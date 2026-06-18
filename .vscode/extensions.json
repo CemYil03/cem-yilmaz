@@ -1,0 +1,16 @@
+{
+    "recommendations": [
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
+        "davidanson.vscode-markdownlint",
+        "esbenp.prettier-vscode",
+        "fill-labs.dependi",
+        "firsttris.vscode-jest-runner",
+        "graphql.vscode-graphql",
+        "ms-playwright.playwright",
+        "streetsidesoftware.code-spell-checker",
+        "viijay-kr.react-ts-css",
+        "webpro.vscode-knip",
+        "yoavbls.pretty-ts-errors",
+    ],
+}

@@ -1,0 +1,1012 @@
+{
+    "id": "a9355fc4-3a73-4e54-9e0e-8f9077e3f261",
+    "prevId": "00000000-0000-0000-0000-000000000000",
+    "version": "7",
+    "dialect": "postgresql",
+    "tables": {
+        "public.ChatMessageUserAttachments": {
+            "name": "ChatMessageUserAttachments",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "fileUploadId": {
+                    "name": "fileUploadId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {
+                "ChatMessageUserAttachments_pk": {
+                    "name": "ChatMessageUserAttachments_pk",
+                    "columns": [
+                        {
+                            "expression": "chatMessageId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "fileUploadId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ChatMessageUserAttachments_chatMessageId_idx": {
+                    "name": "ChatMessageUserAttachments_chatMessageId_idx",
+                    "columns": [
+                        {
+                            "expression": "chatMessageId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessageUserAttachments_chatMessageId_ChatMessagesUser_chatMessageId_fk": {
+                    "name": "ChatMessageUserAttachments_chatMessageId_ChatMessagesUser_chatMessageId_fk",
+                    "tableFrom": "ChatMessageUserAttachments",
+                    "tableTo": "ChatMessagesUser",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessageUserAttachments_fileUploadId_FileUploads_fileUploadId_fk": {
+                    "name": "ChatMessageUserAttachments_fileUploadId_FileUploads_fileUploadId_fk",
+                    "tableFrom": "ChatMessageUserAttachments",
+                    "tableTo": "FileUploads",
+                    "columnsFrom": ["fileUploadId"],
+                    "columnsTo": ["fileUploadId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessages": {
+            "name": "ChatMessages",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "chatId": {
+                    "name": "chatId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "kind": {
+                    "name": "kind",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "authorUserId": {
+                    "name": "authorUserId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "ChatMessages_chatId_createdAt_idx": {
+                    "name": "ChatMessages_chatId_createdAt_idx",
+                    "columns": [
+                        {
+                            "expression": "chatId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "createdAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ChatMessages_kind_idx": {
+                    "name": "ChatMessages_kind_idx",
+                    "columns": [
+                        {
+                            "expression": "kind",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessages_chatId_Chats_chatId_fk": {
+                    "name": "ChatMessages_chatId_Chats_chatId_fk",
+                    "tableFrom": "ChatMessages",
+                    "tableTo": "Chats",
+                    "columnsFrom": ["chatId"],
+                    "columnsTo": ["chatId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessages_authorUserId_Users_userId_fk": {
+                    "name": "ChatMessages_authorUserId_Users_userId_fk",
+                    "tableFrom": "ChatMessages",
+                    "tableTo": "Users",
+                    "columnsFrom": ["authorUserId"],
+                    "columnsTo": ["userId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesAssistantInputCollection": {
+            "name": "ChatMessagesAssistantInputCollection",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "prompt": {
+                    "name": "prompt",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "inputs": {
+                    "name": "inputs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "mode": {
+                    "name": "mode",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'form'"
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesAssistantInputCollection_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesAssistantInputCollection_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesAssistantInputCollection",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesAssistantText": {
+            "name": "ChatMessagesAssistantText",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "body": {
+                    "name": "body",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesAssistantText_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesAssistantText_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesAssistantText",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesToolApprovalRequest": {
+            "name": "ChatMessagesToolApprovalRequest",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "approvalId": {
+                    "name": "approvalId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolCallId": {
+                    "name": "toolCallId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolName": {
+                    "name": "toolName",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolArgs": {
+                    "name": "toolArgs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesToolApprovalRequest_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesToolApprovalRequest_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesToolApprovalRequest",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {
+                "ChatMessagesToolApprovalRequest_approvalId_uniq": {
+                    "name": "ChatMessagesToolApprovalRequest_approvalId_uniq",
+                    "nullsNotDistinct": false,
+                    "columns": ["approvalId"]
+                }
+            },
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesToolApprovalResponse": {
+            "name": "ChatMessagesToolApprovalResponse",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "approvalId": {
+                    "name": "approvalId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "approved": {
+                    "name": "approved",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "reason": {
+                    "name": "reason",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "ChatMessagesToolApprovalResponse_approvalId_uniq": {
+                    "name": "ChatMessagesToolApprovalResponse_approvalId_uniq",
+                    "columns": [
+                        {
+                            "expression": "approvalId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessagesToolApprovalResponse_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesToolApprovalResponse_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesToolApprovalResponse",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessagesToolApprovalResponse_approvalId_ChatMessagesToolApprovalRequest_approvalId_fk": {
+                    "name": "ChatMessagesToolApprovalResponse_approvalId_ChatMessagesToolApprovalRequest_approvalId_fk",
+                    "tableFrom": "ChatMessagesToolApprovalResponse",
+                    "tableTo": "ChatMessagesToolApprovalRequest",
+                    "columnsFrom": ["approvalId"],
+                    "columnsTo": ["approvalId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {
+                "ChatMessagesToolApprovalResponse_approvalId_unique": {
+                    "name": "ChatMessagesToolApprovalResponse_approvalId_unique",
+                    "nullsNotDistinct": false,
+                    "columns": ["approvalId"]
+                }
+            },
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesToolCall": {
+            "name": "ChatMessagesToolCall",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "toolCallId": {
+                    "name": "toolCallId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolName": {
+                    "name": "toolName",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolArgs": {
+                    "name": "toolArgs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolResult": {
+                    "name": "toolResult",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "resultedAt": {
+                    "name": "resultedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "ChatMessagesToolCall_toolCallId_idx": {
+                    "name": "ChatMessagesToolCall_toolCallId_idx",
+                    "columns": [
+                        {
+                            "expression": "toolCallId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessagesToolCall_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesToolCall_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesToolCall",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesUser": {
+            "name": "ChatMessagesUser",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "body": {
+                    "name": "body",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesUser_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesUser_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesUser",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesUserInput": {
+            "name": "ChatMessagesUserInput",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "collectionMessageId": {
+                    "name": "collectionMessageId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "answers": {
+                    "name": "answers",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesUserInput_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesUserInput_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesUserInput",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessagesUserInput_collectionMessageId_ChatMessagesAssistantInputCollection_chatMessageId_fk": {
+                    "name": "ChatMessagesUserInput_collectionMessageId_ChatMessagesAssistantInputCollection_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesUserInput",
+                    "tableTo": "ChatMessagesAssistantInputCollection",
+                    "columnsFrom": ["collectionMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Chats": {
+            "name": "Chats",
+            "schema": "",
+            "columns": {
+                "chatId": {
+                    "name": "chatId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "title": {
+                    "name": "title",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "lastModifiedAt": {
+                    "name": "lastModifiedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.FileUploads": {
+            "name": "FileUploads",
+            "schema": "",
+            "columns": {
+                "fileUploadId": {
+                    "name": "fileUploadId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "userId": {
+                    "name": "userId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "filename": {
+                    "name": "filename",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "mediaType": {
+                    "name": "mediaType",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "size": {
+                    "name": "size",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "bytes": {
+                    "name": "bytes",
+                    "type": "bytea",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "FileUploads_userId_idx": {
+                    "name": "FileUploads_userId_idx",
+                    "columns": [
+                        {
+                            "expression": "userId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "FileUploads_userId_Users_userId_fk": {
+                    "name": "FileUploads_userId_Users_userId_fk",
+                    "tableFrom": "FileUploads",
+                    "tableTo": "Users",
+                    "columnsFrom": ["userId"],
+                    "columnsTo": ["userId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Logs": {
+            "name": "Logs",
+            "schema": "",
+            "columns": {
+                "logId": {
+                    "name": "logId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "sessionId": {
+                    "name": "sessionId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "level": {
+                    "name": "level",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "message": {
+                    "name": "message",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "context": {
+                    "name": "context",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "Logs_sessionId_Sessions_sessionId_fk": {
+                    "name": "Logs_sessionId_Sessions_sessionId_fk",
+                    "tableFrom": "Logs",
+                    "tableTo": "Sessions",
+                    "columnsFrom": ["sessionId"],
+                    "columnsTo": ["sessionId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Sessions": {
+            "name": "Sessions",
+            "schema": "",
+            "columns": {
+                "sessionId": {
+                    "name": "sessionId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "userId": {
+                    "name": "userId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "lastInteractionAt": {
+                    "name": "lastInteractionAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "wasTerminatedAt": {
+                    "name": "wasTerminatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "connectionActive": {
+                    "name": "connectionActive",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "userAgent": {
+                    "name": "userAgent",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "Sessions_userId_Users_userId_fk": {
+                    "name": "Sessions_userId_Users_userId_fk",
+                    "tableFrom": "Sessions",
+                    "tableTo": "Users",
+                    "columnsFrom": ["userId"],
+                    "columnsTo": ["userId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Users": {
+            "name": "Users",
+            "schema": "",
+            "columns": {
+                "userId": {
+                    "name": "userId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "name": {
+                    "name": "name",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        }
+    },
+    "enums": {},
+    "schemas": {},
+    "sequences": {},
+    "roles": {},
+    "policies": {},
+    "views": {},
+    "_meta": {
+        "columns": {},
+        "schemas": {},
+        "tables": {}
+    }
+}

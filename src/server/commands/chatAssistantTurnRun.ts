@@ -1,0 +1,383 @@
+import type { JSONValue, LanguageModelUsage, ModelMessage } from 'ai';
+import { eq } from 'drizzle-orm';
+import { agentUserConversation } from '../agents/agentUserConversation';
+import { chatAssistantInputCollectionInputSchema } from '../agents/toolPromptUserForInput';
+import type { ChatAssistantInputCollectionInput } from '../agents/toolPromptUserForInput';
+import type { ChatAssistantInputSlot } from '../db/chatPayloadTypes';
+import {
+    chatMessagesAssistantInputCollection,
+    chatMessagesAssistantText,
+    chatMessagesToolApprovalRequest,
+    chatMessagesToolCall,
+    chats,
+} from '../db/schema';
+import type {
+    ChatMessageAssistantInputCollectionCreate,
+    ChatMessageAssistantTextCreate,
+    ChatMessageCreate as ChatMessageRowCreate,
+    ChatMessageToolApprovalRequestCreate,
+    ChatMessageToolCallCreate,
+} from '../db/schema';
+import type { ServerRuntime } from '../domain/ServerRuntime';
+import type { GqlSChatAssistantOptions, GqlSSession } from '../graphql/generated';
+import { toModelMessages } from '../mappers/toModelMessages';
+import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
+import { chatMessageAppend } from './chatMessageAppend';
+
+// Shared turn-runner: builds the agent, streams or generates, persists every
+// tool call (with the `promptUserForInput` branch that becomes an input
+// collection), and writes the assistant text row at end-of-stream.
+//
+// Each persisted message commits in its own short transaction; after commit
+// the runner publishes a `ChatUpdateMessageAppended` so subscribers see the
+// new message immediately. The streaming text path additionally publishes a
+// `ChatUpdateAssistantTextChunk` per delta. The id of the eventual
+// `ChatMessageAssistantText` row is pre-allocated so the client can correlate
+// the streaming preview to its persisted swap-in.
+//
+// Two entry points:
+// - `chatAssistantTurnRun` — runs one turn synchronously and returns when the
+//   agent has produced its final assistant text (or thrown). Takes the
+//   pre-built `coreMessages` array; used by tests that want to drive the
+//   runner directly without going through the row-load path.
+// - `chatAssistantTurnRunDetached` — kicks the turn off on a void promise and
+//   returns immediately. Loads `coreMessages` itself (`chatMessageRowsLoad`
+//   then `toModelMessages`) so the three chat commands all share the same
+//   one-line "user-side row is durable; now run the agent" call. Bumps
+//   `chats.lastModifiedAt` after the turn finishes and routes any thrown
+//   error to `serverRuntime.log`. Used by `chatMessageCreate`,
+//   `chatInputCollectionRespond`, and `chatToolApprovalRespond`.
+
+const PROMPT_USER_FOR_INPUT_TOOL_NAME = 'promptUserForInput';
+
+// Per-step generation metadata shared by every AI-produced variant table.
+// `chatMessagesAssistantText`, `chatMessagesToolCall`,
+// `chatMessagesAssistantInputCollection`, and `chatMessagesToolApprovalRequest`
+// each carry the same six nullable columns; this helper produces the snapshot
+// once per `onStepFinish` so a step that fans out into multiple rows records
+// identical numbers on each. See "Generation metadata" in
+// `docs/architecture/chat-persistence.md`.
+type StepGenerationMeta = Pick<
+    ChatMessageAssistantTextCreate,
+    'modelId' | 'inputTokens' | 'outputTokens' | 'totalTokens' | 'reasoningTokens' | 'cachedInputTokens'
+>;
+
+function stepGenerationMeta(step: { usage: LanguageModelUsage; model: { modelId: string } }): StepGenerationMeta {
+    const { inputTokens, outputTokens, totalTokens, inputTokenDetails, outputTokenDetails } = step.usage;
+    // The AI SDK moved provider-specific token counts into nested detail
+    // objects in 5.x — the flat `usage.reasoningTokens` /
+    // `usage.cachedInputTokens` aliases are now `@deprecated`. The detail
+    // objects themselves are always present per the SDK types; their inner
+    // fields stay `undefined` for providers that don't populate them.
+    const reasoningTokens = outputTokenDetails.reasoningTokens;
+    const cachedInputTokens = inputTokenDetails.cacheReadTokens;
+    // Some providers report input/output but omit `totalTokens`; fall back to
+    // their sum when both sides are present, otherwise leave it null rather
+    // than reporting `0` for an unknown total.
+    const totalFallback = totalTokens ?? (inputTokens != null && outputTokens != null ? inputTokens + outputTokens : null);
+    return {
+        modelId: step.model.modelId,
+        inputTokens: inputTokens ?? null,
+        outputTokens: outputTokens ?? null,
+        totalTokens: totalFallback,
+        reasoningTokens: reasoningTokens ?? null,
+        cachedInputTokens: cachedInputTokens ?? null,
+    };
+}
+
+interface ChatAssistantTurnRunOptions {
+    chatId: string;
+    coreMessages: ModelMessage[];
+    requestingSession: GqlSSession;
+    assistantOptions: GqlSChatAssistantOptions;
+    serverRuntime: ServerRuntime;
+}
+
+async function chatAssistantTurnRun({
+    chatId,
+    coreMessages,
+    requestingSession,
+    assistantOptions,
+    serverRuntime,
+}: ChatAssistantTurnRunOptions): Promise<void> {
+    const { generationId } = assistantOptions;
+
+    // Pre-allocate the id of the eventual assistant-text row so streamed
+    // chunk events can carry it; the client uses this id to swap its
+    // streaming preview row for the persisted message at end-of-stream.
+    const assistantTextMessageId = crypto.randomUUID();
+
+    try {
+        await runAgentTurn({
+            chatId,
+            coreMessages,
+            requestingSession,
+            assistantOptions,
+            serverRuntime,
+            assistantTextMessageId,
+        });
+    } finally {
+        // `TurnEnded` runs on every path out — success, agent throw, downstream
+        // publish failure — so the client always tears down its per-turn
+        // composer lock + streaming row, even when the turn produced no
+        // assistant text. The caller is the failure log of last resort.
+        if (generationId) {
+            try {
+                await serverRuntime.publish.chatUpdates({
+                    generationId,
+                    update: { gqlTypeName: 'ChatUpdateTurnEnded', generationId },
+                });
+            } catch (publishError) {
+                // A publish failure here is best-effort: the worst case is the
+                // client never sees `TurnEnded` and stays locked until the
+                // next mount, which is annoying but not data-corrupting.
+                serverRuntime.log.error(publishError, requestingSession);
+            }
+        }
+    }
+}
+
+interface ChatAssistantTurnRunDetachedOptions {
+    chatId: string;
+    requestingSession: GqlSSession;
+    assistantOptions: GqlSChatAssistantOptions;
+    serverRuntime: ServerRuntime;
+}
+
+/**
+ * Kick the assistant turn off on a void promise. Returns synchronously so the
+ * mutation can resolve as soon as the user-side row is durable; the agent
+ * runs detached and emits `TurnEnded` when done.
+ *
+ * Loads the prior conversation rows itself via `chatMessageRowsLoad +
+ * toModelMessages` — the three chat commands all need the same load + replay
+ * step, and re-reading after their own writes is what picks up command-side
+ * side-effects (e.g. the synthetic skipped-userInput row `chatMessageCreate`
+ * inserts when the user pivots away from a form). After the turn finishes
+ * (either path), bumps `chats.lastModifiedAt` so chat lists/sorts reflect the
+ * new activity. Any thrown error from the load, the turn, or the timestamp
+ * bump is routed to `serverRuntime.log`.
+ */
+export function chatAssistantTurnRunDetached({
+    chatId,
+    requestingSession,
+    assistantOptions,
+    serverRuntime,
+}: ChatAssistantTurnRunDetachedOptions): void {
+    void (async () => {
+        try {
+            const coreMessages = toModelMessages(await chatMessageRowsLoad(serverRuntime.db, chatId));
+            await chatAssistantTurnRun({
+                chatId,
+                coreMessages,
+                requestingSession,
+                assistantOptions,
+                serverRuntime,
+            });
+            await serverRuntime.db.update(chats).set({ lastModifiedAt: new Date() }).where(eq(chats.chatId, chatId));
+        } catch (turnError) {
+            serverRuntime.log.error(turnError, requestingSession);
+        }
+    })();
+}
+
+// Body of the agent turn — extracted so the surrounding `chatAssistantTurnRun`
+// can wrap it in the `TurnEnded` publish without nesting indentation.
+async function runAgentTurn({
+    chatId,
+    coreMessages,
+    requestingSession,
+    assistantOptions,
+    serverRuntime,
+    assistantTextMessageId,
+}: ChatAssistantTurnRunOptions & { assistantTextMessageId: string }): Promise<void> {
+    const { generationId } = assistantOptions;
+    const { db } = serverRuntime;
+    // Every `onStepFinish` step caches its generation snapshot in this slot
+    // so the post-stream `assistantText` insert (which runs outside
+    // `onStepFinish` for the streaming path) can record the last step's
+    // usage. Wrapping the mutable slot in an object dodges the lint check's
+    // closure-blind narrowing of a plain `let`-bound `null`. Empty when the
+    // turn produced no steps at all (e.g. an immediate agent throw).
+    const lastStepGeneration: { value: StepGenerationMeta | null } = { value: null };
+    const agent = await agentUserConversation({
+        session: requestingSession,
+        serverRuntime,
+        assistantOptions,
+        onStepFinish: async (step) => {
+            const generation = stepGenerationMeta(step);
+            lastStepGeneration.value = generation;
+            // Phase A — approval requests. When a tool is gated by
+            // `needsApproval`, the AI SDK emits a `tool-approval-request`
+            // content part instead of executing. Persist a
+            // `chatMessagesToolApprovalRequest` row so the UI can render the
+            // Approve/Decline card; record the suspended call's `toolCallId`
+            // so `chatToolApprovalRespond` can later write a
+            // `chatMessagesToolCall` row whose id matches what the agent
+            // originally produced.
+            const approvalRequestedToolCallIds = new Set<string>();
+            for (const part of step.content) {
+                if (part.type !== 'tool-approval-request') continue;
+                const { approvalId, toolCall } = part;
+                approvalRequestedToolCallIds.add(toolCall.toolCallId);
+                const requestSpine: ChatMessageRowCreate = {
+                    chatMessageId: crypto.randomUUID(),
+                    chatId,
+                    kind: 'toolApprovalRequest',
+                    authorUserId: null,
+                    createdAt: new Date(),
+                };
+                const requestVariant: ChatMessageToolApprovalRequestCreate = {
+                    chatMessageId: requestSpine.chatMessageId,
+                    approvalId,
+                    toolCallId: toolCall.toolCallId,
+                    toolName: toolCall.toolName,
+                    toolArgs: toolCall.input as JSONValue,
+                    ...generation,
+                };
+                await chatMessageAppend(db, serverRuntime, generationId, requestSpine, async (transaction) => {
+                    await transaction.insert(chatMessagesToolApprovalRequest).values(requestVariant);
+                });
+            }
+
+            // Phase B — regular tool-call persistence. Skip any call that has
+            // a pending approval request: it has no result yet, and writing a
+            // `chatMessagesToolCall` row for it would be replayed as a stuck
+            // tool-call by `toModelMessages`. The respond command writes the
+            // tool-call row when the human decides.
+            for (const call of step.toolCalls) {
+                if (approvalRequestedToolCallIds.has(call.toolCallId)) continue;
+                if (call.toolName === PROMPT_USER_FOR_INPUT_TOOL_NAME) {
+                    // Validate the LLM-supplied args before persisting. Even
+                    // with `structuredOutputs: true`, providers can ship
+                    // malformed args (renamed fields, missing discriminator,
+                    // ...). A bad call here would produce a row whose `inputs`
+                    // JSONB returns `undefined` slots from `toGqlChatMessage`,
+                    // tripping the non-nullable
+                    // `ChatMessageAssistantInputCollection.inputs` resolver —
+                    // fail loud instead.
+                    const parsed = chatAssistantInputCollectionInputSchema.safeParse(call.input);
+                    if (!parsed.success) {
+                        serverRuntime.log.error(
+                            new Error(`promptUserForInput call rejected: ${parsed.error.message}; raw=${JSON.stringify(call.input)}`),
+                            requestingSession,
+                        );
+                        continue;
+                    }
+                    const collectionSpine: ChatMessageRowCreate = {
+                        chatMessageId: crypto.randomUUID(),
+                        chatId,
+                        kind: 'assistantInputCollection',
+                        authorUserId: null,
+                        createdAt: new Date(),
+                    };
+                    // Slots are persisted with a fresh `inputId` per slot so
+                    // the eventual `ChatMessageUserInput` answers can key back
+                    // even if the LLM reorders.
+                    const collectionVariant: ChatMessageAssistantInputCollectionCreate = {
+                        chatMessageId: collectionSpine.chatMessageId,
+                        prompt: parsed.data.prompt,
+                        inputs: parsed.data.inputs.map(chatAssistantInputSlotPromote),
+                        mode: parsed.data.mode,
+                        ...generation,
+                    };
+                    await chatMessageAppend(db, serverRuntime, generationId, collectionSpine, async (transaction) => {
+                        await transaction.insert(chatMessagesAssistantInputCollection).values(collectionVariant);
+                    });
+                    continue;
+                }
+
+                const toolCallSpine: ChatMessageRowCreate = {
+                    chatMessageId: crypto.randomUUID(),
+                    chatId,
+                    kind: 'toolCall',
+                    authorUserId: null,
+                    createdAt: new Date(),
+                };
+                const matchingResult = step.toolResults.find((r) => r.toolCallId === call.toolCallId);
+                const toolCallVariant: ChatMessageToolCallCreate = {
+                    chatMessageId: toolCallSpine.chatMessageId,
+                    toolCallId: call.toolCallId,
+                    toolName: call.toolName,
+                    toolArgs: call.input,
+                    toolResult: matchingResult ? matchingResult.output : null,
+                    resultedAt: matchingResult ? new Date() : null,
+                    ...generation,
+                };
+                await chatMessageAppend(db, serverRuntime, generationId, toolCallSpine, async (transaction) => {
+                    await transaction.insert(chatMessagesToolCall).values(toolCallVariant);
+                });
+            }
+        },
+    });
+
+    let assistantText = '';
+    if (generationId) {
+        const result = await agent.stream({ messages: coreMessages });
+        for await (const part of result.fullStream) {
+            if (part.type === 'text-delta') {
+                assistantText += part.text;
+                await serverRuntime.publish.chatUpdates({
+                    generationId,
+                    update: {
+                        gqlTypeName: 'ChatUpdateAssistantTextChunk',
+                        chatMessageId: assistantTextMessageId,
+                        delta: part.text,
+                    },
+                });
+            }
+        }
+    } else {
+        const result = await agent.generate({ messages: coreMessages });
+        assistantText = result.text;
+    }
+
+    if (assistantText.length > 0) {
+        const assistantSpine: ChatMessageRowCreate = {
+            chatMessageId: assistantTextMessageId,
+            chatId,
+            kind: 'assistantText',
+            authorUserId: null,
+            createdAt: new Date(),
+        };
+        // `onStepFinish` for the final step has already run by the time we
+        // reach end-of-stream, so `lastStepGeneration.value` reflects the step
+        // that produced this text. Falls back to `null` if no step ran (the
+        // outer `assistantText.length > 0` guard usually rules that out).
+        const generation = lastStepGeneration.value;
+        const assistantVariant: ChatMessageAssistantTextCreate = {
+            chatMessageId: assistantSpine.chatMessageId,
+            body: assistantText,
+            ...(generation ?? {}),
+        };
+        await chatMessageAppend(db, serverRuntime, generationId, assistantSpine, async (transaction) => {
+            await transaction.insert(chatMessagesAssistantText).values(assistantVariant);
+        });
+    }
+}
+
+// The tool's wire schema is intentionally flat (a `kind` enum + optional
+// `options`) so Gemini renders it reliably. Persistence stores the
+// discriminated `ChatAssistantInputSlot` shape the rest of the codebase uses;
+// this lifts the wire shape into that shape after Zod validation.
+function chatAssistantInputSlotPromote(slot: ChatAssistantInputCollectionInput['inputs'][number]): ChatAssistantInputSlot {
+    const inputId = crypto.randomUUID();
+    const shared = { inputId, prompt: slot.prompt };
+    switch (slot.kind) {
+        case 'Date':
+        case 'DateRange':
+        case 'DateTime':
+        case 'Time':
+        case 'Boolean':
+        case 'Text':
+            return { ...shared, kind: slot.kind };
+        case 'SingleSelect':
+        case 'MultiSelect':
+            // The wire schema makes `options` optional; require it here so a
+            // malformed select fails loud instead of rendering empty chips.
+            if (!slot.options || slot.options.length === 0) {
+                throw new Error(`promptUserForInput: ${slot.kind} slot is missing required 'options'`);
+            }
+            return { ...shared, kind: slot.kind, options: slot.options };
+    }
+}

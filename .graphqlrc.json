@@ -1,0 +1,4 @@
+{
+    "schema": "./src/server/graphql/schema.graphqls",
+    "documents": ["./src/web/**/*.graphql", "./src/routes/**/*.graphql"]
+}

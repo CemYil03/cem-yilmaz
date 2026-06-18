@@ -1,0 +1,248 @@
+name: Pipeline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    name: Commit lint
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      - name: Lint commits (PR)
+        if: github.event_name == 'pull_request'
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
+      - name: Lint commits (push)
+        if: github.event_name == 'push'
+        run: |
+          if ! git cat-file -e ${{ github.event.before }}^{commit} 2>/dev/null; then
+            echo "Base commit not found (new branch or force push) — skipping commitlint"
+            exit 0
+          fi
+          npx commitlint --from ${{ github.event.before }} --to ${{ github.event.after }} --verbose
+
+  codegen:
+    name: Codegen freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+
+      - name: GraphQL codegen
+        run: npm run graphql:generate
+
+      - name: DB codegen
+        run: npm run db:generate
+
+      - name: Check for uncommitted changes
+        run: |
+          git diff --exit-code -- '*.gen.ts' '*.generated.ts' 'drizzle/'
+          if [ -n "$(git ls-files --others --exclude-standard -- '*.gen.ts' '*.generated.ts' 'drizzle/')" ]; then
+            echo "Untracked generated files present — codegen output is not committed"
+            exit 1
+          fi
+
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Spell
+        run: npm run spell:check
+
+      - name: Types
+        run: npm run type:check
+
+      - name: Usage
+        run: npm run usage:check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+
+      - name: Run migrations
+        run: npm run db:push
+
+      - name: Test
+        run: npm test
+
+  migrations-check:
+    name: Migrations applied (${{ matrix.env }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [prod, preview]
+    env:
+      DB_LABEL: ${{ matrix.env }}
+      DATABASE_URL: ${{ matrix.env == 'prod' && secrets.DATABASE_URL_PROD || secrets.DATABASE_URL_PREVIEW }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+
+      - name: Check migrations applied
+        run: npm run db:check-applied
+
+  deploy:
+    name: Deploy
+    needs: [commitlint, codegen, check, test, migrations-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver: docker-container
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set image tag on Coolify
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          APP_UUID: ${{ secrets.COOLIFY_SERVICE_UUID }}
+          TAG: ${{ steps.meta.outputs.version }}
+        run: |
+          set -e
+          BODY=$(jq -n --arg tag "$TAG" '{docker_registry_image_tag:$tag}')
+          RESP=$(curl -sS -w "\n%{http_code}" -X PATCH \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            "${COOLIFY_URL%/}/api/v1/applications/${APP_UUID}")
+          BODY_JSON=$(echo "$RESP" | head -n -1); CODE=$(echo "$RESP" | tail -n1)
+          echo "PATCH HTTP $CODE"; echo "$BODY_JSON"; test "$CODE" = "200"
+
+      - name: Restart application
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          APP_UUID: ${{ secrets.COOLIFY_SERVICE_UUID }}
+        run: |
+          set -e
+          RESP=$(curl -sS -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            "${COOLIFY_URL%/}/api/v1/applications/${APP_UUID}/restart")
+          BODY=$(echo "$RESP" | head -n -1); CODE=$(echo "$RESP" | tail -n1)
+          echo "RESTART HTTP $CODE"; echo "$BODY"; test "$CODE" = "200"
+
+      - name: Verify deployment
+        env:
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -e
+          ATTEMPTS=60
+          INTERVAL=5
+          LAST_VERSION=""
+          LAST_CODE=""
+          for i in $(seq 1 $ATTEMPTS); do
+            RESP=$(curl -sS -m 5 -w "\n%{http_code}" "${WEB_APP_URL%/}/api/health" || echo $'\n000')
+            BODY=$(echo "$RESP" | head -n -1); LAST_CODE=$(echo "$RESP" | tail -n1)
+            if [ "$LAST_CODE" = "200" ]; then
+              LAST_VERSION=$(echo "$BODY" | jq -r '.version // empty')
+              if [ "$LAST_VERSION" = "$EXPECTED_SHA" ]; then
+                echo "Verified ${EXPECTED_SHA} is live (attempt ${i})"
+                exit 0
+              fi
+            fi
+            echo "Attempt ${i}/${ATTEMPTS}: HTTP ${LAST_CODE}, version='${LAST_VERSION}', expected='${EXPECTED_SHA}'"
+            sleep $INTERVAL
+          done
+          echo "Verification failed after ${ATTEMPTS} attempts. Last HTTP ${LAST_CODE}, last version='${LAST_VERSION}', expected='${EXPECTED_SHA}'"
+          exit 1

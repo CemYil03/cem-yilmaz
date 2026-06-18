@@ -1,0 +1,49 @@
+name: Storybook
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/web/components/**'
+  workflow_dispatch:
+
+concurrency:
+  group: storybook-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - run: npm install -g "npm@$(node -p "require('./package.json').packageManager.split('@')[1]")"
+
+      - run: npm ci
+
+      - name: Build Storybook
+        run: npm run storybook:build
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: storybook-static
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

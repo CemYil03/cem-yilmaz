@@ -1,0 +1,16 @@
+query HomePage {
+    currentSession {
+        sessionId
+        user {
+            name
+        }
+    }
+}
+
+mutation TerminateSessions($currentSessionId: ID!) {
+    user {
+        terminateSessions(sessionIds: [$currentSessionId]) {
+            success
+        }
+    }
+}

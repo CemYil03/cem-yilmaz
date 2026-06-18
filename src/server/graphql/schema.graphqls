@@ -1,0 +1,387 @@
+scalar DateTime
+scalar Date
+# Untyped JSON payload — used only where the GraphQL schema is itself a union
+# of values that the UI surfaces verbatim (e.g. tool call arguments rendered
+# in a debug/inspect dialog). See docs/architecture/chat.md.
+scalar JSON
+
+type ChatMessageUser {
+    chatMessageId: ID!
+    author: User!
+    body: String!
+    # Files the user attached to this message, in send-order. Empty list when
+    # the message was a plain-text send. The bytes are not exposed inline —
+    # `FileUpload.url` points at `/api/file-uploads/:id` which streams them
+    # back behind the same session cookie that authorized the upload.
+    attachments: [FileUpload!]!
+    createdAt: DateTime!
+}
+
+# A persisted user-uploaded file. Consumer-agnostic — chat surfaces these
+# today as message attachments via the `ChatMessageUser.attachments` field,
+# but the same shape is reused by other surfaces (e.g. assistant-side
+# outputs, avatars, document uploads).
+type FileUpload {
+    fileUploadId: ID!
+    filename: String!
+    # IANA media type — drives both the in-bubble preview (image vs file
+    # chip) and the LLM-side `ImagePart` / `FilePart` choice in
+    # `toModelMessages`.
+    mediaType: String!
+    # Size in bytes. Mirrors what the upload route persisted; clamped at the
+    # route, not validated again here.
+    size: Int!
+    # Server-rooted URL to stream the bytes back. Today: `/api/file-uploads/:id`.
+    url: String!
+}
+
+# Snapshot of a single LLM step's identity and token usage. Attached to every
+# AI-produced message variant — see `docs/architecture/chat-persistence.md`
+# ("Generation metadata"). The whole field is nullable on the parent variants
+# because pre-feature rows have no usage and rare provider responses may omit
+# the model id; when present, `modelId` is always populated. The token fields
+# are individually nullable because providers vary (Gemini reports
+# `cachedInputTokens`; OpenAI reports `reasoningTokens`; some omit
+# `totalTokens` and the server falls back to `inputTokens + outputTokens`).
+#
+# A single LLM step can produce multiple message rows (text + N tool calls);
+# each row carries the same snapshot, so naive `SUM(totalTokens)` aggregations
+# over-count. Group by `(chatMessageId, step boundary)` for accurate totals.
+type ChatMessageGeneration {
+    modelId: String!
+    inputTokens: Int
+    outputTokens: Int
+    totalTokens: Int
+    reasoningTokens: Int
+    cachedInputTokens: Int
+}
+
+type ChatMessageAssistantText {
+    chatMessageId: ID!
+    body: String!
+    # Snapshot of the LLM step that produced this row. See `ChatMessageGeneration`.
+    generation: ChatMessageGeneration
+    createdAt: DateTime!
+}
+
+type ChatMessageToolCall {
+    chatMessageId: ID!
+    toolName: String!
+    # Per-tool-typed call arguments, exposed as opaque JSON so the UI can
+    # render them in an inspect dialog. The shape is only validated at the
+    # tool boundary by Zod.
+    args: JSON!
+    generation: ChatMessageGeneration
+    createdAt: DateTime!
+}
+
+type ChatMessageToolApprovalRequest {
+    chatMessageId: ID!
+    approvalId: String!
+    toolName: String!
+    # The pending call's arguments — same shape and rationale as
+    # `ChatMessageToolCall.args`. Surfaced so the human can inspect what the
+    # assistant is asking permission to run before approving.
+    args: JSON!
+    generation: ChatMessageGeneration
+    createdAt: DateTime!
+}
+
+type ChatMessageToolApprovalResponse {
+    chatMessageId: ID!
+    approvalId: String!
+    approved: Boolean!
+    # Optional free-text justification the human typed when responding. The
+    # SDK's `ToolApprovalResponse` carries this through to the synthetic
+    # denied tool-result so the LLM sees *why* a call was declined.
+    reason: String
+    createdAt: DateTime!
+}
+
+# --- Assistant input collection ----------------------------------------------
+#
+# A single assistant turn that asks the user for one or more structured values.
+# Each entry in `inputs` is a typed slot — see `union ChatAssistantInput`.
+# The user's response is a single `ChatMessageUserInput` carrying one
+# `ChatMessageUserInputAnswer` per answered slot (all-or-nothing submit).
+
+type ChatMessageAssistantInputCollection {
+    chatMessageId: ID!
+    prompt: String!
+    inputs: [ChatAssistantInput!]!
+    # `Form` renders every slot at once; `StepThrough` walks the user through
+    # one slot at a time. The submitted answer set is identical between modes —
+    # the wizard accumulates drafts client-side and submits the same batch the
+    # form does. Picked by the LLM via the `promptUserForInput` tool's `mode`
+    # input; defaults to `Form`.
+    #
+    # Plain `String!` (not a GraphQL enum) so the typescript-operations
+    # codegen plugin doesn't re-emit a duplicate type alias next to the one
+    # the typescript plugin already emits. Same workaround the inlined
+    # mutations use for named input types — see chat.md.
+    mode: String!
+    generation: ChatMessageGeneration
+    createdAt: DateTime!
+}
+
+union ChatAssistantInput =
+    | ChatAssistantInputDate
+    | ChatAssistantInputDateRange
+    | ChatAssistantInputDateTime
+    | ChatAssistantInputTime
+    | ChatAssistantInputSingleSelect
+    | ChatAssistantInputMultiSelect
+    | ChatAssistantInputBoolean
+    | ChatAssistantInputText
+
+type ChatAssistantInputDate {
+    inputId: ID!
+    prompt: String!
+}
+
+type ChatAssistantInputDateRange {
+    inputId: ID!
+    prompt: String!
+}
+
+type ChatAssistantInputDateTime {
+    inputId: ID!
+    prompt: String!
+}
+
+type ChatAssistantInputTime {
+    inputId: ID!
+    prompt: String!
+}
+
+type ChatAssistantInputSingleSelect {
+    inputId: ID!
+    prompt: String!
+    options: [String!]!
+}
+
+type ChatAssistantInputMultiSelect {
+    inputId: ID!
+    prompt: String!
+    options: [String!]!
+}
+
+type ChatAssistantInputBoolean {
+    inputId: ID!
+    prompt: String!
+}
+
+type ChatAssistantInputText {
+    inputId: ID!
+    prompt: String!
+}
+
+# --- User response to an assistant input collection --------------------------
+
+type ChatMessageUserInput {
+    chatMessageId: ID!
+    author: User!
+    collectionMessageId: ID!
+    # Real submits carry one entry per answered slot; an empty list signals
+    # the row is protocol-only — written by `chatMessageCreate` to close an
+    # open collection when the user sent a free-text message instead of
+    # filling the form. See "Pivoting away from an open collection" in
+    # docs/architecture/chat.md.
+    answers: [ChatMessageUserInputAnswer!]!
+    createdAt: DateTime!
+}
+
+type ChatMessageUserInputAnswer {
+    inputId: ID!
+    value: ChatAssistantInputValue!
+}
+
+union ChatAssistantInputValue =
+    | ChatAssistantInputValueDate
+    | ChatAssistantInputValueDateRange
+    | ChatAssistantInputValueDateTime
+    | ChatAssistantInputValueTime
+    | ChatAssistantInputValueString
+    | ChatAssistantInputValueStringList
+    | ChatAssistantInputValueBoolean
+
+type ChatAssistantInputValueDate {
+    date: Date!
+}
+
+type ChatAssistantInputValueDateRange {
+    from: Date!
+    to: Date!
+}
+
+type ChatAssistantInputValueDateTime {
+    dateTime: DateTime!
+}
+
+type ChatAssistantInputValueTime {
+    # ISO 8601 local time, e.g. "14:30"
+    time: String!
+}
+
+type ChatAssistantInputValueString {
+    value: String!
+}
+
+type ChatAssistantInputValueStringList {
+    values: [String!]!
+}
+
+type ChatAssistantInputValueBoolean {
+    boolean: Boolean!
+}
+
+# --- Top-level chat message union --------------------------------------------
+
+union ChatMessage =
+    | ChatMessageUser
+    | ChatMessageUserInput
+    | ChatMessageAssistantText
+    | ChatMessageToolCall
+    | ChatMessageToolApprovalRequest
+    | ChatMessageToolApprovalResponse
+    | ChatMessageAssistantInputCollection
+
+type Chat {
+    chatId: ID!
+    title: String!
+    lastModifiedAt: DateTime!
+    # Flat insertion-ordered list. Day-grouping is a render-time concern in the
+    # client (the live `chatUpdates` subscription delivers raw messages, so the
+    # client has to be the grouping authority anyway).
+    messages: [ChatMessage!]!
+}
+
+input UserCreate {
+    name: String!
+}
+
+input UserUpdate {
+    name: String!
+}
+
+type User {
+    userId: ID!
+    name: String!
+}
+
+type Session {
+    sessionId: ID!
+    user: User
+    chat(chatId: ID!): Chat!
+}
+
+type MutationResult {
+    success: Boolean!
+    referenceId: ID
+}
+
+type ChatMessageCreateResult {
+    chatId: ID!
+    chatMessageId: ID!
+}
+
+type UserMutation {
+    userUpdate(user: UserUpdate!): MutationResult!
+    terminateSessions(sessionIds: [ID!]!): MutationResult!
+    chatMessageCreate(chatId: ID, message: String!, fileUploadIds: [ID!], assistantOptions: ChatAssistantOptions!): ChatMessageCreateResult
+    chatInputCollectionRespond(
+        collectionMessageId: ID!
+        answers: [ChatMessageUserInputAnswerCreate!]!
+        assistantOptions: ChatAssistantOptions!
+    ): ChatMessageCreateResult
+    chatToolApprovalRespond(
+        approvalId: String!
+        approved: Boolean!
+        reason: String
+        assistantOptions: ChatAssistantOptions!
+    ): ChatMessageCreateResult
+}
+
+# --- User-input answer write shape -------------------------------------------
+#
+# GraphQL has no input unions, so we follow the same flat-discriminator pattern
+# the `promptUserForInput` Zod tool schema uses: a `kind` enum drives which of
+# the optional fields is read. The resolver validates the populated field
+# matches `kind` and rejects mismatches before persistence.
+
+enum ChatAssistantInputValueKind {
+    Date
+    DateRange
+    DateTime
+    Time
+    String
+    StringList
+    Boolean
+}
+
+input ChatMessageUserInputAnswerCreate {
+    inputId: ID!
+    kind: ChatAssistantInputValueKind!
+    date: Date
+    dateRangeFrom: Date
+    dateRangeTo: Date
+    dateTime: DateTime
+    time: String
+    string: String
+    stringList: [String!]
+    boolean: Boolean
+}
+
+input ChatAssistantOptions {
+    generationId: ID
+    requireToolCallApprovals: Boolean!
+}
+
+type Query {
+    currentSession: Session!
+}
+
+type Mutation {
+    userCreate(user: UserCreate!): MutationResult!
+    user: UserMutation!
+}
+
+# --- Chat live updates -------------------------------------------------------
+#
+# A single subscription that delivers every event of an in-flight assistant
+# turn — newly persisted `ChatMessage` rows (user message, tool call, approval
+# request/response, input collection, final assistant text) and assistant-text
+# deltas during streaming. Keyed by an ephemeral, client-allocated
+# `generationId` (UUIDv4); the unguessable id IS the capability today. Real
+# chat-level authorization will layer on once chats grow user ownership.
+#
+# `ChatUpdateAssistantTextChunk.chatMessageId` is pre-allocated server-side
+# before streaming begins; it equals the id of the eventual
+# `ChatMessageAssistantText` row that arrives as `ChatUpdateMessageAppended`
+# at end-of-stream. Clients use it to swap their in-place streaming row for
+# the persisted message with no layout shift.
+
+type ChatUpdateMessageAppended {
+    message: ChatMessage!
+}
+
+type ChatUpdateAssistantTextChunk {
+    chatMessageId: ID!
+    delta: String!
+}
+
+# Marker variant published exactly once per turn — when `chatAssistantTurnRun`
+# exits (success or failure). Lets the client tear down per-turn state
+# (composer lock, active streamingId) without waiting on the mutation that
+# kicked the turn off, since the mutation now returns as soon as the user-side
+# row is committed and the agent runs detached.
+type ChatUpdateTurnEnded {
+    generationId: ID!
+}
+
+union ChatUpdate = ChatUpdateMessageAppended | ChatUpdateAssistantTextChunk | ChatUpdateTurnEnded
+
+type Subscription {
+    userUpdates: User!
+    chatUpdates(generationId: ID!): ChatUpdate!
+}

@@ -1,0 +1,38 @@
+{
+    // https://code.visualstudio.com/updates/v1_79#_readonly-mode
+    "files.watcherExclude": {
+        "**/routeTree.gen.ts": true,
+        "src/server/graphql/generated.ts": true,
+        "src/web/graphql/generated.ts": true,
+    },
+    "search.exclude": {
+        "**/routeTree.gen.ts": true,
+        "src/server/graphql/generated.ts": true,
+        "src/web/graphql/generated.ts": true,
+    },
+    "files.readonlyInclude": {
+        "**/routeTree.gen.ts": true,
+        "src/server/graphql/generated.ts": true,
+        "src/web/graphql/generated.ts": true,
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit",
+    },
+    // Tailwind - to hide warnings in lines with tailwind imports
+    "files.associations": {
+        "*.css": "tailwindcss",
+    },
+    // Tailwind - to trigger suggestions when changing class names inline
+    "editor.quickSuggestions": {
+        "strings": "on",
+    },
+    "tailwindCSS.classFunctions": ["tw", "clsx", "tw\\.[a-z-]+"],
+    // Hide these useless suggestions which are listed before the ts suggestions
+    "emmet.showExpandedAbbreviation": "never",
+    "dependi.npm.ignoreLinePatterns": "nitro,types/node",
+    "dependi.npm.lockFileEnabled": false,
+    "dependi.npm.informPatchUpdates": true,
+}
