@@ -4,6 +4,7 @@ import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
 import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
+import { cvSummaryForAgent } from './cvSummaryForAgent';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
 export interface AgentChatOptions {
@@ -34,25 +35,25 @@ export type ChatAgentFactory = (options: AgentChatOptions) => Promise<{
     generate: (...args: any[]) => any;
 }>;
 
-// System prompt for the public visitor chat ("Ask me anything") on
-// cem-yilmaz.de. The bio block below is intentionally a placeholder — fill in
-// the real content before launch.
-const VISITOR_SYSTEM_PROMPT = [
-    "You are the AI assistant on Cem Yilmaz's personal website (cem-yilmaz.de).",
-    "Your job is to answer visitors' questions about Cem, his projects, and this site.",
-    '',
-    'About Cem (TODO: replace before launch):',
-    '- Software engineer based in Germany.',
-    '- Builds full-stack web apps in TypeScript / React / Node.',
-    '- This site is both his portfolio and his private platform; the public part shows projects, blog posts, and curated web tools.',
-    '',
-    'Style:',
-    '- Reply in the language the visitor wrote in (German or English). If unclear, default to English.',
-    '- Be concise, warm, and direct. Avoid corporate filler.',
-    "- If asked something you don't know about Cem, say so — do not invent biography, employers, or credentials.",
-    '- Politely steer off-topic questions back to Cem, his work, or this site.',
-    "- Never claim to be a human; if asked, say you're an AI assistant Cem set up to answer visitor questions.",
-].join('\n');
+// System prompt scaffold for the public visitor chat ("Ask me anything") on
+// cem-yilmaz.de. The "About Cem" block is rebuilt from the DB on every turn
+// (`cvSummaryForAgent`) so admin edits at `/workspace/cv` land in the
+// agent's answers without a redeploy. See `docs/features/cv.md`.
+function buildSystemPrompt(cvSummary: string): string {
+    return [
+        "You are the AI assistant on Cem Yilmaz's personal website (cem-yilmaz.de).",
+        "Your job is to answer visitors' questions about Cem, his projects, and this site.",
+        '',
+        cvSummary,
+        '',
+        'Style:',
+        '- Reply in the language the visitor wrote in (German or English). If unclear, default to English.',
+        '- Be concise, warm, and direct. Avoid corporate filler.',
+        "- If asked something the summary above doesn't cover, say so — do not invent biography, employers, or credentials.",
+        '- Politely steer off-topic questions back to Cem, his work, or this site.',
+        "- Never claim to be a human; if asked, say you're an AI assistant Cem set up to answer visitor questions.",
+    ].join('\n');
+}
 
 export async function agentVisitorAboutCem({
     assistantOptions: _assistantOptions,
@@ -60,6 +61,7 @@ export async function agentVisitorAboutCem({
     serverRuntime,
     onStepFinish,
 }: AgentChatOptions) {
+    const cvSummary = await cvSummaryForAgent(serverRuntime);
     return new ToolLoopAgent({
         // Provider, model id, and API key are bound on the runtime
         // (`serverRuntimeCreate`) so this agent can be exercised against a
@@ -93,7 +95,7 @@ export async function agentVisitorAboutCem({
             // matching tool-result.
             hasToolCall('promptUserForInput'),
         ],
-        instructions: VISITOR_SYSTEM_PROMPT,
+        instructions: buildSystemPrompt(cvSummary),
         // No real DB tools today — the visitor chat is read-only. Approval
         // gating is left wired anyway so the SDK's tool-approval lifecycle
         // (suspend → request → respond → run execute) keeps being exercised

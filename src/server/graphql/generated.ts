@@ -37,6 +37,18 @@ export interface GqlSAdminMutation {
     chatInputCollectionRespond?: Maybe<GqlSChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlSChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlSChatMessageCreateResult>;
+    cvEducationDelete: GqlSMutationResult;
+    cvEducationReorder: GqlSMutationResult;
+    cvEducationUpsert: GqlSCvEducation;
+    cvExperienceDelete: GqlSMutationResult;
+    cvExperienceReorder: GqlSMutationResult;
+    cvExperienceUpsert: GqlSCvExperience;
+    cvHobbyDelete: GqlSMutationResult;
+    cvHobbyReorder: GqlSMutationResult;
+    cvHobbyUpsert: GqlSCvHobby;
+    cvSkillDelete: GqlSMutationResult;
+    cvSkillReorder: GqlSMutationResult;
+    cvSkillUpsert: GqlSCvSkill;
 }
 
 export type GqlSAdminMutationChatInputCollectionRespondArgs = {
@@ -57,6 +69,54 @@ export type GqlSAdminMutationChatToolApprovalRespondArgs = {
     approved: Scalars['Boolean']['input'];
     assistantOptions: GqlSChatAssistantOptions;
     reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSAdminMutationCvEducationDeleteArgs = {
+    cvEducationId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationCvEducationReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationCvEducationUpsertArgs = {
+    input: GqlSCvEducationInput;
+};
+
+export type GqlSAdminMutationCvExperienceDeleteArgs = {
+    cvExperienceId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationCvExperienceReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationCvExperienceUpsertArgs = {
+    input: GqlSCvExperienceInput;
+};
+
+export type GqlSAdminMutationCvHobbyDeleteArgs = {
+    cvHobbyId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationCvHobbyReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationCvHobbyUpsertArgs = {
+    input: GqlSCvHobbyInput;
+};
+
+export type GqlSAdminMutationCvSkillDeleteArgs = {
+    cvSkillId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationCvSkillReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationCvSkillUpsertArgs = {
+    input: GqlSCvSkillInput;
 };
 
 export interface GqlSChat {
@@ -305,6 +365,110 @@ export interface GqlSChatUpdateTurnEnded {
     generationId: Scalars['ID']['output'];
 }
 
+export interface GqlSCvEducation {
+    __typename?: 'CvEducation';
+    cvEducationId: Scalars['ID']['output'];
+    degreeDe: Scalars['String']['output'];
+    degreeEn: Scalars['String']['output'];
+    endDate: Scalars['Date']['output'];
+    institutionDe: Scalars['String']['output'];
+    institutionEn: Scalars['String']['output'];
+    notesDe: Scalars['String']['output'];
+    notesEn: Scalars['String']['output'];
+    position: Scalars['Int']['output'];
+    startDate?: Maybe<Scalars['Date']['output']>;
+    subjectDe: Scalars['String']['output'];
+    subjectEn: Scalars['String']['output'];
+}
+
+export type GqlSCvEducationInput = {
+    cvEducationId?: InputMaybe<Scalars['ID']['input']>;
+    degreeDe: Scalars['String']['input'];
+    degreeEn: Scalars['String']['input'];
+    endDate: Scalars['Date']['input'];
+    institutionDe: Scalars['String']['input'];
+    institutionEn: Scalars['String']['input'];
+    notesDe: Scalars['String']['input'];
+    notesEn: Scalars['String']['input'];
+    position: Scalars['Int']['input'];
+    startDate?: InputMaybe<Scalars['Date']['input']>;
+    subjectDe: Scalars['String']['input'];
+    subjectEn: Scalars['String']['input'];
+};
+
+export interface GqlSCvExperience {
+    __typename?: 'CvExperience';
+    companyDe: Scalars['String']['output'];
+    companyEn: Scalars['String']['output'];
+    cvExperienceId: Scalars['ID']['output'];
+    descriptionDe: Scalars['String']['output'];
+    descriptionEn: Scalars['String']['output'];
+    endDate?: Maybe<Scalars['Date']['output']>;
+    managerName?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    roleDe: Scalars['String']['output'];
+    roleEn: Scalars['String']['output'];
+    startDate: Scalars['Date']['output'];
+    technologies: Array<Scalars['String']['output']>;
+}
+
+export type GqlSCvExperienceInput = {
+    companyDe: Scalars['String']['input'];
+    companyEn: Scalars['String']['input'];
+    cvExperienceId?: InputMaybe<Scalars['ID']['input']>;
+    descriptionDe: Scalars['String']['input'];
+    descriptionEn: Scalars['String']['input'];
+    endDate?: InputMaybe<Scalars['Date']['input']>;
+    managerName?: InputMaybe<Scalars['String']['input']>;
+    position: Scalars['Int']['input'];
+    roleDe: Scalars['String']['input'];
+    roleEn: Scalars['String']['input'];
+    startDate: Scalars['Date']['input'];
+    technologies: Array<Scalars['String']['input']>;
+};
+
+export interface GqlSCvHobby {
+    __typename?: 'CvHobby';
+    cvHobbyId: Scalars['ID']['output'];
+    position: Scalars['Int']['output'];
+    since?: Maybe<Scalars['Int']['output']>;
+    textDe: Scalars['String']['output'];
+    textEn: Scalars['String']['output'];
+}
+
+export type GqlSCvHobbyInput = {
+    cvHobbyId?: InputMaybe<Scalars['ID']['input']>;
+    position: Scalars['Int']['input'];
+    since?: InputMaybe<Scalars['Int']['input']>;
+    textDe: Scalars['String']['input'];
+    textEn: Scalars['String']['input'];
+};
+
+export interface GqlSCvQuery {
+    __typename?: 'CvQuery';
+    education: Array<GqlSCvEducation>;
+    experience: Array<GqlSCvExperience>;
+    hobbies: Array<GqlSCvHobby>;
+    skills: Array<GqlSCvSkill>;
+}
+
+export interface GqlSCvSkill {
+    __typename?: 'CvSkill';
+    category: GqlSCvSkillCategory;
+    cvSkillId: Scalars['ID']['output'];
+    label: Scalars['String']['output'];
+    position: Scalars['Int']['output'];
+}
+
+export type GqlSCvSkillCategory = 'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools';
+
+export type GqlSCvSkillInput = {
+    category: GqlSCvSkillCategory;
+    cvSkillId?: InputMaybe<Scalars['ID']['input']>;
+    label: Scalars['String']['input'];
+    position: Scalars['Int']['input'];
+};
+
 export interface GqlSFileUpload {
     __typename?: 'FileUpload';
     fileUploadId: Scalars['ID']['output'];
@@ -359,6 +523,7 @@ export interface GqlSQuery {
     admin: GqlSAdmin;
     chat: GqlSChat;
     currentSession: GqlSSession;
+    cv: GqlSCvQuery;
 }
 
 export type GqlSQueryChatArgs = {
@@ -585,6 +750,16 @@ export type GqlSResolversTypes = ResolversObject<{
         Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversTypes['ChatMessage'] }
     >;
     ChatUpdateTurnEnded: ResolverTypeWrapper<GqlSChatUpdateTurnEnded>;
+    CvEducation: ResolverTypeWrapper<GqlSCvEducation>;
+    CvEducationInput: GqlSCvEducationInput;
+    CvExperience: ResolverTypeWrapper<GqlSCvExperience>;
+    CvExperienceInput: GqlSCvExperienceInput;
+    CvHobby: ResolverTypeWrapper<GqlSCvHobby>;
+    CvHobbyInput: GqlSCvHobbyInput;
+    CvQuery: ResolverTypeWrapper<GqlSCvQuery>;
+    CvSkill: ResolverTypeWrapper<GqlSCvSkill>;
+    CvSkillCategory: GqlSCvSkillCategory;
+    CvSkillInput: GqlSCvSkillInput;
     Date: ResolverTypeWrapper<Scalars['Date']['output']>;
     DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
     FileUpload: ResolverTypeWrapper<GqlSFileUpload>;
@@ -654,6 +829,15 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ChatUpdateAssistantTextChunk: GqlSChatUpdateAssistantTextChunk;
     ChatUpdateMessageAppended: Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversParentTypes['ChatMessage'] };
     ChatUpdateTurnEnded: GqlSChatUpdateTurnEnded;
+    CvEducation: GqlSCvEducation;
+    CvEducationInput: GqlSCvEducationInput;
+    CvExperience: GqlSCvExperience;
+    CvExperienceInput: GqlSCvExperienceInput;
+    CvHobby: GqlSCvHobby;
+    CvHobbyInput: GqlSCvHobbyInput;
+    CvQuery: GqlSCvQuery;
+    CvSkill: GqlSCvSkill;
+    CvSkillInput: GqlSCvSkillInput;
     Date: Scalars['Date']['output'];
     DateTime: Scalars['DateTime']['output'];
     FileUpload: GqlSFileUpload;
@@ -703,6 +887,78 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationChatToolApprovalRespondArgs, 'approvalId' | 'approved' | 'assistantOptions'>
+    >;
+    cvEducationDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvEducationDeleteArgs, 'cvEducationId'>
+    >;
+    cvEducationReorder?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvEducationReorderArgs, 'orderedIds'>
+    >;
+    cvEducationUpsert?: Resolver<
+        GqlSResolversTypes['CvEducation'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvEducationUpsertArgs, 'input'>
+    >;
+    cvExperienceDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvExperienceDeleteArgs, 'cvExperienceId'>
+    >;
+    cvExperienceReorder?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvExperienceReorderArgs, 'orderedIds'>
+    >;
+    cvExperienceUpsert?: Resolver<
+        GqlSResolversTypes['CvExperience'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvExperienceUpsertArgs, 'input'>
+    >;
+    cvHobbyDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvHobbyDeleteArgs, 'cvHobbyId'>
+    >;
+    cvHobbyReorder?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvHobbyReorderArgs, 'orderedIds'>
+    >;
+    cvHobbyUpsert?: Resolver<
+        GqlSResolversTypes['CvHobby'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvHobbyUpsertArgs, 'input'>
+    >;
+    cvSkillDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvSkillDeleteArgs, 'cvSkillId'>
+    >;
+    cvSkillReorder?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvSkillReorderArgs, 'orderedIds'>
+    >;
+    cvSkillUpsert?: Resolver<
+        GqlSResolversTypes['CvSkill'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvSkillUpsertArgs, 'input'>
     >;
 }>;
 
@@ -1058,6 +1314,73 @@ export type GqlSChatUpdateTurnEndedResolvers<
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlSCvEducationResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CvEducation'] = GqlSResolversParentTypes['CvEducation'],
+> = ResolversObject<{
+    cvEducationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    degreeDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    degreeEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    endDate?: Resolver<GqlSResolversTypes['Date'], ParentType, ContextType>;
+    institutionDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    institutionEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notesDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notesEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    startDate?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    subjectDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    subjectEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type GqlSCvExperienceResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CvExperience'] = GqlSResolversParentTypes['CvExperience'],
+> = ResolversObject<{
+    companyDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    companyEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    cvExperienceId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    descriptionDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    descriptionEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    endDate?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    managerName?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    roleDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    roleEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    startDate?: Resolver<GqlSResolversTypes['Date'], ParentType, ContextType>;
+    technologies?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type GqlSCvHobbyResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CvHobby'] = GqlSResolversParentTypes['CvHobby'],
+> = ResolversObject<{
+    cvHobbyId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    since?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    textDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    textEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type GqlSCvQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CvQuery'] = GqlSResolversParentTypes['CvQuery'],
+> = ResolversObject<{
+    education?: Resolver<Array<GqlSResolversTypes['CvEducation']>, ParentType, ContextType>;
+    experience?: Resolver<Array<GqlSResolversTypes['CvExperience']>, ParentType, ContextType>;
+    hobbies?: Resolver<Array<GqlSResolversTypes['CvHobby']>, ParentType, ContextType>;
+    skills?: Resolver<Array<GqlSResolversTypes['CvSkill']>, ParentType, ContextType>;
+}>;
+
+export type GqlSCvSkillResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CvSkill'] = GqlSResolversParentTypes['CvSkill'],
+> = ResolversObject<{
+    category?: Resolver<GqlSResolversTypes['CvSkillCategory'], ParentType, ContextType>;
+    cvSkillId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    label?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
 export interface GqlSDateScalarConfig extends GraphQLScalarTypeConfig<GqlSResolversTypes['Date'], any> {
     name: 'Date';
 }
@@ -1123,6 +1446,7 @@ export type GqlSQueryResolvers<
     admin?: Resolver<GqlSResolversTypes['Admin'], ParentType, ContextType>;
     chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSQueryChatArgs, 'chatId'>>;
     currentSession?: Resolver<GqlSResolversTypes['Session'], ParentType, ContextType>;
+    cv?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
 }>;
 
 export type GqlSSessionResolvers<
@@ -1209,6 +1533,11 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ChatUpdateAssistantTextChunk?: GqlSChatUpdateAssistantTextChunkResolvers<ContextType>;
     ChatUpdateMessageAppended?: GqlSChatUpdateMessageAppendedResolvers<ContextType>;
     ChatUpdateTurnEnded?: GqlSChatUpdateTurnEndedResolvers<ContextType>;
+    CvEducation?: GqlSCvEducationResolvers<ContextType>;
+    CvExperience?: GqlSCvExperienceResolvers<ContextType>;
+    CvHobby?: GqlSCvHobbyResolvers<ContextType>;
+    CvQuery?: GqlSCvQueryResolvers<ContextType>;
+    CvSkill?: GqlSCvSkillResolvers<ContextType>;
     Date?: GraphQLScalarType;
     DateTime?: GraphQLScalarType;
     FileUpload?: GqlSFileUploadResolvers<ContextType>;
@@ -1237,6 +1566,11 @@ export const GqlSChatAssistantInputValueKindSchema: z.ZodType<
     'Boolean' | 'Date' | 'DateRange' | 'DateTime' | 'String' | 'StringList' | 'Time'
 > = z.enum(['Boolean', 'Date', 'DateRange', 'DateTime', 'String', 'StringList', 'Time']);
 
+export const GqlSCvSkillCategorySchema: z.ZodType<
+    'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools',
+    'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools'
+> = z.enum(['capabilities', 'frameworks', 'languages', 'services', 'tools']);
+
 export function GqlSChatAssistantOptionsSchema(): z.ZodObject<Properties<GqlSChatAssistantOptions>> {
     return z.object({
         generationId: z.string().nullish(),
@@ -1256,6 +1590,59 @@ export function GqlSChatMessageUserInputAnswerCreateSchema(): z.ZodObject<Proper
         string: z.string().nullish(),
         stringList: z.array(z.string()).nullish(),
         time: z.string().nullish(),
+    });
+}
+
+export function GqlSCvEducationInputSchema(): z.ZodObject<Properties<GqlSCvEducationInput>> {
+    return z.object({
+        cvEducationId: z.string().nullish(),
+        degreeDe: z.string(),
+        degreeEn: z.string(),
+        endDate: z.string(),
+        institutionDe: z.string(),
+        institutionEn: z.string(),
+        notesDe: z.string(),
+        notesEn: z.string(),
+        position: z.number(),
+        startDate: z.string().nullish(),
+        subjectDe: z.string(),
+        subjectEn: z.string(),
+    });
+}
+
+export function GqlSCvExperienceInputSchema(): z.ZodObject<Properties<GqlSCvExperienceInput>> {
+    return z.object({
+        companyDe: z.string(),
+        companyEn: z.string(),
+        cvExperienceId: z.string().nullish(),
+        descriptionDe: z.string(),
+        descriptionEn: z.string(),
+        endDate: z.string().nullish(),
+        managerName: z.string().nullish(),
+        position: z.number(),
+        roleDe: z.string(),
+        roleEn: z.string(),
+        startDate: z.string(),
+        technologies: z.array(z.string()),
+    });
+}
+
+export function GqlSCvHobbyInputSchema(): z.ZodObject<Properties<GqlSCvHobbyInput>> {
+    return z.object({
+        cvHobbyId: z.string().nullish(),
+        position: z.number(),
+        since: z.number().nullish(),
+        textDe: z.string(),
+        textEn: z.string(),
+    });
+}
+
+export function GqlSCvSkillInputSchema(): z.ZodObject<Properties<GqlSCvSkillInput>> {
+    return z.object({
+        category: GqlSCvSkillCategorySchema,
+        cvSkillId: z.string().nullish(),
+        label: z.string(),
+        position: z.number(),
     });
 }
 

@@ -1,11 +1,13 @@
 import {
     boolean,
     customType,
+    date,
     foreignKey,
     index,
     integer,
     jsonb,
     pgTable,
+    text,
     timestamp,
     uniqueIndex,
     uuid,
@@ -459,3 +461,112 @@ export const chatMessageUserAttachments = pgTable(
 
 export type ChatMessageUserAttachment = typeof chatMessageUserAttachments.$inferSelect;
 export type ChatMessageUserAttachmentCreate = typeof chatMessageUserAttachments.$inferInsert;
+
+// --- CV ----------------------------------------------------------------------
+//
+// Editable CV content surfaced on `/cv` (timeline) and `/about` (skills,
+// hobbies). Each table is an ordered list driven by a `position` integer that
+// the admin editor at `/workspace/cv` writes via the `*Reorder` command. The
+// public read path is `Query.cv.*`; mutations are gated by `guardAdminMutation`
+// — see `docs/features/cv.md`.
+//
+// Bilingual fields ship as paired `*De` / `*En` text columns. The visitor
+// site never queries by language at the DB layer (the GraphQL response
+// returns both, the client picks at render), so a column-per-locale stays
+// simpler than a JSONB blob and lets the admin form bind to two plain inputs.
+//
+// `endDate IS NULL` is the canonical "ongoing" marker for the timeline rows
+// (rendered as "heute" / "today"). `technologies` is a Postgres `text[]` —
+// the labels are display chips, never queried by relation, so a join table
+// would be overhead.
+
+export const cvExperience = pgTable(
+    'CvExperience',
+    {
+        cvExperienceId: uuid().primaryKey(),
+        roleDe: varchar().notNull(),
+        roleEn: varchar().notNull(),
+        companyDe: varchar().notNull(),
+        companyEn: varchar().notNull(),
+        startDate: date().notNull(),
+        endDate: date(),
+        descriptionDe: text().notNull(),
+        descriptionEn: text().notNull(),
+        technologies: text().array().notNull().default([]),
+        managerName: varchar(),
+        position: integer().notNull(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('CvExperience_position_idx').on(table.position)],
+);
+
+export type CvExperience = typeof cvExperience.$inferSelect;
+export type CvExperienceCreate = typeof cvExperience.$inferInsert;
+
+export const cvEducation = pgTable(
+    'CvEducation',
+    {
+        cvEducationId: uuid().primaryKey(),
+        degreeDe: varchar().notNull(),
+        degreeEn: varchar().notNull(),
+        institutionDe: varchar().notNull(),
+        institutionEn: varchar().notNull(),
+        subjectDe: varchar().notNull().default(''),
+        subjectEn: varchar().notNull().default(''),
+        startDate: date(),
+        endDate: date().notNull(),
+        notesDe: text().notNull().default(''),
+        notesEn: text().notNull().default(''),
+        position: integer().notNull(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('CvEducation_position_idx').on(table.position)],
+);
+
+export type CvEducation = typeof cvEducation.$inferSelect;
+export type CvEducationCreate = typeof cvEducation.$inferInsert;
+
+// `category` is a flat enum stored as varchar — the GraphQL schema mirrors
+// it as `enum CvSkillCategory`. Skill labels themselves are not translated
+// ("TypeScript" reads the same in both locales), which is why there is a
+// single `label` column rather than the `*De`/`*En` pair.
+export const cvSkillCategories = ['capabilities', 'frameworks', 'services', 'tools', 'languages'] as const;
+export type CvSkillCategory = (typeof cvSkillCategories)[number];
+
+export const cvSkill = pgTable(
+    'CvSkill',
+    {
+        cvSkillId: uuid().primaryKey(),
+        category: varchar().$type<CvSkillCategory>().notNull(),
+        label: varchar().notNull(),
+        position: integer().notNull(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('CvSkill_category_idx').on(table.category), index('CvSkill_position_idx').on(table.position)],
+);
+
+export type CvSkill = typeof cvSkill.$inferSelect;
+export type CvSkillCreate = typeof cvSkill.$inferInsert;
+
+// `since` is a free-form integer year for entries like "Seit 2011 Karate" —
+// nullable because not every hobby anchors on a year ("Tennis, Volleyball,
+// Fußball, Schwimmen").
+export const cvHobby = pgTable(
+    'CvHobby',
+    {
+        cvHobbyId: uuid().primaryKey(),
+        textDe: text().notNull(),
+        textEn: text().notNull(),
+        since: integer(),
+        position: integer().notNull(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('CvHobby_position_idx').on(table.position)],
+);
+
+export type CvHobby = typeof cvHobby.$inferSelect;
+export type CvHobbyCreate = typeof cvHobby.$inferInsert;

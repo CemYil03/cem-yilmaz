@@ -1,0 +1,52 @@
+# Public CV read query — feeds `/cv` (timeline) and `/about` (skill / hobby
+# blocks). All four lists arrive in `position`-ascending order.
+query CvPage {
+    cv {
+        experience {
+            cvExperienceId
+            roleDe
+            roleEn
+            companyDe
+            companyEn
+            startDate
+            endDate
+            descriptionDe
+            descriptionEn
+            technologies
+            managerName
+            position
+        }
+        education {
+            cvEducationId
+            degreeDe
+            degreeEn
+            institutionDe
+            institutionEn
+            subjectDe
+            subjectEn
+            startDate
+            endDate
+            notesDe
+            notesEn
+            position
+        }
+    }
+}
+
+query AboutPage {
+    cv {
+        skills {
+            cvSkillId
+            category
+            label
+            position
+        }
+        hobbies {
+            cvHobbyId
+            textDe
+            textEn
+            since
+            position
+        }
+    }
+}

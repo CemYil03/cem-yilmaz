@@ -15,6 +15,13 @@
             "when": 1781801305863,
             "tag": "0001_sticky_lady_mastermind",
             "breakpoints": true
+        },
+        {
+            "idx": 2,
+            "version": "7",
+            "when": 1781861052653,
+            "tag": "0002_neat_mad_thinker",
+            "breakpoints": true
         }
     ]
 }

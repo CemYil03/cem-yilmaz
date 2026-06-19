@@ -24,6 +24,9 @@ export interface SitemapPath {
 
 export const SITEMAP_PATHS: ReadonlyArray<SitemapPath> = [
     { path: '/', changefreq: 'weekly', priority: 1.0 },
+    { path: '/about', changefreq: 'monthly', priority: 0.7 },
+    { path: '/cv', changefreq: 'monthly', priority: 0.8 },
+    { path: '/projects', changefreq: 'monthly', priority: 0.7 },
     { path: '/impressum', changefreq: 'yearly', priority: 0.3 },
     { path: '/datenschutz', changefreq: 'yearly', priority: 0.3 },
 ];

@@ -69,7 +69,8 @@ Notes:
 | `/` — landing page                          | Phase 1  | Public                                               |
 | `/impressum`, `/datenschutz`                | Phase 1  | Public                                               |
 | `/chat` — visitor AI chat                   | Phase 1  | Public                                               |
-| `/projects`, `/projects/$id`                | Phase 3  | Public                                               |
+| `/projects` — static portfolio list         | Phase 1  | Public                                               |
+| `/projects/$id` — DB-backed detail pages    | Phase 3  | Public                                               |
 | `/blog`, `/blog/$slug`                      | Phase 3  | Public                                               |
 | `/tools`                                    | Phase 3  | Public                                               |
 | `/workspace` — hub + assistant composer     | Phase 1  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |

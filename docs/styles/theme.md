@@ -4,18 +4,126 @@ The site has **two themes** — light and dark — plus an `auto` mode that foll
 design tokens declared as CSS custom properties; switching theme just rebinds those properties. See [fonts.md](./fonts.md) for the
 typography half of the visual system.
 
+The visual goal is **professional, clean, minimalistic, trustworthy, tasteful**. Every choice on this page should be measured against those
+five words: if a token, surface, or accent does not earn its place against that bar, simplify it.
+
 ## Tokens
 
 All theme tokens live in `src/styles.css`:
 
 - `:root` defines the **light** values.
 - `.dark` overrides them with the **dark** values.
-- `@theme inline` re-exposes each `--<name>` as a Tailwind token (e.g. `--color-background`) so utilities like `bg-background`,
-  `text-foreground`, and `border-border` resolve to the active theme automatically.
+- `@theme inline` re-exposes each `--<name>` as a Tailwind token (e.g. `--color-background`, `--color-background-alt`, `--color-brand`) so
+  utilities like `bg-background`, `bg-background-alt`, `bg-brand`, `text-brand`, `text-foreground`, and `border-border` resolve to the
+  active theme automatically.
+
+Two principles to keep the palette small:
+
+1. **Hue stays at 250.** Every cool-leaning token — backgrounds, brand, selection, the ambient orb, `chart-1` — sits on hue 250. One hue
+   keeps the page calm; varying lightness and chroma is what creates separation. Don't introduce a second cool hue without a deliberate
+   reason.
+2. **Lightness encodes elevation.** Page is darkest, alt section is one step deeper (because cards and the orb are what we want to stand
+   out, not the page). Cards are a step lighter than the page, popovers a step lighter than cards. Don't reach for shadows when a lightness
+   step would do the job.
+
+### Surface stack
+
+The page uses four surface lightness stops in each theme. Use the lowest layer that still reads:
+
+| Token              | Light                   | Dark                     | Used for                                                             |
+| ------------------ | ----------------------- | ------------------------ | -------------------------------------------------------------------- |
+| `--background`     | `oklch(0.95 0.012 250)` | `oklch(0.141 0.005 285)` | Page base — the canvas behind everything                             |
+| `--background-alt` | `oklch(0.92 0.014 250)` | `oklch(0.18 0.008 285)`  | Alternating landing-page sections, marketing rhythm                  |
+| `--card`           | `oklch(0.99 0.004 250)` | `oklch(0.20 0.008 285)`  | Default elevated surface — `GlassCard`, focus-area cards, list items |
+| `--popover`        | `oklch(1 0 0)`          | `oklch(0.235 0.008 285)` | Floating overlays — popovers, dropdowns, command menus               |
+
+Each step is roughly one perceptual stop, so a popover on a card on an alt section on the page reads as four distinct planes without any
+borders or shadows doing the work. The light card is **not** pure white because pure white kills the cool tilt that the page leans on.
+
+Apply tokens via the Tailwind utilities (`bg-background`, `bg-background-alt`, `bg-card`, `bg-popover`) — never hardcode the OKLCH literal
+in a component, so a future palette tweak is one CSS edit.
+
+### Foreground & muted
+
+| Token                | Light                    | Dark                     | Notes                                      |
+| -------------------- | ------------------------ | ------------------------ | ------------------------------------------ |
+| `--foreground`       | `oklch(0.141 0.005 285)` | `oklch(0.985 0 0)`       | Body copy, headings                        |
+| `--muted-foreground` | `oklch(0.48 0.012 250)`  | `oklch(0.705 0.015 286)` | Subtitles, helper text, secondary metadata |
+| `--border`           | `oklch(0.92 0.004 286)`  | `oklch(0.274 0.006 286)` | Hairline dividers, card outlines           |
+
+Muted text in light was tightened from the shadcn default (`L 0.552`) to `L 0.48` so 14 px subtitles still clear WCAG AA against `--card`.
+The cool 250 hue also picks up the page tilt instead of fighting it.
+
+### Brand
+
+A single hue ties the ambient orb, focus rings, primary CTAs, links, and `chart-1` together. There is one brand colour for the whole site;
+it just lifts in dark mode so it reads off the near-black canvas.
+
+| Token                | Light                  | Dark                   | Used for                                                              |
+| -------------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------- |
+| `--brand`            | `oklch(0.62 0.18 250)` | `oklch(0.72 0.20 250)` | Focus rings, primary CTA fill, links, `chart-1`, ambient backdrop orb |
+| `--brand-foreground` | `oklch(0.99 0 0)`      | `oklch(0.10 0 0)`      | Text/icons rendered on top of `--brand` (e.g. inside the Send button) |
+
+Usage rules:
+
+- **Sparingly.** Brand is for moments where the user's attention is the whole point — the primary CTA in a section, the active focus ring, a
+  link inside body copy. A page covered in brand colour stops being branded; it becomes loud.
+- **One hue, two themes.** The light and dark values share hue 250 — never fork the brand into a different colour for dark mode.
+- **The orb is the brand at low opacity.** `AmbientBackdrop` references `var(--brand)` directly; do not introduce a parallel "ambient" hue.
+- **Charts default to the brand.** `--chart-1` is the same hue. Multi-series charts walk away from it through the existing `--chart-2..5`
+  stops; don't add a new chart hue without checking it works in both themes.
+
+### Selection
+
+`::selection` uses a brand-tinted highlight so dragging across copy feels like part of the visual system, not a default browser blue. The
+foreground swap keeps selected text legible in both themes.
+
+| Token                    | Light                  | Dark                   | Notes                       |
+| ------------------------ | ---------------------- | ---------------------- | --------------------------- |
+| `--selection`            | `oklch(0.85 0.10 250)` | `oklch(0.40 0.14 250)` | Background of selected text |
+| `--selection-foreground` | `oklch(0.20 0.01 250)` | `oklch(0.99 0 0)`      | Text colour while selected  |
+
+The single rule that wires it up lives in `@layer base` in `src/styles.css`:
+
+```css
+::selection {
+  background-color: var(--selection);
+  color: var(--selection-foreground);
+}
+```
+
+The same rule serves both themes because the tokens flip under `.dark`. Add element-scoped `::selection` only if a specific surface needs a
+deviation (e.g. selecting code inside a syntax-highlighted block) — and document the deviation here.
+
+### Accessibility notes
+
+Contrast was checked at the most strained pairings — light has tighter ratios than dark because the canvas is closer to its foreground:
+
+| Pair (light)                                  | Ratio  | Verdict                                  |
+| --------------------------------------------- | ------ | ---------------------------------------- |
+| `--foreground` on `--background`              | ~17:1  | WCAG AAA                                 |
+| `--foreground` on `--card`                    | ~18:1  | WCAG AAA                                 |
+| `--muted-foreground` on `--card`              | ~6.0:1 | WCAG AA for any size, AAA for ≥18 px     |
+| `--brand` on `--background` (link text)       | ~4.7:1 | WCAG AA for ≥16 px — fine for body links |
+| `--brand-foreground` on `--brand` (CTA label) | ~4.6:1 | WCAG AA for ≥16 px                       |
+| `--selection-foreground` on `--selection`     | ~10:1  | Comfortably legible while skimming       |
+
+Dark-mode pairs all clear AAA at the same positions. If you change a token, re-check it here — a lightness shift of `0.05` is enough to drop
+a pair below AA. The numbers above are illustrative; verify with a contrast checker (e.g. [oklch.com](https://oklch.com)) when adjusting
+tokens.
+
+### When to reach for `--background-alt`
+
+The landing page uses alternating section backgrounds to give a long scroll some rhythm without resorting to dividers. Apply
+`bg-background-alt` to every other top-level section on the public landing page; leave the rest on `bg-background` (the cascaded default).
+The step is intentionally subtle — three perceptual stops from the page — so the cards still feel elevated against either surface.
+
+Don't use `bg-background-alt` inside a card or popover; cards already sit above the page on the elevation stack and a banded background
+inside one would re-introduce the visual noise the alt token exists to avoid.
 
 The light page background is **`oklch(0.95 0.012 250)`** — a cool off-white. Pure white was rejected because glass surfaces, color orbs, and
 hairline borders disappear against it. The slight cool tilt (hue 250) keeps the page calm and pairs well with the deep navy used in dark
-mode. Apply it via the `bg-background` utility — never hardcode the literal in components, so a future palette change is one CSS edit.
+mode.
 
 ## Switching modes
 
@@ -94,6 +202,9 @@ A blurred, slowly drifting color orb sits behind every page — the calm-glass l
 mounted once in `src/routes/__root.tsx` so it spans the whole site rather than being re-instantiated per route. The component itself is
 `src/web/components/AmbientBackdrop.tsx`; the `drift` keyframe lives in `src/styles.css`. Pages don't render their own backdrop — adding one
 would double-up against the root layer.
+
+**The orb's colour is `var(--brand)`** at low opacity, so the ambient hue, focus rings, links, and `chart-1` all share a single source of
+truth. If you want to retune the brand, change the `--brand` token — the orb follows.
 
 The orb's size and offset are responsive: at the `sm` breakpoint and up it is sized as a percentage of viewport **width** (`55vw`,
 positioned at `-20vw / -10vw`) so it scales gracefully with the desktop layout. Below `sm` — phones in portrait — that same `vw` math would

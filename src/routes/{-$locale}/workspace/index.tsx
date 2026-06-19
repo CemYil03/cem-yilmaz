@@ -3,6 +3,7 @@ import {
     ArrowRightIcon,
     CodeXmlIcon,
     DumbbellIcon,
+    FileTextIcon,
     FilmIcon,
     FolderKanbanIcon,
     ReceiptTextIcon,
@@ -41,6 +42,13 @@ const COPY = {
         composerPlaceholder: { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' },
     },
     areas: {
+        cv: {
+            title: { de: 'Lebenslauf', en: 'CV' },
+            description: {
+                de: 'Bearbeite die Inhalte für /cv und /about.',
+                en: 'Edit the content shown on /cv and /about.',
+            },
+        },
         software: {
             title: { de: 'Softwareentwicklung & Architektur', en: 'Software development & architecture' },
             description: {
@@ -104,6 +112,7 @@ const extractMessageCreateResult = (data: unknown): { chatId: string } | null =>
 const FOCUS_AREAS: ReadonlyArray<{
     key: keyof typeof COPY.areas;
     to:
+        | '/{-$locale}/workspace/cv'
         | '/{-$locale}/workspace/software'
         | '/{-$locale}/workspace/projects'
         | '/{-$locale}/workspace/finances'
@@ -113,6 +122,7 @@ const FOCUS_AREAS: ReadonlyArray<{
         | '/{-$locale}/workspace/media';
     icon: typeof CodeXmlIcon;
 }> = [
+    { key: 'cv', to: '/{-$locale}/workspace/cv', icon: FileTextIcon },
     { key: 'software', to: '/{-$locale}/workspace/software', icon: CodeXmlIcon },
     { key: 'projects', to: '/{-$locale}/workspace/projects', icon: FolderKanbanIcon },
     { key: 'finances', to: '/{-$locale}/workspace/finances', icon: WalletIcon },

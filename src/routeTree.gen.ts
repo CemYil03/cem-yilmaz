@@ -13,9 +13,12 @@ import { Route as Char123LocaleChar125RouteImport } from './routes/{-$locale}'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as Char123LocaleChar125IndexRouteImport } from './routes/{-$locale}/index'
+import { Route as Char123LocaleChar125ProjectsRouteImport } from './routes/{-$locale}/projects'
 import { Route as Char123LocaleChar125ImpressumRouteImport } from './routes/{-$locale}/impressum'
 import { Route as Char123LocaleChar125DatenschutzRouteImport } from './routes/{-$locale}/datenschutz'
+import { Route as Char123LocaleChar125CvRouteImport } from './routes/{-$locale}/cv'
 import { Route as Char123LocaleChar125ChatRouteImport } from './routes/{-$locale}/chat'
+import { Route as Char123LocaleChar125AboutRouteImport } from './routes/{-$locale}/about'
 import { Route as ApiStreamRouteImport } from './routes/api/stream'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
@@ -28,6 +31,7 @@ import { Route as Char123LocaleChar125WorkspaceMedicalRouteImport } from './rout
 import { Route as Char123LocaleChar125WorkspaceMediaRouteImport } from './routes/{-$locale}/workspace/media'
 import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './routes/{-$locale}/workspace/fitness'
 import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
+import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
 import { Route as Char123LocaleChar125WorkspaceAssistantRouteImport } from './routes/{-$locale}/workspace/assistant'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
 
@@ -52,6 +56,12 @@ const Char123LocaleChar125IndexRoute =
     path: '/',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
+const Char123LocaleChar125ProjectsRoute =
+  Char123LocaleChar125ProjectsRouteImport.update({
+    id: '/projects',
+    path: '/projects',
+    getParentRoute: () => Char123LocaleChar125Route,
+  } as any)
 const Char123LocaleChar125ImpressumRoute =
   Char123LocaleChar125ImpressumRouteImport.update({
     id: '/impressum',
@@ -64,10 +74,21 @@ const Char123LocaleChar125DatenschutzRoute =
     path: '/datenschutz',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
+const Char123LocaleChar125CvRoute = Char123LocaleChar125CvRouteImport.update({
+  id: '/cv',
+  path: '/cv',
+  getParentRoute: () => Char123LocaleChar125Route,
+} as any)
 const Char123LocaleChar125ChatRoute =
   Char123LocaleChar125ChatRouteImport.update({
     id: '/chat',
     path: '/chat',
+    getParentRoute: () => Char123LocaleChar125Route,
+  } as any)
+const Char123LocaleChar125AboutRoute =
+  Char123LocaleChar125AboutRouteImport.update({
+    id: '/about',
+    path: '/about',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
 const ApiStreamRoute = ApiStreamRouteImport.update({
@@ -138,6 +159,12 @@ const Char123LocaleChar125WorkspaceFinancesRoute =
     path: '/workspace/finances',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
+const Char123LocaleChar125WorkspaceCvRoute =
+  Char123LocaleChar125WorkspaceCvRouteImport.update({
+    id: '/workspace/cv',
+    path: '/workspace/cv',
+    getParentRoute: () => Char123LocaleChar125Route,
+  } as any)
 const Char123LocaleChar125WorkspaceAssistantRoute =
   Char123LocaleChar125WorkspaceAssistantRouteImport.update({
     id: '/workspace/assistant',
@@ -159,12 +186,16 @@ export interface FileRoutesByFullPath {
   '/api/graphql': typeof ApiGraphqlRoute
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
+  '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
   '/{-$locale}/chat': typeof Char123LocaleChar125ChatRoute
+  '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
   '/{-$locale}/impressum': typeof Char123LocaleChar125ImpressumRoute
+  '/{-$locale}/projects': typeof Char123LocaleChar125ProjectsRoute
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
   '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
+  '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
@@ -181,12 +212,16 @@ export interface FileRoutesByTo {
   '/api/graphql': typeof ApiGraphqlRoute
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
+  '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
   '/{-$locale}/chat': typeof Char123LocaleChar125ChatRoute
+  '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
   '/{-$locale}/impressum': typeof Char123LocaleChar125ImpressumRoute
+  '/{-$locale}/projects': typeof Char123LocaleChar125ProjectsRoute
   '/{-$locale}': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
   '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
+  '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
@@ -205,12 +240,16 @@ export interface FileRoutesById {
   '/api/graphql': typeof ApiGraphqlRoute
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
+  '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
   '/{-$locale}/chat': typeof Char123LocaleChar125ChatRoute
+  '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
   '/{-$locale}/impressum': typeof Char123LocaleChar125ImpressumRoute
+  '/{-$locale}/projects': typeof Char123LocaleChar125ProjectsRoute
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads_/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
   '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
+  '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
@@ -230,12 +269,16 @@ export interface FileRouteTypes {
     | '/api/graphql'
     | '/api/health'
     | '/api/stream'
+    | '/{-$locale}/about'
     | '/{-$locale}/chat'
+    | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
     | '/{-$locale}/impressum'
+    | '/{-$locale}/projects'
     | '/{-$locale}/'
     | '/api/file-uploads/$fileUploadId'
     | '/{-$locale}/workspace/assistant'
+    | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/media'
@@ -252,12 +295,16 @@ export interface FileRouteTypes {
     | '/api/graphql'
     | '/api/health'
     | '/api/stream'
+    | '/{-$locale}/about'
     | '/{-$locale}/chat'
+    | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
     | '/{-$locale}/impressum'
+    | '/{-$locale}/projects'
     | '/{-$locale}'
     | '/api/file-uploads/$fileUploadId'
     | '/{-$locale}/workspace/assistant'
+    | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/media'
@@ -275,12 +322,16 @@ export interface FileRouteTypes {
     | '/api/graphql'
     | '/api/health'
     | '/api/stream'
+    | '/{-$locale}/about'
     | '/{-$locale}/chat'
+    | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
     | '/{-$locale}/impressum'
+    | '/{-$locale}/projects'
     | '/{-$locale}/'
     | '/api/file-uploads_/$fileUploadId'
     | '/{-$locale}/workspace/assistant'
+    | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/media'
@@ -332,6 +383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125IndexRouteImport
       parentRoute: typeof Char123LocaleChar125Route
     }
+    '/{-$locale}/projects': {
+      id: '/{-$locale}/projects'
+      path: '/projects'
+      fullPath: '/{-$locale}/projects'
+      preLoaderRoute: typeof Char123LocaleChar125ProjectsRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
     '/{-$locale}/impressum': {
       id: '/{-$locale}/impressum'
       path: '/impressum'
@@ -346,11 +404,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125DatenschutzRouteImport
       parentRoute: typeof Char123LocaleChar125Route
     }
+    '/{-$locale}/cv': {
+      id: '/{-$locale}/cv'
+      path: '/cv'
+      fullPath: '/{-$locale}/cv'
+      preLoaderRoute: typeof Char123LocaleChar125CvRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
     '/{-$locale}/chat': {
       id: '/{-$locale}/chat'
       path: '/chat'
       fullPath: '/{-$locale}/chat'
       preLoaderRoute: typeof Char123LocaleChar125ChatRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/about': {
+      id: '/{-$locale}/about'
+      path: '/about'
+      fullPath: '/{-$locale}/about'
+      preLoaderRoute: typeof Char123LocaleChar125AboutRouteImport
       parentRoute: typeof Char123LocaleChar125Route
     }
     '/api/stream': {
@@ -437,6 +509,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceFinancesRouteImport
       parentRoute: typeof Char123LocaleChar125Route
     }
+    '/{-$locale}/workspace/cv': {
+      id: '/{-$locale}/workspace/cv'
+      path: '/workspace/cv'
+      fullPath: '/{-$locale}/workspace/cv'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceCvRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
     '/{-$locale}/workspace/assistant': {
       id: '/{-$locale}/workspace/assistant'
       path: '/workspace/assistant'
@@ -455,11 +534,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface Char123LocaleChar125RouteChildren {
+  Char123LocaleChar125AboutRoute: typeof Char123LocaleChar125AboutRoute
   Char123LocaleChar125ChatRoute: typeof Char123LocaleChar125ChatRoute
+  Char123LocaleChar125CvRoute: typeof Char123LocaleChar125CvRoute
   Char123LocaleChar125DatenschutzRoute: typeof Char123LocaleChar125DatenschutzRoute
   Char123LocaleChar125ImpressumRoute: typeof Char123LocaleChar125ImpressumRoute
+  Char123LocaleChar125ProjectsRoute: typeof Char123LocaleChar125ProjectsRoute
   Char123LocaleChar125IndexRoute: typeof Char123LocaleChar125IndexRoute
   Char123LocaleChar125WorkspaceAssistantRoute: typeof Char123LocaleChar125WorkspaceAssistantRoute
+  Char123LocaleChar125WorkspaceCvRoute: typeof Char123LocaleChar125WorkspaceCvRoute
   Char123LocaleChar125WorkspaceFinancesRoute: typeof Char123LocaleChar125WorkspaceFinancesRoute
   Char123LocaleChar125WorkspaceFitnessRoute: typeof Char123LocaleChar125WorkspaceFitnessRoute
   Char123LocaleChar125WorkspaceMediaRoute: typeof Char123LocaleChar125WorkspaceMediaRoute
@@ -471,12 +554,16 @@ interface Char123LocaleChar125RouteChildren {
 }
 
 const Char123LocaleChar125RouteChildren: Char123LocaleChar125RouteChildren = {
+  Char123LocaleChar125AboutRoute: Char123LocaleChar125AboutRoute,
   Char123LocaleChar125ChatRoute: Char123LocaleChar125ChatRoute,
+  Char123LocaleChar125CvRoute: Char123LocaleChar125CvRoute,
   Char123LocaleChar125DatenschutzRoute: Char123LocaleChar125DatenschutzRoute,
   Char123LocaleChar125ImpressumRoute: Char123LocaleChar125ImpressumRoute,
+  Char123LocaleChar125ProjectsRoute: Char123LocaleChar125ProjectsRoute,
   Char123LocaleChar125IndexRoute: Char123LocaleChar125IndexRoute,
   Char123LocaleChar125WorkspaceAssistantRoute:
     Char123LocaleChar125WorkspaceAssistantRoute,
+  Char123LocaleChar125WorkspaceCvRoute: Char123LocaleChar125WorkspaceCvRoute,
   Char123LocaleChar125WorkspaceFinancesRoute:
     Char123LocaleChar125WorkspaceFinancesRoute,
   Char123LocaleChar125WorkspaceFitnessRoute:

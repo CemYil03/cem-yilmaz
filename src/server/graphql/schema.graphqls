@@ -330,6 +330,12 @@ type Query {
     # admin reads use `Query.admin.chat(...)` instead. See
     # `docs/architecture/multi-agent-chat.md`.
     chat(chatId: ID!): Chat!
+    # Public CV namespace — surfaces the timeline (`/cv`) and the
+    # skill/hobby blocks (`/about`). Always returns lists ordered by their
+    # `position` column, ascending. Edits land via the admin namespace
+    # (`Mutation.admin.cv*`), gated by `guardAdminMutation`. See
+    # `docs/features/cv.md`.
+    cv: CvQuery!
     # Workspace-only namespace, gated by `guardAdmin`. Visitor sessions get
     # an authorization error here.
     admin: Admin!
@@ -430,4 +436,148 @@ union ChatUpdate = ChatUpdateMessageAppended | ChatUpdateAssistantTextChunk | Ch
 type Subscription {
     userUpdates: User!
     chatUpdates(generationId: ID!): ChatUpdate!
+}
+
+# --- CV ----------------------------------------------------------------------
+#
+# Editable CV content surfaced on `/cv` and `/about`. Bilingual text rides
+# as paired `*De` / `*En` fields — the client renders the locale-matching
+# pair. `position` is server-authoritative ordering written by `*Reorder`.
+# See `docs/features/cv.md`.
+
+type CvExperience {
+    cvExperienceId: ID!
+    roleDe: String!
+    roleEn: String!
+    companyDe: String!
+    companyEn: String!
+    # ISO 8601 calendar date (yyyy-mm-dd).
+    startDate: Date!
+    # Null marks an ongoing role. The renderer formats it as "heute" / "today".
+    endDate: Date
+    descriptionDe: String!
+    descriptionEn: String!
+    technologies: [String!]!
+    managerName: String
+    position: Int!
+}
+
+type CvEducation {
+    cvEducationId: ID!
+    degreeDe: String!
+    degreeEn: String!
+    institutionDe: String!
+    institutionEn: String!
+    # Optional course of study within the degree (e.g. "Informatik").
+    subjectDe: String!
+    subjectEn: String!
+    # Education entries occasionally have only an end date (e.g. Abitur).
+    startDate: Date
+    endDate: Date!
+    # Free-form notes per locale: "Kursprecher", "Abschlussprüfung Informatik: 1+", etc.
+    notesDe: String!
+    notesEn: String!
+    position: Int!
+}
+
+# `category` is a flat enum — see the CvSkillCategory definition. Skill
+# labels themselves are not translated.
+type CvSkill {
+    cvSkillId: ID!
+    category: CvSkillCategory!
+    label: String!
+    position: Int!
+}
+
+enum CvSkillCategory {
+    capabilities
+    frameworks
+    services
+    tools
+    languages
+}
+
+type CvHobby {
+    cvHobbyId: ID!
+    textDe: String!
+    textEn: String!
+    # Optional anchor year for entries like "Seit 2011 Karate".
+    since: Int
+    position: Int!
+}
+
+type CvQuery {
+    experience: [CvExperience!]!
+    education: [CvEducation!]!
+    skills: [CvSkill!]!
+    hobbies: [CvHobby!]!
+}
+
+# --- CV admin write inputs ---------------------------------------------------
+#
+# Upserts use a nullable id: when present the row with that id is updated,
+# when absent a new row is created. The `position` slot lets the editor
+# place a new row at a specific spot; reordering as a whole is a separate
+# `*Reorder` mutation that takes the full id array.
+
+input CvExperienceInput {
+    cvExperienceId: ID
+    roleDe: String!
+    roleEn: String!
+    companyDe: String!
+    companyEn: String!
+    startDate: Date!
+    endDate: Date
+    descriptionDe: String!
+    descriptionEn: String!
+    technologies: [String!]!
+    managerName: String
+    position: Int!
+}
+
+input CvEducationInput {
+    cvEducationId: ID
+    degreeDe: String!
+    degreeEn: String!
+    institutionDe: String!
+    institutionEn: String!
+    subjectDe: String!
+    subjectEn: String!
+    startDate: Date
+    endDate: Date!
+    notesDe: String!
+    notesEn: String!
+    position: Int!
+}
+
+input CvSkillInput {
+    cvSkillId: ID
+    category: CvSkillCategory!
+    label: String!
+    position: Int!
+}
+
+input CvHobbyInput {
+    cvHobbyId: ID
+    textDe: String!
+    textEn: String!
+    since: Int
+    position: Int!
+}
+
+# CV admin namespace — mounted under `AdminMutation.cv` so the existing
+# `guardAdminMutation` gate covers it without a parallel Mutation entry.
+extend type AdminMutation {
+    cvExperienceUpsert(input: CvExperienceInput!): CvExperience!
+    cvExperienceDelete(cvExperienceId: ID!): MutationResult!
+    cvExperienceReorder(orderedIds: [ID!]!): MutationResult!
+    cvEducationUpsert(input: CvEducationInput!): CvEducation!
+    cvEducationDelete(cvEducationId: ID!): MutationResult!
+    cvEducationReorder(orderedIds: [ID!]!): MutationResult!
+    cvSkillUpsert(input: CvSkillInput!): CvSkill!
+    cvSkillDelete(cvSkillId: ID!): MutationResult!
+    cvSkillReorder(orderedIds: [ID!]!): MutationResult!
+    cvHobbyUpsert(input: CvHobbyInput!): CvHobby!
+    cvHobbyDelete(cvHobbyId: ID!): MutationResult!
+    cvHobbyReorder(orderedIds: [ID!]!): MutationResult!
 }

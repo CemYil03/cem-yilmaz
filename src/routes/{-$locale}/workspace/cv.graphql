@@ -1,0 +1,170 @@
+# CV admin operations — co-located with the `/workspace/cv` editor route. The
+# read query overlaps with `CvPage` / `AboutPage` but is named separately so
+# the editor's URQL cache is independent from the public surfaces (an admin
+# save invalidates the editor's view without churning the public page caches).
+
+query WorkspaceCvPage {
+    cv {
+        experience {
+            cvExperienceId
+            roleDe
+            roleEn
+            companyDe
+            companyEn
+            startDate
+            endDate
+            descriptionDe
+            descriptionEn
+            technologies
+            managerName
+            position
+        }
+        education {
+            cvEducationId
+            degreeDe
+            degreeEn
+            institutionDe
+            institutionEn
+            subjectDe
+            subjectEn
+            startDate
+            endDate
+            notesDe
+            notesEn
+            position
+        }
+        skills {
+            cvSkillId
+            category
+            label
+            position
+        }
+        hobbies {
+            cvHobbyId
+            textDe
+            textEn
+            since
+            position
+        }
+    }
+}
+
+mutation WorkspaceCvExperienceUpsert(
+    $cvExperienceId: ID
+    $roleDe: String!
+    $roleEn: String!
+    $companyDe: String!
+    $companyEn: String!
+    $startDate: Date!
+    $endDate: Date
+    $descriptionDe: String!
+    $descriptionEn: String!
+    $technologies: [String!]!
+    $managerName: String
+    $position: Int!
+) {
+    admin {
+        cvExperienceUpsert(
+            input: {
+                cvExperienceId: $cvExperienceId
+                roleDe: $roleDe
+                roleEn: $roleEn
+                companyDe: $companyDe
+                companyEn: $companyEn
+                startDate: $startDate
+                endDate: $endDate
+                descriptionDe: $descriptionDe
+                descriptionEn: $descriptionEn
+                technologies: $technologies
+                managerName: $managerName
+                position: $position
+            }
+        ) {
+            cvExperienceId
+        }
+    }
+}
+
+mutation WorkspaceCvExperienceDelete($cvExperienceId: ID!) {
+    admin {
+        cvExperienceDelete(cvExperienceId: $cvExperienceId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceCvEducationUpsert(
+    $cvEducationId: ID
+    $degreeDe: String!
+    $degreeEn: String!
+    $institutionDe: String!
+    $institutionEn: String!
+    $subjectDe: String!
+    $subjectEn: String!
+    $startDate: Date
+    $endDate: Date!
+    $notesDe: String!
+    $notesEn: String!
+    $position: Int!
+) {
+    admin {
+        cvEducationUpsert(
+            input: {
+                cvEducationId: $cvEducationId
+                degreeDe: $degreeDe
+                degreeEn: $degreeEn
+                institutionDe: $institutionDe
+                institutionEn: $institutionEn
+                subjectDe: $subjectDe
+                subjectEn: $subjectEn
+                startDate: $startDate
+                endDate: $endDate
+                notesDe: $notesDe
+                notesEn: $notesEn
+                position: $position
+            }
+        ) {
+            cvEducationId
+        }
+    }
+}
+
+mutation WorkspaceCvEducationDelete($cvEducationId: ID!) {
+    admin {
+        cvEducationDelete(cvEducationId: $cvEducationId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceCvSkillUpsert($cvSkillId: ID, $category: CvSkillCategory!, $label: String!, $position: Int!) {
+    admin {
+        cvSkillUpsert(input: { cvSkillId: $cvSkillId, category: $category, label: $label, position: $position }) {
+            cvSkillId
+        }
+    }
+}
+
+mutation WorkspaceCvSkillDelete($cvSkillId: ID!) {
+    admin {
+        cvSkillDelete(cvSkillId: $cvSkillId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceCvHobbyUpsert($cvHobbyId: ID, $textDe: String!, $textEn: String!, $since: Int, $position: Int!) {
+    admin {
+        cvHobbyUpsert(input: { cvHobbyId: $cvHobbyId, textDe: $textDe, textEn: $textEn, since: $since, position: $position }) {
+            cvHobbyId
+        }
+    }
+}
+
+mutation WorkspaceCvHobbyDelete($cvHobbyId: ID!) {
+    admin {
+        cvHobbyDelete(cvHobbyId: $cvHobbyId) {
+            success
+        }
+    }
+}

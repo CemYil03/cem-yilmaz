@@ -40,6 +40,18 @@ export interface GqlCAdminMutation {
     chatInputCollectionRespond?: Maybe<GqlCChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlCChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlCChatMessageCreateResult>;
+    cvEducationDelete: GqlCMutationResult;
+    cvEducationReorder: GqlCMutationResult;
+    cvEducationUpsert: GqlCCvEducation;
+    cvExperienceDelete: GqlCMutationResult;
+    cvExperienceReorder: GqlCMutationResult;
+    cvExperienceUpsert: GqlCCvExperience;
+    cvHobbyDelete: GqlCMutationResult;
+    cvHobbyReorder: GqlCMutationResult;
+    cvHobbyUpsert: GqlCCvHobby;
+    cvSkillDelete: GqlCMutationResult;
+    cvSkillReorder: GqlCMutationResult;
+    cvSkillUpsert: GqlCCvSkill;
 }
 
 export type GqlCAdminMutationChatInputCollectionRespondArgs = {
@@ -60,6 +72,54 @@ export type GqlCAdminMutationChatToolApprovalRespondArgs = {
     approved: Scalars['Boolean']['input'];
     assistantOptions: GqlCChatAssistantOptions;
     reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminMutationCvEducationDeleteArgs = {
+    cvEducationId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCvEducationReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationCvEducationUpsertArgs = {
+    input: GqlCCvEducationInput;
+};
+
+export type GqlCAdminMutationCvExperienceDeleteArgs = {
+    cvExperienceId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCvExperienceReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationCvExperienceUpsertArgs = {
+    input: GqlCCvExperienceInput;
+};
+
+export type GqlCAdminMutationCvHobbyDeleteArgs = {
+    cvHobbyId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCvHobbyReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationCvHobbyUpsertArgs = {
+    input: GqlCCvHobbyInput;
+};
+
+export type GqlCAdminMutationCvSkillDeleteArgs = {
+    cvSkillId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCvSkillReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationCvSkillUpsertArgs = {
+    input: GqlCCvSkillInput;
 };
 
 export interface GqlCChat {
@@ -308,6 +368,110 @@ export interface GqlCChatUpdateTurnEnded {
     generationId: Scalars['ID']['output'];
 }
 
+export interface GqlCCvEducation {
+    __typename?: 'CvEducation';
+    cvEducationId: Scalars['ID']['output'];
+    degreeDe: Scalars['String']['output'];
+    degreeEn: Scalars['String']['output'];
+    endDate: Scalars['Date']['output'];
+    institutionDe: Scalars['String']['output'];
+    institutionEn: Scalars['String']['output'];
+    notesDe: Scalars['String']['output'];
+    notesEn: Scalars['String']['output'];
+    position: Scalars['Int']['output'];
+    startDate?: Maybe<Scalars['Date']['output']>;
+    subjectDe: Scalars['String']['output'];
+    subjectEn: Scalars['String']['output'];
+}
+
+export type GqlCCvEducationInput = {
+    cvEducationId?: InputMaybe<Scalars['ID']['input']>;
+    degreeDe: Scalars['String']['input'];
+    degreeEn: Scalars['String']['input'];
+    endDate: Scalars['Date']['input'];
+    institutionDe: Scalars['String']['input'];
+    institutionEn: Scalars['String']['input'];
+    notesDe: Scalars['String']['input'];
+    notesEn: Scalars['String']['input'];
+    position: Scalars['Int']['input'];
+    startDate?: InputMaybe<Scalars['Date']['input']>;
+    subjectDe: Scalars['String']['input'];
+    subjectEn: Scalars['String']['input'];
+};
+
+export interface GqlCCvExperience {
+    __typename?: 'CvExperience';
+    companyDe: Scalars['String']['output'];
+    companyEn: Scalars['String']['output'];
+    cvExperienceId: Scalars['ID']['output'];
+    descriptionDe: Scalars['String']['output'];
+    descriptionEn: Scalars['String']['output'];
+    endDate?: Maybe<Scalars['Date']['output']>;
+    managerName?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    roleDe: Scalars['String']['output'];
+    roleEn: Scalars['String']['output'];
+    startDate: Scalars['Date']['output'];
+    technologies: Array<Scalars['String']['output']>;
+}
+
+export type GqlCCvExperienceInput = {
+    companyDe: Scalars['String']['input'];
+    companyEn: Scalars['String']['input'];
+    cvExperienceId?: InputMaybe<Scalars['ID']['input']>;
+    descriptionDe: Scalars['String']['input'];
+    descriptionEn: Scalars['String']['input'];
+    endDate?: InputMaybe<Scalars['Date']['input']>;
+    managerName?: InputMaybe<Scalars['String']['input']>;
+    position: Scalars['Int']['input'];
+    roleDe: Scalars['String']['input'];
+    roleEn: Scalars['String']['input'];
+    startDate: Scalars['Date']['input'];
+    technologies: Array<Scalars['String']['input']>;
+};
+
+export interface GqlCCvHobby {
+    __typename?: 'CvHobby';
+    cvHobbyId: Scalars['ID']['output'];
+    position: Scalars['Int']['output'];
+    since?: Maybe<Scalars['Int']['output']>;
+    textDe: Scalars['String']['output'];
+    textEn: Scalars['String']['output'];
+}
+
+export type GqlCCvHobbyInput = {
+    cvHobbyId?: InputMaybe<Scalars['ID']['input']>;
+    position: Scalars['Int']['input'];
+    since?: InputMaybe<Scalars['Int']['input']>;
+    textDe: Scalars['String']['input'];
+    textEn: Scalars['String']['input'];
+};
+
+export interface GqlCCvQuery {
+    __typename?: 'CvQuery';
+    education: Array<GqlCCvEducation>;
+    experience: Array<GqlCCvExperience>;
+    hobbies: Array<GqlCCvHobby>;
+    skills: Array<GqlCCvSkill>;
+}
+
+export interface GqlCCvSkill {
+    __typename?: 'CvSkill';
+    category: GqlCCvSkillCategory;
+    cvSkillId: Scalars['ID']['output'];
+    label: Scalars['String']['output'];
+    position: Scalars['Int']['output'];
+}
+
+export type GqlCCvSkillCategory = 'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools';
+
+export type GqlCCvSkillInput = {
+    category: GqlCCvSkillCategory;
+    cvSkillId?: InputMaybe<Scalars['ID']['input']>;
+    label: Scalars['String']['input'];
+    position: Scalars['Int']['input'];
+};
+
 export interface GqlCFileUpload {
     __typename?: 'FileUpload';
     fileUploadId: Scalars['ID']['output'];
@@ -362,6 +526,7 @@ export interface GqlCQuery {
     admin: GqlCAdmin;
     chat: GqlCChat;
     currentSession: GqlCSession;
+    cv: GqlCCvQuery;
 }
 
 export type GqlCQueryChatArgs = {
@@ -771,6 +936,50 @@ export type GqlCChatUpdatesSubscription = {
         | { __typename: 'ChatUpdateTurnEnded'; generationId: string };
 };
 
+export type GqlCCvPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCCvPageQuery = {
+    cv: {
+        experience: Array<{
+            cvExperienceId: string;
+            roleDe: string;
+            roleEn: string;
+            companyDe: string;
+            companyEn: string;
+            startDate: string;
+            endDate: string | null;
+            descriptionDe: string;
+            descriptionEn: string;
+            technologies: Array<string>;
+            managerName: string | null;
+            position: number;
+        }>;
+        education: Array<{
+            cvEducationId: string;
+            degreeDe: string;
+            degreeEn: string;
+            institutionDe: string;
+            institutionEn: string;
+            subjectDe: string;
+            subjectEn: string;
+            startDate: string | null;
+            endDate: string;
+            notesDe: string;
+            notesEn: string;
+            position: number;
+        }>;
+    };
+};
+
+export type GqlCAboutPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCAboutPageQuery = {
+    cv: {
+        skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+        hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+    };
+};
+
 export type GqlCHomePageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCHomePageQuery = { currentSession: { sessionId: string; user: { name: string } | null } };
@@ -1035,6 +1244,120 @@ export type GqlCWorkspaceChatToolApprovalRespondMutationVariables = Exact<{
 export type GqlCWorkspaceChatToolApprovalRespondMutation = {
     admin: { chatToolApprovalRespond: { chatId: string; chatMessageId: string } | null };
 };
+
+export type GqlCWorkspaceCvPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceCvPageQuery = {
+    cv: {
+        experience: Array<{
+            cvExperienceId: string;
+            roleDe: string;
+            roleEn: string;
+            companyDe: string;
+            companyEn: string;
+            startDate: string;
+            endDate: string | null;
+            descriptionDe: string;
+            descriptionEn: string;
+            technologies: Array<string>;
+            managerName: string | null;
+            position: number;
+        }>;
+        education: Array<{
+            cvEducationId: string;
+            degreeDe: string;
+            degreeEn: string;
+            institutionDe: string;
+            institutionEn: string;
+            subjectDe: string;
+            subjectEn: string;
+            startDate: string | null;
+            endDate: string;
+            notesDe: string;
+            notesEn: string;
+            position: number;
+        }>;
+        skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+        hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+    };
+};
+
+export type GqlCWorkspaceCvExperienceUpsertMutationVariables = Exact<{
+    cvExperienceId?: string | null | undefined;
+    roleDe: string;
+    roleEn: string;
+    companyDe: string;
+    companyEn: string;
+    startDate: string;
+    endDate?: string | null | undefined;
+    descriptionDe: string;
+    descriptionEn: string;
+    technologies: Array<string> | string;
+    managerName?: string | null | undefined;
+    position: number;
+}>;
+
+export type GqlCWorkspaceCvExperienceUpsertMutation = { admin: { cvExperienceUpsert: { cvExperienceId: string } } };
+
+export type GqlCWorkspaceCvExperienceDeleteMutationVariables = Exact<{
+    cvExperienceId: string;
+}>;
+
+export type GqlCWorkspaceCvExperienceDeleteMutation = { admin: { cvExperienceDelete: { success: boolean } } };
+
+export type GqlCWorkspaceCvEducationUpsertMutationVariables = Exact<{
+    cvEducationId?: string | null | undefined;
+    degreeDe: string;
+    degreeEn: string;
+    institutionDe: string;
+    institutionEn: string;
+    subjectDe: string;
+    subjectEn: string;
+    startDate?: string | null | undefined;
+    endDate: string;
+    notesDe: string;
+    notesEn: string;
+    position: number;
+}>;
+
+export type GqlCWorkspaceCvEducationUpsertMutation = { admin: { cvEducationUpsert: { cvEducationId: string } } };
+
+export type GqlCWorkspaceCvEducationDeleteMutationVariables = Exact<{
+    cvEducationId: string;
+}>;
+
+export type GqlCWorkspaceCvEducationDeleteMutation = { admin: { cvEducationDelete: { success: boolean } } };
+
+export type GqlCWorkspaceCvSkillUpsertMutationVariables = Exact<{
+    cvSkillId?: string | null | undefined;
+    category: Schema.GqlCCvSkillCategory;
+    label: string;
+    position: number;
+}>;
+
+export type GqlCWorkspaceCvSkillUpsertMutation = { admin: { cvSkillUpsert: { cvSkillId: string } } };
+
+export type GqlCWorkspaceCvSkillDeleteMutationVariables = Exact<{
+    cvSkillId: string;
+}>;
+
+export type GqlCWorkspaceCvSkillDeleteMutation = { admin: { cvSkillDelete: { success: boolean } } };
+
+export type GqlCWorkspaceCvHobbyUpsertMutationVariables = Exact<{
+    cvHobbyId?: string | null | undefined;
+    textDe: string;
+    textEn: string;
+    since?: number | null | undefined;
+    position: number;
+}>;
+
+export type GqlCWorkspaceCvHobbyUpsertMutation = { admin: { cvHobbyUpsert: { cvHobbyId: string } } };
+
+export type GqlCWorkspaceCvHobbyDeleteMutationVariables = Exact<{
+    cvHobbyId: string;
+}>;
+
+export type GqlCWorkspaceCvHobbyDeleteMutation = { admin: { cvHobbyDelete: { success: boolean } } };
 
 export const ChatMessageGenerationFragmentDoc = {
     kind: 'Document',
@@ -3114,6 +3437,123 @@ export const ChatUpdatesDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCChatUpdatesSubscription, GqlCChatUpdatesSubscriptionVariables>;
+export const CvPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'CvPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'cv' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'experience' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'companyDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'companyEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'education' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notesDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notesEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCCvPageQuery, GqlCCvPageQueryVariables>;
+export const AboutPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'AboutPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'cv' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'skills' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvSkillId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'hobbies' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvHobbyId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'textDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'textEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'since' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCAboutPageQuery, GqlCAboutPageQueryVariables>;
 export const HomePageDocument = {
     kind: 'Document',
     definitions: [
@@ -3943,3 +4383,796 @@ export const WorkspaceChatToolApprovalRespondDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceChatToolApprovalRespondMutation, GqlCWorkspaceChatToolApprovalRespondMutationVariables>;
+export const WorkspaceCvPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceCvPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'cv' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'experience' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'companyDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'companyEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'education' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notesDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notesEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'skills' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvSkillId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'hobbies' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'cvHobbyId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'textDe' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'textEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'since' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvPageQuery, GqlCWorkspaceCvPageQueryVariables>;
+export const WorkspaceCvExperienceUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvExperienceUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvExperienceId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'roleDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'roleEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'companyDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'companyEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'startDate' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Date' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'endDate' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Date' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'descriptionDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'descriptionEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'technologies' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                        },
+                    },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'managerName' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvExperienceUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'cvExperienceId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'cvExperienceId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'roleDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'roleDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'roleEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'roleEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'companyDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'companyDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'companyEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'companyEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'startDate' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'startDate' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'endDate' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'endDate' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'descriptionDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'descriptionDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'descriptionEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'descriptionEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'technologies' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'technologies' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'managerName' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'managerName' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'position' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvExperienceUpsertMutation, GqlCWorkspaceCvExperienceUpsertMutationVariables>;
+export const WorkspaceCvExperienceDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvExperienceDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvExperienceId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvExperienceDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'cvExperienceId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'cvExperienceId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvExperienceDeleteMutation, GqlCWorkspaceCvExperienceDeleteMutationVariables>;
+export const WorkspaceCvEducationUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvEducationUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvEducationId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'degreeDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'degreeEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'institutionDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'institutionEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'subjectDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'subjectEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'startDate' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Date' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'endDate' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Date' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'notesDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'notesEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvEducationUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'cvEducationId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'cvEducationId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'degreeDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'degreeDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'degreeEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'degreeEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'institutionDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'institutionDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'institutionEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'institutionEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'subjectDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'subjectDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'subjectEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'subjectEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'startDate' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'startDate' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'endDate' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'endDate' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'notesDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'notesDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'notesEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'notesEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'position' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvEducationUpsertMutation, GqlCWorkspaceCvEducationUpsertMutationVariables>;
+export const WorkspaceCvEducationDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvEducationDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvEducationId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvEducationDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'cvEducationId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'cvEducationId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvEducationDeleteMutation, GqlCWorkspaceCvEducationDeleteMutationVariables>;
+export const WorkspaceCvSkillUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvSkillUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvSkillId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'CvSkillCategory' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvSkillUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'cvSkillId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'cvSkillId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'category' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'label' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'position' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'cvSkillId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvSkillUpsertMutation, GqlCWorkspaceCvSkillUpsertMutationVariables>;
+export const WorkspaceCvSkillDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvSkillDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvSkillId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvSkillDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'cvSkillId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'cvSkillId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvSkillDeleteMutation, GqlCWorkspaceCvSkillDeleteMutationVariables>;
+export const WorkspaceCvHobbyUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvHobbyUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvHobbyId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'textDe' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'textEn' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'since' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvHobbyUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'cvHobbyId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'cvHobbyId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'textDe' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'textDe' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'textEn' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'textEn' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'since' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'since' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'position' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'cvHobbyId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvHobbyUpsertMutation, GqlCWorkspaceCvHobbyUpsertMutationVariables>;
+export const WorkspaceCvHobbyDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvHobbyDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'cvHobbyId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvHobbyDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'cvHobbyId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'cvHobbyId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvHobbyDeleteMutation, GqlCWorkspaceCvHobbyDeleteMutationVariables>;

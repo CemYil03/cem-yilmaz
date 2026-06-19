@@ -31,13 +31,16 @@
     --font-heading: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Inter Variable', system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 
-    /* Off-white instead of pure white so glass surfaces, color orbs, and
+    /* Surface stack — see docs/styles/theme.md for the full palette + rationale.
+       Off-white instead of pure white so glass surfaces, color orbs, and
        hairline borders read against a real surface. Cool-leaning chroma
-       (hue 250) keeps the page calm and lets the foreground type pop.
-       See docs/styles/theme.md. */
+       (hue 250) keeps the page calm and lets the foreground type pop. The
+       page → alt → card → popover steps each shift one perceptual stop so
+       elevation reads even where the ambient orb brightens the canvas. */
     --background: oklch(0.95 0.012 250);
+    --background-alt: oklch(0.92 0.014 250);
     --foreground: oklch(0.141 0.005 285.823);
-    --card: oklch(1 0 0);
+    --card: oklch(0.99 0.004 250);
     --card-foreground: oklch(0.141 0.005 285.823);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.141 0.005 285.823);
@@ -46,7 +49,7 @@
     --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.21 0.006 285.885);
     --muted: oklch(0.967 0.001 286.375);
-    --muted-foreground: oklch(0.552 0.016 285.938);
+    --muted-foreground: oklch(0.48 0.012 250);
     --accent: oklch(0.967 0.001 286.375);
     --accent-foreground: oklch(0.21 0.006 285.885);
     --destructive: oklch(0.577 0.245 27.325);
@@ -54,7 +57,17 @@
     --border: oklch(0.92 0.004 286.32);
     --input: oklch(0.92 0.004 286.32);
     --ring: oklch(0.871 0.006 286.286);
-    --chart-1: oklch(0.646 0.222 41.116);
+    /* Brand — the single hue that ties the ambient orb, focus rings, links,
+       and charts together. Tuned to pass contrast as text on `--background`
+       in light and on `--background` in dark without forking the hue. */
+    --brand: oklch(0.62 0.18 250);
+    --brand-foreground: oklch(0.99 0 0);
+    /* Selection — brand at high lightness / low chroma so highlighted text
+       still reads while skimming. The foreground swap keeps it legible
+       against the brand-tinted background. */
+    --selection: oklch(0.85 0.1 250);
+    --selection-foreground: oklch(0.2 0.01 250);
+    --chart-1: oklch(0.62 0.18 250);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
     --chart-4: oklch(0.828 0.189 84.429);
@@ -72,10 +85,11 @@
 
 .dark {
     --background: oklch(0.141 0.005 285.823);
+    --background-alt: oklch(0.18 0.008 285);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.141 0.005 285.823);
+    --card: oklch(0.2 0.008 285);
     --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.141 0.005 285.823);
+    --popover: oklch(0.235 0.008 285);
     --popover-foreground: oklch(0.985 0 0);
     --primary: oklch(0.985 0 0);
     --primary-foreground: oklch(0.21 0.006 285.885);
@@ -90,7 +104,14 @@
     --border: oklch(0.274 0.006 286.033);
     --input: oklch(0.274 0.006 286.033);
     --ring: oklch(0.442 0.017 285.786);
-    --chart-1: oklch(0.488 0.243 264.376);
+    /* Brand pushed slightly lighter in dark so it lifts off the near-black
+       page without becoming neon. Same hue as the light brand — one colour,
+       two themes. */
+    --brand: oklch(0.72 0.2 250);
+    --brand-foreground: oklch(0.1 0 0);
+    --selection: oklch(0.4 0.14 250);
+    --selection-foreground: oklch(0.99 0 0);
+    --chart-1: oklch(0.72 0.2 250);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
@@ -114,6 +135,7 @@
     --font-mono: var(--font-mono);
 
     --color-background: var(--background);
+    --color-background-alt: var(--background-alt);
     --color-foreground: var(--foreground);
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
@@ -132,6 +154,10 @@
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-selection: var(--selection);
+    --color-selection-foreground: var(--selection-foreground);
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
     --color-chart-3: var(--chart-3);
@@ -166,6 +192,13 @@
     h5,
     h6 {
         font-family: var(--font-heading);
+    }
+    /* Brand-tinted selection. Both themes share the rule; the tokens flip
+       under `.dark`. The foreground swap keeps selected text legible
+       against the brand-tinted highlight. See docs/styles/theme.md. */
+    ::selection {
+        background-color: var(--selection);
+        color: var(--selection-foreground);
     }
 }
 

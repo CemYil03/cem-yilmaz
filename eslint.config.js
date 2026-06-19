@@ -37,7 +37,7 @@ export default [
         },
     },
     {
-        files: ['src/server/env/environmentVariablesCreate.ts', 'scripts/migrationsCheck.ts'],
+        files: ['src/server/env/environmentVariablesCreate.ts', 'scripts/migrationsCheck.ts', 'scripts/seedCv.ts'],
         rules: {
             'no-restricted-syntax': 'off',
         },

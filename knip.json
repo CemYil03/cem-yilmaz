@@ -14,6 +14,7 @@
         "src/server/utils/serverToken.ts",
         "src/web/components/base/**/*.tsx",
         "src/web/hooks/use-mobile.ts",
+        "scripts/seedCv.ts",
         ".storybook/vite.config.ts"
     ],
     "ignoreDependencies": [

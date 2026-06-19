@@ -5,6 +5,18 @@ import { chatInputCollectionRespond } from '../commands/chatInputCollectionRespo
 import type { ChatMutationDispatch } from '../commands/chatMessageCreate';
 import { chatMessageCreate } from '../commands/chatMessageCreate';
 import { chatToolApprovalRespond } from '../commands/chatToolApprovalRespond';
+import { cvEducationDelete } from '../commands/cvEducationDelete';
+import { cvEducationReorder } from '../commands/cvEducationReorder';
+import { cvEducationUpsert } from '../commands/cvEducationUpsert';
+import { cvExperienceDelete } from '../commands/cvExperienceDelete';
+import { cvExperienceReorder } from '../commands/cvExperienceReorder';
+import { cvExperienceUpsert } from '../commands/cvExperienceUpsert';
+import { cvHobbyDelete } from '../commands/cvHobbyDelete';
+import { cvHobbyReorder } from '../commands/cvHobbyReorder';
+import { cvHobbyUpsert } from '../commands/cvHobbyUpsert';
+import { cvSkillDelete } from '../commands/cvSkillDelete';
+import { cvSkillReorder } from '../commands/cvSkillReorder';
+import { cvSkillUpsert } from '../commands/cvSkillUpsert';
 import { userSessionTerminateMany } from '../commands/userSessionTerminateMany';
 import { userUpdate } from '../commands/userUpdate';
 import type { ServerRuntime } from '../domain/ServerRuntime';
@@ -14,6 +26,10 @@ import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
+import { cvEducationList } from '../queries/cvEducationList';
+import { cvExperienceList } from '../queries/cvExperienceList';
+import { cvHobbyList } from '../queries/cvHobbyList';
+import { cvSkillList } from '../queries/cvSkillList';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
 import type {
     GqlSAdmin,
@@ -22,11 +38,24 @@ import type {
     GqlSAdminMutationChatInputCollectionRespondArgs,
     GqlSAdminMutationChatMessageCreateArgs,
     GqlSAdminMutationChatToolApprovalRespondArgs,
+    GqlSAdminMutationCvEducationDeleteArgs,
+    GqlSAdminMutationCvEducationReorderArgs,
+    GqlSAdminMutationCvEducationUpsertArgs,
+    GqlSAdminMutationCvExperienceDeleteArgs,
+    GqlSAdminMutationCvExperienceReorderArgs,
+    GqlSAdminMutationCvExperienceUpsertArgs,
+    GqlSAdminMutationCvHobbyDeleteArgs,
+    GqlSAdminMutationCvHobbyReorderArgs,
+    GqlSAdminMutationCvHobbyUpsertArgs,
+    GqlSAdminMutationCvSkillDeleteArgs,
+    GqlSAdminMutationCvSkillReorderArgs,
+    GqlSAdminMutationCvSkillUpsertArgs,
     GqlSAdminPublicChatArgs,
     GqlSChatAssistantInput,
     GqlSChatAssistantInputValue,
     GqlSChatMessage,
     GqlSChatUpdate,
+    GqlSCvQuery,
     GqlSMutationChatInputCollectionRespondArgs,
     GqlSMutationChatMessageCreateArgs,
     GqlSMutationChatToolApprovalRespondArgs,
@@ -99,6 +128,20 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 return chatFindByScope(args.chatId, 'admin', requestingSession, serverRuntime);
             },
         },
+        CvQuery: {
+            experience(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return cvExperienceList(requestingSession, serverRuntime);
+            },
+            education(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return cvEducationList(requestingSession, serverRuntime);
+            },
+            skills(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return cvSkillList(requestingSession, serverRuntime);
+            },
+            hobbies(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return cvHobbyList(requestingSession, serverRuntime);
+            },
+        },
         AdminMutation: {
             chatMessageCreate(_parent: GqlSAdminMutation, args: GqlSAdminMutationChatMessageCreateArgs, requestingSession: GqlSSession) {
                 return chatMessageCreate(args, requestingSession, serverRuntime, ADMIN_DISPATCH);
@@ -117,6 +160,46 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             ) {
                 return chatToolApprovalRespond(args, requestingSession, serverRuntime, ADMIN_DISPATCH);
             },
+            cvExperienceUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvExperienceUpsertArgs, requestingSession: GqlSSession) {
+                return cvExperienceUpsert(args, requestingSession, serverRuntime);
+            },
+            cvExperienceDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvExperienceDeleteArgs, requestingSession: GqlSSession) {
+                return cvExperienceDelete(args, requestingSession, serverRuntime);
+            },
+            cvExperienceReorder(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationCvExperienceReorderArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return cvExperienceReorder(args, requestingSession, serverRuntime);
+            },
+            cvEducationUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvEducationUpsertArgs, requestingSession: GqlSSession) {
+                return cvEducationUpsert(args, requestingSession, serverRuntime);
+            },
+            cvEducationDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvEducationDeleteArgs, requestingSession: GqlSSession) {
+                return cvEducationDelete(args, requestingSession, serverRuntime);
+            },
+            cvEducationReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvEducationReorderArgs, requestingSession: GqlSSession) {
+                return cvEducationReorder(args, requestingSession, serverRuntime);
+            },
+            cvSkillUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvSkillUpsertArgs, requestingSession: GqlSSession) {
+                return cvSkillUpsert(args, requestingSession, serverRuntime);
+            },
+            cvSkillDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvSkillDeleteArgs, requestingSession: GqlSSession) {
+                return cvSkillDelete(args, requestingSession, serverRuntime);
+            },
+            cvSkillReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvSkillReorderArgs, requestingSession: GqlSSession) {
+                return cvSkillReorder(args, requestingSession, serverRuntime);
+            },
+            cvHobbyUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyUpsertArgs, requestingSession: GqlSSession) {
+                return cvHobbyUpsert(args, requestingSession, serverRuntime);
+            },
+            cvHobbyDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyDeleteArgs, requestingSession: GqlSSession) {
+                return cvHobbyDelete(args, requestingSession, serverRuntime);
+            },
+            cvHobbyReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyReorderArgs, requestingSession: GqlSSession) {
+                return cvHobbyReorder(args, requestingSession, serverRuntime);
+            },
         },
         Query: {
             currentSession(_: any, __: any, requestingSession: GqlSSession) {
@@ -124,6 +207,12 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             chat(_: any, args: GqlSQueryChatArgs, requestingSession: GqlSSession) {
                 return chatFindByScope(args.chatId, 'public', requestingSession, serverRuntime);
+            },
+            // The CV namespace is public — every visitor can read the
+            // timeline on `/cv` and the skill block on `/about`. Return an
+            // empty parent shell; per-field resolvers do the actual reads.
+            cv() {
+                return {} as GqlSCvQuery;
             },
             admin(_: any, __: any, requestingSession: GqlSSession) {
                 return guardAdmin(requestingSession);

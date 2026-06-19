@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowRightIcon, BriefcaseIcon, CodeXmlIcon, MailIcon, MessageSquareIcon } from 'lucide-react';
+import {
+    ArrowRightIcon,
+    BriefcaseIcon,
+    CodeXmlIcon,
+    FileTextIcon,
+    FolderGitIcon,
+    MailIcon,
+    MessageSquareIcon,
+    UserRoundIcon,
+} from 'lucide-react';
+import { personalInfo } from '../../web/content/personalInfo';
 import { CardContent, CardDescription, CardTitle } from '../../web/components/base/card';
 import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
@@ -18,29 +28,29 @@ const COPY = {
         en: 'Hi, I’m Cem. This site is my portfolio and at the same time my private platform — projects, notes, an AI assistant. Have a look around.',
     },
     sections: {
+        about: {
+            title: { de: 'Über mich', en: 'About me' },
+            description: {
+                de: 'Wer ich bin, was ich kann und wie du mich erreichst.',
+                en: 'Who I am, what I do, and how to reach me.',
+            },
+            cta: { de: 'Mehr erfahren', en: 'Read more' },
+        },
+        cv: {
+            title: { de: 'Lebenslauf', en: 'CV' },
+            description: {
+                de: 'Stationen, Skills und Ausbildung — chronologisch.',
+                en: 'Roles, skills, and education — in chronological order.',
+            },
+            cta: { de: 'Lebenslauf ansehen', en: 'View CV' },
+        },
         projects: {
             title: { de: 'Projekte', en: 'Projects' },
             description: {
                 de: 'Eine Auswahl von Dingen, die ich gebaut habe.',
                 en: 'A selection of things I have built.',
             },
-            cta: { de: 'Bald verfügbar', en: 'Coming soon' },
-        },
-        blog: {
-            title: { de: 'Blog', en: 'Blog' },
-            description: {
-                de: 'Gelegentliche Notizen über Code, Tools und Produkte.',
-                en: 'Occasional notes on code, tools, and products.',
-            },
-            cta: { de: 'Bald verfügbar', en: 'Coming soon' },
-        },
-        tools: {
-            title: { de: 'Web-Tools', en: 'Web tools' },
-            description: {
-                de: 'Coole Web-Tools, die ich entdeckt habe und teilen möchte.',
-                en: 'Cool web tools I have discovered and want to share.',
-            },
-            cta: { de: 'Bald verfügbar', en: 'Coming soon' },
+            cta: { de: 'Projekte ansehen', en: 'View projects' },
         },
         chat: {
             title: { de: 'Frag mich was', en: 'Ask me anything' },
@@ -64,11 +74,26 @@ const SOCIAL_LINKS: ReadonlyArray<{
     href: string;
     label: { de: string; en: string };
     icon: typeof CodeXmlIcon;
+    visible: boolean;
 }> = [
-    // TODO: replace with real handles before launch.
-    { href: 'https://github.com/cem-yilmaz', label: { de: 'GitHub', en: 'GitHub' }, icon: CodeXmlIcon },
-    { href: 'https://www.linkedin.com/', label: { de: 'LinkedIn', en: 'LinkedIn' }, icon: BriefcaseIcon },
-    { href: 'mailto:hello@cem-yilmaz.de', label: { de: 'E-Mail', en: 'Email' }, icon: MailIcon },
+    {
+        href: personalInfo.contact.github.url,
+        label: { de: 'GitHub', en: 'GitHub' },
+        icon: CodeXmlIcon,
+        visible: personalInfo.publicVisibility.github,
+    },
+    {
+        href: personalInfo.contact.linkedin.url,
+        label: { de: 'LinkedIn', en: 'LinkedIn' },
+        icon: BriefcaseIcon,
+        visible: personalInfo.publicVisibility.linkedin,
+    },
+    {
+        href: `mailto:${personalInfo.contact.emails[0] ?? ''}`,
+        label: { de: 'E-Mail', en: 'Email' },
+        icon: MailIcon,
+        visible: personalInfo.publicVisibility.emails && personalInfo.contact.emails.length > 0,
+    },
 ];
 
 export const Route = createFileRoute('/{-$locale}/')({
@@ -115,35 +140,61 @@ function Hero({ locale }: { locale: Locale }) {
 function SectionGrid({ locale }: { locale: Locale }) {
     return (
         <section className="grid gap-4 md:grid-cols-2 pb-16">
-            <ComingSoonCard
+            <NavCard
+                to="/{-$locale}/about"
+                icon={UserRoundIcon}
+                title={COPY.sections.about.title[locale]}
+                description={COPY.sections.about.description[locale]}
+                cta={COPY.sections.about.cta[locale]}
+            />
+            <NavCard
+                to="/{-$locale}/cv"
+                icon={FileTextIcon}
+                title={COPY.sections.cv.title[locale]}
+                description={COPY.sections.cv.description[locale]}
+                cta={COPY.sections.cv.cta[locale]}
+            />
+            <NavCard
+                to="/{-$locale}/projects"
+                icon={FolderGitIcon}
                 title={COPY.sections.projects.title[locale]}
                 description={COPY.sections.projects.description[locale]}
                 cta={COPY.sections.projects.cta[locale]}
-            />
-            <ComingSoonCard
-                title={COPY.sections.blog.title[locale]}
-                description={COPY.sections.blog.description[locale]}
-                cta={COPY.sections.blog.cta[locale]}
-            />
-            <ComingSoonCard
-                title={COPY.sections.tools.title[locale]}
-                description={COPY.sections.tools.description[locale]}
-                cta={COPY.sections.tools.cta[locale]}
             />
             <ChatCard locale={locale} />
         </section>
     );
 }
 
-function ComingSoonCard({ title, description, cta }: { title: string; description: string; cta: string }) {
+function NavCard({
+    to,
+    icon: Icon,
+    title,
+    description,
+    cta,
+}: {
+    to: '/{-$locale}/about' | '/{-$locale}/cv' | '/{-$locale}/projects';
+    icon: typeof CodeXmlIcon;
+    title: string;
+    description: string;
+    cta: string;
+}) {
     return (
-        <GlassCard className="py-6 opacity-70">
-            <CardContent className="flex flex-col gap-2">
-                <CardTitle className="text-xl">{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-                <span className="mt-3 inline-flex items-center gap-2 text-sm text-muted-foreground">{cta}</span>
-            </CardContent>
-        </GlassCard>
+        <Link to={to} className="group">
+            <GlassCard className="h-full py-6 transition-colors hover:bg-white/55 dark:hover:bg-white/8">
+                <CardContent className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-primary">
+                        <Icon className="size-5" />
+                        <CardTitle className="text-xl">{title}</CardTitle>
+                    </div>
+                    <CardDescription>{description}</CardDescription>
+                    <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium group-hover:gap-3 transition-all">
+                        {cta}
+                        <ArrowRightIcon className="size-4" />
+                    </span>
+                </CardContent>
+            </GlassCard>
+        </Link>
     );
 }
 
@@ -174,7 +225,7 @@ function Footer({ locale }: { locale: Locale }) {
                 <div>
                     <h2 className="text-sm font-medium text-muted-foreground">{COPY.footer.contactHeading[locale]}</h2>
                     <ul className="mt-3 flex gap-4">
-                        {SOCIAL_LINKS.map(({ href, label, icon: Icon }) => (
+                        {SOCIAL_LINKS.filter((link) => link.visible).map(({ href, label, icon: Icon }) => (
                             <li key={href}>
                                 <a
                                     href={href}

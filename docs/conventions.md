@@ -31,6 +31,19 @@ npm run graphql:generate
 
 Same workflow as above — modify the table definition in `schema.ts`, then generate and apply the migration.
 
+### Bilingual columns
+
+For text that ships in DE and EN (CV entries, future projects/blog/tools), the convention is **paired `*De` / `*En` text columns** rather
+than a JSONB `{ de, en }` blob:
+
+- `roleDe varchar`, `roleEn varchar` — both required if the field is required
+- `subjectDe varchar default ''`, `subjectEn varchar default ''` — both default if the field is optional
+
+The GraphQL schema mirrors the same pair as `roleDe: String!`, `roleEn: String!`. The client renders the locale-matching half, same as the
+inline `{ de, en }[locale]` copy pattern used in routes. JSONB for two-key bilingual data is Postgres-native overhead; the column-pair shape
+keeps `WHERE roleDe ILIKE …` queries trivial when the future search surface needs them. See
+[`docs/architecture/content-model.md`](./architecture/content-model.md) for the broader pattern.
+
 ## Icons
 
 Use [Lucide React](https://lucide.dev/icons/) for all icons. It is already installed as `lucide-react`.

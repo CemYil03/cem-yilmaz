@@ -42,6 +42,9 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 - **Resolver wiring**: all in `src/server/graphql/resolversCreate.ts` — the only file that imports from commands/, queries/, and guards/
 - **Bilingual copy**: this site is DE + EN. Use the inline `{ de: '…', en: '…' }[locale]` pattern (no i18n library). Every visitor- facing
   string ships in both locales.
+- **Bilingual DB content**: paired `*De` / `*En` text columns (e.g. `roleDe`, `roleEn`), exposed as paired `*De` / `*En` GraphQL fields. See
+  [docs/architecture/content-model.md](./docs/architecture/content-model.md).
+- **Static identity content**: lives under `src/web/content/` (e.g. `personalInfo.ts`). Imported by both server and client. PR-edited.
 - **Comments**: only comment if there is no other way to make the code self-explanatory — prefer better names, smaller functions, and
   clearer types
 - **Quality checks**: run `npm run check` before considering any task complete
@@ -61,6 +64,8 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Server-side rendering | Singleton headless Chromium via `serverRuntime.browser.capture()`        | `docs/architecture/server-side-rendering.md`   |
 | SEO                   | `seoMeta()` per page; dynamic `/sitemap.xml` and `/robots.txt`           | `docs/architecture/seo.md`                     |
 | Code generation       | `npm run graphql:generate` — server `GqlS*`, client `GqlC*`              | `codegen.ts`                                   |
+| Editable content      | DB tables (CV, future projects/blog/tools) + admin UI under `/workspace` | `docs/architecture/content-model.md`           |
+| Static identity       | Typed config under `src/web/content/`                                    | `src/web/content/personalInfo.ts`              |
 | AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                            | `src/server/agents/agentVisitorAboutCem.ts`    |
 | AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                      | `docs/architecture/multi-agent-chat.md`        |
 
@@ -124,12 +129,16 @@ src/
 │   ├── __root.tsx              Root layout
 │   ├── {-$locale}/
 │   │   ├── index.tsx           Portfolio landing page
+│   │   ├── about.tsx           Public profile page (bio, identity, skills, hobbies, contact)
+│   │   ├── cv.tsx              Public CV (experience + education timelines)
+│   │   ├── projects.tsx        Public portfolio (static list of Cem's projects)
 │   │   ├── impressum.tsx       Imprint (TMG §5)
 │   │   ├── datenschutz.tsx     Privacy notice (GDPR)
 │   │   ├── chat.tsx            Visitor AI chat
 │   │   └── workspace/          Personal workspace hub + focus areas (noindex; Phase 2 OAuth-gated)
 │   │       ├── index.tsx       Hub: greeting + assistant composer + links to each focus area
 │   │       ├── assistant.tsx   Personal-assistant chat (admin-scope)
+│   │       ├── cv.tsx          CV editor (writes the `Cv*` tables)
 │   │       ├── software.tsx    Software development & architecture
 │   │       ├── projects.tsx    Personal projects
 │   │       ├── finances.tsx    Finances (goals, overview, trading & stocks)
@@ -171,6 +180,11 @@ src/
 ├── web/
 │   ├── components/
 │   │   ├── base/               Radix/shadcn primitives
+│   │   ├── CvTimeline.tsx      Shared timeline renderer (used on /cv)
+│   │   └── CvSkillGroup.tsx    Skill block grouped by category (used on /about)
+│   ├── content/
+│   │   ├── personalInfo.ts     Static identity facts (DOB, nationality, contact)
+│   │   └── portfolioProjects.ts  Static portfolio list (Phase 1; replaced by DB in Phase 3)
 │   ├── graphql/
 │   │   ├── client.ts           URQL client config
 │   │   └── generated.ts        Generated types (DO NOT EDIT)
