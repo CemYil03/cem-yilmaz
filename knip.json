@@ -15,6 +15,7 @@
         "src/web/components/base/**/*.tsx",
         "src/web/hooks/use-mobile.ts",
         "scripts/seedCv.ts",
+        "scripts/captureProjectScreenshots.ts",
         ".storybook/vite.config.ts"
     ],
     "ignoreDependencies": [
