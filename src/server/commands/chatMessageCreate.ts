@@ -1,6 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
 import { chatMessageAppend } from './chatMessageAppend';
+import type { ChatAgentFactory } from '../agents/agentVisitorAboutCem';
 import type {
     ChatCreate,
     ChatMessage,
@@ -12,14 +13,21 @@ import type {
 } from '../db/schema';
 import { fileUploads, chatMessageUserAttachments, chatMessagesUser, chatMessagesUserInput, chats } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type {
-    GqlSChatMessageCreateResult,
-    GqlSSession,
-    GqlSUserMutation,
-    GqlSUserMutationChatMessageCreateArgs,
-} from '../graphql/generated';
+import type { GqlSChatMessageCreateResult, GqlSMutationChatMessageCreateArgs, GqlSSession } from '../graphql/generated';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
+
+// Dispatch context the resolver passes in. The mutation namespace decides the
+// values: visitor mutations pass `{ scope: 'public', agentFactory:
+// agentVisitorAboutCem }`; admin mutations pass `{ scope: 'admin',
+// agentFactory: agentPersonalAssistant }`. The command stamps `scope` on new
+// chats and rejects an existing `chatId` whose scope doesn't match — a stolen
+// id can't slip from one namespace to the other. See
+// `docs/architecture/multi-agent-chat.md`.
+export interface ChatMutationDispatch {
+    scope: 'public' | 'admin';
+    agentFactory: ChatAgentFactory;
+}
 
 // Persists the user's message and runs the next assistant turn.
 //
@@ -36,10 +44,10 @@ import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
 // replay whatever's persisted.
 
 export async function chatMessageCreate(
-    { userId }: GqlSUserMutation,
-    { chatId: attemptedChatId, message, fileUploadIds, assistantOptions }: GqlSUserMutationChatMessageCreateArgs,
+    { chatId: attemptedChatId, message, fileUploadIds, assistantOptions }: GqlSMutationChatMessageCreateArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
+    dispatch: ChatMutationDispatch,
 ): Promise<GqlSChatMessageCreateResult | null> {
     try {
         // Phase 1 — Payload construction (pure, no DB calls).
@@ -48,6 +56,13 @@ export async function chatMessageCreate(
         const userMessageId = crypto.randomUUID();
         const now = new Date();
         const { generationId } = assistantOptions;
+        // Cookie session is the only authentication today; the user-side row
+        // gets an `authorUserId` only when a registered user is on the
+        // session. Visitor chat allows anonymous sends — `authorUserId` stays
+        // null, but the message still persists. (When the workspace lands,
+        // admin chats will always have a userId because the OAuth login
+        // implies one.)
+        const userId = requestingSession.userId ?? null;
         // Treat null/undefined the same as an empty list — the GraphQL field
         // is `[ID!]` (nullable list) so URQL emits `null` when the client
         // didn't pass it. Dedupe to keep the join row's unique index happy
@@ -70,8 +85,13 @@ export async function chatMessageCreate(
         // Validate file-upload ownership BEFORE any writes — a foreign-user id
         // (or a non-existent one) becomes a hard error so the user sees a
         // clear failure instead of a half-persisted message that silently
-        // dropped a file.
+        // dropped a file. Anonymous visitor sessions can't own uploads at all
+        // (the upload route rejects them), so a request that carries upload
+        // ids without a user is itself invalid.
         if (requestedFileUploadIds.length > 0) {
+            if (!userId) {
+                throw new Error('chatMessageCreate: anonymous session cannot reference fileUploadIds');
+            }
             const owned = await serverRuntime.db
                 .select({ fileUploadId: fileUploads.fileUploadId })
                 .from(fileUploads)
@@ -89,13 +109,29 @@ export async function chatMessageCreate(
             position,
         }));
 
-        // Phase 2 — Create the chat row up front for new chats. Subscribers
-        // don't observe this commit (no row goes through `chatMessageAppend`),
-        // but the FK from `chatMessages.chatId → chats.chatId` needs the row
-        // present before the user message inserts.
+        // Phase 2 — Stamp / verify the chat scope. New chats are inserted
+        // with `dispatch.scope`; existing chats are looked up and rejected if
+        // they belong to the other namespace. The scope check is what stops a
+        // stolen `chatId` from one surface from being used to post into the
+        // other.
         if (isNewChat) {
-            const chatInsert: ChatCreate = { chatId, title: '', lastModifiedAt: now, createdAt: now };
+            const chatInsert: ChatCreate = { chatId, title: '', scope: dispatch.scope, lastModifiedAt: now, createdAt: now };
             await serverRuntime.db.insert(chats).values(chatInsert);
+        } else {
+            const existing = await serverRuntime.db
+                .select({ scope: chats.scope })
+                .from(chats)
+                .where(eq(chats.chatId, chatId))
+                .limit(1)
+                .then((rows) => rows[0] ?? null);
+            if (!existing) {
+                throw new Error(`chatMessageCreate: chat ${chatId} not found`);
+            }
+            if (existing.scope !== dispatch.scope) {
+                throw new Error(
+                    `chatMessageCreate: chat ${chatId} has scope=${existing.scope} but mutation namespace requires scope=${dispatch.scope}`,
+                );
+            }
         }
 
         // Phase 3 — Pivoting away from an open collection. If the previous
@@ -163,6 +199,7 @@ export async function chatMessageCreate(
             requestingSession,
             assistantOptions,
             serverRuntime,
+            agentFactory: dispatch.agentFactory,
         });
 
         return {

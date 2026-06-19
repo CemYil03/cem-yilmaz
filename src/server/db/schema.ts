@@ -85,9 +85,19 @@ export type UserCreate = typeof users.$inferInsert;
 // is used only where the GraphQL schema itself is a union of values
 // (`inputs`, `answers`, tool args/result).
 
+// `scope` discriminates visitor chats (`/chat`) from the personal-assistant
+// chats at `/workspace/assistant`. The column is stamped on insert by the
+// command that created the chat — visitor mutations write `'public'`, admin
+// mutations write `'admin'` — and never updated afterward. Dispatch to the
+// agent factory is decided by the access path (which mutation namespace was
+// used), not by reading this column; `scope` exists so the chat commands can
+// reject a `chatId` flowing through the wrong namespace, and so
+// `Admin.publicChats` / `Admin.chats` can split admin-side reads. See
+// `docs/architecture/multi-agent-chat.md`.
 export const chats = pgTable('Chats', {
     chatId: uuid().primaryKey(),
     title: varchar().notNull().default(''),
+    scope: varchar().$type<'public' | 'admin'>().notNull().default('public'),
     lastModifiedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
 });

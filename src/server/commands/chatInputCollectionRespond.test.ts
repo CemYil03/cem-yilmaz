@@ -1,11 +1,13 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 
+import { agentVisitorAboutCem } from '../agents/agentVisitorAboutCem';
 import { chatMessages, chatMessagesAssistantInputCollection, chatMessagesUserInput, chats } from '../db/schema';
 import { commandSetup, testDb } from '../test/commandTestUtils';
-import type { GqlSChatAssistantOptions, GqlSUserMutation } from '../graphql/generated';
+import type { GqlSChatAssistantOptions } from '../graphql/generated';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
 import { chatInputCollectionRespond } from './chatInputCollectionRespond';
+import type { ChatMutationDispatch } from './chatMessageCreate';
 
 // `chatAssistantTurnRunDetached` would call Gemini; mock it as a no-op so the
 // test can inspect the userInput-row persistence + publish path in isolation.
@@ -17,6 +19,8 @@ const streamingAssistantOptions: GqlSChatAssistantOptions = {
     generationId: 'gen-test',
     requireToolCallApprovals: false,
 };
+
+const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitorAboutCem };
 
 interface CollectionInputSeed {
     inputId: string;
@@ -45,8 +49,7 @@ async function seedOpenCollection(input: CollectionInputSeed = { inputId: crypto
         inputs: [input],
     });
 
-    const parent: GqlSUserMutation = { userId: setup.user.userId } as GqlSUserMutation;
-    return { ...setup, parent, chatId, collectionMessageId, inputId: input.inputId };
+    return { ...setup, chatId, collectionMessageId, inputId: input.inputId };
 }
 
 describe('chatInputCollectionRespond', () => {
@@ -56,7 +59,6 @@ describe('chatInputCollectionRespond', () => {
 
         // Act
         const result = await chatInputCollectionRespond(
-            seed.parent,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'String', string: 'Friday' }],
@@ -64,6 +66,7 @@ describe('chatInputCollectionRespond', () => {
             },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — mutation result
@@ -99,7 +102,6 @@ describe('chatInputCollectionRespond', () => {
 
         // Act
         const result = await chatInputCollectionRespond(
-            seed.parent,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [],
@@ -107,6 +109,7 @@ describe('chatInputCollectionRespond', () => {
             },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — a userInput row was written with no answers and the
@@ -126,7 +129,6 @@ describe('chatInputCollectionRespond', () => {
         // Arrange — seed and submit a first answer so the collection is closed.
         const seed = await seedOpenCollection();
         const first = await chatInputCollectionRespond(
-            seed.parent,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'String', string: 'Friday' }],
@@ -134,13 +136,13 @@ describe('chatInputCollectionRespond', () => {
             },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
         expect(first).not.toBeNull();
         expect(chatAssistantTurnRunDetached).toHaveBeenCalledTimes(1);
 
         // Act — a second submit against the now-answered collection.
         const second = await chatInputCollectionRespond(
-            seed.parent,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'String', string: 'Saturday' }],
@@ -148,6 +150,7 @@ describe('chatInputCollectionRespond', () => {
             },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — the second call returns null, leaves a single userInput
@@ -167,7 +170,6 @@ describe('chatInputCollectionRespond', () => {
 
         // Act
         const result = await chatInputCollectionRespond(
-            seed.parent,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'Boolean', boolean: true }],
@@ -175,6 +177,7 @@ describe('chatInputCollectionRespond', () => {
             },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — the JSONB answer carries the lifted discriminated shape.

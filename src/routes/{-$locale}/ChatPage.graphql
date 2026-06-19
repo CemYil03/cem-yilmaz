@@ -153,32 +153,30 @@ query ChatPage($chatId: ID!) {
             userId
             name
         }
-        chat(chatId: $chatId) {
-            chatId
-            title
-            lastModifiedAt
-            messages {
-                ...ChatMessageFields
-            }
+    }
+    chat(chatId: $chatId) {
+        chatId
+        title
+        lastModifiedAt
+        messages {
+            ...ChatMessageFields
         }
     }
 }
 
 mutation ChatMessageCreate($chatId: ID, $message: String!, $fileUploadIds: [ID!], $generationId: ID, $requireToolCallApprovals: Boolean!) {
-    user {
-        # `assistantOptions` is built inline so the operation doesn't reference the
-        # named `ChatAssistantOptions` input type — referencing it makes
-        # `typescript-operations` re-emit `GqlCChatAssistantOptions` and clash with
-        # the `typescript` plugin's emission of the same name.
-        chatMessageCreate(
-            chatId: $chatId
-            message: $message
-            fileUploadIds: $fileUploadIds
-            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
-        ) {
-            chatId
-            chatMessageId
-        }
+    # `assistantOptions` is built inline so the operation doesn't reference the
+    # named `ChatAssistantOptions` input type — referencing it makes
+    # `typescript-operations` re-emit `GqlCChatAssistantOptions` and clash with
+    # the `typescript` plugin's emission of the same name.
+    chatMessageCreate(
+        chatId: $chatId
+        message: $message
+        fileUploadIds: $fileUploadIds
+        assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+    ) {
+        chatId
+        chatMessageId
     }
 }
 
@@ -194,15 +192,13 @@ mutation ChatInputCollectionRespond(
     $generationId: ID
     $requireToolCallApprovals: Boolean!
 ) {
-    user {
-        chatInputCollectionRespond(
-            collectionMessageId: $collectionMessageId
-            answers: $answers
-            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
-        ) {
-            chatId
-            chatMessageId
-        }
+    chatInputCollectionRespond(
+        collectionMessageId: $collectionMessageId
+        answers: $answers
+        assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+    ) {
+        chatId
+        chatMessageId
     }
 }
 
@@ -213,16 +209,14 @@ mutation ChatToolApprovalRespond(
     $generationId: ID
     $requireToolCallApprovals: Boolean!
 ) {
-    user {
-        chatToolApprovalRespond(
-            approvalId: $approvalId
-            approved: $approved
-            reason: $reason
-            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
-        ) {
-            chatId
-            chatMessageId
-        }
+    chatToolApprovalRespond(
+        approvalId: $approvalId
+        approved: $approved
+        reason: $reason
+        assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+    ) {
+        chatId
+        chatMessageId
     }
 }
 

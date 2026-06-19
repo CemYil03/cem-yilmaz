@@ -70,11 +70,11 @@ The following environment variables must be configured in the deployment environ
 | ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `DATABASE_URL`                 | Yes      | PostgreSQL connection string                                                                                                                                                                                                                                       |
 | `sessionCookieName`            | Yes      | Name of the cookie used to store the session ID                                                                                                                                                                                                                    |
-| `WEB_PAGE_URL`                 | Yes      | Absolute origin of the deployed site, no trailing slash (e.g. `https://example.com`). Drives canonical URLs, hreflang alternates, the dynamic `/sitemap.xml`, and `/robots.txt` — see [architecture/seo.md](./architecture/seo.md)                                 |
+| `WEB_PAGE_URL`                 | Yes      | Absolute origin of the deployed site, no trailing slash. In production this is `https://cem-yilmaz.de`. Drives canonical URLs, hreflang alternates, the dynamic `/sitemap.xml`, and `/robots.txt` — see [architecture/seo.md](./architecture/seo.md)               |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Yes      | Google Generative AI API key. Validated when `serverRuntimeCreate` builds the Gemini language model                                                                                                                                                                |
 | `SERVER_TOKEN_SECRET`          | No\*     | HMAC secret signing short-lived server-side render tokens. Required only by features that call `serverRuntime.browser.capture()` against an authenticated `/server/*` route — see [architecture/server-side-rendering.md](./architecture/server-side-rendering.md) |
 | `sessionCookieSecure`          | No       | Set to `"true"` in production to enable Secure + SameSite=None                                                                                                                                                                                                     |
-| `sessionCookieDomainScope`     | No       | Cookie domain scope for cross-subdomain sessions                                                                                                                                                                                                                   |
+| `sessionCookieDomainScope`     | No       | Cookie domain scope for cross-subdomain sessions (e.g. `cem-yilmaz.de`)                                                                                                                                                                                            |
 
 ### Database Migrations
 
@@ -155,21 +155,24 @@ Runs only on `push` to `main` and only after every gate passes. Uses a separate 
 
 | Secret                 | Description                                                                                                                    |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `COOLIFY_URL`          | Coolify instance URL (e.g. `https://coolify.example.com`)                                                                      |
+| `COOLIFY_URL`          | Coolify instance URL                                                                                                           |
 | `COOLIFY_API_TOKEN`    | Coolify API token (Settings → API Tokens)                                                                                      |
 | `COOLIFY_SERVICE_UUID` | Application UUID (visible in the application URL)                                                                              |
-| `WEB_APP_URL`          | Public URL of the deployed app (e.g. `https://app.example.com`) — polled by the post-deploy verification step                  |
+| `WEB_APP_URL`          | Public URL of the deployed app — `https://cem-yilmaz.de` — polled by the post-deploy verification step                         |
 | `DATABASE_URL_PROD`    | Connection string used by `migrations-check (prod)` — recommend a role with `SELECT` on `drizzle.__drizzle_migrations` only    |
 | `DATABASE_URL_PREVIEW` | Connection string used by `migrations-check (preview)` — recommend a role with `SELECT` on `drizzle.__drizzle_migrations` only |
 
-## Coolify Deployment Strategy
+> Note: the GitHub Actions secret `WEB_APP_URL` and the runtime env var `WEB_PAGE_URL` are different things. `WEB_APP_URL` is only read by
+> the post-deploy health-check polling step in `pipeline.yml`; the running app reads `WEB_PAGE_URL` for canonical URLs and SEO. Set both to
+> `https://cem-yilmaz.de` in their respective places.
 
-This template ships with a **single-environment** default: every push to `main` that passes CI builds a Docker image and deploys it to one
-Coolify application. There is no test/staging app and no `production` branch — you can add those later when the project actually needs them
-(see [Extending to multiple environments](#extending-to-multiple-environments) below). Per-PR preview deployments are supported and
-recommended.
+## Coolify Deployment
 
-### Default Setup
+This project runs in a **single environment**: every push to `main` that passes CI builds a Docker image and deploys it to one Coolify
+application serving `https://cem-yilmaz.de`. There is no test/staging app and no separate production branch — `main` is production. Per-PR
+preview deployments are enabled on the same application.
+
+### Setup
 
 | Environment | Coolify Resource    | Branch      | Trigger                  |
 | ----------- | ------------------- | ----------- | ------------------------ |
@@ -179,10 +182,11 @@ recommended.
 **Setup in Coolify:**
 
 1. Create a new Application (Docker → GHCR)
-2. Set the image to `ghcr.io/<owner>/<repo>` with tag `latest` (CD updates this on every deploy)
-3. Configure environment variables (`DATABASE_URL`, `sessionCookieSecure=true`, etc.)
+2. Set the image to `ghcr.io/<owner>/cem-yilmaz` with tag `latest` (CD updates this on every deploy)
+3. Configure environment variables (`DATABASE_URL`, `WEB_PAGE_URL=https://cem-yilmaz.de`, `sessionCookieSecure=true`, `sessionCookieName`,
+   `GOOGLE_GENERATIVE_AI_API_KEY`)
 4. Attach a PostgreSQL database resource
-5. Set up the custom domain and SSL
+5. Set up the `cem-yilmaz.de` custom domain and SSL
 
 The CD job in `.github/workflows/pipeline.yml` (CI and CD share a single workflow) is already wired for this: it builds the image, PATCHes
 the Coolify application's image tag, and restarts the application via the Coolify API. The only required secrets are `COOLIFY_URL`,
@@ -197,7 +201,7 @@ the lifecycle natively against the same Application — no additional CD workflo
 
 1. Open the production Application → **Preview Deployments** tab
 2. Enable preview deployments
-3. Set the **Base Domain** (e.g. `preview.example.com`) — each PR gets `pr-<number>.preview.example.com`
+3. Set the **Base Domain** for previews — each PR gets `pr-<number>.<base-domain>`
 4. Configure environment overrides for previews (typically a shared preview database or per-PR database)
 
 **Database options for previews:**
@@ -208,7 +212,7 @@ the lifecycle natively against the same Application — no additional CD workflo
 | Per-PR DB (scripted)  | Full isolation             | Requires setup/teardown scripts       |
 | Seed-only (ephemeral) | Clean state every deploy   | No persistent test data across pushes |
 
-For most teams, a **shared preview database** with schema push on deploy is sufficient:
+For most setups, a **shared preview database** with schema push on deploy is sufficient:
 
 ```bash
 # Add to your preview deploy command or Dockerfile entrypoint
@@ -231,57 +235,6 @@ npx drizzle-kit migrate && node .output/server/index.mjs
 ```
 
 Option A is safer — if the migration fails, the old container keeps running.
-
-## Extending to Multiple Environments
-
-When you outgrow the single-environment default, the typical next step is to split into a **test** environment that tracks `main` and a
-**production** environment that tracks a dedicated `production` branch. Promoting becomes an explicit `main` → `production` merge, which
-gives you a manual gate before production deploys.
-
-| Environment | Coolify Resource | Branch       | Trigger                              |
-| ----------- | ---------------- | ------------ | ------------------------------------ |
-| Test        | Application      | `main`       | Push to `main` (CD)                  |
-| Production  | Application      | `production` | Merge `main` → `production` (manual) |
-
-### Steps to Extend
-
-1. **Create a `production` branch** on GitHub from the current `main` and protect it (require PRs, restrict who can merge).
-2. **Create a second Coolify Application** for production: same GHCR image, separate environment variables, separate domain, separate
-   PostgreSQL database. Keep the existing application as the test environment.
-3. **Generate a second Coolify API token** so each environment can be revoked independently. Add these GitHub Actions secrets:
-
-| Secret                      | Description                 |
-| --------------------------- | --------------------------- |
-| `COOLIFY_SERVICE_UUID_TEST` | Test application UUID       |
-| `COOLIFY_SERVICE_UUID_PROD` | Production application UUID |
-| `COOLIFY_API_TOKEN_TEST`    | Token for test app          |
-| `COOLIFY_API_TOKEN_PROD`    | Token for production app    |
-
-You can keep using a single shared token if you prefer, but separate tokens are easier to rotate.
-
-4. **Update `.github/workflows/pipeline.yml`** so both gate jobs and the deploy job run on pushes to `production` as well as `main`. The
-   simplest shape is to add `production` to the existing trigger filter:
-
-```yaml
-on:
-  pull_request:
-    branches: [main, production]
-  push:
-    branches: [main, production]
-```
-
-5. **Update the `deploy` job in `.github/workflows/pipeline.yml`** to deploy each branch to its corresponding application — typically a
-   matrix over `{ env: test, prod }` with a `branch == ref` filter, selecting the right `COOLIFY_SERVICE_UUID_*` / `COOLIFY_API_TOKEN_*` per
-   entry.
-6. **Promote with a PR**: when you want to release, open a PR from `main` → `production`. Merging it triggers `pipeline.yml` on
-   `production`, which runs the gates and then the deploy job against the production application.
-
-### Going Further
-
-- **Additional environments** (e.g. a stakeholder demo app) — repeat the steps above with another application, branch, and secret pair.
-- **Move previews off the test app** — by default, per-PR previews live alongside the `main`/test application. If you want previews to stage
-  against production-like configuration instead, enable Preview Deployments on the production application and disable them on the test
-  application.
 
 ## Storybook (GitHub Pages)
 

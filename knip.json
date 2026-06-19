@@ -6,7 +6,6 @@
         "src/web/graphql/generated.ts",
 
         "src/server/graphql/extensions.ts",
-        "src/web/components/ThemeToggle.tsx",
 
         "src/server/graphql/PubSubPostgres.ts",
         "src/server/graphql/server.ts",

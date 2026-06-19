@@ -37,10 +37,10 @@ export const Route = createFileRoute('/{-$locale}/chat')({
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: { de: 'Chat', en: 'Chat' }[locale],
+            title: { de: 'Frag mich was', en: 'Ask me anything' }[locale],
             description: {
-                de: 'Unterhaltung mit dem Assistenten.',
-                en: 'A conversation with the assistant.',
+                de: 'Stell dem KI-Assistenten eine Frage über Cem oder seine Arbeit.',
+                en: 'Ask the AI assistant a question about Cem or his work.',
             }[locale],
             path: '/chat',
             locale,
@@ -77,7 +77,11 @@ function ChatEmpty({ live }: { live: ReturnType<typeof useChatLiveUpdates> }) {
     return (
         <main className="mx-auto grid h-dvh w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
             <div className="grid place-items-center text-sm text-muted-foreground">
-                {live.isGenerating ? <Spinner className="size-4 text-muted-foreground" /> : 'Start a new conversation.'}
+                {live.isGenerating ? (
+                    <Spinner className="size-4 text-muted-foreground" />
+                ) : (
+                    'Frag mich was über Cem · Ask me anything about Cem.'
+                )}
             </div>
             <ChatComposer
                 onMessageSent={(newChatId) => navigate({ to: '/{-$locale}/chat', search: { chatId: newChatId } })}
@@ -140,8 +144,7 @@ function ChatPage({ chatId, live }: { chatId: string; live: ReturnType<typeof us
         [respondToApproval, live],
     );
 
-    const session = data?.currentSession;
-    const chat = session?.chat;
+    const chat = data?.chat;
 
     if (error) {
         return <main className="grid place-items-center p-8 text-sm text-destructive">Failed to load chat: {error.message}</main>;
@@ -183,7 +186,7 @@ function ChatTranscript({
     onCollectionSubmit,
     onApprovalRespond,
 }: {
-    chat: GqlCChatPageQuery['currentSession']['chat'];
+    chat: GqlCChatPageQuery['chat'];
     appendedMessages: ReadonlyArray<TranscriptMessage>;
     streamingTexts: Readonly<Record<string, string>>;
     onCollectionSubmit: (

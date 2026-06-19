@@ -1,5 +1,5 @@
 import type { Session } from '../db/schema';
-import type { GqlSChat, GqlSSession } from '../graphql/generated';
+import type { GqlSSession } from '../graphql/generated';
 
 export function toGqlSession(session: Session): GqlSSession {
     return {
@@ -8,6 +8,5 @@ export function toGqlSession(session: Session): GqlSSession {
 
         // resolved fields
         user: null,
-        chat: null as unknown as GqlSChat,
     };
 }

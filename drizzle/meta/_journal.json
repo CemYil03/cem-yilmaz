@@ -8,6 +8,13 @@
             "when": 1781269848014,
             "tag": "0000_magical_kitty_pryde",
             "breakpoints": true
+        },
+        {
+            "idx": 1,
+            "version": "7",
+            "when": 1781801305863,
+            "tag": "0001_sticky_lady_mastermind",
+            "breakpoints": true
         }
     ]
 }

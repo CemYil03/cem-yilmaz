@@ -49,17 +49,17 @@ The pieces:
 
 Per-locale canonicals follow the routing setup:
 
-| Locale         | Path on the site   | Canonical                                                |
-| -------------- | ------------------ | -------------------------------------------------------- |
-| `de` (default) | `/`, `/terms`      | `https://example.com`, `https://example.com/terms`       |
-| `en`           | `/en`, `/en/terms` | `https://example.com/en`, `https://example.com/en/terms` |
+| Locale         | Path on the site       | Canonical                                                        |
+| -------------- | ---------------------- | ---------------------------------------------------------------- |
+| `de` (default) | `/`, `/impressum`      | `https://cem-yilmaz.de`, `https://cem-yilmaz.de/impressum`       |
+| `en`           | `/en`, `/en/impressum` | `https://cem-yilmaz.de/en`, `https://cem-yilmaz.de/en/impressum` |
 
 For each page `seoMeta()` emits one `<link rel="canonical">` and one `<link rel="alternate" hreflang="…">` per configured locale plus
 `hreflang="x-default"` pointing at the default-locale URL.
 
 ## How to add SEO to a new page
 
-1. Pick a `title` (≤ 60 chars before the ` — Project name` suffix) and a `description` (50–160 chars). Localize both via the standard
+1. Pick a `title` (≤ 60 chars before the ` — Cem Yilmaz` suffix) and a `description` (50–160 chars). Localize both via the standard
    `{ de: '…', en: '…' }[locale]` pattern.
 2. In your route file, import `seoMeta`, `webPageUrlGet`, and `localeFromParam`, then add a `head:` callback to the route options:
 

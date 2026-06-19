@@ -6,11 +6,3 @@ query HomePage {
         }
     }
 }
-
-mutation TerminateSessions($currentSessionId: ID!) {
-    user {
-        terminateSessions(sessionIds: [$currentSessionId]) {
-            success
-        }
-    }
-}

@@ -1,0 +1,233 @@
+# Operations for the personal-assistant chat at `/workspace/assistant`. Same
+# shape as the visitor chat at `/chat` (see `ChatPage.graphql`), but every
+# call goes through the `admin` namespace so the server dispatches to
+# `agentPersonalAssistant` and persists with `scope = 'admin'`. Every
+# operation and fragment is `Workspace*`-prefixed so codegen does not collide
+# with the visitor variants in `ChatPage.graphql`. See
+# `docs/architecture/multi-agent-chat.md`.
+
+fragment WorkspaceChatMessageGeneration on ChatMessageGeneration {
+    modelId
+    inputTokens
+    outputTokens
+    totalTokens
+    reasoningTokens
+    cachedInputTokens
+}
+
+fragment WorkspaceChatMessageFields on ChatMessage {
+    __typename
+    ... on ChatMessageUser {
+        chatMessageId
+        body
+        createdAt
+        author {
+            userId
+            name
+        }
+        attachments {
+            fileUploadId
+            filename
+            mediaType
+            size
+            url
+        }
+    }
+    ... on ChatMessageAssistantText {
+        chatMessageId
+        body
+        createdAt
+        generation {
+            ...WorkspaceChatMessageGeneration
+        }
+    }
+    ... on ChatMessageToolCall {
+        chatMessageId
+        toolName
+        args
+        createdAt
+    }
+    ... on ChatMessageToolApprovalRequest {
+        chatMessageId
+        approvalId
+        toolName
+        args
+        createdAt
+        generation {
+            ...WorkspaceChatMessageGeneration
+        }
+    }
+    ... on ChatMessageToolApprovalResponse {
+        chatMessageId
+        approvalId
+        approved
+        reason
+        createdAt
+    }
+    ... on ChatMessageAssistantInputCollection {
+        chatMessageId
+        prompt
+        mode
+        createdAt
+        generation {
+            ...WorkspaceChatMessageGeneration
+        }
+        inputs {
+            __typename
+            ... on ChatAssistantInputDate {
+                inputId
+                prompt
+            }
+            ... on ChatAssistantInputDateRange {
+                inputId
+                prompt
+            }
+            ... on ChatAssistantInputDateTime {
+                inputId
+                prompt
+            }
+            ... on ChatAssistantInputTime {
+                inputId
+                prompt
+            }
+            ... on ChatAssistantInputSingleSelect {
+                inputId
+                prompt
+                options
+            }
+            ... on ChatAssistantInputMultiSelect {
+                inputId
+                prompt
+                options
+            }
+            ... on ChatAssistantInputBoolean {
+                inputId
+                prompt
+            }
+            ... on ChatAssistantInputText {
+                inputId
+                prompt
+            }
+        }
+    }
+    ... on ChatMessageUserInput {
+        chatMessageId
+        collectionMessageId
+        createdAt
+        author {
+            userId
+            name
+        }
+        answers {
+            inputId
+            value {
+                __typename
+                ... on ChatAssistantInputValueDate {
+                    date
+                }
+                ... on ChatAssistantInputValueDateRange {
+                    from
+                    to
+                }
+                ... on ChatAssistantInputValueDateTime {
+                    dateTime
+                }
+                ... on ChatAssistantInputValueTime {
+                    time
+                }
+                ... on ChatAssistantInputValueString {
+                    value
+                }
+                ... on ChatAssistantInputValueStringList {
+                    values
+                }
+                ... on ChatAssistantInputValueBoolean {
+                    boolean
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceChatPage($chatId: ID!) {
+    currentSession {
+        sessionId
+        user {
+            userId
+            name
+        }
+    }
+    admin {
+        chat(chatId: $chatId) {
+            chatId
+            title
+            lastModifiedAt
+            messages {
+                ...WorkspaceChatMessageFields
+            }
+        }
+    }
+}
+
+mutation WorkspaceChatMessageCreate(
+    $chatId: ID
+    $message: String!
+    $fileUploadIds: [ID!]
+    $generationId: ID
+    $requireToolCallApprovals: Boolean!
+) {
+    # `assistantOptions` is built inline so the operation doesn't reference the
+    # named `ChatAssistantOptions` input type — referencing it makes
+    # `typescript-operations` re-emit `GqlCChatAssistantOptions` and clash with
+    # the `typescript` plugin's emission of the same name. See the matching
+    # comment in `ChatPage.graphql`.
+    admin {
+        chatMessageCreate(
+            chatId: $chatId
+            message: $message
+            fileUploadIds: $fileUploadIds
+            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+        ) {
+            chatId
+            chatMessageId
+        }
+    }
+}
+
+mutation WorkspaceChatInputCollectionRespond(
+    $collectionMessageId: ID!
+    $answers: [ChatMessageUserInputAnswerCreate!]!
+    $generationId: ID
+    $requireToolCallApprovals: Boolean!
+) {
+    admin {
+        chatInputCollectionRespond(
+            collectionMessageId: $collectionMessageId
+            answers: $answers
+            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+        ) {
+            chatId
+            chatMessageId
+        }
+    }
+}
+
+mutation WorkspaceChatToolApprovalRespond(
+    $approvalId: String!
+    $approved: Boolean!
+    $reason: String
+    $generationId: ID
+    $requireToolCallApprovals: Boolean!
+) {
+    admin {
+        chatToolApprovalRespond(
+            approvalId: $approvalId
+            approved: $approved
+            reason: $reason
+            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+        ) {
+            chatId
+            chatMessageId
+        }
+    }
+}

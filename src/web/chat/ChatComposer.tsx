@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { TypedDocumentNode } from 'urql';
 import { useMutation } from 'urql';
 import { ChatMessageCreateDocument } from '../graphql/generated';
 import { uploadFile } from './fileUpload';
@@ -27,9 +28,52 @@ interface ChatComposerProps {
     /** Tear down per-turn state if the mutation errors before the server
      *  could publish anything. From `useChatLiveUpdates`. */
     endTurn: () => void;
+    /** Which `chatMessageCreate` mutation to send. Defaults to the visitor
+     *  mutation (`Mutation.chatMessageCreate`); the workspace assistant route
+     *  passes the `admin.chatMessageCreate` variant so the same UI dispatches
+     *  to `agentPersonalAssistant` instead. See
+     *  `docs/architecture/multi-agent-chat.md`. */
+    sendMutation?: TypedDocumentNode<unknown, ChatMessageCreateVariables>;
+    /** Pulls `{ chatId }` out of the mutation result. Defaults to the
+     *  visitor shape (`data.chatMessageCreate`); the workspace caller passes
+     *  `(data) => data?.admin?.chatMessageCreate ?? null`. Returning `null`
+     *  is treated as a transport failure (draft restored, turn cleared). */
+    extractResult?: (data: unknown) => { chatId: string } | null;
+    /** Localized placeholder. Defaults to "Type a message…". */
+    placeholder?: string;
+    /** Focus the composer on mount. Use on landing surfaces where the
+     *  composer is the primary affordance (e.g. `/workspace`). */
+    autoFocus?: boolean;
 }
 
-export function ChatComposer({ chatId, onMessageSent, isLocked, beginTurn, endTurn }: ChatComposerProps) {
+// Both the visitor and admin variants of `chatMessageCreate` accept the same
+// argument shape — only the result wrapping differs (`admin { … }`). Typing
+// the document on this single variables shape lets one component drive both
+// without `any` at the call site.
+interface ChatMessageCreateVariables {
+    chatId?: string | null;
+    message: string;
+    fileUploadIds?: string[] | null;
+    generationId?: string | null;
+    requireToolCallApprovals: boolean;
+}
+
+const defaultExtractResult = (data: unknown): { chatId: string } | null => {
+    const wrapper = data as { chatMessageCreate?: { chatId: string } | null } | null | undefined;
+    return wrapper?.chatMessageCreate ?? null;
+};
+
+export function ChatComposer({
+    chatId,
+    onMessageSent,
+    isLocked,
+    beginTurn,
+    endTurn,
+    sendMutation = ChatMessageCreateDocument as unknown as TypedDocumentNode<unknown, ChatMessageCreateVariables>,
+    extractResult = defaultExtractResult,
+    placeholder = 'Type a message…',
+    autoFocus = false,
+}: ChatComposerProps) {
     const [draft, setDraft] = useState('');
     // Each composer attachment carries its upload lifecycle. Files are
     // uploaded as soon as they're attached so the eventual send is fast and
@@ -37,7 +81,7 @@ export function ChatComposer({ chatId, onMessageSent, isLocked, beginTurn, endTu
     // the Send button.
     const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
     const [mode, setMode] = useState<ToolCallApprovalMode>('auto');
-    const [, sendMessage] = useMutation(ChatMessageCreateDocument);
+    const [, sendMessage] = useMutation(sendMutation);
 
     const updateAttachment = useCallback((localId: string, patch: Partial<ComposerAttachment>) => {
         setAttachments((current) =>
@@ -115,7 +159,8 @@ export function ChatComposer({ chatId, onMessageSent, isLocked, beginTurn, endTu
             requireToolCallApprovals: mode === 'manual',
         });
 
-        if (result.error || !result.data?.user.chatMessageCreate) {
+        const created = result.data ? extractResult(result.data) : null;
+        if (result.error || !created) {
             // Restore the draft so the user doesn't lose their text on a
             // transport failure. We restore the attachment tiles too — they
             // already point at server-side rows (the upload succeeded), so
@@ -129,8 +174,8 @@ export function ChatComposer({ chatId, onMessageSent, isLocked, beginTurn, endTu
         }
         // Don't clear `generationId` on success — the turn is still running
         // detached on the server. The `TurnEnded` event clears it.
-        onMessageSent?.(result.data.user.chatMessageCreate.chatId);
-    }, [attachments, chatId, draft, mode, onMessageSent, sendMessage, beginTurn, endTurn]);
+        onMessageSent?.(created.chatId);
+    }, [attachments, chatId, draft, mode, onMessageSent, sendMessage, beginTurn, endTurn, extractResult]);
 
     return (
         <MessageComposer
@@ -139,7 +184,8 @@ export function ChatComposer({ chatId, onMessageSent, isLocked, beginTurn, endTu
             onSubmit={() => void submit()}
             disabled={isLocked}
             busy={isLocked}
-            placeholder="Type a message…"
+            placeholder={placeholder}
+            autoFocus={autoFocus}
             attachments={attachments}
             onAttachmentsAdd={onAttachmentsAdd}
             onAttachmentRemove={onAttachmentRemove}

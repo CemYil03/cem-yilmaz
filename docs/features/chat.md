@@ -1,5 +1,9 @@
 # Minimal AI Chat
 
+> **Project note:** on cem-yilmaz.de this `/chat` surface is the **public visitor chat** — "Ask me anything about Cem." Phase 2 adds a
+> second chat surface inside `/workspace` powered by a different agent. The user behavior described here covers the visitor surface; the
+> workspace personal assistant gets its own feature doc.
+
 ## User Behavior
 
 A signed-in user can open `/chat`, type a message, and receive a streaming response from the assistant. With no `?chatId` in the URL, the
@@ -69,7 +73,7 @@ with the call's arguments JSON-pretty-printed — see "Tool argument inspection"
 | Joined-row read for publish  | `src/server/queries/chatMessageRowLoad.ts`                                         |
 | Collection submit            | `src/server/commands/chatInputCollectionRespond.ts`                                |
 | Tool approval respond        | `src/server/commands/chatToolApprovalRespond.ts`                                   |
-| Approval-gated tool          | `src/server/agents/toolWriteToConsole.ts`                                          |
+| Approval-gated tool          | _none in Phase 1 — Phase 2 personal-assistant agent introduces real gated tools_   |
 | Shared assistant turn        | `src/server/commands/chatAssistantTurnRun.ts` (`chatAssistantTurnRunDetached`)     |
 
 The route hosts these operations:
@@ -190,8 +194,10 @@ Tool **results** are not exposed; the assistant interprets the result and emits 
 
 ### Tool approval flow
 
-When the composer is in **manual** mode, every approval-gated tool (today: `toolWriteToConsole` in
-`src/server/agents/toolWriteToConsole.ts`) suspends the agent loop instead of executing. The flow:
+When the composer is in **manual** mode, every approval-gated tool the agent registers suspends the agent loop instead of executing. **Phase
+1 ships no gated tools** — the visitor chat agent only uses `toolPromptUserForInput` (which has no `execute` and is not gated). The Phase 2
+personal-assistant agent will be the first to register real gated tools. The flow below is preserved because the plumbing — and its tests —
+already exist:
 
 1. **Suspend.** `agentUserConversation` builds each gated tool with `needsApproval: assistantOptions.requireToolCallApprovals`. When the
    model calls one, the AI SDK skips `execute` and emits a `tool-approval-request` content part on the step.

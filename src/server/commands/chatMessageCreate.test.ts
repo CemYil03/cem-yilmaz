@@ -1,10 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 
+import { agentVisitorAboutCem } from '../agents/agentVisitorAboutCem';
 import { chatMessageUserAttachments, chatMessages, chatMessagesUser, chats } from '../db/schema';
 import { commandSetup, testDb } from '../test/commandTestUtils';
-import type { GqlSChatAssistantOptions, GqlSUserMutation } from '../graphql/generated';
+import type { GqlSChatAssistantOptions } from '../graphql/generated';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
+import type { ChatMutationDispatch } from './chatMessageCreate';
 import { chatMessageCreate } from './chatMessageCreate';
 import { fileUploadCreate } from './fileUploadCreate';
 
@@ -22,18 +24,23 @@ const streamingAssistantOptions: GqlSChatAssistantOptions = {
     requireToolCallApprovals: false,
 };
 
+// Visitor-namespace dispatch — the public mutation route's resolver passes
+// this; tests want to exercise the same path. The agent factory is the real
+// `agentVisitorAboutCem` because nothing here actually runs it (the detached
+// turn is mocked above).
+const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitorAboutCem };
+
 describe('chatMessageCreate', () => {
     it('creates a new chat, persists the user message, and publishes MessageAppended before the assistant turn runs', async () => {
         // Arrange
         const { serverRuntime, requestingSession, user } = await commandSetup.withUser();
-        const parent: GqlSUserMutation = { userId: user.userId } as GqlSUserMutation;
 
         // Act
         const result = await chatMessageCreate(
-            parent,
             { chatId: null, message: 'hello world', assistantOptions: streamingAssistantOptions },
             requestingSession,
             serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — mutation result
@@ -76,8 +83,7 @@ describe('chatMessageCreate', () => {
 
     it('does not publish MessageAppended when no generationId is supplied', async () => {
         // Arrange — no generationId means no live subscriber to push to.
-        const { serverRuntime, requestingSession, user } = await commandSetup.withUser();
-        const parent: GqlSUserMutation = { userId: user.userId } as GqlSUserMutation;
+        const { serverRuntime, requestingSession } = await commandSetup.withUser();
         const noStreamOptions: GqlSChatAssistantOptions = {
             generationId: null,
             requireToolCallApprovals: false,
@@ -85,10 +91,10 @@ describe('chatMessageCreate', () => {
 
         // Act
         const result = await chatMessageCreate(
-            parent,
             { chatId: null, message: 'silent send', assistantOptions: noStreamOptions },
             requestingSession,
             serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — persistence still happens; only the publish is skipped.
@@ -101,7 +107,6 @@ describe('chatMessageCreate', () => {
     it('links attachments to the user message and exposes them on the published payload', async () => {
         // Arrange — pre-upload two attachments owned by the seeded user.
         const { serverRuntime, requestingSession, user } = await commandSetup.withUser();
-        const parent: GqlSUserMutation = { userId: user.userId } as GqlSUserMutation;
         const a1 = await fileUploadCreate(testDb, {
             userId: user.userId,
             filename: 'photo.png',
@@ -117,7 +122,6 @@ describe('chatMessageCreate', () => {
 
         // Act
         const result = await chatMessageCreate(
-            parent,
             {
                 chatId: null,
                 message: 'see attached',
@@ -126,6 +130,7 @@ describe('chatMessageCreate', () => {
             },
             requestingSession,
             serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — join rows present in send-order.
@@ -161,7 +166,6 @@ describe('chatMessageCreate', () => {
         // Arrange — file upload owned by user B; user A tries to send it.
         const a = await commandSetup.withUser();
         const b = await commandSetup.withUser();
-        const parentA: GqlSUserMutation = { userId: a.user.userId } as GqlSUserMutation;
         const otherUsersFileUpload = await fileUploadCreate(testDb, {
             userId: b.user.userId,
             filename: 'other.txt',
@@ -172,7 +176,6 @@ describe('chatMessageCreate', () => {
         // Act — A passes B's file-upload id; the command's try/catch should
         // log and return null instead of persisting a half-row.
         const result = await chatMessageCreate(
-            parentA,
             {
                 chatId: null,
                 message: 'borrowed!',
@@ -181,6 +184,7 @@ describe('chatMessageCreate', () => {
             },
             a.requestingSession,
             a.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — null result, no user rows persisted, no publish, no agent kicked off.

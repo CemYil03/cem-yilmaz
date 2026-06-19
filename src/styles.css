@@ -3,6 +3,19 @@
 
 @import 'tw-animate-css';
 
+/*
+ * Self-hosted variable fonts — bundled at build time via @fontsource-variable
+ * so first paint already has the right metrics. No external request, no FOUT,
+ * no layout shift between fallback and webfont.
+ *
+ * - Inter           → body / UI copy / long-form text (--font-body)
+ * - Plus Jakarta    → display / headlines / titles    (--font-heading)
+ *
+ * See docs/styles/fonts.md for the rationale and how to add a font.
+ */
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/plus-jakarta-sans/index.css';
+
 /* Pick up Streamdown's utility classes — see streamdown's README. */
 @source "../node_modules/streamdown/dist/*.js";
 /* Streamdown code syntax highlighting */
@@ -11,7 +24,18 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --background: oklch(1 0 0);
+    /* Type stack — see docs/styles/fonts.md.
+       Keep system fallbacks: while the variable font streams in we still
+       paint with metrics-similar fallbacks, then swap once loaded. */
+    --font-body: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-heading: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Inter Variable', system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+    /* Off-white instead of pure white so glass surfaces, color orbs, and
+       hairline borders read against a real surface. Cool-leaning chroma
+       (hue 250) keeps the page calm and lets the foreground type pop.
+       See docs/styles/theme.md. */
+    --background: oklch(0.95 0.012 250);
     --foreground: oklch(0.141 0.005 285.823);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.141 0.005 285.823);
@@ -82,6 +106,13 @@
 }
 
 @theme inline {
+    /* Tailwind font tokens. `font-sans` (the default) becomes Inter, so every
+       existing `font-sans` site picks up the new body face for free. Headings
+       opt in via `font-display`. */
+    --font-sans: var(--font-body);
+    --font-display: var(--font-heading);
+    --font-mono: var(--font-mono);
+
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-card: var(--card);
@@ -126,6 +157,15 @@
     }
     body {
         @apply bg-background text-foreground;
+        font-family: var(--font-body);
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-heading);
     }
 }
 
@@ -135,5 +175,21 @@
     }
     100% {
         transform: scaleX(0.9);
+    }
+}
+
+/*
+ * Ambient backdrop — slow orbital drift for the blurred color orb in
+ * `src/web/components/AmbientBackdrop.tsx`. The orb is fixed-positioned and
+ * sits behind every page, so the motion is intentionally lazy (22s loop,
+ * small translation) — present in peripheral vision, never demanding it.
+ */
+@keyframes drift {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+        transform: translate3d(6vw, 4vh, 0) scale(1.08);
     }
 }

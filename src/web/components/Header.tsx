@@ -1,0 +1,101 @@
+import { Link } from '@tanstack/react-router';
+import { GlassCard } from './GlassCard';
+import { LanguageSelector } from './LanguageSelector';
+import { ThemeSelector } from './ThemeSelector';
+import { useLocale } from '../hooks/useLocale';
+
+type NavItem = {
+    label: { de: string; en: string };
+    href: string;
+};
+
+type Props = {
+    /** Optional secondary label rendered after the brand (e.g. "/ design preview"). */
+    subtitle?: string;
+    /** Optional desktop nav links — hidden below `md`. Omit for nav-less pages. */
+    navItems?: ReadonlyArray<NavItem>;
+};
+
+/* ----------------------------------------------------------------------------
+ * Header — the one header used across public pages. A floating, sticky
+ * `GlassCard` with a progressive blur field above it, containing the favicon
+ * (light/dark variants), brand name, optional desktop nav links, and the
+ * language and theme selectors.
+ *
+ * Pages that need it can pass a `subtitle` slot and a desktop `navItems` list.
+ *
+ * For sticky to work, the nearest scroll ancestor must not be a scroll
+ * container — `overflow-x: hidden` on a wrapper turns it into one. Use
+ * `overflow-x-clip` instead.
+ * ------------------------------------------------------------------------- */
+
+export function Header({ subtitle, navItems }: Props) {
+    const locale = useLocale();
+
+    return (
+        <>
+            <ProgressiveBlurTop />
+            <header className="sticky top-4 z-50 mx-auto w-full max-w-6xl px-6 sm:px-8">
+                <GlassCard>
+                    <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+                        <Link to="/{-$locale}" className="flex items-center gap-2.5">
+                            <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
+                            <img src="/favicon-dark.ico" className="hidden size-8 dark:block" alt="" />
+                            <span className="font-display text-sm font-semibold tracking-tight">Cem Yilmaz</span>
+                            {subtitle && <span className="hidden text-xs text-muted-foreground sm:inline">{subtitle}</span>}
+                        </Link>
+
+                        {navItems && navItems.length > 0 && (
+                            <nav className="hidden items-center gap-1 text-sm md:flex">
+                                {navItems.map((item) => (
+                                    <a
+                                        key={item.href + item.label.en}
+                                        href={item.href}
+                                        className="rounded-full px-3 py-1.5 text-foreground/70 transition hover:bg-foreground/5 hover:text-foreground dark:hover:bg-white/6"
+                                    >
+                                        {item.label[locale]}
+                                    </a>
+                                ))}
+                            </nav>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                            <LanguageSelector />
+                            <ThemeSelector />
+                        </div>
+                    </div>
+                </GlassCard>
+            </header>
+        </>
+    );
+}
+
+/* Five stacked fixed layers above the page. Each layer blurs more than the
+   one above it but is masked to fade out where the next takes over, producing
+   a smooth blur falloff from the top edge to the bottom of the floating
+   header. Sits below the header (z-40) so the header still floats above. */
+function ProgressiveBlurTop() {
+    const layers = [
+        { blur: '4px', from: 0, to: 100 },
+        { blur: '8px', from: 0, to: 80 },
+        { blur: '16px', from: 0, to: 60 },
+        { blur: '32px', from: 0, to: 40 },
+        { blur: '64px', from: 0, to: 20 },
+    ];
+    return (
+        <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 h-32">
+            {layers.map((l, i) => (
+                <div
+                    key={i}
+                    className="absolute inset-0"
+                    style={{
+                        backdropFilter: `blur(${l.blur})`,
+                        WebkitBackdropFilter: `blur(${l.blur})`,
+                        maskImage: `linear-gradient(to bottom, black ${l.from}%, transparent ${l.to}%)`,
+                        WebkitMaskImage: `linear-gradient(to bottom, black ${l.from}%, transparent ${l.to}%)`,
+                    }}
+                />
+            ))}
+        </div>
+    );
+}

@@ -45,6 +45,20 @@ import { ChevronRightIcon } from 'lucide-react';
 import { ChevronRight } from 'lucide-react';
 ```
 
+## Typography
+
+Headlines render in **Plus Jakarta Sans**, body and UI copy in **Inter**. Both are bundled at build time so there is no first-render flash
+and no layout shift. See [docs/styles/fonts.md](./styles/fonts.md) for the rationale, the Tailwind utilities (`font-display` / `font-sans`),
+and how to add a font.
+
+## Theming
+
+The site supports **light, dark, and `auto`** (follow OS) themes, persisted in `localStorage`. Color tokens live as CSS custom properties in
+`src/styles.css` (`:root` for light, `.dark` for dark) and are exposed as Tailwind utilities (`bg-background`, `text-foreground`, …). Always
+reach for those utilities — never hardcode `oklch(...)` values in components. The standard light page background is `oklch(0.95 0.012 250)`.
+Two favicons (`favicon.ico` / `favicon-dark.ico`) follow the active mode, including manual overrides. See
+[docs/styles/theme.md](./styles/theme.md) for the full token list, mode-switching mechanics, and how to add a theme-aware asset.
+
 ## Naming Strategy
 
 This project uses **entity-action naming** where file and function names lead with the entity (or domain concept) followed by the action or
@@ -102,30 +116,31 @@ Commands in `src/server/commands/` follow a two-phase structure: **payload const
 ### Structure
 
 ```typescript
-export async function orderCreate(db: Database, input: OrderInput): Promise<GqlSOrder> {
+export async function projectCreate(db: Database, input: ProjectInput): Promise<GqlSProject> {
   // Phase 1 — Payload construction (pure, no DB calls)
-  const orderInsert: OrderCreate = {
-    orderId: crypto.randomUUID(),
-    customerId: input.customerId,
-    status: 'pending',
+  const projectInsert: ProjectCreate = {
+    projectId: crypto.randomUUID(),
+    slug: input.slug,
+    titleDe: input.titleDe,
+    titleEn: input.titleEn,
+    publishedAt: null,
   };
 
-  const orderItemInserts: OrderItemCreate[] = input.items.map((item) => ({
-    orderItemId: crypto.randomUUID(),
-    orderId: orderInsert.orderId,
-    productId: item.productId,
-    quantity: item.quantity,
+  const tagInserts: ProjectTagCreate[] = input.tags.map((tag) => ({
+    projectTagId: crypto.randomUUID(),
+    projectId: projectInsert.projectId,
+    label: tag,
   }));
 
   // Phase 2 — Transactional execution (side-effectful)
   try {
-    const order = await db.transaction(async (transaction) => {
-      const [created] = await transaction.insert(orders).values(orderInsert).returning();
-      await transaction.insert(orderItems).values(orderItemInserts);
+    const project = await db.transaction(async (transaction) => {
+      const [created] = await transaction.insert(projects).values(projectInsert).returning();
+      await transaction.insert(projectTags).values(tagInserts);
       return created!;
     });
 
-    return toGqlOrder(order);
+    return toGqlProject(project);
   } catch (error) {
     console.error(error);
     throw error;

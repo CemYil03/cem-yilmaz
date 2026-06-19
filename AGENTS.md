@@ -7,6 +7,20 @@
 Before writing any code, read the relevant documentation in `docs/`. After implementing a feature or refactoring, update the docs to reflect
 the change. Drift between docs and code is a bug.
 
+## Project Context
+
+This repo is **Cem Yilmaz's personal site** at <https://cem-yilmaz.de>:
+
+- **Public**: portfolio landing, projects showcase, markdown blog, web-tools showcase, and a visitor AI chat ("Ask me anything") that
+  answers questions about Cem.
+- **Private** (`/workspace`, GitHub-OAuth-gated): personal AI assistant and a content editor for the public portfolio. Future iterations add
+  calendar, notes, tasks.
+
+There is **one environment**: pushes to `main` deploy to production via Coolify. No staging branch.
+
+The work is staged in phases — see `README.md` for the phase table. Phase 1 (de-template-ification + portfolio shell + legal pages) is in.
+Phase 2 brings GitHub OAuth and dual-agent chat. Phase 3 brings the DB-backed projects/tools and the markdown blog.
+
 ## Before You Start
 
 1. Read `docs/conventions.md` — follow every convention without exception
@@ -26,6 +40,8 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 - **Class merging**: use `cn()` from `src/web/utils/cn.ts`
 - **GraphQL schema**: SDL-first in `src/server/graphql/schema.graphqls`. Run `npm run graphql:generate` after any schema change.
 - **Resolver wiring**: all in `src/server/graphql/resolversCreate.ts` — the only file that imports from commands/, queries/, and guards/
+- **Bilingual copy**: this site is DE + EN. Use the inline `{ de: '…', en: '…' }[locale]` pattern (no i18n library). Every visitor- facing
+  string ships in both locales.
 - **Comments**: only comment if there is no other way to make the code self-explanatory — prefer better names, smaller functions, and
   clearer types
 - **Quality checks**: run `npm run check` before considering any task complete
@@ -37,7 +53,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Server-side structure | CQRS — commands/, queries/, mappers/                                     | `docs/architecture/server-architecture.md`     |
 | Dependency injection  | ServerRuntime container                                                  | `src/server/domain/ServerRuntime.ts`           |
 | Environment variables | Central validated `EnvironmentVariables` — no direct `process.env` reads | `src/server/env/environmentVariablesCreate.ts` |
-| Authentication        | Cookie-based automatic sessions                                          | `src/server/utils/sessionUpsert.ts`            |
+| Authentication        | Cookie-based automatic sessions; Phase 2 adds GitHub OAuth on top        | `src/server/utils/sessionUpsert.ts`            |
 | Authorization         | Guard functions (`guard{Entity}{Ctx}`)                                   | `src/server/guards/`                           |
 | GraphQL               | SDL-first, Apollo Server v5, URQL client                                 | `src/server/graphql/schema.graphqls`           |
 | Real-time             | Subscriptions over SSE, PostgreSQL NOTIFY/LISTEN                         | `src/server/graphql/PubSubPostgres.ts`         |
@@ -45,6 +61,8 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Server-side rendering | Singleton headless Chromium via `serverRuntime.browser.capture()`        | `docs/architecture/server-side-rendering.md`   |
 | SEO                   | `seoMeta()` per page; dynamic `/sitemap.xml` and `/robots.txt`           | `docs/architecture/seo.md`                     |
 | Code generation       | `npm run graphql:generate` — server `GqlS*`, client `GqlC*`              | `codegen.ts`                                   |
+| AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                            | `src/server/agents/agentVisitorAboutCem.ts`    |
+| AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                      | `docs/architecture/multi-agent-chat.md`        |
 
 ## How to Add Things
 
@@ -64,6 +82,13 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 5. Wire the resolver in `src/server/graphql/resolversCreate.ts`
 6. For protected operations, add a guard in `src/server/guards/` and call it in the resolver
 7. Add the client-side `.graphql` operation file alongside the route or component
+
+### New Public Page
+
+1. Add the route under `src/routes/{-$locale}/` (the `{-$locale}` segment makes the page bilingual at `/page` and `/en/page`)
+2. Use `seoMeta()` in `head()` with bilingual `title` / `description`
+3. **Add the path to `src/web/seo/sitemapRoutes.ts`** if it should be indexed
+4. Bilingual page copy uses the `{ de: '…', en: '…' }[locale]` pattern
 
 ### New Feature
 
@@ -97,12 +122,26 @@ If you are unsure whether a doc needs updating, it does.
 src/
 ├── routes/                     TanStack Router route definitions
 │   ├── __root.tsx              Root layout
-│   ├── index.tsx               Home page
+│   ├── {-$locale}/
+│   │   ├── index.tsx           Portfolio landing page
+│   │   ├── impressum.tsx       Imprint (TMG §5)
+│   │   ├── datenschutz.tsx     Privacy notice (GDPR)
+│   │   ├── chat.tsx            Visitor AI chat
+│   │   └── workspace/          Personal workspace hub + focus areas (noindex; Phase 2 OAuth-gated)
+│   │       ├── index.tsx       Hub: greeting + assistant composer + links to each focus area
+│   │       ├── assistant.tsx   Personal-assistant chat (admin-scope)
+│   │       ├── software.tsx    Software development & architecture
+│   │       ├── projects.tsx    Personal projects
+│   │       ├── finances.tsx    Finances (goals, overview, trading & stocks)
+│   │       ├── tax.tsx         Tax matters
+│   │       ├── fitness.tsx     Fitness & well-being
+│   │       ├── medical.tsx     Medical (appointments, results, health notes)
+│   │       └── media.tsx       Movies & TV shows
 │   └── api/
 │       ├── graphql.ts          POST /api/graphql (queries, mutations)
 │       └── stream.ts           POST /api/stream (subscriptions via SSE)
 ├── server/
-│   ├── agents/                 AI agents
+│   ├── agents/                 AI agents (visitor in Phase 1, +personal in Phase 2)
 │   ├── commands/               Write operations (mutations)
 │   ├── queries/                Read operations
 │   ├── mappers/                DB-to-GraphQL transformations
@@ -136,8 +175,12 @@ src/
 │   │   ├── client.ts           URQL client config
 │   │   └── generated.ts        Generated types (DO NOT EDIT)
 │   ├── hooks/                  Shared React hooks
+│   ├── seo/
+│   │   ├── seoMeta.ts          Per-page meta tag builder
+│   │   └── sitemapRoutes.ts    Static path enumeration for /sitemap.xml
 │   └── utils/
-│       └── cn.ts               Class name merging
+│       ├── cn.ts               Class name merging
+│       └── locale.ts           DE / EN locale helpers
 ├── router.tsx
 ├── routeTree.gen.ts            Generated (DO NOT EDIT)
 └── styles.css
@@ -150,8 +193,8 @@ src/
 - **Backend**: Apollo Server 5, Drizzle ORM, PostgreSQL
 - **Real-time**: graphql-sse (SSE), PostgreSQL NOTIFY/LISTEN
 - **Validation**: Zod 4
-- **AI**: Vercel AI SDK
+- **AI**: Vercel AI SDK + Google Gemini
 - **Testing**: Vitest, Playwright
 - **Build**: Vite 8
 - **CI**: GitHub Actions
-- **Deployment**: Docker via Coolify
+- **Deployment**: Docker via Coolify, single environment, `main` → prod

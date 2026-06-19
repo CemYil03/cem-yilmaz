@@ -1,17 +1,17 @@
 import { eq } from 'drizzle-orm';
+import type { ChatMutationDispatch } from './chatMessageCreate';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
 import { chatMessageAppend } from './chatMessageAppend';
 import type { ChatAssistantInputValue, ChatMessageUserInputAnswer as ChatMessageUserInputAnswerPayload } from '../db/chatPayloadTypes';
 import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageUserInputCreate } from '../db/schema';
-import { chatMessages, chatMessagesAssistantInputCollection, chatMessagesUserInput } from '../db/schema';
+import { chats, chatMessages, chatMessagesAssistantInputCollection, chatMessagesUserInput } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type {
     GqlSChatAssistantInputValueKind,
     GqlSChatMessageCreateResult,
     GqlSChatMessageUserInputAnswerCreate,
+    GqlSMutationChatInputCollectionRespondArgs,
     GqlSSession,
-    GqlSUserMutation,
-    GqlSUserMutationChatInputCollectionRespondArgs,
 } from '../graphql/generated';
 
 // Persists a `ChatMessageUserInput` row in response to an assistant input
@@ -21,19 +21,20 @@ import type {
 // tool-result, so the LLM sees the same turn shape it originally produced.
 
 export async function chatInputCollectionRespond(
-    { userId }: GqlSUserMutation,
-    { collectionMessageId, answers, assistantOptions }: GqlSUserMutationChatInputCollectionRespondArgs,
+    { collectionMessageId, answers, assistantOptions }: GqlSMutationChatInputCollectionRespondArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
+    dispatch: ChatMutationDispatch,
 ): Promise<GqlSChatMessageCreateResult | null> {
     try {
         // Phase 1 — Resolve the chat the collection belongs to. The join
         // double-checks both that the collection exists and that it lives in
         // a real chat; the cookie session keeps cross-user attempts out.
         const collectionRow = await serverRuntime.db
-            .select({ chatId: chatMessages.chatId })
+            .select({ chatId: chatMessages.chatId, scope: chats.scope })
             .from(chatMessagesAssistantInputCollection)
             .innerJoin(chatMessages, eq(chatMessages.chatMessageId, chatMessagesAssistantInputCollection.chatMessageId))
+            .innerJoin(chats, eq(chats.chatId, chatMessages.chatId))
             .where(eq(chatMessagesAssistantInputCollection.chatMessageId, collectionMessageId))
             .limit(1)
             .then((rows) => rows[0] ?? null);
@@ -45,7 +46,19 @@ export async function chatInputCollectionRespond(
             );
             return null;
         }
+        // Reject a collection that lives in the other namespace's scope —
+        // a stolen collectionMessageId can't be used to flip namespaces.
+        if (collectionRow.scope !== dispatch.scope) {
+            serverRuntime.log.error(
+                new Error(
+                    `chatInputCollectionRespond: collection ${collectionMessageId} has scope=${collectionRow.scope} but mutation namespace requires scope=${dispatch.scope}`,
+                ),
+                requestingSession,
+            );
+            return null;
+        }
         const { chatId } = collectionRow;
+        const userId = requestingSession.userId ?? null;
 
         // Phase 1.5 — Refuse to write a second userInput for the same
         // collection. The UI rule is that an answered (or skipped) collection
@@ -126,6 +139,7 @@ export async function chatInputCollectionRespond(
             requestingSession,
             assistantOptions,
             serverRuntime,
+            agentFactory: dispatch.agentFactory,
         });
 
         return {

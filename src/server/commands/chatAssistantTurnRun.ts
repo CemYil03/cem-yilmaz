@@ -1,6 +1,6 @@
 import type { JSONValue, LanguageModelUsage, ModelMessage } from 'ai';
 import { eq } from 'drizzle-orm';
-import { agentUserConversation } from '../agents/agentUserConversation';
+import type { ChatAgentFactory } from '../agents/agentVisitorAboutCem';
 import { chatAssistantInputCollectionInputSchema } from '../agents/toolPromptUserForInput';
 import type { ChatAssistantInputCollectionInput } from '../agents/toolPromptUserForInput';
 import type { ChatAssistantInputSlot } from '../db/chatPayloadTypes';
@@ -91,6 +91,11 @@ interface ChatAssistantTurnRunOptions {
     requestingSession: GqlSSession;
     assistantOptions: GqlSChatAssistantOptions;
     serverRuntime: ServerRuntime;
+    // Agent to drive this turn. Picked by the dispatching mutation
+    // resolver based on the access path — visitor mutations pass
+    // `agentVisitorAboutCem`, admin mutations pass `agentPersonalAssistant`.
+    // See `docs/architecture/multi-agent-chat.md`.
+    agentFactory: ChatAgentFactory;
 }
 
 async function chatAssistantTurnRun({
@@ -99,6 +104,7 @@ async function chatAssistantTurnRun({
     requestingSession,
     assistantOptions,
     serverRuntime,
+    agentFactory,
 }: ChatAssistantTurnRunOptions): Promise<void> {
     const { generationId } = assistantOptions;
 
@@ -114,6 +120,7 @@ async function chatAssistantTurnRun({
             requestingSession,
             assistantOptions,
             serverRuntime,
+            agentFactory,
             assistantTextMessageId,
         });
     } finally {
@@ -142,6 +149,8 @@ interface ChatAssistantTurnRunDetachedOptions {
     requestingSession: GqlSSession;
     assistantOptions: GqlSChatAssistantOptions;
     serverRuntime: ServerRuntime;
+    // See `ChatAssistantTurnRunOptions.agentFactory`.
+    agentFactory: ChatAgentFactory;
 }
 
 /**
@@ -163,6 +172,7 @@ export function chatAssistantTurnRunDetached({
     requestingSession,
     assistantOptions,
     serverRuntime,
+    agentFactory,
 }: ChatAssistantTurnRunDetachedOptions): void {
     void (async () => {
         try {
@@ -173,6 +183,7 @@ export function chatAssistantTurnRunDetached({
                 requestingSession,
                 assistantOptions,
                 serverRuntime,
+                agentFactory,
             });
             await serverRuntime.db.update(chats).set({ lastModifiedAt: new Date() }).where(eq(chats.chatId, chatId));
         } catch (turnError) {
@@ -189,6 +200,7 @@ async function runAgentTurn({
     requestingSession,
     assistantOptions,
     serverRuntime,
+    agentFactory,
     assistantTextMessageId,
 }: ChatAssistantTurnRunOptions & { assistantTextMessageId: string }): Promise<void> {
     const { generationId } = assistantOptions;
@@ -200,7 +212,7 @@ async function runAgentTurn({
     // closure-blind narrowing of a plain `let`-bound `null`. Empty when the
     // turn produced no steps at all (e.g. an immediate agent throw).
     const lastStepGeneration: { value: StepGenerationMeta | null } = { value: null };
-    const agent = await agentUserConversation({
+    const agent = await agentFactory({
         session: requestingSession,
         serverRuntime,
         assistantOptions,

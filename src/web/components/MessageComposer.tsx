@@ -76,6 +76,15 @@ export interface MessageComposerProps {
     /** Whether the picker accepts multiple files at once. Defaults to true.
      *  Drops are similarly clamped to one file when this is false. */
     multipleAttachments?: boolean;
+    /** `name` attribute on the underlying textarea. Set so browsers (and
+     *  accessibility tooling) can identify the field — without it Chrome
+     *  logs "A form field element should have an id or name attribute".
+     *  Defaults to `'message'`. */
+    name?: string;
+    /** Focus the textarea on mount. Use on landing pages where the composer
+     *  is the page's primary affordance (e.g. the workspace hub) so the user
+     *  can start typing without clicking. */
+    autoFocus?: boolean;
 }
 
 export function MessageComposer({
@@ -93,6 +102,8 @@ export function MessageComposer({
     onAttachmentRemove,
     accept,
     multipleAttachments = true,
+    name = 'message',
+    autoFocus = false,
 }: MessageComposerProps) {
     const attachmentsEnabled = onAttachmentsAdd !== undefined && onAttachmentRemove !== undefined;
     const currentAttachments = attachments ?? [];
@@ -110,6 +121,17 @@ export function MessageComposer({
         if (wasBusyRef.current && !busy) textareaRef.current?.focus();
         wasBusyRef.current = busy;
     }, [busy]);
+    // Initial autoFocus — opt-in via prop. Runs once on mount so the
+    // composer can be the landing affordance on pages like the workspace
+    // hub. We use an effect rather than the textarea's native `autoFocus`
+    // attribute because the latter is a no-op on hydration when the input
+    // mounts already disabled (the busy/disabled flags can flicker on
+    // mount), and it doesn't compose with the post-turn refocus above.
+    useEffect(() => {
+        if (autoFocus) textareaRef.current?.focus();
+        // Mount-only: changing `autoFocus` later shouldn't yank focus from
+        // wherever the user currently is.
+    }, []);
     // dragenter/dragleave fire for every child crossing — counting depth is
     // the standard way to keep the highlight stable across the textarea,
     // addon, and preview tiles inside the form.
@@ -183,7 +205,11 @@ export function MessageComposer({
             onDragLeave={onDragLeave}
             onDrop={onDrop}
         >
-            <InputGroup className={cn(isDragOver && 'border-ring ring-[3px] ring-ring/50')}>
+            <InputGroup
+                className={cn('bg-white dark:bg-black', {
+                    'border-ring ring-[3px] ring-ring/50': isDragOver,
+                })}
+            >
                 {attachmentsEnabled && hasAttachments ? (
                     <InputGroupAddon align="block-start" className="flex-wrap gap-2">
                         {currentAttachments.map((attachment) => (
@@ -199,6 +225,7 @@ export function MessageComposer({
 
                 <InputGroupTextarea
                     ref={textareaRef}
+                    name={name}
                     value={value}
                     onChange={(event) => onValueChange(event.target.value)}
                     onKeyDown={(event) => {

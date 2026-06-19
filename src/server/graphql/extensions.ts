@@ -7,6 +7,16 @@ declare module './generated' {
     export interface GqlSUserMutation {
         userId: string;
     }
+    // Phase 1: visitors only — `Admin` and `AdminMutation` are gated by
+    // `guardAdmin` and `guardAdminMutation` respectively, both permissive
+    // today. The shapes still exist on both server and client so Phase 2's
+    // workspace surface can land incrementally without an SDL refactor.
+    export interface GqlSAdmin {
+        userId?: string;
+    }
+    export interface GqlSAdminMutation {
+        userId?: string;
+    }
 
     // --- ChatMessage union --------------------------------------------------
     export interface GqlSChatMessageUser {

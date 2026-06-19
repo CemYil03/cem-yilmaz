@@ -272,7 +272,6 @@ type User {
 type Session {
     sessionId: ID!
     user: User
-    chat(chatId: ID!): Chat!
 }
 
 type MutationResult {
@@ -288,18 +287,6 @@ type ChatMessageCreateResult {
 type UserMutation {
     userUpdate(user: UserUpdate!): MutationResult!
     terminateSessions(sessionIds: [ID!]!): MutationResult!
-    chatMessageCreate(chatId: ID, message: String!, fileUploadIds: [ID!], assistantOptions: ChatAssistantOptions!): ChatMessageCreateResult
-    chatInputCollectionRespond(
-        collectionMessageId: ID!
-        answers: [ChatMessageUserInputAnswerCreate!]!
-        assistantOptions: ChatAssistantOptions!
-    ): ChatMessageCreateResult
-    chatToolApprovalRespond(
-        approvalId: String!
-        approved: Boolean!
-        reason: String
-        assistantOptions: ChatAssistantOptions!
-    ): ChatMessageCreateResult
 }
 
 # --- User-input answer write shape -------------------------------------------
@@ -339,11 +326,70 @@ input ChatAssistantOptions {
 
 type Query {
     currentSession: Session!
+    # A single visitor chat by id. Resolves only `scope = 'public'` chats —
+    # admin reads use `Query.admin.chat(...)` instead. See
+    # `docs/architecture/multi-agent-chat.md`.
+    chat(chatId: ID!): Chat!
+    # Workspace-only namespace, gated by `guardAdmin`. Visitor sessions get
+    # an authorization error here.
+    admin: Admin!
+}
+
+# Workspace read namespace — Cem's own chats and a separate window onto the
+# visitor chats his site recorded. The split exists because the two have
+# different agents, different system prompts, and different on-row tools; the
+# `Chat` type itself is the same.
+type Admin {
+    # Visitor (`scope = 'public'`) chats, newest first.
+    publicChats: [Chat!]!
+    # A single visitor chat by id. Rejects `scope = 'admin'` chats.
+    publicChat(chatId: ID!): Chat!
+    # Admin (`scope = 'admin'`) chats, newest first.
+    chats: [Chat!]!
+    # A single admin chat by id. Rejects `scope = 'public'` chats.
+    chat(chatId: ID!): Chat!
 }
 
 type Mutation {
     userCreate(user: UserCreate!): MutationResult!
     user: UserMutation!
+    # --- Visitor chat ---------------------------------------------------------
+    # The three mutations below operate on `scope = 'public'` chats and
+    # dispatch to the visitor agent (`agentVisitorAboutCem`). The agent
+    # factory is selected by the access path — the resolver wires it in;
+    # callers do NOT pass it. Mismatched scope (e.g. an admin chatId reaching
+    # this namespace) is rejected by the command.
+    chatMessageCreate(chatId: ID, message: String!, fileUploadIds: [ID!], assistantOptions: ChatAssistantOptions!): ChatMessageCreateResult
+    chatInputCollectionRespond(
+        collectionMessageId: ID!
+        answers: [ChatMessageUserInputAnswerCreate!]!
+        assistantOptions: ChatAssistantOptions!
+    ): ChatMessageCreateResult
+    chatToolApprovalRespond(
+        approvalId: String!
+        approved: Boolean!
+        reason: String
+        assistantOptions: ChatAssistantOptions!
+    ): ChatMessageCreateResult
+    # Workspace-only mutations, gated by `guardAdmin`.
+    admin: AdminMutation!
+}
+
+# Workspace write namespace — same chat shape as the visitor mutations above,
+# routed to `agentPersonalAssistant` and operating on `scope = 'admin'` chats.
+type AdminMutation {
+    chatMessageCreate(chatId: ID, message: String!, fileUploadIds: [ID!], assistantOptions: ChatAssistantOptions!): ChatMessageCreateResult
+    chatInputCollectionRespond(
+        collectionMessageId: ID!
+        answers: [ChatMessageUserInputAnswerCreate!]!
+        assistantOptions: ChatAssistantOptions!
+    ): ChatMessageCreateResult
+    chatToolApprovalRespond(
+        approvalId: String!
+        approved: Boolean!
+        reason: String
+        assistantOptions: ChatAssistantOptions!
+    ): ChatMessageCreateResult
 }
 
 # --- Chat live updates -------------------------------------------------------

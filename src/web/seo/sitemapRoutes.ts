@@ -7,7 +7,8 @@
 //
 //   - `/api/*`, `/server/*` and any other handler-only route
 //   - parameterized paths whose values aren't enumerable here (e.g.
-//     `/chat/$chatId`) — generate a per-row sitemap from the DB instead
+//     `/projects/$slug`, `/blog/$slug`) — generate a per-row sitemap from
+//     the DB or content glob instead (planned for Phase 3)
 //   - logged-in / transactional / noindex pages (see `seoMeta`'s
 //     `noindex: true` option) — these stay out of both the sitemap and
 //     search engines
@@ -23,5 +24,6 @@ export interface SitemapPath {
 
 export const SITEMAP_PATHS: ReadonlyArray<SitemapPath> = [
     { path: '/', changefreq: 'weekly', priority: 1.0 },
-    { path: '/terms', changefreq: 'yearly', priority: 0.3 },
+    { path: '/impressum', changefreq: 'yearly', priority: 0.3 },
+    { path: '/datenschutz', changefreq: 'yearly', priority: 0.3 },
 ];

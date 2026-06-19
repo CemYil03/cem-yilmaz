@@ -2,7 +2,7 @@ import type { Locale } from '../utils/locale';
 
 // Site-wide branding and SEO defaults. Update `SITE_NAME` here once and every
 // page's `<title>`, `og:site_name`, and Twitter card text follows.
-export const SITE_NAME = 'Project name';
+export const SITE_NAME = 'Cem Yilmaz';
 
 // Default Open Graph / Twitter Card image. Root-relative so the `seoMeta()`
 // helper turns it into an absolute URL using `webPageUrl`. Replace with your

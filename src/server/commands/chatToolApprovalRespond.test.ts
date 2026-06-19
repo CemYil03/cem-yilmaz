@@ -1,9 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 
+import { agentVisitorAboutCem } from '../agents/agentVisitorAboutCem';
 import { chatMessages, chatMessagesToolApprovalRequest, chatMessagesToolApprovalResponse, chatMessagesToolCall, chats } from '../db/schema';
 import { commandSetup, testDb } from '../test/commandTestUtils';
-import type { GqlSChatAssistantOptions, GqlSUserMutation } from '../graphql/generated';
+import type { GqlSChatAssistantOptions } from '../graphql/generated';
+import type { ChatMutationDispatch } from './chatMessageCreate';
 import { chatToolApprovalRespond } from './chatToolApprovalRespond';
 
 // `chatAssistantTurnRun` calls Gemini, which we don't want to hit from a unit
@@ -25,6 +27,8 @@ const streamingAssistantOptions: GqlSChatAssistantOptions = {
     generationId: 'gen-test',
     requireToolCallApprovals: true,
 };
+
+const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitorAboutCem };
 
 // Seeds a chat with a pending `toolApprovalRequest` and returns the ids the
 // test needs to drive `chatToolApprovalRespond`. The session+user come from
@@ -50,8 +54,7 @@ async function seedApprovalRequest(toolName: string, toolArgs: object) {
         toolArgs,
     });
 
-    const parent: GqlSUserMutation = { userId: setup.user.userId } as GqlSUserMutation;
-    return { ...setup, parent, chatId, requestMessageId, approvalId, toolCallId };
+    return { ...setup, chatId, requestMessageId, approvalId, toolCallId };
 }
 
 describe('chatToolApprovalRespond', () => {
@@ -61,10 +64,10 @@ describe('chatToolApprovalRespond', () => {
 
         // Act
         const result = await chatToolApprovalRespond(
-            seed.parent,
             { approvalId: seed.approvalId, approved: true, assistantOptions: streamingAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — mutation result
@@ -108,10 +111,10 @@ describe('chatToolApprovalRespond', () => {
 
         // Act
         const result = await chatToolApprovalRespond(
-            seed.parent,
             { approvalId: seed.approvalId, approved: false, assistantOptions: streamingAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert
@@ -147,10 +150,10 @@ describe('chatToolApprovalRespond', () => {
 
         // Act
         const result = await chatToolApprovalRespond(
-            seed.parent,
             { approvalId: seed.approvalId, approved: false, reason, assistantOptions: streamingAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert
@@ -181,18 +184,18 @@ describe('chatToolApprovalRespond', () => {
         // Arrange — first attempt carries a reason.
         const seed = await seedApprovalRequest('writeToConsole', { message: 'one-shot' });
         await chatToolApprovalRespond(
-            seed.parent,
             { approvalId: seed.approvalId, approved: true, reason: 'looks fine', assistantOptions: stubAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Act — second attempt with different fields
         const second = await chatToolApprovalRespond(
-            seed.parent,
             { approvalId: seed.approvalId, approved: false, reason: 'changed my mind', assistantOptions: stubAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert — first write wins and is preserved verbatim.
@@ -209,14 +212,14 @@ describe('chatToolApprovalRespond', () => {
 
     it('returns null for an unknown approvalId without writing any rows', async () => {
         // Arrange
-        const { serverRuntime, requestingSession, user } = await commandSetup.withUser();
+        const { serverRuntime, requestingSession } = await commandSetup.withUser();
 
         // Act
         const result = await chatToolApprovalRespond(
-            { userId: user.userId } as GqlSUserMutation,
             { approvalId: 'does-not-exist', approved: true, assistantOptions: stubAssistantOptions },
             requestingSession,
             serverRuntime,
+            PUBLIC_DISPATCH,
         );
 
         // Assert

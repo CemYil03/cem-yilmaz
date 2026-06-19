@@ -5,9 +5,8 @@ import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
-import { toolWriteToConsole } from './toolWriteToConsole';
 
-interface AgentUserConversationOptions {
+export interface AgentChatOptions {
     assistantOptions: GqlCChatAssistantOptions;
     session: GqlSSession;
     serverRuntime: ServerRuntime;
@@ -22,12 +21,45 @@ interface AgentUserConversationOptions {
     onStepFinish: ToolLoopAgentOnStepFinishCallback<any>;
 }
 
-export async function agentUserConversation({
-    assistantOptions,
+// Shared agent factory signature for the chat surfaces. The mutation-resolver
+// dispatch passes one of these into `chatAssistantTurnRunDetached` based on
+// the access path — visitor mutations pass `agentVisitorAboutCem`; admin
+// mutations pass `agentPersonalAssistant`. Each agent ships its own
+// concretely-typed `ToolLoopAgent` (the toolset is heterogeneous and the
+// generic parameters differ); all the runner needs is the structural surface
+// (`stream`, `generate`, `onStepFinish`), so the runtime type stays wide.
+// See `docs/architecture/multi-agent-chat.md`.
+export type ChatAgentFactory = (options: AgentChatOptions) => Promise<{
+    stream: (...args: any[]) => any;
+    generate: (...args: any[]) => any;
+}>;
+
+// System prompt for the public visitor chat ("Ask me anything") on
+// cem-yilmaz.de. The bio block below is intentionally a placeholder — fill in
+// the real content before launch.
+const VISITOR_SYSTEM_PROMPT = [
+    "You are the AI assistant on Cem Yilmaz's personal website (cem-yilmaz.de).",
+    "Your job is to answer visitors' questions about Cem, his projects, and this site.",
+    '',
+    'About Cem (TODO: replace before launch):',
+    '- Software engineer based in Germany.',
+    '- Builds full-stack web apps in TypeScript / React / Node.',
+    '- This site is both his portfolio and his private platform; the public part shows projects, blog posts, and curated web tools.',
+    '',
+    'Style:',
+    '- Reply in the language the visitor wrote in (German or English). If unclear, default to English.',
+    '- Be concise, warm, and direct. Avoid corporate filler.',
+    "- If asked something you don't know about Cem, say so — do not invent biography, employers, or credentials.",
+    '- Politely steer off-topic questions back to Cem, his work, or this site.',
+    "- Never claim to be a human; if asked, say you're an AI assistant Cem set up to answer visitor questions.",
+].join('\n');
+
+export async function agentVisitorAboutCem({
+    assistantOptions: _assistantOptions,
     session: _session,
     serverRuntime,
     onStepFinish,
-}: AgentUserConversationOptions) {
+}: AgentChatOptions) {
     return new ToolLoopAgent({
         // Provider, model id, and API key are bound on the runtime
         // (`serverRuntimeCreate`) so this agent can be exercised against a
@@ -61,17 +93,14 @@ export async function agentUserConversation({
             // matching tool-result.
             hasToolCall('promptUserForInput'),
         ],
-        instructions: 'You are a helpful assistant.',
-        // Approval gating is per-chat: when `requireToolCallApprovals` is on,
-        // the AI SDK suspends the loop on the gated call and emits a
-        // `tool-approval-request` content part instead of executing. The
-        // human's decision lands as a `chatMessagesToolApprovalResponse` row
-        // and is replayed (by `toModelMessages`) as a `tool-approval-response`
-        // part on the next turn — at which point the SDK runs `execute`
-        // itself. We never call `execute` manually.
+        instructions: VISITOR_SYSTEM_PROMPT,
+        // No real DB tools today — the visitor chat is read-only. Approval
+        // gating is left wired anyway so the SDK's tool-approval lifecycle
+        // (suspend → request → respond → run execute) keeps being exercised
+        // by the chat-respond command and its tests; the personal-assistant
+        // agent uses it in earnest.
         tools: {
             promptUserForInput: toolPromptUserForInput(),
-            writeToConsole: toolWriteToConsole({ needsApproval: assistantOptions.requireToolCallApprovals }),
         },
     });
 }

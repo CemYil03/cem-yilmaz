@@ -16,7 +16,7 @@ describe('seoMeta', () => {
 
         // Assert
         const titleEntry = output.meta.find((entry): entry is { title: string } => 'title' in entry);
-        expect(titleEntry?.title).toBe('Welcome — Project name');
+        expect(titleEntry?.title).toBe('Welcome — Cem Yilmaz');
     });
 
     it('emits a bare-path canonical for the default locale and a /en prefix for english', () => {

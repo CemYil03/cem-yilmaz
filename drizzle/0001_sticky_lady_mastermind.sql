@@ -1,0 +1,1 @@
+ALTER TABLE "Chats" ADD COLUMN "scope" varchar DEFAULT 'public' NOT NULL;

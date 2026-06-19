@@ -1,15 +1,11 @@
 import { eq } from 'drizzle-orm';
+import type { ChatMutationDispatch } from './chatMessageCreate';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
 import { chatMessageAppend } from './chatMessageAppend';
 import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolApprovalResponseCreate } from '../db/schema';
-import { chatMessages, chatMessagesToolApprovalRequest, chatMessagesToolApprovalResponse } from '../db/schema';
+import { chats, chatMessages, chatMessagesToolApprovalRequest, chatMessagesToolApprovalResponse } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type {
-    GqlSChatMessageCreateResult,
-    GqlSSession,
-    GqlSUserMutation,
-    GqlSUserMutationChatToolApprovalRespondArgs,
-} from '../graphql/generated';
+import type { GqlSChatMessageCreateResult, GqlSMutationChatToolApprovalRespondArgs, GqlSSession } from '../graphql/generated';
 
 // Persists the human's Approve/Decline decision in response to a
 // `ChatMessageToolApprovalRequest`, then runs the next assistant turn via the
@@ -23,10 +19,10 @@ import type {
 // job is to durably record the human's decision and kick the next turn off.
 
 export async function chatToolApprovalRespond(
-    _parent: GqlSUserMutation,
-    { approvalId, approved, reason, assistantOptions }: GqlSUserMutationChatToolApprovalRespondArgs,
+    { approvalId, approved, reason, assistantOptions }: GqlSMutationChatToolApprovalRespondArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
+    dispatch: ChatMutationDispatch,
 ): Promise<GqlSChatMessageCreateResult | null> {
     try {
         // Phase 1 — Resolve the approval request and the chat it belongs to.
@@ -37,15 +33,27 @@ export async function chatToolApprovalRespond(
                 requestMessageId: chatMessagesToolApprovalRequest.chatMessageId,
                 approvalId: chatMessagesToolApprovalRequest.approvalId,
                 chatId: chatMessages.chatId,
+                scope: chats.scope,
             })
             .from(chatMessagesToolApprovalRequest)
             .innerJoin(chatMessages, eq(chatMessages.chatMessageId, chatMessagesToolApprovalRequest.chatMessageId))
+            .innerJoin(chats, eq(chats.chatId, chatMessages.chatId))
             .where(eq(chatMessagesToolApprovalRequest.approvalId, approvalId))
             .limit(1)
             .then((rows) => rows[0] ?? null);
 
         if (!requestRow) {
             serverRuntime.log.error(new Error(`chatToolApprovalRespond: no request row for approvalId=${approvalId}`), requestingSession);
+            return null;
+        }
+        // Reject an approvalId that lives in the other namespace's scope.
+        if (requestRow.scope !== dispatch.scope) {
+            serverRuntime.log.error(
+                new Error(
+                    `chatToolApprovalRespond: approvalId=${approvalId} has scope=${requestRow.scope} but mutation namespace requires scope=${dispatch.scope}`,
+                ),
+                requestingSession,
+            );
             return null;
         }
 
@@ -107,6 +115,7 @@ export async function chatToolApprovalRespond(
             requestingSession,
             assistantOptions,
             serverRuntime,
+            agentFactory: dispatch.agentFactory,
         });
 
         return {

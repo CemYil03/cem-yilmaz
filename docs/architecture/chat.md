@@ -1,5 +1,9 @@
 # Chat Foundation
 
+> **Phase 1 → Phase 2 note:** today there is a single agent (`agentUserConversation.ts`) used by the public visitor chat at `/chat`. Phase 2
+> adds a second agent for the workspace personal assistant. The message-persistence and streaming machinery described here is shared between
+> both — see [`multi-agent-chat.md`](./multi-agent-chat.md) for the dispatch design.
+
 ## Context
 
 The app needs several kinds of chat surface — direct human-to-human conversations, assistant-driven flows, and likely more. They share the
