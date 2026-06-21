@@ -1,5 +1,5 @@
 {
-    "id": "a9355fc4-3a73-4e54-9e0e-8f9077e3f261",
+    "id": "3e3d28b6-7389-4f16-865f-eccfbf10ede7",
     "prevId": "00000000-0000-0000-0000-000000000000",
     "version": "7",
     "dialect": "postgresql",
@@ -732,6 +732,13 @@
                     "notNull": true,
                     "default": "''"
                 },
+                "scope": {
+                    "name": "scope",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'public'"
+                },
                 "lastModifiedAt": {
                     "name": "lastModifiedAt",
                     "type": "timestamp with time zone",
@@ -748,6 +755,396 @@
                 }
             },
             "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvEducation": {
+            "name": "CvEducation",
+            "schema": "",
+            "columns": {
+                "cvEducationId": {
+                    "name": "cvEducationId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "degreeDe": {
+                    "name": "degreeDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "degreeEn": {
+                    "name": "degreeEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "institutionDe": {
+                    "name": "institutionDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "institutionEn": {
+                    "name": "institutionEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "subjectDe": {
+                    "name": "subjectDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "subjectEn": {
+                    "name": "subjectEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "startDate": {
+                    "name": "startDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "endDate": {
+                    "name": "endDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "notesDe": {
+                    "name": "notesDe",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "notesEn": {
+                    "name": "notesEn",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvEducation_position_idx": {
+                    "name": "CvEducation_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvExperience": {
+            "name": "CvExperience",
+            "schema": "",
+            "columns": {
+                "cvExperienceId": {
+                    "name": "cvExperienceId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "roleDe": {
+                    "name": "roleDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "roleEn": {
+                    "name": "roleEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "companyDe": {
+                    "name": "companyDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "companyEn": {
+                    "name": "companyEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "startDate": {
+                    "name": "startDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "endDate": {
+                    "name": "endDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "descriptionDe": {
+                    "name": "descriptionDe",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "descriptionEn": {
+                    "name": "descriptionEn",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "technologies": {
+                    "name": "technologies",
+                    "type": "text[]",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'{}'"
+                },
+                "managerName": {
+                    "name": "managerName",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvExperience_position_idx": {
+                    "name": "CvExperience_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvHobby": {
+            "name": "CvHobby",
+            "schema": "",
+            "columns": {
+                "cvHobbyId": {
+                    "name": "cvHobbyId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "textDe": {
+                    "name": "textDe",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "textEn": {
+                    "name": "textEn",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "since": {
+                    "name": "since",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvHobby_position_idx": {
+                    "name": "CvHobby_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvSkill": {
+            "name": "CvSkill",
+            "schema": "",
+            "columns": {
+                "cvSkillId": {
+                    "name": "cvSkillId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "category": {
+                    "name": "category",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "label": {
+                    "name": "label",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvSkill_category_idx": {
+                    "name": "CvSkill_category_idx",
+                    "columns": [
+                        {
+                            "expression": "category",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "CvSkill_position_idx": {
+                    "name": "CvSkill_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
             "foreignKeys": {},
             "compositePrimaryKeys": {},
             "uniqueConstraints": {},

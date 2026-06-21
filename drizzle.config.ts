@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 import { defineConfig } from 'drizzle-kit';
 import type { Config } from 'drizzle-kit';
 
-config({ path: ['.env.local', '.env'] });
+config({ path: ['.env.local'] });
 
 const drizzleConfig: Config = defineConfig({
     out: './drizzle',

@@ -5,22 +5,8 @@
         {
             "idx": 0,
             "version": "7",
-            "when": 1781269848014,
-            "tag": "0000_magical_kitty_pryde",
-            "breakpoints": true
-        },
-        {
-            "idx": 1,
-            "version": "7",
-            "when": 1781801305863,
-            "tag": "0001_sticky_lady_mastermind",
-            "breakpoints": true
-        },
-        {
-            "idx": 2,
-            "version": "7",
-            "when": 1781861052653,
-            "tag": "0002_neat_mad_thinker",
+            "when": 1782064430513,
+            "tag": "0000_handy_kitty_pryde",
             "breakpoints": true
         }
     ]
