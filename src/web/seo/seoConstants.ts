@@ -7,7 +7,7 @@ export const SITE_NAME = 'Cem Yilmaz';
 // Default Open Graph / Twitter Card image. Root-relative so the `seoMeta()`
 // helper turns it into an absolute URL using `webPageUrl`. Replace with your
 // actual social-share image (recommended 1200×630).
-export const DEFAULT_SHARE_IMAGE = '/logo512.png';
+export const DEFAULT_SHARE_IMAGE = '/profile-picture.png';
 
 // Maps app locales to the IETF tags Open Graph expects. Add a new entry here
 // whenever you add a locale in `src/web/utils/locale.ts`.

@@ -122,7 +122,7 @@ The Phase 1 work shipped placeholder content in a few legally-sensitive places. 
   biographical text.
 - `src/routes/{-$locale}/index.tsx` — the social-link footer points at placeholder URLs (`github.com/cem-yilmaz`, generic LinkedIn,
   `hello@cem-yilmaz.de`). Confirm or replace.
-- `public/favicon.ico`, `public/logo192.png`, `public/logo512.png` — still the generic TanStack icons. Replace with brand assets.
+- `public/favicon.ico` — still the generic TanStack icon. Replace with a brand asset.
 - `src/routes/{-$locale}/workspace/` — the workspace hub and its focus-area stubs ship **ungated** in Phase 1 (only `noindex` keeps them out
   of search engines). Wrap the entire `/workspace/*` tree behind the GitHub OAuth gate before pointing DNS at production. See
   `docs/features/workspace-hub.md`.

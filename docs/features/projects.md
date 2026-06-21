@@ -5,16 +5,18 @@
 The public Projects page lives at `/projects` (`/en/projects` for the English locale). Each project renders as a wide **feature row** that
 alternates image-left / image-right down the page, and collapses to image-on-top on mobile. A row contains:
 
-- **Hero image** (16:9). Software products (peopleeat, Draw Schema) get a faked browser-window chrome — three traffic-light dots, the
-  hostname in a URL bar, the screenshot inside. Real-world businesses (the podiatry practice) get the photo edge-to-edge inside a
-  `<GlassCard>`. The image is wrapped in a link to the live site and lifts on hover behind a soft per-project accent glow.
+- **Hero image** (16:9) plus a **thumbnail strip** below — clicking a thumb cross-fades the hero to the chosen shot. Software products
+  (peopleeat, Draw Schema) get a faked browser-window chrome — three traffic-light dots, the hostname in a URL bar, the screenshot inside.
+  Real-world businesses (the podiatry practice) get the photo edge-to-edge inside a `<GlassCard>`. The hero is wrapped in a link to the live
+  site; behind it sits a soft per-project accent glow that brightens on hover (the frame itself does not move — earlier iterations lifted it
+  on hover, but the effect read as cheap).
 - **Role / hostname strip** above the title — `Founding architect · people-eat.com`.
 - **Project name, tagline, description** in DE or EN.
 - **Tech-stack chips** — display-only labels.
 - **Primary "Visit site" button** linking to the live URL (`target="_blank" rel="noopener noreferrer"`).
 - **Secondary "View source" button** rendered only when `repoUrl` is set (currently Draw Schema, since it's open source).
 
-Rows fade up as they scroll into view. `prefers-reduced-motion` users skip the animation entirely.
+Rows fade up as they scroll into view. `prefers-reduced-motion` users skip every transition (fade-in, gallery cross-fade, glow brighten).
 
 The landing page (`/`) links into the page from its section grid; before this change that card rendered as a "coming soon" stub.
 
@@ -31,8 +33,8 @@ The landing page (`/`) links into the page from its section grid; before this ch
 Static content + plain route, replaced by Phase 3 when it lands.
 
 - **Data**: `src/web/content/portfolioProjects.ts` — typed `ReadonlyArray<PortfolioProject>` with `id`, `name`, `url`, optional `repoUrl`,
-  paired `*De` / `*En` text fields, a `techStack` array, and the visual fields (`imagePath`, `imageKind`, `imageAlt*`, `accent`). Imported
-  directly by the route.
+  paired `*De` / `*En` text fields, a `techStack` array, and the visual fields (`images: ReadonlyArray<{ src; altDe; altEn }>`, `imageKind`,
+  `accent`). The first entry of `images` is the hero; subsequent entries fill the thumbnail strip. Imported directly by the route.
 - **Route**: `src/routes/{-$locale}/projects.tsx` — single file, no GraphQL loader. Bilingual copy follows the inline `{ de, en }[locale]`
   pattern used by `about.tsx` and `cv.tsx`.
 - **SEO**: `seoMeta()` in `head()`; `/projects` listed in `src/web/seo/sitemapRoutes.ts`.
@@ -50,14 +52,26 @@ Two image kinds, set per-project via `imageKind`:
 - **`'photo'`** — real-world businesses. The image sits edge-to-edge inside a regular `<GlassCard>`. Cropped to 16:9 with `object-cover`.
 
 Behind every image, an absolutely-positioned `<div>` paints a `radial-gradient` using the project's `accent` color. Blurred and offset
-behind the frame, it reads as a soft glow. The glow expands and intensifies on hover, while the frame itself lifts via `translate-y`. All
-transitions are skipped under `prefers-reduced-motion`.
+behind the frame, it reads as a soft glow that brightens on hover (`opacity-50 → opacity-90`). The frame itself stays put — an earlier
+iteration also lifted the frame via `translate-y` on hover, but it read as cheap. All transitions are skipped under
+`prefers-reduced-motion`.
 
 Per-project accent colors are defined as raw `oklch(...)` strings in `portfolioProjects.ts`:
 
 - peopleeat — warm orange (`oklch(0.78 0.16 55)`)
 - Draw Schema — cool slate-blue (`oklch(0.7 0.13 240)`)
 - Podologie Dudenhofen — calm green-teal (`oklch(0.75 0.1 165)`)
+
+### Gallery
+
+Each project row owns a small `<ProjectGallery>` that holds the hero plus a thumbnail strip below it. State (`activeIndex`) lives in the
+gallery component so each project's gallery is independent. The hero stacks every image absolutely and toggles `opacity` for a 500ms
+cross-fade between thumbs. The first image renders `relative` so the hero gets a real size from CSS; subsequent images sit
+`absolute inset-0`.
+
+Single-image projects render only the hero — the strip is gated on `images.length > 1`. The strip is horizontally scrollable on small
+screens and uses `aria-current="true"` on the active thumb. Buttons carry the locale-appropriate alt text as `aria-label`; the thumb image
+itself is `aria-hidden`, so screen readers hear one label per thumb, not two.
 
 ### Bilingual copy
 
@@ -74,13 +88,14 @@ detail pages today; the "Visit site" button takes visitors directly to the live 
 
 Hero images live under `public/projects/<id>/`. There are three sources:
 
-1. **Live capture** — the script `scripts/captureProjectScreenshots.ts` uses Playwright Chromium to grab `1600×900` screenshots at
-   `deviceScaleFactor: 2`. Run with `npx tsx scripts/captureProjectScreenshots.ts` whenever a target site's design changes. Currently used
-   for `peopleeat` only (the live captures of `podologie-dudenhofen.de` are blocked from this network with a TLS reset).
-2. **Curated from sibling repo** — `Draw Schema` ships a polished 16:9 product shot in its own `public/16-9.png`. Copied by hand into
-   `public/projects/draw-schema/1.png` and flagged `manualOnly: true` in the capture script so it isn't overwritten.
-3. **Photo from sibling repo** — `Podologie Dudenhofen` reuses the practice photo from its own `public/podologie-dudenhofen-praxis.jpg`,
-   copied to `public/projects/podologie-dudenhofen/1.jpg`. Honest, on-brand, doesn't depend on the live site being reachable.
+1. **Live capture** — the script `scripts/captureProjectScreenshots.ts` uses Playwright Chromium to grab `1600×900` screenshots. Run with
+   `npx tsx scripts/captureProjectScreenshots.ts` whenever a target site's design changes. Currently captures four routes for `peopleeat`
+   (`/`, `/chefs`, `/about-us`, `/cities/Berlin`) and the `/landing` page of `draw-schema`.
+2. **Curated from sibling repo** — `Draw Schema` ships a polished 16:9 product shot in its own `public/16-9.png` and an empty-canvas shot in
+   `public/empty-canvas-16-9.png`. Both copied by hand into `public/projects/draw-schema/` and flagged `manualOnly: true` in the capture
+   script so they aren't overwritten.
+3. **Photo from sibling repo** — `Podologie Dudenhofen` reuses two photos from the practice's own `public/`: the treatment-room shot and a
+   portrait of the owner Annette Yilmaz. Honest, on-brand, and doesn't depend on the live site being reachable from the build host.
 
 ### Scroll-in animation
 
@@ -95,6 +110,6 @@ hidden state.
   `src/web/content/portfolioProjects.ts` and switch the route to a GraphQL loader. The visual layout should survive the swap unchanged.
 - **AI agent integration**: the visitor chat does not currently know about portfolio projects. When Phase 3 lands the DB table, extend
   `cvSummaryForAgent` (or a new `projectsSummaryForAgent`) so the agent can answer "what does Cem build?" deterministically.
-- **Multiple images per project**: `imagePath` is a single string today. If a project warrants a small thumb strip below the hero, switch to
-  `images: ReadonlyArray<{ src; altDe; altEn }>` and render with scroll-snap.
 - **Re-capture podologie when the firewall lifts**: the `manualOnly` flag is a workaround, not the desired end state.
+- **Lightbox**: clicking a thumb currently swaps the hero in place. Could be promoted to a fullscreen lightbox if the strip grows past ~5
+  images per project.

@@ -28,8 +28,14 @@ interface Shot {
 
 const SHOTS: ReadonlyArray<Shot> = [
     { slug: 'people-eat', url: 'https://people-eat.com', fileName: '1.jpg' },
+    { slug: 'people-eat', url: 'https://people-eat.com/chefs', fileName: '2.jpg' },
+    { slug: 'people-eat', url: 'https://people-eat.com/about-us', fileName: '3.jpg' },
+    { slug: 'people-eat', url: 'https://people-eat.com/cities/Berlin', fileName: '4.jpg' },
     { slug: 'draw-schema', url: 'https://draw-schema.com', fileName: '1.png', manualOnly: true },
+    { slug: 'draw-schema', url: 'https://draw-schema.com', fileName: '2.png', manualOnly: true },
+    { slug: 'draw-schema', url: 'https://draw-schema.com/landing', fileName: '3.jpg' },
     { slug: 'podologie-dudenhofen', url: 'https://podologie-dudenhofen.de/', fileName: '1.jpg', manualOnly: true },
+    { slug: 'podologie-dudenhofen', url: 'https://podologie-dudenhofen.de/leistungen', fileName: '2.jpg', manualOnly: true },
 ];
 
 const VIEWPORT = { width: 1600, height: 900 } as const;
@@ -39,7 +45,7 @@ async function captureWithRetry(browser: Awaited<ReturnType<typeof chromium.laun
     const attempts = 3;
     let lastError: unknown;
     for (let i = 1; i <= attempts; i++) {
-        const page = await browser.newPage({ viewport: VIEWPORT, deviceScaleFactor: 2 });
+        const page = await browser.newPage({ viewport: VIEWPORT, deviceScaleFactor: 1 });
         try {
             console.log(`→ ${shot.url} (attempt ${i}/${attempts})`);
             await page.goto(shot.url, { waitUntil: 'load', timeout: 60_000 });

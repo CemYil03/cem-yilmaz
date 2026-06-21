@@ -197,8 +197,8 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Prototype Development',
             roleEn: 'Prototype Development',
-            companyDe: 'PeopleEat',
-            companyEn: 'PeopleEat',
+            companyDe: 'peopleeat',
+            companyEn: 'peopleeat',
             startDate: '2021-02-01',
             endDate: '2022-03-31',
             descriptionDe: 'iOS- und Backend-Entwicklung, UX Design und Business Prozess Entwicklung.',

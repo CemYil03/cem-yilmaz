@@ -19,6 +19,7 @@ const COPY = {
     },
     visitLabel: { de: 'Besuchen', en: 'Visit site' },
     repoLabel: { de: 'Quellcode', en: 'View source' },
+    galleryLabel: { de: 'Bildergalerie', en: 'Gallery' },
 };
 
 export const Route = createFileRoute('/{-$locale}/projects')({
@@ -63,7 +64,6 @@ function ProjectRow({ project, locale, reverse }: { project: Project; locale: Lo
     const role = locale === 'de' ? project.roleDe : project.roleEn;
     const tagline = locale === 'de' ? project.taglineDe : project.taglineEn;
     const description = locale === 'de' ? project.descriptionDe : project.descriptionEn;
-    const imageAlt = locale === 'de' ? project.imageAltDe : project.imageAltEn;
     const visible = useFadeInOnScroll();
 
     return (
@@ -74,15 +74,15 @@ function ProjectRow({ project, locale, reverse }: { project: Project; locale: Lo
                 visible.shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
             )}
         >
-            <div className={cn('md:col-span-7 group/image', reverse ? 'md:order-2' : 'md:order-1')}>
-                <ProjectImage project={project} alt={imageAlt} />
+            <div className={cn('md:col-span-7', reverse ? 'md:order-2' : 'md:order-1')}>
+                <ProjectGallery project={project} locale={locale} />
             </div>
 
             <div className={cn('md:col-span-5 flex flex-col gap-4', reverse ? 'md:order-1' : 'md:order-2')}>
                 <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     <span>{role}</span>
                     <span aria-hidden>·</span>
-                    <UrlLabel url={project.url} />
+                    <span className="truncate">{hostnameOf(project.url)}</span>
                 </div>
                 <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">{project.name}</h2>
                 <p className="text-base md:text-lg text-muted-foreground">{tagline}</p>
@@ -115,38 +115,123 @@ function ProjectRow({ project, locale, reverse }: { project: Project; locale: Lo
     );
 }
 
-function ProjectImage({ project, alt }: { project: Project; alt: string }) {
+// Gallery state lives one level above the hero so the thumbnail strip can
+// drive it. The hero cross-fades between source images by stacking them
+// absolutely and toggling opacity. Single-image projects skip the strip
+// entirely and render exactly like the previous static hero.
+function ProjectGallery({ project, locale }: { project: Project; locale: Locale }) {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const active = project.images[activeIndex] ?? project.images[0];
+    if (!active) return null;
+    const activeAlt = locale === 'de' ? active.altDe : active.altEn;
+
+    return (
+        <div className="flex flex-col gap-3">
+            <ProjectHero project={project} active={active} activeAlt={activeAlt} />
+            {project.images.length > 1 && (
+                <ThumbStrip project={project} locale={locale} activeIndex={activeIndex} onSelect={setActiveIndex} />
+            )}
+        </div>
+    );
+}
+
+function ProjectHero({ project, active, activeAlt }: { project: Project; active: Project['images'][number]; activeAlt: string }) {
+    const inner = (
+        <>
+            {project.images.map((image, i) => (
+                <img
+                    key={image.src}
+                    src={image.src}
+                    alt={image.src === active.src ? activeAlt : ''}
+                    aria-hidden={image.src !== active.src}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    className={cn(
+                        'block w-full aspect-video object-cover',
+                        project.imageKind === 'browser' ? 'object-top' : 'object-center',
+                        i === 0 ? 'relative' : 'absolute inset-0',
+                        'transition-opacity duration-500 motion-reduce:transition-none',
+                        image.src === active.src ? 'opacity-100' : 'opacity-0',
+                    )}
+                />
+            ))}
+        </>
+    );
+
     return (
         <a
             href={project.url}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={alt}
-            className="relative block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
+            aria-label={activeAlt}
+            className="relative block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl group/hero"
         >
-            {/* accent glow — sits behind the frame, scales softly on hover */}
+            {/* accent glow — sits behind the frame, brightens on hover */}
             <div
                 aria-hidden
-                className="pointer-events-none absolute -inset-6 rounded-[2rem] opacity-50 blur-3xl transition-all duration-500 group-hover/image:opacity-80 group-hover/image:-inset-8"
+                className="pointer-events-none absolute -inset-6 rounded-4xl opacity-50 blur-3xl transition-opacity duration-500 group-hover/hero:opacity-90 motion-reduce:transition-none"
                 style={{ background: `radial-gradient(closest-side, ${project.accent}, transparent 70%)` }}
             />
-            <div className="relative transition-transform duration-500 ease-out group-hover/image:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover/image:translate-y-0">
+            <div className="relative">
                 {project.imageKind === 'browser' ? (
                     <BrowserFrame url={project.url}>
-                        <img
-                            src={project.imagePath}
-                            alt={alt}
-                            loading="lazy"
-                            className="block w-full aspect-[16/9] object-cover object-top"
-                        />
+                        <div className="relative">{inner}</div>
                     </BrowserFrame>
                 ) : (
                     <GlassCard className="overflow-hidden">
-                        <img src={project.imagePath} alt={alt} loading="lazy" className="block w-full aspect-[16/9] object-cover" />
+                        <div className="relative">{inner}</div>
                     </GlassCard>
                 )}
             </div>
         </a>
+    );
+}
+
+function ThumbStrip({
+    project,
+    locale,
+    activeIndex,
+    onSelect,
+}: {
+    project: Project;
+    locale: Locale;
+    activeIndex: number;
+    onSelect: (index: number) => void;
+}) {
+    return (
+        <ul aria-label={COPY.galleryLabel[locale]} className="flex gap-2 overflow-x-auto scrollbar-thin pb-1 -mx-1 px-1">
+            {project.images.map((image, i) => {
+                const alt = locale === 'de' ? image.altDe : image.altEn;
+                const isActive = i === activeIndex;
+                return (
+                    <li key={image.src} className="shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => onSelect(i)}
+                            aria-label={alt}
+                            aria-current={isActive ? 'true' : undefined}
+                            className={cn(
+                                'block overflow-hidden rounded-lg border transition-all duration-200 motion-reduce:transition-none cursor-pointer',
+                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                isActive
+                                    ? 'border-primary opacity-100'
+                                    : 'border-white/40 dark:border-white/10 opacity-60 hover:opacity-100',
+                            )}
+                        >
+                            <img
+                                src={image.src}
+                                alt=""
+                                aria-hidden
+                                loading="lazy"
+                                className={cn(
+                                    'block h-16 w-28 object-cover md:h-20 md:w-32',
+                                    project.imageKind === 'browser' ? 'object-top' : 'object-center',
+                                )}
+                            />
+                        </button>
+                    </li>
+                );
+            })}
+        </ul>
     );
 }
 
@@ -160,7 +245,7 @@ function BrowserFrame({ url, children }: { url: string; children: React.ReactNod
                     <span className="size-2.5 rounded-full bg-[#28c840]" />
                 </div>
                 <div className="flex-1 truncate rounded-md bg-white/40 px-2.5 py-1 text-center text-xs text-muted-foreground dark:bg-white/5">
-                    {urlForFrame(url)}
+                    {hostnameOf(url)}
                 </div>
             </div>
             {children}
@@ -168,11 +253,7 @@ function BrowserFrame({ url, children }: { url: string; children: React.ReactNod
     );
 }
 
-function UrlLabel({ url }: { url: string }) {
-    return <span className="truncate">{urlForFrame(url)}</span>;
-}
-
-function urlForFrame(url: string) {
+function hostnameOf(url: string) {
     try {
         const parsed = new URL(url);
         return parsed.hostname.replace(/^www\./, '') + (parsed.pathname === '/' ? '' : parsed.pathname);

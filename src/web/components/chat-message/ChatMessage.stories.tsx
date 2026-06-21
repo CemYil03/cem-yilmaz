@@ -37,7 +37,7 @@ const userMessageWithAttachments: GqlCChatMessage = {
             filename: 'menu.jpg',
             mediaType: 'image/jpeg',
             size: 1024 * 90,
-            url: '/logo512.png',
+            url: '/profile-picture.png',
         },
         {
             __typename: 'FileUpload',
@@ -66,7 +66,7 @@ const userMessageWithOneAttachment: GqlCChatMessage = {
             filename: 'screenshot.png',
             mediaType: 'image/png',
             size: 1024 * 60,
-            url: '/logo512.png',
+            url: '/profile-picture.png',
         },
     ],
     createdAt: '2026-06-03T18:30:01.000Z',
@@ -87,7 +87,7 @@ const userMessageWithThreeAttachments: GqlCChatMessage = {
             filename: 'hotel.jpg',
             mediaType: 'image/jpeg',
             size: 1024 * 100,
-            url: '/logo512.png',
+            url: '/profile-picture.png',
         },
         {
             __typename: 'FileUpload',
@@ -124,7 +124,7 @@ const userMessageWithFourAttachments: GqlCChatMessage = {
             filename: 'hotel.jpg',
             mediaType: 'image/jpeg',
             size: 1024 * 100,
-            url: '/logo512.png',
+            url: '/profile-picture.png',
         },
         {
             __typename: 'FileUpload',
@@ -169,7 +169,7 @@ const userMessageWithManyAttachments: GqlCChatMessage = {
             filename: 'hotel.jpg',
             mediaType: 'image/jpeg',
             size: 1024 * 120,
-            url: '/logo512.png',
+            url: '/profile-picture.png',
         },
         {
             __typename: 'FileUpload',
@@ -201,7 +201,7 @@ const userMessageWithManyAttachments: GqlCChatMessage = {
             filename: 'sights.png',
             mediaType: 'image/png',
             size: 1024 * 80,
-            url: '/logo512.png',
+            url: '/profile-picture.png',
         },
     ],
     createdAt: '2026-06-03T18:30:02.000Z',

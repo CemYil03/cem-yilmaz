@@ -76,8 +76,8 @@ describe('seoMeta', () => {
         // Assert
         const ogImage = output.meta.find((entry) => 'property' in entry && entry.property === 'og:image');
         const twitterImage = output.meta.find((entry) => 'name' in entry && entry.name === 'twitter:image');
-        expect(ogImage).toEqual({ property: 'og:image', content: 'https://example.com/logo512.png' });
-        expect(twitterImage).toEqual({ name: 'twitter:image', content: 'https://example.com/logo512.png' });
+        expect(ogImage).toEqual({ property: 'og:image', content: 'https://example.com/profile-picture.png' });
+        expect(twitterImage).toEqual({ name: 'twitter:image', content: 'https://example.com/profile-picture.png' });
     });
 
     it('passes through an absolute image URL unchanged', () => {
