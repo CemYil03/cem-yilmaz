@@ -1,0 +1,35 @@
+# Admin review of visitor chats — rendered at `/workspace/visitor-chats`.
+# Reads cross-session through the `admin.publicChats` / `admin.publicChat`
+# namespace (parent-gated by `guardAdmin`). The transcript view reuses the
+# `WorkspaceChatMessageFields` fragment from `WorkspaceAssistantPage.graphql`
+# so we don't fork the per-variant rendering shape. See
+# `docs/features/chat-visitor.md`.
+
+query WorkspaceVisitorChats {
+    currentSession {
+        sessionId
+    }
+    admin {
+        publicChats {
+            chatId
+            title
+            lastModifiedAt
+        }
+    }
+}
+
+query WorkspaceVisitorChat($chatId: ID!) {
+    currentSession {
+        sessionId
+    }
+    admin {
+        publicChat(chatId: $chatId) {
+            chatId
+            title
+            lastModifiedAt
+            messages {
+                ...WorkspaceChatMessageFields
+            }
+        }
+    }
+}

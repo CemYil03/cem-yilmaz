@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import { createSetCookieString, sessionUtils } from './sessionUtils';
 import type { SessionCookieConfiguration } from '../env/EnvironmentVariables';
-import type { GqlSChat } from '../graphql/generated';
+import type { GqlSChat, GqlSSession } from '../graphql/generated';
 
 const sessionCookieConfig: SessionCookieConfiguration = {
     name: 'session-cookie-name',
@@ -96,7 +96,7 @@ describe('createSetCookieString', () => {
 
 describe('createSetSessionCookie', () => {
     it('creates a session cookie with Lax when not secure', () => {
-        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat };
+        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat } as unknown as GqlSSession;
         const result = sessionUtils.createSetSessionCookie(sessionCookieConfig, session);
 
         expect(result).toContain('session-cookie-name=session-1');
@@ -107,7 +107,7 @@ describe('createSetSessionCookie', () => {
     });
 
     it('uses Secure and SameSite=None when env.secure is true', () => {
-        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat };
+        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat } as unknown as GqlSSession;
         const result = sessionUtils.createSetSessionCookie({ ...sessionCookieConfig, secure: true }, session);
 
         expect(result).toContain('Secure');
@@ -115,7 +115,7 @@ describe('createSetSessionCookie', () => {
     });
 
     it('includes Domain when env.domainScope is set', () => {
-        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat };
+        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat } as unknown as GqlSSession;
         const result = sessionUtils.createSetSessionCookie({ ...sessionCookieConfig, domainScope: '.example.com' }, session);
 
         expect(result).toContain('Domain=.example.com');
@@ -123,7 +123,7 @@ describe('createSetSessionCookie', () => {
 
     it('sets expiry roughly 1 year in the future', () => {
         const before = Date.now();
-        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat };
+        const session = { sessionId: 'session-1', chat: null as unknown as GqlSChat } as unknown as GqlSSession;
         const result = sessionUtils.createSetSessionCookie(sessionCookieConfig, session);
         const after = Date.now();
 

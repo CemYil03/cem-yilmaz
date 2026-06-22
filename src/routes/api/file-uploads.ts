@@ -4,6 +4,7 @@ import { db } from '../../server/db';
 import { environmentVariables } from '../../server/env/environmentVariablesCreate';
 import { sessionUpsert } from '../../server/utils/sessionUpsert';
 import { sessionUtils } from '../../server/utils/sessionUtils';
+import { clientIpFromRequest } from '../../server/utils/clientIpFromRequest';
 import { loggerCreate } from '../../server/utils/loggerCreate';
 
 const log = loggerCreate(db);
@@ -30,7 +31,13 @@ export const Route = createFileRoute('/api/file-uploads')({
         handlers: {
             POST: async ({ request }) => {
                 const existingSessionId = sessionUtils.getSessionIdFromRequest(environmentVariables.sessionCookie, request);
-                const session = await sessionUpsert(db, log, existingSessionId, request.headers.get('user-agent'));
+                const session = await sessionUpsert(
+                    db,
+                    log,
+                    existingSessionId,
+                    request.headers.get('user-agent'),
+                    clientIpFromRequest(request),
+                );
                 const setCookie = sessionUtils.createSetSessionCookie(environmentVariables.sessionCookie, session);
 
                 if (!session.userId) {

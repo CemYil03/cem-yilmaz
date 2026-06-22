@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { GlassCard } from './GlassCard';
+import { HeaderChatButton } from './HeaderChatButton';
 import { LanguageSelector } from './LanguageSelector';
 import { ThemeSelector } from './ThemeSelector';
 import { useLocale } from '../hooks/useLocale';
+import { cn } from '../utils/cn';
 
 type NavItem = {
     label: { de: string; en: string };
@@ -31,12 +34,18 @@ type Props = {
 
 export function Header({ subtitle, navItems }: Props) {
     const locale = useLocale();
+    const scrolled = useHasScrolled();
 
     return (
         <>
             <ProgressiveBlurTop />
             <header className="sticky top-4 z-50 mx-auto w-full max-w-6xl px-6 sm:px-8">
-                <GlassCard>
+                <GlassCard
+                    className={cn(
+                        'transition-[background-color,box-shadow] duration-200 ease-out',
+                        scrolled && 'bg-white/70 dark:bg-white/8',
+                    )}
+                >
                     <div className="flex items-center justify-between gap-3 px-4 py-2.5">
                         <Link to="/{-$locale}" className="flex items-center gap-2.5">
                             <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
@@ -60,6 +69,7 @@ export function Header({ subtitle, navItems }: Props) {
                         )}
 
                         <div className="flex items-center gap-2">
+                            <HeaderChatButton />
                             <LanguageSelector />
                             <ThemeSelector />
                         </div>
@@ -68,6 +78,24 @@ export function Header({ subtitle, navItems }: Props) {
             </header>
         </>
     );
+}
+
+/* Tracks whether the viewport has scrolled past a small threshold. Used by
+   the header to firm up its glass surface once the user is below the hero —
+   keeps the floating nav legible over arbitrary section content without
+   making it heavy at rest. */
+function useHasScrolled(threshold = 8) {
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const onScroll = () => setScrolled(window.scrollY > threshold);
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, [threshold]);
+
+    return scrolled;
 }
 
 /* Five stacked fixed layers above the page. Each layer blurs more than the

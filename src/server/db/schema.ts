@@ -32,6 +32,13 @@ export const sessions = pgTable(
         wasTerminatedAt: timestamp({ withTimezone: true }),
         connectionActive: boolean().notNull().default(false),
         userAgent: varchar(),
+        // `ipHash` is `SHA256(VISITOR_IP_HASH_SALT + ":" + clientIp)`, computed
+        // on every session upsert by `sessionUpsert`. Nullable because local
+        // dev / unproxied requests have no resolvable IP (see
+        // `clientIpFromRequest`). The visitor-chat rate limiter buckets by
+        // `(sessionId OR ipHash)` so cookie-clearing does not reset a
+        // visitor's daily quota — see `docs/features/chat-visitor.md`.
+        ipHash: varchar(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
     (table) => [
@@ -41,6 +48,7 @@ export const sessions = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
+        index('Sessions_ipHash_idx').on(table.ipHash),
     ],
 );
 
@@ -96,13 +104,34 @@ export type UserCreate = typeof users.$inferInsert;
 // reject a `chatId` flowing through the wrong namespace, and so
 // `Admin.publicChats` / `Admin.chats` can split admin-side reads. See
 // `docs/architecture/multi-agent-chat.md`.
-export const chats = pgTable('Chats', {
-    chatId: uuid().primaryKey(),
-    title: varchar().notNull().default(''),
-    scope: varchar().$type<'public' | 'admin'>().notNull().default('public'),
-    lastModifiedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
-    createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
-});
+export const chats = pgTable(
+    'Chats',
+    {
+        chatId: uuid().primaryKey(),
+        title: varchar().notNull().default(''),
+        scope: varchar().$type<'public' | 'admin'>().notNull().default('public'),
+        // Owning visitor session for `scope = 'public'` chats. Stamped on
+        // insert by `chatMessageCreate` and never updated. Nullable because
+        // admin (`scope = 'admin'`) chats are owned by a logged-in user, not
+        // a session — they leave this column null. The FK is `ON DELETE SET
+        // NULL` so visitor history survives a session-row purge (used by the
+        // admin review at `/workspace/visitor-chats`); the data still ages
+        // out through the chat-level retention rules. See
+        // `docs/features/chat-visitor.md`.
+        sessionId: uuid(),
+        lastModifiedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.sessionId],
+            foreignColumns: [sessions.sessionId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('Chats_sessionId_lastModifiedAt_idx').on(table.sessionId, table.lastModifiedAt),
+    ],
+);
 
 export type Chat = typeof chats.$inferSelect;
 export type ChatCreate = typeof chats.$inferInsert;

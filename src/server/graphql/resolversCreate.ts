@@ -26,11 +26,13 @@ import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
+import { chatsFindBySession } from '../queries/chatsFindBySession';
 import { cvEducationList } from '../queries/cvEducationList';
 import { cvExperienceList } from '../queries/cvExperienceList';
 import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
+import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 import type {
     GqlSAdmin,
     GqlSAdminChatArgs,
@@ -104,6 +106,12 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
         Session: {
             user(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
                 return sessionUserFindOne(requestingSession, serverRuntime);
+            },
+            visitorChats(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
+                return chatsFindBySession(requestingSession, serverRuntime);
+            },
+            visitorChatQuota(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
+                return visitorChatQuotaFindOne(requestingSession, serverRuntime);
             },
         },
         UserMutation: {

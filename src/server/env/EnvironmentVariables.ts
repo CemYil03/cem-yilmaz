@@ -25,4 +25,12 @@ export interface EnvironmentVariables {
     // short-lived HMAC tokens that authenticate server-side renders against
     // `/server/*` routes. See `docs/architecture/server-side-rendering.md`.
     serverTokenSecret: string | undefined;
+    // Per-deploy salt mixed into the SHA-256 of every visitor request's
+    // client IP before it lands in `Sessions.ipHash`. The hash is used for
+    // the public visitor-chat rate limit (see
+    // `docs/features/chat-visitor.md`); salting means a DB leak does not
+    // expose visitor IPs and two deploys cannot be cross-correlated.
+    // Required at boot — refusing a missing salt up front is safer than
+    // silently dropping the IP bucket of the rate limiter.
+    visitorIpHashSalt: string;
 }

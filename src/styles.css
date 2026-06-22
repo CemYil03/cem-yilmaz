@@ -226,3 +226,52 @@
         transform: translate3d(6vw, 4vh, 0) scale(1.08);
     }
 }
+
+/*
+ * Subtle "alive now" pulse for the assistant status dot in the landing-page
+ * hero. Opacity-only on purpose — a scale change here looks like a buggy
+ * radio button. 2s loop is slow enough to read as a pulse, not a strobe.
+ */
+@keyframes pulse-dot {
+    0%,
+    100% {
+        opacity: 0.55;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.animate-pulse-dot {
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/*
+ * Slow drift for the blurred primary halo behind the hero portrait. The
+ * translate is tiny per-frame — at 24s loop it reads as "the page is
+ * breathing" rather than "something is moving".
+ */
+@keyframes portrait-halo-drift {
+    0%,
+    100% {
+        transform: translate3d(-2px, 2px, 0);
+    }
+    50% {
+        transform: translate3d(2px, -2px, 0);
+    }
+}
+
+.animate-portrait-halo {
+    animation: portrait-halo-drift 24s ease-in-out infinite;
+}
+
+/* Honour the user's OS-level preference. Reduce-motion gets a still page —
+   the AmbientBackdrop drift, the dot pulse, and the halo drift all stop.
+   The Reveal component handles its own reduce-motion fallback at the
+   component level. */
+@media (prefers-reduced-motion: reduce) {
+    .animate-pulse-dot,
+    .animate-portrait-halo {
+        animation: none;
+    }
+}

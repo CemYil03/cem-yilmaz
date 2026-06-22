@@ -7,7 +7,11 @@ scalar JSON
 
 type ChatMessageUser {
     chatMessageId: ID!
-    author: User!
+    # Null for anonymous visitor messages. The visitor surface never has a
+    # `User` row to attach (anonymous traffic by design) — the client
+    # renders "Du" / "You" when this is null. Admin chats always have a
+    # logged-in author so the field is populated there.
+    author: User
     body: String!
     # Files the user attached to this message, in send-order. Empty list when
     # the message was a plain-text send. The bytes are not exposed inline —
@@ -180,7 +184,9 @@ type ChatAssistantInputText {
 
 type ChatMessageUserInput {
     chatMessageId: ID!
-    author: User!
+    # Null for anonymous visitor responses — same rationale as
+    # `ChatMessageUser.author`.
+    author: User
     collectionMessageId: ID!
     # Real submits carry one entry per answered slot; an empty list signals
     # the row is protocol-only — written by `chatMessageCreate` to close an
@@ -272,6 +278,28 @@ type User {
 type Session {
     sessionId: ID!
     user: User
+    # Visitor-assistant chats owned by this session, most-recent first. Empty
+    # for sessions that have never started a visitor chat. The `messages`
+    # field on each entry is empty — fetch a single chat through `Query.chat`
+    # to materialize its transcript. Used by the chat dialog's empty state
+    # so a returning visitor can resume a prior conversation.
+    visitorChats: [Chat!]!
+    # Rolling-24h cap on visitor-chat user messages from this requester.
+    # Counted across (this session) OR (other sessions sharing this `ipHash`)
+    # so clearing cookies does not reset the bucket. The visitor dialog
+    # renders `used / limit` and the time until the oldest in-window message
+    # ages out. See `docs/features/chat-visitor.md`.
+    visitorChatQuota: VisitorChatQuota!
+}
+
+# Read-only quota snapshot. `resetsAt` is the moment the oldest in-window
+# message ages out of the rolling 24h window — null when `used = 0`. Counts
+# only user messages on `scope = 'public'` chats; admin chats are not
+# counted. See `docs/features/chat-visitor.md`.
+type VisitorChatQuota {
+    used: Int!
+    limit: Int!
+    resetsAt: DateTime
 }
 
 type MutationResult {

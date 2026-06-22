@@ -80,6 +80,11 @@ export const chats = pgTable('Chats', {
   // personal assistant at /workspace/assistant. Stamped by the creating
   // mutation; never updated.
   scope: varchar().$type<'public' | 'admin'>().notNull().default('public'),
+  // Owning visitor session for public-scope chats — stamped on insert,
+  // ON DELETE SET NULL. Admin chats leave this null (they belong to the
+  // logged-in user, not the session). Powers Session.visitorChats and the
+  // visitor-chat rate limiter — see docs/features/chat-visitor.md.
+  sessionId: uuid(),
   lastModifiedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
 });

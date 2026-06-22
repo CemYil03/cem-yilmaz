@@ -313,7 +313,7 @@ export interface GqlSChatMessageToolCall {
 export interface GqlSChatMessageUser {
     __typename?: 'ChatMessageUser';
     attachments: Array<GqlSFileUpload>;
-    author: GqlSUser;
+    author?: Maybe<GqlSUser>;
     body: Scalars['String']['output'];
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
@@ -322,7 +322,7 @@ export interface GqlSChatMessageUser {
 export interface GqlSChatMessageUserInput {
     __typename?: 'ChatMessageUserInput';
     answers: Array<GqlSChatMessageUserInputAnswer>;
-    author: GqlSUser;
+    author?: Maybe<GqlSUser>;
     chatMessageId: Scalars['ID']['output'];
     collectionMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
@@ -534,6 +534,8 @@ export interface GqlSSession {
     __typename?: 'Session';
     sessionId: Scalars['ID']['output'];
     user?: Maybe<GqlSUser>;
+    visitorChatQuota: GqlSVisitorChatQuota;
+    visitorChats: Array<GqlSChat>;
 }
 
 export interface GqlSSubscription {
@@ -573,6 +575,13 @@ export type GqlSUserMutationUserUpdateArgs = {
 export type GqlSUserUpdate = {
     name: Scalars['String']['input'];
 };
+
+export interface GqlSVisitorChatQuota {
+    __typename?: 'VisitorChatQuota';
+    limit: Scalars['Int']['output'];
+    resetsAt?: Maybe<Scalars['DateTime']['output']>;
+    used: Scalars['Int']['output'];
+}
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
@@ -769,13 +778,14 @@ export type GqlSResolversTypes = ResolversObject<{
     Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
     MutationResult: ResolverTypeWrapper<GqlSMutationResult>;
     Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
-    Session: ResolverTypeWrapper<GqlSSession>;
+    Session: ResolverTypeWrapper<Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversTypes['Chat']> }>;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
     User: ResolverTypeWrapper<GqlSUser>;
     UserCreate: GqlSUserCreate;
     UserMutation: ResolverTypeWrapper<GqlSUserMutation>;
     UserUpdate: GqlSUserUpdate;
+    VisitorChatQuota: ResolverTypeWrapper<GqlSVisitorChatQuota>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -847,13 +857,14 @@ export type GqlSResolversParentTypes = ResolversObject<{
     Mutation: Record<PropertyKey, never>;
     MutationResult: GqlSMutationResult;
     Query: Record<PropertyKey, never>;
-    Session: GqlSSession;
+    Session: Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversParentTypes['Chat']> };
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
     User: GqlSUser;
     UserCreate: GqlSUserCreate;
     UserMutation: GqlSUserMutation;
     UserUpdate: GqlSUserUpdate;
+    VisitorChatQuota: GqlSVisitorChatQuota;
 }>;
 
 export type GqlSAdminResolvers<
@@ -1251,7 +1262,7 @@ export type GqlSChatMessageUserResolvers<
     ParentType extends GqlSResolversParentTypes['ChatMessageUser'] = GqlSResolversParentTypes['ChatMessageUser'],
 > = ResolversObject<{
     attachments?: Resolver<Array<GqlSResolversTypes['FileUpload']>, ParentType, ContextType>;
-    author?: Resolver<GqlSResolversTypes['User'], ParentType, ContextType>;
+    author?: Resolver<Maybe<GqlSResolversTypes['User']>, ParentType, ContextType>;
     body?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
@@ -1263,7 +1274,7 @@ export type GqlSChatMessageUserInputResolvers<
     ParentType extends GqlSResolversParentTypes['ChatMessageUserInput'] = GqlSResolversParentTypes['ChatMessageUserInput'],
 > = ResolversObject<{
     answers?: Resolver<Array<GqlSResolversTypes['ChatMessageUserInputAnswer']>, ParentType, ContextType>;
-    author?: Resolver<GqlSResolversTypes['User'], ParentType, ContextType>;
+    author?: Resolver<Maybe<GqlSResolversTypes['User']>, ParentType, ContextType>;
     chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     collectionMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
@@ -1455,6 +1466,8 @@ export type GqlSSessionResolvers<
 > = ResolversObject<{
     sessionId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     user?: Resolver<Maybe<GqlSResolversTypes['User']>, ParentType, ContextType>;
+    visitorChatQuota?: Resolver<GqlSResolversTypes['VisitorChatQuota'], ParentType, ContextType>;
+    visitorChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
 }>;
 
 export type GqlSSubscriptionResolvers<
@@ -1495,6 +1508,15 @@ export type GqlSUserMutationResolvers<
         ContextType,
         RequireFields<GqlSUserMutationUserUpdateArgs, 'user'>
     >;
+}>;
+
+export type GqlSVisitorChatQuotaResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['VisitorChatQuota'] = GqlSResolversParentTypes['VisitorChatQuota'],
+> = ResolversObject<{
+    limit?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    resetsAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    used?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type GqlSResolvers<ContextType = any> = ResolversObject<{
@@ -1549,6 +1571,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Subscription?: GqlSSubscriptionResolvers<ContextType>;
     User?: GqlSUserResolvers<ContextType>;
     UserMutation?: GqlSUserMutationResolvers<ContextType>;
+    VisitorChatQuota?: GqlSVisitorChatQuotaResolvers<ContextType>;
 }>;
 
 type Properties<T> = {

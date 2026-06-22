@@ -8,7 +8,7 @@ import { sessions } from '../db/schema';
 describe('sessionUpsert', () => {
     it('creates a new session when no existing session ID is provided', async () => {
         // Act
-        const result = await sessionUpsert(testDb, testLogger, null, 'TestAgent');
+        const result = await sessionUpsert(testDb, testLogger, null, 'TestAgent', null);
 
         // Assert
         expect(result.sessionId).toBeDefined();
@@ -24,7 +24,7 @@ describe('sessionUpsert', () => {
         const unknownId = crypto.randomUUID();
 
         // Act
-        const result = await sessionUpsert(testDb, testLogger, unknownId, 'TestAgent');
+        const result = await sessionUpsert(testDb, testLogger, unknownId, 'TestAgent', null);
 
         // Assert
         expect(result.sessionId).not.toBe(unknownId);
@@ -46,7 +46,7 @@ describe('sessionUpsert', () => {
             .returning();
 
         // Act
-        const result = await sessionUpsert(testDb, testLogger, terminated!.sessionId, 'TestAgent');
+        const result = await sessionUpsert(testDb, testLogger, terminated!.sessionId, 'TestAgent', null);
 
         // Assert
         expect(result.sessionId).not.toBe(terminated!.sessionId);
@@ -69,7 +69,7 @@ describe('sessionUpsert', () => {
             .returning();
 
         // Act
-        const result = await sessionUpsert(testDb, testLogger, existing!.sessionId, 'NewAgent');
+        const result = await sessionUpsert(testDb, testLogger, existing!.sessionId, 'NewAgent', null);
 
         // Assert
         expect(result.sessionId).toBe(existing!.sessionId);
@@ -81,7 +81,7 @@ describe('sessionUpsert', () => {
 
     it('handles null userAgent', async () => {
         // Act
-        const result = await sessionUpsert(testDb, testLogger, null, null);
+        const result = await sessionUpsert(testDb, testLogger, null, null, null);
 
         // Assert
         expect(result.sessionId).toBeDefined();

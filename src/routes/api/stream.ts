@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { executeGraphQLSubscription } from '../../server/graphql/server';
 import { sessionUtils } from '../../server/utils/sessionUtils';
 import { sessionUpsert } from '../../server/utils/sessionUpsert';
+import { clientIpFromRequest } from '../../server/utils/clientIpFromRequest';
 import type { GqlSSession } from '../../server/graphql/generated';
 import { db } from '../../server/db';
 import { environmentVariables } from '../../server/env/environmentVariablesCreate';
@@ -75,7 +76,13 @@ export const Route = createFileRoute('/api/stream')({
         handlers: {
             POST: async ({ request }) => {
                 const existingSessionId = sessionUtils.getSessionIdFromRequest(environmentVariables.sessionCookie, request);
-                const session = await sessionUpsert(db, log, existingSessionId, request.headers.get('user-agent'));
+                const session = await sessionUpsert(
+                    db,
+                    log,
+                    existingSessionId,
+                    request.headers.get('user-agent'),
+                    clientIpFromRequest(request),
+                );
 
                 try {
                     const body = await request.json();

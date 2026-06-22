@@ -1,6 +1,6 @@
 import type { EnvironmentVariables } from './EnvironmentVariables';
 
-const requiredEnvironmentVariables = ['DATABASE_URL', 'sessionCookieName', 'WEB_PAGE_URL'] as const;
+const requiredEnvironmentVariables = ['DATABASE_URL', 'sessionCookieName', 'WEB_PAGE_URL', 'VISITOR_IP_HASH_SALT'] as const;
 
 export function environmentVariablesCreate(source: NodeJS.ProcessEnv = process.env): EnvironmentVariables {
     const missing = requiredEnvironmentVariables.filter((name) => !source[name]);
@@ -24,6 +24,7 @@ export function environmentVariablesCreate(source: NodeJS.ProcessEnv = process.e
         // server-side renders via `serverToken.ts`. Validated at the call
         // site, not at boot. See `docs/architecture/server-side-rendering.md`.
         serverTokenSecret: source.SERVER_TOKEN_SECRET,
+        visitorIpHashSalt: source.VISITOR_IP_HASH_SALT!,
     };
 }
 

@@ -6,6 +6,7 @@ import {
     FileTextIcon,
     FilmIcon,
     FolderKanbanIcon,
+    MessageSquareTextIcon,
     ReceiptTextIcon,
     StethoscopeIcon,
     WalletIcon,
@@ -98,6 +99,13 @@ const COPY = {
                 en: 'Watchlist and what I have watched recently.',
             },
         },
+        visitorChats: {
+            title: { de: 'Besucher-Chats', en: 'Visitor chats' },
+            description: {
+                de: 'Was Besucher meinen KI-Assistenten gefragt haben.',
+                en: 'What visitors have asked my AI assistant.',
+            },
+        },
     },
     enter: { de: 'Öffnen', en: 'Open' },
 };
@@ -119,7 +127,8 @@ const FOCUS_AREAS: ReadonlyArray<{
         | '/{-$locale}/workspace/tax'
         | '/{-$locale}/workspace/fitness'
         | '/{-$locale}/workspace/medical'
-        | '/{-$locale}/workspace/media';
+        | '/{-$locale}/workspace/media'
+        | '/{-$locale}/workspace/visitor-chats';
     icon: typeof CodeXmlIcon;
 }> = [
     { key: 'cv', to: '/{-$locale}/workspace/cv', icon: FileTextIcon },
@@ -130,6 +139,7 @@ const FOCUS_AREAS: ReadonlyArray<{
     { key: 'fitness', to: '/{-$locale}/workspace/fitness', icon: DumbbellIcon },
     { key: 'medical', to: '/{-$locale}/workspace/medical', icon: StethoscopeIcon },
     { key: 'media', to: '/{-$locale}/workspace/media', icon: FilmIcon },
+    { key: 'visitorChats', to: '/{-$locale}/workspace/visitor-chats', icon: MessageSquareTextIcon },
 ];
 
 export const Route = createFileRoute('/{-$locale}/workspace/')({

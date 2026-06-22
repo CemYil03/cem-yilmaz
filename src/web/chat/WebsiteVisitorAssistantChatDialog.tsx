@@ -1,17 +1,24 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { format, parseISO } from 'date-fns';
-import { ArrowDownIcon, SparklesIcon } from 'lucide-react';
+import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
+import { ArrowDownIcon, MessageSquareTextIcon, SparklesIcon } from 'lucide-react';
 import { useMutation, useQuery } from 'urql';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/base/dialog';
 import { Spinner } from '../components/base/spinner';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { ChatMessage } from '../components/chat-message';
-import type { GqlCChatAssistantInputValue, GqlCChatPageQuery } from '../graphql/generated';
+import type {
+    GqlCChatAssistantInputValue,
+    GqlCChatPageQuery,
+    GqlCVisitorChatListItemFragment,
+    GqlCVisitorChatQuotaFieldsFragment,
+} from '../graphql/generated';
 import {
     ChatInputCollectionRespondDocument,
     ChatMessageCreateDocument,
     ChatPageDocument,
     ChatToolApprovalRespondDocument,
+    VisitorPreviousChatsDocument,
 } from '../graphql/generated';
 import type { Locale } from '../utils/locale';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
@@ -25,28 +32,33 @@ import {
     mergeTranscriptMessages,
 } from './chatTranscript';
 import { useChatLiveUpdates } from './useChatLiveUpdates';
+import { useVisitorChat } from './VisitorChatProvider';
+import type { VisitorChatIntent } from './VisitorChatProvider';
 
-// Visitor-facing AI chat surface, rendered inside the landing page's
-// "Ask me anything" Dialog. Holds the full transcript-and-composer experience
-// that used to live at the dedicated `/chat` route — `/chat` is gone; the
-// landing-page dialog is the only visitor chat surface now. The route under
-// `/workspace/assistant` is a distinct surface that talks to the personal
-// assistant agent through the `admin.*` namespace — this dialog uses the
-// visitor (non-admin) GraphQL ops so the server dispatches to
-// `agentVisitorAboutCem`. See `docs/features/chat.md`.
+// Visitor-facing AI chat surface. Mounted once at the root layout — see
+// `__root.tsx` — so any surface can open it via `useVisitorChat()` without
+// duplicating the dialog tree. The route under `/workspace/assistant` is a
+// distinct surface that talks to the personal-assistant agent through the
+// `admin.*` namespace — this dialog uses the visitor (non-admin) GraphQL ops
+// so the server dispatches to `agentVisitorAboutCem`. See
+// `docs/features/chat-visitor.md`.
 //
-// The dialog is controlled by its parent through the `question` prop:
+// The dialog reads its open state from `useVisitorChat()`. The `intent`
+// decides what we render on the open transition:
 //
-//   - `question === null` — dialog is closed; internal state is reset.
-//   - `question === string` — dialog is open. On the open transition the
-//     dialog kicks off a fresh chat by sending that seeded question through
-//     `chatMessageCreate`, then drops into the loaded transcript + composer
-//     view once the server returns the `chatId`. The user never has to
-//     retype what they typed on the landing-page composer.
+//   - `'empty'`  → empty state with previous-chats list + composer. Header
+//                  button opens this way.
+//   - `'seeded'` → fire the seeded question through `chatMessageCreate` on
+//                  mount, then drop into the loaded view once `chatId`
+//                  lands. Landing-page composer + suggestion chips open
+//                  this way.
+//   - `'loaded'` → already pointed at a specific chat. Skip the seed-send
+//                  and render the loaded transcript directly. "Previous
+//                  chats" rows in the empty state open this way.
 //
-// The live-updates listener mounts at the dialog root (above the inner
-// loaded/empty swap) so the subscription survives the empty→loaded handoff
-// after the seeded send — same pattern the route used to use.
+// Radix's `Dialog` unmounts its children on close, so every fresh open
+// gets a fresh `ChatSurface` instance — no manual reset of the seeded-once
+// ref or chatId.
 
 const COPY = {
     title: { de: 'Frag mich was', en: 'Ask me anything' },
@@ -60,26 +72,41 @@ const COPY = {
         en: 'Could not send your question. Please try again.',
     },
     placeholder: { de: 'Stelle eine weitere Frage…', en: 'Ask another question…' },
+    composerEmpty: { de: 'Stell eine Frage…', en: 'Ask a question…' },
     jumpToLatest: { de: 'Zum neuesten springen', en: 'Jump to latest' },
+    previousChats: { de: 'Frühere Chats', en: 'Previous chats' },
+    emptyIntroNoPrevious: {
+        de: 'Stell eine Frage zu meinem Werdegang, meinen Projekten oder meiner Arbeitsweise.',
+        en: 'Ask a question about my career, projects, or how I work.',
+    },
+    emptyIntroWithPrevious: { de: 'Oder stell eine neue Frage.', en: 'Or ask a new question.' },
+    quotaUsed: {
+        de: (used: number, limit: number, resetsIn: string) => `${used} / ${limit} Nachrichten heute · zurückgesetzt in ${resetsIn}`,
+        en: (used: number, limit: number, resetsIn: string) => `${used} / ${limit} messages today · resets in ${resetsIn}`,
+    },
+    quotaAtLimit: {
+        de: (used: number, limit: number, resetsIn: string) =>
+            `Tageslimit erreicht (${used} / ${limit}). Neue Nachricht in ${resetsIn} möglich.`,
+        en: (used: number, limit: number, resetsIn: string) =>
+            `Daily limit reached (${used} / ${limit}). You can send again in ${resetsIn}.`,
+    },
+    quotaFallbackResetsIn: { de: '24 Std.', en: '24 h' },
 };
 
-export interface WebsiteVisitorAssistantChatDialogProps {
+const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
+
+interface WebsiteVisitorAssistantChatDialogProps {
     locale: Locale;
-    /** The seeded question typed on the landing-page composer (or a chip
-     *  click). Non-null = dialog open; null = dialog closed and internal
-     *  state reset. */
-    question: string | null;
-    onClose: () => void;
 }
 
-export function WebsiteVisitorAssistantChatDialog({ locale, question, onClose }: WebsiteVisitorAssistantChatDialogProps) {
-    const isOpen = question !== null;
+export function WebsiteVisitorAssistantChatDialog({ locale }: WebsiteVisitorAssistantChatDialogProps) {
+    const { isOpen, intent, close } = useVisitorChat();
     const live = useChatLiveUpdates(undefined);
     return (
         <Dialog
             open={isOpen}
             onOpenChange={(next) => {
-                if (!next) onClose();
+                if (!next) close();
             }}
         >
             <DialogContent className="flex h-[85vh] flex-col gap-0 p-0 sm:max-w-2xl">
@@ -95,7 +122,7 @@ export function WebsiteVisitorAssistantChatDialog({ locale, question, onClose }:
                  *  handoff. Re-mounted fresh each time the dialog opens
                  *  because `Dialog` unmounts its children on close. */}
                 {live.listener}
-                {isOpen ? <ChatSurface locale={locale} seededQuestion={question} live={live} /> : null}
+                {isOpen && intent ? <ChatSurface locale={locale} intent={intent} live={live} /> : null}
             </DialogContent>
         </Dialog>
     );
@@ -103,37 +130,30 @@ export function WebsiteVisitorAssistantChatDialog({ locale, question, onClose }:
 
 // --- Surface inside the dialog ----------------------------------------------
 //
-// Manages the local `chatId` state. On first mount the seeded question is
-// sent through `chatMessageCreate` — that send sets the chatId, after which
-// the loaded transcript view takes over. Subsequent sends are normal
-// `ChatComposer` invocations against the same chat.
+// Branches on `intent` to decide the initial state:
+//   - 'empty'  → render the empty state (previous chats + composer)
+//   - 'seeded' → fire seeded question on mount; flip to loaded on chatId
+//   - 'loaded' → render the loaded transcript directly
 
-function ChatSurface({
-    locale,
-    seededQuestion,
-    live,
-}: {
-    locale: Locale;
-    seededQuestion: string;
-    live: ReturnType<typeof useChatLiveUpdates>;
-}) {
-    const [chatId, setChatId] = useState<string | undefined>(undefined);
+function ChatSurface({ locale, intent, live }: { locale: Locale; intent: VisitorChatIntent; live: ReturnType<typeof useChatLiveUpdates> }) {
+    const [chatId, setChatId] = useState<string | undefined>(intent.kind === 'loaded' ? intent.chatId : undefined);
     const [sendError, setSendError] = useState<string | null>(null);
 
     const [, sendMessage] = useMutation(ChatMessageCreateDocument);
 
-    // The seeded question is fired exactly once per dialog session. A ref
-    // guards against React's StrictMode double-invoke and any later effect
-    // re-runs (the dialog component unmounts on close, so the next open
-    // gets a fresh ref instance — no need to reset it ourselves).
+    // Seeded send is one-shot per dialog session. A ref guards React's
+    // StrictMode double-invoke; the dialog component unmounts on close so
+    // the next open gets a fresh ref instance automatically.
     const seededSentRef = useRef(false);
     useEffect(() => {
+        if (intent.kind !== 'seeded') return;
         if (seededSentRef.current) return;
         seededSentRef.current = true;
+        const seededQuestion = intent.seededQuestion;
         void (async () => {
             // Lift the generationId BEFORE firing the mutation so the
             // listener mounts and subscribes before any server-side publish
-            // can happen — same race-avoidance pattern the route used.
+            // can happen — same race-avoidance pattern the old route used.
             const generationId = live.beginTurn();
             const result = await sendMessage({
                 chatId: undefined,
@@ -150,25 +170,143 @@ function ChatSurface({
             }
             setChatId(created.chatId);
         })();
-        // Only run on mount — the seeded send is one-shot. `live` and
-        // `sendMessage` are stable references from their hooks.
+        // Only run on mount — the seeded send is one-shot.
+    }, []);
+
+    const onResume = useCallback((nextChatId: string) => {
+        setChatId(nextChatId);
     }, []);
 
     if (sendError) {
         return <div className="grid flex-1 place-items-center p-8 text-sm text-destructive">{sendError}</div>;
     }
     if (!chatId) {
-        // Pre-chatId state: the seeded send is in flight. The user message
-        // and the first streaming chunks already buffer through the live
-        // updates listener mounted at the dialog root — they'll appear here
-        // as soon as the chatId lands and the loaded view subscribes.
-        return (
-            <div className="grid flex-1 place-items-center p-8 text-sm text-muted-foreground">
-                <Spinner />
-            </div>
-        );
+        if (intent.kind === 'seeded') {
+            // Seeded send is in flight — show a spinner. The user message
+            // and the first streaming chunks already buffer through the
+            // live updates listener mounted at the dialog root.
+            return (
+                <div className="grid flex-1 place-items-center p-8 text-sm text-muted-foreground">
+                    <Spinner />
+                </div>
+            );
+        }
+        return <ChatEmptyState locale={locale} live={live} onResume={onResume} setChatId={setChatId} />;
     }
     return <ChatLoaded chatId={chatId} live={live} locale={locale} />;
+}
+
+// --- Empty state ------------------------------------------------------------
+//
+// What the dialog shows when opened without a seeded question and without
+// an existing chatId — i.e. the header button. Renders the visitor's prior
+// chats (so they can resume one) and a composer for a new conversation.
+// The rate-limit row sits below the composer and disables the input when
+// the visitor is over the daily cap.
+
+function ChatEmptyState({
+    locale,
+    live,
+    onResume,
+    setChatId,
+}: {
+    locale: Locale;
+    live: ReturnType<typeof useChatLiveUpdates>;
+    onResume: (chatId: string) => void;
+    setChatId: (chatId: string) => void;
+}) {
+    // `cache-and-network` so the previous-chats list and quota refresh on
+    // every reopen — without it a stale list from yesterday would render
+    // while the network call is in flight.
+    const [{ data }] = useQuery({
+        query: VisitorPreviousChatsDocument,
+        requestPolicy: 'cache-and-network',
+    });
+
+    const previousChats = data?.currentSession.visitorChats ?? [];
+    const quota = data?.currentSession.visitorChatQuota ?? null;
+    const isAtLimit = quota ? quota.used >= quota.limit : false;
+
+    return (
+        <div className="grid min-h-0 flex-1 grid-rows-[1fr_auto] gap-4 px-6 pt-4 pb-6">
+            <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2 text-sm text-muted-foreground">
+                {previousChats.length > 0 ? (
+                    <section className="flex flex-col gap-2">
+                        <h3 className="text-xs uppercase tracking-wide text-muted-foreground">{COPY.previousChats[locale]}</h3>
+                        <ul className="flex flex-col gap-1.5">
+                            {previousChats.map((chat) => (
+                                <li key={chat.chatId}>
+                                    <PreviousChatButton chat={chat} locale={locale} onResume={onResume} />
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                ) : null}
+                <p className="max-w-md">
+                    {previousChats.length > 0 ? COPY.emptyIntroWithPrevious[locale] : COPY.emptyIntroNoPrevious[locale]}
+                </p>
+            </div>
+            <div className="flex flex-col gap-2">
+                <ChatComposer
+                    chatId={undefined}
+                    isLocked={live.isGenerating || isAtLimit}
+                    beginTurn={live.beginTurn}
+                    endTurn={live.endTurn}
+                    placeholder={COPY.composerEmpty[locale]}
+                    onMessageSent={setChatId}
+                />
+                <VisitorChatQuotaStatus quota={quota} locale={locale} />
+            </div>
+        </div>
+    );
+}
+
+function PreviousChatButton({
+    chat,
+    locale,
+    onResume,
+}: {
+    chat: GqlCVisitorChatListItemFragment;
+    locale: Locale;
+    onResume: (chatId: string) => void;
+}) {
+    const relative = formatDistanceToNow(parseISO(chat.lastModifiedAt as unknown as string), {
+        addSuffix: true,
+        locale: DATE_FNS_LOCALE[locale],
+    });
+    const title = chat.title.trim() ? chat.title : { de: 'Ohne Titel', en: 'Untitled' }[locale];
+    return (
+        <button
+            type="button"
+            onClick={() => onResume(chat.chatId)}
+            className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm hover:bg-accent"
+        >
+            <MessageSquareTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-foreground">{title}</span>
+                <span className="text-xs text-muted-foreground">{relative}</span>
+            </span>
+        </button>
+    );
+}
+
+function VisitorChatQuotaStatus({ quota, locale }: { quota: GqlCVisitorChatQuotaFieldsFragment | null; locale: Locale }) {
+    if (!quota || quota.used === 0) return null;
+    const isAtLimit = quota.used >= quota.limit;
+    const resetsIn = quota.resetsAt
+        ? formatDistanceToNow(parseISO(quota.resetsAt as unknown as string), {
+              addSuffix: false,
+              locale: DATE_FNS_LOCALE[locale],
+          })
+        : COPY.quotaFallbackResetsIn[locale];
+    const text = isAtLimit
+        ? COPY.quotaAtLimit[locale](quota.used, quota.limit, resetsIn)
+        : COPY.quotaUsed[locale](quota.used, quota.limit, resetsIn);
+    return (
+        <p role="status" className="text-xs text-muted-foreground">
+            {text}
+        </p>
+    );
 }
 
 function ChatLoaded({ chatId, live, locale }: { chatId: string; live: ReturnType<typeof useChatLiveUpdates>; locale: Locale }) {

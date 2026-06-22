@@ -6,7 +6,11 @@ export function toGqlSession(session: Session): GqlSSession {
         sessionId: session.sessionId,
         userId: session.userId,
 
-        // resolved fields
+        // resolved fields — populated by Session.* resolvers in resolversCreate.ts.
+        // The mapper still has to satisfy the generated type, so the placeholder
+        // values mirror the corresponding resolvers' return shapes.
         user: null,
+        visitorChats: [],
+        visitorChatQuota: { used: 0, limit: 0, resetsAt: null },
     };
 }

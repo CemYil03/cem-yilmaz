@@ -237,3 +237,35 @@ subscription ChatUpdates($generationId: ID!) {
         }
     }
 }
+
+# --- Visitor dialog empty state ---------------------------------------------
+#
+# `VisitorPreviousChats` powers the "Frühere Chats / Previous chats" list
+# rendered in the chat dialog's empty state, and the rate-limit row below
+# the composer. Refetch on every open (`requestPolicy: 'cache-and-network'`)
+# and after every successful send so the quota readout reflects the latest
+# state. See `docs/features/chat-visitor.md`.
+
+fragment VisitorChatListItem on Chat {
+    chatId
+    title
+    lastModifiedAt
+}
+
+fragment VisitorChatQuotaFields on VisitorChatQuota {
+    used
+    limit
+    resetsAt
+}
+
+query VisitorPreviousChats {
+    currentSession {
+        sessionId
+        visitorChats {
+            ...VisitorChatListItem
+        }
+        visitorChatQuota {
+            ...VisitorChatQuotaFields
+        }
+    }
+}

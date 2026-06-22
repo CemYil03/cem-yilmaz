@@ -16,6 +16,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatMessageCreateResult, GqlSMutationChatMessageCreateArgs, GqlSSession } from '../graphql/generated';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
+import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 
 // Dispatch context the resolver passes in. The mutation namespace decides the
 // values: visitor mutations pass `{ scope: 'public', agentFactory:
@@ -50,6 +51,25 @@ export async function chatMessageCreate(
     dispatch: ChatMutationDispatch,
 ): Promise<GqlSChatMessageCreateResult | null> {
     try {
+        // Phase 0 — Rate-limit visitor traffic. Counted across (this session)
+        // OR (other sessions sharing the same `ipHash`) over a rolling 24h
+        // window, so clearing cookies does not reset the bucket. Admin
+        // traffic skips the check — the workspace is already gated by login
+        // and is not a public abuse surface. See
+        // `docs/features/chat-visitor.md`.
+        if (dispatch.scope === 'public') {
+            const quota = await visitorChatQuotaFindOne(requestingSession, serverRuntime);
+            if (quota.used >= quota.limit) {
+                serverRuntime.log.error(
+                    new Error(
+                        `visitor chat rate limit exceeded: sessionId=${requestingSession.sessionId} used=${quota.used}/${quota.limit}`,
+                    ),
+                    requestingSession,
+                );
+                return null;
+            }
+        }
+
         // Phase 1 — Payload construction (pure, no DB calls).
         const isNewChat = !attemptedChatId;
         const chatId = attemptedChatId ?? crypto.randomUUID();
@@ -114,8 +134,20 @@ export async function chatMessageCreate(
         // they belong to the other namespace. The scope check is what stops a
         // stolen `chatId` from one surface from being used to post into the
         // other.
+        //
+        // Public-scope chats also stamp `sessionId` so the chat dialog's
+        // "Frühere Chats / Previous chats" list can find them; admin chats
+        // leave it null (they're owned by the logged-in user, not the
+        // session).
         if (isNewChat) {
-            const chatInsert: ChatCreate = { chatId, title: '', scope: dispatch.scope, lastModifiedAt: now, createdAt: now };
+            const chatInsert: ChatCreate = {
+                chatId,
+                title: '',
+                scope: dispatch.scope,
+                sessionId: dispatch.scope === 'public' ? requestingSession.sessionId : null,
+                lastModifiedAt: now,
+                createdAt: now,
+            };
             await serverRuntime.db.insert(chats).values(chatInsert);
         } else {
             const existing = await serverRuntime.db

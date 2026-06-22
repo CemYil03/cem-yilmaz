@@ -64,11 +64,13 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
     switch (spine.kind) {
         case 'user': {
             const variant = need(row.user, spine, 'user');
-            const author = need(row.author, spine, 'author');
+            // Author is nullable for anonymous visitor messages (no `User`
+            // row at all). Admin chats always have a logged-in author so
+            // the null branch fires only for visitor traffic.
             return {
                 gqlTypeName: 'ChatMessageUser',
                 chatMessageId: spine.chatMessageId,
-                author: toGqlUser(author),
+                author: row.author ? toGqlUser(row.author) : null,
                 body: variant.body,
                 // Attachments are an empty array on legacy rows / messages
                 // without files. The bulk loader in `chatMessageRowsLoad`
@@ -148,12 +150,14 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
         }
         case 'userInput': {
             const variant = need(row.userInput, spine, 'userInput');
-            const author = need(row.author, spine, 'author');
             const answers = variant.answers as ChatMessageUserInputAnswer[];
             return {
                 gqlTypeName: 'ChatMessageUserInput',
                 chatMessageId: spine.chatMessageId,
-                author: toGqlUser(author),
+                // Same nullable-author rationale as the `user` case above —
+                // anonymous visitors also submit answers to assistant input
+                // collections.
+                author: row.author ? toGqlUser(row.author) : null,
                 collectionMessageId: variant.collectionMessageId,
                 answers: answers.map(toGqlChatMessageUserInputAnswer),
                 createdAt: spine.createdAt,

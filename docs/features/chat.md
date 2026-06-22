@@ -1,17 +1,25 @@
 # Minimal AI Chat
 
 > **Project note:** on cem-yilmaz.de this is the **public visitor chat** — "Ask me anything about Cem." It is **not** a standalone route; it
-> lives inside a `Dialog` opened from the landing page's Assistant section (`/`). The workspace personal assistant gets its own feature doc
-> — see [Workspace Hub](./workspace-hub.md).
+> lives inside a `Dialog` mounted at the root layout and opened from the landing page's Assistant section, the suggestion chips, or the chat
+> icon in the site header. The workspace personal assistant gets its own feature doc — see [Workspace Hub](./workspace-hub.md). The
+> visitor-only concerns (anonymous authoring, rate limiting, previous-chats list, admin review at `/workspace/visitor-chats`) live in
+> [Visitor Chat](./chat-visitor.md).
 
 ## User Behavior
 
 A visitor on the landing page (`/` or `/en`) types a question into the Assistant section's composer (or clicks one of the suggested-question
 chips). Submitting the composer opens a `Dialog` containing the visitor chat surface. On open, the seeded question is sent through
 `chatMessageCreate` automatically (the user never has to retype it), a new chat is created server-side, and the dialog drops into the loaded
-transcript + composer view as the chatId returns. The transcript renders the full message history grouped by date, using the shared
-`<ChatMessage />` component for every variant of the message union. Subsequent sends are appended to the same chat. There is no URL state —
-the chatId lives in component state inside the dialog; closing the dialog ends the session.
+transcript + composer view as the chatId returns.
+
+The same dialog can also be opened from the **chat icon in the site header** (any public page) — that entry point opens the dialog in its
+empty state with no seeded send, listing the visitor's previous chats so they can pick one up where they left off. See
+[Visitor Chat](./chat-visitor.md) for the provider state machine and the entry-point table.
+
+The transcript renders the full message history grouped by date, using the shared `<ChatMessage />` component for every variant of the
+message union. Subsequent sends are appended to the same chat. There is no URL state — the chatId lives in component state inside the
+dialog; closing the dialog ends the session.
 
 The composer:
 

@@ -6,6 +6,8 @@ import { AmbientBackdrop } from '../web/components/AmbientBackdrop';
 import { Toaster } from '../web/components/base/sonner';
 import { TooltipProvider } from '../web/components/base/tooltip';
 import { NavigationProgress } from '../web/components/NavigationProgress';
+import { VisitorChatProvider } from '../web/chat/VisitorChatProvider';
+import { WebsiteVisitorAssistantChatDialog } from '../web/chat/WebsiteVisitorAssistantChatDialog';
 import { urqlClient } from '../web/graphql/client';
 import { useLocale } from '../web/hooks/useLocale';
 
@@ -89,7 +91,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <AmbientBackdrop />
                 <NavigationProgress />
                 <TooltipProvider>
-                    <GraphQLClientProvider value={urqlClient}>{children}</GraphQLClientProvider>
+                    <GraphQLClientProvider value={urqlClient}>
+                        <VisitorChatProvider>
+                            {children}
+                            {/* Visitor chat dialog mounts once at root so the
+                             *  header button (and any other surface) can open
+                             *  it from any public route. Renders nothing
+                             *  until `useVisitorChat()` flips `isOpen`. */}
+                            <WebsiteVisitorAssistantChatDialog locale={locale} />
+                        </VisitorChatProvider>
+                    </GraphQLClientProvider>
                 </TooltipProvider>
                 <Toaster position="bottom-center" richColors />
                 <Scripts />
