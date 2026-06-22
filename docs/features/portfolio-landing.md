@@ -22,7 +22,7 @@ Top-to-bottom structure:
 
    **The hero's primary call-to-action is the AI assistant itself**, embedded directly into the hero as a `GlassCard` beneath the headline
    block: an assistant header (avatar dot + "Cem's assistant" + green "available now · around the clock" status), the shared
-   `MessageComposer`, four suggested-question chip buttons under a "Popular questions" label, and a small disclaimer line. The page does not
+   `MessageComposer`, four suggested-question prompt cards under a "Popular questions" label, and a small disclaimer line. The page does not
    show a separate email or "scroll down" button in the hero — the landing page is itself a demo of an AI workflow Cem builds, so the first
    interactive element is the assistant. Email lives in the footer; deep navigation lives in the Explore section further down.
 
@@ -71,13 +71,16 @@ The visual treatment is a single `GlassCard` containing:
 
 - an assistant header (avatar dot + "Cem's assistant" + green "available now · around the clock" status),
 - the shared `MessageComposer` (controlled — `value` / `onValueChange` / `onSubmit`, no attachments slot, `rows={3}`),
-- four suggested-question chip buttons under a "Popular questions" label,
+- four suggested-question prompt cards in a 2-column grid (single column on mobile) under a "Popular questions" label — each card is a
+  left-aligned, rounded-2xl button with the question text and a faded `ArrowUpRightIcon` that brightens on hover. Cards replaced the earlier
+  pill chips because the longest German prompt wrapped awkwardly into a two-line stadium shape; the card grid keeps multi-line prompts
+  visually intentional and matches the starter-prompt pattern used by Claude/ChatGPT/Gemini.
 - a small disclaimer line beneath the card.
 
 Submit semantics (Enter to send, Shift+Enter for newline, send gating on non-empty input) come from `MessageComposer` itself — `Hero` only
 supplies the value and the submit callback.
 
-Submitting the composer, or clicking any suggestion chip, calls the `onOpenChat` callback owned by `HomePage` which sets `submittedQuestion`
+Submitting the composer, or clicking any suggestion card, calls the `onOpenChat` callback owned by `HomePage` which sets `submittedQuestion`
 and opens `<WebsiteVisitorAssistantChatDialog />` (`src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`). The dialog is the live visitor
 chat — it fires `chatMessageCreate` with the seeded question on open, mounts `useChatLiveUpdates` at its root so the subscription is in
 place before the mutation publishes, and renders the same transcript + composer stack that used to live at the now-removed `/chat` route.
@@ -121,7 +124,8 @@ Layout: a three-column grid on `md+` (brand block · sitemap · contact), stacke
 origin line ("Designed and built in Germany"), and the legal links to `/impressum` and `/datenschutz`. The brand column repeats the header's
 favicon + wordmark pair so the page bookends cleanly, plus a one-paragraph blurb. The sitemap column links back into the public routes
 (`/about`, `/cv`, `/projects`) with the same icons the Explore section uses — the footer earns its space as secondary navigation, not just a
-contact strip. Contact renders as chip-style pills matching the hero's "popular questions" buttons.
+contact strip. Contact renders as chip-style pills — the same glass-pill treatment the hero's "popular questions" buttons used before they
+were upgraded to prompt cards.
 
 The footer is separated from the page above by a brand-tinted hairline gradient (`from-transparent via-primary/40 to-transparent`) along its
 top edge rather than a flat `border-t` — keeps the page in the calm-glass system instead of reading as a generic CMS strip.

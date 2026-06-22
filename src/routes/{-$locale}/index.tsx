@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { CodeXmlIcon } from 'lucide-react';
 import {
     ArrowRightIcon,
+    ArrowUpRightIcon,
     Building2Icon,
     CalendarClockIcon,
     FileTextIcon,
@@ -393,15 +394,19 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
                         <div className="text-xs font-medium tracking-[0.18em] uppercase text-foreground/60">
                             {COPY.hero.suggestionsLabel[locale]}
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
                             {COPY.hero.suggestions.map((s) => (
                                 <button
                                     key={s.en}
                                     type="button"
                                     onClick={() => onOpenChat(s[locale])}
-                                    className="rounded-full border border-white/55 bg-white/40 px-4 py-2.5 text-sm text-foreground/85 transition-colors hover:bg-white/70 hover:text-foreground active:bg-white/80 active:text-foreground dark:border-white/10 dark:bg-white/4 dark:hover:bg-white/8 dark:active:bg-white/12 cursor-pointer"
+                                    className="group flex h-full items-start justify-between gap-3 rounded-2xl border border-white/55 bg-white/40 px-4 py-3 text-left text-sm leading-snug text-foreground/85 transition-colors hover:bg-white/70 hover:text-foreground active:bg-white/80 active:text-foreground dark:border-white/10 dark:bg-white/4 dark:hover:bg-white/8 dark:active:bg-white/12 cursor-pointer"
                                 >
-                                    {s[locale]}
+                                    <span>{s[locale]}</span>
+                                    <ArrowUpRightIcon
+                                        className="mt-0.5 size-4 shrink-0 text-foreground/40 transition-colors group-hover:text-primary motion-reduce:transition-none"
+                                        aria-hidden
+                                    />
                                 </button>
                             ))}
                         </div>
@@ -592,7 +597,7 @@ function availabilityMonthLabel(locale: Locale): string {
         month: 'long',
         year: 'numeric',
     });
-    return formatter.format(next);
+    return formatter.format(next).replace(/\s/g, ' ');
 }
 
 function Explore({ locale }: { locale: Locale }) {
