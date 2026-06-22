@@ -66,9 +66,8 @@ Notes:
 
 | Surface                                     | Status   | Auth                                                 |
 | ------------------------------------------- | -------- | ---------------------------------------------------- |
-| `/` — landing page                          | Phase 1  | Public                                               |
+| `/` — landing page (incl. visitor AI chat)  | Phase 1  | Public                                               |
 | `/impressum`, `/datenschutz`                | Phase 1  | Public                                               |
-| `/chat` — visitor AI chat                   | Phase 1  | Public                                               |
 | `/projects` — static portfolio list         | Phase 1  | Public                                               |
 | `/projects/$id` — DB-backed detail pages    | Phase 3  | Public                                               |
 | `/blog`, `/blog/$slug`                      | Phase 3  | Public                                               |

@@ -1,5 +1,6 @@
 import { MoonIcon, SunIcon, SunMoonIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
 
@@ -90,14 +91,18 @@ export function ThemeSelector() {
     const Icon = mode === 'light' ? SunIcon : mode === 'dark' ? MoonIcon : SunMoonIcon;
 
     return (
-        <button
-            type="button"
-            onClick={toggleMode}
-            aria-label={label}
-            title={label}
-            className="grid size-9 place-items-center rounded-full border border-foreground/10 text-foreground/80 transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/8 cursor-pointer"
-        >
-            <Icon className="size-4" />
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    onClick={toggleMode}
+                    aria-label={label}
+                    className="grid size-9 place-items-center rounded-full border border-foreground/10 text-foreground/80 transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/8 cursor-pointer"
+                >
+                    <Icon className="size-4" />
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
     );
 }

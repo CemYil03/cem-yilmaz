@@ -29,15 +29,15 @@ The hub greeting and the assistant composer are paired but not nested:
 
 - A bilingual greeting (`Willkommen zurück, Cem` / `Welcome back, Cem`) at the same h1 size the hub previously used for "Workspace".
 - A one-line subtitle inviting Cem to either ask the assistant or pick a focus area below.
-- A `ChatComposer` (the same component that powers `/chat`) wired through `useChatLiveUpdates`. The composer is rendered as a sibling of
-  `<main>` with `sticky bottom-4` so it stays anchored to the bottom of the viewport as the page scrolls — the mirror image of the
-  `sticky top-4` `Header`. `<main>` carries `pb-40` to reserve space so the focus-area grid is never hidden underneath. A
-  `ProgressiveBlurBottom` (a vertical mirror of the `ProgressiveBlurTop` field above the `Header` — five stacked fixed layers, each blurring
-  more than the one above and masked to fade out as it approaches the composer) sits at `z-40` directly under the composer (`z-50`) so
-  scrolling page content fades into a soft blur as it approaches the composer instead of sliding behind it in sharp focus. The bottom field
-  is **tuned differently** from the top one: it's taller (`h-64` vs `h-32`) and the per-layer mask `to` values are pulled higher (the 64px
-  layer reaches 65% up the field instead of 20%) so every layer — including the strongest — is still partially active at the composer's top
-  edge. The Header's curve concentrates the strongest blur at the very bottom of the viewport, which here would sit invisibly behind the
+- A `ChatComposer` (the same component that powers the visitor chat dialog on `/`) wired through `useChatLiveUpdates`. The composer is
+  rendered as a sibling of `<main>` with `sticky bottom-4` so it stays anchored to the bottom of the viewport as the page scrolls — the
+  mirror image of the `sticky top-4` `Header`. `<main>` carries `pb-40` to reserve space so the focus-area grid is never hidden underneath.
+  A `ProgressiveBlurBottom` (a vertical mirror of the `ProgressiveBlurTop` field above the `Header` — five stacked fixed layers, each
+  blurring more than the one above and masked to fade out as it approaches the composer) sits at `z-40` directly under the composer (`z-50`)
+  so scrolling page content fades into a soft blur as it approaches the composer instead of sliding behind it in sharp focus. The bottom
+  field is **tuned differently** from the top one: it's taller (`h-64` vs `h-32`) and the per-layer mask `to` values are pulled higher (the
+  64px layer reaches 65% up the field instead of 20%) so every layer — including the strongest — is still partially active at the composer's
+  top edge. The Header's curve concentrates the strongest blur at the very bottom of the viewport, which here would sit invisibly behind the
   composer's opaque `bg-white`; the composer's curve instead peaks at the composer's top edge so the fade-out happens above it, where it's
   actually visible. The composer is fully functional from the hub — it accepts attachments, supports the auto/manual tool-approval mode
   toggle, and locks during an in-flight turn. It is rendered with `autoFocus` so the textarea is the active element on landing — the user
@@ -46,8 +46,8 @@ The hub greeting and the assistant composer are paired but not nested:
 
 The composer is configured to talk to the **personal-assistant agent** by passing the `WorkspaceChatMessageCreate` mutation document and a
 matching result extractor to `ChatComposer`. That mutation goes through `Mutation.admin.chatMessageCreate`, which the server dispatches to
-`agentPersonalAssistant` (see `docs/architecture/multi-agent-chat.md`). The visitor agent at `/chat` is unaffected — `ChatComposer`'s
-defaults still target the visitor namespace.
+`agentPersonalAssistant` (see `docs/architecture/multi-agent-chat.md`). The public visitor chat (in the landing-page dialog) is unaffected —
+`ChatComposer`'s defaults still target the visitor namespace.
 
 On first send the hub navigates to `/workspace/assistant?chatId=<new id>`. Because `useChatLiveUpdates` was mounted on the hub before the
 mutation fired, the user message and the first streaming chunks of the assistant reply are already buffered when the loaded view takes over
@@ -55,9 +55,9 @@ mutation fired, the user message and the first streaming chunks of the assistant
 
 ## `/workspace/assistant`
 
-The dedicated chat surface for the personal assistant. Same shape as `/chat`: empty state with the composer, loaded state with a header, the
-transcript, and the composer pinned to the bottom. The loaded transcript reads `Query.admin.chat(chatId)` so a stolen chatId from the
-visitor namespace is rejected by `chatFindByScope`.
+The dedicated chat surface for the personal assistant. Same shape as the public visitor chat dialog: empty state with the composer, loaded
+state with a header, the transcript, and the composer pinned to the bottom. The loaded transcript reads `Query.admin.chat(chatId)` so a
+stolen chatId from the visitor namespace is rejected by `chatFindByScope`.
 
 The route is `noindex`, kept out of the sitemap, and unlinked from the public site — same posture as the rest of `/workspace/*`.
 
@@ -133,7 +133,8 @@ exist, not for the rooms to be furnished.
   pass an extractor that reads `data.admin.chatMessageCreate`.
 - `placeholder` — localized placeholder string. Defaults to `"Type a message…"`.
 
-The `/chat` route is unchanged — it doesn't pass any of these and gets the visitor defaults.
+The visitor chat dialog on the landing page (`WebsiteVisitorAssistantChatDialog`) is unchanged — it doesn't pass any of these and gets the
+visitor defaults.
 
 ### SEO
 
@@ -155,6 +156,6 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
   `WORKSPACE_GITHUB_LOGINS`). The README and `AGENTS.md` already document the env vars; the gate itself does not exist yet. `guardAdmin` and
   `guardAdminMutation` are the files that flip from permissive to allowlist-checked.
 - **Phase 2+ — populate focus areas.** Each stub becomes a real surface (per-area notes, lists, integrations) once the gate is in.
-- **Follow-up — extract `ChatTranscript`.** The transcript layout in `src/routes/{-$locale}/chat.tsx` and
+- **Follow-up — extract `ChatTranscript`.** The transcript layout in `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx` and
   `src/routes/{-$locale}/workspace/assistant.tsx` is duplicated. Once a third surface needs it, extract to a shared component under
   `src/web/chat/`.

@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import { DEFAULT_LOCALE, LOCALES } from '../utils/locale';
 import type { Locale } from '../utils/locale';
 import { useLocale } from '../hooks/useLocale';
+import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 
 function setLocaleCookie(locale: Locale) {
     document.cookie = `locale=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
@@ -30,14 +31,18 @@ export function LanguageSelector() {
     }
 
     return (
-        <button
-            type="button"
-            onClick={toggleLocale}
-            aria-label={label}
-            title={label}
-            className="grid size-9 place-items-center rounded-full border border-foreground/10 text-foreground/80 text-xs font-semibold uppercase transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/8 cursor-pointer"
-        >
-            {currentLocale}
-        </button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    onClick={toggleLocale}
+                    aria-label={label}
+                    className="grid size-9 place-items-center rounded-full border border-foreground/10 text-foreground/80 text-xs font-semibold transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/8 cursor-pointer capitalize"
+                >
+                    {currentLocale}
+                </button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
     );
 }

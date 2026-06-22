@@ -128,13 +128,12 @@ src/
 ├── routes/                     TanStack Router route definitions
 │   ├── __root.tsx              Root layout
 │   ├── {-$locale}/
-│   │   ├── index.tsx           Portfolio landing page
+│   │   ├── index.tsx           Portfolio landing page (hosts the visitor AI chat dialog)
 │   │   ├── about.tsx           Public profile page (bio, identity, skills, hobbies, contact)
 │   │   ├── cv.tsx              Public CV (experience + education timelines)
 │   │   ├── projects.tsx        Public portfolio (static list of Cem's projects)
 │   │   ├── impressum.tsx       Imprint (TMG §5)
 │   │   ├── datenschutz.tsx     Privacy notice (GDPR)
-│   │   ├── chat.tsx            Visitor AI chat
 │   │   └── workspace/          Personal workspace hub + focus areas (noindex; Phase 2 OAuth-gated)
 │   │       ├── index.tsx       Hub: greeting + assistant composer + links to each focus area
 │   │       ├── assistant.tsx   Personal-assistant chat (admin-scope)

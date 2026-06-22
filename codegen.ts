@@ -62,7 +62,7 @@ const config: CodegenConfig = {
         // turns that into a type-only self-import (TypeScript accepts those
         // because they erase). See `docs/architecture/api-layer.md`.
         'src/web/graphql/generated.ts': {
-            documents: ['src/routes/**/*.graphql', 'src/web/components/**/*.graphql'],
+            documents: ['src/routes/**/*.graphql', 'src/web/components/**/*.graphql', 'src/web/chat/**/*.graphql'],
             plugins: ['typescript', 'typescript-operations', 'typed-document-node'],
             config: {
                 ...sharedConfig,

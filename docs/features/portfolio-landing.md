@@ -7,25 +7,32 @@ everyone who isn't going through a deep-link.
 
 The page doubles as Cem's **marketing surface** — it positions him as a freelance consultant for business-process digitalisation and AI
 workflow implementation, while also signalling availability as a developing architect for standard web projects. The proof points are
-**SAP** (enterprise depth) and **peopleeat** (startup speed, founding architect).
+**enterprise depth** (large, regulated environments — anonymous on purpose) and **peopleeat** (startup speed, founding architect — named
+because it is Cem's own track record, not a logo name-drop).
 
 Top-to-bottom structure:
 
 1. **Header** — site name (links back to `/`) and the bilingual `LanguageSelector` / `ThemeSelector`.
-2. **Hero** — eyebrow chip ("Freelance · Consulting & Architecture"), bold headline, a value-proposition subhead naming SAP + peopleeat, and
-   two CTAs side by side: primary **"Email me"** (mailto) and secondary **"Ask my AI assistant"** (links to `/chat`). A circular portrait of
-   Cem (`/profile-picture.png`) sits to the right of the copy on `md+` screens and stacks above the copy on small screens, framed by a soft
-   primary-tinted glow so it blends with the glass aesthetic.
-3. **Proof strip** — a single `GlassCard` with two short blurbs about SAP and peopleeat.
-4. **Services** — three pillar cards: Process digitalisation, AI workflows, Web architecture & development. Each card has an icon, a short
+2. **Hero** — eyebrow chip ("Freelance · Consulting & Architecture"), a short bold headline ("Enterprise depth. Startup speed." /
+   "Enterprise-Tiefe. Startup-Tempo."), a one-line sub-headline naming the category (digitalisation + AI), and a tighter two-sentence body.
+   A circular portrait of Cem (`/profile-picture.png`) sits to the right of the copy on `md+` screens and stacks above the copy on small
+   screens, framed by a soft primary-tinted glow so it blends with the glass aesthetic.
+
+   **The hero's primary call-to-action is the AI assistant itself**, embedded directly into the hero as a `GlassCard` beneath the headline
+   block: an assistant header (avatar dot + "Cem's assistant" + green "available now · around the clock" status), the shared
+   `MessageComposer`, four suggested-question chip buttons under a "Popular questions" label, and a small disclaimer line. The page does not
+   show a separate email or "scroll down" button in the hero — the landing page is itself a demo of an AI workflow Cem builds, so the first
+   interactive element is the assistant. Email lives in the footer; deep navigation lives in the Explore section further down.
+
+3. **Services** — three pillar cards: Process digitalisation, AI workflows, Web architecture & development. Each card has an icon, a short
    description, and three bullets.
-5. **Why me** — two cards contrasting enterprise depth (SAP) with startup speed (peopleeat).
-6. **Assistant** — inline AI-assistant composer (Textarea + Send button) plus four pre-baked suggested-question chips and a soft disclaimer.
-   Submitting the composer or clicking any chip opens a `Dialog` containing the question and a placeholder for the chat surface. This is the
-   page's primary "act now" surface: the landing page is itself a demo of an AI workflow Cem builds.
-7. **Explore** — secondary nav cards for `About`, `CV`, `Projects`, and the visitor AI chat. Demoted to the bottom of the page since the
-   marketing pitch + assistant come first; still links to real routes.
-8. **Footer** — contact links (GitHub, LinkedIn, email) plus legal links to `/impressum` and `/datenschutz`.
+4. **Why me ("Tiefe und Tempo")** — two cards contrasting **enterprise depth** with **startup speed (peopleeat)**. The enterprise card is
+   intentionally anonymous — it leads with "Years of enterprise experience inside large, regulated environments" rather than naming a
+   customer. This is the single proof section; the standalone proof strip and the standalone assistant section that used to sit between Hero
+   and Why-Me were folded away (proof into this section, assistant into Hero).
+5. **Explore** — secondary nav cards for `About`, `CV`, and `Projects`. Demoted to the bottom of the page since the marketing pitch +
+   assistant come first; still links to real routes.
+6. **Footer** — contact links (GitHub, LinkedIn, email) plus legal links to `/impressum` and `/datenschutz`.
 
 ## Implementation Details
 
@@ -36,29 +43,37 @@ Top-to-bottom structure:
 
 ### Bilingual copy
 
-All visitor-facing text lives in a single `COPY` constant at the top of the route file, keyed by section (`hero`, `proof`, `services`,
-`whyMe`, `explore`, `assistant`, `footer`). Each entry is `{ de: string; en: string }` and is read with `entry[locale]`. **Do not**
-introduce a translation library — see [`docs/architecture/i18n.md`](../architecture/i18n.md).
+All visitor-facing text lives in a single `COPY` constant at the top of the route file, keyed by section (`hero`, `services`, `whyMe`,
+`explore`, `footer`). The `hero` block bundles both the headline copy and the embedded assistant's labels (`assistantName`,
+`assistantStatus`, `placeholder`, `send`, `suggestionsLabel`, `suggestions`, `disclaimer`) since the assistant is the hero's primary CTA
+rather than a standalone section. Each entry is `{ de: string; en: string }` and is read with `entry[locale]`. The hero block splits its
+headline copy into `headline` (short claim), `subheadline` (one-line category description) and `body` (two-sentence engagement intro) so
+each line works at its own typographic altitude. **Do not** introduce a translation library — see
+[`docs/architecture/i18n.md`](../architecture/i18n.md).
 
-### CTAs
+### Hero CTA (the embedded assistant)
 
-The primary CTA is a `<Button asChild>` wrapping a `mailto:` `<a>` tag built from `personalInfo.contact.emails[0]`. The secondary CTA is a
-`<Button asChild variant="outline">` wrapping a TanStack Router `<Link to="/{-$locale}/chat">`. The hero shows both; further down the page,
-the **Assistant** section replaces a static CTA band with an interactive AI composer that opens a `Dialog` on submit.
+The hero has **no buttons**. The call-to-action is the assistant composer itself, mounted directly inside `Hero` below the headline /
+sub-headline / body block. The composer state (`question`, `submittedQuestion`) lives in `Hero` because that is where the affordance now
+lives.
 
-### Assistant section
+The visual treatment is a single `GlassCard` containing:
 
-The visual reference for this section is the Podologie Dudenhofen "Erst kurz fragen — dann anrufen" panel: an eyebrow ("Fragen?"), a
-serif-feel heading, a soft intro paragraph, and a single `GlassCard` containing the composer.
+- an assistant header (avatar dot + "Cem's assistant" + green "available now · around the clock" status),
+- the shared `MessageComposer` (controlled — `value` / `onValueChange` / `onSubmit`, no attachments slot, `rows={3}`),
+- four suggested-question chip buttons under a "Popular questions" label,
+- a small disclaimer line beneath the card.
 
-The card uses an assistant header (avatar dot + "Cem's assistant" + green "available now · around the clock" status), a `Textarea` composer
-with an inline `Send` button (`SendHorizontalIcon`), four suggested-question chip buttons under a "Popular questions" label, and a small
-disclaimer line beneath the card.
+Submit semantics (Enter to send, Shift+Enter for newline, send gating on non-empty input) come from `MessageComposer` itself — `Hero` only
+supplies the value and the submit callback.
 
-Submitting the form (button click, or Enter without Shift), or clicking any suggestion chip, calls `setSubmittedQuestion(text)` which opens
-an `AssistantDialog`. The dialog currently shows the user's question echoed back, a placeholder copy line, and `Close` / `Email me` buttons.
-The dialog component is structured so it can be swapped for a real chat surface later without touching `AssistantSection`'s state machinery
-— the next iteration will wire it to the existing `/chat` agent.
+Submitting the composer, or clicking any suggestion chip, calls `setSubmittedQuestion(text)` which opens
+`<WebsiteVisitorAssistantChatDialog />` (`src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`). The dialog is the live visitor chat — it
+fires `chatMessageCreate` with the seeded question on open, mounts `useChatLiveUpdates` at its root so the subscription is in place before
+the mutation publishes, and renders the same transcript + composer stack that used to live at the now-removed `/chat` route. The dialog owns
+its own `chatId` in component state — closing it ends the session.
+
+See [`docs/features/chat.md`](./chat.md) for the visitor chat surface itself.
 
 ### SEO
 
@@ -68,10 +83,10 @@ and uses the hero subhead as the meta `description`. The page is listed in `src/
 
 ### Sections
 
-All sections use the shared `GlassCard` primitive for visual consistency with the header and other public pages. The proof strip is a single
-full-width card; the services and explore sections are grids of cards. The Why-Me cards and the Assistant card also use `GlassCard`. No new
-shared components were extracted — the section helpers (`Hero`, `HeroPortrait`, `Services`, `WhyMe`, `AssistantSection`, `AssistantDialog`,
-`Explore`, `SectionHeading`, `ServiceCard`, `WhyMeCard`, `ProofItem`, `NavCard`, `ChatCard`) live locally inside `index.tsx`.
+All sections use the shared `GlassCard` primitive for visual consistency with the header and other public pages. The services and explore
+sections are grids of cards; the Why-Me cards and the Hero's embedded assistant card also use `GlassCard`. The section helpers (`Hero`,
+`HeroPortrait`, `Services`, `WhyMe`, `Explore`, `SectionHeading`, `ServiceCard`, `WhyMeCard`, `NavCard`) live locally inside `index.tsx`.
+The visitor chat dialog is the only piece extracted — it lives in `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`.
 
 ### Social-link footer
 
@@ -80,8 +95,6 @@ a generic Lucide icon since the project's `lucide-react` does not bundle brand i
 
 ## Open TODOs
 
-- Wire `AssistantDialog` to the real `/chat` agent — submit the seeded question, render the streaming reply inline. Today the dialog is a
-  placeholder that echoes the question and offers an email fallback.
 - Replace generic `BriefcaseIcon` / `CodeXmlIcon` with proper brand SVGs shipped from `public/` once a brand kit lands.
 - Consider extracting the services / why-me sections into a dedicated `/services` route once the marketing copy settles and SEO benefits
   from a deeper page (see also `docs/conventions.md` for the bilingual route pattern).

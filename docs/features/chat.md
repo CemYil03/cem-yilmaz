@@ -1,20 +1,23 @@
 # Minimal AI Chat
 
-> **Project note:** on cem-yilmaz.de this `/chat` surface is the **public visitor chat** — "Ask me anything about Cem." Phase 2 adds a
-> second chat surface inside `/workspace` powered by a different agent. The user behavior described here covers the visitor surface; the
-> workspace personal assistant gets its own feature doc.
+> **Project note:** on cem-yilmaz.de this is the **public visitor chat** — "Ask me anything about Cem." It is **not** a standalone route; it
+> lives inside a `Dialog` opened from the landing page's Assistant section (`/`). The workspace personal assistant gets its own feature doc
+> — see [Workspace Hub](./workspace-hub.md).
 
 ## User Behavior
 
-A signed-in user can open `/chat`, type a message, and receive a streaming response from the assistant. With no `?chatId` in the URL, the
-first send creates a new chat and navigates to `/chat?chatId={id}`. Subsequent sends are appended to that chat. The transcript renders the
-full message history grouped by date, using the shared `<ChatMessage />` component for every variant of the message union.
+A visitor on the landing page (`/` or `/en`) types a question into the Assistant section's composer (or clicks one of the suggested-question
+chips). Submitting the composer opens a `Dialog` containing the visitor chat surface. On open, the seeded question is sent through
+`chatMessageCreate` automatically (the user never has to retype it), a new chat is created server-side, and the dialog drops into the loaded
+transcript + composer view as the chatId returns. The transcript renders the full message history grouped by date, using the shared
+`<ChatMessage />` component for every variant of the message union. Subsequent sends are appended to the same chat. There is no URL state —
+the chatId lives in component state inside the dialog; closing the dialog ends the session.
 
 The composer:
 
 - Auto-grows up to a few lines (`<InputGroupTextarea />` with `field-sizing-content`) inside an `<InputGroup>` whose `block-end` addon hosts
   the Send button. The presentational shell — textarea, Send button, Enter-to-send, busy/disabled wiring, and a slot for feature-specific
-  addon content — lives in the decoupled `<MessageComposer />` component (`src/web/components/MessageComposer.tsx`); `chat.tsx`'s
+  addon content — lives in the decoupled `<MessageComposer />` component (`src/web/components/MessageComposer.tsx`); the visitor chat's
   `ChatComposer` owns the draft state, the create mutation, the streaming preview, and the tool-call mode selector that plugs into the
   shell's `addonStart` slot.
 - Exposes a tool-call mode selector (`auto` / `manual`) at the bottom-left of the addon, which controls
@@ -44,7 +47,7 @@ auto-follow stops and a floating "Jump to latest" pill appears at the bottom-cen
 the tail and re-attaches the auto-follow. The "are we at the bottom?" check uses a 64 px tolerance so the few-pixel content-height jitter
 Streamdown produces between scroll events doesn't drop us out of stick mode. The decision to re-pin is read from a ref that `onScroll`
 updates and the `useLayoutEffect` consults — `onScroll` fires after the previous layout effect, so the ref always holds the pre-update
-bottom answer the next batch needs. Implemented in `ChatTranscript` (`src/routes/{-$locale}/chat.tsx`).
+bottom answer the next batch needs. Implemented in `ChatTranscript` inside `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`.
 
 Assistant text messages render free-floating — no chat bubble, no avatar — directly on the page background. A timestamp and a Copy button
 sit on a single row beneath the body; the Copy button writes the raw markdown body to the clipboard and flashes a check for ~1.5 s. User
@@ -58,8 +61,9 @@ with the call's arguments JSON-pretty-printed — see "Tool argument inspection"
 
 | Concern                      | Where                                                                              |
 | ---------------------------- | ---------------------------------------------------------------------------------- |
-| Route                        | `src/routes/{-$locale}/chat.tsx`                                                   |
-| Operations                   | `src/routes/{-$locale}/ChatPage.graphql`                                           |
+| Dialog component             | `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`                               |
+| Landing-page integration     | `src/routes/{-$locale}/index.tsx` (`AssistantSection`)                             |
+| Operations                   | `src/web/chat/ChatPage.graphql`                                                    |
 | Live-update hook             | `src/web/chat/useChatLiveUpdates.tsx`                                              |
 | Composer                     | `src/web/chat/ChatComposer.tsx`                                                    |
 | Transcript helpers           | `src/web/chat/chatTranscript.ts`                                                   |
@@ -76,11 +80,12 @@ with the call's arguments JSON-pretty-printed — see "Tool argument inspection"
 | Approval-gated tool          | _none in Phase 1 — Phase 2 personal-assistant agent introduces real gated tools_   |
 | Shared assistant turn        | `src/server/commands/chatAssistantTurnRun.ts` (`chatAssistantTurnRunDetached`)     |
 
-The route hosts these operations:
+The dialog hosts these operations:
 
 1. **`ChatPage` query** — pulls the current session, the chat, and every message via the shared `ChatMessageFields` fragment.
    `chat.messages` is a flat insertion-ordered list; the client groups by date at render time so subscription-delivered messages land in the
-   right group without a refetch. Loaded once on mount; the subscription extends the transcript from there. There is no refetch on send.
+   right group without a refetch. Loaded once when the chatId returns from the seeded send; the subscription extends the transcript from
+   there. There is no refetch on send.
 2. **`ChatMessageCreate` mutation** — inlines the `ChatAssistantOptions` literal so that `typescript-operations` does not re-emit
    `GqlCChatAssistantOptions` and clash with the `typescript` plugin's emission.
 3. **`ChatUpdates` subscription** — single live channel for the in-flight turn. Keyed by a per-turn `generationId` (UUIDv4 generated
@@ -101,6 +106,15 @@ The transcript renders from a single client-side store: the initial query's flat
 by `chatMessageId`), grouped client-side by ISO date so subscription-delivered messages land in the right group without a refetch. Streaming
 text rows render at the tail through the same `<AssistantMarkdown />` path the persisted `ChatMessageAssistantText` view uses, so the swap
 from streaming preview → persisted row is a true no-op.
+
+### Opening flow
+
+`AssistantSection` in the landing page (`src/routes/{-$locale}/index.tsx`) tracks a `submittedQuestion: string | null`. Submitting the
+section's `MessageComposer` (or clicking a suggestion chip) sets it to the typed text; `WebsiteVisitorAssistantChatDialog` reads it through
+the `question` prop: non-null opens the dialog, null closes it and resets internal state. On the open transition the dialog fires
+`chatMessageCreate` with the seeded question (guarded by a ref against StrictMode double-invoke) — so the user sees their question land in
+the transcript and the assistant streams its reply, all without retyping. The `useChatLiveUpdates` listener mounts at the dialog root so the
+subscription is in place BEFORE the seeded mutation fires (same race-avoidance pattern the old route used).
 
 ### User input flow
 

@@ -17,7 +17,6 @@ import { Route as Char123LocaleChar125ProjectsRouteImport } from './routes/{-$lo
 import { Route as Char123LocaleChar125ImpressumRouteImport } from './routes/{-$locale}/impressum'
 import { Route as Char123LocaleChar125DatenschutzRouteImport } from './routes/{-$locale}/datenschutz'
 import { Route as Char123LocaleChar125CvRouteImport } from './routes/{-$locale}/cv'
-import { Route as Char123LocaleChar125ChatRouteImport } from './routes/{-$locale}/chat'
 import { Route as Char123LocaleChar125AboutRouteImport } from './routes/{-$locale}/about'
 import { Route as ApiStreamRouteImport } from './routes/api/stream'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
@@ -79,12 +78,6 @@ const Char123LocaleChar125CvRoute = Char123LocaleChar125CvRouteImport.update({
   path: '/cv',
   getParentRoute: () => Char123LocaleChar125Route,
 } as any)
-const Char123LocaleChar125ChatRoute =
-  Char123LocaleChar125ChatRouteImport.update({
-    id: '/chat',
-    path: '/chat',
-    getParentRoute: () => Char123LocaleChar125Route,
-  } as any)
 const Char123LocaleChar125AboutRoute =
   Char123LocaleChar125AboutRouteImport.update({
     id: '/about',
@@ -187,7 +180,6 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
   '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
-  '/{-$locale}/chat': typeof Char123LocaleChar125ChatRoute
   '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
   '/{-$locale}/impressum': typeof Char123LocaleChar125ImpressumRoute
@@ -213,7 +205,6 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
   '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
-  '/{-$locale}/chat': typeof Char123LocaleChar125ChatRoute
   '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
   '/{-$locale}/impressum': typeof Char123LocaleChar125ImpressumRoute
@@ -241,7 +232,6 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
   '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
-  '/{-$locale}/chat': typeof Char123LocaleChar125ChatRoute
   '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
   '/{-$locale}/impressum': typeof Char123LocaleChar125ImpressumRoute
@@ -270,7 +260,6 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/stream'
     | '/{-$locale}/about'
-    | '/{-$locale}/chat'
     | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
     | '/{-$locale}/impressum'
@@ -296,7 +285,6 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/stream'
     | '/{-$locale}/about'
-    | '/{-$locale}/chat'
     | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
     | '/{-$locale}/impressum'
@@ -323,7 +311,6 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/stream'
     | '/{-$locale}/about'
-    | '/{-$locale}/chat'
     | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
     | '/{-$locale}/impressum'
@@ -409,13 +396,6 @@ declare module '@tanstack/react-router' {
       path: '/cv'
       fullPath: '/{-$locale}/cv'
       preLoaderRoute: typeof Char123LocaleChar125CvRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/{-$locale}/chat': {
-      id: '/{-$locale}/chat'
-      path: '/chat'
-      fullPath: '/{-$locale}/chat'
-      preLoaderRoute: typeof Char123LocaleChar125ChatRouteImport
       parentRoute: typeof Char123LocaleChar125Route
     }
     '/{-$locale}/about': {
@@ -535,7 +515,6 @@ declare module '@tanstack/react-router' {
 
 interface Char123LocaleChar125RouteChildren {
   Char123LocaleChar125AboutRoute: typeof Char123LocaleChar125AboutRoute
-  Char123LocaleChar125ChatRoute: typeof Char123LocaleChar125ChatRoute
   Char123LocaleChar125CvRoute: typeof Char123LocaleChar125CvRoute
   Char123LocaleChar125DatenschutzRoute: typeof Char123LocaleChar125DatenschutzRoute
   Char123LocaleChar125ImpressumRoute: typeof Char123LocaleChar125ImpressumRoute
@@ -555,7 +534,6 @@ interface Char123LocaleChar125RouteChildren {
 
 const Char123LocaleChar125RouteChildren: Char123LocaleChar125RouteChildren = {
   Char123LocaleChar125AboutRoute: Char123LocaleChar125AboutRoute,
-  Char123LocaleChar125ChatRoute: Char123LocaleChar125ChatRoute,
   Char123LocaleChar125CvRoute: Char123LocaleChar125CvRoute,
   Char123LocaleChar125DatenschutzRoute: Char123LocaleChar125DatenschutzRoute,
   Char123LocaleChar125ImpressumRoute: Char123LocaleChar125ImpressumRoute,

@@ -31,7 +31,8 @@ import { localeFromParam } from '../../../web/utils/locale';
 import type { Locale } from '../../../web/utils/locale';
 
 // Personal-assistant chat surface for the workspace. Same shape as
-// `src/routes/{-$locale}/chat.tsx` — the live-updates subscription, the
+// `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx` (the visitor chat
+// hosted in the landing-page dialog) — the live-updates subscription, the
 // transcript layout, and the composer are all reused — but every mutation
 // goes through the `admin.*` namespace so the server dispatches to
 // `agentPersonalAssistant`. The route is `noindex`, kept out of the sitemap,
@@ -210,8 +211,8 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
 
 // --- Transcript --------------------------------------------------------------
 //
-// Mirrors the transcript layout in `src/routes/{-$locale}/chat.tsx`. Once a
-// third surface arrives this should move to a shared `src/web/chat/`
+// Mirrors the transcript layout in `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`.
+// Once a third surface arrives this should move to a shared `src/web/chat/`
 // component; for two callers the duplication is the smaller cost.
 
 function ChatTranscript({
