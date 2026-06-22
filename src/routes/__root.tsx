@@ -10,47 +10,80 @@ import { VisitorChatProvider } from '../web/chat/VisitorChatProvider';
 import { WebsiteVisitorAssistantChatDialog } from '../web/chat/WebsiteVisitorAssistantChatDialog';
 import { urqlClient } from '../web/graphql/client';
 import { useLocale } from '../web/hooks/useLocale';
+import { DEFAULT_SHARE_IMAGE, DEFAULT_SHARE_IMAGE_DIMENSIONS, SITE_NAME } from '../web/seo/seoConstants';
+import { webPageUrlGet } from '../web/seo/webPageUrlGet';
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;var lightIcon=document.querySelector('link[rel="icon"][data-theme-icon="light"]');var darkIcon=document.querySelector('link[rel="icon"][data-theme-icon="dark"]');if(lightIcon&&darkIcon){if(mode==='auto'){lightIcon.media='(prefers-color-scheme: light)';darkIcon.media='(prefers-color-scheme: dark)';}else{lightIcon.media=resolved==='light'?'all':'not all';darkIcon.media=resolved==='dark'?'all':'not all';}}}catch(e){}})();`;
 
+// Site-wide defaults. Every route's `head()` overrides title/description/OG
+// per-page via `seoMeta()`; these only matter when a page omits `head()`
+// entirely or when a crawler hits a redirect before the locale-aware route
+// renders. Keep them generic and locale-neutral.
+const FALLBACK_DESCRIPTION = 'Freelance full-stack & AI engineer — digitalisation, AI workflows, and web architecture.';
+
 export const Route = createRootRoute({
-    head: () => ({
-        meta: [
-            {
-                charSet: 'utf-8',
-            },
-            {
-                name: 'viewport',
-                content: 'width=device-width, initial-scale=1',
-            },
-        ],
-        links: [
-            {
-                rel: 'stylesheet',
-                href: appCss,
-            },
-            // Favicon swap: the browser picks one of these two by media query
-            // when theme mode is `auto`. When the user manually toggles light
-            // or dark, THEME_INIT_SCRIPT and ThemeSelector rewrite both `media`
-            // attributes so the active icon follows the chosen mode rather
-            // than the OS preference. The `data-theme-icon` hooks identify
-            // them for that script. See docs/styles/theme.md.
-            {
-                rel: 'icon',
-                href: '/favicon.ico',
-                type: 'image/x-icon',
-                media: '(prefers-color-scheme: light)',
-                'data-theme-icon': 'light',
-            },
-            {
-                rel: 'icon',
-                href: '/favicon-dark.ico',
-                type: 'image/x-icon',
-                media: '(prefers-color-scheme: dark)',
-                'data-theme-icon': 'dark',
-            },
-        ],
-    }),
+    head: () => {
+        const webPageUrl = webPageUrlGet();
+        const shareImageAbsolute = `${webPageUrl}${DEFAULT_SHARE_IMAGE}`;
+        return {
+            meta: [
+                { charSet: 'utf-8' },
+                { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+                { name: 'theme-color', content: '#0f172a' },
+                // Fallback social-share metadata. Per-page `seoMeta()` calls
+                // override these for indexable pages; this block exists so
+                // crawlers that hit a redirect or a route without its own
+                // `head()` still see a complete card.
+                { name: 'description', content: FALLBACK_DESCRIPTION },
+                { property: 'og:site_name', content: SITE_NAME },
+                { property: 'og:type', content: 'website' },
+                { property: 'og:title', content: SITE_NAME },
+                { property: 'og:description', content: FALLBACK_DESCRIPTION },
+                { property: 'og:image', content: shareImageAbsolute },
+                { property: 'og:image:width', content: String(DEFAULT_SHARE_IMAGE_DIMENSIONS.width) },
+                { property: 'og:image:height', content: String(DEFAULT_SHARE_IMAGE_DIMENSIONS.height) },
+                { name: 'twitter:card', content: 'summary_large_image' },
+                { name: 'twitter:title', content: SITE_NAME },
+                { name: 'twitter:description', content: FALLBACK_DESCRIPTION },
+                { name: 'twitter:image', content: shareImageAbsolute },
+                // iOS home-screen / web-app cosmetics. Doesn't affect SEO, but
+                // pairs with `manifest.json` for a cohesive PWA install.
+                { name: 'apple-mobile-web-app-capable', content: 'yes' },
+                { name: 'apple-mobile-web-app-title', content: SITE_NAME },
+                { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+            ],
+            links: [
+                { rel: 'stylesheet', href: appCss },
+                // PWA manifest — declares short_name, theme_color, start_url
+                // for the install prompt. The file lives at `public/manifest.json`.
+                { rel: 'manifest', href: '/manifest.json' },
+                // Favicon swap: the browser picks one of these two by media query
+                // when theme mode is `auto`. When the user manually toggles light
+                // or dark, THEME_INIT_SCRIPT and ThemeSelector rewrite both `media`
+                // attributes so the active icon follows the chosen mode rather
+                // than the OS preference. The `data-theme-icon` hooks identify
+                // them for that script. See docs/styles/theme.md.
+                {
+                    rel: 'icon',
+                    href: '/favicon.ico',
+                    type: 'image/x-icon',
+                    media: '(prefers-color-scheme: light)',
+                    'data-theme-icon': 'light',
+                },
+                {
+                    rel: 'icon',
+                    href: '/favicon-dark.ico',
+                    type: 'image/x-icon',
+                    media: '(prefers-color-scheme: dark)',
+                    'data-theme-icon': 'dark',
+                },
+                // Universal fallback for older crawlers / clients that ignore
+                // the media-query variants above. Picked up by anything that
+                // walks `<link rel="icon">` without honouring `media`.
+                { rel: 'shortcut icon', href: '/favicon.ico', type: 'image/x-icon' },
+            ],
+        };
+    },
     component: RootComponent,
     notFoundComponent: NotFound,
     shellComponent: RootDocument,

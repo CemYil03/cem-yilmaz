@@ -37,7 +37,7 @@ export function LanguageSelector() {
                     type="button"
                     onClick={toggleLocale}
                     aria-label={label}
-                    className="grid size-9 place-items-center rounded-full border border-foreground/10 text-foreground/80 text-xs font-semibold transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/8 cursor-pointer capitalize"
+                    className="grid size-10 place-items-center rounded-full border border-foreground/10 text-foreground/80 text-xs font-semibold transition hover:bg-foreground/5 active:bg-foreground/10 dark:border-white/10 dark:hover:bg-white/8 dark:active:bg-white/14 cursor-pointer capitalize"
                 >
                     {currentLocale}
                 </button>

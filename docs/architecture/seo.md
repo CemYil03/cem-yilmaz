@@ -10,14 +10,17 @@ there are more than a few of them.
 ## Decision
 
 A single `seoMeta()` helper produces the full set of meta and link tags from a small per-page input. Each page route calls it from TanStack
-Router's `head()` callback. Sitemap and robots are served dynamically so the absolute URLs reflect the deployed environment.
+Router's `head()` callback. Sitemap and robots are served dynamically so the absolute URLs reflect the deployed environment. Schema.org
+structured data (`WebSite` + `Person`) is emitted on the homepage via JSON-LD scripts.
 
 The pieces:
 
 | Concern             | Where                                                                                                    |
 | ------------------- | -------------------------------------------------------------------------------------------------------- |
 | Per-page meta+links | `src/web/seo/seoMeta.ts` — pure helper; tests in `seoMeta.test.ts`                                       |
-| Site-wide constants | `src/web/seo/seoConstants.ts` — `SITE_NAME`, default share image, OG locale map                          |
+| Site-wide constants | `src/web/seo/seoConstants.ts` — `SITE_NAME`, default share image + dimensions, OG locale map             |
+| Structured data     | `src/web/seo/jsonLd.ts` — `WebSite` + `Person` JSON-LD; emitted only on the homepage                     |
+| Root-level defaults | `src/routes/__root.tsx` — fallback OG/Twitter card, manifest link, theme-color, apple-mobile-web-app     |
 | Absolute origin     | `WEB_PAGE_URL` env var → `EnvironmentVariables.webPageUrl`; resolved on the client via `webPageUrlGet()` |
 | Sitemap             | Dynamic route `src/routes/sitemap[.]xml.ts`; entries in `src/web/seo/sitemapRoutes.ts`                   |
 | Robots              | Dynamic route `src/routes/robots[.]txt.ts`                                                               |
@@ -41,9 +44,25 @@ The pieces:
 - One mandatory env var (`WEB_PAGE_URL`) — see `docs/infrastructure.md`.
 - Adding a new public page is two lines: a `head:` block in the route file and an entry in `src/web/seo/sitemapRoutes.ts`.
 - Localized pages get `hreflang` alternates and an `x-default` automatically — no per-page bookkeeping.
+- `seoMeta()` **always** emits an explicit `<meta name="robots">` — `index,follow` by default, `noindex,nofollow` when `noindex: true` is
+  passed. There is no implicit-default state; every public page declares its indexability.
+- Pages using the default share image (`/profile-picture.png`) also get `og:image:width` / `og:image:height` automatically. Pages passing a
+  custom `image` should pass `imageWidth` / `imageHeight` alongside it.
 - Logged-in / transactional pages set `noindex: true` on `seoMeta()` and are omitted from `SITEMAP_PATHS`. The chat route is the canonical
   example.
+- The homepage emits two JSON-LD blocks (`WebSite`, `Person`) via the route's `head().scripts`. Both pull from
+  `src/web/content/personalInfo.ts`, so identity facts have a single source of truth.
+- The root route emits site-wide fallbacks (OG/Twitter card pointing at the default share image, `theme-color`, `apple-mobile-web-app-*`,
+  `<link rel="manifest">`). Per-page `head()` overrides these for every indexable route, but the fallback exists for crawlers that hit a
+  redirect, a bare 404, or a route that omits `head()` entirely.
 - The helper is pure and isomorphic; client-side navigation updates the head correctly via TanStack Router's standard mechanism.
+
+## AI-search (GEO)
+
+Classical SEO and AI-search optimisation overlap but reward different signals. The AI-search layer (robots.txt AI bot allowlist,
+`/llms.txt`, `ProfilePage` + `FAQPage` schemas, `?ask=…` chat deep-link, `dateModified` freshness) lives alongside the SEO building blocks
+and is documented in [ai-search.md](./ai-search.md). When adding a new public page, mirror the SEO checklist with the AI-search one — add a
+bullet to `/llms.txt` and consider whether the page warrants a `ProfilePage` / `FAQPage` schema.
 
 ## Canonical URL strategy
 

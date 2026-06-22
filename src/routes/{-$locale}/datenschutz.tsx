@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { Header } from '../../web/components/Header';
 import { useLocale } from '../../web/hooks/useLocale';
 import { seoMeta } from '../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
 import { localeFromParam } from '../../web/utils/locale';
 
-// TODO(launch): adjust this notice as soon as the real data-processing
-// surface is locked in (workspace OAuth scopes, contact form, analytics, …).
-// Until then this is a baseline GDPR notice covering only what the site
-// actually does today: cookie-based session, the visitor AI chat that calls
-// Google Gemini, and standard server logs.
+// Baseline GDPR notice covering what the site actually does today: a cookie-
+// based session, the visitor AI chat that calls Google Gemini, and standard
+// server logs. Extend this page whenever the data-processing surface grows —
+// for example when analytics, a contact form, or a third-party embed lands.
 
 export const Route = createFileRoute('/{-$locale}/datenschutz')({
     head: ({ params }) => {
@@ -29,15 +29,19 @@ export const Route = createFileRoute('/{-$locale}/datenschutz')({
 
 function DatenschutzPage() {
     const locale = useLocale();
-    return locale === 'de' ? <PageDe /> : <PageEn />;
+    return (
+        <div className="min-h-screen flex flex-col overflow-x-clip">
+            <Header />
+            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-3xl mx-auto w-full py-12 leading-relaxed">
+                {locale === 'de' ? <PageDe /> : <PageEn />}
+            </main>
+        </div>
+    );
 }
 
 function PageDe() {
     return (
-        <main className="px-6 md:px-10 lg:px-16 max-w-3xl mx-auto w-full py-12 leading-relaxed">
-            <Link to="/{-$locale}" className="text-sm text-muted-foreground hover:text-foreground">
-                ← Zur Startseite
-            </Link>
+        <>
             <h1 className="mt-6 text-3xl font-bold tracking-tight">Datenschutz</h1>
 
             <h2 className="mt-8 text-lg font-semibold">Verantwortlicher</h2>
@@ -70,26 +74,13 @@ function PageDe() {
                 Beim Aufruf der Seite werden die üblichen technischen Daten verarbeitet (IP-Adresse, User-Agent, Zeitpunkt, abgerufene
                 Ressource), um den Betrieb sicherzustellen und Fehler zu diagnostizieren.
             </p>
-
-            <h2 className="mt-6 text-lg font-semibold">Anmeldung am Workspace (geplant)</h2>
-            <p className="mt-2">
-                Der private <code>/workspace</code>-Bereich nutzt eine GitHub-OAuth-Anmeldung. Dabei werden GitHub-Benutzername und
-                GitHub-ID gespeichert. Dieser Bereich ist ausschließlich dem Betreiber selbst zugänglich.
-            </p>
-
-            <p className="mt-8 text-sm text-muted-foreground">
-                Hinweis: Diese Erklärung wird vor dem Live-Gang auf den tatsächlichen Stand erweitert.
-            </p>
-        </main>
+        </>
     );
 }
 
 function PageEn() {
     return (
-        <main className="px-6 md:px-10 lg:px-16 max-w-3xl mx-auto w-full py-12 leading-relaxed">
-            <Link to="/{-$locale}" className="text-sm text-muted-foreground hover:text-foreground">
-                ← Back to home
-            </Link>
+        <>
             <h1 className="mt-6 text-3xl font-bold tracking-tight">Privacy</h1>
 
             <h2 className="mt-8 text-lg font-semibold">Controller</h2>
@@ -120,16 +111,6 @@ function PageEn() {
                 When you visit the site, standard technical data is processed (IP address, user agent, timestamp, requested resource) to
                 operate the site and diagnose errors.
             </p>
-
-            <h2 className="mt-6 text-lg font-semibold">Workspace sign-in (planned)</h2>
-            <p className="mt-2">
-                The private <code>/workspace</code> area uses GitHub OAuth. GitHub username and GitHub user id are stored. This area is only
-                accessible to the operator.
-            </p>
-
-            <p className="mt-8 text-sm text-muted-foreground">
-                Note: this notice will be expanded to match actual data processing before launch.
-            </p>
-        </main>
+        </>
     );
 }

@@ -283,9 +283,9 @@ function FocusAreaGrid({ locale }: { locale: Locale }) {
                                     <CardTitle className="text-xl">{area.title[locale]}</CardTitle>
                                 </div>
                                 <CardDescription>{area.description[locale]}</CardDescription>
-                                <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium group-hover:gap-3 transition-all">
+                                <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium">
                                     {COPY.enter[locale]}
-                                    <ArrowRightIcon className="size-4" />
+                                    <ArrowRightIcon className="size-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
                                 </span>
                             </CardContent>
                         </GlassCard>

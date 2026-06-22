@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { z } from 'zod';
+import type { CodeXmlIcon } from 'lucide-react';
 import {
     ArrowRightIcon,
-    BriefcaseIcon,
     Building2Icon,
     CalendarClockIcon,
-    CodeXmlIcon,
     FileTextIcon,
     FolderGitIcon,
     LayersIcon,
@@ -20,6 +20,7 @@ import { personalInfo } from '../../web/content/personalInfo';
 import { useVisitorChat } from '../../web/chat/VisitorChatProvider';
 import { Button } from '../../web/components/base/button';
 import { CardContent, CardDescription, CardTitle } from '../../web/components/base/card';
+import { Footer } from '../../web/components/Footer';
 import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
 import { MessageComposer } from '../../web/components/MessageComposer';
@@ -27,6 +28,7 @@ import { Reveal } from '../../web/components/Reveal';
 import { HomePageDocument } from '../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../web/hooks/useLocale';
+import { jsonLdScripts } from '../../web/seo/jsonLd';
 import { seoMeta } from '../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
 import { localeFromParam } from '../../web/utils/locale';
@@ -65,16 +67,16 @@ const COPY = {
             en: 'Freelance · Consulting & Architecture',
         },
         headline: {
-            de: 'Enterprise-Tiefe. Startup-Tempo.',
-            en: 'Enterprise depth. Startup speed.',
+            de: 'Digitalisierung, KI-Workflows und Web-Architektur.',
+            en: 'Digitalisation, AI workflows and web architecture.',
         },
         subheadline: {
             de: 'Digitalisierung und KI für Unternehmen, die liefern müssen.',
             en: 'Digitalisation and AI for companies that need to ship.',
         },
         body: {
-            de: 'Ich helfe Unternehmen, manuelle Abläufe in saubere digitale Workflows zu überführen und KI dort einzubauen, wo sie messbar Wert schafft. Daneben übernehme ich klassische Webprojekte als freiberuflicher Architekt und Entwickler.',
-            en: 'I help companies turn manual operations into clean digital workflows and embed AI where it measurably pays off. I also take on standard web projects as a freelance architect and developer.',
+            de: 'Manuelle Abläufe werden zu sauberen digitalen Workflows — und KI kommt dort zum Einsatz, wo sie messbar Wert schafft. Dazu kommen klassische Webprojekte, freiberuflich begleitet als Architekt und Entwickler.',
+            en: 'Manual operations turn into clean digital workflows — and AI gets embedded exactly where it measurably pays off. Plus classic web projects, taken on freelance as architect and developer.',
         },
         assistantName: { de: 'KI-Assistent von Cem', en: 'Cem’s assistant' },
         assistantStatus: { de: 'jetzt verfügbar · rund um die Uhr', en: 'available now · around the clock' },
@@ -100,12 +102,12 @@ const COPY = {
             },
         ],
         disclaimer: {
-            de: 'Der Assistent beantwortet Fragen zu Cem und seiner Arbeit — für konkrete Angebote und Preise melde dich bitte direkt.',
-            en: 'The assistant answers questions about Cem and his work — for offers and pricing, please reach out directly.',
+            de: 'Schildere dein Anliegen direkt im Chat — der Assistent leitet konkrete Anfragen an Cem weiter.',
+            en: 'Share your request in the chat — the assistant forwards concrete enquiries to Cem.',
         },
     },
     services: {
-        heading: { de: 'Womit ich helfe', en: 'How I help' },
+        heading: { de: 'Schwerpunkte', en: 'Focus areas' },
         subheading: {
             de: 'Drei Schwerpunkte. Wähle einen — oder kombiniere sie zu einem Programm, das zu deinem Unternehmen passt.',
             en: 'Three focus areas. Pick one — or combine them into a programme that fits your business.',
@@ -208,23 +210,23 @@ const COPY = {
     whyMe: {
         heading: { de: 'Tiefe und Tempo', en: 'Depth and speed' },
         subheading: {
-            de: 'Enterprise-Disziplin trifft auf Startup-Geschwindigkeit. Ich weiß, wann ein Prozess sauberen Audit-Trail braucht — und wann „in zwei Wochen live“ wichtiger ist.',
-            en: 'Enterprise discipline meets startup speed. I know when a process needs a clean audit trail — and when "live in two weeks" matters more.',
+            de: 'Enterprise-Disziplin trifft auf Startup-Geschwindigkeit. Saubere Audit-Trails dort, wo der Prozess sie braucht — und „in zwei Wochen live", wenn das die wichtigere Kennzahl ist.',
+            en: 'Enterprise discipline meets startup speed. Clean audit trails where the process demands them — and "live in two weeks" when that is the metric that matters.',
         },
         enterprise: {
             icon: Building2Icon,
             title: { de: 'Enterprise-Tiefe', en: 'Enterprise depth' },
             body: {
-                de: 'Langjährige Enterprise-Erfahrung in großen, regulierten Umgebungen: komplexe Domänen, kritische Integrationen, langlebige Codebasen. Ich weiß, was es heißt, Software zu bauen, die fünf Jahre lang gewartet werden muss.',
-                en: 'Years of enterprise experience inside large, regulated environments: complex domains, critical integrations, long-lived codebases. I know what it takes to build software that has to be maintained for five years.',
+                de: 'Langjährige Enterprise-Erfahrung in großen, regulierten Umgebungen: komplexe Domänen, kritische Integrationen, langlebige Codebasen. Software, die fünf Jahre lang wartbar bleiben muss — gebaut mit dem entsprechenden Anspruch.',
+                en: 'Years of enterprise experience inside large, regulated environments: complex domains, critical integrations, long-lived codebases. Software built to the standard required when it has to be maintained for five years.',
             },
         },
         startup: {
             icon: RocketIcon,
             title: { de: 'Startup-Tempo · peopleeat', en: 'Startup speed · peopleeat' },
             body: {
-                de: 'Gründungs-Architekt einer Food-Tech-Plattform — Architekturentscheidungen unter Unsicherheit, schnelle Iterationen, MVP zu Produkt. Ich liefere, ohne den nächsten Schritt zu verbauen.',
-                en: 'Founding architect of a food-tech platform — architecture calls under uncertainty, fast iterations, MVP to product. I ship without painting the next step into a corner.',
+                de: 'Gründungs-Architekt einer Food-Tech-Plattform — Architekturentscheidungen unter Unsicherheit, schnelle Iterationen, MVP zu Produkt. Liefern, ohne den nächsten Schritt zu verbauen.',
+                en: 'Founding architect of a food-tech platform — architecture calls under uncertainty, fast iterations, MVP to product. Shipping without painting the next step into a corner.',
             },
         },
     },
@@ -253,53 +255,31 @@ const COPY = {
         projects: {
             title: { de: 'Projekte', en: 'Projects' },
             description: {
-                de: 'Eine Auswahl von Dingen, die ich gebaut habe.',
-                en: 'A selection of things I have built.',
+                de: 'Eine Auswahl meiner Projekte — die, die ich öffentlich zeigen kann.',
+                en: 'A selection of my projects — the ones I can share publicly.',
             },
             cta: { de: 'Projekte ansehen', en: 'View projects' },
         },
     },
-    footer: {
-        contactHeading: { de: 'Kontakt', en: 'Get in touch' },
-        legal: {
-            impressum: { de: 'Impressum', en: 'Impressum' },
-            datenschutz: { de: 'Datenschutz', en: 'Privacy' },
-        },
-    },
 };
 
-const SOCIAL_LINKS: ReadonlyArray<{
-    href: string;
-    label: { de: string; en: string };
-    icon: typeof CodeXmlIcon;
-    visible: boolean;
-}> = [
-    {
-        href: personalInfo.contact.github.url,
-        label: { de: 'GitHub', en: 'GitHub' },
-        icon: CodeXmlIcon,
-        visible: personalInfo.publicVisibility.github,
-    },
-    {
-        href: personalInfo.contact.linkedin.url,
-        label: { de: 'LinkedIn', en: 'LinkedIn' },
-        icon: BriefcaseIcon,
-        visible: personalInfo.publicVisibility.linkedin,
-    },
-    {
-        href: `mailto:${PRIMARY_EMAIL}`,
-        label: { de: 'E-Mail', en: 'Email' },
-        icon: MailIcon,
-        visible: personalInfo.publicVisibility.emails && PRIMARY_EMAIL.length > 0,
-    },
-];
+// Search params for the homepage. `?ask=…` deep-links into the visitor chat
+// dialog, preseeded with the supplied question. AI search engines (and
+// shareable links) can hand off a question directly: e.g. ChatGPT can answer
+// "tell me about Cem" with a `[ask Cem's own assistant](…/?ask=tell+me+more)`
+// citation. Trimmed to 500 chars to keep URLs reasonable and avoid abuse.
+const homeSearchSchema = z.object({
+    ask: z.string().trim().min(1).max(500).optional(),
+});
 
 export const Route = createFileRoute('/{-$locale}/')({
     loader: () => routeLoaderGraphqlClient(HomePageDocument)(),
     staleTime: 0,
+    validateSearch: homeSearchSchema,
     head: ({ params }) => {
         const locale = localeFromParam(params);
-        return seoMeta({
+        const webPageUrl = webPageUrlGet();
+        const seo = seoMeta({
             title: {
                 de: 'Cem Yilmaz — Beratung für Digitalisierung & KI · Freelance Software-Architekt',
                 en: 'Cem Yilmaz — Digitalisation & AI consulting · Freelance software architect',
@@ -307,14 +287,25 @@ export const Route = createFileRoute('/{-$locale}/')({
             description: COPY.hero.body[locale],
             path: '/',
             locale,
-            webPageUrl: webPageUrlGet(),
+            webPageUrl,
         });
+        // Homepage carries the site-level structured data — WebSite + Person
+        // — so search engines can attribute brand, knowledge-panel facts, and
+        // social profiles to Cem. See src/web/seo/jsonLd.ts.
+        return {
+            ...seo,
+            scripts: jsonLdScripts(webPageUrl).map((script) => ({
+                type: script.type,
+                children: script.children,
+            })),
+        };
     },
     component: HomePage,
 });
 
 function HomePage() {
     const locale = useLocale();
+    const { ask } = Route.useSearch();
     const { openWithMessage } = useVisitorChat();
 
     function openChat(text: string) {
@@ -322,6 +313,14 @@ function HomePage() {
         if (trimmed.length === 0) return;
         openWithMessage(trimmed);
     }
+
+    // `?ask=…` deep-link: fire once on mount when the search param is present.
+    // Effect runs only when `ask` actually changes, so client-side navigation
+    // back to `/` (after the chat opened) does not re-trigger. The dialog
+    // dedupes on its end too via the `intent` state machine.
+    useEffect(() => {
+        if (ask) openWithMessage(ask);
+    }, [ask, openWithMessage]);
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
@@ -333,7 +332,7 @@ function HomePage() {
                 <CallToAction locale={locale} onOpenChat={openChat} />
                 <Explore locale={locale} />
             </main>
-            <Footer locale={locale} />
+            <Footer />
             {/* Dialog is mounted at the root layout — see `__root.tsx`. The
              *  `openWithMessage` call above seeds it with the hero composer's
              *  question; the header chat button opens it empty. */}
@@ -400,7 +399,7 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
                                     key={s.en}
                                     type="button"
                                     onClick={() => onOpenChat(s[locale])}
-                                    className="rounded-full border border-white/55 bg-white/40 px-3 py-1.5 text-sm text-foreground/85 transition-colors hover:bg-white/70 hover:text-foreground dark:border-white/10 dark:bg-white/4 dark:hover:bg-white/8 cursor-pointer"
+                                    className="rounded-full border border-white/55 bg-white/40 px-4 py-2.5 text-sm text-foreground/85 transition-colors hover:bg-white/70 hover:text-foreground active:bg-white/80 active:text-foreground dark:border-white/10 dark:bg-white/4 dark:hover:bg-white/8 dark:active:bg-white/12 cursor-pointer"
                                 >
                                     {s[locale]}
                                 </button>
@@ -422,8 +421,17 @@ function HeroPortrait({ alt }: { alt: string }) {
                 aria-hidden
                 className="absolute -inset-3 rounded-full bg-gradient-to-tr from-primary/30 via-primary/10 to-transparent blur-2xl animate-portrait-halo"
             />
-            <div className="relative size-48 overflow-hidden rounded-full border border-white/60 bg-white/40 shadow-xl backdrop-blur-md sm:size-52 md:size-56 lg:size-60 dark:border-white/10 dark:bg-white/4">
-                <img src="/profile-picture.png" alt={alt} className="size-full object-cover" loading="eager" />
+            <div className="relative size-40 overflow-hidden rounded-full border border-white/60 bg-white/40 shadow-xl backdrop-blur-md sm:size-44 md:size-52 lg:size-60 dark:border-white/10 dark:bg-white/4">
+                <img
+                    src="/profile-picture.png"
+                    alt={alt}
+                    width={640}
+                    height={640}
+                    className="size-full object-cover"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                />
             </div>
         </div>
     );
@@ -658,7 +666,7 @@ function NavCard({
 }) {
     return (
         <Link to={to} className="group">
-            <GlassCard className="h-full py-6 transition-colors hover:bg-white/55 dark:hover:bg-white/8">
+            <GlassCard className="h-full py-6 transition-colors hover:bg-white/55 active:bg-white/65 dark:hover:bg-white/8 dark:active:bg-white/12">
                 <CardContent className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-primary">
                         <Icon className="size-5" />
@@ -672,40 +680,5 @@ function NavCard({
                 </CardContent>
             </GlassCard>
         </Link>
-    );
-}
-
-function Footer({ locale }: { locale: Locale }) {
-    return (
-        <footer className="border-t mt-12">
-            <div className="px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full py-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 className="text-sm font-medium text-muted-foreground">{COPY.footer.contactHeading[locale]}</h2>
-                    <ul className="mt-3 flex gap-4">
-                        {SOCIAL_LINKS.filter((link) => link.visible).map(({ href, label, icon: Icon }) => (
-                            <li key={href}>
-                                <a
-                                    href={href}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-2 text-sm hover:text-primary"
-                                >
-                                    <Icon className="size-4" />
-                                    {label[locale]}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-                <nav className="flex gap-4 text-sm text-muted-foreground">
-                    <Link to="/{-$locale}/impressum" className="hover:text-foreground">
-                        {COPY.footer.legal.impressum[locale]}
-                    </Link>
-                    <Link to="/{-$locale}/datenschutz" className="hover:text-foreground">
-                        {COPY.footer.legal.datenschutz[locale]}
-                    </Link>
-                </nav>
-            </div>
-        </footer>
     );
 }

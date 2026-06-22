@@ -26,7 +26,7 @@ export function HeaderChatButton() {
                     type="button"
                     onClick={openEmpty}
                     aria-label={label}
-                    className="grid size-9 place-items-center rounded-full border border-foreground/10 text-foreground/80 transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/8 cursor-pointer"
+                    className="grid size-10 place-items-center rounded-full border border-foreground/10 text-foreground/80 transition hover:bg-foreground/5 active:bg-foreground/10 dark:border-white/10 dark:hover:bg-white/8 dark:active:bg-white/14 cursor-pointer"
                 >
                     <MessageCircleIcon className="size-4" aria-hidden />
                 </button>

@@ -21,6 +21,20 @@ See also:
 The provider's state machine is the `VisitorChatIntent` discriminated union in `src/web/chat/VisitorChatProvider.tsx`. The dialog itself is
 mounted once in `src/routes/__root.tsx`, so every public route inherits it without duplicating the dialog tree.
 
+## Composer
+
+Two visitor-specific deviations from the shared `<ChatComposer />`:
+
+- **No approval-mode selector.** Page visitors never need to gate tool calls — `showApprovalMode={false}` hides the Auto / Manual select in
+  the composer's bottom-left addon. The shared composer keeps it on by default for the workspace assistant surface.
+- **"New chat" button on the loaded transcript.** Inside the loaded view the composer's bottom-left addon slot hosts a "Neuer Chat" / "New
+  chat" button (plus icon). Clicking it resets the dialog's internal `chatId` back to `undefined`, which drops `ChatSurface` into
+  `ChatEmptyState` — the previous-chats list + composer overview. The button is disabled while a turn is generating; the empty state's own
+  composer creates a fresh chat on first send, just like opening the dialog from the header.
+
+Both deviations are wired by passing `showApprovalMode={false}` and an `addonStart` ReactNode into `<ChatComposer />` — props the shared
+composer exposes so surface-specific controls can plug into the same bottom-left slot.
+
 ## Anonymous authoring
 
 Visitors are not logged in. The server identifies a visitor by the session cookie alone — there is no `User` row and `sessions.userId` stays

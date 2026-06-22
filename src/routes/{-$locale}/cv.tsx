@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { DownloadIcon } from 'lucide-react';
+import { Button } from '../../web/components/base/button';
 import type { CvTimelineEntry } from '../../web/components/CvTimeline';
 import { CvTimeline } from '../../web/components/CvTimeline';
 import { Header } from '../../web/components/Header';
+import { Reveal } from '../../web/components/Reveal';
 import type { GqlCCvPageQuery } from '../../web/graphql/generated';
 import { CvPageDocument } from '../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../web/graphql/routeLoaderGraphqlClient';
@@ -51,30 +53,27 @@ function CvPage() {
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
             <Header />
-            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-16">
+            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <header className="py-12 md:py-16">
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{COPY.title[locale]}</h1>
                     <p className="mt-4 max-w-2xl text-base md:text-lg text-muted-foreground">{COPY.intro[locale]}</p>
-                    <a
-                        href="/Lebenslauf.pdf"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-6 inline-flex items-center gap-2 rounded-md border border-border/60 bg-background/40 px-3 py-1.5 text-sm hover:bg-foreground/5"
-                    >
-                        <DownloadIcon className="size-4" />
-                        {COPY.download[locale]}
-                    </a>
+                    <Button asChild variant="outline" size="default" className="mt-6">
+                        <a href="/Lebenslauf.pdf" target="_blank" rel="noreferrer">
+                            <DownloadIcon className="size-4" />
+                            {COPY.download[locale]}
+                        </a>
+                    </Button>
                 </header>
 
-                <section className="mt-4">
+                <Reveal as="section" className="mt-4">
                     <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.experience[locale]}</h2>
                     <CvTimeline entries={experience.map((row) => mapExperience(row, locale))} locale={locale} />
-                </section>
+                </Reveal>
 
-                <section className="mt-12">
+                <Reveal as="section" className="mt-12">
                     <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.education[locale]}</h2>
                     <CvTimeline entries={education.map((row) => mapEducation(row, locale))} locale={locale} />
-                </section>
+                </Reveal>
             </main>
         </div>
     );

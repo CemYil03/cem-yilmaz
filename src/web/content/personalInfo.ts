@@ -58,8 +58,8 @@ export const personalInfo: PersonalInfo = {
         en: 'with enterprise and startup experience.',
     },
     bio: {
-        de: 'Hi, ich bin Cem — Full-Stack- und AI-Engineer mit Erfahrung in großen SAP-Projekten und in Startups. Ich baue Produkte, die Menschen tatsächlich nutzen, von der Datenbank bis zum Pixel. Diese Seite ist gleichzeitig mein Portfolio und meine private Plattform.',
-        en: 'Hi, I’m Cem — a full-stack and AI engineer with experience across large SAP projects and startups. I build products people actually use, from the database to the pixel. This site is both my portfolio and my private platform.',
+        de: 'Hi, ich bin Cem — Full-Stack- und AI-Engineer mit Erfahrung in großen SAP-Projekten und in Startups. Produkte, die Menschen tatsächlich nutzen — gebaut von der Datenbank bis zum Pixel. Diese Seite ist zugleich Portfolio und private Plattform.',
+        en: 'Hi, I’m Cem — a full-stack and AI engineer with experience across large SAP projects and startups. Products people actually use — built from the database to the pixel. This site doubles as portfolio and private platform.',
     },
     contact: {
         phone: '+49 1525 6207005',

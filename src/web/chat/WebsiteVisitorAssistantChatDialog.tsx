@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
-import { ArrowDownIcon, MessageSquareTextIcon, SparklesIcon } from 'lucide-react';
+import { ArrowDownIcon, MessageSquareTextIcon, PlusIcon, SparklesIcon } from 'lucide-react';
 import { useMutation, useQuery } from 'urql';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/base/dialog';
 import { Spinner } from '../components/base/spinner';
@@ -75,6 +75,7 @@ const COPY = {
     composerEmpty: { de: 'Stell eine Frage…', en: 'Ask a question…' },
     jumpToLatest: { de: 'Zum neuesten springen', en: 'Jump to latest' },
     previousChats: { de: 'Frühere Chats', en: 'Previous chats' },
+    newChat: { de: 'Neuer Chat', en: 'New chat' },
     emptyIntroNoPrevious: {
         de: 'Stell eine Frage zu meinem Werdegang, meinen Projekten oder meiner Arbeitsweise.',
         en: 'Ask a question about my career, projects, or how I work.',
@@ -177,6 +178,15 @@ function ChatSurface({ locale, intent, live }: { locale: Locale; intent: Visitor
         setChatId(nextChatId);
     }, []);
 
+    // Returning to the overview from inside a loaded chat clears `chatId`,
+    // which drops `ChatSurface` back into `ChatEmptyState`. The hook clears
+    // its per-turn buffers on the loaded→empty transition, so the next
+    // empty-state render is a clean slate. Use this only when no turn is in
+    // flight (the button is hidden while `isGenerating`).
+    const onResetToOverview = useCallback(() => {
+        setChatId(undefined);
+    }, []);
+
     if (sendError) {
         return <div className="grid flex-1 place-items-center p-8 text-sm text-destructive">{sendError}</div>;
     }
@@ -193,7 +203,7 @@ function ChatSurface({ locale, intent, live }: { locale: Locale; intent: Visitor
         }
         return <ChatEmptyState locale={locale} live={live} onResume={onResume} setChatId={setChatId} />;
     }
-    return <ChatLoaded chatId={chatId} live={live} locale={locale} />;
+    return <ChatLoaded chatId={chatId} live={live} locale={locale} onResetToOverview={onResetToOverview} />;
 }
 
 // --- Empty state ------------------------------------------------------------
@@ -254,6 +264,7 @@ function ChatEmptyState({
                     endTurn={live.endTurn}
                     placeholder={COPY.composerEmpty[locale]}
                     onMessageSent={setChatId}
+                    showApprovalMode={false}
                 />
                 <VisitorChatQuotaStatus quota={quota} locale={locale} />
             </div>
@@ -309,7 +320,17 @@ function VisitorChatQuotaStatus({ quota, locale }: { quota: GqlCVisitorChatQuota
     );
 }
 
-function ChatLoaded({ chatId, live, locale }: { chatId: string; live: ReturnType<typeof useChatLiveUpdates>; locale: Locale }) {
+function ChatLoaded({
+    chatId,
+    live,
+    locale,
+    onResetToOverview,
+}: {
+    chatId: string;
+    live: ReturnType<typeof useChatLiveUpdates>;
+    locale: Locale;
+    onResetToOverview: () => void;
+}) {
     const [{ data, fetching, error }] = useQuery({
         query: ChatPageDocument,
         variables: { chatId },
@@ -385,6 +406,19 @@ function ChatLoaded({ chatId, live, locale }: { chatId: string; live: ReturnType
                 beginTurn={live.beginTurn}
                 endTurn={live.endTurn}
                 placeholder={COPY.placeholder[locale]}
+                showApprovalMode={false}
+                addonStart={
+                    <button
+                        type="button"
+                        onClick={onResetToOverview}
+                        disabled={live.isGenerating}
+                        aria-label={COPY.newChat[locale]}
+                        className="flex h-7 items-center gap-1 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <PlusIcon className="size-3.5" />
+                        {COPY.newChat[locale]}
+                    </button>
+                }
             />
         </div>
     );

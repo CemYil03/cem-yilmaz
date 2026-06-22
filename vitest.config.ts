@@ -19,6 +19,14 @@ import viteReact from '@vitejs/plugin-react';
 // Both projects share `src/server/test/vitestSetup.ts` for the global
 // console-spy setup; the web project layers its own jsdom-aware setup on top.
 export default defineConfig({
+    // Vite-injected build constants from `vite.config.ts` — Vitest does not
+    // load that config, so the build-time `define` does not flow through. We
+    // stub a stable value so any module under test that references
+    // `__SITE_LAST_MODIFIED__` (notably the JSON-LD builders) compiles and
+    // returns a deterministic timestamp in tests.
+    define: {
+        __SITE_LAST_MODIFIED__: JSON.stringify('2026-01-01T00:00:00Z'),
+    },
     test: {
         projects: [
             {

@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowRightIcon, BriefcaseIcon, CodeXmlIcon, MailIcon } from 'lucide-react';
+import { Button } from '../../web/components/base/button';
 import { CvSkillGroup } from '../../web/components/CvSkillGroup';
 import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
+import { Reveal } from '../../web/components/Reveal';
 import { personalInfo } from '../../web/content/personalInfo';
 import { AboutPageDocument } from '../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../web/hooks/useLocale';
+import { jsonLdFaqPage, jsonLdProfilePage } from '../../web/seo/jsonLd';
+import type { FaqEntry } from '../../web/seo/jsonLd';
 import { seoMeta } from '../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
 import type { Locale } from '../../web/utils/locale';
@@ -23,6 +27,7 @@ const COPY = {
         skills: { de: 'Skills & Werkzeuge', en: 'Skills & tools' },
         hobbies: { de: 'Freizeit', en: 'Hobbies' },
         contact: { de: 'Kontakt', en: 'Contact' },
+        faq: { de: 'Häufige Fragen', en: 'Common questions' },
     },
     facts: {
         born: { de: 'Geboren', en: 'Born' },
@@ -35,6 +40,65 @@ const COPY = {
     },
 };
 
+// Q&A block rendered on /about and mirrored into the page's FAQPage JSON-LD.
+// Crawler-friendly answers: discrete, factual, ~1-3 sentences each. AI
+// engines (Perplexity, ChatGPT Search, Google AI Overviews) extract these
+// verbatim when answering "who is Cem Yilmaz", "where does Cem live", etc.
+// Keep answers in sync with `personalInfo` and the public CV — drift here
+// becomes contradictions in AI answers.
+function buildFaq(locale: Locale): ReadonlyArray<FaqEntry> {
+    const city = personalInfo.residence.city;
+    const github = personalInfo.contact.github.url;
+    const linkedin = personalInfo.contact.linkedin.url;
+    const email = personalInfo.contact.emails[0] ?? '';
+    if (locale === 'de') {
+        return [
+            {
+                question: 'Wer ist Cem Yilmaz?',
+                answer: `Cem Yilmaz ist Full-Stack- und AI-Engineer mit Erfahrung in großen SAP-Projekten und in Startups. Er baut Produkte von der Datenbank bis zum Pixel und arbeitet freiberuflich an Digitalisierungs-, KI- und Web-Architektur-Projekten.`,
+            },
+            {
+                question: 'Wo lebt Cem?',
+                answer: `Cem lebt in ${city} in Rheinland-Pfalz, Deutschland. Mandate werden in der Regel remote durchgeführt; vor Ort im Großraum Mannheim/Ludwigshafen/Karlsruhe nach Absprache.`,
+            },
+            {
+                question: 'Womit arbeitet Cem hauptsächlich?',
+                answer: 'Schwerpunkte sind Digitalisierung manueller Prozesse, KI-Workflows (Vercel AI SDK, Google Gemini, Claude), TypeScript/React/Node-Stacks und SAP-Integrationen. Voller Stack inklusive Datenbankdesign und Deployment.',
+            },
+            {
+                question: 'Kann ich Cem für ein Projekt buchen?',
+                answer: `Ja — Cem nimmt selektiv Freelance-Mandate an. Schreibe an ${email} oder starte den KI-Assistenten auf der Startseite, um ein Projekt zu beschreiben und Verfügbarkeit zu prüfen.`,
+            },
+            {
+                question: 'Wie kontaktiere ich Cem?',
+                answer: `Per E-Mail an ${email}, über GitHub (${github}) oder LinkedIn (${linkedin}). Auf der Startseite steht zusätzlich ein KI-Assistent rund um die Uhr für Fragen zur Verfügung.`,
+            },
+        ];
+    }
+    return [
+        {
+            question: 'Who is Cem Yilmaz?',
+            answer: `Cem Yilmaz is a full-stack and AI engineer with experience across large SAP projects and startups. He builds products from the database to the pixel and takes on freelance work in digitalisation, AI workflows, and web architecture.`,
+        },
+        {
+            question: 'Where is Cem based?',
+            answer: `Cem lives in ${city}, Rhineland-Palatinate, Germany. Engagements are usually remote; on-site in the Mannheim / Ludwigshafen / Karlsruhe area by arrangement.`,
+        },
+        {
+            question: 'What does Cem work on?',
+            answer: 'Digitalisation of manual operations, AI workflows (Vercel AI SDK, Google Gemini, Claude), TypeScript / React / Node stacks, and SAP integrations. Full stack including database design and deployment.',
+        },
+        {
+            question: 'Can I hire Cem for a project?',
+            answer: `Yes — Cem takes on selective freelance engagements. Reach out at ${email} or start the AI assistant on the home page to describe a project and check availability.`,
+        },
+        {
+            question: 'How do I contact Cem?',
+            answer: `Email ${email}, GitHub (${github}), or LinkedIn (${linkedin}). The home page also hosts an AI assistant available around the clock for live questions.`,
+        },
+    ];
+}
+
 const GERMAN_DATE_FORMATTER = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
 const ENGLISH_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -43,13 +107,28 @@ export const Route = createFileRoute('/{-$locale}/about')({
     staleTime: 0,
     head: ({ params }) => {
         const locale = localeFromParam(params);
-        return seoMeta({
+        const webPageUrl = webPageUrlGet();
+        const seo = seoMeta({
             title: COPY.title[locale],
             description: COPY.intro[locale],
             path: '/about',
             locale,
-            webPageUrl: webPageUrlGet(),
+            webPageUrl,
         });
+        // ProfilePage + FAQPage JSON-LD. The Profile schema tells AI engines
+        // this is the canonical "about" page for the Person on the homepage;
+        // the FAQ schema mirrors the visible Q&A block below so engines can
+        // extract discrete answers verbatim. The visible block is the
+        // source of truth — keep `buildFaq()` in sync with what renders.
+        const profile = jsonLdProfilePage(webPageUrl, locale);
+        const faq = jsonLdFaqPage(buildFaq(locale));
+        return {
+            ...seo,
+            scripts: [
+                { type: profile.type, children: profile.children },
+                { type: faq.type, children: faq.children },
+            ],
+        };
     },
     component: AboutPage,
 });
@@ -61,7 +140,7 @@ function AboutPage() {
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
             <Header />
-            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-16">
+            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <header className="py-12 md:py-16">
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{COPY.title[locale]}</h1>
                     <p className="mt-4 text-lg md:text-xl text-muted-foreground">
@@ -70,14 +149,16 @@ function AboutPage() {
                     <p className="mt-6 max-w-2xl text-base md:text-lg leading-relaxed">{personalInfo.bio[locale]}</p>
                 </header>
 
-                <IdentityFacts locale={locale} />
+                <Reveal as="section" className="mt-4">
+                    <IdentityFacts locale={locale} />
+                </Reveal>
 
-                <section className="mt-12">
+                <Reveal as="section" className="mt-12">
                     <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.skills[locale]}</h2>
                     <CvSkillGroup skills={data.cv.skills} locale={locale} />
-                </section>
+                </Reveal>
 
-                <section className="mt-12">
+                <Reveal as="section" className="mt-12">
                     <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.hobbies[locale]}</h2>
                     <GlassCard className="px-6 py-5">
                         <ul className="flex flex-col gap-2 text-sm leading-relaxed">
@@ -88,19 +169,20 @@ function AboutPage() {
                             })}
                         </ul>
                     </GlassCard>
-                </section>
+                </Reveal>
 
                 <ContactBlock locale={locale} />
 
-                <section className="mt-12">
-                    <Link
-                        to="/{-$locale}/cv"
-                        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                    >
-                        {COPY.cta.cv[locale]}
-                        <ArrowRightIcon className="size-4" />
-                    </Link>
-                </section>
+                <FaqBlock locale={locale} />
+
+                <Reveal as="section" className="mt-12">
+                    <Button asChild size="lg">
+                        <Link to="/{-$locale}/cv" className="group">
+                            {COPY.cta.cv[locale]}
+                            <ArrowRightIcon className="size-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
+                        </Link>
+                    </Button>
+                </Reveal>
             </main>
         </div>
     );
@@ -112,7 +194,7 @@ function IdentityFacts({ locale }: { locale: Locale }) {
     const residence = `${personalInfo.residence.postalCode} ${personalInfo.residence.city}`;
     const languages = personalInfo.spokenLanguages.map((l) => l[locale]).join(', ');
     return (
-        <section className="mt-4">
+        <>
             <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.identity[locale]}</h2>
             <GlassCard className="px-6 py-5">
                 <dl className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-2">
@@ -122,7 +204,7 @@ function IdentityFacts({ locale }: { locale: Locale }) {
                     <Fact label={COPY.facts.languages[locale]} value={languages} />
                 </dl>
             </GlassCard>
-        </section>
+        </>
     );
 }
 
@@ -162,17 +244,19 @@ function ContactBlock({ locale }: { locale: Locale }) {
     }
     return (
         <section className="mt-12">
-            <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.contact[locale]}</h2>
+            <Reveal>
+                <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.contact[locale]}</h2>
+            </Reveal>
             <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {items.map(({ key, icon: Icon, label, href, body }) => (
-                    <li key={key}>
+                {items.map(({ key, icon: Icon, label, href, body }, i) => (
+                    <Reveal as="li" key={key} index={i} className="h-full">
                         <a
                             href={href}
                             target={href.startsWith('mailto:') ? undefined : '_blank'}
                             rel={href.startsWith('mailto:') ? undefined : 'noreferrer'}
                             className="block"
                         >
-                            <GlassCard className="px-5 py-4 transition-colors hover:bg-white/55 dark:hover:bg-white/8">
+                            <GlassCard className="px-5 py-4 transition-colors hover:bg-white/55 dark:hover:bg-white/8 active:bg-white/70 dark:active:bg-white/12">
                                 <div className="flex items-center gap-2 text-sm">
                                     <Icon className="size-4 text-primary" />
                                     <span className="font-medium">{label}</span>
@@ -180,7 +264,37 @@ function ContactBlock({ locale }: { locale: Locale }) {
                                 <p className="mt-1 text-xs text-muted-foreground">{body}</p>
                             </GlassCard>
                         </a>
-                    </li>
+                    </Reveal>
+                ))}
+            </ul>
+        </section>
+    );
+}
+
+// Visible counterpart of the FAQPage JSON-LD. Renders as `<details>` so the
+// answers are crawlable in the DOM (open or closed) but stay tidy for human
+// readers. Keep the visible answers verbatim with `buildFaq()` so search
+// engines do not penalise the schema for mismatched content.
+function FaqBlock({ locale }: { locale: Locale }) {
+    const entries = buildFaq(locale);
+    return (
+        <section className="mt-12">
+            <Reveal>
+                <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.faq[locale]}</h2>
+            </Reveal>
+            <ul className="flex flex-col gap-2">
+                {entries.map((entry, i) => (
+                    <Reveal as="li" key={entry.question} index={i}>
+                        <GlassCard className="px-5 py-3">
+                            <details className="group">
+                                <summary className="cursor-pointer list-none font-medium text-sm md:text-base flex items-center justify-between gap-3">
+                                    <span>{entry.question}</span>
+                                    <ArrowRightIcon className="size-4 text-muted-foreground transition-transform duration-200 ease-out group-open:rotate-90 motion-reduce:transition-none" />
+                                </summary>
+                                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{entry.answer}</p>
+                            </details>
+                        </GlassCard>
+                    </Reveal>
                 ))}
             </ul>
         </section>

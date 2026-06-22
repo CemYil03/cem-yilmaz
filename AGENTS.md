@@ -28,6 +28,16 @@ Phase 2 brings GitHub OAuth and dual-agent chat. Phase 3 brings the DB-backed pr
 3. Read the relevant `docs/architecture/*.md` files for the area you are working in
 4. Read `docs/infrastructure.md` if your change affects deployment, CI, or environment variables
 
+## Working Boundaries
+
+- **Do not create new branches** unless the user explicitly asks you to. Work on the currently checked-out branch.
+- **Do not create or switch into a git worktree** unless the user explicitly asks for one. Never invoke `EnterWorktree`, `git worktree add`,
+  or spawn an agent with `isolation: "worktree"` on your own initiative.
+- **Do not commit or push** unless the user explicitly asks. If you're on `main` and the user asks you to commit, stop and ask first —
+  `main` deploys to production via Coolify.
+- If you think a branch or worktree would genuinely help (e.g. parallel agents that would otherwise conflict), surface that as a suggestion
+  and wait for approval before acting.
+
 ## Conventions (Summary)
 
 These are non-negotiable. The full details are in `docs/conventions.md`.
@@ -38,6 +48,8 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 - **Icons**: Lucide React only (`lucide-react`)
 - **UI components**: base primitives in `src/web/components/base/`, app components in `src/web/components/`
 - **Class merging**: use `cn()` from `src/web/utils/cn.ts`
+- **Motion**: every animation must answer a question the user is already asking — see [docs/styles/motion.md](./docs/styles/motion.md) for
+  the guardrails, anti-patterns, and reduced-motion stance. No motion library; reuse `Reveal` / `useInView`.
 - **GraphQL schema**: SDL-first in `src/server/graphql/schema.graphqls`. Run `npm run graphql:generate` after any schema change.
 - **Resolver wiring**: all in `src/server/graphql/resolversCreate.ts` — the only file that imports from commands/, queries/, and guards/
 - **Bilingual copy**: this site is DE + EN. Use the inline `{ de: '…', en: '…' }[locale]` pattern (no i18n library). Every visitor- facing
@@ -51,23 +63,24 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 
 ## Architecture at a Glance
 
-| Concern               | Pattern                                                                  | Key Files                                      |
-| --------------------- | ------------------------------------------------------------------------ | ---------------------------------------------- |
-| Server-side structure | CQRS — commands/, queries/, mappers/                                     | `docs/architecture/server-architecture.md`     |
-| Dependency injection  | ServerRuntime container                                                  | `src/server/domain/ServerRuntime.ts`           |
-| Environment variables | Central validated `EnvironmentVariables` — no direct `process.env` reads | `src/server/env/environmentVariablesCreate.ts` |
-| Authentication        | Cookie-based automatic sessions; Phase 2 adds GitHub OAuth on top        | `src/server/utils/sessionUpsert.ts`            |
-| Authorization         | Guard functions (`guard{Entity}{Ctx}`)                                   | `src/server/guards/`                           |
-| GraphQL               | SDL-first, Apollo Server v5, URQL client                                 | `src/server/graphql/schema.graphqls`           |
-| Real-time             | Subscriptions over SSE, PostgreSQL NOTIFY/LISTEN                         | `src/server/graphql/PubSubPostgres.ts`         |
-| Background jobs       | pg-boss via `serverRuntime.jobs.enqueue()`                               | `docs/architecture/jobs.md`                    |
-| Server-side rendering | Singleton headless Chromium via `serverRuntime.browser.capture()`        | `docs/architecture/server-side-rendering.md`   |
-| SEO                   | `seoMeta()` per page; dynamic `/sitemap.xml` and `/robots.txt`           | `docs/architecture/seo.md`                     |
-| Code generation       | `npm run graphql:generate` — server `GqlS*`, client `GqlC*`              | `codegen.ts`                                   |
-| Editable content      | DB tables (CV, future projects/blog/tools) + admin UI under `/workspace` | `docs/architecture/content-model.md`           |
-| Static identity       | Typed config under `src/web/content/`                                    | `src/web/content/personalInfo.ts`              |
-| AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                            | `src/server/agents/agentVisitorAboutCem.ts`    |
-| AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                      | `docs/architecture/multi-agent-chat.md`        |
+| Concern               | Pattern                                                                    | Key Files                                      |
+| --------------------- | -------------------------------------------------------------------------- | ---------------------------------------------- |
+| Server-side structure | CQRS — commands/, queries/, mappers/                                       | `docs/architecture/server-architecture.md`     |
+| Dependency injection  | ServerRuntime container                                                    | `src/server/domain/ServerRuntime.ts`           |
+| Environment variables | Central validated `EnvironmentVariables` — no direct `process.env` reads   | `src/server/env/environmentVariablesCreate.ts` |
+| Authentication        | Cookie-based automatic sessions; Phase 2 adds GitHub OAuth on top          | `src/server/utils/sessionUpsert.ts`            |
+| Authorization         | Guard functions (`guard{Entity}{Ctx}`)                                     | `src/server/guards/`                           |
+| GraphQL               | SDL-first, Apollo Server v5, URQL client                                   | `src/server/graphql/schema.graphqls`           |
+| Real-time             | Subscriptions over SSE, PostgreSQL NOTIFY/LISTEN                           | `src/server/graphql/PubSubPostgres.ts`         |
+| Background jobs       | pg-boss via `serverRuntime.jobs.enqueue()`                                 | `docs/architecture/jobs.md`                    |
+| Server-side rendering | Singleton headless Chromium via `serverRuntime.browser.capture()`          | `docs/architecture/server-side-rendering.md`   |
+| SEO                   | `seoMeta()` per page; dynamic `/sitemap.xml` and `/robots.txt`             | `docs/architecture/seo.md`                     |
+| AI-search (GEO)       | `/llms.txt`, ProfilePage/FAQPage JSON-LD, AI bot allowlist, chat deep-link | `docs/architecture/ai-search.md`               |
+| Code generation       | `npm run graphql:generate` — server `GqlS*`, client `GqlC*`                | `codegen.ts`                                   |
+| Editable content      | DB tables (CV, future projects/blog/tools) + admin UI under `/workspace`   | `docs/architecture/content-model.md`           |
+| Static identity       | Typed config under `src/web/content/`                                      | `src/web/content/personalInfo.ts`              |
+| AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                              | `src/server/agents/agentVisitorAboutCem.ts`    |
+| AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                        | `docs/architecture/multi-agent-chat.md`        |
 
 ## How to Add Things
 

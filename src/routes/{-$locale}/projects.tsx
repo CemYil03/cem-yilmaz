@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { CodeXmlIcon, ExternalLinkIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { Button } from '../../web/components/base/button';
 import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
+import { Reveal } from '../../web/components/Reveal';
 import { portfolioProjects } from '../../web/content/portfolioProjects';
 import { useLocale } from '../../web/hooks/useLocale';
 import { seoMeta } from '../../web/seo/seoMeta';
@@ -14,8 +16,8 @@ import { localeFromParam } from '../../web/utils/locale';
 const COPY = {
     title: { de: 'Projekte', en: 'Projects' },
     intro: {
-        de: 'Eine Auswahl von Dingen, die ich gebaut habe.',
-        en: 'A selection of things I have built.',
+        de: 'Eine Auswahl meiner Projekte — die, die ich öffentlich zeigen kann.',
+        en: 'A selection of my projects — the ones I can share publicly.',
     },
     visitLabel: { de: 'Besuchen', en: 'Visit site' },
     repoLabel: { de: 'Quellcode', en: 'View source' },
@@ -50,7 +52,9 @@ function ProjectsPage() {
 
                 <div className="flex flex-col gap-16 md:gap-24">
                     {portfolioProjects.map((project, index) => (
-                        <ProjectRow key={project.id} project={project} locale={locale} reverse={index % 2 === 1} />
+                        <Reveal key={project.id} as="div">
+                            <ProjectRow project={project} locale={locale} reverse={index % 2 === 1} />
+                        </Reveal>
                     ))}
                 </div>
             </main>
@@ -64,16 +68,9 @@ function ProjectRow({ project, locale, reverse }: { project: Project; locale: Lo
     const role = locale === 'de' ? project.roleDe : project.roleEn;
     const tagline = locale === 'de' ? project.taglineDe : project.taglineEn;
     const description = locale === 'de' ? project.descriptionDe : project.descriptionEn;
-    const visible = useFadeInOnScroll();
 
     return (
-        <article
-            ref={visible.ref}
-            className={cn(
-                'grid gap-8 md:grid-cols-12 md:items-center transition-all duration-700 ease-out motion-reduce:transition-none',
-                visible.shown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
-            )}
-        >
+        <article className="grid gap-8 md:grid-cols-12 md:items-center">
             <div className={cn('md:col-span-7', reverse ? 'md:order-2' : 'md:order-1')}>
                 <ProjectGallery project={project} locale={locale} />
             </div>
@@ -88,26 +85,20 @@ function ProjectRow({ project, locale, reverse }: { project: Project; locale: Lo
                 <p className="text-base md:text-lg text-muted-foreground">{tagline}</p>
                 <p className="text-base leading-relaxed">{description}</p>
                 <TechStack items={project.techStack} />
-                <div className="mt-2 flex flex-wrap gap-3">
-                    <a
-                        href={project.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                    >
-                        {COPY.visitLabel[locale]}
-                        <ExternalLinkIcon className="size-4" />
-                    </a>
-                    {project.repoUrl && (
-                        <a
-                            href={project.repoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 rounded-md border border-border bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-foreground/5"
-                        >
-                            <CodeXmlIcon className="size-4" />
-                            {COPY.repoLabel[locale]}
+                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                    <Button asChild size="lg" className="w-full sm:w-auto">
+                        <a href={project.url} target="_blank" rel="noopener noreferrer">
+                            {COPY.visitLabel[locale]}
+                            <ExternalLinkIcon className="size-4" />
                         </a>
+                    </Button>
+                    {project.repoUrl && (
+                        <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                            <a href={project.repoUrl} target="_blank" rel="noopener noreferrer">
+                                <CodeXmlIcon className="size-4" />
+                                {COPY.repoLabel[locale]}
+                            </a>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -144,7 +135,10 @@ function ProjectHero({ project, active, activeAlt }: { project: Project; active:
                     src={image.src}
                     alt={image.src === active.src ? activeAlt : ''}
                     aria-hidden={image.src !== active.src}
+                    width={1600}
+                    height={900}
                     loading={i === 0 ? 'eager' : 'lazy'}
+                    decoding={i === 0 ? 'async' : 'async'}
                     className={cn(
                         'block w-full aspect-video object-cover',
                         project.imageKind === 'browser' ? 'object-top' : 'object-center',
@@ -214,14 +208,17 @@ function ThumbStrip({
                                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                                 isActive
                                     ? 'border-primary opacity-100'
-                                    : 'border-white/40 dark:border-white/10 opacity-60 hover:opacity-100',
+                                    : 'border-white/40 dark:border-white/10 opacity-60 hover:opacity-100 active:opacity-80',
                             )}
                         >
                             <img
                                 src={image.src}
                                 alt=""
                                 aria-hidden
+                                width={1600}
+                                height={900}
                                 loading="lazy"
+                                decoding="async"
                                 className={cn(
                                     'block h-16 w-28 object-cover md:h-20 md:w-32',
                                     project.imageKind === 'browser' ? 'object-top' : 'object-center',
@@ -275,40 +272,4 @@ function TechStack({ items }: { items: ReadonlyArray<string> }) {
             ))}
         </ul>
     );
-}
-
-// Toggles a one-way `shown` flag the first time the element scrolls into the
-// viewport. Used to fade rows up as the visitor reaches them. SSR-safe: the
-// flag starts `false`, the observer is set up only on the client, and
-// reduced-motion users get the final state immediately.
-function useFadeInOnScroll() {
-    const ref = useRef<HTMLElement | null>(null);
-    const [shown, setShown] = useState(false);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (prefersReducedMotion) {
-            setShown(true);
-            return;
-        }
-        const node = ref.current;
-        if (!node) return;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                for (const entry of entries) {
-                    if (entry.isIntersecting) {
-                        setShown(true);
-                        observer.disconnect();
-                        break;
-                    }
-                }
-            },
-            { rootMargin: '0px 0px -10% 0px', threshold: 0.1 },
-        );
-        observer.observe(node);
-        return () => observer.disconnect();
-    }, []);
-
-    return { ref, shown };
 }

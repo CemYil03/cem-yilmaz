@@ -57,15 +57,57 @@ describe('seoMeta', () => {
         );
     });
 
-    it('omits robots tag by default and emits noindex,nofollow when requested', () => {
+    it('always emits an explicit robots tag — index,follow by default and noindex,nofollow when requested', () => {
         // Arrange — nothing
         // Act
         const indexable = seoMeta({ ...baseInput, path: '/', locale: 'de' });
         const hidden = seoMeta({ ...baseInput, path: '/', locale: 'de', noindex: true });
 
         // Assert
-        expect(indexable.meta.some((entry) => 'name' in entry && entry.name === 'robots')).toBe(false);
+        expect(indexable.meta).toContainEqual({ name: 'robots', content: 'index,follow' });
         expect(hidden.meta).toContainEqual({ name: 'robots', content: 'noindex,nofollow' });
+    });
+
+    it('emits og:image:width and og:image:height for the default share image', () => {
+        // Arrange — nothing
+        // Act
+        const output = seoMeta({ ...baseInput, path: '/', locale: 'de' });
+
+        // Assert
+        expect(output.meta).toContainEqual({ property: 'og:image:width', content: '640' });
+        expect(output.meta).toContainEqual({ property: 'og:image:height', content: '640' });
+    });
+
+    it('emits caller-supplied image dimensions when an override image is passed with size', () => {
+        // Arrange — nothing
+        // Act
+        const output = seoMeta({
+            ...baseInput,
+            path: '/',
+            locale: 'de',
+            image: '/custom-share.png',
+            imageWidth: 1200,
+            imageHeight: 630,
+        });
+
+        // Assert
+        expect(output.meta).toContainEqual({ property: 'og:image:width', content: '1200' });
+        expect(output.meta).toContainEqual({ property: 'og:image:height', content: '630' });
+    });
+
+    it('omits og:image dimensions when an override image is passed without size', () => {
+        // Arrange — nothing
+        // Act
+        const output = seoMeta({
+            ...baseInput,
+            path: '/',
+            locale: 'de',
+            image: '/custom-share.png',
+        });
+
+        // Assert
+        expect(output.meta.some((entry) => 'property' in entry && entry.property === 'og:image:width')).toBe(false);
+        expect(output.meta.some((entry) => 'property' in entry && entry.property === 'og:image:height')).toBe(false);
     });
 
     it('emits absolute Open Graph and Twitter image URLs', () => {

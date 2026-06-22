@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { TypedDocumentNode } from 'urql';
 import { useMutation } from 'urql';
 import { ChatMessageCreateDocument } from '../graphql/generated';
@@ -44,6 +45,15 @@ interface ChatComposerProps {
     /** Focus the composer on mount. Use on landing surfaces where the
      *  composer is the primary affordance (e.g. `/workspace`). */
     autoFocus?: boolean;
+    /** Render the tool-call approval-mode selector (Auto / Manual) at the
+     *  bottom-left of the composer. Defaults to true. The visitor dialog
+     *  passes `false` — page visitors never need to gate tool calls. */
+    showApprovalMode?: boolean;
+    /** Extra content rendered in the bottom-left addon slot, beside (or in
+     *  place of) the approval-mode selector. Use this to inject
+     *  surface-specific controls — the visitor dialog uses it for a
+     *  "New chat" button on the loaded transcript. */
+    addonStart?: ReactNode;
 }
 
 // Both the visitor and admin variants of `chatMessageCreate` accept the same
@@ -73,6 +83,8 @@ export function ChatComposer({
     extractResult = defaultExtractResult,
     placeholder = 'Type a message…',
     autoFocus = false,
+    showApprovalMode = true,
+    addonStart,
 }: ChatComposerProps) {
     const [draft, setDraft] = useState('');
     // Each composer attachment carries its upload lifecycle. Files are
@@ -190,15 +202,20 @@ export function ChatComposer({
             onAttachmentsAdd={onAttachmentsAdd}
             onAttachmentRemove={onAttachmentRemove}
             addonStart={
-                <Select value={mode} onValueChange={(value) => setMode(value as ToolCallApprovalMode)} disabled={isLocked}>
-                    <SelectTrigger size="sm" aria-label="Tool call approval mode" className="h-7 gap-1 px-2 text-xs">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="auto">Auto</SelectItem>
-                        <SelectItem value="manual">Manual</SelectItem>
-                    </SelectContent>
-                </Select>
+                <>
+                    {addonStart}
+                    {showApprovalMode ? (
+                        <Select value={mode} onValueChange={(value) => setMode(value as ToolCallApprovalMode)} disabled={isLocked}>
+                            <SelectTrigger size="sm" aria-label="Tool call approval mode" className="h-7 gap-1 px-2 text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="auto">Auto</SelectItem>
+                                <SelectItem value="manual">Manual</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    ) : null}
+                </>
             }
         />
     );

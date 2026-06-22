@@ -13,10 +13,12 @@ because it is Cem's own track record, not a logo name-drop).
 Top-to-bottom structure:
 
 1. **Header** — site name (links back to `/`) and the bilingual `LanguageSelector` / `ThemeSelector`.
-2. **Hero** — eyebrow chip ("Freelance · Consulting & Architecture"), a short bold headline ("Enterprise depth. Startup speed." /
-   "Enterprise-Tiefe. Startup-Tempo."), a one-line sub-headline naming the category (digitalisation + AI), and a tighter two-sentence body.
-   A circular portrait of Cem (`/profile-picture.png`) sits to the right of the copy on `md+` screens and stacks above the copy on small
-   screens, framed by a soft primary-tinted glow so it blends with the glass aesthetic.
+2. **Hero** — eyebrow chip ("Freelance · Consulting & Architecture"), a short bold headline naming the three service pillars
+   ("Digitalisation, AI workflows and web architecture." / "Digitalisierung, KI-Workflows und Web-Architektur."), a one-line sub-headline
+   naming the audience (companies that need to ship), and a tighter two-sentence body. The dual-background contrast (enterprise depth +
+   startup speed) is saved for the **Why me** section further down. A circular portrait of Cem (`/profile-picture.png`) sits to the right of
+   the copy on `md+` screens and stacks above the copy on small screens, framed by a soft primary-tinted glow so it blends with the glass
+   aesthetic.
 
    **The hero's primary call-to-action is the AI assistant itself**, embedded directly into the hero as a `GlassCard` beneath the headline
    block: an assistant header (avatar dot + "Cem's assistant" + green "available now · around the clock" status), the shared
@@ -110,10 +112,24 @@ explore sections are grids of cards; the Why-Me cards and the Hero's embedded as
 locally inside `index.tsx`. The visitor chat dialog is the only piece extracted — it lives in
 `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`.
 
+### Footer
+
+The footer is a shared component at `src/web/components/Footer.tsx` — not a section-helper inside `index.tsx`. It owns its own bilingual
+copy, social-link config, and locale lookup (via `useLocale`), so other public routes can drop it in without threading copy through props.
+
+Layout: a three-column grid on `md+` (brand block · sitemap · contact), stacked on mobile, with a bottom bar carrying the copyright, an
+origin line ("Designed and built in Germany"), and the legal links to `/impressum` and `/datenschutz`. The brand column repeats the header's
+favicon + wordmark pair so the page bookends cleanly, plus a one-paragraph blurb. The sitemap column links back into the public routes
+(`/about`, `/cv`, `/projects`) with the same icons the Explore section uses — the footer earns its space as secondary navigation, not just a
+contact strip. Contact renders as chip-style pills matching the hero's "popular questions" buttons.
+
+The footer is separated from the page above by a brand-tinted hairline gradient (`from-transparent via-primary/40 to-transparent`) along its
+top edge rather than a flat `border-t` — keeps the page in the calm-glass system instead of reading as a generic CMS strip.
+
 ### Social-link footer
 
-Defined as `SOCIAL_LINKS` (a `ReadonlyArray` of `{ href, label, icon, visible }`). Hrefs come from `personalInfo.contact.*`. Each entry uses
-a generic Lucide icon since the project's `lucide-react` does not bundle brand icons.
+Social-link visibility is governed by `personalInfo.publicVisibility.{github,linkedin,emails}`. Hrefs come from `personalInfo.contact.*`.
+Each entry uses a generic Lucide icon since the project's `lucide-react` does not bundle brand icons.
 
 ### Motion
 

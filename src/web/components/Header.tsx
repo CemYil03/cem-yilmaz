@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { GlassCard } from './GlassCard';
 import { HeaderChatButton } from './HeaderChatButton';
 import { LanguageSelector } from './LanguageSelector';
 import { ThemeSelector } from './ThemeSelector';
 import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
+
+/* Strip a leading `/en` (or any non-default locale) segment so `/about` and
+   `/en/about` collapse to the same comparison key. Trailing slashes are
+   normalized away too. */
+function normalizePath(pathname: string): string {
+    let p = pathname.replace(/^\/(en)(?=\/|$)/, '');
+    if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
+    return p === '' ? '/' : p;
+}
 
 type NavItem = {
     label: { de: string; en: string };
@@ -35,6 +44,8 @@ type Props = {
 export function Header({ subtitle, navItems }: Props) {
     const locale = useLocale();
     const scrolled = useHasScrolled();
+    const { pathname } = useLocation();
+    const currentPath = normalizePath(pathname);
 
     return (
         <>
@@ -47,7 +58,7 @@ export function Header({ subtitle, navItems }: Props) {
                     )}
                 >
                     <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-                        <Link to="/{-$locale}" className="flex items-center gap-2.5">
+                        <Link to="/{-$locale}" className="flex items-center gap-2.5 transition-opacity hover:opacity-80 active:opacity-70">
                             <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
                             <img src="/favicon-dark.ico" className="hidden size-8 dark:block" alt="" />
                             <span className="font-display text-sm font-semibold tracking-tight">Cem Yilmaz</span>
@@ -56,19 +67,26 @@ export function Header({ subtitle, navItems }: Props) {
 
                         {navItems && navItems.length > 0 && (
                             <nav className="hidden items-center gap-1 text-sm md:flex">
-                                {navItems.map((item) => (
-                                    <a
-                                        key={item.href + item.label.en}
-                                        href={item.href}
-                                        className="rounded-full px-3 py-1.5 text-foreground/70 transition hover:bg-foreground/5 hover:text-foreground dark:hover:bg-white/6"
-                                    >
-                                        {item.label[locale]}
-                                    </a>
-                                ))}
+                                {navItems.map((item) => {
+                                    const isActive = normalizePath(item.href) === currentPath;
+                                    return (
+                                        <a
+                                            key={item.href + item.label.en}
+                                            href={item.href}
+                                            aria-current={isActive ? 'page' : undefined}
+                                            className={cn(
+                                                'rounded-full px-3 py-1.5 transition hover:bg-foreground/5 hover:text-foreground active:bg-foreground/8 active:text-foreground dark:hover:bg-white/6 dark:active:bg-white/12',
+                                                isActive ? 'bg-foreground/8 text-foreground dark:bg-white/10' : 'text-foreground/70',
+                                            )}
+                                        >
+                                            {item.label[locale]}
+                                        </a>
+                                    );
+                                })}
                             </nav>
                         )}
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                             <HeaderChatButton />
                             <LanguageSelector />
                             <ThemeSelector />

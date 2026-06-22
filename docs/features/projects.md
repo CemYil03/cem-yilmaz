@@ -99,10 +99,10 @@ Hero images live under `public/projects/<id>/`. There are three sources:
 
 ### Scroll-in animation
 
-A small `useFadeInOnScroll()` hook (defined in `projects.tsx`) wires an `IntersectionObserver` to each row. The observer fires once, sets a
-`shown` flag, then disconnects. The row's `opacity` and `translate-y` classes flip via the `cn()` helper. SSR-safe: server output starts
-with `opacity-0`; the hook only mounts client-side. `prefers-reduced-motion` users get `shown: true` immediately, so they never see the
-hidden state.
+Each row is wrapped in the shared [`Reveal`](../../src/web/components/Reveal.tsx) component, which uses the shared `useInView` hook to fade
+and lift the row up when it scrolls into view. Server output starts with `opacity-0`; the hook only mounts client-side, and
+`prefers-reduced-motion` users render the row at its final state without animation. See [docs/styles/motion.md](../styles/motion.md) for the
+broader motion guardrails this honours.
 
 ## Open TODOs
 

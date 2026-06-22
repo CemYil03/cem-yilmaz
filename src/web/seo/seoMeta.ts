@@ -1,6 +1,6 @@
 import { DEFAULT_LOCALE, LOCALES } from '../utils/locale';
 import type { Locale } from '../utils/locale';
-import { DEFAULT_SHARE_IMAGE, OG_LOCALE, SITE_NAME } from './seoConstants';
+import { DEFAULT_SHARE_IMAGE, DEFAULT_SHARE_IMAGE_DIMENSIONS, OG_LOCALE, SITE_NAME } from './seoConstants';
 
 export interface SeoInput {
     // The page-specific title — `seoMeta` appends ` — ${SITE_NAME}` for the
@@ -23,10 +23,16 @@ export interface SeoInput {
     // Optional override for the Open Graph / Twitter share image. May be a
     // root-relative path (turned into an absolute URL) or an absolute URL.
     image?: string;
+    // Optional intrinsic dimensions of `image`. When omitted the helper falls
+    // back to `DEFAULT_SHARE_IMAGE_DIMENSIONS`. Setting both `og:image:width`
+    // and `og:image:height` lets crawlers reserve layout space and skip a
+    // round-trip to probe the file.
+    imageWidth?: number;
+    imageHeight?: number;
     // Open Graph object type. Defaults to `'website'`.
     type?: 'website' | 'article';
     // When true, emits `<meta name="robots" content="noindex,nofollow">`.
-    // Use for auth-gated, transactional, or otherwise non-indexable pages.
+    // Otherwise emits `index,follow` so indexability is always explicit.
     noindex?: boolean;
 }
 
@@ -41,12 +47,16 @@ export interface SeoOutput {
 export function seoMeta(input: SeoInput): SeoOutput {
     const fullTitle = `${input.title} — ${SITE_NAME}`;
     const canonical = canonicalUrlBuild(input.webPageUrl, input.locale, input.path);
+    const usingDefaultImage = !input.image;
     const imageUrl = imageUrlAbsolute(input.webPageUrl, input.image ?? DEFAULT_SHARE_IMAGE);
+    const imageWidth = input.imageWidth ?? (usingDefaultImage ? DEFAULT_SHARE_IMAGE_DIMENSIONS.width : undefined);
+    const imageHeight = input.imageHeight ?? (usingDefaultImage ? DEFAULT_SHARE_IMAGE_DIMENSIONS.height : undefined);
     const ogType = input.type ?? 'website';
 
     const meta: MetaTag[] = [
         { title: fullTitle },
         { name: 'description', content: input.description },
+        { name: 'robots', content: input.noindex ? 'noindex,nofollow' : 'index,follow' },
         { property: 'og:title', content: fullTitle },
         { property: 'og:description', content: input.description },
         { property: 'og:url', content: canonical },
@@ -60,16 +70,19 @@ export function seoMeta(input: SeoInput): SeoOutput {
         { name: 'twitter:image', content: imageUrl },
     ];
 
+    if (imageWidth !== undefined && imageHeight !== undefined) {
+        meta.push(
+            { property: 'og:image:width', content: String(imageWidth) },
+            { property: 'og:image:height', content: String(imageHeight) },
+        );
+    }
+
     for (const otherLocale of LOCALES) {
         if (otherLocale === input.locale) continue;
         meta.push({
             property: 'og:locale:alternate',
             content: OG_LOCALE[otherLocale],
         });
-    }
-
-    if (input.noindex) {
-        meta.push({ name: 'robots', content: 'noindex,nofollow' });
     }
 
     const links: LinkTag[] = [{ rel: 'canonical', href: canonical }];

@@ -30,7 +30,10 @@ The composer:
   shell's `addonStart` slot.
 - Exposes a tool-call mode selector (`auto` / `manual`) at the bottom-left of the addon, which controls
   `ChatAssistantOptions.requireToolCallApprovals` on the create mutation. `auto` lets the assistant invoke tools directly; `manual` makes
-  each call surface an approval message in the transcript first.
+  each call surface an approval message in the transcript first. The selector is opt-in via the `showApprovalMode` prop (default `true`);
+  the visitor dialog passes `false` because page visitors never need to gate tool calls. The `addonStart` prop on the same composer lets a
+  caller drop additional controls into the bottom-left slot — the visitor dialog uses it to render a "New chat" button on the loaded
+  transcript that resets back to the empty/overview state (see [Visitor Chat](./chat-visitor.md#composer)).
 - Sends on `Enter`; `Shift+Enter` inserts a newline.
 - Disables itself while a response is streaming and shows an inline spinner.
 - Restores the draft if the mutation errors.
