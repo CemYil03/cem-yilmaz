@@ -102,7 +102,6 @@ interface WebsiteVisitorAssistantChatDialogProps {
 
 export function WebsiteVisitorAssistantChatDialog({ locale }: WebsiteVisitorAssistantChatDialogProps) {
     const { isOpen, intent, close } = useVisitorChat();
-    const live = useChatLiveUpdates(undefined);
     return (
         <Dialog
             open={isOpen}
@@ -118,12 +117,7 @@ export function WebsiteVisitorAssistantChatDialog({ locale }: WebsiteVisitorAssi
                     </div>
                     <DialogDescription>{COPY.description[locale]}</DialogDescription>
                 </DialogHeader>
-                {/* Mount the listener once at the dialog root so the
-                 *  subscription survives the seeded send → loaded transcript
-                 *  handoff. Re-mounted fresh each time the dialog opens
-                 *  because `Dialog` unmounts its children on close. */}
-                {live.listener}
-                {isOpen && intent ? <ChatSurface locale={locale} intent={intent} live={live} /> : null}
+                {isOpen && intent ? <ChatSurface locale={locale} intent={intent} /> : null}
             </DialogContent>
         </Dialog>
     );
@@ -136,9 +130,15 @@ export function WebsiteVisitorAssistantChatDialog({ locale }: WebsiteVisitorAssi
 //   - 'seeded' → fire seeded question on mount; flip to loaded on chatId
 //   - 'loaded' → render the loaded transcript directly
 
-function ChatSurface({ locale, intent, live }: { locale: Locale; intent: VisitorChatIntent; live: ReturnType<typeof useChatLiveUpdates> }) {
+function ChatSurface({ locale, intent }: { locale: Locale; intent: VisitorChatIntent }) {
     const [chatId, setChatId] = useState<string | undefined>(intent.kind === 'loaded' ? intent.chatId : undefined);
     const [sendError, setSendError] = useState<string | null>(null);
+
+    // Owned by ChatSurface — not the dialog root — so Radix's unmount-on-close
+    // gives every fresh open a fresh hook instance. Hoisting it to the dialog
+    // root would let `appendedMessages` from one chat leak into the next when
+    // the user closes the dialog mid-turn and reopens with a seeded send.
+    const live = useChatLiveUpdates(chatId);
 
     const [, sendMessage] = useMutation(ChatMessageCreateDocument);
 
@@ -190,20 +190,29 @@ function ChatSurface({ locale, intent, live }: { locale: Locale; intent: Visitor
     if (sendError) {
         return <div className="grid flex-1 place-items-center p-8 text-sm text-destructive">{sendError}</div>;
     }
-    if (!chatId) {
-        if (intent.kind === 'seeded') {
-            // Seeded send is in flight — show a spinner. The user message
-            // and the first streaming chunks already buffer through the
-            // live updates listener mounted at the dialog root.
-            return (
-                <div className="grid flex-1 place-items-center p-8 text-sm text-muted-foreground">
-                    <Spinner />
-                </div>
-            );
-        }
-        return <ChatEmptyState locale={locale} live={live} onResume={onResume} setChatId={setChatId} />;
-    }
-    return <ChatLoaded chatId={chatId} live={live} locale={locale} onResetToOverview={onResetToOverview} />;
+    // The listener is rendered alongside whichever inner view is active. It's
+    // owned by ChatSurface (stable across the seeded-send → loaded handoff and
+    // across empty ↔ loaded transitions) so the SSE subscription doesn't tear
+    // down mid-turn.
+    return (
+        <>
+            {live.listener}
+            {!chatId ? (
+                intent.kind === 'seeded' ? (
+                    // Seeded send is in flight — show a spinner. The user
+                    // message and the first streaming chunks already buffer
+                    // through the live updates listener.
+                    <div className="grid flex-1 place-items-center p-8 text-sm text-muted-foreground">
+                        <Spinner />
+                    </div>
+                ) : (
+                    <ChatEmptyState locale={locale} live={live} onResume={onResume} setChatId={setChatId} />
+                )
+            ) : (
+                <ChatLoaded chatId={chatId} live={live} locale={locale} onResetToOverview={onResetToOverview} />
+            )}
+        </>
+    );
 }
 
 // --- Empty state ------------------------------------------------------------
