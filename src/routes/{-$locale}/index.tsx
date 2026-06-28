@@ -218,8 +218,8 @@ const COPY = {
             icon: Building2Icon,
             title: { de: 'Enterprise-Tiefe', en: 'Enterprise depth' },
             body: {
-                de: 'Langjährige Enterprise-Erfahrung in großen, regulierten Umgebungen: komplexe Domänen, kritische Integrationen, langlebige Codebasen. Software, die fünf Jahre lang wartbar bleiben muss — gebaut mit dem entsprechenden Anspruch.',
-                en: 'Years of enterprise experience inside large, regulated environments: complex domains, critical integrations, long-lived codebases. Software built to the standard required when it has to be maintained for five years.',
+                de: 'Langjährige Enterprise-Erfahrung in großen, regulierten Umgebungen: komplexe Domänen, kritische Integrationen, event-basierte Systeme mit voller Nachvollziehbarkeit, langlebige Codebasen. Software, die fünf Jahre lang wartbar bleiben muss — gebaut mit dem entsprechenden Anspruch.',
+                en: 'Years of enterprise experience inside large, regulated environments: complex domains, critical integrations, event-sourced systems with full traceability, long-lived codebases. Software built to the standard required when it has to be maintained for five years.',
             },
         },
         startup: {

@@ -5,44 +5,57 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
 
 ## User Behavior
 
-- `/workspace` (DE) and `/en/workspace` (EN) render the hub: header, hero ("Welcome back, Cem" / "Willkommen zurück, Cem" + a one-line
-  intro), a 2-column grid of focus-area cards, and a muted "Mehr folgt." / "More to come." line under the grid. The personal-assistant
-  composer is **pinned to the bottom of the viewport** (sticky) so it stays reachable as the focus-area grid scrolls past — the same posture
-  as the loaded `/workspace/assistant` view, just without a transcript above it.
+- `/workspace` (DE) and `/en/workspace` (EN) render the hub: a slimmed-down header (logo links home, the word "Workspace" sits beside it as
+  inert text instead of the public "Cem Yilmaz" wordmark — the page already knows whose workspace it is), a small muted motivational quote
+  (see "Hero quote" below), the personal-assistant composer directly under the quote, and a **bento-style focus-area grid** below that. The
+  composer scrolls with the page — it is **not** pinned to the viewport bottom; on a typical desktop the composer is already on-screen at
+  load, and pinning it overlapped the last row of focus cards behind a progressive blur, which read as "the input is parked on top of my
+  last tile."
 - Sending a message from the hub composer creates a new admin-scope chat and navigates to `/workspace/assistant?chatId=<id>`, where the rest
   of the conversation happens. The hub itself stays a hub — every visit lands on the empty composer again.
-- The cards in Phase 1 are:
-  - Software development & architecture → `/workspace/software`
+- The focus-area cards in Phase 1 are:
+  - CV → `/workspace/cv`
+  - Software & architecture → `/workspace/software`
   - Projects → `/workspace/projects`
   - Finances → `/workspace/finances`
   - Tax → `/workspace/tax`
-  - Fitness & well-being → `/workspace/fitness`
+  - Fitness → `/workspace/fitness`
   - Medical → `/workspace/medical`
-  - Movies & TV shows → `/workspace/media`
+  - Movies & TV → `/workspace/media`
+  - Visitor chats → `/workspace/visitor-chats`
 - Each focus-area page is a placeholder: a back link to `/workspace`, the area name + icon, a one-line "this area is being built out" body,
   and a muted "Coming soon" line.
 - The language switcher in the header swaps between `/workspace` and `/en/workspace`.
 
+## Hero quote
+
+Above the focus-area grid sits a rotating motivational quote — replacing the static "Welcome back, Cem" greeting that used to live there. A
+generic welcome was wallpaper; the quote is a quiet motivational beat at the top of the hub. It is **rendered small and muted on purpose**
+(body-text size, italic, `text-muted-foreground`) — it is not the focus of the workspace; the assistant composer and the focus-area grid
+are. The list lives in `src/web/content/workspaceQuotes.ts` as `{ de, en, attribution? }` triples (Cem's own lines + a handful of well-known
+entrepreneurial / resilience quotes). Edited via PR, same pattern as `personalInfo.ts` and `portfolioProjects.ts`.
+
+Selection is **deterministic per UTC day** via `workspaceQuotePick()` — `dayOfYear % quotes.length`. Two consequences:
+
+- SSR and hydration agree without a `useEffect` flash on first paint.
+- Navigating back to `/workspace` later in the same day shows the same line; the quote is decoration, not churn-content.
+
+The visible element is a `<blockquote>`, not an `<h1>` — wrapping a quote in h1 reads oddly to screen readers and pins the document outline
+to whatever line landed today. A visually-hidden `<h1>Workspace</h1>` keeps the page semantically identifiable for assistive tech without
+putting that string into the visual hierarchy. The browser-tab title and `seoMeta` description are unchanged.
+
 ## Personal-assistant composer
 
-The hub greeting and the assistant composer are paired but not nested:
-
-- A bilingual greeting (`Willkommen zurück, Cem` / `Welcome back, Cem`) at the same h1 size the hub previously used for "Workspace".
-- A one-line subtitle inviting Cem to either ask the assistant or pick a focus area below.
-- A `ChatComposer` (the same component that powers the visitor chat dialog on `/`) wired through `useChatLiveUpdates`. The composer is
-  rendered as a sibling of `<main>` with `sticky bottom-4` so it stays anchored to the bottom of the viewport as the page scrolls — the
-  mirror image of the `sticky top-4` `Header`. `<main>` carries `pb-40` to reserve space so the focus-area grid is never hidden underneath.
-  A `ProgressiveBlurBottom` (a vertical mirror of the `ProgressiveBlurTop` field above the `Header` — five stacked fixed layers, each
-  blurring more than the one above and masked to fade out as it approaches the composer) sits at `z-40` directly under the composer (`z-50`)
-  so scrolling page content fades into a soft blur as it approaches the composer instead of sliding behind it in sharp focus. The bottom
-  field is **tuned differently** from the top one: it's taller (`h-64` vs `h-32`) and the per-layer mask `to` values are pulled higher (the
-  64px layer reaches 65% up the field instead of 20%) so every layer — including the strongest — is still partially active at the composer's
-  top edge. The Header's curve concentrates the strongest blur at the very bottom of the viewport, which here would sit invisibly behind the
-  composer's opaque `bg-white`; the composer's curve instead peaks at the composer's top edge so the fade-out happens above it, where it's
-  actually visible. The composer is fully functional from the hub — it accepts attachments, supports the auto/manual tool-approval mode
-  toggle, and locks during an in-flight turn. It is rendered with `autoFocus` so the textarea is the active element on landing — the user
-  can start typing immediately without clicking. `/workspace/assistant` (both empty and loaded states) uses the same `autoFocus` for
-  symmetry.
+The assistant composer sits **directly under** the hero quote, in normal page flow — not pinned to the bottom of the viewport. It's a
+`ChatComposer` (the same component that powers the visitor chat dialog on `/`) wired through `useChatLiveUpdates`. On a typical desktop the
+quote + composer occupy the top half of the viewport, so the assistant is the first thing the user sees and the most prominent affordance —
+the same priority the old sticky placement was trying to encode, just without the side-effect of overlapping the focus-area cards. Removing
+the sticky composer also removed the `ProgressiveBlurBottom` field and the 256px bottom padding `<main>` used to reserve; neither was
+carrying weight once the composer left the bottom of the viewport. The composer is fully functional — it accepts attachments, supports the
+auto/manual tool-approval mode toggle, and locks during an in-flight turn. It is rendered with `autoFocus` so the textarea is the active
+element on landing — the user can start typing immediately without clicking. `/workspace/assistant` (both empty and loaded states) continues
+to use a `sticky bottom-4` composer because a transcript scrolling above an input is a different layout problem from a launcher beside a nav
+grid.
 
 The composer is configured to talk to the **personal-assistant agent** by passing the `WorkspaceChatMessageCreate` mutation document and a
 matching result extractor to `ChatComposer`. That mutation goes through `Mutation.admin.chatMessageCreate`, which the server dispatches to
@@ -105,7 +118,8 @@ All page files follow the same shape as `src/routes/{-$locale}/index.tsx` and `s
 The hub reuses the same primitives the landing page does:
 
 - `Card` / `CardContent` / `CardTitle` / `CardDescription` from `src/web/components/base/card.tsx`
-- `Header` from `src/web/components/Header.tsx`
+- `Header` from `src/web/components/Header.tsx` — invoked with `brandLabel="Workspace"` so the brand cluster renders as `logo + "Workspace"`
+  rather than the public `logo + "Cem Yilmaz"` wordmark; only the logo is a link (back to `/{-$locale}`), the label itself is inert text.
 - `useLocale()` from `src/web/hooks/useLocale.ts`
 - `ChatComposer` from `src/web/chat/ChatComposer.tsx` (parameterized with the workspace mutation)
 - `useChatLiveUpdates` from `src/web/chat/useChatLiveUpdates.tsx` (namespace-agnostic)
@@ -113,9 +127,19 @@ The hub reuses the same primitives the landing page does:
 A single `COPY` constant at the top of the file keys every visible string under `{ de, en }`. This follows the inline-bilingual-copy pattern
 from `docs/architecture/i18n.md` — no translation library.
 
-The cards are driven by a small `FOCUS_AREAS` array (`{ key, to, icon }`) so adding a new focus area is one entry plus one new file plus one
-new copy block. Each card is a real `<Link>` to its stub route and uses a Lucide icon (`CodeXmlIcon`, `WalletIcon`, `StethoscopeIcon`,
-`DumbbellIcon`, `FilmIcon`).
+The cards are driven by a small `FOCUS_AREAS` array (`{ key, to, icon, size }`) so adding a new focus area is one entry plus one new file
+plus one new copy block. Each card is a real `<Link>` to its stub route and uses a Lucide icon.
+
+**Bento sizing.** On `lg`+ the grid is 6 columns and each card declares a span via its `size`: `primary` (CV, Software — 3/6 each so two sit
+on a row), `standard` (the daily/weekly areas — 2/6 each, three per row), `wide` (Visitor chats — 6/6, the full row). On `md` it collapses
+to 2 columns and the spans drop out; on `sm` it stacks to one column. This breaks the "8 identical tiles in a 2-col wall" silhouette the
+previous layout had on wide viewports — daily-use areas get more visual weight, the observational visitor-chats surface takes the bottom row
+by itself, and the whole grid fits without the page needing to scroll past one viewport on a typical desktop.
+
+**Card content.** Each card is icon + title on one row, a one-line description below, and an `ArrowUpRightIcon` tucked in the top-right
+corner that brightens and translates on hover. The previous "Öffnen → / Open →" labelled-button row was redundant with the entire card being
+a `<Link>`; removing it cut a row of vertical space per card without losing affordance — the cursor change on hover, the corner arrow, and
+the card-wide hover state all still read as "this is clickable."
 
 ### Stub layout
 
@@ -145,7 +169,7 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
 ## Adding a new focus area
 
 1. Add a new entry to `COPY.areas` in `src/routes/{-$locale}/workspace/index.tsx` (DE + EN copy).
-2. Add a new entry to `FOCUS_AREAS` in the same file (key, route path, icon).
+2. Add a new entry to `FOCUS_AREAS` in the same file (key, route path, icon, size — `primary` / `standard` / `wide`).
 3. Create a new stub file under `src/routes/{-$locale}/workspace/` mirroring one of the existing stubs (`software.tsx`, etc.). Use the same
    `COPY` shape and `seoMeta({ ..., noindex: true })`.
 4. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap until they are public.

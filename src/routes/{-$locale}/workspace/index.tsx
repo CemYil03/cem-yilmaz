@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import {
-    ArrowRightIcon,
+    ArrowUpRightIcon,
     CodeXmlIcon,
     DumbbellIcon,
     FileTextIcon,
@@ -16,10 +16,12 @@ import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
 import { CardContent, CardDescription, CardTitle } from '../../../web/components/base/card';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Header } from '../../../web/components/Header';
+import { workspaceQuotePick } from '../../../web/content/workspaceQuotes';
 import { WorkspaceChatMessageCreateDocument } from '../../../web/graphql/generated';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
+import { cn } from '../../../web/utils/cn';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -33,9 +35,8 @@ const COPY = {
         // Title still feeds `seoMeta` and the browser tab — keep "Workspace"
         // there so the page identity is unambiguous in tabs and shared links.
         title: { de: 'Workspace', en: 'Workspace' },
-        // The on-page hero is now a personal greeting + the assistant
-        // composer; the older "this is my workspace" intro paragraph is gone.
-        greeting: { de: 'Willkommen zurück, Cem', en: 'Welcome back, Cem' },
+        // SEO description only — the on-page hero shows a rotating motivational
+        // quote from `workspaceQuotes.ts`, not a welcome-back greeting.
         intro: {
             de: 'Frag deinen Assistenten oder spring direkt in einen Themenbereich.',
             en: 'Ask your assistant, or jump straight into a focus area.',
@@ -51,7 +52,7 @@ const COPY = {
             },
         },
         software: {
-            title: { de: 'Softwareentwicklung & Architektur', en: 'Software development & architecture' },
+            title: { de: 'Software & Architektur', en: 'Software & architecture' },
             description: {
                 de: 'Code, Architektur-Notizen, Werkzeuge.',
                 en: 'Code, architecture notes, tools.',
@@ -60,43 +61,43 @@ const COPY = {
         projects: {
             title: { de: 'Projekte', en: 'Projects' },
             description: {
-                de: 'Persönliche Projekte, Status und nächste Schritte.',
-                en: 'Personal projects, status, and next steps.',
+                de: 'Persönliche Projekte und nächste Schritte.',
+                en: 'Personal projects and next steps.',
             },
         },
         finances: {
             title: { de: 'Finanzen', en: 'Finances' },
             description: {
-                de: 'Finanzielle Ziele, Überblick, Trading und Aktien.',
-                en: 'Financial goals, overview, trading and stocks.',
+                de: 'Ziele, Überblick, Trading.',
+                en: 'Goals, overview, trading.',
             },
         },
         tax: {
             title: { de: 'Steuern', en: 'Tax' },
             description: {
-                de: 'Belege, Fristen, Notizen zu Steuersachen.',
-                en: 'Receipts, deadlines, notes on tax matters.',
+                de: 'Belege, Fristen, Notizen.',
+                en: 'Receipts, deadlines, notes.',
             },
         },
         fitness: {
-            title: { de: 'Fitness & Wohlbefinden', en: 'Fitness & well-being' },
+            title: { de: 'Fitness', en: 'Fitness' },
             description: {
-                de: 'Trainingspläne, Notizen, Fortschritt.',
-                en: 'Training plans, notes, progress.',
+                de: 'Trainingspläne, Fortschritt.',
+                en: 'Training plans, progress.',
             },
         },
         medical: {
             title: { de: 'Medizinisches', en: 'Medical' },
             description: {
-                de: 'Termine, Befunde und Notizen zur Gesundheit.',
-                en: 'Appointments, results, and health notes.',
+                de: 'Termine, Befunde, Notizen.',
+                en: 'Appointments, results, notes.',
             },
         },
         media: {
-            title: { de: 'Filme & Serien', en: 'Movies & TV shows' },
+            title: { de: 'Filme & Serien', en: 'Movies & TV' },
             description: {
-                de: 'Watchlist und was ich zuletzt gesehen habe.',
-                en: 'Watchlist and what I have watched recently.',
+                de: 'Watchlist und Gesehenes.',
+                en: 'Watchlist and watched.',
             },
         },
         visitorChats: {
@@ -107,7 +108,6 @@ const COPY = {
             },
         },
     },
-    enter: { de: 'Öffnen', en: 'Open' },
 };
 
 // `admin.chatMessageCreate` returns the chat row wrapped in the admin
@@ -116,6 +116,13 @@ const extractMessageCreateResult = (data: unknown): { chatId: string } | null =>
     const wrapper = data as { admin?: { chatMessageCreate?: { chatId: string } | null } | null } | null | undefined;
     return wrapper?.admin?.chatMessageCreate ?? null;
 };
+
+// `size` drives the bento span on `lg`+. `md` always renders 2-col, `sm` 1-col,
+// so the spans only matter on wide viewports — where vertical-height-uniform
+// 8-card grids waste space and hide the user's information hierarchy. Primary
+// areas (the ones Cem actually opens daily) take a wider tile; the visitor-chat
+// observational surface takes the full last row.
+type FocusAreaSize = 'primary' | 'standard' | 'wide';
 
 const FOCUS_AREAS: ReadonlyArray<{
     key: keyof typeof COPY.areas;
@@ -130,17 +137,27 @@ const FOCUS_AREAS: ReadonlyArray<{
         | '/{-$locale}/workspace/media'
         | '/{-$locale}/workspace/visitor-chats';
     icon: typeof CodeXmlIcon;
+    size: FocusAreaSize;
 }> = [
-    { key: 'cv', to: '/{-$locale}/workspace/cv', icon: FileTextIcon },
-    { key: 'software', to: '/{-$locale}/workspace/software', icon: CodeXmlIcon },
-    { key: 'projects', to: '/{-$locale}/workspace/projects', icon: FolderKanbanIcon },
-    { key: 'finances', to: '/{-$locale}/workspace/finances', icon: WalletIcon },
-    { key: 'tax', to: '/{-$locale}/workspace/tax', icon: ReceiptTextIcon },
-    { key: 'fitness', to: '/{-$locale}/workspace/fitness', icon: DumbbellIcon },
-    { key: 'medical', to: '/{-$locale}/workspace/medical', icon: StethoscopeIcon },
-    { key: 'media', to: '/{-$locale}/workspace/media', icon: FilmIcon },
-    { key: 'visitorChats', to: '/{-$locale}/workspace/visitor-chats', icon: MessageSquareTextIcon },
+    { key: 'cv', to: '/{-$locale}/workspace/cv', icon: FileTextIcon, size: 'primary' },
+    { key: 'software', to: '/{-$locale}/workspace/software', icon: CodeXmlIcon, size: 'primary' },
+    { key: 'projects', to: '/{-$locale}/workspace/projects', icon: FolderKanbanIcon, size: 'standard' },
+    { key: 'finances', to: '/{-$locale}/workspace/finances', icon: WalletIcon, size: 'standard' },
+    { key: 'tax', to: '/{-$locale}/workspace/tax', icon: ReceiptTextIcon, size: 'standard' },
+    { key: 'fitness', to: '/{-$locale}/workspace/fitness', icon: DumbbellIcon, size: 'standard' },
+    { key: 'medical', to: '/{-$locale}/workspace/medical', icon: StethoscopeIcon, size: 'standard' },
+    { key: 'media', to: '/{-$locale}/workspace/media', icon: FilmIcon, size: 'standard' },
+    { key: 'visitorChats', to: '/{-$locale}/workspace/visitor-chats', icon: MessageSquareTextIcon, size: 'wide' },
 ];
+
+// `lg:col-span-*` on a 6-col grid: primaries take a half-row (3/6), standards
+// fit three to a row (2/6), the wide tile takes the full row (6/6). On `md`
+// the grid collapses to 2-col and the spans drop out. On `sm` it stacks.
+const SIZE_TO_SPAN: Record<FocusAreaSize, string> = {
+    primary: 'lg:col-span-3',
+    standard: 'lg:col-span-2',
+    wide: 'lg:col-span-6',
+};
 
 export const Route = createFileRoute('/{-$locale}/workspace/')({
     head: ({ params }) => {
@@ -171,122 +188,94 @@ function WorkspaceHub() {
     return (
         <div className="min-h-screen flex flex-col">
             {live.listener}
-            <Header />
-            {/* Bottom padding on `<main>` reserves space for the sticky composer
-             * so the focus-area grid and "More to come" line are never hidden
-             * underneath it on short viewports. */}
-            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-40">
-                <AssistantGreeting locale={locale} />
+            {/* `brandLabel="Workspace"` swaps the public "Cem Yilmaz" wordmark
+             * for an inert "Workspace" label — the logo stays clickable (back
+             * to landing) but the label itself doesn't pretend to be a link
+             * to nowhere. On a single-user private surface the wordmark is
+             * decoration; the page already knows whose workspace it is. */}
+            <Header brandLabel={COPY.hero.title[locale]} />
+            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
+                <AssistantHero
+                    locale={locale}
+                    composer={
+                        <ChatComposer
+                            isLocked={live.isGenerating}
+                            beginTurn={live.beginTurn}
+                            endTurn={live.endTurn}
+                            onMessageSent={(chatId) => navigate({ to: '/{-$locale}/workspace/assistant', search: { chatId } })}
+                            sendMutation={WorkspaceChatMessageCreateDocument}
+                            extractResult={extractMessageCreateResult}
+                            placeholder={COPY.hero.composerPlaceholder[locale]}
+                            autoFocus
+                        />
+                    }
+                />
                 <FocusAreaGrid locale={locale} />
             </main>
-            {/* Composer pinned to the viewport bottom — mirror of the
-             * `sticky top-4` Header. Sibling of `<main>` so it lives at the
-             * end of the document flow; `sticky bottom-4` keeps it parked
-             * above the bottom edge as content scrolls beneath.
-             *
-             * `ProgressiveBlurBottom` sits below the composer (z-40) and
-             * fades the page content into a soft blur as it approaches the
-             * composer — same trick the Header uses at the top edge, just
-             * mirrored — so scrolling content doesn't visibly slide behind
-             * the floating surface in sharp focus. */}
-            <ProgressiveBlurBottom />
-            <div className="sticky bottom-4 z-50 mx-auto w-full max-w-3xl px-6 sm:px-8">
-                <ChatComposer
-                    isLocked={live.isGenerating}
-                    beginTurn={live.beginTurn}
-                    endTurn={live.endTurn}
-                    onMessageSent={(chatId) => navigate({ to: '/{-$locale}/workspace/assistant', search: { chatId } })}
-                    sendMutation={WorkspaceChatMessageCreateDocument}
-                    extractResult={extractMessageCreateResult}
-                    placeholder={COPY.hero.composerPlaceholder[locale]}
-                    autoFocus
-                />
-            </div>
         </div>
     );
 }
 
-/* Five stacked fixed layers below the page content. Mirror of
- * `ProgressiveBlurTop` in `src/web/components/Header.tsx`, but tuned for
- * a different goal: the Header's field decorates the area ABOVE its
- * floating surface, while the composer's field has to decorate the area
- * ABOVE the composer too — the area BELOW the composer's top edge is
- * hidden by the composer's opaque `bg-white` and is wasted.
- *
- * That means the Header's curve (strongest blur at the very bottom of
- * the viewport, fading up) is wrong here — it puts the strongest blur
- * exactly where the composer covers it, leaving only the weakest 4–8px
- * blurs active where the user can actually see them. The result is what
- * the screenshot showed: content scrolling cleanly under the composer
- * with no visible softening at the top edge.
- *
- * Tuned curve for the composer:
- * - Field height `h-64` (256px) — ~145px above the composer's top edge
- *   given `sticky bottom-4` + a ~95px composer body. That headroom is
- *   what the strong blurs fade out across, so the top edge of the
- *   composer is the *peak* of the blur, not its trailing edge.
- * - Each layer's mask runs from full opacity at the field bottom up to
- *   transparent at its `to` boundary. The `to` values are pulled up so
- *   every layer (including the 64px one) is still partially active at
- *   the composer's top edge. The blur sizes are slightly stronger than
- *   the Header's so the effect reads at the composer's smaller scale.
- *
- * If a third surface ever needs this look, lift it (and `ProgressiveBlurTop`)
- * into a shared `src/web/components/ProgressiveBlur.tsx` with `direction`
- * and `tuning` props. Two callers is the smaller cost. */
-function ProgressiveBlurBottom() {
-    const layers = [
-        { blur: '4px', to: 100 },
-        { blur: '12px', to: 95 },
-        { blur: '24px', to: 85 },
-        { blur: '40px', to: 75 },
-        { blur: '64px', to: 65 },
-    ];
+function AssistantHero({ locale, composer }: { locale: Locale; composer: React.ReactNode }) {
+    // Rotates daily (UTC), not per render — see `workspaceQuotes.ts`. The
+    // same quote on every navigation back to the hub on the same day is
+    // intentional: the headline is decoration, not content the user is
+    // here to read again.
+    //
+    // The visible heading is a blockquote rather than an `<h1>` — wrapping
+    // a quote in h1 reads oddly to screen readers and pins our document
+    // outline to whatever motivational line landed today. The sr-only h1
+    // keeps the page semantically identifiable as "Workspace" without
+    // putting that string into the visual hierarchy.
+    //
+    // The composer sits *in-flow* below the quote (not pinned to the viewport
+    // bottom as it used to). On a single-screen-tall layout the composer is
+    // already visible without scrolling, and the previous sticky placement
+    // overlapped the last row of focus cards behind a progressive blur — the
+    // overlap read as "the input is parked on top of my last tile", which is
+    // worse than the few rows of scroll the in-flow version costs.
+    const quote = workspaceQuotePick();
     return (
-        <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-40 h-64">
-            {layers.map((l, i) => (
-                <div
-                    key={i}
-                    className="absolute inset-0"
-                    style={{
-                        backdropFilter: `blur(${l.blur})`,
-                        WebkitBackdropFilter: `blur(${l.blur})`,
-                        maskImage: `linear-gradient(to top, black 0%, transparent ${l.to}%)`,
-                        WebkitMaskImage: `linear-gradient(to top, black 0%, transparent ${l.to}%)`,
-                    }}
-                />
-            ))}
-        </div>
-    );
-}
-
-function AssistantGreeting({ locale }: { locale: Locale }) {
-    return (
-        <section className="py-12 md:py-16">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">{COPY.hero.greeting[locale]}</h1>
-            <p className="mt-6 max-w-2xl text-base md:text-lg leading-relaxed text-muted-foreground">{COPY.hero.intro[locale]}</p>
+        <section className="pt-8 md:pt-10 pb-10 md:pb-12 mx-auto max-w-3xl">
+            <h1 className="sr-only">{COPY.hero.title[locale]}</h1>
+            <blockquote className="text-base md:text-lg leading-relaxed text-muted-foreground italic">
+                <p>“{quote[locale]}”</p>
+                {quote.attribution ? (
+                    <footer className="mt-2 text-sm not-italic text-muted-foreground/80">— {quote.attribution}</footer>
+                ) : null}
+            </blockquote>
+            <div className="mt-6 md:mt-8">{composer}</div>
         </section>
     );
 }
 
 function FocusAreaGrid({ locale }: { locale: Locale }) {
     return (
-        <section className="grid gap-4 md:grid-cols-2">
-            {FOCUS_AREAS.map(({ key, to, icon: Icon }) => {
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+            {FOCUS_AREAS.map(({ key, to, icon: Icon, size }) => {
                 const area = COPY.areas[key];
                 return (
-                    <Link key={key} to={to} className="group">
-                        <GlassCard className="h-full py-6 transition-colors hover:bg-white/55 dark:hover:bg-white/8">
-                            <CardContent className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 text-primary">
-                                    <Icon className="size-5" />
-                                    <CardTitle className="text-xl">{area.title[locale]}</CardTitle>
+                    <Link key={key} to={to} className={cn('group', SIZE_TO_SPAN[size])}>
+                        <GlassCard className="h-full transition-colors hover:bg-white/55 dark:hover:bg-white/8">
+                            <CardContent className="flex h-full flex-col gap-1.5 py-5">
+                                {/* Icon + title on one row, arrow tucked into
+                                 * the top-right corner. The whole card is the
+                                 * link, so the arrow is purely an affordance
+                                 * cue — it brightens and translates on hover
+                                 * instead of carrying its own "Öffnen" label,
+                                 * which was redundant with the card itself
+                                 * being clickable. */}
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-primary">
+                                        <Icon className="size-5 shrink-0" />
+                                        <CardTitle className="text-base md:text-lg leading-tight">{area.title[locale]}</CardTitle>
+                                    </div>
+                                    <ArrowUpRightIcon
+                                        className="size-4 shrink-0 text-muted-foreground/60 transition-[color,transform] duration-200 ease-out group-hover:text-foreground group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0"
+                                        aria-hidden
+                                    />
                                 </div>
-                                <CardDescription>{area.description[locale]}</CardDescription>
-                                <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium">
-                                    {COPY.enter[locale]}
-                                    <ArrowRightIcon className="size-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
-                                </span>
+                                <CardDescription className="text-sm leading-snug">{area.description[locale]}</CardDescription>
                             </CardContent>
                         </GlassCard>
                     </Link>

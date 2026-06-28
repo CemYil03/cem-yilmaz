@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
-import { ArrowDownIcon, MessageSquareTextIcon, PlusIcon, SparklesIcon } from 'lucide-react';
+import { ArrowDownIcon, Maximize2Icon, MessageSquareTextIcon, Minimize2Icon, PlusIcon, SparklesIcon } from 'lucide-react';
 import { useMutation, useQuery } from 'urql';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/base/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/base/sheet';
 import { Spinner } from '../components/base/spinner';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { ChatMessage } from '../components/chat-message';
@@ -20,6 +20,9 @@ import {
     ChatToolApprovalRespondDocument,
     VisitorPreviousChatsDocument,
 } from '../graphql/generated';
+import { useIsMobile } from '../hooks/use-mobile';
+import { useVisualViewport } from '../hooks/useVisualViewport';
+import { cn } from '../utils/cn';
 import type { Locale } from '../utils/locale';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
 import { ChatComposer } from './ChatComposer';
@@ -37,13 +40,13 @@ import type { VisitorChatIntent } from './VisitorChatProvider';
 
 // Visitor-facing AI chat surface. Mounted once at the root layout — see
 // `__root.tsx` — so any surface can open it via `useVisitorChat()` without
-// duplicating the dialog tree. The route under `/workspace/assistant` is a
+// duplicating the sheet tree. The route under `/workspace/assistant` is a
 // distinct surface that talks to the personal-assistant agent through the
-// `admin.*` namespace — this dialog uses the visitor (non-admin) GraphQL ops
+// `admin.*` namespace — this sheet uses the visitor (non-admin) GraphQL ops
 // so the server dispatches to `agentVisitorAboutCem`. See
 // `docs/features/chat-visitor.md`.
 //
-// The dialog reads its open state from `useVisitorChat()`. The `intent`
+// The sheet reads its open state from `useVisitorChat()`. The `intent`
 // decides what we render on the open transition:
 //
 //   - `'empty'`  → empty state with previous-chats list + composer. Header
@@ -56,9 +59,16 @@ import type { VisitorChatIntent } from './VisitorChatProvider';
 //                  and render the loaded transcript directly. "Previous
 //                  chats" rows in the empty state open this way.
 //
-// Radix's `Dialog` unmounts its children on close, so every fresh open
-// gets a fresh `ChatSurface` instance — no manual reset of the seeded-once
-// ref or chatId.
+// Why a sheet and not a dialog: a chat is an ongoing side conversation,
+// not a modal decision the user must resolve. A right-side sheet reads as
+// "a panel that slides in alongside what I was doing" — which matches
+// every native chat UI a visitor has seen. On mobile the sheet is full-
+// screen by default with no card padding; on desktop it sits in a narrow
+// `sm:max-w-2xl` column with an expand toggle for power readers.
+//
+// Radix's `Sheet` (a Dialog underneath) unmounts its children on close, so
+// every fresh open gets a fresh `ChatSurface` instance — no manual reset
+// of the seeded-once ref or chatId.
 
 const COPY = {
     title: { de: 'Frag mich was', en: 'Ask me anything' },
@@ -76,6 +86,8 @@ const COPY = {
     jumpToLatest: { de: 'Zum neuesten springen', en: 'Jump to latest' },
     previousChats: { de: 'Frühere Chats', en: 'Previous chats' },
     newChat: { de: 'Neuer Chat', en: 'New chat' },
+    expand: { de: 'Chat vergrößern', en: 'Expand chat' },
+    collapse: { de: 'Chat verkleinern', en: 'Collapse chat' },
     emptyIntroNoPrevious: {
         de: 'Stell eine Frage zu meinem Werdegang, meinen Projekten oder meiner Arbeitsweise.',
         en: 'Ask a question about my career, projects, or how I work.',
@@ -96,54 +108,100 @@ const COPY = {
 
 const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
-interface WebsiteVisitorAssistantChatDialogProps {
+interface WebsiteVisitorAssistantChatSheetProps {
     locale: Locale;
 }
 
-export function WebsiteVisitorAssistantChatDialog({ locale }: WebsiteVisitorAssistantChatDialogProps) {
+export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssistantChatSheetProps) {
     const { isOpen, intent, close } = useVisitorChat();
+
+    // Desktop-only expand toggle. Mobile is always full-bleed; the toggle
+    // is hidden under `sm`. Reset to the default narrow width whenever the
+    // sheet closes — opening fresh shouldn't surprise the visitor with a
+    // previously-expanded layout.
+    const [isExpanded, setIsExpanded] = useState(false);
+    useEffect(() => {
+        if (!isOpen) setIsExpanded(false);
+    }, [isOpen]);
+
+    // Mobile keyboard fit. The sheet is portal-mounted with `inset-y-0 h-full`,
+    // which sizes against the layout viewport — that does not shrink when
+    // iOS Safari's soft keyboard appears, so the browser auto-scrolls the
+    // focused textarea into view and drags the header off the top. Driving
+    // the sheet's height + top from `window.visualViewport` while open keeps
+    // the header pinned at the top of the visible area, lets the transcript
+    // shrink in the middle, and parks the composer just above the keyboard.
+    // Desktop keeps the original `h-full` layout — the expand toggle still
+    // needs the sheet to fill the layout viewport.
+    const isMobile = useIsMobile();
+    const visualViewport = useVisualViewport();
+    const mobileViewportStyle =
+        isMobile && isOpen && visualViewport ? { height: visualViewport.height, top: visualViewport.offsetTop } : undefined;
+
     return (
-        <Dialog
+        <Sheet
             open={isOpen}
             onOpenChange={(next) => {
                 if (!next) close();
             }}
         >
-            <DialogContent className="flex h-[85vh] flex-col gap-0 p-0 sm:max-w-2xl">
-                <DialogHeader className="border-b px-6 py-4">
-                    <div className="flex items-center gap-2 text-primary">
-                        <SparklesIcon className="size-4" />
-                        <DialogTitle>{COPY.title[locale]}</DialogTitle>
+            <SheetContent
+                side="right"
+                className={cn('flex w-full flex-col gap-0 p-0', isExpanded ? 'sm:max-w-none' : 'sm:max-w-2xl')}
+                style={mobileViewportStyle}
+            >
+                {/* Desktop-only expand toggle. Lives on the absolute layer
+                 *  beside the Sheet's built-in close (top-4 right-4); we sit
+                 *  at right-12 so the two glyphs don't overlap. Hidden under
+                 *  `sm` — mobile is already full-bleed. */}
+                <button
+                    type="button"
+                    onClick={() => setIsExpanded((value) => !value)}
+                    aria-label={isExpanded ? COPY.collapse[locale] : COPY.expand[locale]}
+                    aria-pressed={isExpanded}
+                    className="absolute right-12 top-4 z-10 hidden rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:block"
+                >
+                    {isExpanded ? <Minimize2Icon className="size-4" /> : <Maximize2Icon className="size-4" />}
+                </button>
+                <SheetHeader className="border-b px-6 py-4">
+                    {/* When expanded, cap the inner column so prose stays
+                     *  at a comfortable reading width while the sheet
+                     *  itself spans the viewport. */}
+                    <div className={isExpanded ? 'mx-auto flex w-full max-w-3xl flex-col gap-1.5' : 'flex flex-col gap-1.5'}>
+                        <div className="flex items-center gap-2 text-primary">
+                            <SparklesIcon className="size-4" />
+                            <SheetTitle>{COPY.title[locale]}</SheetTitle>
+                        </div>
+                        <SheetDescription>{COPY.description[locale]}</SheetDescription>
                     </div>
-                    <DialogDescription>{COPY.description[locale]}</DialogDescription>
-                </DialogHeader>
-                {isOpen && intent ? <ChatSurface locale={locale} intent={intent} /> : null}
-            </DialogContent>
-        </Dialog>
+                </SheetHeader>
+                {isOpen && intent ? <ChatSurface locale={locale} intent={intent} isExpanded={isExpanded} /> : null}
+            </SheetContent>
+        </Sheet>
     );
 }
 
-// --- Surface inside the dialog ----------------------------------------------
+// --- Surface inside the sheet -----------------------------------------------
 //
 // Branches on `intent` to decide the initial state:
 //   - 'empty'  → render the empty state (previous chats + composer)
 //   - 'seeded' → fire seeded question on mount; flip to loaded on chatId
 //   - 'loaded' → render the loaded transcript directly
 
-function ChatSurface({ locale, intent }: { locale: Locale; intent: VisitorChatIntent }) {
+function ChatSurface({ locale, intent, isExpanded }: { locale: Locale; intent: VisitorChatIntent; isExpanded: boolean }) {
     const [chatId, setChatId] = useState<string | undefined>(intent.kind === 'loaded' ? intent.chatId : undefined);
     const [sendError, setSendError] = useState<string | null>(null);
 
-    // Owned by ChatSurface — not the dialog root — so Radix's unmount-on-close
-    // gives every fresh open a fresh hook instance. Hoisting it to the dialog
+    // Owned by ChatSurface — not the sheet root — so Radix's unmount-on-close
+    // gives every fresh open a fresh hook instance. Hoisting it to the sheet
     // root would let `appendedMessages` from one chat leak into the next when
-    // the user closes the dialog mid-turn and reopens with a seeded send.
+    // the user closes the sheet mid-turn and reopens with a seeded send.
     const live = useChatLiveUpdates(chatId);
 
     const [, sendMessage] = useMutation(ChatMessageCreateDocument);
 
-    // Seeded send is one-shot per dialog session. A ref guards React's
-    // StrictMode double-invoke; the dialog component unmounts on close so
+    // Seeded send is one-shot per sheet session. A ref guards React's
+    // StrictMode double-invoke; the sheet component unmounts on close so
     // the next open gets a fresh ref instance automatically.
     const seededSentRef = useRef(false);
     useEffect(() => {
@@ -187,6 +245,11 @@ function ChatSurface({ locale, intent }: { locale: Locale; intent: VisitorChatIn
         setChatId(undefined);
     }, []);
 
+    // Cap the inner column when expanded so the prose stays readable on a
+    // wide viewport. The sheet itself still spans the viewport — only the
+    // content column reads at ~3xl.
+    const innerClass = cn('grid min-h-0 flex-1 grid-rows-[1fr_auto] gap-4 px-6 pt-4 pb-6', isExpanded && 'mx-auto w-full max-w-3xl');
+
     if (sendError) {
         return <div className="grid flex-1 place-items-center p-8 text-sm text-destructive">{sendError}</div>;
     }
@@ -206,10 +269,10 @@ function ChatSurface({ locale, intent }: { locale: Locale; intent: VisitorChatIn
                         <Spinner />
                     </div>
                 ) : (
-                    <ChatEmptyState locale={locale} live={live} onResume={onResume} setChatId={setChatId} />
+                    <ChatEmptyState locale={locale} live={live} onResume={onResume} setChatId={setChatId} innerClass={innerClass} />
                 )
             ) : (
-                <ChatLoaded chatId={chatId} live={live} locale={locale} onResetToOverview={onResetToOverview} />
+                <ChatLoaded chatId={chatId} live={live} locale={locale} onResetToOverview={onResetToOverview} innerClass={innerClass} />
             )}
         </>
     );
@@ -217,7 +280,7 @@ function ChatSurface({ locale, intent }: { locale: Locale; intent: VisitorChatIn
 
 // --- Empty state ------------------------------------------------------------
 //
-// What the dialog shows when opened without a seeded question and without
+// What the sheet shows when opened without a seeded question and without
 // an existing chatId — i.e. the header button. Renders the visitor's prior
 // chats (so they can resume one) and a composer for a new conversation.
 // The rate-limit row sits below the composer and disables the input when
@@ -228,11 +291,13 @@ function ChatEmptyState({
     live,
     onResume,
     setChatId,
+    innerClass,
 }: {
     locale: Locale;
     live: ReturnType<typeof useChatLiveUpdates>;
     onResume: (chatId: string) => void;
     setChatId: (chatId: string) => void;
+    innerClass: string;
 }) {
     // `cache-and-network` so the previous-chats list and quota refresh on
     // every reopen — without it a stale list from yesterday would render
@@ -247,7 +312,7 @@ function ChatEmptyState({
     const isAtLimit = quota ? quota.used >= quota.limit : false;
 
     return (
-        <div className="grid min-h-0 flex-1 grid-rows-[1fr_auto] gap-4 px-6 pt-4 pb-6">
+        <div className={innerClass}>
             <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2 text-sm text-muted-foreground">
                 {previousChats.length > 0 ? (
                     <section className="flex flex-col gap-2">
@@ -334,11 +399,13 @@ function ChatLoaded({
     live,
     locale,
     onResetToOverview,
+    innerClass,
 }: {
     chatId: string;
     live: ReturnType<typeof useChatLiveUpdates>;
     locale: Locale;
     onResetToOverview: () => void;
+    innerClass: string;
 }) {
     const [{ data, fetching, error }] = useQuery({
         query: ChatPageDocument,
@@ -399,7 +466,7 @@ function ChatLoaded({
     }
 
     return (
-        <div className="grid min-h-0 flex-1 grid-rows-[1fr_auto] gap-4 px-6 pt-4 pb-6">
+        <div className={innerClass}>
             <ChatTranscript
                 chat={chat}
                 appendedMessages={live.appendedMessages}

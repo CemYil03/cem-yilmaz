@@ -26,6 +26,12 @@ type Props = {
     subtitle?: string;
     /** Optional desktop nav links — hidden below `md`. Omit for nav-less pages. */
     navItems?: ReadonlyArray<NavItem>;
+    /** When set, the brand cluster is rendered as `logo + <label>` with only
+     *  the logo being a link back to `/{-$locale}`. The label itself is plain
+     *  text. Used by surfaces that have their own identity (e.g. `/workspace`,
+     *  where the label is "Workspace") so the brand name doesn't shout over
+     *  the page's own heading. */
+    brandLabel?: string;
 };
 
 /* ----------------------------------------------------------------------------
@@ -41,7 +47,7 @@ type Props = {
  * `overflow-x-clip` instead.
  * ------------------------------------------------------------------------- */
 
-export function Header({ subtitle, navItems }: Props) {
+export function Header({ subtitle, navItems, brandLabel }: Props) {
     const locale = useLocale();
     const scrolled = useHasScrolled();
     const { pathname } = useLocation();
@@ -50,7 +56,7 @@ export function Header({ subtitle, navItems }: Props) {
     return (
         <>
             <ProgressiveBlurTop />
-            <header className="sticky top-4 z-50 mx-auto w-full max-w-6xl px-6 sm:px-8">
+            <header className="sticky top-4 z-50 mx-auto w-full max-w-6xl px-4 sm:px-8">
                 <GlassCard
                     className={cn(
                         'transition-[background-color,box-shadow] duration-200 ease-out',
@@ -58,12 +64,33 @@ export function Header({ subtitle, navItems }: Props) {
                     )}
                 >
                     <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-                        <Link to="/{-$locale}" className="flex items-center gap-2.5 transition-opacity hover:opacity-80 active:opacity-70">
-                            <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
-                            <img src="/favicon-dark.ico" className="hidden size-8 dark:block" alt="" />
-                            <span className="font-display text-sm font-semibold tracking-tight">Cem Yilmaz</span>
-                            {subtitle && <span className="hidden text-xs text-muted-foreground sm:inline">{subtitle}</span>}
-                        </Link>
+                        {brandLabel ? (
+                            // Brand-as-label variant: only the logo links home;
+                            // the label itself is inert text so the page's own
+                            // identity (e.g. "Workspace") doesn't double as a
+                            // self-link the user can't follow anywhere useful.
+                            <div className="flex items-center gap-2.5">
+                                <Link
+                                    to="/{-$locale}"
+                                    aria-label="Home"
+                                    className="flex items-center transition-opacity hover:opacity-80 active:opacity-70"
+                                >
+                                    <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
+                                    <img src="/favicon-dark.ico" className="hidden size-8 dark:block" alt="" />
+                                </Link>
+                                <span className="font-display text-sm font-semibold tracking-tight">{brandLabel}</span>
+                            </div>
+                        ) : (
+                            <Link
+                                to="/{-$locale}"
+                                className="flex items-center gap-2.5 transition-opacity hover:opacity-80 active:opacity-70"
+                            >
+                                <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
+                                <img src="/favicon-dark.ico" className="hidden size-8 dark:block" alt="" />
+                                <span className="font-display text-sm font-semibold tracking-tight">Cem Yilmaz</span>
+                                {subtitle && <span className="hidden text-xs text-muted-foreground sm:inline">{subtitle}</span>}
+                            </Link>
+                        )}
 
                         {navItems && navItems.length > 0 && (
                             <nav className="hidden items-center gap-1 text-sm md:flex">

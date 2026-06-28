@@ -7,7 +7,7 @@ import { Toaster } from '../web/components/base/sonner';
 import { TooltipProvider } from '../web/components/base/tooltip';
 import { NavigationProgress } from '../web/components/NavigationProgress';
 import { VisitorChatProvider } from '../web/chat/VisitorChatProvider';
-import { WebsiteVisitorAssistantChatDialog } from '../web/chat/WebsiteVisitorAssistantChatDialog';
+import { WebsiteVisitorAssistantChatSheet } from '../web/chat/WebsiteVisitorAssistantChatSheet';
 import { urqlClient } from '../web/graphql/client';
 import { useLocale } from '../web/hooks/useLocale';
 import { DEFAULT_SHARE_IMAGE, DEFAULT_SHARE_IMAGE_DIMENSIONS, SITE_NAME } from '../web/seo/seoConstants';
@@ -47,7 +47,10 @@ export const Route = createRootRoute({
                 { name: 'twitter:description', content: FALLBACK_DESCRIPTION },
                 { name: 'twitter:image', content: shareImageAbsolute },
                 // iOS home-screen / web-app cosmetics. Doesn't affect SEO, but
-                // pairs with `manifest.json` for a cohesive PWA install.
+                // pairs with `manifest.json` for a cohesive PWA install. The
+                // standard `mobile-web-app-capable` is the modern equivalent;
+                // the `apple-` variant stays for older iOS Safari.
+                { name: 'mobile-web-app-capable', content: 'yes' },
                 { name: 'apple-mobile-web-app-capable', content: 'yes' },
                 { name: 'apple-mobile-web-app-title', content: SITE_NAME },
                 { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
@@ -127,11 +130,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     <GraphQLClientProvider value={urqlClient}>
                         <VisitorChatProvider>
                             {children}
-                            {/* Visitor chat dialog mounts once at root so the
+                            {/* Visitor chat sheet mounts once at root so the
                              *  header button (and any other surface) can open
                              *  it from any public route. Renders nothing
                              *  until `useVisitorChat()` flips `isOpen`. */}
-                            <WebsiteVisitorAssistantChatDialog locale={locale} />
+                            <WebsiteVisitorAssistantChatSheet locale={locale} />
                         </VisitorChatProvider>
                     </GraphQLClientProvider>
                 </TooltipProvider>

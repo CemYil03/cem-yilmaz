@@ -10,6 +10,13 @@
 // CV tables (see docs/architecture/content-model.md). `name`, `url`, and
 // `techStack` labels are display-only and locale-independent.
 //
+// `techStack` is one flat ordered array — most-prominent / most-distinctive
+// items first. The route renders the items as a wrapping row of subtle
+// chips, in order, with no truncation. `facts` are short chip-sized tags
+// rendered near the title ("4 languages", "RTL support", "EU-hosted").
+// Both `facts` and tagline are concise on purpose — the layout leans on
+// the screenshot, not on copy.
+//
 // Hero images live under `public/projects/<id>/`. The capture script at
 // `scripts/captureProjectScreenshots.ts` re-grabs them; sites that block
 // headless traffic are flagged `manualOnly` there and the asset is dropped
@@ -43,6 +50,10 @@ interface PortfolioProject {
     taglineEn: string;
     descriptionDe: string;
     descriptionEn: string;
+    /** Short chip-sized tags rendered near the title. Locale-independent. */
+    facts?: ReadonlyArray<string>;
+    /** Flat ordered tech list — most-distinctive items first. Rendered as
+     *  a wrapping row of subtle chips. */
     techStack: ReadonlyArray<string>;
     images: ReadonlyArray<ProjectImage>;
     imageKind: 'browser' | 'photo';
@@ -60,10 +71,26 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
         taglineDe: 'Marktplatz für private Dining-Erlebnisse mit lokalen Köchen.',
         taglineEn: 'Marketplace for private dining experiences with local chefs.',
         descriptionDe:
-            'Technische Architektur seit Gründung des Startups verantwortet. Skalierbares Nx-Monorepo mit TypeScript, Next.js und GraphQL, CQRS und Domain-Driven Design, plus Integrationen mit Payment-, AI- und Messaging-Diensten.',
+            'Verantwortlich für technische Architektur und Umsetzung seit Tag eins — und Mitgestaltung der Geschäftsprozesse darüber hinaus. Eine zweiseitige Plattform für Gäste und Köche, ergänzt um einen umfangreichen Admin-Bereich als dritte Seite für Operations, Einblicke und Kuration. Mobile, Desktop und Barrierefreiheit als ein Produkt gedacht; SEO und GEO von Anfang an Teil der Architektur.',
         descriptionEn:
-            'Founding architect at peopleeat — owning the technical foundation since day one. Scalable Nx monorepo with TypeScript, Next.js and GraphQL, CQRS and domain-driven design, plus payment, AI and messaging integrations.',
-        techStack: ['Next.js', 'React', 'GraphQL', 'TypeScript', 'Drizzle', 'MySQL', 'Nx'],
+            'Owning technical architecture and implementation since day one — and shaping the business processes alongside. A two-sided platform for guests and chefs, complemented by an extensive admin space as a third side for operations, insights and curation. Mobile, desktop and accessibility treated as one product; SEO and GEO baked into the architecture from the start.',
+        facts: ['Live since 2022', 'DE + EN'],
+        techStack: [
+            'TypeScript',
+            'Next.js',
+            'GraphQL',
+            'Nx',
+            'Drizzle',
+            'MySQL',
+            'Vercel AI SDK',
+            'Google Gemini',
+            'OpenAI',
+            'Stripe',
+            'Klaviyo',
+            'Metabase',
+            'Meta WhatsApp',
+            'Slack',
+        ],
         imageKind: 'browser',
         accent: 'oklch(0.78 0.16 55)', // warm orange — peopleeat brand
         images: [
@@ -80,52 +107,30 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
         ],
     },
     {
-        id: 'draw-schema',
-        name: 'Draw Schema',
-        url: 'https://draw-schema.com',
-        repoUrl: 'https://github.com/CemYil03/draw-schema',
-        roleDe: 'Eigenes Projekt',
-        roleEn: 'Own project',
-        taglineDe: 'Kollaboratives, KI-gestütztes Datenbank-Modellierungs-Tool für Entwicklerteams.',
-        taglineEn: 'Collaborative, AI-guided database modelling tool for developer teams.',
-        descriptionDe:
-            'Ein eigenes, nicht-produktives SaaS. Schemas im Team in Echtzeit entwerfen, bestehende Codebasen importieren (SQL, Drizzle, TypeORM) und produktionsreife Migrationen generieren. EU-gehostet.',
-        descriptionEn:
-            'A self-built non-productive SaaS. Design schemas with your team in real-time, import existing codebases (SQL, Drizzle, TypeORM) and generate production-ready migrations. EU-hosted.',
-        techStack: ['React 19', 'TanStack Start', 'GraphQL', 'Drizzle', 'PostgreSQL', 'Vercel AI SDK'],
-        imageKind: 'browser',
-        accent: 'oklch(0.7 0.13 240)', // cool slate-blue — draw-schema brand
-        images: [
-            {
-                src: '/projects/draw-schema/1.png',
-                altDe: 'Draw Schema: kollaboratives Schema-Modellierungs-Canvas mit Tabellen und Relationen',
-                altEn: 'Draw Schema: collaborative schema-modelling canvas with tables and relations',
-            },
-            {
-                src: '/projects/draw-schema/2.png',
-                altDe: 'Leeres Canvas — Ausgangspunkt für ein neues Schema',
-                altEn: 'Empty canvas — starting point for a new schema',
-            },
-            {
-                src: '/projects/draw-schema/3.png',
-                altDe: 'Landing-Page von Draw Schema mit dem Slogan „The blueprint for your team\'s data"',
-                altEn: 'Draw Schema landing page with the headline "The blueprint for your team\'s data"',
-            },
-        ],
-    },
-    {
         id: 'podologie-dudenhofen',
         name: 'Podologie Dudenhofen',
         url: 'https://podologie-dudenhofen.de',
         roleDe: 'Kundenprojekt',
         roleEn: 'Client work',
-        taglineDe: 'Zweisprachige Website für eine Podologie-Praxis in Dudenhofen.',
-        taglineEn: 'Bilingual website for a podiatry practice in Dudenhofen, Germany.',
+        taglineDe: 'Mehrsprachige Praxis-Website mit KI-Assistent und voller Barrierefreiheit.',
+        taglineEn: 'Multilingual practice website with an AI assistant and full accessibility.',
         descriptionDe:
-            'Vollständig zweisprachige Praxis-Website mit Leistungen, Preisen, Terminanfragen und KI-Assistent. Ersetzt die alte Jimdo-Seite durch einen modernen, eigens entwickelten Stack.',
+            'Vollständig mehrsprachige Praxis-Website in vier Sprachen, inklusive RTL für Arabisch. Leistungen, Preisen und Terminanfragen sind durch einen KI-Assistenten ergänzt, der typische Fragen direkt beantwortet. Mobile-first, barrierefrei und sauber für SEO und GEO aufgesetzt — ersetzt die alte Jimdo-Seite durch einen modernen, eigens entwickelten Stack.',
         descriptionEn:
-            'Fully bilingual practice website with services, pricing, appointment requests and an AI assistant. Replaces the legacy Jimdo site with a modern, custom-built stack.',
-        techStack: ['TanStack Start', 'React 19', 'GraphQL', 'Drizzle', 'PostgreSQL', 'Tailwind CSS'],
+            'A fully multilingual practice website in four languages, with proper RTL support for Arabic. Services, pricing and appointment requests sit alongside an AI assistant that answers common questions directly. Mobile-first, accessibility-led and built properly for SEO and GEO — replacing the legacy Jimdo site with a modern, custom-built stack.',
+        facts: ['4 languages', 'RTL support'],
+        techStack: [
+            'TypeScript',
+            'React',
+            'TanStack Start',
+            'Tailwind CSS',
+            'shadcn/ui',
+            'GraphQL',
+            'Drizzle',
+            'PostgreSQL',
+            'Google Gemini',
+            'Resend',
+        ],
         imageKind: 'browser',
         accent: 'oklch(0.75 0.1 165)', // calm green-teal
         images: [
@@ -143,6 +148,53 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
                 src: '/projects/podologie-dudenhofen/3.png',
                 altDe: 'Annette Yilmaz, Inhaberin der Praxis, im Behandlungsraum',
                 altEn: 'Annette Yilmaz, owner of the practice, in the treatment room',
+            },
+        ],
+    },
+    {
+        id: 'draw-schema',
+        name: 'Draw Schema',
+        url: 'https://draw-schema.com',
+        // repoUrl: 'https://github.com/CemYil03/draw-schema',
+        roleDe: 'Eigenes Projekt',
+        roleEn: 'Own project',
+        taglineDe: 'Kollaboratives, KI-gestütztes Datenbank-Modellierungs-Tool für Entwicklerteams.',
+        taglineEn: 'Collaborative, AI-guided database modelling tool for developer teams.',
+        descriptionDe:
+            'Ein eigenes SaaS: Schemas im Team in Echtzeit entwerfen, bestehende Codebasen importieren (SQL, Drizzle, TypeORM) und produktionsreife Migrationen generieren. EU-gehostet und Open Source.',
+        descriptionEn:
+            'A self-built SaaS: design schemas with your team in real-time, import existing codebases (SQL, Drizzle, TypeORM) and generate production-ready migrations. EU-hosted and open source.',
+        facts: ['EU-hosted', 'Open source'],
+        techStack: [
+            'TypeScript',
+            'React',
+            'TanStack Start',
+            'Tailwind CSS',
+            'GraphQL',
+            'Drizzle',
+            'PostgreSQL',
+            'Vercel AI SDK',
+            'Google Gemini',
+            'Stripe',
+            'Resend',
+        ],
+        imageKind: 'browser',
+        accent: 'oklch(0.7 0.13 240)', // cool slate-blue — draw-schema brand
+        images: [
+            {
+                src: '/projects/draw-schema/1.png',
+                altDe: 'Draw Schema: kollaboratives Schema-Modellierungs-Canvas mit Tabellen und Relationen',
+                altEn: 'Draw Schema: collaborative schema-modelling canvas with tables and relations',
+            },
+            {
+                src: '/projects/draw-schema/2.png',
+                altDe: 'Leeres Canvas — Ausgangspunkt für ein neues Schema',
+                altEn: 'Empty canvas — starting point for a new schema',
+            },
+            {
+                src: '/projects/draw-schema/3.png',
+                altDe: 'Landing-Page von Draw Schema mit dem Slogan „The blueprint for your team\'s data"',
+                altEn: 'Draw Schema landing page with the headline "The blueprint for your team\'s data"',
             },
         ],
     },
