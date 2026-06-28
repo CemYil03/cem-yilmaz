@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import {
     ArrowUpRightIcon,
     CodeXmlIcon,
@@ -11,13 +11,13 @@ import {
     StethoscopeIcon,
     WalletIcon,
 } from 'lucide-react';
-import { ChatComposer } from '../../../web/chat/ChatComposer';
-import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
+import { useCallback, useState } from 'react';
+import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { CardContent, CardDescription, CardTitle } from '../../../web/components/base/card';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Header } from '../../../web/components/Header';
+import { MessageComposer } from '../../../web/components/MessageComposer';
 import { workspaceQuotePick } from '../../../web/content/workspaceQuotes';
-import { WorkspaceChatMessageCreateDocument } from '../../../web/graphql/generated';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -111,11 +111,8 @@ const COPY = {
 };
 
 // `admin.chatMessageCreate` returns the chat row wrapped in the admin
-// namespace; pull `{ chatId }` out for `ChatComposer` to navigate on.
-const extractMessageCreateResult = (data: unknown): { chatId: string } | null => {
-    const wrapper = data as { admin?: { chatMessageCreate?: { chatId: string } | null } | null } | null | undefined;
-    return wrapper?.admin?.chatMessageCreate ?? null;
-};
+// namespace; the provider in `WorkspaceAssistantChatProvider` extracts
+// `{ chatId }` so the hub composer only forwards the user's text.
 
 // `size` drives the bento span on `lg`+. `md` always renders 2-col, `sm` 1-col,
 // so the spans only matter on wide viewports — where vertical-height-uniform
@@ -176,18 +173,17 @@ export const Route = createFileRoute('/{-$locale}/workspace/')({
 
 function WorkspaceHub() {
     const locale = useLocale();
-    // No `chatId` yet — the hub is always the empty state for the assistant.
-    // The composer creates a chat on first send, then we navigate to
-    // `/workspace/assistant?chatId=<id>` where the loaded view takes over.
-    // Mounting `useChatLiveUpdates(undefined)` here means the subscription
-    // listener is already in place (and the user message + first assistant
-    // chunks are already buffered) by the time the navigation lands.
-    const live = useChatLiveUpdates(undefined);
-    const navigate = useNavigate();
+    // The assistant chat lives in the workspace-layout provider (one level
+    // up). Submitting the hub composer routes through `openWithMessage`,
+    // which opens the sheet and fires the message in one call — no
+    // navigation, no chat-id juggling here. The provider keeps the
+    // conversation alive across focus-area navigation, so jumping into a
+    // focus area to consult something and coming back keeps the
+    // transcript intact.
+    const { openWithMessage, live } = useWorkspaceAssistantChat();
 
     return (
         <div className="min-h-screen flex flex-col">
-            {live.listener}
             {/* `brandLabel="Workspace"` swaps the public "Cem Yilmaz" wordmark
              * for an inert "Workspace" label — the logo stays clickable (back
              * to landing) but the label itself doesn't pretend to be a link
@@ -198,21 +194,37 @@ function WorkspaceHub() {
                 <AssistantHero
                     locale={locale}
                     composer={
-                        <ChatComposer
-                            isLocked={live.isGenerating}
-                            beginTurn={live.beginTurn}
-                            endTurn={live.endTurn}
-                            onMessageSent={(chatId) => navigate({ to: '/{-$locale}/workspace/assistant', search: { chatId } })}
-                            sendMutation={WorkspaceChatMessageCreateDocument}
-                            extractResult={extractMessageCreateResult}
-                            placeholder={COPY.hero.composerPlaceholder[locale]}
-                            autoFocus
-                        />
+                        <HubComposer locale={locale} disabled={live.isGenerating} onSubmit={(message) => void openWithMessage(message)} />
                     }
                 />
                 <FocusAreaGrid locale={locale} />
             </main>
         </div>
+    );
+}
+
+// Lightweight wrapper around the dumb `<MessageComposer />`. Owns just the
+// draft state for the hub — the provider owns everything else (the mutation,
+// the chatId, the live updates).
+function HubComposer({ locale, disabled, onSubmit }: { locale: Locale; disabled: boolean; onSubmit: (message: string) => void }) {
+    const [draft, setDraft] = useState('');
+    const submit = useCallback(() => {
+        const message = draft.trim();
+        if (!message) return;
+        setDraft('');
+        onSubmit(message);
+    }, [draft, onSubmit]);
+    return (
+        <MessageComposer
+            value={draft}
+            onValueChange={setDraft}
+            onSubmit={submit}
+            disabled={disabled}
+            busy={disabled}
+            placeholder={COPY.hero.composerPlaceholder[locale]}
+            autoFocus
+            sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
+        />
     );
 }
 

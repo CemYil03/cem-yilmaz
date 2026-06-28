@@ -2,8 +2,8 @@
 
 The site has two AI surfaces:
 
-1. **Public visitor chat** — anonymous-or-cookie-session visitors. Answers questions about Cem and his work. Lives in a `Dialog` opened from
-   the landing page's Assistant section (`src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`).
+1. **Public visitor chat** — anonymous-or-cookie-session visitors. Answers questions about Cem and his work. Lives in a right-side `Sheet`
+   opened from the landing page's Assistant section (`src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`).
 2. **Personal assistant at `/workspace/assistant`** — Cem's own assistant, behind GitHub OAuth. Eventually has tools that touch the database
    (calendar, notes, project content) — tools the visitor chat must NEVER reach.
 
@@ -76,7 +76,7 @@ sending is a per-session capability, not a per-user one — the public visitor d
 export const chats = pgTable('Chats', {
   chatId: uuid().primaryKey(),
   title: varchar().notNull().default(''),
-  // 'public' for visitor chats from the landing-page dialog; 'admin' for the
+  // 'public' for visitor chats from the landing-page sheet; 'admin' for the
   // personal assistant at /workspace/assistant. Stamped by the creating
   // mutation; never updated.
   scope: varchar().$type<'public' | 'admin'>().notNull().default('public'),
@@ -150,7 +150,7 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
 
 ### Routing
 
-- **Visitor chat dialog** — hosted on the landing page (`/`) inside `<WebsiteVisitorAssistantChatDialog />`. Always creates new chats with
+- **Visitor chat sheet** — hosted on the landing page (`/`) inside `<WebsiteVisitorAssistantChatSheet />`. Always creates new chats with
   `scope = 'public'`. Sends through `Mutation.chatMessageCreate` (visitor namespace).
 - `/workspace` — workspace hub. Hosts the assistant composer as the page hero. Sends through `Mutation.admin.chatMessageCreate` and
   navigates to `/workspace/assistant?chatId=<new id>` on first send.

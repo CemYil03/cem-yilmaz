@@ -17,7 +17,8 @@ import type { ChatLiveUpdates } from './useChatLiveUpdates';
 //     intact.
 //   - The "Open full-screen" button on the sheet hands the conversation
 //     off to `/workspace/assistant?chatId=<id>` via plain navigation; the
-//     full-screen route is the source of truth from then on (URL-bookmarkable).
+//     full-screen route is the source of truth from then on (URL-routable
+//     and bookmark-friendly).
 //
 // State that survives the sheet's open/close cycle:
 //

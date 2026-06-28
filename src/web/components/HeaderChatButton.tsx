@@ -10,8 +10,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 // right-side cluster stays visually balanced.
 
 const LABEL = {
-    de: 'Chat öffnen',
-    en: 'Open chat',
+    de: 'Chats',
+    en: 'Chats',
 };
 
 export function HeaderChatButton() {

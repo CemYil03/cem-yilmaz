@@ -5,11 +5,16 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useMutation } from 'urql';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
 import type { TranscriptMessage } from './chatTranscript';
-import { findLatestCollectionId, findPendingApprovalIds, findUserInputByCollectionId, groupMessagesByDate, mergeTranscriptMessages } from './chatTranscript';
+import {
+    findLatestCollectionId,
+    findPendingApprovalIds,
+    findUserInputByCollectionId,
+    groupMessagesByDate,
+    mergeTranscriptMessages,
+} from './chatTranscript';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/base/sheet';
-import { Spinner } from '../components/base/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/base/tooltip';
 import { ChatMessage } from '../components/chat-message';
 import { MessageComposer } from '../components/MessageComposer';
@@ -150,11 +155,7 @@ export function WorkspaceAssistantChatSheet({ locale }: WorkspaceAssistantChatSh
                     {allMessages.length === 0 && !live.isGenerating ? (
                         <EmptyState locale={locale} />
                     ) : (
-                        <ChatTranscript
-                            messages={allMessages}
-                            streamingTexts={live.streamingTexts}
-                            locale={locale}
-                        />
+                        <ChatTranscript messages={allMessages} streamingTexts={live.streamingTexts} locale={locale} />
                     )}
                     <WorkspaceAssistantComposer locale={locale} hasChat={!!chatId} onReset={resetChat} />
                 </div>

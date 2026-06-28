@@ -1,7 +1,7 @@
 # Chat Foundation
 
 > **Phase 1 → Phase 2 note:** today there is a single agent (`agentUserConversation.ts`) used by the public visitor chat hosted in the
-> landing-page dialog (`src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`). Phase 2 adds a second agent for the workspace personal
+> landing-page sheet (`src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`). Phase 2 adds a second agent for the workspace personal
 > assistant. The message-persistence and streaming machinery described here is shared between both — see
 > [`multi-agent-chat.md`](./multi-agent-chat.md) for the dispatch design.
 

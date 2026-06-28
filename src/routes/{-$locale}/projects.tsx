@@ -93,9 +93,9 @@ function ProjectsPage() {
                 </header>
 
                 <div className="flex flex-col gap-20 md:gap-28">
-                    {portfolioProjects.map((project) => (
+                    {portfolioProjects.map((project, index) => (
                         <Reveal key={project.id} as="div">
-                            <ProjectRow project={project} locale={locale} />
+                            <ProjectRow project={project} locale={locale} index={index} total={portfolioProjects.length} />
                         </Reveal>
                     ))}
                 </div>

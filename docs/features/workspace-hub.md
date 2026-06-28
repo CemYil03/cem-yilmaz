@@ -46,31 +46,28 @@ putting that string into the visual hierarchy. The browser-tab title and `seoMet
 
 ## Personal-assistant composer
 
-The assistant composer sits **directly under** the hero quote, in normal page flow — not pinned to the bottom of the viewport. It's a
-`ChatComposer` (the same component that powers the visitor chat dialog on `/`) wired through `useChatLiveUpdates`. On a typical desktop the
-quote + composer occupy the top half of the viewport, so the assistant is the first thing the user sees and the most prominent affordance —
-the same priority the old sticky placement was trying to encode, just without the side-effect of overlapping the focus-area cards. Removing
-the sticky composer also removed the `ProgressiveBlurBottom` field and the 256px bottom padding `<main>` used to reserve; neither was
-carrying weight once the composer left the bottom of the viewport. The composer is fully functional — it accepts attachments, supports the
-auto/manual tool-approval mode toggle, and locks during an in-flight turn. It is rendered with `autoFocus` so the textarea is the active
-element on landing — the user can start typing immediately without clicking. `/workspace/assistant` (both empty and loaded states) continues
-to use a `sticky bottom-4` composer because a transcript scrolling above an input is a different layout problem from a launcher beside a nav
-grid.
+The assistant composer sits **directly under** the hero quote, in normal page flow — not pinned to the bottom of the viewport. It's a small
+wrapper around `<MessageComposer />` that submits into the workspace assistant chat provider (see [Workspace Chat](./chat-workspace.md)) via
+`openWithMessage(text)`. On a typical desktop the quote + composer occupy the top half of the viewport, so the assistant is the first thing
+the user sees and the most prominent affordance — the same priority the old sticky placement was trying to encode, just without the
+side-effect of overlapping the focus-area cards. Removing the sticky composer also removed the `ProgressiveBlurBottom` field and the 256px
+bottom padding `<main>` used to reserve; neither was carrying weight once the composer left the bottom of the viewport. The composer is
+rendered with `autoFocus` so the textarea is the active element on landing — the user can start typing immediately without clicking.
 
-The composer is configured to talk to the **personal-assistant agent** by passing the `WorkspaceChatMessageCreate` mutation document and a
-matching result extractor to `ChatComposer`. That mutation goes through `Mutation.admin.chatMessageCreate`, which the server dispatches to
-`agentPersonalAssistant` (see `docs/architecture/multi-agent-chat.md`). The public visitor chat (in the landing-page dialog) is unaffected —
-`ChatComposer`'s defaults still target the visitor namespace.
-
-On first send the hub navigates to `/workspace/assistant?chatId=<new id>`. Because `useChatLiveUpdates` was mounted on the hub before the
-mutation fired, the user message and the first streaming chunks of the assistant reply are already buffered when the loaded view takes over
-— no perceptible "loading then a flash" gap.
+Submitting the hub composer opens the **workspace assistant sheet** (the same sheet the floating launcher on every other workspace page
+opens) and fires the first message into it. The conversation stays in the sheet across navigation between focus areas; clicking **"Open
+full-screen"** in the sheet's header navigates to `/workspace/assistant?chatId=<id>` for a dedicated full-screen surface. See
+[Workspace Chat](./chat-workspace.md) for the sheet, launcher, and full-screen jump-off behaviour.
 
 ## `/workspace/assistant`
 
-The dedicated chat surface for the personal assistant. Same shape as the public visitor chat dialog: empty state with the composer, loaded
+The dedicated chat surface for the personal assistant. Same shape as the public visitor chat sheet: empty state with the composer, loaded
 state with a header, the transcript, and the composer pinned to the bottom. The loaded transcript reads `Query.admin.chat(chatId)` so a
 stolen chatId from the visitor namespace is rejected by `chatFindByScope`.
+
+This route is the **bookmark-able** form of the same conversation that lives in the sheet. The sheet's "Open full-screen" button hands the
+active `chatId` off to this route via a normal navigation; the sheet stays the in-context surface for short questions while doing other
+workspace work, the route is for deep work where the chat IS the page. See [Workspace Chat](./chat-workspace.md).
 
 The route is `noindex`, kept out of the sitemap, and unlinked from the public site — same posture as the rest of `/workspace/*`.
 
@@ -157,7 +154,7 @@ exist, not for the rooms to be furnished.
   pass an extractor that reads `data.admin.chatMessageCreate`.
 - `placeholder` — localized placeholder string. Defaults to `"Type a message…"`.
 
-The visitor chat dialog on the landing page (`WebsiteVisitorAssistantChatDialog`) is unchanged — it doesn't pass any of these and gets the
+The visitor chat sheet on the landing page (`WebsiteVisitorAssistantChatSheet`) is unchanged — it doesn't pass any of these and gets the
 visitor defaults.
 
 ### SEO
@@ -180,6 +177,6 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
   `WORKSPACE_GITHUB_LOGINS`). The README and `AGENTS.md` already document the env vars; the gate itself does not exist yet. `guardAdmin` and
   `guardAdminMutation` are the files that flip from permissive to allowlist-checked.
 - **Phase 2+ — populate focus areas.** Each stub becomes a real surface (per-area notes, lists, integrations) once the gate is in.
-- **Follow-up — extract `ChatTranscript`.** The transcript layout in `src/web/chat/WebsiteVisitorAssistantChatDialog.tsx` and
+- **Follow-up — extract `ChatTranscript`.** The transcript layout in `src/web/chat/WebsiteVisitorAssistantChatSheet.tsx` and
   `src/routes/{-$locale}/workspace/assistant.tsx` is duplicated. Once a third surface needs it, extract to a shared component under
   `src/web/chat/`.

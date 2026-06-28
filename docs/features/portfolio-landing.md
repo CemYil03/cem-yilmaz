@@ -64,7 +64,7 @@ month. The badge therefore always reads "from <next month> <year>" without manua
 ### Hero CTA (the embedded assistant)
 
 The hero has **no buttons**. The call-to-action is the assistant composer itself, mounted directly inside `Hero` below the headline /
-sub-headline / body block. The composer state (`question`) lives in `Hero`; the dialog open state (`submittedQuestion`) is lifted to
+sub-headline / body block. The composer state (`question`) lives in `Hero`; the sheet open state (`submittedQuestion`) is lifted to
 `HomePage` so the CallToAction section further down the page can drive the same chat.
 
 The visual treatment is a single `GlassCard` containing:
@@ -81,10 +81,10 @@ Submit semantics (Enter to send, Shift+Enter for newline, send gating on non-emp
 supplies the value and the submit callback.
 
 Submitting the composer, or clicking any suggestion card, calls the `onOpenChat` callback owned by `HomePage` which sets `submittedQuestion`
-and opens `<WebsiteVisitorAssistantChatDialog />` (`src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`). The dialog is the live visitor
-chat — it fires `chatMessageCreate` with the seeded question on open, mounts `useChatLiveUpdates` at its root so the subscription is in
-place before the mutation publishes, and renders the same transcript + composer stack that used to live at the now-removed `/chat` route.
-The dialog owns its own `chatId` in component state — closing it ends the session.
+and opens `<WebsiteVisitorAssistantChatSheet />` (`src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`). The sheet is the live visitor chat —
+it fires `chatMessageCreate` with the seeded question on open, mounts `useChatLiveUpdates` at its root so the subscription is in place
+before the mutation publishes, and renders the same transcript + composer stack that used to live at the now-removed `/chat` route. The
+sheet owns its own `chatId` in component state — closing it ends the session.
 
 See [`docs/features/chat.md`](./chat.md) for the visitor chat surface itself.
 
@@ -112,8 +112,8 @@ and uses the hero subhead as the meta `description`. The page is listed in `src/
 All sections use the shared `GlassCard` primitive for visual consistency with the header and other public pages. The services, CTA, and
 explore sections are grids of cards; the Why-Me cards and the Hero's embedded assistant card also use `GlassCard`. The section helpers
 (`Hero`, `HeroPortrait`, `Services`, `WhyMe`, `CallToAction`, `Explore`, `SectionHeading`, `ServiceCard`, `WhyMeCard`, `NavCard`) live
-locally inside `index.tsx`. The visitor chat dialog is the only piece extracted — it lives in
-`src/web/chat/WebsiteVisitorAssistantChatDialog.tsx`.
+locally inside `index.tsx`. The visitor chat sheet is the only piece extracted — it lives in
+`src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`.
 
 ### Footer
 
@@ -155,7 +155,7 @@ The landing page uses restrained, purposeful motion — no animation for animati
    Tracked by a local `useHasScrolled` hook in `src/web/components/Header.tsx`.
 5. **NavCard arrow** — hovering an Explore card translates its arrow 1 unit right (`group-hover:translate-x-1`) over 200ms instead of the
    previous gap-grow. Reads as "go" rather than "stretch".
-6. **Dialog open** — the visitor chat dialog uses Radix's stock fade + zoom-in on open, no custom motion layered on top.
+6. **Sheet open** — the visitor chat sheet uses Radix's stock slide-in-from-right on open, no custom motion layered on top.
 
 **`prefers-reduced-motion: reduce` honours the user's OS-level setting at every layer:** `useInView` short-circuits to `inView = true` so
 the Reveal component renders at its final state; `Reveal`'s transform is suppressed via `motion-reduce:`; the keyframe animations

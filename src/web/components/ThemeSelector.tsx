@@ -1,5 +1,6 @@
 import { MoonIcon, SunIcon, SunMoonIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useLocale } from '../hooks/useLocale';
 import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 
 type ThemeMode = 'light' | 'dark' | 'auto';
@@ -56,6 +57,7 @@ function applyFaviconForMode(mode: ThemeMode, resolved: 'light' | 'dark') {
 }
 
 export function ThemeSelector() {
+    const locale = useLocale();
     const [mode, setMode] = useState<ThemeMode>('auto');
 
     useEffect(() => {
@@ -85,8 +87,20 @@ export function ThemeSelector() {
         window.localStorage.setItem('theme', nextMode);
     }
 
-    const label =
-        mode === 'auto' ? 'Theme mode: auto (system). Click to switch to light mode.' : `Theme mode: ${mode}. Click to switch mode.`;
+    const label = {
+        de:
+            mode === 'auto'
+                ? 'Designmodus: automatisch (System). Klicken, um zum hellen Modus zu wechseln.'
+                : mode === 'light'
+                  ? 'Designmodus: hell. Klicken, um zum dunklen Modus zu wechseln.'
+                  : 'Designmodus: dunkel. Klicken, um zum automatischen Modus zu wechseln.',
+        en:
+            mode === 'auto'
+                ? 'Theme mode: auto (system). Click to switch to light mode.'
+                : mode === 'light'
+                  ? 'Theme mode: light. Click to switch to dark mode.'
+                  : 'Theme mode: dark. Click to switch to auto mode.',
+    }[locale];
 
     const Icon = mode === 'light' ? SunIcon : mode === 'dark' ? MoonIcon : SunMoonIcon;
 
