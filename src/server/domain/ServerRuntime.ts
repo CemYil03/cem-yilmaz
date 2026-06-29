@@ -1,6 +1,6 @@
 import type { LanguageModel } from 'ai';
 import type { Database, DatabaseTransaction } from '../db';
-import type { GqlSChatUpdate } from '../graphql/generated';
+import type { ChatUpdateWirePayload } from '../graphql/chatUpdateWirePayload';
 import type { QueuedJobDefinition } from '../jobs/types';
 import type { EmailService } from '../services/emailServiceCreate';
 import type { BrowserCaptureOptions } from '../utils/browserCapture';
@@ -14,7 +14,13 @@ export interface ServerRuntime {
     };
     publish: {
         userUpdates: (args: { userId: string }) => Promise<void>;
-        chatUpdates: (args: { generationId: string; update: GqlSChatUpdate }) => Promise<void>;
+        // Wire payload carries only ids/small primitives — pg_notify caps
+        // NOTIFY at 8000 bytes, so we can't put a full `ChatMessage` on the
+        // wire (a long user-message body or fat tool-call args blob blows
+        // the cap). The subscription resolver re-loads via `chatMessageRowLoad`
+        // and maps to `GqlSChatUpdate` before delivery. See
+        // `src/server/graphql/chatUpdateWirePayload.ts`.
+        chatUpdates: (args: { generationId: string; payload: ChatUpdateWirePayload }) => Promise<void>;
     };
     jobs: {
         enqueue: <TData>(

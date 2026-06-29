@@ -308,7 +308,7 @@ async function chatAssistantTurnRun({
             try {
                 await serverRuntime.publish.chatUpdates({
                     generationId,
-                    update: { gqlTypeName: 'ChatUpdateTurnEnded', generationId },
+                    payload: { kind: 'turnEnded', generationId },
                 });
             } catch (publishError) {
                 // A publish failure here is best-effort: the worst case is the
@@ -441,8 +441,8 @@ async function runAgentTurn({
                 assistantText += part.text;
                 await serverRuntime.publish.chatUpdates({
                     generationId,
-                    update: {
-                        gqlTypeName: 'ChatUpdateAssistantTextChunk',
+                    payload: {
+                        kind: 'assistantTextChunk',
                         chatMessageId: assistantTextMessageId,
                         delta: part.text,
                     },

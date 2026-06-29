@@ -82,16 +82,16 @@ describe('chatInputCollectionRespond', () => {
         expect(userInputRows[0]!.collectionMessageId).toBe(seed.collectionMessageId);
 
         // Assert — exactly one MessageAppended fired (for the userInput row)
-        // and chatAssistantTurnRun was called once.
+        // and chatAssistantTurnRun was called once. Wire payload is only
+        // `{ chatMessageId }`; the message variant is re-loaded by the
+        // subscription resolver.
         const appended = vi
             .mocked(seed.serverRuntime.publish.chatUpdates)
             .mock.calls.map(([args]) => args)
-            .filter(({ update }) => update.gqlTypeName === 'ChatUpdateMessageAppended');
+            .filter(({ payload }) => payload.kind === 'messageAppended');
         expect(appended).toHaveLength(1);
         expect(appended[0]!.generationId).toBe('gen-test');
-        const message = (appended[0]!.update as { message: { gqlTypeName: string; chatMessageId: string } }).message;
-        expect(message.gqlTypeName).toBe('ChatMessageUserInput');
-        expect(message.chatMessageId).toBe(result!.chatMessageId);
+        expect(appended[0]!.payload).toEqual({ kind: 'messageAppended', chatMessageId: result!.chatMessageId });
 
         expect(chatAssistantTurnRunDetached).toHaveBeenCalledTimes(1);
     });

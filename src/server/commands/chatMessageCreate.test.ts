@@ -64,17 +64,17 @@ describe('chatMessageCreate', () => {
         expect(userRows[0]!.body).toBe('hello world');
 
         // Assert — exactly one MessageAppended fired (for the user row),
-        // before chatAssistantTurnRun was invoked.
+        // before chatAssistantTurnRun was invoked. The wire payload only
+        // carries the `chatMessageId` — the full message shape is built by
+        // the subscription resolver via `chatMessageRowLoad`. See
+        // `docs/architecture/chat.md`.
         const appended = vi
             .mocked(serverRuntime.publish.chatUpdates)
             .mock.calls.map(([args]) => args)
-            .filter(({ update }) => update.gqlTypeName === 'ChatUpdateMessageAppended');
+            .filter(({ payload }) => payload.kind === 'messageAppended');
         expect(appended).toHaveLength(1);
         expect(appended[0]!.generationId).toBe('gen-test');
-        const message = (appended[0]!.update as { message: { gqlTypeName: string; chatMessageId: string; body?: string } }).message;
-        expect(message.gqlTypeName).toBe('ChatMessageUser');
-        expect(message.chatMessageId).toBe(chatMessageId);
-        expect(message.body).toBe('hello world');
+        expect(appended[0]!.payload).toEqual({ kind: 'messageAppended', chatMessageId });
 
         // The mock asserts the detached turn was kicked off exactly once —
         // we don't care about the LLM result here, only the publish ordering.
@@ -142,24 +142,16 @@ describe('chatMessageCreate', () => {
         const inOrder = joinRows.sort((x, y) => x.position - y.position);
         expect(inOrder.map((r) => r.fileUploadId)).toEqual([a1.fileUploadId, a2.fileUploadId]);
 
-        // Assert — the published MessageAppended carries `attachments` with
-        // resolver-shaped url, mediaType, etc.
+        // Assert — the published MessageAppended carries the new user row's
+        // `chatMessageId`. The full `attachments` shape isn't on the wire any
+        // more; it's re-loaded by the subscription resolver. We assert the
+        // attachment join rows directly above instead.
         const appended = vi
             .mocked(serverRuntime.publish.chatUpdates)
             .mock.calls.map(([args]) => args)
-            .find(({ update }) => update.gqlTypeName === 'ChatUpdateMessageAppended');
+            .find(({ payload }) => payload.kind === 'messageAppended');
         expect(appended).toBeDefined();
-        const message = (
-            appended!.update as {
-                message: { gqlTypeName: string; attachments: Array<{ fileUploadId: string; url: string; mediaType: string }> };
-            }
-        ).message;
-        expect(message.gqlTypeName).toBe('ChatMessageUser');
-        expect(message.attachments).toHaveLength(2);
-        expect(message.attachments[0]!.fileUploadId).toBe(a1.fileUploadId);
-        expect(message.attachments[0]!.url).toBe(`/api/file-uploads/${a1.fileUploadId}`);
-        expect(message.attachments[0]!.mediaType).toBe('image/png');
-        expect(message.attachments[1]!.fileUploadId).toBe(a2.fileUploadId);
+        expect(appended!.payload).toEqual({ kind: 'messageAppended', chatMessageId: result!.chatMessageId });
     });
 
     it('rejects fileUploadIds owned by a different user', async () => {

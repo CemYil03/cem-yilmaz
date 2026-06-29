@@ -9,8 +9,6 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
-import { chatMessageRowLoad } from '../queries/chatMessageRowLoad';
 import type { ProjectsAgentMutation, ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 import { agentPersonalAssistantProjects } from './agentPersonalAssistantProjects';
 
@@ -151,23 +149,19 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
                   } as const);
 
             // Stamp the result onto the pre-written row and republish a fresh
-            // `ChatUpdateMessageAppended` so the UI re-renders the now-
-            // complete delegate card (with its result available to the
-            // tool-args inspector). The subscription delivers the same shape
-            // a re-fetch would have, so the client's id-keyed merge swaps the
-            // partial row for the complete one.
+            // `messageAppended` so the UI re-renders the now-complete delegate
+            // card (with its result available to the tool-args inspector). The
+            // subscription resolver re-loads via `chatMessageRowLoad` so the
+            // shape that reaches the client matches a re-fetch.
             await db
                 .update(chatMessagesToolCall)
                 .set({ toolResult: toolResult as unknown as JSONValue, resultedAt: new Date() })
                 .where(eq(chatMessagesToolCall.chatMessageId, parentChatMessageId));
             if (generationId) {
-                const updatedRow = await chatMessageRowLoad(db, parentChatMessageId);
-                if (updatedRow) {
-                    await serverRuntime.publish.chatUpdates({
-                        generationId,
-                        update: { gqlTypeName: 'ChatUpdateMessageAppended', message: toGqlChatMessage(updatedRow) },
-                    });
-                }
+                await serverRuntime.publish.chatUpdates({
+                    generationId,
+                    payload: { kind: 'messageAppended', chatMessageId: parentChatMessageId },
+                });
             }
 
             return toolResult;

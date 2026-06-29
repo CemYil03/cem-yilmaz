@@ -39,8 +39,10 @@ import { guardAdminMutation } from '../guards/guardAdminMutation';
 import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
 import { toGqlProfile } from '../mappers/toGqlProfile';
+import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
+import { chatMessageRowLoad } from '../queries/chatMessageRowLoad';
 import { chatsFindBySession } from '../queries/chatsFindBySession';
 import { cvEducationList } from '../queries/cvEducationList';
 import { cvExperienceList } from '../queries/cvExperienceList';
@@ -109,6 +111,7 @@ import type {
     GqlSUserMutationTerminateSessionsArgs,
     GqlSUserMutationUserUpdateArgs,
 } from './generated';
+import type { ChatUpdateWirePayload } from './chatUpdateWirePayload';
 
 // Visitor / admin namespaces share the same chat command bodies — only the
 // scope and the agent factory change. Pinning these once keeps the resolver
@@ -399,8 +402,33 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 subscribe(_: any, { generationId }: GqlSSubscriptionChatUpdatesArgs) {
                     return serverRuntime.subscribe.to(`chat-updates:${generationId}`);
                 },
-                resolve(payload: GqlSChatUpdate) {
-                    return payload;
+                // Wire payload carries ids/small primitives only — pg_notify
+                // caps NOTIFY at 8000 bytes. We re-load the row here and map
+                // it to the full `GqlSChatMessage` so the shape that reaches
+                // the client matches what `chatFindOne` would return. See
+                // `src/server/graphql/chatUpdateWirePayload.ts`.
+                async resolve(payload: ChatUpdateWirePayload): Promise<GqlSChatUpdate> {
+                    switch (payload.kind) {
+                        case 'messageAppended': {
+                            const joined = await chatMessageRowLoad(serverRuntime.db, payload.chatMessageId);
+                            // Publish runs after commit, so the row should
+                            // always be found. A miss here would be data
+                            // corruption (row deleted between publish and
+                            // delivery) — throw so the subscriber sees a
+                            // GraphQL error rather than a silently-dropped
+                            // update.
+                            if (!joined) throw new Error(`chatUpdates: row ${payload.chatMessageId} not found on re-load`);
+                            return { gqlTypeName: 'ChatUpdateMessageAppended', message: toGqlChatMessage(joined) };
+                        }
+                        case 'assistantTextChunk':
+                            return {
+                                gqlTypeName: 'ChatUpdateAssistantTextChunk',
+                                chatMessageId: payload.chatMessageId,
+                                delta: payload.delta,
+                            };
+                        case 'turnEnded':
+                            return { gqlTypeName: 'ChatUpdateTurnEnded', generationId: payload.generationId };
+                    }
                 },
             },
         },

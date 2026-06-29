@@ -38,7 +38,12 @@ function aiForTest(): ServerRuntime['ai'] {
 // function is a `vi.fn()` so tests can introspect via
 // `vi.mocked(stubRuntime.publish.chatUpdates).mock.calls` /
 // `toHaveBeenCalledWith(...)`. `publish.*` channels are silent no-ops so tests
-// can observe what the command published without per-test overrides.
+// can observe what the command published without per-test overrides. The
+// `chatUpdates` wire payload is the lean `ChatUpdateWirePayload`
+// (`{ kind: 'messageAppended', chatMessageId }` etc.) — the full
+// `GqlSChatMessage` shape is built by the subscription resolver via
+// `chatMessageRowLoad`, so tests assert on the persisted DB rows plus the
+// published id, not on a shape that no longer rides the wire.
 function serverRuntimeStubCreate(): ServerRuntime {
     return {
         db: testDb,

@@ -41,8 +41,10 @@ export function serverRuntimeCreate(): ServerRuntime {
             // key and (hypothetically) some other key wouldn't collide. The
             // `PubSubPostgres` transport lower-cases the channel name; a UUIDv4
             // is already lower-case so the prefix is the only case-sensitive
-            // part.
-            chatUpdates: ({ generationId, update }) => publish(`chat-updates:${generationId}`, update),
+            // part. Wire payload is the lean `ChatUpdateWirePayload` — the
+            // subscription resolver re-loads the row and maps to the full
+            // `GqlSChatUpdate` before handing it to subscribers.
+            chatUpdates: ({ generationId, payload }) => publish(`chat-updates:${generationId}`, payload),
         },
         jobs: {
             enqueue: jobEnqueue,

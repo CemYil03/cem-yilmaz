@@ -94,15 +94,15 @@ describe('chatToolApprovalRespond', () => {
         expect(console.log).not.toHaveBeenCalled();
 
         // Assert — exactly one MessageAppended event fires: the response row.
+        // The wire payload carries only `chatMessageId`; the response shape is
+        // re-loaded by the subscription resolver.
         const appended = vi
             .mocked(seed.serverRuntime.publish.chatUpdates)
             .mock.calls.map(([args]) => args)
-            .filter(({ update }) => update.gqlTypeName === 'ChatUpdateMessageAppended');
+            .filter(({ payload }) => payload.kind === 'messageAppended');
         expect(appended).toHaveLength(1);
         expect(appended[0]!.generationId).toBe('gen-test');
-        const message = (appended[0]!.update as { message: { gqlTypeName: string; approved?: boolean } }).message;
-        expect(message.gqlTypeName).toBe('ChatMessageToolApprovalResponse');
-        expect(message.approved).toBe(true);
+        expect(appended[0]!.payload).toEqual({ kind: 'messageAppended', chatMessageId: responseRows[0]!.chatMessageId });
     });
 
     it('declines a pending call: writes the response row with approved=false and does not execute the tool', async () => {
@@ -136,11 +136,9 @@ describe('chatToolApprovalRespond', () => {
         const appended = vi
             .mocked(seed.serverRuntime.publish.chatUpdates)
             .mock.calls.map(([args]) => args)
-            .filter(({ update }) => update.gqlTypeName === 'ChatUpdateMessageAppended');
+            .filter(({ payload }) => payload.kind === 'messageAppended');
         expect(appended).toHaveLength(1);
-        const message = (appended[0]!.update as { message: { gqlTypeName: string; approved?: boolean } }).message;
-        expect(message.gqlTypeName).toBe('ChatMessageToolApprovalResponse');
-        expect(message.approved).toBe(false);
+        expect(appended[0]!.payload).toEqual({ kind: 'messageAppended', chatMessageId: responseRows[0]!.chatMessageId });
     });
 
     it('declines with a reason: persists the reason and surfaces it on the published MessageAppended payload', async () => {
@@ -166,18 +164,16 @@ describe('chatToolApprovalRespond', () => {
         expect(responseRows[0]!.approved).toBe(false);
         expect(responseRows[0]!.reason).toBe(reason);
 
-        // The published MessageAppended carries the reason through to the
-        // subscriber so the transcript reflects it without a refetch — same
-        // shape `chatFindOne` would emit.
+        // The published MessageAppended only carries the response row's
+        // chatMessageId; the reason+approved are persisted (asserted on the
+        // DB above) and re-loaded by the subscription resolver before
+        // delivery.
         const appended = vi
             .mocked(seed.serverRuntime.publish.chatUpdates)
             .mock.calls.map(([args]) => args)
-            .filter(({ update }) => update.gqlTypeName === 'ChatUpdateMessageAppended');
+            .filter(({ payload }) => payload.kind === 'messageAppended');
         expect(appended).toHaveLength(1);
-        const message = (appended[0]!.update as { message: { gqlTypeName: string; approved?: boolean; reason?: string | null } }).message;
-        expect(message.gqlTypeName).toBe('ChatMessageToolApprovalResponse');
-        expect(message.approved).toBe(false);
-        expect(message.reason).toBe(reason);
+        expect(appended[0]!.payload).toEqual({ kind: 'messageAppended', chatMessageId: responseRows[0]!.chatMessageId });
     });
 
     it('rejects a second response for the same approvalId (idempotency guard)', async () => {

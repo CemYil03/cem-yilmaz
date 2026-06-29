@@ -272,8 +272,22 @@ Three rules fall out of this:
 
 The single primitive that implements "commit + publish" is `chatMessageAppend` in `src/server/commands/chatMessageAppend.ts`. Every chat
 command (`chatMessageCreate`, `chatInputCollectionRespond`, `chatToolApprovalRespond`) and the agent loop's `onStepFinish` use it; the
-publish payload is built from the same `ChatMessageRowJoined` shape `chatFindOne` returns, so the subscription delivers messages identical
-to what the page query would have re-fetched.
+publish carries only the new row's `chatMessageId`, and the subscription resolver re-loads the joined row via `chatMessageRowLoad` before
+delivery — so subscribers receive a `ChatMessage` identical to what `chatFindOne` would have returned.
+
+### Why the wire payload is the id, not the full message
+
+`PubSubPostgres.publish` round-trips through `pg_notify`, which **caps NOTIFY payloads at 8000 bytes**. A long user message, a fat tool-call
+args blob, or a multi-paragraph assistant text would blow the cap, the DB driver would reject the `pg_notify` call, and the chat command
+would error after a successful write — committed truth that never reached its subscriber.
+
+The fix is structural: the wire payload — `ChatUpdateWirePayload` in `src/server/graphql/chatUpdateWirePayload.ts` — only carries small
+primitives (`{ kind: 'messageAppended', chatMessageId }`, the streaming-chunk delta, or the `turnEnded` marker). The subscription resolver
+in `resolversCreate.ts` re-loads the row and maps it to the full `GqlSChatMessage` before handing it to graphql-js. The shape that reaches
+the client is exactly what a re-fetch would have returned; the wire payload stays small and fixed-size regardless of message body size.
+
+`PubSubPostgres.publish` enforces this with a 7500-byte hard guard so any future publisher that tries to put a fat value on the wire fails
+loudly at the call site, not deep inside the driver. **The rule: fan out via id, not value.**
 
 The shared turn-runner `chatAssistantTurnRun` exposes `chatAssistantTurnRunDetached`, which all three write commands use to fire the
 assistant turn on a void promise — the mutation returns as soon as the user-side row is durable, the agent runs detached, and the helper

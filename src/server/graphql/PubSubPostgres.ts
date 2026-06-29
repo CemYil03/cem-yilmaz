@@ -205,6 +205,18 @@ export class PubSubPostgres implements PubSubLike {
     async publish(triggerName: string, payload: unknown): Promise<void> {
         const trigger = this.normalizeTrigger(triggerName);
         const text = payload === undefined ? null : JSON.stringify(payload);
+        // pg_notify caps NOTIFY payloads at 8000 bytes. The error message
+        // ("payload string too long") only surfaces inside the database
+        // driver, far from the call site, so the producer has no idea which
+        // channel just dropped an update. Pre-check here and throw with the
+        // trigger name + size so the caller can fan out via id, not value.
+        // 7500 bytes is the soft ceiling — leaves headroom for JSON escapes
+        // and pg's internal accounting.
+        if (text !== null && Buffer.byteLength(text, 'utf8') > 7500) {
+            throw new Error(
+                `PubSubPostgres.publish(${trigger}): payload is ${Buffer.byteLength(text, 'utf8')} bytes; pg_notify caps at 8000. Fan out via id, not value.`,
+            );
+        }
         await this.pool.query('SELECT pg_notify($1, $2)', [trigger, text]);
     }
 
