@@ -61,7 +61,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
         const locale = useLocale();
         return (
             <div className="min-h-screen flex flex-col">
-                <Header />
+                <Header chatVariant="workspace" />
                 <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-16">
                     {chatId ? <VisitorChatDetail chatId={chatId} locale={locale} /> : <VisitorChatsList locale={locale} />}
                 </main>

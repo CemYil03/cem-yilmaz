@@ -2,11 +2,12 @@
 
 ## User Behavior
 
-The public Projects page lives at `/projects` (`/en/projects` for the English locale). Each project renders as a **magazine-style spread**:
-a hero image on top (capped at `max-w-3xl` and centered, so it doesn't stretch the full row width on desktop), a thin thumbnail strip below
-it, then a two-column meta block — title / facts / description on the left and tech list / buttons on the right. On mobile the meta block
-collapses to a single column. The layout deliberately trusts the screenshot to carry the row; copy is kept short so the image is the
-dominant element.
+The public Projects page lives at `/projects` (`/en/projects` for the English locale). Each project renders as a **magazine-style spread**
+inside a shared `max-w-3xl` column so the row reads as one coherent unit: a `01 / 03`-style counter row at the top (project index, a thin
+divider, and the role on the right), a hero image, a thin thumbnail strip below it, then a two-column meta block — title / fact badges /
+description / primary action on the left (`md:col-span-8`) and a quiet "Stack" spec card on the right (`md:col-span-4`). On mobile the meta
+block collapses to a single column. The hero is capped by viewport height (`max-h-[64vh]`) so it never crowds the meta block on short
+laptops. The layout deliberately trusts the screenshot to carry the row; copy is kept short so the image is the dominant element.
 
 A row contains:
 
@@ -18,18 +19,26 @@ A row contains:
   photo edge-to-edge inside a `<GlassCard>`. Behind every inline hero sits a soft per-project accent glow that brightens on hover (the frame
   itself does not move — earlier iterations lifted it on hover, but the effect read as cheap). The "Visit site" button (not the hero click)
   takes visitors to the live URL.
-- **Role / hostname strip** above the title — `Founding architect · people-eat.com`.
-- **Project name** and, when set, a small row of **fact badges** (e.g. `4 languages`, `RTL support`, `EU-hosted`) — primary-tinted chips
-  rendered between the title and the description.
+- **Role / counter strip** above the gallery — a tabular-nums `01 / 03` counter on the left, a thin divider, and the role on the right
+  (`Founding architect`). The hostname is intentionally not repeated here — it already lives inside the faked browser URL bar on `'browser'`
+  rows, and the "Visit site" button below carries the link itself. An earlier iteration put `role · hostname` directly under the title; the
+  hostname duplication felt redundant and the role-only counter row reads more confidently.
+- **Project name** and, when set, a small row of **fact badges** (e.g. `4 languages`, `RTL support`, `EU-hosted`) — neutral translucent
+  chips rendered between the title and the description. An earlier iteration tinted these with the primary colour, but they then visually
+  outranked the role label above them; downgrading them to the same neutral chip family as the tech list lets the role + title carry the
+  hierarchy.
 - **Description** in DE or EN. 2–3 sentences. Holds positioning, not feature list — the distinctive points are folded in here rather than
   surfaced as a separate bullet list (an earlier iteration tried that; the page became too dense).
-- **Tech line** — a wrapping row of subtle chips listing the project's stack, in the order defined in `portfolioProjects.ts`. Low-contrast
-  (translucent border, muted text) so the row reads as meta-information rather than as a feature list. An earlier iteration tried a flat
-  dot-separated `text-muted-foreground` line; chips ended up reading more confidently because each item gets its own shape and the eye
-  groups them as a coherent stack. Predecessor to both was a labelled Frontend/Backend/Integrations grouped layout, which read as a CV table
-  and wrapped awkwardly in a narrow column.
-- **Primary "Visit site" button** linking to the live URL (`target="_blank" rel="noopener noreferrer"`).
-- **Secondary "View source" button** rendered only when `repoUrl` is set (currently Draw Schema, since it's open source).
+- **Tech line** — a wrapping row of subtle chips listing the project's stack, in the order defined in `portfolioProjects.ts`. Lives in the
+  right column of the meta block on desktop under a small `Stack` label so it reads as a spec sheet next to the description; collapses to a
+  plain chip row (label moved to `sr-only`) on mobile. Low-contrast (translucent border, muted text) so the row reads as meta-information
+  rather than as a feature list. An earlier iteration tried a flat dot-separated `text-muted-foreground` line; chips ended up reading more
+  confidently because each item gets its own shape and the eye groups them as a coherent stack. Predecessor to both was a labelled
+  Frontend/Backend/Integrations grouped layout, which read as a CV table and wrapped awkwardly in a narrow column.
+- **Primary "Visit site" button** linking to the live URL (`target="_blank" rel="noopener noreferrer"`). Sits directly under the description
+  on the left column so the eye doesn't have to jump across the row to commit to the action.
+- **Secondary "View source" button** rendered only when `repoUrl` is set (currently Draw Schema, since it's open source). Sits next to the
+  primary action on wider screens, stacks below it on mobile.
 
 Rows fade up as they scroll into view. `prefers-reduced-motion` users skip every transition (fade-in, gallery cross-fade, glow brighten).
 
@@ -87,12 +96,15 @@ Per-project accent colors are defined as raw `oklch(...)` strings in `portfolioP
 
 Two small components surface project meta in the meta block:
 
-- **`FactBadges`** renders short chips (`'4 languages'`, `'EU-hosted'`, `'Live since 2022'`) right under the title. Tinted with the primary
-  colour so they pop without competing with the tech line. Skipped silently when `facts` is empty or absent.
-- **`TechStack`** renders the flat ordered `techStack` array as a wrapping row of subtle chips — translucent border, `text-foreground/80`,
-  no fill colour beyond a faint white surface. Each item is a `<li>` so screen readers hear it as a list. Two earlier iterations are gone: a
-  Frontend/Backend/Integrations grouped chip layout (read as a CV table, wrapped awkwardly in a narrow column) and a flat dot-separated text
-  line (read as too quiet — chips give each item its own shape and the eye groups them as a coherent stack).
+- **`FactBadges`** renders short chips (`'4 languages'`, `'EU-hosted'`, `'Live since 2022'`) right under the title. Neutral translucent
+  chips matching the `TechStack` family — primary-tinted variants visually outranked the role label above them in an earlier iteration.
+  Skipped silently when `facts` is empty or absent.
+- **`TechStack`** renders the flat ordered `techStack` array as a wrapping row of subtle chips under a `Stack` label — translucent border,
+  `text-foreground/80`, no fill colour beyond a faint white surface. Each item is a `<li>` so screen readers hear it as a list. The label is
+  visible on `md+` (where the component owns the right column of the meta block) and `sr-only` on mobile (where it collapses into a plain
+  chip row beneath the description). Two earlier iterations are gone: a Frontend/Backend/Integrations grouped chip layout (read as a CV
+  table, wrapped awkwardly in a narrow column) and a flat dot-separated text line (read as too quiet — chips give each item its own shape
+  and the eye groups them as a coherent stack).
 
 There is intentionally no highlights bullet list. A prior iteration had one; combined with the description and the grouped tech rows the
 page felt cluttered. The strongest 1–2 points from those highlights are now folded into the description prose instead.

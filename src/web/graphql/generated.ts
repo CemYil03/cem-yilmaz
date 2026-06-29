@@ -1123,6 +1123,30 @@ export type GqlCWorkspaceCvHobbyDeleteMutationVariables = Exact<{
 
 export type GqlCWorkspaceCvHobbyDeleteMutation = { admin: { cvHobbyDelete: { success: boolean } } };
 
+export type GqlCWorkspaceCvExperienceReorderMutationVariables = Exact<{
+    orderedIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceCvExperienceReorderMutation = { admin: { cvExperienceReorder: { success: boolean } } };
+
+export type GqlCWorkspaceCvEducationReorderMutationVariables = Exact<{
+    orderedIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceCvEducationReorderMutation = { admin: { cvEducationReorder: { success: boolean } } };
+
+export type GqlCWorkspaceCvSkillReorderMutationVariables = Exact<{
+    orderedIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceCvSkillReorderMutation = { admin: { cvSkillReorder: { success: boolean } } };
+
+export type GqlCWorkspaceCvHobbyReorderMutationVariables = Exact<{
+    orderedIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceCvHobbyReorderMutation = { admin: { cvHobbyReorder: { success: boolean } } };
+
 export type GqlCChatMessageGenerationFragment = {
     modelId: string;
     inputTokens: number | null;
@@ -4647,6 +4671,214 @@ export const WorkspaceCvHobbyDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCvHobbyDeleteMutation, GqlCWorkspaceCvHobbyDeleteMutationVariables>;
+export const WorkspaceCvExperienceReorderDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvExperienceReorder' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvExperienceReorder' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'orderedIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvExperienceReorderMutation, GqlCWorkspaceCvExperienceReorderMutationVariables>;
+export const WorkspaceCvEducationReorderDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvEducationReorder' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvEducationReorder' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'orderedIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvEducationReorderMutation, GqlCWorkspaceCvEducationReorderMutationVariables>;
+export const WorkspaceCvSkillReorderDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvSkillReorder' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvSkillReorder' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'orderedIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvSkillReorderMutation, GqlCWorkspaceCvSkillReorderMutationVariables>;
+export const WorkspaceCvHobbyReorderDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCvHobbyReorder' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cvHobbyReorder' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'orderedIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvHobbyReorderMutation, GqlCWorkspaceCvHobbyReorderMutationVariables>;
 export const ChatPageDocument = {
     kind: 'Document',
     definitions: [

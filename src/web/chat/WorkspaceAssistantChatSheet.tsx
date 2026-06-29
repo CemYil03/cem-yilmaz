@@ -113,8 +113,9 @@ export function WorkspaceAssistantChatSheet({ locale }: WorkspaceAssistantChatSh
                             <button
                                 type="button"
                                 onClick={onOpenFullscreen}
+                                disabled={live.isGenerating}
                                 aria-label={COPY.openFullscreen[locale]}
-                                className="grid size-7 place-items-center rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                className="grid size-7 place-items-center rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <ExternalLinkIcon className="size-4" />
                             </button>

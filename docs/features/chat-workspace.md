@@ -32,11 +32,12 @@ Mounting the provider at the `workspace.tsx` layout — one level above every wo
 
 ## Surfaces
 
-| Entry point                                                                    | How it opens the sheet                              | Notes                                                                                                                                                                                                 |
-| ------------------------------------------------------------------------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace hub composer                                                         | `useWorkspaceAssistantChat().openWithMessage(text)` | Hub composer fires the typed message as the first turn; the conversation continues in the sheet.                                                                                                      |
-| Floating launcher (every workspace page except hub and `/workspace/assistant`) | `useWorkspaceAssistantChat().open()`                | FAB-style circle, bottom-right of the viewport. Hidden on the hub (the hero composer is the launcher there) and on `/workspace/assistant` (the route IS the chat). Pulses while a turn is generating. |
-| Sheet's **"Open full-screen"** button                                          | Navigates to `/workspace/assistant?chatId=<id>`     | Hands the conversation off to the dedicated full-screen route — the chat row is the same on both sides.                                                                                               |
+| Entry point                                                                    | How it opens the sheet                              | Notes                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace hub composer                                                         | `useWorkspaceAssistantChat().openWithMessage(text)` | Hub composer fires the typed message as the first turn; the conversation continues in the sheet.                                                                                                                                                                                                        |
+| Header chat button (every workspace page that renders `<Header />`)            | `useWorkspaceAssistantChat().open()`                | Same right-side cluster button as the public site's visitor-chat button, but on workspace surfaces the header reroutes it to the admin assistant via `<Header chatVariant="workspace" />`. The visitor sheet is irrelevant inside the workspace, so its entry point is replaced rather than duplicated. |
+| Floating launcher (every workspace page except hub and `/workspace/assistant`) | `useWorkspaceAssistantChat().open()`                | FAB-style circle, bottom-right of the viewport. Hidden on the hub (the hero composer is the launcher there) and on `/workspace/assistant` (the route IS the chat). Pulses while a turn is generating.                                                                                                   |
+| Sheet's **"Open full-screen"** button                                          | Navigates to `/workspace/assistant?chatId=<id>`     | Hands the conversation off to the dedicated full-screen route — the chat row is the same on both sides.                                                                                                                                                                                                 |
 
 The provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`.
 
@@ -70,6 +71,12 @@ Clicking "Open full-screen" in the sheet:
 1. Closes the sheet via `setOpen(false)`.
 2. Navigates to `/workspace/assistant?chatId=<id>` (or `?chatId=undefined` if no chat has started yet).
 3. The route reads `chatId` from the URL search and takes over — empty state when none, loaded transcript when set.
+
+The button is **disabled while a turn is streaming**. Reason: the dedicated route page mounts its own `useChatLiveUpdates(chatId)`, which
+only listens to a `generationId` it allocates itself. The sheet's in-flight stream is on a different `generationId` (the provider's), so
+handing off mid-stream would leave the route page showing the persisted transcript up to the navigation moment plus a missing tail until the
+user sends the next message. Forcing the hand-off to between-turn moments side-steps that — by the time the button re-enables, the turn has
+already persisted, and the route's `WorkspaceChatPage` query (`cache-and-network`) picks up the full transcript on mount.
 
 The provider does NOT drop its `chatId` on the navigation — if the user navigates back to a workspace page (the hub, a focus area), the
 sheet's launcher is one click away and reopening shows the same conversation. The route page is the source of truth for "is this chat

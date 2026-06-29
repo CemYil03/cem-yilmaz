@@ -1,26 +1,34 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { FileTextIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
-import { useState } from 'react';
+import { format, parseISO } from 'date-fns';
+import { FileTextIcon, GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
 import { Button } from '../../../web/components/base/button';
+import { DatePicker } from '../../../web/components/base/date-picker';
 import { Input } from '../../../web/components/base/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import type { GqlCWorkspaceCvPageQuery } from '../../../web/graphql/generated';
 import {
     WorkspaceCvEducationDeleteDocument,
+    WorkspaceCvEducationReorderDocument,
     WorkspaceCvEducationUpsertDocument,
     WorkspaceCvExperienceDeleteDocument,
+    WorkspaceCvExperienceReorderDocument,
     WorkspaceCvExperienceUpsertDocument,
     WorkspaceCvHobbyDeleteDocument,
+    WorkspaceCvHobbyReorderDocument,
     WorkspaceCvHobbyUpsertDocument,
     WorkspaceCvPageDocument,
     WorkspaceCvSkillDeleteDocument,
+    WorkspaceCvSkillReorderDocument,
     WorkspaceCvSkillUpsertDocument,
 } from '../../../web/graphql/generated';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
+import { cn } from '../../../web/utils/cn';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -31,10 +39,14 @@ import { localeFromParam } from '../../../web/utils/locale';
 // surfaces — visitors land here only by typing the URL.
 //
 // One section per CV entity. Each section is a list of cards plus a "new
-// entry" form. Reordering is not in this iteration — the underlying
-// `*Reorder` mutation is wired but the UI surfaces the `position` integer
-// directly so the editor can re-shuffle by typing numbers. A drag-handle
-// pass lands in a follow-up.
+// entry" form. Ordering is changed by grabbing the grip handle on a row
+// and dragging it vertically — the matching `cv*Reorder` mutation rewrites
+// every row's `position` from the new id order. New rows are appended
+// (position = current length); their final slot is set by dragging them
+// into place afterwards. Skills are grouped by category on screen and
+// drag is scoped within a single category (cross-category moves require
+// editing the row's category field; visitor-side rendering ignores
+// position across categories anyway).
 
 const COPY = {
     title: { de: 'Lebenslauf bearbeiten', en: 'Edit CV' },
@@ -58,6 +70,7 @@ const COPY = {
         cancel: { de: 'Abbrechen', en: 'Cancel' },
         edit: { de: 'Bearbeiten', en: 'Edit' },
         delete: { de: 'Löschen', en: 'Delete' },
+        dragHandle: { de: 'Ziehen zum Sortieren', en: 'Drag to reorder' },
     },
     fields: {
         roleDe: { de: 'Rolle (DE)', en: 'Role (DE)' },
@@ -70,7 +83,6 @@ const COPY = {
         descriptionEn: { de: 'Beschreibung (EN)', en: 'Description (EN)' },
         technologies: { de: 'Technologien (kommagetrennt)', en: 'Technologies (comma-separated)' },
         managerName: { de: 'Manager (optional)', en: 'Manager (optional)' },
-        position: { de: 'Position (Sortierung)', en: 'Position (sort order)' },
         degreeDe: { de: 'Abschluss (DE)', en: 'Degree (DE)' },
         degreeEn: { de: 'Abschluss (EN)', en: 'Degree (EN)' },
         institutionDe: { de: 'Institution (DE)', en: 'Institution (DE)' },
@@ -154,7 +166,15 @@ type ExperienceRow = GqlCWorkspaceCvPageQuery['cv']['experience'][number];
 function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<ExperienceRow>; locale: Locale; onChanged: () => void }) {
     const [editing, setEditing] = useState<ExperienceRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvExperienceDeleteDocument);
-    const nextPosition = rows.length;
+    const [, reorderMutation] = useMutation(WorkspaceCvExperienceReorderDocument);
+    const ordered = useReorderableList(
+        rows,
+        (r) => r.cvExperienceId,
+        async (ids) => {
+            await reorderMutation({ orderedIds: ids });
+            onChanged();
+        },
+    );
 
     return (
         <section className="mt-12">
@@ -165,10 +185,10 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
                 disabled={editing !== null}
             />
             {editing === 'new' ? (
-                <ExperienceForm row={null} position={nextPosition} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
+                <ExperienceForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
             ) : null}
             <ul className="mt-4 flex flex-col gap-3">
-                {rows.map((row) =>
+                {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvExperienceId === row.cvExperienceId ? (
                         <li key={row.cvExperienceId}>
                             <ExperienceForm
@@ -180,10 +200,10 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
                             />
                         </li>
                     ) : (
-                        <li key={row.cvExperienceId}>
+                        <DraggableItem key={row.cvExperienceId} id={row.cvExperienceId} index={index} state={ordered} locale={locale}>
                             <RowCard
                                 title={`${row.roleDe} — ${row.companyDe}`}
-                                subtitle={`${row.startDate} → ${row.endDate ?? 'heute'} · pos ${row.position}`}
+                                subtitle={`${row.startDate} → ${row.endDate ?? 'heute'}`}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
                                     await deleteMutation({ cvExperienceId: row.cvExperienceId });
@@ -192,7 +212,7 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
                                 editLabel={COPY.actions.edit[locale]}
                                 deleteLabel={COPY.actions.delete[locale]}
                             />
-                        </li>
+                        </DraggableItem>
                     ),
                 )}
             </ul>
@@ -225,7 +245,6 @@ function ExperienceForm({
         descriptionEn: row?.descriptionEn ?? '',
         technologies: row?.technologies.join(', ') ?? '',
         managerName: row?.managerName ?? '',
-        position: String(row?.position ?? position),
     });
     const [busy, setBusy] = useState(false);
 
@@ -249,7 +268,7 @@ function ExperienceForm({
                         .map((t) => t.trim())
                         .filter(Boolean),
                     managerName: form.managerName || null,
-                    position: parseInt(form.position, 10),
+                    position: row?.position ?? position,
                 });
                 setBusy(false);
                 onClose();
@@ -273,10 +292,10 @@ function ExperienceForm({
                     <Input value={form.companyEn} onChange={(e) => setForm({ ...form, companyEn: e.target.value })} required />
                 </Field>
                 <Field label={COPY.fields.startDate[locale]}>
-                    <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
+                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} required />
                 </Field>
                 <Field label={COPY.fields.endDate[locale]}>
-                    <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} />
                 </Field>
                 <Field label={COPY.fields.descriptionDe[locale]} fullWidth>
                     <Textarea value={form.descriptionDe} onChange={(e) => setForm({ ...form, descriptionDe: e.target.value })} required />
@@ -290,9 +309,6 @@ function ExperienceForm({
                 <Field label={COPY.fields.managerName[locale]}>
                     <Input value={form.managerName} onChange={(e) => setForm({ ...form, managerName: e.target.value })} />
                 </Field>
-                <Field label={COPY.fields.position[locale]}>
-                    <Input type="number" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required />
-                </Field>
             </FormGrid>
         </FormCard>
     );
@@ -305,7 +321,16 @@ type EducationRow = GqlCWorkspaceCvPageQuery['cv']['education'][number];
 function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<EducationRow>; locale: Locale; onChanged: () => void }) {
     const [editing, setEditing] = useState<EducationRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvEducationDeleteDocument);
-    const nextPosition = rows.length;
+    const [, reorderMutation] = useMutation(WorkspaceCvEducationReorderDocument);
+    const ordered = useReorderableList(
+        rows,
+        (r) => r.cvEducationId,
+        async (ids) => {
+            await reorderMutation({ orderedIds: ids });
+            onChanged();
+        },
+    );
+
     return (
         <section className="mt-12">
             <SectionHeader
@@ -315,10 +340,10 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
                 disabled={editing !== null}
             />
             {editing === 'new' ? (
-                <EducationForm row={null} position={nextPosition} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
+                <EducationForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
             ) : null}
             <ul className="mt-4 flex flex-col gap-3">
-                {rows.map((row) =>
+                {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvEducationId === row.cvEducationId ? (
                         <li key={row.cvEducationId}>
                             <EducationForm
@@ -330,10 +355,10 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
                             />
                         </li>
                     ) : (
-                        <li key={row.cvEducationId}>
+                        <DraggableItem key={row.cvEducationId} id={row.cvEducationId} index={index} state={ordered} locale={locale}>
                             <RowCard
                                 title={`${row.degreeDe} · ${row.institutionDe}`}
-                                subtitle={`${row.startDate ?? '?'} → ${row.endDate} · pos ${row.position}`}
+                                subtitle={`${row.startDate ?? '?'} → ${row.endDate}`}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
                                     await deleteMutation({ cvEducationId: row.cvEducationId });
@@ -342,7 +367,7 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
                                 editLabel={COPY.actions.edit[locale]}
                                 deleteLabel={COPY.actions.delete[locale]}
                             />
-                        </li>
+                        </DraggableItem>
                     ),
                 )}
             </ul>
@@ -375,7 +400,6 @@ function EducationForm({
         endDate: row?.endDate ?? '',
         notesDe: row?.notesDe ?? '',
         notesEn: row?.notesEn ?? '',
-        position: String(row?.position ?? position),
     });
     const [busy, setBusy] = useState(false);
     return (
@@ -395,7 +419,7 @@ function EducationForm({
                     endDate: form.endDate,
                     notesDe: form.notesDe,
                     notesEn: form.notesEn,
-                    position: parseInt(form.position, 10),
+                    position: row?.position ?? position,
                 });
                 setBusy(false);
                 onClose();
@@ -425,19 +449,16 @@ function EducationForm({
                     <Input value={form.subjectEn} onChange={(e) => setForm({ ...form, subjectEn: e.target.value })} />
                 </Field>
                 <Field label={COPY.fields.startDateOptional[locale]}>
-                    <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} />
                 </Field>
                 <Field label={COPY.fields.endDateRequired[locale]}>
-                    <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
+                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} required />
                 </Field>
                 <Field label={COPY.fields.notesDe[locale]} fullWidth>
                     <Textarea value={form.notesDe} onChange={(e) => setForm({ ...form, notesDe: e.target.value })} />
                 </Field>
                 <Field label={COPY.fields.notesEn[locale]} fullWidth>
                     <Textarea value={form.notesEn} onChange={(e) => setForm({ ...form, notesEn: e.target.value })} />
-                </Field>
-                <Field label={COPY.fields.position[locale]}>
-                    <Input type="number" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required />
                 </Field>
             </FormGrid>
         </FormCard>
@@ -447,13 +468,38 @@ function EducationForm({
 // --- Skills -----------------------------------------------------------------
 
 type SkillRow = GqlCWorkspaceCvPageQuery['cv']['skills'][number];
+type SkillCategory = SkillRow['category'];
 
-const SKILL_CATEGORIES = ['capabilities', 'frameworks', 'services', 'tools', 'languages'] as const;
+const SKILL_CATEGORIES: ReadonlyArray<SkillCategory> = ['capabilities', 'frameworks', 'services', 'tools', 'languages'];
+const SKILL_CATEGORY_LABELS: Record<SkillCategory, { de: string; en: string }> = {
+    capabilities: { de: 'Fähigkeiten', en: 'Capabilities' },
+    frameworks: { de: 'Bibliotheken & Frameworks', en: 'Libraries & Frameworks' },
+    services: { de: 'Services & APIs', en: 'Services & APIs' },
+    tools: { de: 'Werkzeuge', en: 'Tools' },
+    languages: { de: 'Programmiersprachen', en: 'Programming Languages' },
+};
 
 function SkillSection({ rows, locale, onChanged }: { rows: ReadonlyArray<SkillRow>; locale: Locale; onChanged: () => void }) {
     const [editing, setEditing] = useState<SkillRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvSkillDeleteDocument);
-    const nextPosition = rows.length;
+    const [, reorderMutation] = useMutation(WorkspaceCvSkillReorderDocument);
+
+    // The reorder mutation rewrites every row's position from a single id list,
+    // so when a user reorders inside one category we still need to send the
+    // full list — concatenate every category in CATEGORY_ORDER with its own
+    // current order, splicing in the new order for the touched category.
+    const grouped = useMemo(() => {
+        const buckets: Record<SkillCategory, SkillRow[]> = {
+            capabilities: [],
+            frameworks: [],
+            services: [],
+            tools: [],
+            languages: [],
+        };
+        for (const row of rows) buckets[row.category].push(row);
+        return buckets;
+    }, [rows]);
+
     return (
         <section className="mt-12">
             <SectionHeader
@@ -463,49 +509,94 @@ function SkillSection({ rows, locale, onChanged }: { rows: ReadonlyArray<SkillRo
                 disabled={editing !== null}
             />
             {editing === 'new' ? (
-                <SkillForm row={null} position={nextPosition} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
+                <SkillForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
             ) : null}
-            <ul className="mt-4 flex flex-col gap-1.5">
-                {rows.map((row) =>
+            <div className="mt-4 flex flex-col gap-6">
+                {SKILL_CATEGORIES.filter((c) => grouped[c].length > 0).map((category) => (
+                    <SkillCategoryGroup
+                        key={category}
+                        category={category}
+                        rows={grouped[category]}
+                        locale={locale}
+                        editing={editing}
+                        onEdit={(row) => setEditing(row)}
+                        onCancel={() => setEditing(null)}
+                        onSaved={onChanged}
+                        onDelete={async (cvSkillId) => {
+                            await deleteMutation({ cvSkillId });
+                            onChanged();
+                        }}
+                        onReorder={async (newOrderForCategory) => {
+                            const orderedIds: string[] = [];
+                            for (const c of SKILL_CATEGORIES) {
+                                if (c === category) {
+                                    orderedIds.push(...newOrderForCategory);
+                                } else {
+                                    orderedIds.push(...grouped[c].map((s) => s.cvSkillId));
+                                }
+                            }
+                            await reorderMutation({ orderedIds });
+                            onChanged();
+                        }}
+                    />
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function SkillCategoryGroup({
+    category,
+    rows,
+    locale,
+    editing,
+    onEdit,
+    onCancel,
+    onSaved,
+    onDelete,
+    onReorder,
+}: {
+    category: SkillCategory;
+    rows: ReadonlyArray<SkillRow>;
+    locale: Locale;
+    editing: SkillRow | 'new' | null;
+    onEdit: (row: SkillRow) => void;
+    onCancel: () => void;
+    onSaved: () => void;
+    onDelete: (cvSkillId: string) => Promise<void>;
+    onReorder: (orderedIds: string[]) => Promise<void>;
+}) {
+    const ordered = useReorderableList(rows, (r) => r.cvSkillId, onReorder);
+
+    return (
+        <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {SKILL_CATEGORY_LABELS[category][locale]}
+            </h3>
+            <ul className="mt-2 flex flex-col gap-1.5">
+                {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvSkillId === row.cvSkillId ? (
                         <li key={row.cvSkillId}>
-                            <SkillForm
-                                row={row}
-                                position={row.position}
-                                locale={locale}
-                                onClose={() => setEditing(null)}
-                                onSaved={onChanged}
-                            />
+                            <SkillForm row={row} position={row.position} locale={locale} onClose={onCancel} onSaved={onSaved} />
                         </li>
                     ) : (
-                        <li
-                            key={row.cvSkillId}
-                            className="flex items-center justify-between rounded-md border border-border/40 bg-background/40 px-3 py-1.5 text-sm"
-                        >
-                            <span>
-                                <span className="text-xs text-muted-foreground">{row.category}</span> · {row.label} ·{' '}
-                                <span className="text-xs text-muted-foreground">pos {row.position}</span>
-                            </span>
-                            <span className="flex gap-1">
-                                <Button size="icon-xs" variant="ghost" onClick={() => setEditing(row)}>
-                                    <PencilIcon />
-                                </Button>
-                                <Button
-                                    size="icon-xs"
-                                    variant="ghost"
-                                    onClick={async () => {
-                                        await deleteMutation({ cvSkillId: row.cvSkillId });
-                                        onChanged();
-                                    }}
-                                >
-                                    <Trash2Icon />
-                                </Button>
-                            </span>
-                        </li>
+                        <DraggableItem key={row.cvSkillId} id={row.cvSkillId} index={index} state={ordered} locale={locale} compact>
+                            <div className="flex flex-1 items-center justify-between rounded-md border border-border/40 bg-background/40 px-3 py-1.5 text-sm">
+                                <span>{row.label}</span>
+                                <span className="flex gap-1">
+                                    <Button size="icon-xs" variant="ghost" onClick={() => onEdit(row)}>
+                                        <PencilIcon />
+                                    </Button>
+                                    <Button size="icon-xs" variant="ghost" onClick={() => onDelete(row.cvSkillId)}>
+                                        <Trash2Icon />
+                                    </Button>
+                                </span>
+                            </div>
+                        </DraggableItem>
                     ),
                 )}
             </ul>
-        </section>
+        </div>
     );
 }
 
@@ -524,9 +615,8 @@ function SkillForm({
 }) {
     const [, upsert] = useMutation(WorkspaceCvSkillUpsertDocument);
     const [form, setForm] = useState({
-        category: row?.category ?? 'frameworks',
+        category: row?.category ?? ('frameworks' as SkillCategory),
         label: row?.label ?? '',
-        position: String(row?.position ?? position),
     });
     const [busy, setBusy] = useState(false);
     return (
@@ -538,7 +628,7 @@ function SkillForm({
                     cvSkillId: row?.cvSkillId ?? null,
                     category: form.category,
                     label: form.label,
-                    position: parseInt(form.position, 10),
+                    position: row?.position ?? position,
                 });
                 setBusy(false);
                 onClose();
@@ -550,23 +640,21 @@ function SkillForm({
         >
             <FormGrid>
                 <Field label={COPY.fields.category[locale]}>
-                    <select
-                        className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-                        value={form.category}
-                        onChange={(e) => setForm({ ...form, category: e.target.value as SkillRow['category'] })}
-                    >
-                        {SKILL_CATEGORIES.map((c) => (
-                            <option key={c} value={c}>
-                                {c}
-                            </option>
-                        ))}
-                    </select>
+                    <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value as SkillCategory })}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {SKILL_CATEGORIES.map((c) => (
+                                <SelectItem key={c} value={c}>
+                                    {SKILL_CATEGORY_LABELS[c][locale]}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </Field>
                 <Field label={COPY.fields.label[locale]}>
                     <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required />
-                </Field>
-                <Field label={COPY.fields.position[locale]}>
-                    <Input type="number" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required />
                 </Field>
             </FormGrid>
         </FormCard>
@@ -580,7 +668,16 @@ type HobbyRow = GqlCWorkspaceCvPageQuery['cv']['hobbies'][number];
 function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRow>; locale: Locale; onChanged: () => void }) {
     const [editing, setEditing] = useState<HobbyRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvHobbyDeleteDocument);
-    const nextPosition = rows.length;
+    const [, reorderMutation] = useMutation(WorkspaceCvHobbyReorderDocument);
+    const ordered = useReorderableList(
+        rows,
+        (r) => r.cvHobbyId,
+        async (ids) => {
+            await reorderMutation({ orderedIds: ids });
+            onChanged();
+        },
+    );
+
     return (
         <section className="mt-12 mb-16">
             <SectionHeader
@@ -590,10 +687,10 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
                 disabled={editing !== null}
             />
             {editing === 'new' ? (
-                <HobbyForm row={null} position={nextPosition} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
+                <HobbyForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
             ) : null}
             <ul className="mt-4 flex flex-col gap-3">
-                {rows.map((row) =>
+                {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvHobbyId === row.cvHobbyId ? (
                         <li key={row.cvHobbyId}>
                             <HobbyForm
@@ -605,10 +702,10 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
                             />
                         </li>
                     ) : (
-                        <li key={row.cvHobbyId}>
+                        <DraggableItem key={row.cvHobbyId} id={row.cvHobbyId} index={index} state={ordered} locale={locale}>
                             <RowCard
                                 title={row.textDe}
-                                subtitle={`${row.since ?? '–'} · pos ${row.position}`}
+                                subtitle={row.since ? String(row.since) : '–'}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
                                     await deleteMutation({ cvHobbyId: row.cvHobbyId });
@@ -617,7 +714,7 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
                                 editLabel={COPY.actions.edit[locale]}
                                 deleteLabel={COPY.actions.delete[locale]}
                             />
-                        </li>
+                        </DraggableItem>
                     ),
                 )}
             </ul>
@@ -643,7 +740,6 @@ function HobbyForm({
         textDe: row?.textDe ?? '',
         textEn: row?.textEn ?? '',
         since: row?.since ? String(row.since) : '',
-        position: String(row?.position ?? position),
     });
     const [busy, setBusy] = useState(false);
     return (
@@ -656,7 +752,7 @@ function HobbyForm({
                     textDe: form.textDe,
                     textEn: form.textEn,
                     since: form.since ? parseInt(form.since, 10) : null,
-                    position: parseInt(form.position, 10),
+                    position: row?.position ?? position,
                 });
                 setBusy(false);
                 onClose();
@@ -676,15 +772,143 @@ function HobbyForm({
                 <Field label={COPY.fields.since[locale]}>
                     <Input type="number" value={form.since} onChange={(e) => setForm({ ...form, since: e.target.value })} />
                 </Field>
-                <Field label={COPY.fields.position[locale]}>
-                    <Input type="number" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} required />
-                </Field>
             </FormGrid>
         </FormCard>
     );
 }
 
 // --- Shared bits ------------------------------------------------------------
+
+// Drag-and-drop state for a single ordered list. The hook holds an
+// optimistic copy of the upstream `rows` so the on-screen order updates
+// the moment the user drops, before the round-trip mutation +
+// `network-only` refetch returns. The optimistic copy resets whenever the
+// upstream list's id sequence changes.
+interface ReorderableState<T> {
+    items: ReadonlyArray<T>;
+    draggingId: string | null;
+    overId: string | null;
+    setDraggingId: (id: string | null) => void;
+    setOverId: (id: string | null) => void;
+    commitDrop: () => void;
+    getId: (row: T) => string;
+}
+
+function useReorderableList<T>(
+    rows: ReadonlyArray<T>,
+    getId: (row: T) => string,
+    onCommit: (orderedIds: string[]) => Promise<void>,
+): ReorderableState<T> {
+    const [items, setItems] = useState<ReadonlyArray<T>>(rows);
+    const [draggingId, setDraggingId] = useState<string | null>(null);
+    const [overId, setOverId] = useState<string | null>(null);
+
+    // Resync the optimistic copy whenever the upstream id sequence changes.
+    // Same ids in the same order → no-op; otherwise adopt the new ordering.
+    // Comparing the joined id string is cheap and avoids a deep walk for the
+    // common case where the parent re-renders with an equivalent array.
+    const upstreamKey = rows.map(getId).join('|');
+    const lastKeyRef = useRef(upstreamKey);
+    useEffect(() => {
+        if (lastKeyRef.current !== upstreamKey) {
+            lastKeyRef.current = upstreamKey;
+            setItems(rows);
+        }
+    }, [upstreamKey, rows]);
+
+    const commitDrop = () => {
+        if (!draggingId || !overId || draggingId === overId) {
+            setDraggingId(null);
+            setOverId(null);
+            return;
+        }
+        const next = [...items];
+        const from = next.findIndex((r) => getId(r) === draggingId);
+        const to = next.findIndex((r) => getId(r) === overId);
+        if (from < 0 || to < 0) {
+            setDraggingId(null);
+            setOverId(null);
+            return;
+        }
+        const [moved] = next.splice(from, 1) as [T];
+        next.splice(to, 0, moved);
+        setItems(next);
+        setDraggingId(null);
+        setOverId(null);
+        void onCommit(next.map(getId));
+    };
+
+    return { items, draggingId, overId, setDraggingId, setOverId, commitDrop, getId };
+}
+
+function DraggableItem<T>({
+    id,
+    index,
+    state,
+    locale,
+    children,
+    compact,
+}: {
+    id: string;
+    index: number;
+    state: ReorderableState<T>;
+    locale: Locale;
+    children: React.ReactNode;
+    compact?: boolean;
+}) {
+    const isDragging = state.draggingId === id;
+    const isOver = state.overId === id && state.draggingId !== id;
+
+    return (
+        <li
+            draggable
+            onDragStart={(event) => {
+                state.setDraggingId(id);
+                event.dataTransfer.effectAllowed = 'move';
+                // Firefox refuses to start a drag without payload data.
+                event.dataTransfer.setData('text/plain', id);
+            }}
+            onDragEnter={() => {
+                if (state.draggingId && state.draggingId !== id) state.setOverId(id);
+            }}
+            onDragOver={(event) => {
+                if (!state.draggingId) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+            }}
+            onDrop={(event) => {
+                if (!state.draggingId) return;
+                event.preventDefault();
+                state.commitDrop();
+            }}
+            onDragEnd={() => {
+                state.setDraggingId(null);
+                state.setOverId(null);
+            }}
+            className={cn(
+                'flex items-stretch gap-2 transition-opacity',
+                isDragging && 'opacity-50',
+                isOver && 'rounded-md ring-2 ring-primary/60 ring-offset-2 ring-offset-background',
+            )}
+            aria-grabbed={isDragging}
+            data-index={index}
+        >
+            <button
+                type="button"
+                tabIndex={-1}
+                aria-label={COPY.actions.dragHandle[locale]}
+                title={COPY.actions.dragHandle[locale]}
+                className={cn(
+                    'flex shrink-0 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:text-foreground active:cursor-grabbing',
+                    compact ? 'w-6' : 'w-7',
+                )}
+            >
+                <GripVerticalIcon className="size-4" />
+            </button>
+            <div className="min-w-0 flex-1">{children}</div>
+        </li>
+    );
+}
 
 function SectionHeader({ title, addLabel, onAdd, disabled }: { title: string; addLabel: string; onAdd: () => void; disabled: boolean }) {
     return (
@@ -773,5 +997,32 @@ function Field({ label, children, fullWidth }: { label: string; children: React.
             <span className="text-xs font-medium text-muted-foreground">{label}</span>
             {children}
         </label>
+    );
+}
+
+// Bridges the ISO `YYYY-MM-DD` storage shape the GraphQL `Date` scalar
+// expects over to the `Date`-based `DatePicker`. The mirrored input keeps
+// native HTML5 `required` validation working — the picker itself is a
+// popover trigger button, not a form control, so the browser can't see its
+// value.
+function DateField({ value, onChange, required }: { value: string; onChange: (next: string) => void; required?: boolean }) {
+    return (
+        <div className="relative">
+            <DatePicker
+                value={value ? parseISO(value) : undefined}
+                onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : '')}
+                className="w-full"
+            />
+            {required ? (
+                <input
+                    tabIndex={-1}
+                    aria-hidden
+                    required
+                    value={value}
+                    onChange={() => {}}
+                    className="pointer-events-none absolute inset-x-0 bottom-0 h-px w-full opacity-0"
+                />
+            ) : null}
+        </div>
     );
 }

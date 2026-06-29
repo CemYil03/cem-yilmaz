@@ -32,6 +32,11 @@ type Props = {
      *  where the label is "Workspace") so the brand name doesn't shout over
      *  the page's own heading. */
     brandLabel?: string;
+    /** Which chat sheet the header chat button opens. Defaults to `'visitor'`
+     *  for the public site; workspace surfaces pass `'workspace'` so the
+     *  button leads to the admin assistant sheet instead of the irrelevant
+     *  visitor sheet. */
+    chatVariant?: 'visitor' | 'workspace';
 };
 
 /* ----------------------------------------------------------------------------
@@ -47,7 +52,7 @@ type Props = {
  * `overflow-x-clip` instead.
  * ------------------------------------------------------------------------- */
 
-export function Header({ subtitle, navItems, brandLabel }: Props) {
+export function Header({ subtitle, navItems, brandLabel, chatVariant = 'visitor' }: Props) {
     const locale = useLocale();
     const scrolled = useHasScrolled();
     const { pathname } = useLocation();
@@ -114,7 +119,7 @@ export function Header({ subtitle, navItems, brandLabel }: Props) {
                         )}
 
                         <div className="flex items-center gap-1.5 sm:gap-2">
-                            <HeaderChatButton />
+                            <HeaderChatButton variant={chatVariant} />
                             <LanguageSelector />
                             <ThemeSelector />
                         </div>

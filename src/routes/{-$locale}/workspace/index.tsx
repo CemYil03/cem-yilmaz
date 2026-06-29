@@ -43,6 +43,13 @@ const COPY = {
         },
         composerPlaceholder: { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' },
     },
+    publicSiteSection: {
+        title: { de: 'Öffentliche Website', en: 'Public site' },
+        subtitle: {
+            de: 'Inhalte, die auf der öffentlichen Seite erscheinen.',
+            en: 'Content that appears on the public site.',
+        },
+    },
     areas: {
         cv: {
             title: { de: 'Lebenslauf', en: 'CV' },
@@ -52,7 +59,7 @@ const COPY = {
             },
         },
         software: {
-            title: { de: 'Software & Architektur', en: 'Software & architecture' },
+            title: { de: 'Software', en: 'Software' },
             description: {
                 de: 'Code, Architektur-Notizen, Werkzeuge.',
                 en: 'Code, architecture notes, tools.',
@@ -114,47 +121,46 @@ const COPY = {
 // namespace; the provider in `WorkspaceAssistantChatProvider` extracts
 // `{ chatId }` so the hub composer only forwards the user's text.
 
-// `size` drives the bento span on `lg`+. `md` always renders 2-col, `sm` 1-col,
-// so the spans only matter on wide viewports — where vertical-height-uniform
-// 8-card grids waste space and hide the user's information hierarchy. Primary
-// areas (the ones Cem actually opens daily) take a wider tile; the visitor-chat
-// observational surface takes the full last row.
-type FocusAreaSize = 'primary' | 'standard' | 'wide';
+// The grid is split into two subgroups. The top "personal" grid is the daily
+// surface — focus areas Cem actually opens to work on himself. The bottom
+// "public site" group is content-management for cem-yilmaz.de — touched rarely
+// (when the CV changes, when a visitor chat is worth a look), so it sits below
+// the personal areas as a small labelled cluster instead of mixed in with the
+// daily tiles. Every tile inside a subgroup is the same size — the previous
+// bento with primary/standard/wide tiles encoded a priority the user didn't
+// want to read into the layout.
 
-const FOCUS_AREAS: ReadonlyArray<{
+type FocusAreaRoute =
+    | '/{-$locale}/workspace/cv'
+    | '/{-$locale}/workspace/software'
+    | '/{-$locale}/workspace/projects'
+    | '/{-$locale}/workspace/finances'
+    | '/{-$locale}/workspace/tax'
+    | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/medical'
+    | '/{-$locale}/workspace/media'
+    | '/{-$locale}/workspace/visitor-chats';
+
+type FocusArea = {
     key: keyof typeof COPY.areas;
-    to:
-        | '/{-$locale}/workspace/cv'
-        | '/{-$locale}/workspace/software'
-        | '/{-$locale}/workspace/projects'
-        | '/{-$locale}/workspace/finances'
-        | '/{-$locale}/workspace/tax'
-        | '/{-$locale}/workspace/fitness'
-        | '/{-$locale}/workspace/medical'
-        | '/{-$locale}/workspace/media'
-        | '/{-$locale}/workspace/visitor-chats';
+    to: FocusAreaRoute;
     icon: typeof CodeXmlIcon;
-    size: FocusAreaSize;
-}> = [
-    { key: 'cv', to: '/{-$locale}/workspace/cv', icon: FileTextIcon, size: 'primary' },
-    { key: 'software', to: '/{-$locale}/workspace/software', icon: CodeXmlIcon, size: 'primary' },
-    { key: 'projects', to: '/{-$locale}/workspace/projects', icon: FolderKanbanIcon, size: 'standard' },
-    { key: 'finances', to: '/{-$locale}/workspace/finances', icon: WalletIcon, size: 'standard' },
-    { key: 'tax', to: '/{-$locale}/workspace/tax', icon: ReceiptTextIcon, size: 'standard' },
-    { key: 'fitness', to: '/{-$locale}/workspace/fitness', icon: DumbbellIcon, size: 'standard' },
-    { key: 'medical', to: '/{-$locale}/workspace/medical', icon: StethoscopeIcon, size: 'standard' },
-    { key: 'media', to: '/{-$locale}/workspace/media', icon: FilmIcon, size: 'standard' },
-    { key: 'visitorChats', to: '/{-$locale}/workspace/visitor-chats', icon: MessageSquareTextIcon, size: 'wide' },
+};
+
+const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
+    { key: 'software', to: '/{-$locale}/workspace/software', icon: CodeXmlIcon },
+    { key: 'projects', to: '/{-$locale}/workspace/projects', icon: FolderKanbanIcon },
+    { key: 'finances', to: '/{-$locale}/workspace/finances', icon: WalletIcon },
+    { key: 'tax', to: '/{-$locale}/workspace/tax', icon: ReceiptTextIcon },
+    { key: 'fitness', to: '/{-$locale}/workspace/fitness', icon: DumbbellIcon },
+    { key: 'medical', to: '/{-$locale}/workspace/medical', icon: StethoscopeIcon },
+    { key: 'media', to: '/{-$locale}/workspace/media', icon: FilmIcon },
 ];
 
-// `lg:col-span-*` on a 6-col grid: primaries take a half-row (3/6), standards
-// fit three to a row (2/6), the wide tile takes the full row (6/6). On `md`
-// the grid collapses to 2-col and the spans drop out. On `sm` it stacks.
-const SIZE_TO_SPAN: Record<FocusAreaSize, string> = {
-    primary: 'lg:col-span-3',
-    standard: 'lg:col-span-2',
-    wide: 'lg:col-span-6',
-};
+const PUBLIC_SITE_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
+    { key: 'cv', to: '/{-$locale}/workspace/cv', icon: FileTextIcon },
+    { key: 'visitorChats', to: '/{-$locale}/workspace/visitor-chats', icon: MessageSquareTextIcon },
+];
 
 export const Route = createFileRoute('/{-$locale}/workspace/')({
     head: ({ params }) => {
@@ -189,7 +195,7 @@ function WorkspaceHub() {
              * to landing) but the label itself doesn't pretend to be a link
              * to nowhere. On a single-user private surface the wordmark is
              * decoration; the page already knows whose workspace it is. */}
-            <Header brandLabel={COPY.hero.title[locale]} />
+            <Header brandLabel={COPY.hero.title[locale]} chatVariant="workspace" />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <AssistantHero
                     locale={locale}
@@ -263,11 +269,41 @@ function AssistantHero({ locale, composer }: { locale: Locale; composer: React.R
 
 function FocusAreaGrid({ locale }: { locale: Locale }) {
     return (
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-            {FOCUS_AREAS.map(({ key, to, icon: Icon, size }) => {
+        <div className="flex flex-col gap-10 md:gap-12">
+            {/* Personal focus areas — daily-use surfaces. Uniform tiling: 1
+             * column on `sm`, 2 on `md`, 4 on `lg`. With seven entries the `lg`
+             * grid fills 4 + 3; the trailing gap on the second row is fine
+             * because the next subgroup starts beneath it anyway. */}
+            <section aria-label={{ de: 'Persönliche Bereiche', en: 'Personal areas' }[locale]}>
+                <FocusCardGrid locale={locale} areas={PERSONAL_FOCUS_AREAS} columnsClass="lg:grid-cols-4" />
+            </section>
+            {/* Public-site management — content that feeds cem-yilmaz.de.
+             * Visited rarely (CV updates, scanning visitor chats), so it sits
+             * below the personal grid as its own labelled cluster. A small
+             * muted h2 + one-line subtitle marks the boundary without a hard
+             * divider; the heading is visible (the grouping is the point) but
+             * stays quiet so it doesn't compete with the personal tiles
+             * above. */}
+            <section aria-labelledby="workspace-public-site-heading">
+                <div className="mb-3 flex flex-col gap-0.5">
+                    <h2 id="workspace-public-site-heading" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        {COPY.publicSiteSection.title[locale]}
+                    </h2>
+                    <p className="text-sm text-muted-foreground/80">{COPY.publicSiteSection.subtitle[locale]}</p>
+                </div>
+                <FocusCardGrid locale={locale} areas={PUBLIC_SITE_FOCUS_AREAS} columnsClass="lg:grid-cols-2" />
+            </section>
+        </div>
+    );
+}
+
+function FocusCardGrid({ locale, areas, columnsClass }: { locale: Locale; areas: ReadonlyArray<FocusArea>; columnsClass: string }) {
+    return (
+        <div className={cn('grid gap-4 md:grid-cols-2', columnsClass)}>
+            {areas.map(({ key, to, icon: Icon }) => {
                 const area = COPY.areas[key];
                 return (
-                    <Link key={key} to={to} className={cn('group', SIZE_TO_SPAN[size])}>
+                    <Link key={key} to={to} className="group">
                         <GlassCard className="h-full transition-colors hover:bg-white/55 dark:hover:bg-white/8">
                             <CardContent className="flex h-full flex-col gap-1.5 py-5">
                                 {/* Icon + title on one row, arrow tucked into
@@ -293,6 +329,6 @@ function FocusAreaGrid({ locale }: { locale: Locale }) {
                     </Link>
                 );
             })}
-        </section>
+        </div>
     );
 }

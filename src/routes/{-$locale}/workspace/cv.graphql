@@ -168,3 +168,35 @@ mutation WorkspaceCvHobbyDelete($cvHobbyId: ID!) {
         }
     }
 }
+
+mutation WorkspaceCvExperienceReorder($orderedIds: [ID!]!) {
+    admin {
+        cvExperienceReorder(orderedIds: $orderedIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceCvEducationReorder($orderedIds: [ID!]!) {
+    admin {
+        cvEducationReorder(orderedIds: $orderedIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceCvSkillReorder($orderedIds: [ID!]!) {
+    admin {
+        cvSkillReorder(orderedIds: $orderedIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceCvHobbyReorder($orderedIds: [ID!]!) {
+    admin {
+        cvHobbyReorder(orderedIds: $orderedIds) {
+            success
+        }
+    }
+}

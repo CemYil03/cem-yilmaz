@@ -13,16 +13,22 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
   last tile."
 - Sending a message from the hub composer creates a new admin-scope chat and navigates to `/workspace/assistant?chatId=<id>`, where the rest
   of the conversation happens. The hub itself stays a hub — every visit lands on the empty composer again.
-- The focus-area cards in Phase 1 are:
-  - CV → `/workspace/cv`
-  - Software & architecture → `/workspace/software`
-  - Projects → `/workspace/projects`
-  - Finances → `/workspace/finances`
-  - Tax → `/workspace/tax`
-  - Fitness → `/workspace/fitness`
-  - Medical → `/workspace/medical`
-  - Movies & TV → `/workspace/media`
-  - Visitor chats → `/workspace/visitor-chats`
+- The focus-area cards are split into two subgroups:
+  - **Personal areas** (top): Software, Projects, Finances, Tax, Fitness, Medical, Movies & TV — the daily-use surfaces.
+  - **Public site** (bottom, under a small muted "Öffentliche Website / Public site" heading): CV, Visitor chats. These manage what appears
+    on the public `cem-yilmaz.de` (the CV editor writes the `Cv*` tables that feed `/cv` and `/about`; the visitor-chats surface is for
+    reading what visitors have asked the public assistant). They sit at the bottom because they're touched rarely compared to the personal
+    areas above.
+  - Routes:
+    - CV → `/workspace/cv`
+    - Software → `/workspace/software`
+    - Projects → `/workspace/projects`
+    - Finances → `/workspace/finances`
+    - Tax → `/workspace/tax`
+    - Fitness → `/workspace/fitness`
+    - Medical → `/workspace/medical`
+    - Movies & TV → `/workspace/media`
+    - Visitor chats → `/workspace/visitor-chats`
 - Each focus-area page is a placeholder: a back link to `/workspace`, the area name + icon, a one-line "this area is being built out" body,
   and a muted "Coming soon" line.
 - The language switcher in the header swaps between `/workspace` and `/en/workspace`.
@@ -124,14 +130,20 @@ The hub reuses the same primitives the landing page does:
 A single `COPY` constant at the top of the file keys every visible string under `{ de, en }`. This follows the inline-bilingual-copy pattern
 from `docs/architecture/i18n.md` — no translation library.
 
-The cards are driven by a small `FOCUS_AREAS` array (`{ key, to, icon, size }`) so adding a new focus area is one entry plus one new file
-plus one new copy block. Each card is a real `<Link>` to its stub route and uses a Lucide icon.
+The cards are driven by two small `FocusArea[]` arrays — `PERSONAL_FOCUS_AREAS` and `PUBLIC_SITE_FOCUS_AREAS` (`{ key, to, icon }`) — and a
+shared `<FocusCardGrid />` that renders one subgroup at uniform tile size with a parameterized `lg:grid-cols-*`. Adding a new focus area is
+one entry to the right array plus one new file plus one new copy block.
 
-**Bento sizing.** On `lg`+ the grid is 6 columns and each card declares a span via its `size`: `primary` (CV, Software — 3/6 each so two sit
-on a row), `standard` (the daily/weekly areas — 2/6 each, three per row), `wide` (Visitor chats — 6/6, the full row). On `md` it collapses
-to 2 columns and the spans drop out; on `sm` it stacks to one column. This breaks the "8 identical tiles in a 2-col wall" silhouette the
-previous layout had on wide viewports — daily-use areas get more visual weight, the observational visitor-chats surface takes the bottom row
-by itself, and the whole grid fits without the page needing to scroll past one viewport on a typical desktop.
+**Two-subgroup layout.** The grid is split into a top "personal" subgroup and a bottom "public site" subgroup, separated by vertical spacing
+and a small muted `<h2>` + one-line subtitle marking the boundary. Inside each subgroup every tile is the same size — the previous bento
+with `primary` / `standard` / `wide` spans encoded a daily-vs-rare priority across one combined grid, but reading the layout as one flow
+obscured that CV and Visitor chats are content-management surfaces for the public site rather than daily personal areas. Splitting them into
+a labelled cluster at the bottom makes that grouping legible without relying on tile size as a proxy for it.
+
+**Tile sizing.** Both subgroups use the same uniform grid: 1 column on `sm`, 2 on `md`, then 4 on `lg` for the personal subgroup (7 entries
+→ 4 + 3 with a trailing gap on the second row) and 2 on `lg` for the public-site subgroup (2 entries side by side). The trailing gap is
+intentional — adding a filler tile or shrinking to `lg:grid-cols-3` would just shift the awkwardness around. Card heights are uniform inside
+a subgroup because every card has the same icon + title + one-line description layout.
 
 **Card content.** Each card is icon + title on one row, a one-line description below, and an `ArrowUpRightIcon` tucked in the top-right
 corner that brightens and translates on hover. The previous "Öffnen → / Open →" labelled-button row was redundant with the entire card being
@@ -166,7 +178,9 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
 ## Adding a new focus area
 
 1. Add a new entry to `COPY.areas` in `src/routes/{-$locale}/workspace/index.tsx` (DE + EN copy).
-2. Add a new entry to `FOCUS_AREAS` in the same file (key, route path, icon, size — `primary` / `standard` / `wide`).
+2. Add a new entry to either `PERSONAL_FOCUS_AREAS` (daily-use surfaces) or `PUBLIC_SITE_FOCUS_AREAS` (content that feeds the public site)
+   in the same file (key, route path, icon). If you're adding a third subgroup, factor a new array + `<FocusCardGrid />` invocation in
+   `FocusAreaGrid` and pick an appropriate `lg:grid-cols-*` for its width.
 3. Create a new stub file under `src/routes/{-$locale}/workspace/` mirroring one of the existing stubs (`software.tsx`, etc.). Use the same
    `COPY` shape and `seoMeta({ ..., noindex: true })`.
 4. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap until they are public.

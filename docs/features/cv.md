@@ -91,8 +91,20 @@ doesn't leave a hollow header.
 time). On save the page issues the matching `cv*Upsert` mutation through URQL and re-fetches the read query with
 `requestPolicy: 'network-only'`.
 
-Reordering today is done by typing a `position` integer directly into the form. The `cv*Reorder` mutations are wired but a drag-handle UI is
-deferred to a follow-up; one-line copy edits to position numbers are good enough for the hand-curated list this CV is.
+Date fields use the shared `DatePicker` (`src/web/components/base/date-picker.tsx`). The form keeps the GraphQL wire shape (ISO `YYYY-MM-DD`
+strings) as its storage type and adapts at the picker boundary via `date-fns` `parseISO` / `format`; a thin `DateField` wrapper in the
+editor handles the conversion and mirrors the value into a hidden input so native HTML5 `required` validation still fires (the picker itself
+is a popover trigger button, not a form control).
+
+Reordering uses a vertical drag-and-drop gesture: every row carries a `GripVertical` handle on its leading edge, the user drags the row into
+its new slot, and on drop the editor commits the new order via the matching `cv*Reorder` mutation (which rewrites every row's `position`
+from a single id list). The on-screen list updates optimistically the instant the drop fires; the admin read query then re-fetches with
+`network-only` so `/cv` and `/about` see the new order on their next request. Drag is implemented with the platform's native HTML5
+drag-and-drop API (no library); a `useReorderableList` hook owns the optimistic state and is reused across all four sections. Reordering is
+scoped per list — for skills, drag is scoped within a single category (cross-category moves are done by editing the row's category field).
+
+The skills list itself is rendered grouped by category — same `SKILL_CATEGORIES` order and same `SKILL_CATEGORY_LABELS` used by the public
+`CvSkillGroup` component — so the editor view mirrors the visitor-side `/about` layout, and each category drags independently.
 
 ### Sitemap
 
@@ -120,7 +132,6 @@ admin editor is the only edit path.
 ## Out of scope (deferred)
 
 - `/cv.pdf` server-rendered download via `serverRuntime.browser.capture()` — the existing `Lebenslauf.pdf` covers it for now.
-- Drag-handle UI for reordering — the `cv*Reorder` mutations are wired and tested; only the UI is missing.
 - A `toolCvSearch` agent tool — the embedded summary covers visitor questions for the current row count.
 - Profile photo asset and avatar surfacing on `/about`.
 - Phase 2 admin OAuth wiring — the editor is reachable today; mutations will start refusing once `guardAdminMutation` flips on.

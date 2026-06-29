@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useClient, useMutation } from 'urql';
 import { WorkspaceChatMessageCreateDocument, WorkspaceChatPageDocument } from '../graphql/generated';
@@ -59,6 +59,11 @@ interface WorkspaceAssistantChatContextValue {
     /** Resume a previous admin chat by id — fetches its transcript and
      *  seeds `loadedMessages` + `chatId`. */
     loadChat: (chatId: string) => Promise<void>;
+    /** Counter bumped every time the sheet closes. The floating launcher
+     *  pulses for ~1.4s on each new value so the user knows "your
+     *  conversation went there, the launcher is how you come back." See
+     *  `WorkspaceAssistantLauncher.tsx`. */
+    highlightSignal: number;
 }
 
 const WorkspaceAssistantChatContext = createContext<WorkspaceAssistantChatContextValue | null>(null);
@@ -78,9 +83,21 @@ export function WorkspaceAssistantChatProvider({ children }: { children: ReactNo
     const [isOpen, setOpen] = useState(false);
     const [chatId, setChatId] = useState<string | undefined>(undefined);
     const [loadedMessages, setLoadedMessages] = useState<ReadonlyArray<TranscriptMessage>>([]);
+    const [highlightSignal, setHighlightSignal] = useState(0);
     const live = useChatLiveUpdates(chatId);
     const [, sendMutation] = useMutation(WorkspaceChatMessageCreateDocument);
     const urqlClient = useClient();
+
+    // Bump the highlight signal on every open → closed transition so the
+    // floating launcher can pulse and point the user back at where the
+    // conversation lives. Same shape as `VisitorChatProvider`.
+    const previouslyOpenRef = useRef(false);
+    useEffect(() => {
+        if (previouslyOpenRef.current && !isOpen) {
+            setHighlightSignal((value) => value + 1);
+        }
+        previouslyOpenRef.current = isOpen;
+    }, [isOpen]);
 
     // The mutation's `chatId` argument has to follow the freshly-allocated id
     // even when state hasn't re-rendered yet — two `sendMessage` calls fired
@@ -167,8 +184,9 @@ export function WorkspaceAssistantChatProvider({ children }: { children: ReactNo
             openWithMessage,
             resetChat,
             loadChat,
+            highlightSignal,
         }),
-        [isOpen, open, chatId, loadedMessages, live, sendMessage, openWithMessage, resetChat, loadChat],
+        [isOpen, open, chatId, loadedMessages, live, sendMessage, openWithMessage, resetChat, loadChat, highlightSignal],
     );
 
     return (

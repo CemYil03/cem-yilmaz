@@ -265,13 +265,37 @@
     animation: portrait-halo-drift 24s ease-in-out infinite;
 }
 
+/*
+ * One-shot attention pulse for the header chat button when the visitor
+ * sheet closes. Answers "where did my conversation go?" by drawing the
+ * eye to the place the user can pick it back up. Opacity + a tiny
+ * box-shadow ring — no scale, no colour shift. A single slow breath
+ * (1.2s) that reads as deliberate rather than frantic; the class is
+ * removed after the animation finishes. See `docs/styles/motion.md`
+ * for the one-principle rule this earns.
+ */
+@keyframes chat-button-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+    50% {
+        box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-primary) 32%, transparent);
+    }
+}
+
+.animate-chat-button-pulse {
+    animation: chat-button-pulse 1.2s ease-out 1;
+}
+
 /* Honour the user's OS-level preference. Reduce-motion gets a still page —
    the AmbientBackdrop drift, the dot pulse, and the halo drift all stop.
    The Reveal component handles its own reduce-motion fallback at the
    component level. */
 @media (prefers-reduced-motion: reduce) {
     .animate-pulse-dot,
-    .animate-portrait-halo {
+    .animate-portrait-halo,
+    .animate-chat-button-pulse {
         animation: none;
     }
 }

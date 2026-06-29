@@ -85,11 +85,11 @@ function ProjectsPage() {
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header />
+            <Header subtitle={`/ ${COPY.title[locale].toLowerCase()}`} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full pb-24">
                 <header className="py-12 md:py-16">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{COPY.title[locale]}</h1>
-                    <p className="mt-4 text-lg md:text-xl text-muted-foreground">{COPY.intro[locale]}</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{COPY.title[locale]}</h1>
+                    <p className="mt-4 text-lg text-muted-foreground">{COPY.intro[locale]}</p>
                 </header>
 
                 <div className="flex flex-col gap-20 md:gap-28">
@@ -108,45 +108,44 @@ function ProjectsPage() {
 
 type Project = (typeof portfolioProjects)[number];
 
-// One project as a magazine-style spread: a centered hero capped at
-// `max-w-3xl`, a thin thumbnail strip, then a meta block. The meta block
-// is a two-column layout on desktop — title/facts/description on the
-// left, tech line and buttons on the right — and a single column on
-// mobile. The hero stays narrower than the prose column on purpose: a
-// full-bleed screenshot felt too aggressive on desktop.
-function ProjectRow({ project, locale }: { project: Project; locale: Locale }) {
+// One project as a magazine-style spread, all columns capped at the same
+// width as the hero so the row reads as a single coherent unit rather
+// than a wide hero floating above a wider meta block. The meta block
+// below the gallery is two columns on desktop — narrative + primary
+// action on the left (8/12), a quiet spec card on the right (4/12) — and
+// a single column on mobile. Each row carries a `01 / 03` counter at the
+// top so visitors know the list is finite.
+function ProjectRow({ project, locale, index, total }: { project: Project; locale: Locale; index: number; total: number }) {
     const role = locale === 'de' ? project.roleDe : project.roleEn;
     const description = locale === 'de' ? project.descriptionDe : project.descriptionEn;
+    const counter = `${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
 
     return (
-        <article className="flex flex-col gap-8">
-            <div className="mx-auto w-full max-w-3xl">
-                <ProjectGallery project={project} locale={locale} />
+        <article className="mx-auto w-full max-w-3xl flex flex-col gap-8">
+            <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="tabular-nums text-foreground/60">{counter}</span>
+                <span aria-hidden className="h-px flex-1 bg-foreground/10" />
+                <span className="text-foreground/75">{role}</span>
             </div>
 
-            <div className="grid gap-6 md:gap-10 md:grid-cols-12 md:items-start">
-                <div className="md:col-span-7 flex flex-col gap-3">
-                    <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        <span>{role}</span>
-                        <span aria-hidden>·</span>
-                        <span className="truncate">{hostnameOf(project.url)}</span>
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">{project.name}</h2>
-                    {project.facts && project.facts.length > 0 && <FactBadges items={project.facts} />}
-                    <p className="text-base leading-relaxed text-foreground/85 mt-1">{description}</p>
-                </div>
+            <ProjectGallery project={project} locale={locale} />
 
-                <div className="md:col-span-5 flex flex-col gap-5">
-                    <TechStack items={project.techStack} />
-                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap md:flex-col">
-                        <Button asChild size="lg" className="w-full sm:w-auto md:w-full">
+            <div className="grid gap-8 md:gap-10 md:grid-cols-12 md:items-start">
+                <div className="md:col-span-8 flex flex-col gap-4">
+                    <div className="flex flex-col gap-3">
+                        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">{project.name}</h2>
+                        {project.facts && project.facts.length > 0 && <FactBadges items={project.facts} />}
+                    </div>
+                    <p className="text-base leading-relaxed text-foreground/85">{description}</p>
+                    <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                        <Button asChild size="lg" className="w-full sm:w-auto">
                             <a href={project.url} target="_blank" rel="noopener noreferrer">
                                 {COPY.visitLabel[locale]}
                                 <ExternalLinkIcon className="size-4" />
                             </a>
                         </Button>
                         {project.repoUrl && (
-                            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto md:w-full">
+                            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
                                 <a href={project.repoUrl} target="_blank" rel="noopener noreferrer">
                                     <CodeXmlIcon className="size-4" />
                                     {COPY.repoLabel[locale]}
@@ -154,6 +153,10 @@ function ProjectRow({ project, locale }: { project: Project; locale: Locale }) {
                             </Button>
                         )}
                     </div>
+                </div>
+
+                <div className="md:col-span-4 md:pt-1">
+                    <TechStack items={project.techStack} locale={locale} />
                 </div>
             </div>
         </article>
@@ -218,7 +221,7 @@ function ProjectHero({
                     loading={i === 0 ? 'eager' : 'lazy'}
                     decoding={i === 0 ? 'async' : 'async'}
                     className={cn(
-                        'block w-full aspect-video object-cover',
+                        'block w-full aspect-video object-cover max-h-[64vh]',
                         project.imageKind === 'browser' ? 'object-top' : 'object-center',
                         i === 0 ? 'relative' : 'absolute inset-0',
                         'transition-opacity duration-500 motion-reduce:transition-none',
@@ -440,7 +443,7 @@ function FactBadges({ items }: { items: ReadonlyArray<string> }) {
             {items.map((fact) => (
                 <li
                     key={fact}
-                    className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-primary"
+                    className="rounded-full border border-white/55 bg-white/40 px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-foreground/75 backdrop-blur-md dark:border-white/10 dark:bg-white/5"
                 >
                     {fact}
                 </li>
@@ -449,24 +452,31 @@ function FactBadges({ items }: { items: ReadonlyArray<string> }) {
     );
 }
 
-// Tech stack as a wrapping row of subtle chips. Pills read more
-// confidently than a flat dot-separated line — each item gets its own
-// shape and the eye groups them as a coherent stack. Kept low-contrast
-// (translucent border, muted text) so the chips don't compete with the
-// fact badges above them or the buttons below.
-function TechStack({ items }: { items: ReadonlyArray<string> }) {
+// Tech stack as a labelled spec card on desktop, plain chip-row on mobile.
+// On the wider viewport it sits in the right-hand column of the meta block
+// as a quiet vertical list under a `Stack` heading — reads as a spec
+// sheet rather than competing with the description. Below the `md`
+// breakpoint the label collapses into a screen-reader-only heading and
+// the items render as the same wrapping chip row used everywhere else,
+// so the mobile rhythm stays unchanged.
+function TechStack({ items, locale }: { items: ReadonlyArray<string>; locale: Locale }) {
     if (items.length === 0) return null;
+    const label = locale === 'de' ? 'Stack' : 'Stack';
     return (
-        <ul className="flex flex-wrap gap-1.5">
-            {items.map((tech) => (
-                <li
-                    key={tech}
-                    className="rounded-full border border-white/40 bg-white/30 px-2.5 py-0.5 text-xs font-medium text-foreground/80 dark:border-white/10 dark:bg-white/5"
-                >
-                    {tech}
-                </li>
-            ))}
-        </ul>
+        <div className="flex flex-col gap-2.5">
+            <span className="hidden md:inline text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+            <span className="md:hidden sr-only">{label}</span>
+            <ul className="flex flex-wrap gap-1.5">
+                {items.map((tech) => (
+                    <li
+                        key={tech}
+                        className="rounded-full border border-white/40 bg-white/30 px-2.5 py-0.5 text-xs font-medium text-foreground/80 dark:border-white/10 dark:bg-white/5"
+                    >
+                        {tech}
+                    </li>
+                ))}
+            </ul>
+        </div>
     );
 }
 

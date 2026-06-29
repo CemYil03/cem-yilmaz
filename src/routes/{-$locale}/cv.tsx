@@ -52,7 +52,7 @@ function CvPage() {
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header />
+            <Header subtitle={`/ ${COPY.title[locale].toLowerCase()}`} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <header className="py-12 md:py-16">
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{COPY.title[locale]}</h1>
