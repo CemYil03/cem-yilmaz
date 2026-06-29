@@ -218,7 +218,7 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
         descriptionDe:
             'Nativ in SwiftUI entwickelte iPad-App, die einen neuen ergotherapeutischen Trainingsansatz für die Doktorarbeit einer Doktorandin überprüfbar macht. Übungen, Patientenakten und Verlaufsdaten werden lokal über SwiftData persistiert; Swift Charts visualisiert Fortschritt und Bewegungsmuster über die Zeit. Vollständig auf Querformat und Tablet-Workflows optimiert.',
         descriptionEn:
-            'A native iPad app built in SwiftUI to validate a new occupational-therapy training approach as part of a doctoral dissertation. Exercises, patient records and progress data are persisted locally via SwiftData; Swift Charts visualises progress and movement patterns over time. Built entirely around landscape and tablet-first workflows.',
+            'A native iPad app built in SwiftUI to validate a new occupational-therapy training approach as part of a doctoral dissertation. Exercises, patient records and progress data are persisted locally via SwiftData; Swift Charts visualizes progress and movement patterns over time. Built entirely around landscape and tablet-first workflows.',
         facts: ['iPad only', 'Landscape', 'Research tool'],
         techStack: ['Swift', 'SwiftUI', 'SwiftData', 'Swift Charts', 'iPadOS'],
         imageKind: 'ipad',

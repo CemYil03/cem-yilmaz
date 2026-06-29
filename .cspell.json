@@ -13,7 +13,9 @@
         ".env*",
         ".claude"
     ],
-    "import": ["@cspell/dict-de-de/cspell-ext.json"],
+    "import": [
+        "@cspell/dict-de-de/cspell-ext.json"
+    ],
     "words": [
         "ABAP",
         "abteilungsinternen",
@@ -57,6 +59,7 @@
         "DSGVO",
         "Dudenhofen",
         "effectful",
+        "Elgendorfer",
         "Eliane",
         "exfiltration",
         "fontsource",
@@ -80,6 +83,7 @@
         "indexability",
         "inlines",
         "Integrationen",
+        "IONOS",
         "isready",
         "Jimdo",
         "Klaviyo",
@@ -100,6 +104,7 @@
         "Menlo",
         "Metabase",
         "Modellierungs",
+        "Montabaur",
         "navigations",
         "Northstar",
         "nums",
@@ -131,6 +136,7 @@
         "skullbuster",
         "sparticuz",
         "Steckhan",
+        "stiftungsfinanziert",
         "Stiftungsgeförderte",
         "subheadline",
         "summarises",
@@ -151,6 +157,7 @@
         "urql",
         "varchar",
         "vaul",
+        "Verlaufsdaten",
         "vinxi",
         "Vite",
         "Watchlist",
@@ -163,5 +170,11 @@
         "zodv"
     ],
     // https://cspell.org/docs/dictionaries/
-    "dictionaries": ["typescript", "node", "html", "css", "de-de"]
+    "dictionaries": [
+        "typescript",
+        "node",
+        "html",
+        "css",
+        "de-de"
+    ]
 }
