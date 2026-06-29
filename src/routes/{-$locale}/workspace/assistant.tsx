@@ -105,6 +105,7 @@ function WorkspaceAssistantEmpty({ live, locale }: { live: ReturnType<typeof use
                 onMessageSent={(newChatId) => navigate({ to: '/{-$locale}/workspace/assistant', search: { chatId: newChatId } })}
                 isLocked={live.isGenerating}
                 beginTurn={live.beginTurn}
+                locale={locale}
                 endTurn={live.endTurn}
                 sendMutation={WorkspaceChatMessageCreateDocument}
                 extractResult={extractMessageCreateResult}
@@ -196,6 +197,7 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
                 isLocked={live.isGenerating}
                 beginTurn={live.beginTurn}
                 endTurn={live.endTurn}
+                locale={locale}
                 sendMutation={WorkspaceChatMessageCreateDocument}
                 extractResult={extractMessageCreateResult}
                 placeholder={composerPlaceholder[locale]}

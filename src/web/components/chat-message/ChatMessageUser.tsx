@@ -24,7 +24,7 @@ export function ChatMessageUserView({ message }: { message: GqlCChatMessageUser 
 
     return (
         <MessageRow side="user">
-            <div className="flex flex-col items-end max-w-full">
+            <div className="flex flex-col w-full items-end max-w-full">
                 <Bubble tone="user">
                     {hasAttachments ? (
                         <div className="mb-2">

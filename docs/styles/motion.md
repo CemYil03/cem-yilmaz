@@ -78,6 +78,21 @@ CTAs). Inline text links inside flowing prose are exempt — they ride the line-
 The site must work as a still page. Test by enabling "Reduce motion" in your OS and walking through the landing page — nothing should
 animate, nothing should feel broken.
 
+## Composer states
+
+The `MessageComposer` (`src/web/components/MessageComposer.tsx`) holds the same five-word bar as the rest of the site — no continuous loops,
+no decorative sweeps. Each state answers one question:
+
+| State       | User's question                    | Visual                                                                                                                                                                |
+| ----------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Focus**   | "Am I in the right field?"         | Brand-tinted static ring on the wrapper (`focus-within:border-brand`, `ring-brand/30`). Uses `--brand` so the composer ties into the ambient orb, links, and chart-1. |
+| **Ready**   | "Did it notice I typed something?" | Send button lifts `−1px` and fades from muted to full opacity (`enabled:-translate-y-px`, 200 ms). Stops the moment the draft is empty again.                         |
+| **Sending** | "Did it hear me?"                  | `SendIcon` crossfades to a `Spinner` (150 ms) inside the Send button.                                                                                                 |
+| **Sent**    | "Did it land?"                     | `CheckIcon` flashes in the Send button slot for 700 ms after the busy → idle edge, then the icon stack reverts to `SendIcon`.                                         |
+
+Everything beyond these four states — rotating borders, sweeping highlights, particle effects, gradient cursors, animated placeholders — is
+decoration. Don't add it without writing the question it answers into the PR description first, the same bar as anywhere else on the site.
+
 ## The shared primitives
 
 Before writing a new motion, check whether one of these already covers it:

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent, ReactNode } from 'react';
-import { CircleAlertIcon, FileIcon, PaperclipIcon, SendIcon, XIcon } from 'lucide-react';
+import { CheckIcon, CircleAlertIcon, FileIcon, PaperclipIcon, SendIcon, XIcon } from 'lucide-react';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from './base/input-group';
 import { Spinner } from './base/spinner';
 import { cn } from '../utils/cn';
@@ -11,6 +11,17 @@ import { cn } from '../utils/cn';
 // and any inflight/lock state. Chat-specific controls (e.g. a tool-call mode
 // selector) plug into the bottom addon via the `addonStart` slot so the
 // component itself stays decoupled from any one feature.
+//
+// Visual identity (see docs/styles/motion.md, "Composer states"):
+// - Focus: brand-tinted ring on the wrapper (`--brand`), the same hue as the
+//   ambient backdrop orb and links — ties the composer into the site's
+//   visual system rather than the neutral `--ring` default.
+// - Draft-ready: the Send button lifts (−1px translate) and fades from
+//   muted to full opacity the instant the draft is non-empty, answering
+//   "I noticed you typed something."
+// - Submitting: SendIcon crossfades to a Spinner.
+// - Just landed: a CheckIcon flashes for ~700ms after a send completes
+//   (busy → !busy transition), confirming the message went out.
 //
 // Attachments are an opt-in surface: when the parent passes both
 // `attachments` and `onAttachmentsChange`, the composer renders a paperclip
@@ -59,7 +70,7 @@ export interface MessageComposerProps {
     addonStart?: ReactNode;
     /** Visible Send button label; also used as the submit button's
      *  `aria-label` when no children would describe it otherwise. */
-    sendLabel?: string;
+    sendLabel: string;
     /** Currently-attached files. Pass together with `onAttachmentsChange` to
      *  enable the paperclip button, drop-zone behavior, and preview row. */
     attachments?: readonly ComposerAttachment[];
@@ -96,7 +107,7 @@ export function MessageComposer({
     placeholder,
     rows = 2,
     addonStart,
-    sendLabel = 'Send',
+    sendLabel,
     attachments,
     onAttachmentsAdd,
     onAttachmentRemove,
@@ -110,15 +121,26 @@ export function MessageComposer({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
+    // Brief CheckIcon after a send lands ("did it hear me?"). Driven by the
+    // same busy→!busy edge as the focus refocus, kept up for 700ms — long
+    // enough to register, short enough to clear before the next keystroke.
+    const [showSent, setShowSent] = useState(false);
 
     // After a send, the parent flips `busy` back to false once the turn is
     // accepted (or instantly on a new chat after navigation). Pull focus
     // straight back to the textarea so the user can keep typing without
     // reaching for the mouse — the textarea was disabled mid-turn, which
-    // moves focus to <body>, so this is a real refocus, not a no-op.
+    // moves focus to <body>, so this is a real refocus, not a no-op. The
+    // same edge also fires the "sent" check flash.
     const wasBusyRef = useRef(busy);
     useEffect(() => {
-        if (wasBusyRef.current && !busy) textareaRef.current?.focus();
+        if (wasBusyRef.current && !busy) {
+            textareaRef.current?.focus();
+            setShowSent(true);
+            const timeout = window.setTimeout(() => setShowSent(false), 700);
+            wasBusyRef.current = busy;
+            return () => window.clearTimeout(timeout);
+        }
         wasBusyRef.current = busy;
     }, [busy]);
     // Initial autoFocus — opt-in via prop. Runs once on mount so the
@@ -206,9 +228,16 @@ export function MessageComposer({
             onDrop={onDrop}
         >
             <InputGroup
-                className={cn('bg-white dark:bg-black', {
-                    'border-ring ring-[3px] ring-ring/50': isDragOver,
-                })}
+                className={cn(
+                    'bg-white dark:bg-black transition-[box-shadow,border-color] duration-200',
+                    // Focus ring uses --brand so the composer ties into the
+                    // ambient backdrop orb and link colour. Overrides the
+                    // neutral default from the base InputGroup primitive.
+                    'has-[[data-slot=input-group-control]:focus-visible]:border-brand has-[[data-slot=input-group-control]:focus-visible]:ring-[3px] has-[[data-slot=input-group-control]:focus-visible]:ring-brand/30',
+                    {
+                        'border-brand ring-[3px] ring-brand/30': isDragOver,
+                    },
+                )}
             >
                 {attachmentsEnabled && hasAttachments ? (
                     <InputGroupAddon align="block-start" className="flex-wrap gap-2">
@@ -239,6 +268,11 @@ export function MessageComposer({
                     placeholder={placeholder}
                     disabled={inputsLocked}
                     rows={rows}
+                    // `field-sizing: content` lets the textarea grow with
+                    // its content (capped via max-h) the way Gemini's
+                    // composer does. `rows` sets the minimum; the cap
+                    // keeps a runaway paste from pushing the page.
+                    className="field-sizing-content max-h-[40vh]"
                 />
 
                 <InputGroupAddon align="block-end">
@@ -272,11 +306,40 @@ export function MessageComposer({
                         type="submit"
                         variant="default"
                         size="sm"
-                        className={attachmentsEnabled ? undefined : 'ml-auto'}
+                        className={cn(
+                            // Lift + colour-shift the instant the draft is
+                            // non-empty — answers "I noticed you typed
+                            // something." Tailwind's `disabled:` already
+                            // dims the button via opacity-50, so this just
+                            // adds a tiny rise on the ready state.
+                            'transition-all duration-200',
+                            'enabled:-translate-y-px',
+                            'motion-reduce:enabled:translate-y-0',
+                            attachmentsEnabled ? undefined : 'ml-auto',
+                        )}
                         disabled={!canSubmit}
                         aria-label={sendLabel}
                     >
-                        {busy ? <Spinner /> : <SendIcon />}
+                        {/* Icon stack — exactly one visible at a time,
+                            crossfaded so the swap reads as a state
+                            change rather than a pop. */}
+                        <span className="relative grid place-items-center">
+                            <SendIcon
+                                aria-hidden
+                                className={cn('transition-opacity duration-150', busy || showSent ? 'opacity-0' : 'opacity-100')}
+                            />
+                            <Spinner
+                                aria-hidden
+                                className={cn('absolute inset-0 transition-opacity duration-150', busy ? 'opacity-100' : 'opacity-0')}
+                            />
+                            <CheckIcon
+                                aria-hidden
+                                className={cn(
+                                    'absolute inset-0 transition-opacity duration-150',
+                                    !busy && showSent ? 'opacity-100' : 'opacity-0',
+                                )}
+                            />
+                        </span>
                         {sendLabel}
                     </InputGroupButton>
                 </InputGroupAddon>

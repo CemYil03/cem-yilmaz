@@ -37,6 +37,7 @@ import {
 import { useChatLiveUpdates } from './useChatLiveUpdates';
 import { useVisitorChat } from './VisitorChatProvider';
 import type { VisitorChatIntent } from './VisitorChatProvider';
+import { Button } from '../components/base/button';
 
 // Visitor-facing AI chat surface. Mounted once at the root layout — see
 // `__root.tsx` — so any surface can open it via `useVisitorChat()` without
@@ -129,7 +130,7 @@ export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssis
                             : { de: 'Chat vergrößern', en: 'Expand chat' }[locale]
                     }
                     aria-pressed={isExpanded}
-                    className="absolute right-12 top-4 z-10 hidden rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:block"
+                    className="absolute right-12 top-4 z-10 hidden rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:block cursor-pointer"
                 >
                     {isExpanded ? <Minimize2Icon className="size-4" /> : <Maximize2Icon className="size-4" />}
                 </button>
@@ -312,7 +313,7 @@ function ChatEmptyState({
                 ) : null}
                 <p className="max-w-md">
                     {previousChats.length > 0
-                        ? { de: 'Oder stell eine neue Frage.', en: 'Or ask a new question.' }[locale]
+                        ? { de: 'Oder stelle eine neue Frage.', en: 'Or ask a new question.' }[locale]
                         : {
                               de: 'Stell eine Frage zu meinem Werdegang, meinen Projekten oder meiner Arbeitsweise.',
                               en: 'Ask a question about my career, projects, or how I work.',
@@ -321,6 +322,7 @@ function ChatEmptyState({
             </div>
             <div className="flex flex-col gap-2">
                 <ChatComposer
+                    locale={locale}
                     chatId={undefined}
                     isLocked={live.isGenerating || isAtLimit}
                     beginTurn={live.beginTurn}
@@ -353,7 +355,7 @@ function PreviousChatButton({
         <button
             type="button"
             onClick={() => onResume(chat.chatId)}
-            className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm hover:bg-accent"
+            className="flex w-full items-center gap-2 rounded-md border border-input px-3 py-2 text-left text-sm hover:bg-accent bg-white dark:bg-black cursor-pointer"
         >
             <MessageSquareTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <span className="flex min-w-0 flex-1 flex-col">
@@ -474,21 +476,16 @@ function ChatLoaded({
             <ChatComposer
                 chatId={chat.chatId}
                 isLocked={live.isGenerating}
+                locale={locale}
                 beginTurn={live.beginTurn}
                 endTurn={live.endTurn}
                 placeholder={{ de: 'Stelle eine weitere Frage…', en: 'Ask another question…' }[locale]}
                 showApprovalMode={false}
                 addonStart={
-                    <button
-                        type="button"
-                        onClick={onResetToOverview}
-                        disabled={live.isGenerating}
-                        aria-label={newChatLabel[locale]}
-                        className="flex h-7 items-center gap-1 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                    >
+                    <Button onClick={onResetToOverview} disabled={live.isGenerating} aria-label={newChatLabel[locale]} variant="ghost">
                         <PlusIcon className="size-3.5" />
                         {newChatLabel[locale]}
-                    </button>
+                    </Button>
                 }
             />
         </div>

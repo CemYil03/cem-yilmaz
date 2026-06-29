@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { Locale } from '../utils/locale';
 import type { ReactNode } from 'react';
 import type { TypedDocumentNode } from 'urql';
 import { useMutation } from 'urql';
@@ -14,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 type ToolCallApprovalMode = 'auto' | 'manual';
 
 interface ChatComposerProps {
+    locale: Locale;
     /** Optional — undefined means "first send creates a new chat". */
     chatId?: string;
     /** Called with the chatId returned by the mutation. For an existing chat
@@ -85,6 +87,7 @@ export function ChatComposer({
     autoFocus = false,
     showApprovalMode = true,
     addonStart,
+    locale,
 }: ChatComposerProps) {
     const [draft, setDraft] = useState('');
     // Each composer attachment carries its upload lifecycle. Files are
@@ -198,6 +201,7 @@ export function ChatComposer({
             busy={isLocked}
             placeholder={placeholder}
             autoFocus={autoFocus}
+            sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
             attachments={attachments}
             onAttachmentsAdd={onAttachmentsAdd}
             onAttachmentRemove={onAttachmentRemove}
