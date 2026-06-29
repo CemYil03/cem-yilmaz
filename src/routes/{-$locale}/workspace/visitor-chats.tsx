@@ -6,7 +6,6 @@ import { useQuery } from 'urql';
 import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
 import { groupMessagesByDate, mergeTranscriptMessages } from '../../../web/chat/chatTranscript';
 import { GlassCard } from '../../../web/components/GlassCard';
-import { Header } from '../../../web/components/Header';
 import { Spinner } from '../../../web/components/base/spinner';
 import { ChatMessage } from '../../../web/components/chat-message';
 import type { GqlCWorkspaceVisitorChatQuery } from '../../../web/graphql/generated';
@@ -53,12 +52,9 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
         const { chatId } = Route.useSearch();
         const locale = useLocale();
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header chatVariant="workspace" />
-                <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-16">
-                    {chatId ? <VisitorChatDetail chatId={chatId} locale={locale} /> : <VisitorChatsList locale={locale} />}
-                </main>
-            </div>
+            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-16">
+                {chatId ? <VisitorChatDetail chatId={chatId} locale={locale} /> : <VisitorChatsList locale={locale} />}
+            </main>
         );
     },
 });

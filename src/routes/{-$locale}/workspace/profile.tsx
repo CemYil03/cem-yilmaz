@@ -2,7 +2,6 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import {
-    ArrowLeftIcon,
     BrainIcon,
     EyeOffIcon,
     InfoIcon,
@@ -20,7 +19,6 @@ import { Button } from '../../../web/components/base/button';
 import { Spinner } from '../../../web/components/base/spinner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
 import { GlassCard } from '../../../web/components/GlassCard';
-import { Header } from '../../../web/components/Header';
 import type { GqlCProfileObservationCategory, GqlCWorkspaceProfilePageQuery } from '../../../web/graphql/generated';
 import {
     WorkspaceProfileObservationDismissDocument,
@@ -83,53 +81,42 @@ function WorkspaceProfilePage() {
     });
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header brandLabel={pageTitle[locale]} chatVariant="workspace" />
-            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full pb-20">
-                <Link
-                    to="/{-$locale}/workspace"
-                    className="mt-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                    <ArrowLeftIcon className="size-3.5" />
-                    {{ de: 'Workspace', en: 'Workspace' }[locale]}
-                </Link>
+        <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full pb-20">
+            <header className="mt-10 mb-10">
+                <div className="flex items-center gap-3 text-primary">
+                    <SparklesIcon className="size-6" />
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{pageTitle[locale]}</h1>
+                </div>
+                <p className="mt-3 max-w-2xl text-base text-muted-foreground">{pageDescription[locale]}</p>
+            </header>
 
-                <header className="mt-6 mb-10">
-                    <div className="flex items-center gap-3 text-primary">
-                        <SparklesIcon className="size-6" />
-                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{pageTitle[locale]}</h1>
-                    </div>
-                    <p className="mt-3 max-w-2xl text-base text-muted-foreground">{pageDescription[locale]}</p>
-                </header>
+            {error ? <ErrorBanner message={error.message} locale={locale} /> : null}
 
-                {error ? <ErrorBanner message={error.message} locale={locale} /> : null}
+            {fetching && !data ? (
+                <div className="grid place-items-center py-16">
+                    <Spinner className="size-5 text-muted-foreground" />
+                </div>
+            ) : null}
 
-                {fetching && !data ? (
-                    <div className="grid place-items-center py-16">
-                        <Spinner className="size-5 text-muted-foreground" />
-                    </div>
-                ) : null}
-
-                {data?.admin.profile ? (
-                    <>
-                        <SynthesisHero
-                            profile={data.admin.profile}
-                            locale={locale}
-                            onSynthesized={() => refetch({ requestPolicy: 'network-only' })}
-                        />
-                        <ObservationsSection
-                            observations={data.admin.profile.observations}
-                            filter={filter}
-                            onFilterChange={setFilter}
-                            includeDismissed={includeDismissed}
-                            onIncludeDismissedChange={setIncludeDismissed}
-                            locale={locale}
-                            onChanged={() => refetch({ requestPolicy: 'network-only' })}
-                        />
-                    </>
-                ) : null}
-            </main>
-        </div>
+            {data?.admin.profile ? (
+                <>
+                    <SynthesisHero
+                        profile={data.admin.profile}
+                        locale={locale}
+                        onSynthesized={() => refetch({ requestPolicy: 'network-only' })}
+                    />
+                    <ObservationsSection
+                        observations={data.admin.profile.observations}
+                        filter={filter}
+                        onFilterChange={setFilter}
+                        includeDismissed={includeDismissed}
+                        onIncludeDismissedChange={setIncludeDismissed}
+                        locale={locale}
+                        onChanged={() => refetch({ requestPolicy: 'network-only' })}
+                    />
+                </>
+            ) : null}
+        </main>
     );
 }
 

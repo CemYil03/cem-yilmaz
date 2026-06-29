@@ -5,12 +5,12 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
 
 ## User Behavior
 
-- `/workspace` (DE) and `/en/workspace` (EN) render the hub: a slimmed-down header (logo links home, the word "Workspace" sits beside it as
-  inert text instead of the public "Cem Yilmaz" wordmark — the page already knows whose workspace it is), a small muted motivational quote
-  (see "Hero quote" below), the personal-assistant composer directly under the quote, and a **bento-style focus-area grid** below that. The
-  composer scrolls with the page — it is **not** pinned to the viewport bottom; on a typical desktop the composer is already on-screen at
-  load, and pinning it overlapped the last row of focus cards behind a progressive blur, which read as "the input is parked on top of my
-  last tile."
+- `/workspace` (DE) and `/en/workspace` (EN) render the hub: a slimmed-down workspace header (logo links home, a breadcrumb trail to the
+  right shows where you are inside the workspace, and the assistant chat button sits on the right — language and theme selectors are
+  intentionally absent on workspace surfaces), a small muted motivational quote (see "Hero quote" below), the personal-assistant composer
+  directly under the quote, and a **bento-style focus-area grid** below that. The composer scrolls with the page — it is **not** pinned to
+  the viewport bottom; on a typical desktop the composer is already on-screen at load, and pinning it overlapped the last row of focus cards
+  behind a progressive blur, which read as "the input is parked on top of my last tile."
 - Sending a message from the hub composer creates a new admin-scope chat and navigates to `/workspace/assistant?chatId=<id>`, where the rest
   of the conversation happens. The hub itself stays a hub — every visit lands on the empty composer again.
 - The focus-area cards are split into two subgroups:
@@ -29,9 +29,10 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
     - Medical → `/workspace/medical`
     - Movies & TV → `/workspace/media`
     - Visitor chats → `/workspace/visitor-chats`
-- Each focus-area page is a placeholder: a back link to `/workspace`, the area name + icon, a one-line "this area is being built out" body,
-  and a muted "Coming soon" line.
-- The language switcher in the header swaps between `/workspace` and `/en/workspace`.
+- Each focus-area page is a placeholder: the area name + icon, a one-line "this area is being built out" body, and a muted "Coming soon"
+  line. No per-page back-link — the workspace header's breadcrumb trail is the way back to `/workspace`.
+- The language switcher is hidden on workspace surfaces (the workspace is single-user private chrome; the locale toggle belongs to the
+  public site). To switch locale, return to a public page via the logo.
 
 ## Hero quote
 
@@ -116,16 +117,38 @@ src/routes/{-$locale}/workspace/
 All page files follow the same shape as `src/routes/{-$locale}/index.tsx` and `src/routes/{-$locale}/datenschutz.tsx`:
 `createFileRoute(...)` with a `head()` that returns `seoMeta(...)`, plus a component that reads `useLocale()` and renders the locale's copy.
 
+### Workspace header
+
+Every workspace surface inherits the same chrome: `<WorkspaceHeader />` is mounted once at `src/routes/{-$locale}/workspace.tsx` (the
+layout) and renders above the `<Outlet />`. Pages render only their body content — no per-page `<Header />` invocations and no per-page
+`← Workspace` back-links.
+
+`WorkspaceHeader` is a thin wrapper around `<Header />` that:
+
+- passes `chatVariant="workspace"` so the chat button opens the personal-assistant sheet,
+- passes `hideSelectors` so the language and theme selectors don't render (workspace is private chrome; locale/theme belong to the public
+  site),
+- builds a breadcrumb trail from the current pathname against a centralized `WORKSPACE_TITLES` map (path-segment → `{ de, en }` label) in
+  the same file.
+
+Adding a new `/workspace/<segment>` route: add one entry to `WORKSPACE_TITLES` so the breadcrumb has a label. Everything else is already in
+the layout — the page file itself just exports its component.
+
+The `<Header />` primitive grew two props to support this: `breadcrumbs?: ReadonlyArray<Crumb>` (replaces the brand cluster with
+`logo + trail`; only the logo is a link, home) and `hideSelectors?: boolean`. The previous `brandLabel` variant is no longer used by any
+workspace page but is kept on the primitive for any future surface that needs `logo + plain label` chrome.
+
 ### Hub layout
 
 The hub reuses the same primitives the landing page does:
 
 - `Card` / `CardContent` / `CardTitle` / `CardDescription` from `src/web/components/base/card.tsx`
-- `Header` from `src/web/components/Header.tsx` — invoked with `brandLabel="Workspace"` so the brand cluster renders as `logo + "Workspace"`
-  rather than the public `logo + "Cem Yilmaz"` wordmark; only the logo is a link (back to `/{-$locale}`), the label itself is inert text.
 - `useLocale()` from `src/web/hooks/useLocale.ts`
 - `ChatComposer` from `src/web/chat/ChatComposer.tsx` (parameterized with the workspace mutation)
 - `useChatLiveUpdates` from `src/web/chat/useChatLiveUpdates.tsx` (namespace-agnostic)
+
+The header is **not** invoked by the hub itself — it comes from `<WorkspaceHeader />` mounted at the layout (see "Workspace header" above).
+The hub's component body is only the assistant hero (quote + composer) and the focus-area grid.
 
 A single `COPY` constant at the top of the file keys every visible string under `{ de, en }`. This follows the inline-bilingual-copy pattern
 from `docs/architecture/i18n.md` — no translation library.
@@ -152,9 +175,9 @@ the card-wide hover state all still read as "this is clickable."
 
 ### Stub layout
 
-Each focus-area stub has its own `COPY` constant (title, description, body, "coming soon", "back" label) and a single `<main>` block: back
-link → icon + h1 → body paragraph → muted "Coming soon" line. They are intentionally tiny — the goal of Phase 1 is for the navigation to
-exist, not for the rooms to be furnished.
+Each focus-area stub has its own `COPY` constant (title, description, body, "coming soon") and a single `<main>` block: icon + h1 → body
+paragraph → muted "Coming soon" line. They are intentionally tiny — the goal of Phase 1 is for the navigation to exist, not for the rooms to
+be furnished. Stubs don't render their own header or back-link; the workspace header above the outlet provides both.
 
 ### Wiring `ChatComposer` to the admin namespace
 
@@ -182,8 +205,10 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
    in the same file (key, route path, icon). If you're adding a third subgroup, factor a new array + `<FocusCardGrid />` invocation in
    `FocusAreaGrid` and pick an appropriate `lg:grid-cols-*` for its width.
 3. Create a new stub file under `src/routes/{-$locale}/workspace/` mirroring one of the existing stubs (`software.tsx`, etc.). Use the same
-   `COPY` shape and `seoMeta({ ..., noindex: true })`.
-4. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap until they are public.
+   `COPY` shape and `seoMeta({ ..., noindex: true })`. The stub does **not** render its own `<Header />` or back-link — both come from the
+   layout.
+4. Add the new path-segment to `WORKSPACE_TITLES` in `src/web/components/WorkspaceHeader.tsx` so the breadcrumb has a label.
+5. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap until they are public.
 
 ## Open TODOs
 

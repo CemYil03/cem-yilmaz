@@ -113,7 +113,7 @@ function WorkspaceAssistantEmpty({ live, locale }: { live: ReturnType<typeof use
     const [{ data }] = useQuery({ query: WorkspaceAssistantChatsDocument, requestPolicy: 'cache-and-network' });
     const chats = (data?.admin.chats ?? []).slice(0, RECENT_CHATS_LIMIT);
     return (
-        <main className="mx-auto grid h-dvh w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
+        <main className="mx-auto grid w-full max-w-2xl flex-1 min-h-0 grid-rows-[1fr_auto] gap-4 p-6">
             <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pr-2">
                 <div className="grid place-items-center py-8 text-sm text-muted-foreground">
                     {live.isGenerating ? (
@@ -247,7 +247,7 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
     }
 
     return (
-        <main className="mx-auto grid h-dvh w-full min-w-0 max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <main className="mx-auto grid w-full min-w-0 max-w-6xl flex-1 min-h-0 grid-cols-1 gap-6 p-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
             {/* Desktop sidebar: at-a-glance list of recent chats so the
              *  admin can jump between conversations without bouncing back
              *  through the empty state. Hidden under `lg` — the row is the
