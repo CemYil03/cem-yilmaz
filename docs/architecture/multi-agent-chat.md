@@ -103,8 +103,9 @@ Replace `agentUserConversation.ts` with two siblings:
 - `src/server/agents/agentPersonalAssistant.ts` — personal-assistant system prompt, real tools (e.g. `toolNoteCreate`,
   `toolCalendarEventCreate`), all gated by `needsApproval` per the existing approval lifecycle.
 
-Shared scaffolding (provider bindings, `stopWhen` rules, the `onStepFinish` plumbing) lives in a tiny helper, not a base class — each agent
-file is self-contained enough to skim.
+Shared scaffolding (provider bindings, a `currentDateForAgent()` line every system prompt embeds so Gemini doesn't anchor on its training
+cutoff, `stopWhen` rules, the `onStepFinish` plumbing) lives in a tiny helper, not a base class — each agent file is self-contained enough
+to skim.
 
 ### Dispatch
 

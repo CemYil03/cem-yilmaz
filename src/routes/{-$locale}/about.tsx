@@ -40,6 +40,10 @@ function buildFaq(locale: Locale): ReadonlyArray<FaqEntry> {
                 answer: `Cem lebt in ${city} in Rheinland-Pfalz, Deutschland. Mandate werden in der Regel remote durchgeführt; vor Ort im Großraum Mannheim/Ludwigshafen/Karlsruhe nach Absprache.`,
             },
             {
+                question: 'Funktioniert das mit Teams in Nordamerika oder Indien trotz der Zeitverschiebung?',
+                answer: 'Ja. Cem arbeitet regelmäßig mit verteilten Teams in Kanada, den USA und Indien zusammen. Frühe Calls vor dem Frühstück (ab ca. 7 Uhr deutscher Zeit für Indien) und späte Calls am Abend (bis ca. 22 Uhr deutscher Zeit für Nordamerika) sind Teil des Pakets, nicht die Ausnahme.',
+            },
+            {
                 question: 'Womit arbeitet Cem hauptsächlich?',
                 answer: 'Schwerpunkte sind Digitalisierung manueller Prozesse, KI-Workflows (Vercel AI SDK, Google Gemini, Claude), TypeScript/React/Node-Stacks und SAP-Integrationen. Voller Stack inklusive Datenbankdesign und Deployment.',
             },
@@ -61,6 +65,10 @@ function buildFaq(locale: Locale): ReadonlyArray<FaqEntry> {
         {
             question: 'Where is Cem based?',
             answer: `Cem lives in ${city}, Rhineland-Palatinate, Germany. Engagements are usually remote; on-site in the Mannheim / Ludwigshafen / Karlsruhe area by arrangement.`,
+        },
+        {
+            question: 'Does working with teams in North America or India still work despite the time difference?',
+            answer: 'Yes. Cem regularly works with distributed teams in Canada, the US and India. Early calls before breakfast (from around 7am German time for India) and late calls after dinner (until around 10pm German time for North America) are part of the package, not the exception.',
         },
         {
             question: 'What does Cem work on?',

@@ -23,6 +23,12 @@ export async function cvSummaryForAgent(serverRuntime: ServerRuntime): Promise<s
     return [
         identityBlock(),
         '',
+        '## Verfügbarkeit & Zeitzonen',
+        '- Wohnt in Deutschland (Zeitzone Europe/Berlin, also UTC+1 im Winter, UTC+2 im Sommer).',
+        '- Arbeitet regelmäßig mit verteilten Teams in Kanada, den USA und Indien zusammen.',
+        '- Ist zeitlich flexibel: frühe Calls vor dem Frühstück (z. B. ab ca. 7 Uhr deutscher Zeit für Indien) und späte Calls am Abend (z. B. bis ca. 22 Uhr deutscher Zeit für Nordamerika) sind ausdrücklich Teil des Pakets, nicht die Ausnahme.',
+        '- Wenn jemand Bedenken äußert, ob die Zeitverschiebung zu einer Zusammenarbeit über Kontinente hinweg passt: bestätigen, dass das funktioniert, und auf die genannten gemeinsamen Zeitfenster verweisen.',
+        '',
         '## Berufserfahrung',
         ...experiences.map(experienceLine),
         '',

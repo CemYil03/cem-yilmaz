@@ -13,13 +13,13 @@ import {
     WalletIcon,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { useQuery } from 'urql';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { CardContent, CardDescription, CardTitle } from '../../../web/components/base/card';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { MessageComposer } from '../../../web/components/MessageComposer';
 import { workspaceQuotePick } from '../../../web/content/workspaceQuotes';
 import { WorkspaceHubDocument } from '../../../web/graphql/generated';
+import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -137,6 +137,8 @@ const PUBLIC_SITE_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
 ];
 
 export const Route = createFileRoute('/{-$locale}/workspace/')({
+    loader: () => routeLoaderGraphqlClient(WorkspaceHubDocument)(),
+    staleTime: 0,
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
@@ -164,11 +166,9 @@ function WorkspaceHub() {
     // focus area to consult something and coming back keeps the
     // transcript intact.
     const { openWithMessage, live } = useWorkspaceAssistantChat();
-    // `cache-and-network` so returning to the hub shows the last-known
-    // badge value instantly while a fresh count fetches in the background.
-    const [{ data }] = useQuery({ query: WorkspaceHubDocument, requestPolicy: 'cache-and-network' });
+    const data = Route.useLoaderData();
     const badges: Record<NonNullable<FocusArea['badgeKey']>, number> = {
-        projectsInbox: data?.admin.projectRequestsInboxCount ?? 0,
+        projectsInbox: data.admin.projectRequestsInboxCount,
     };
 
     return (

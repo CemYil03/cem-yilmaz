@@ -1,7 +1,7 @@
 import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
 import { profileSummaryGet } from '../queries/profileSummaryGet';
-import { googleAgentProviderOptions } from './agentScaffolding';
+import { currentDateForAgent, googleAgentProviderOptions } from './agentScaffolding';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
@@ -47,9 +47,13 @@ const BASE_SYSTEM_PROMPT = [
 ].join('\n');
 
 function buildSystemPrompt(profileSummary: string): string {
-    if (!profileSummary.trim()) return BASE_SYSTEM_PROMPT;
+    // `currentDateForAgent()` is called here (not woven into the base
+    // constant) so it re-evaluates on every user turn instead of freezing to
+    // module-load time.
+    const dated = [currentDateForAgent(), '', BASE_SYSTEM_PROMPT].join('\n');
+    if (!profileSummary.trim()) return dated;
     return [
-        BASE_SYSTEM_PROMPT,
+        dated,
         '',
         'Context about Cem (synthesized from prior conversations — refine your answers with these facts when relevant):',
         profileSummary.trim(),

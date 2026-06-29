@@ -1,4 +1,18 @@
 import { useLocation } from '@tanstack/react-router';
+import {
+    CodeXmlIcon,
+    DumbbellIcon,
+    FileTextIcon,
+    FilmIcon,
+    FolderKanbanIcon,
+    MessageCircleIcon,
+    MessageSquareTextIcon,
+    ReceiptTextIcon,
+    SparklesIcon,
+    StethoscopeIcon,
+    WalletIcon,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useLocale } from '../hooks/useLocale';
 import type { Locale } from '../utils/locale';
 import type { Crumb } from './Header';
@@ -7,18 +21,19 @@ import { Header } from './Header';
 // Workspace-wide header. Mounted once at `src/routes/{-$locale}/workspace.tsx`,
 // so every workspace page inherits the same chrome:
 //
-//   logo (links to `/{-$locale}`)  workspace / <where we are>           Assistant
+//   logo (links to `/{-$locale}`)  workspace / <icon> <where we are>           Assistant
 //
 // The trail is derived from the current pathname against the title map below;
 // the first crumb always links back to `/workspace`, the trailing crumb is
-// rendered as the current page. Language and theme selectors are hidden here —
-// the workspace is a private surface with its own chrome and those controls
-// belong to the public site; only the assistant chat button stays in the
-// right cluster.
+// rendered as the current page (with its focus-area icon — the workspace pages
+// don't render an on-page title row, so the icon lives here instead).
+// Language and theme selectors are hidden — the workspace is a private surface
+// with its own chrome and those controls belong to the public site; only the
+// assistant chat button stays in the right cluster.
 //
 // Adding a new workspace route: add an entry to `WORKSPACE_TITLES` so the
-// breadcrumb has a label. The route file itself no longer needs to render a
-// `<Header />` or a back-link — both come from the layout.
+// breadcrumb has a label, and (optionally) one to `WORKSPACE_ICONS` so the
+// trailing crumb gets the same lucide icon used on the hub tile.
 
 const workspaceLabel: Record<Locale, string> = { de: 'Workspace', en: 'Workspace' };
 
@@ -36,6 +51,22 @@ const WORKSPACE_TITLES: Record<string, { de: string; en: string }> = {
     medical: { de: 'Medizinisches', en: 'Medical' },
     media: { de: 'Filme & Serien', en: 'Movies & TV' },
     'visitor-chats': { de: 'Besucher-Chats', en: 'Visitor chats' },
+};
+
+// Path segment → lucide icon. Matches the icon used on the hub tile so the
+// breadcrumb visually anchors the user in the same focus area.
+const WORKSPACE_ICONS: Record<string, LucideIcon> = {
+    assistant: MessageCircleIcon,
+    profile: SparklesIcon,
+    cv: FileTextIcon,
+    software: CodeXmlIcon,
+    projects: FolderKanbanIcon,
+    finances: WalletIcon,
+    tax: ReceiptTextIcon,
+    fitness: DumbbellIcon,
+    medical: StethoscopeIcon,
+    media: FilmIcon,
+    'visitor-chats': MessageSquareTextIcon,
 };
 
 // Strip a leading `/en` (or any non-default locale) segment so the path-segment
@@ -64,12 +95,12 @@ function buildCrumbs(pathname: string, locale: Locale): ReadonlyArray<Crumb> {
         ...segments.map((segment, index) => {
             const entry = WORKSPACE_TITLES[segment];
             const label = entry ? entry[locale] : segment;
-            // Intermediate segments don't have routes of their own today; we
-            // render every crumb but only the trailing one is treated as the
-            // current page — anything before it without a known `to` is
-            // unlinked but visible.
             const isLast = index === segments.length - 1;
-            return isLast ? { label } : { label };
+            // Only the trailing crumb carries the icon — intermediate
+            // segments (none today, but defensive) stay plain so the
+            // header doesn't grow visually crowded.
+            const icon = isLast ? WORKSPACE_ICONS[segment] : undefined;
+            return { label, icon };
         }),
     ];
 }

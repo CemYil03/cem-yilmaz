@@ -3,7 +3,7 @@ import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
 import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { googleAgentProviderOptions } from './agentScaffolding';
+import { currentDateForAgent, googleAgentProviderOptions } from './agentScaffolding';
 import { cvSummaryForAgent } from './cvSummaryForAgent';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 import { toolSendEmailToCem } from './toolSendEmailToCem';
@@ -50,6 +50,8 @@ function buildSystemPrompt(cvSummary: string): string {
     return [
         "You are the AI assistant on Cem Yilmaz's personal website (cem-yilmaz.de).",
         "Your job is to answer visitors' questions about Cem, his projects, and this site.",
+        '',
+        currentDateForAgent(),
         '',
         cvSummary,
         '',

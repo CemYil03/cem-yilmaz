@@ -1,7 +1,7 @@
 import { ToolLoopAgent, stepCountIs } from 'ai';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { googleAgentProviderOptions } from './agentScaffolding';
+import { googleAgentProviderOptions, currentDateForAgent } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
 import { toolProjectDelete } from './toolProjectDelete';
 import { toolProjectsList } from './toolProjectsList';
@@ -52,6 +52,8 @@ function buildSystemPrompt(snapshot: string): string {
         "You are the projects sub-agent inside Cem's personal workspace. You handle every project- and task-related",
         'instruction the orchestrator delegates to you. Your tools touch the workspace DB directly — only use them',
         'when the user has unambiguously asked you to change something.',
+        '',
+        currentDateForAgent(),
         '',
         'You have six tools:',
         '- `projectsList`, `standaloneTasksList` — read the current board when you need ids or full task details',

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
     ArchiveIcon,
@@ -23,7 +23,8 @@ import {
     VideoIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from 'urql';
+import { useMutation } from 'urql';
+import { z } from 'zod';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
 import { Input } from '../../../web/components/base/input';
@@ -50,6 +51,7 @@ import {
     WorkspaceTaskDeleteDocument,
     WorkspaceTaskUpsertDocument,
 } from '../../../web/graphql/generated';
+import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -68,7 +70,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // See `docs/features/projects-workspace.md`.
 
 type Tab = 'inbox' | 'projects' | 'todos';
-const TABS: ReadonlyArray<Tab> = ['inbox', 'projects', 'todos'];
+const TABS = ['inbox', 'projects', 'todos'] as const satisfies ReadonlyArray<Tab>;
 const TAB_LABELS: Record<Tab, { de: string; en: string }> = {
     inbox: { de: 'Eingang', en: 'Inbox' },
     projects: { de: 'Projekte', en: 'Projects' },
@@ -166,12 +168,22 @@ function formatHms(totalSec: number): string {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
+// URL state for this page. `tab` selects the active section; `inboxView`
+// toggles the archive/inbox split on the Inbox tab and is absent (= `inbox`)
+// when at the default. State that survives reload sits here; ephemeral local
+// state (which row is expanded, which form is being edited) stays in
+// `useState`.
+const projectsSearchSchema = z.object({
+    tab: z.enum(TABS).optional(),
+    inboxView: z.enum(['archive']).optional(),
+});
+
+type ProjectsSearch = z.infer<typeof projectsSearchSchema>;
+
 export const Route = createFileRoute('/{-$locale}/workspace/projects')({
-    validateSearch: (search: Record<string, unknown>) => {
-        const raw = typeof search.tab === 'string' ? (search.tab as Tab) : undefined;
-        const tab: Tab = raw && (TABS as ReadonlyArray<string>).includes(raw) ? raw : 'projects';
-        return { tab };
-    },
+    validateSearch: projectsSearchSchema,
+    loader: () => routeLoaderGraphqlClient(WorkspaceProjectsPageDocument)(),
+    staleTime: 0,
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
@@ -188,30 +200,33 @@ export const Route = createFileRoute('/{-$locale}/workspace/projects')({
 
 function WorkspaceProjects() {
     const locale = useLocale();
-    const { tab } = Route.useSearch();
-    const navigate = Route.useNavigate();
-    const [{ data, fetching, error }, refetch] = useQuery({ query: WorkspaceProjectsPageDocument, requestPolicy: 'cache-and-network' });
-    const onChanged = () => refetch({ requestPolicy: 'network-only' });
+    const search = Route.useSearch();
+    const tab: Tab = search.tab ?? 'projects';
+    const data = Route.useLoaderData();
+    const router = useRouter();
+    const onChanged = () => router.invalidate();
 
-    const inboxCount = data?.admin.projectRequests.filter((r) => r.status === 'emailVerified').length ?? 0;
+    const inboxCount = data.admin.projectRequests.filter((r) => r.status === 'emailVerified').length;
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full py-12 leading-relaxed">
-            <div className="flex items-center gap-3 text-primary">
-                <FolderKanbanIcon className="size-6" />
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">{title[locale]}</h1>
-            </div>
-            <p className="mt-3 text-sm text-muted-foreground">{description[locale]}</p>
+            <p className="text-sm text-muted-foreground">{description[locale]}</p>
 
             <nav className="mt-8 flex gap-1 border-b border-border/60" aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}>
                 {TABS.map((t) => {
                     const Icon = TAB_ICONS[t];
                     const isActive = tab === t;
                     return (
-                        <button
+                        <Link
                             key={t}
-                            type="button"
-                            onClick={() => void navigate({ search: { tab: t }, replace: true })}
+                            to="/{-$locale}/workspace/projects"
+                            from="/{-$locale}/workspace/projects"
+                            // Default tab (`projects`) drops the key so the canonical
+                            // URL for the landing view has no `?tab=`. Switching tabs
+                            // also clears `inboxView` so per-tab subfilters don't
+                            // leak between tabs.
+                            search={() => (t === 'projects' ? {} : { tab: t })}
+                            replace
                             className={cn(
                                 '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                                 isActive
@@ -227,28 +242,30 @@ function WorkspaceProjects() {
                                     {inboxCount}
                                 </span>
                             ) : null}
-                        </button>
+                        </Link>
                     );
                 })}
             </nav>
 
-            {fetching && !data ? <p className="mt-8 text-sm text-muted-foreground">…</p> : null}
-            {error ? <p className="mt-8 text-sm text-destructive">{error.message}</p> : null}
-
-            {data ? (
-                <div className="mt-8">
-                    {tab === 'inbox' ? <InboxSection rows={data.admin.projectRequests} locale={locale} onChanged={onChanged} /> : null}
-                    {tab === 'projects' ? (
-                        <ProjectsBoard
-                            rows={data.admin.projects}
-                            activeTimer={data.admin.activeTimer ?? null}
-                            locale={locale}
-                            onChanged={onChanged}
-                        />
-                    ) : null}
-                    {tab === 'todos' ? <TodosSection rows={data.admin.standaloneTasks} locale={locale} onChanged={onChanged} /> : null}
-                </div>
-            ) : null}
+            <div className="mt-8">
+                {tab === 'inbox' ? (
+                    <InboxSection
+                        rows={data.admin.projectRequests}
+                        showArchived={search.inboxView === 'archive'}
+                        locale={locale}
+                        onChanged={onChanged}
+                    />
+                ) : null}
+                {tab === 'projects' ? (
+                    <ProjectsBoard
+                        rows={data.admin.projects}
+                        activeTimer={data.admin.activeTimer ?? null}
+                        locale={locale}
+                        onChanged={onChanged}
+                    />
+                ) : null}
+                {tab === 'todos' ? <TodosSection rows={data.admin.standaloneTasks} locale={locale} onChanged={onChanged} /> : null}
+            </div>
         </main>
     );
 }
@@ -257,8 +274,17 @@ function WorkspaceProjects() {
 
 type RequestRow = GqlCWorkspaceProjectsPageQuery['admin']['projectRequests'][number];
 
-function InboxSection({ rows, locale, onChanged }: { rows: ReadonlyArray<RequestRow>; locale: Locale; onChanged: () => void }) {
-    const [showArchived, setShowArchived] = useState(false);
+function InboxSection({
+    rows,
+    showArchived,
+    locale,
+    onChanged,
+}: {
+    rows: ReadonlyArray<RequestRow>;
+    showArchived: boolean;
+    locale: Locale;
+    onChanged: () => void;
+}) {
     const visible = rows.filter((r) => (showArchived ? r.status === 'archived' : r.status === 'emailVerified' && !r.convertedProject));
     const convertedCount = rows.filter((r) => r.convertedProject).length;
 
@@ -272,10 +298,23 @@ function InboxSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Request
                               locale
                           ]}
                 </p>
-                <Button variant="outline" size="sm" onClick={() => setShowArchived(!showArchived)}>
-                    {showArchived
-                        ? { de: 'Eingang anzeigen', en: 'Show inbox' }[locale]
-                        : { de: 'Archiv anzeigen', en: 'Show archive' }[locale]}
+                <Button asChild variant="outline" size="sm">
+                    {/* Inbox-view toggle stays in the URL: `?inboxView=archive`
+                     * or absent. Reload preserves the view, and a shared link
+                     * to the archive opens straight to it. */}
+                    <Link
+                        to="/{-$locale}/workspace/projects"
+                        from="/{-$locale}/workspace/projects"
+                        search={(prev: ProjectsSearch) => ({
+                            ...prev,
+                            inboxView: showArchived ? undefined : ('archive' as const),
+                        })}
+                        replace
+                    >
+                        {showArchived
+                            ? { de: 'Eingang anzeigen', en: 'Show inbox' }[locale]
+                            : { de: 'Archiv anzeigen', en: 'Show archive' }[locale]}
+                    </Link>
                 </Button>
             </div>
             {convertedCount > 0 && !showArchived ? (

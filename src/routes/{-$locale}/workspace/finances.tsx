@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { WalletIcon } from 'lucide-react';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -28,11 +27,7 @@ function FinancesArea() {
     const locale = useLocale();
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-3xl mx-auto w-full py-12 leading-relaxed">
-            <div className="flex items-center gap-3 text-primary">
-                <WalletIcon className="size-6" />
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">{title[locale]}</h1>
-            </div>
-            <p className="mt-6">
+            <p>
                 {
                     {
                         de: 'Dieser Bereich wird gerade aufgebaut. Hier landen finanzielle Ziele, ein allgemeiner Überblick sowie Watchlists, Notizen zu Strategien und Beobachtungen vom Aktienmarkt.',

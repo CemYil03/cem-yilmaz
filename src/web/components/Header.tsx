@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from './base/breadcrumb';
@@ -24,11 +25,16 @@ type NavItem = {
 
 /** A single breadcrumb crumb. The last crumb is rendered as the current page
  *  (inert); every earlier crumb is a link. `to` uses the TanStack-style typed
- *  path with `{-$locale}` so the locale param is preserved automatically. */
+ *  path with `{-$locale}` so the locale param is preserved automatically.
+ *  `icon` (optional) renders before the label — workspace surfaces use it on
+ *  the trailing crumb so the page's icon lives in the header instead of
+ *  repeating in an on-page title row. */
 export type Crumb = {
     label: string;
     /** Set on every crumb except the last (which is the current page). */
     to?: string;
+    /** Optional Lucide icon rendered before the label. */
+    icon?: LucideIcon;
 };
 
 type Props = {
@@ -107,15 +113,24 @@ export function Header({ subtitle, navItems, brandLabel, breadcrumbs, hideSelect
                                     <BreadcrumbList className="flex-nowrap">
                                         {breadcrumbs.map((crumb, index) => {
                                             const isLast = index === breadcrumbs.length - 1;
+                                            const Icon = crumb.icon;
+                                            const labelNode = Icon ? (
+                                                <span className="flex min-w-0 items-center gap-1.5">
+                                                    <Icon className="size-4 shrink-0 text-primary" aria-hidden />
+                                                    <span className="truncate">{crumb.label}</span>
+                                                </span>
+                                            ) : (
+                                                <span className="truncate">{crumb.label}</span>
+                                            );
                                             return (
                                                 <span key={`${crumb.label}-${index}`} className="contents">
                                                     <BreadcrumbItem className="min-w-0">
                                                         {isLast || !crumb.to ? (
-                                                            <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                                                            <BreadcrumbPage className="min-w-0">{labelNode}</BreadcrumbPage>
                                                         ) : (
                                                             <BreadcrumbLink asChild>
-                                                                <Link to={crumb.to as never} className="truncate">
-                                                                    {crumb.label}
+                                                                <Link to={crumb.to as never} className="min-w-0">
+                                                                    {labelNode}
                                                                 </Link>
                                                             </BreadcrumbLink>
                                                         )}

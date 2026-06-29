@@ -9,6 +9,7 @@ import {
     CalendarClockIcon,
     FileTextIcon,
     FolderGitIcon,
+    GlobeIcon,
     LayersIcon,
     MailIcon,
     RocketIcon,
@@ -26,6 +27,7 @@ import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
 import { MessageComposer } from '../../web/components/MessageComposer';
 import { Reveal } from '../../web/components/Reveal';
+import { WorldReachMap } from '../../web/components/WorldReachMap';
 import { HomePageDocument } from '../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../web/hooks/useLocale';
@@ -52,8 +54,11 @@ import type { Locale } from '../../web/utils/locale';
  *   4. Call to action — availability badge + primary buttons that seed the
  *      chat with a project / intro-call prompt, plus a mailto fallback for
  *      visitors who prefer email.
- *   5. Explore — secondary nav cards (About / CV / Projects).
- *   6. Footer — contact + legal.
+ *   5. Across time zones — nice-to-have selling point for cross-continent
+ *      collaboration; copy + band list on the left, WorldReachMap SVG on
+ *      the right. Sits after the CTA so it doesn't distract from the close.
+ *   6. Explore — secondary nav cards (About / CV / Projects).
+ *   7. Footer — contact + legal.
  *
  * All visitor-facing copy is inlined at the call site as
  * `{ de: '…', en: '…' }[locale]` — no central COPY object. See
@@ -134,6 +139,7 @@ function HomePage() {
                 <Services locale={locale} />
                 <WhyMe locale={locale} />
                 <CallToAction locale={locale} onOpenChat={openChat} />
+                <TimeZoneReach locale={locale} />
                 <Explore locale={locale} />
             </main>
             <Footer />
@@ -466,6 +472,119 @@ function WhyMeCard({ icon: Icon, title, body }: { icon: typeof CodeXmlIcon; titl
                 <p className="text-sm leading-relaxed text-foreground/80">{body}</p>
             </CardContent>
         </GlassCard>
+    );
+}
+
+function TimeZoneReach({ locale }: { locale: Locale }) {
+    // Bands rendered next to the map. Each entry pairs a region label with
+    // the comfortable overlap window in Cem's local time (Europe/Berlin), so
+    // the visitor can read at-a-glance "yes, he's reachable at 7am or 10pm
+    // when needed". Hours are rounded to the working-hour boundary on the
+    // remote side so they hold across DST shifts without per-season churn.
+    const bands: ReadonlyArray<{
+        region: { de: string; en: string };
+        zone: string;
+        overlap: { de: string; en: string };
+    }> = [
+        {
+            region: { de: 'Deutschland · Heimatzeitzone', en: 'Germany · home time zone' },
+            zone: 'CET / CEST (UTC+1 / +2)',
+            overlap: { de: 'Reguläre Bürozeiten', en: 'Regular office hours' },
+        },
+        {
+            region: { de: 'Nordamerika · USA & Kanada', en: 'North America · US & Canada' },
+            zone: 'EST – PST (UTC−5 bis −8)',
+            overlap: {
+                de: 'Nachmittags & abends, oft bis 22 Uhr deutscher Zeit',
+                en: 'Afternoons & evenings, often until 10pm German time',
+            },
+        },
+        {
+            region: { de: 'Indien', en: 'India' },
+            zone: 'IST (UTC+5:30)',
+            overlap: {
+                de: 'Frühe Vormittage ab 7 Uhr deutscher Zeit',
+                en: 'Early mornings from 7am German time',
+            },
+        },
+    ];
+
+    const markers: ReadonlyArray<{ label: string; lat: number; lng: number; anchor?: boolean }> = [
+        { label: 'Berlin', lat: 52.5, lng: 13.4, anchor: true },
+        { label: 'Toronto', lat: 43.7, lng: -79.4 },
+        { label: 'San Francisco', lat: 37.8, lng: -122.4 },
+        { label: 'New York', lat: 40.7, lng: -74.0 },
+        { label: 'Bengaluru', lat: 12.97, lng: 77.6 },
+    ];
+    // Arc targets: every non-anchor marker. Reads as "Berlin reaches out to
+    // each of these places" without forcing the caller to hand-pick indexes.
+    const arcsFromAnchorTo = markers.map((_, i) => i).filter((i) => !markers[i]?.anchor);
+
+    const mapTitle = {
+        de: 'Weltkarte mit Berlin, Nordamerika und Indien hervorgehoben',
+        en: 'World map with Berlin, North America and India highlighted',
+    }[locale];
+
+    return (
+        <section className="pb-12 md:pb-16">
+            <Reveal>
+                <SectionHeading
+                    title={{ de: 'Über Zeitzonen hinweg', en: 'Across time zones' }[locale]}
+                    subtitle={
+                        {
+                            de: 'Erfahrung mit verteilten Teams in Kanada, den USA und Indien. Frühe Calls vor dem Frühstück oder späte Calls am Abend sind Teil des Pakets, nicht die Ausnahme.',
+                            en: 'Used to working with distributed teams in Canada, the US and India. Early calls before breakfast or late calls after dinner are part of the package, not the exception.',
+                        }[locale]
+                    }
+                />
+            </Reveal>
+            <Reveal className="mt-8">
+                <GlassCard className="px-6 py-6 md:px-8 md:py-8">
+                    <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:gap-10">
+                        <div>
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/55 bg-white/40 px-3 py-1 text-xs font-medium tracking-wide text-foreground/80 backdrop-blur-md dark:border-white/10 dark:bg-white/4">
+                                <GlobeIcon className="size-3.5 text-primary" />
+                                {{ de: 'Zeitlich flexibel', en: 'Time-zone flexible' }[locale]}
+                            </div>
+                            <h3 className="mt-4 text-xl md:text-2xl font-semibold tracking-tight">
+                                {
+                                    {
+                                        de: 'Calls dann, wenn dein Team gerade arbeitet.',
+                                        en: 'Calls when your team is actually working.',
+                                    }[locale]
+                                }
+                            </h3>
+                            <p className="mt-3 text-sm md:text-base text-foreground/75 leading-relaxed">
+                                {
+                                    {
+                                        de: 'Aus deutscher Sicht erfordert die Zusammenarbeit mit Teams in Nordamerika oder Indien sehr frühe oder sehr späte Termine. Bin ich offen für — und gewohnt an.',
+                                        en: 'Working with teams in North America or India from a German vantage point means very early or very late slots. I am open to those and used to them.',
+                                    }[locale]
+                                }
+                            </p>
+                            <ul className="mt-5 flex flex-col gap-3">
+                                {bands.map((b) => (
+                                    <li key={b.zone} className="flex flex-col gap-0.5">
+                                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                                            <span className="text-sm font-medium text-foreground/90">{b.region[locale]}</span>
+                                            <span className="text-xs font-mono tabular-nums text-foreground/55">{b.zone}</span>
+                                        </div>
+                                        <p className="text-xs text-foreground/65 leading-relaxed">{b.overlap[locale]}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="relative">
+                            <div
+                                aria-hidden
+                                className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-primary/15 via-primary/5 to-transparent blur-2xl"
+                            />
+                            <WorldReachMap title={mapTitle} markers={markers} arcsFromAnchorTo={arcsFromAnchorTo} className="relative" />
+                        </div>
+                    </div>
+                </GlassCard>
+            </Reveal>
+        </section>
     );
 }
 

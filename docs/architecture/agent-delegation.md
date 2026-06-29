@@ -92,8 +92,10 @@ mutations + final text without running into the ceiling.
 - **Tools are thin wrappers around existing `commands/`+`queries/`.** CQRS already gave us single-purpose units. A tool file is mostly the
   Zod input schema, the closure-bound dependencies (`serverRuntime`, `session`, optional `mutations`), and 5–10 lines of `execute` that maps
   to the command's args shape and pushes onto the mutation log on success.
-- **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptions` and nothing else
-  per `multi-agent-chat.md`'s "tiny helper, not a base class" stance. System-prompt builders, stop conditions, and tool sets stay per-agent.
+- **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptions` plus a
+  `currentDateForAgent()` helper (today's date as a one-liner each system prompt embeds near the top so Gemini doesn't fall back to its
+  training-cutoff date when reasoning about deadlines). Nothing else lives there per `multi-agent-chat.md`'s "tiny helper, not a base class"
+  stance. System-prompt builders, stop conditions, and tool sets stay per-agent.
 - **Sub-agent failure isolates to its turn.** An exception in any sub-agent tool propagates through `agent.generate`, surfaces as a
   rejection from the delegate tool's `execute`, and lands in the same `chatMessagesToolCall.toolResult` error path the runner already
   handles. The orchestrator can retry or apologize; the chat is never broken.

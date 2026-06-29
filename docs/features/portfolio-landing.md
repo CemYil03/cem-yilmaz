@@ -36,9 +36,16 @@ Top-to-bottom structure:
 5. **Call to action** — a wide `GlassCard` with an availability badge ("Currently capacity for 1 project from <next-month>"), a short pitch
    ("Let's talk about your project") and two primary buttons that seed the visitor chat with a project / intro-call prompt. A small mailto
    fallback link sits beneath the buttons so visitors who prefer email aren't forced through the assistant.
-6. **Explore** — secondary nav cards for `About`, `CV`, and `Projects`. Demoted to the bottom of the page since the marketing pitch +
+6. **Across time zones** — a single wide `GlassCard` that adds a nice-to-have selling point for cross-continent collaboration. Left column
+   carries a "Time-zone flexible" eyebrow chip, a short headline ("Calls when your team is actually working"), a one-paragraph pitch, and a
+   three-row band list (Germany / North America / India) with each region's UTC offset and the comfortable overlap window in Berlin time.
+   Right column carries the `WorldReachMap` SVG — a stylised low-fidelity world map with Berlin pinned as the anchor and Toronto / New York
+   / San Francisco / Bengaluru pinned as remote regions, plus dashed primary-tinted arcs from Berlin to each remote pin. The map is
+   decorative, not cartographic; the markers' halos breathe and the arc dashes drift on a slow loop. Both motions stop under
+   `prefers-reduced-motion: reduce`. Sits **after** the CTA on purpose — it's supporting detail, not the close.
+7. **Explore** — secondary nav cards for `About`, `CV`, and `Projects`. Demoted to the bottom of the page since the marketing pitch +
    assistant come first; still links to real routes.
-7. **Footer** — contact links (GitHub, LinkedIn, email) plus legal links to `/impressum` and `/datenschutz`.
+8. **Footer** — contact links (GitHub, LinkedIn, email) plus legal links to `/impressum` and `/datenschutz`.
 
 ## Implementation Details
 
@@ -110,10 +117,10 @@ and uses the hero subhead as the meta `description`. The page is listed in `src/
 ### Sections
 
 All sections use the shared `GlassCard` primitive for visual consistency with the header and other public pages. The services, CTA, and
-explore sections are grids of cards; the Why-Me cards and the Hero's embedded assistant card also use `GlassCard`. The section helpers
-(`Hero`, `HeroPortrait`, `Services`, `WhyMe`, `CallToAction`, `Explore`, `SectionHeading`, `ServiceCard`, `WhyMeCard`, `NavCard`) live
-locally inside `index.tsx`. The visitor chat sheet is the only piece extracted — it lives in
-`src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`.
+explore sections are grids of cards; the Why-Me cards, the Hero's embedded assistant card and the Across-time-zones card also use
+`GlassCard`. The section helpers (`Hero`, `HeroPortrait`, `Services`, `WhyMe`, `TimeZoneReach`, `CallToAction`, `Explore`, `SectionHeading`,
+`ServiceCard`, `WhyMeCard`, `NavCard`) live locally inside `index.tsx`. The visitor chat sheet and the `WorldReachMap` SVG are the pieces
+extracted — they live in `src/web/chat/WebsiteVisitorAssistantChatSheet.tsx` and `src/web/components/WorldReachMap.tsx` respectively.
 
 ### Footer
 
@@ -156,6 +163,10 @@ The landing page uses restrained, purposeful motion — no animation for animati
 5. **NavCard arrow** — hovering an Explore card translates its arrow 1 unit right (`group-hover:translate-x-1`) over 200ms instead of the
    previous gap-grow. Reads as "go" rather than "stretch".
 6. **Sheet open** — the visitor chat sheet uses Radix's stock slide-in-from-right on open, no custom motion layered on top.
+7. **World-reach map** — the highlighted-region markers' halos breathe on a 3.4s `ease-in-out` opacity-and-scale loop
+   (`@keyframes world-reach-halo`), and the dashed arcs from Berlin drift along their stroke length on a 14s linear loop
+   (`@keyframes world-reach-arc`). The motions are slow enough to feel like signal rather than animation; both stop under
+   `prefers-reduced-motion: reduce`. Lives on the `WorldReachMap` component (`src/web/components/WorldReachMap.tsx`).
 
 **`prefers-reduced-motion: reduce` honours the user's OS-level setting at every layer:** `useInView` short-circuits to `inView = true` so
 the Reveal component renders at its final state; `Reveal`'s transform is suppressed via `motion-reduce:`; the keyframe animations

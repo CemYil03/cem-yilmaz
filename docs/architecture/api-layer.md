@@ -142,6 +142,47 @@ For queries with variables:
 loader: ({ params }) => routeLoaderGraphqlClient(SomeDocument)(params),
 ```
 
+### Filter state in the URL
+
+Filter state — what the user is _looking at_ — belongs in the URL, not in `useState`. The loader sees it through `loaderDeps`, so SSR
+returns the correct filtered payload on first paint, and reloads / shared links / back button all preserve the view.
+
+```ts
+const fooSearchSchema = z.object({
+  category: z.enum(['a', 'b']).optional(), // absent === "all"
+  includeDismissed: z.boolean().optional(), // absent === false
+});
+
+export const Route = createFileRoute('/.../foo')({
+  validateSearch: fooSearchSchema,
+  loaderDeps: ({ search }) => ({
+    category: search.category ?? null,
+    includeDismissed: search.includeDismissed ?? false,
+  }),
+  loader: ({ deps }) =>
+    routeLoaderGraphqlClient(FooDocument, {
+      category: deps.category,
+      includeDismissed: deps.includeDismissed,
+    })(),
+  component: FooPage,
+});
+```
+
+In the component:
+
+- Read state via `Route.useSearch()` instead of `useState`.
+- Filter chips / toggles are `<Link search={prev => ({...prev, …})} replace>`.
+- After a mutation, call `router.invalidate()` (from `useRouter()`) — the loader re-runs with the current URL state.
+- One canonical URL per state: the default value drops the key entirely (`category=all` → no `?category=` at all).
+
+Ephemeral local state (which row is expanded, which form is being edited) stays in `useState`. Filter state — the lens — goes in the URL.
+
+#### When to keep `useQuery`
+
+The loader pattern is the default for file-route data. Reach for `useQuery` only when the surface needs reactive updates the loader can't
+model — live subscriptions, polling, cache-shared lists driven by client-only state. Mutations don't justify `useQuery`:
+`router.invalidate()` re-runs the loader and keeps the SSR-first invariant intact.
+
 ### Isomorphic Execution
 
 | Environment | Execution path                                 | Why                                                                |

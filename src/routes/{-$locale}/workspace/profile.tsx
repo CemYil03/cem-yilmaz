@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import {
@@ -8,15 +8,15 @@ import {
     MessageSquareTextIcon,
     RefreshCwIcon,
     ShieldCheckIcon,
-    SparklesIcon,
     UserRoundIcon,
     WavesIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from 'urql';
+import { useMutation } from 'urql';
+import { z } from 'zod';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
-import { Spinner } from '../../../web/components/base/spinner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
 import { GlassCard } from '../../../web/components/GlassCard';
 import type { GqlCProfileObservationCategory, GqlCWorkspaceProfilePageQuery } from '../../../web/graphql/generated';
@@ -25,6 +25,7 @@ import {
     WorkspaceProfilePageDocument,
     WorkspaceProfileSynthesizeRequestDocument,
 } from '../../../web/graphql/generated';
+import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -36,6 +37,14 @@ import { localeFromParam } from '../../../web/utils/locale';
 // the underlying observations stream. Cem reads this; the assistant does NOT.
 // Only the `summary` artifact crosses back into the personal-assistant prompt
 // — see `docs/features/profile.md`.
+//
+// Data flow follows the standard workspace pattern: filter state lives in the
+// URL via `validateSearch`, the loader sees those filters through
+// `loaderDeps`, and `routeLoaderGraphqlClient` does the fetch server-side so
+// the first paint already carries filtered data. Mutations call
+// `router.invalidate()` to re-run the loader rather than imperatively
+// refetching. Reloading the page keeps the user's filter view; chip clicks
+// produce shareable URLs.
 
 const pageTitle = { de: 'Profil', en: 'Profile' };
 const pageDescription = {
@@ -49,9 +58,30 @@ type ProfileQueryData = NonNullable<GqlCWorkspaceProfilePageQuery['admin']>;
 type ProfileData = ProfileQueryData['profile'];
 type ObservationRow = ProfileData['observations'][number];
 type ProfileTab = 'summary' | 'prose' | 'psychProfile';
+
+const OBSERVATION_CATEGORIES = ['factual', 'behavioral', 'psychological'] as const satisfies ReadonlyArray<GqlCProfileObservationCategory>;
+
+// `category` is absent when "all" is selected — one canonical URL per state.
+// `includeDismissed` is absent when false for the same reason.
+const profileSearchSchema = z.object({
+    category: z.enum(OBSERVATION_CATEGORIES).optional(),
+    includeDismissed: z.boolean().optional(),
+});
+
+type ProfileSearch = z.infer<typeof profileSearchSchema>;
 type ObservationFilter = 'all' | GqlCProfileObservationCategory;
 
 export const Route = createFileRoute('/{-$locale}/workspace/profile')({
+    validateSearch: profileSearchSchema,
+    loaderDeps: ({ search }) => ({
+        category: search.category ?? null,
+        includeDismissed: search.includeDismissed ?? false,
+    }),
+    loader: ({ deps }) =>
+        routeLoaderGraphqlClient(WorkspaceProfilePageDocument, {
+            category: deps.category,
+            includeDismissed: deps.includeDismissed,
+        })(),
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
@@ -68,54 +98,29 @@ export const Route = createFileRoute('/{-$locale}/workspace/profile')({
 
 function WorkspaceProfilePage() {
     const locale = useLocale();
-    const [filter, setFilter] = useState<ObservationFilter>('all');
-    const [includeDismissed, setIncludeDismissed] = useState(false);
+    const data = Route.useLoaderData();
+    const search = Route.useSearch();
+    const router = useRouter();
+    const filter: ObservationFilter = search.category ?? 'all';
+    const includeDismissed = search.includeDismissed ?? false;
+    const invalidate = () => router.invalidate();
 
-    const [{ data, fetching, error }, refetch] = useQuery({
-        query: WorkspaceProfilePageDocument,
-        variables: {
-            category: filter === 'all' ? null : filter,
-            includeDismissed,
-        },
-        requestPolicy: 'cache-and-network',
-    });
+    const profile = data.admin.profile;
 
     return (
         <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full pb-20">
             <header className="mt-10 mb-10">
-                <div className="flex items-center gap-3 text-primary">
-                    <SparklesIcon className="size-6" />
-                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{pageTitle[locale]}</h1>
-                </div>
-                <p className="mt-3 max-w-2xl text-base text-muted-foreground">{pageDescription[locale]}</p>
+                <p className="max-w-2xl text-base text-muted-foreground">{pageDescription[locale]}</p>
             </header>
 
-            {error ? <ErrorBanner message={error.message} locale={locale} /> : null}
-
-            {fetching && !data ? (
-                <div className="grid place-items-center py-16">
-                    <Spinner className="size-5 text-muted-foreground" />
-                </div>
-            ) : null}
-
-            {data?.admin.profile ? (
-                <>
-                    <SynthesisHero
-                        profile={data.admin.profile}
-                        locale={locale}
-                        onSynthesized={() => refetch({ requestPolicy: 'network-only' })}
-                    />
-                    <ObservationsSection
-                        observations={data.admin.profile.observations}
-                        filter={filter}
-                        onFilterChange={setFilter}
-                        includeDismissed={includeDismissed}
-                        onIncludeDismissedChange={setIncludeDismissed}
-                        locale={locale}
-                        onChanged={() => refetch({ requestPolicy: 'network-only' })}
-                    />
-                </>
-            ) : null}
+            <SynthesisHero profile={profile} locale={locale} onSynthesized={invalidate} />
+            <ObservationsSection
+                observations={profile.observations}
+                filter={filter}
+                includeDismissed={includeDismissed}
+                locale={locale}
+                onChanged={invalidate}
+            />
         </main>
     );
 }
@@ -176,7 +181,7 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
                             const result = await synthesize({});
                             if (result.data?.admin.profileSynthesizeRequest.success) {
                                 setJustQueued(true);
-                                // Poll for ~10s after enqueue — synthesis is a few seconds
+                                // Poll for ~6s after enqueue — synthesis is a few seconds
                                 // and the user shouldn't have to refresh.
                                 setTimeout(() => {
                                     onSynthesized();
@@ -197,7 +202,7 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
 }
 
 function TabStrip({ locale, active, onChange }: { locale: Locale; active: ProfileTab; onChange: (tab: ProfileTab) => void }) {
-    const tabs: { id: ProfileTab; label: { de: string; en: string }; icon: typeof SparklesIcon }[] = [
+    const tabs: { id: ProfileTab; label: { de: string; en: string }; icon: LucideIcon }[] = [
         { id: 'summary', label: { de: 'Kurz', en: 'Summary' }, icon: ShieldCheckIcon },
         { id: 'prose', label: { de: 'Porträt', en: 'Portrait' }, icon: UserRoundIcon },
         { id: 'psychProfile', label: { de: 'Psychologisch', en: 'Psychological' }, icon: WavesIcon },
@@ -307,17 +312,13 @@ function EmptyState({ locale }: { locale: Locale }) {
 function ObservationsSection({
     observations,
     filter,
-    onFilterChange,
     includeDismissed,
-    onIncludeDismissedChange,
     locale,
     onChanged,
 }: {
     observations: ReadonlyArray<ObservationRow>;
     filter: ObservationFilter;
-    onFilterChange: (f: ObservationFilter) => void;
     includeDismissed: boolean;
-    onIncludeDismissedChange: (next: boolean) => void;
     locale: Locale;
     onChanged: () => void;
 }) {
@@ -337,23 +338,10 @@ function ObservationsSection({
                         }
                     </p>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => onIncludeDismissedChange(!includeDismissed)}
-                    className={cn(
-                        'text-xs px-2.5 py-1.5 rounded-md border transition-colors',
-                        includeDismissed
-                            ? 'border-primary/40 bg-primary/10 text-primary'
-                            : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border',
-                    )}
-                >
-                    {includeDismissed
-                        ? { de: 'Verworfene einblenden', en: 'Showing dismissed' }[locale]
-                        : { de: 'Verworfene anzeigen', en: 'Show dismissed' }[locale]}
-                </button>
+                <DismissedToggle includeDismissed={includeDismissed} locale={locale} />
             </div>
 
-            <FilterChips active={filter} onChange={onFilterChange} locale={locale} />
+            <FilterChips active={filter} locale={locale} />
 
             {observations.length === 0 ? (
                 <p className="mt-8 text-sm text-muted-foreground italic">
@@ -375,6 +363,30 @@ function ObservationsSection({
     );
 }
 
+// Toggle for the dismissed filter. Rendered as a `<Link>` so the URL stays
+// canonical and shareable; `replace` so the back button doesn't accumulate
+// noise from a chip dance.
+function DismissedToggle({ includeDismissed, locale }: { includeDismissed: boolean; locale: Locale }) {
+    return (
+        <Link
+            to="/{-$locale}/workspace/profile"
+            from="/{-$locale}/workspace/profile"
+            search={(prev: ProfileSearch) => ({ ...prev, includeDismissed: includeDismissed ? undefined : true })}
+            replace
+            className={cn(
+                'text-xs px-2.5 py-1.5 rounded-md border transition-colors',
+                includeDismissed
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border',
+            )}
+        >
+            {includeDismissed
+                ? { de: 'Verworfene einblenden', en: 'Showing dismissed' }[locale]
+                : { de: 'Verworfene anzeigen', en: 'Show dismissed' }[locale]}
+        </Link>
+    );
+}
+
 const CATEGORY_LABELS: Record<GqlCProfileObservationCategory, { de: string; en: string }> = {
     factual: { de: 'Faktisch', en: 'Factual' },
     behavioral: { de: 'Verhalten', en: 'Behavioral' },
@@ -387,15 +399,7 @@ const CATEGORY_ACCENT: Record<GqlCProfileObservationCategory, string> = {
     psychological: 'bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-500/30',
 };
 
-function FilterChips({
-    active,
-    onChange,
-    locale,
-}: {
-    active: ObservationFilter;
-    onChange: (f: ObservationFilter) => void;
-    locale: Locale;
-}) {
+function FilterChips({ active, locale }: { active: ObservationFilter; locale: Locale }) {
     const filters: { id: ObservationFilter; label: { de: string; en: string } }[] = [
         { id: 'all', label: { de: 'Alle', en: 'All' } },
         { id: 'factual', label: CATEGORY_LABELS.factual },
@@ -407,10 +411,17 @@ function FilterChips({
             {filters.map((f) => {
                 const isActive = active === f.id;
                 return (
-                    <button
+                    <Link
                         key={f.id}
-                        type="button"
-                        onClick={() => onChange(f.id)}
+                        to="/{-$locale}/workspace/profile"
+                        from="/{-$locale}/workspace/profile"
+                        // "all" → drop the `category` key entirely so the canonical
+                        // URL for the unfiltered view has no `?category=`.
+                        search={(prev: ProfileSearch) => ({
+                            ...prev,
+                            category: f.id === 'all' ? undefined : f.id,
+                        })}
+                        replace
                         className={cn(
                             'text-xs font-medium px-3 py-1.5 rounded-full border transition-colors',
                             isActive
@@ -421,7 +432,7 @@ function FilterChips({
                         )}
                     >
                         {f.label[locale]}
-                    </button>
+                    </Link>
                 );
             })}
         </div>
@@ -521,16 +532,5 @@ function ConfidenceMeter({ confidence, locale }: { confidence: number; locale: L
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
-    );
-}
-
-// --- Error banner -----------------------------------------------------------
-
-function ErrorBanner({ message, locale }: { message: string; locale: Locale }) {
-    return (
-        <div className="mt-6 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            <strong className="font-semibold">{{ de: 'Fehler:', en: 'Error:' }[locale]} </strong>
-            {message}
-        </div>
     );
 }

@@ -23,3 +23,14 @@ export const googleAgentProviderOptions = {
         structuredOutputs: true,
     } satisfies GoogleLanguageModelOptions,
 };
+
+// Today's date in `YYYY-MM-DD`, rendered as the line every chat agent embeds
+// near the top of its system prompt. Without this, Gemini answers
+// "what day is it?" with a year-old training-cutoff date and reasons about
+// deadlines (project timelines, OTP expiry, "due next Friday") as if today
+// were that cutoff. Read at agent-construction time — every user turn builds
+// a fresh `ToolLoopAgent`, so the value tracks the calendar without a
+// long-lived cache.
+export function currentDateForAgent(): string {
+    return `Today's date is ${new Date().toISOString().slice(0, 10)}.`;
+}

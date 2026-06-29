@@ -3,7 +3,8 @@ import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { ArrowDownIcon, MessageSquareTextIcon } from 'lucide-react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { useMutation, useQuery } from 'urql';
+import { useMutation } from 'urql';
+import { z } from 'zod';
 import { toFlatAnswerInput } from '../../../web/chat/chatAssistantInputKinds';
 import { ChatComposer } from '../../../web/chat/ChatComposer';
 import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
@@ -20,6 +21,7 @@ import { Spinner } from '../../../web/components/base/spinner';
 import { ChatMessage } from '../../../web/components/chat-message';
 import type {
     GqlCChatAssistantInputValue,
+    GqlCWorkspaceAssistantChatsQuery,
     GqlCWorkspaceChatListItemFragment,
     GqlCWorkspaceChatPageQuery,
 } from '../../../web/graphql/generated';
@@ -30,6 +32,7 @@ import {
     WorkspaceChatPageDocument,
     WorkspaceChatToolApprovalRespondDocument,
 } from '../../../web/graphql/generated';
+import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -66,8 +69,35 @@ const extractMessageCreateResult = (data: unknown): { chatId: string } | null =>
     return wrapper?.admin?.chatMessageCreate ?? null;
 };
 
+const assistantSearchSchema = z.object({
+    chatId: z.string().optional(),
+});
+
+// Loader payload. Sidebar/empty-state always need the chat list; the loaded
+// view additionally needs the chat detail. We always fetch both so the
+// component code can hand either surface a ready array without a second
+// trip.
+type LoaderData = {
+    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
+    chat: NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['admin']>['chat']> | null;
+};
+
 export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
-    validateSearch: (search: Record<string, unknown>) => ({ chatId: typeof search.chatId === 'string' ? search.chatId : undefined }),
+    validateSearch: assistantSearchSchema,
+    loaderDeps: ({ search }) => ({ chatId: search.chatId }),
+    loader: async ({ deps }): Promise<LoaderData> => {
+        // Two queries can fan out in parallel — the chat list and the
+        // selected chat detail are independent.
+        const chatsPromise = routeLoaderGraphqlClient(WorkspaceAssistantChatsDocument)();
+        const chatPromise = deps.chatId
+            ? routeLoaderGraphqlClient(WorkspaceChatPageDocument, { chatId: deps.chatId })()
+            : Promise.resolve(null);
+        const [chatsResult, chatResult] = await Promise.all([chatsPromise, chatPromise]);
+        return {
+            chats: chatsResult.admin.chats,
+            chat: chatResult?.admin.chat ?? null,
+        };
+    },
     staleTime: 0,
     head: ({ params }) => {
         const locale = localeFromParam(params);
@@ -85,15 +115,16 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
     },
     component() {
         const { chatId } = Route.useSearch();
+        const data = Route.useLoaderData();
         const live = useChatLiveUpdates(chatId);
         const locale = useLocale();
         return (
             <>
                 {live.listener}
-                {chatId ? (
-                    <WorkspaceAssistantPage chatId={chatId} live={live} locale={locale} />
+                {chatId && data.chat ? (
+                    <WorkspaceAssistantPage chat={data.chat} chats={data.chats} live={live} locale={locale} />
                 ) : (
-                    <WorkspaceAssistantEmpty live={live} locale={locale} />
+                    <WorkspaceAssistantEmpty chats={data.chats} live={live} locale={locale} />
                 )}
             </>
         );
@@ -108,12 +139,19 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
 // before the mutation fired so the user message and every subsequent update
 // are already buffered when the navigate completes.
 
-function WorkspaceAssistantEmpty({ live, locale }: { live: ReturnType<typeof useChatLiveUpdates>; locale: Locale }) {
+function WorkspaceAssistantEmpty({
+    chats: allChats,
+    live,
+    locale,
+}: {
+    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
+    live: ReturnType<typeof useChatLiveUpdates>;
+    locale: Locale;
+}) {
     const navigate = useNavigate();
-    const [{ data }] = useQuery({ query: WorkspaceAssistantChatsDocument, requestPolicy: 'cache-and-network' });
-    const chats = (data?.admin.chats ?? []).slice(0, RECENT_CHATS_LIMIT);
+    const chats = allChats.slice(0, RECENT_CHATS_LIMIT);
     return (
-        <main className="mx-auto grid w-full max-w-2xl flex-1 min-h-0 grid-rows-[1fr_auto] gap-4 p-6">
+        <main className="mx-auto grid h-[calc(100dvh-5rem)] w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
             <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pr-2">
                 <div className="grid place-items-center py-8 text-sm text-muted-foreground">
                     {live.isGenerating ? (
@@ -188,16 +226,17 @@ function PreviousChatLink({
 
 // --- Loaded chat -------------------------------------------------------------
 
-function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live: ReturnType<typeof useChatLiveUpdates>; locale: Locale }) {
-    const [{ data, fetching, error }] = useQuery({
-        query: WorkspaceChatPageDocument,
-        variables: { chatId },
-        // Initial transcript only — subsequent updates arrive via the
-        // `chatUpdates` subscription. `cache-and-network` keeps the transcript
-        // fresh across navigations without forcing a refetch on every send.
-        requestPolicy: 'cache-and-network',
-    });
-
+function WorkspaceAssistantPage({
+    chat,
+    chats,
+    live,
+    locale,
+}: {
+    chat: NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['admin']>['chat']>;
+    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
+    live: ReturnType<typeof useChatLiveUpdates>;
+    locale: Locale;
+}) {
     const [, respondToCollection] = useMutation(WorkspaceChatInputCollectionRespondDocument);
     const [, respondToApproval] = useMutation(WorkspaceChatToolApprovalRespondDocument);
 
@@ -229,37 +268,30 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
         [respondToApproval, live],
     );
 
-    const chat = data?.admin.chat;
-
-    if (error) {
-        return (
-            <main className="grid place-items-center p-8 text-sm text-destructive">
-                {{ de: 'Chat konnte nicht geladen werden:', en: 'Failed to load chat:' }[locale]} {error.message}
-            </main>
-        );
-    }
-    if (!chat) {
-        return (
-            <main className="grid place-items-center p-8 text-sm text-muted-foreground">
-                <Spinner />
-            </main>
-        );
-    }
-
+    // Standard chat layout — composer parks against the viewport bottom and
+    // the transcript scrolls in between. The workspace layout wraps the
+    // outlet in `flex min-h-screen flex-col`; `min-h-screen` is a minimum,
+    // so `flex-1` alone wouldn't clamp main to one viewport — once content
+    // grew past the screen, the page would scroll and the composer would
+    // ride along. We give main a definite height (`100dvh` minus the
+    // floating sticky header's flow rail of ~5rem) so its child flex
+    // column has a real bottom anchor: the transcript wrapper takes the
+    // leftover space as `flex-1 min-h-0` and scrolls internally, the
+    // composer parks below. `dvh` tracks the mobile URL-bar collapse so
+    // the composer stays glued to the visible edge.
     return (
-        <main className="mx-auto grid w-full min-w-0 max-w-6xl flex-1 min-h-0 grid-cols-1 gap-6 p-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-6xl flex-col gap-6 p-6 lg:flex-row">
             {/* Desktop sidebar: at-a-glance list of recent chats so the
              *  admin can jump between conversations without bouncing back
              *  through the empty state. Hidden under `lg` — the row is the
              *  primary surface on narrow viewports, and the same list is
              *  one tap away from the sheet. */}
-            <aside className="hidden min-h-0 lg:block">
-                <ChatsSidebar locale={locale} activeChatId={chat.chatId} />
+            <aside className="hidden w-64 shrink-0 min-h-0 lg:block">
+                <ChatsSidebar chats={chats} locale={locale} activeChatId={chat.chatId} />
             </aside>
-            <div className="grid min-h-0 grid-rows-[auto_1fr_auto] gap-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-4">
                 <header className="flex items-baseline justify-between">
                     <h1 className="text-lg font-semibold">{chat.title || { de: 'Neuer Chat', en: 'New chat' }[locale]}</h1>
-                    {fetching ? <Spinner className="size-3 text-muted-foreground" /> : null}
                 </header>
 
                 <ChatTranscript
@@ -290,11 +322,19 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
 // Sidebar list of admin chats shown on the loaded route. The active chat is
 // highlighted so the user always knows where they are in the list; clicking
 // any other row just updates the `chatId` search param and the route's own
-// `useQuery` handles the fetch. The list shares its cap (`RECENT_CHATS_LIMIT`)
-// with the sheet's empty state — both surfaces stay in lockstep.
-function ChatsSidebar({ locale, activeChatId }: { locale: Locale; activeChatId: string }) {
-    const [{ data }] = useQuery({ query: WorkspaceAssistantChatsDocument, requestPolicy: 'cache-and-network' });
-    const chats = (data?.admin.chats ?? []).slice(0, RECENT_CHATS_LIMIT);
+// loader picks the new payload. The list shares its cap
+// (`RECENT_CHATS_LIMIT`) with the sheet's empty state — both surfaces stay
+// in lockstep.
+function ChatsSidebar({
+    chats: allChats,
+    locale,
+    activeChatId,
+}: {
+    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
+    locale: Locale;
+    activeChatId: string;
+}) {
+    const chats = allChats.slice(0, RECENT_CHATS_LIMIT);
     return (
         <div className="flex h-full min-h-0 flex-col gap-2">
             <h2 className="text-xs uppercase tracking-wide text-muted-foreground">{previousChatsLabel[locale]}</h2>
@@ -375,7 +415,7 @@ function ChatTranscript({
     }, []);
 
     return (
-        <div className="relative min-h-0 min-w-0">
+        <div className="relative flex-1 min-h-0 min-w-0">
             <div ref={scrollRef} onScroll={onScroll} className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-2">
                 {groupedMessages.map((group) => (
                     <section key={group.date} className="flex min-w-0 flex-col gap-4">

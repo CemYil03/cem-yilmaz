@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
-import { FileTextIcon, GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation, useQuery } from 'urql';
+import { useMutation } from 'urql';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
 import { Input } from '../../../web/components/base/input';
@@ -25,6 +25,7 @@ import {
     WorkspaceCvSkillReorderDocument,
     WorkspaceCvSkillUpsertDocument,
 } from '../../../web/graphql/generated';
+import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -58,6 +59,8 @@ const rowDeleteLabel = { de: 'Löschen', en: 'Delete' };
 const dragHandleLabel = { de: 'Ziehen zum Sortieren', en: 'Drag to reorder' };
 
 export const Route = createFileRoute('/{-$locale}/workspace/cv')({
+    loader: () => routeLoaderGraphqlClient(WorkspaceCvPageDocument)(),
+    staleTime: 0,
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
@@ -74,15 +77,13 @@ export const Route = createFileRoute('/{-$locale}/workspace/cv')({
 
 function WorkspaceCvEditor() {
     const locale = useLocale();
-    const [{ data, fetching, error }, refetch] = useQuery({ query: WorkspaceCvPageDocument });
+    const data = Route.useLoaderData();
+    const router = useRouter();
+    const onChanged = () => router.invalidate();
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full py-12 leading-relaxed">
-            <div className="flex items-center gap-3 text-primary">
-                <FileTextIcon className="size-6" />
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">{pageTitle[locale]}</h1>
-            </div>
-            <p className="mt-3 text-sm text-muted-foreground">{description[locale]}</p>
+            <p className="text-sm text-muted-foreground">{description[locale]}</p>
             <p className="mt-2 text-xs text-muted-foreground">
                 {
                     {
@@ -92,25 +93,10 @@ function WorkspaceCvEditor() {
                 }
             </p>
 
-            {fetching && !data ? <p className="mt-8 text-sm text-muted-foreground">…</p> : null}
-            {error ? <p className="mt-8 text-sm text-destructive">{error.message}</p> : null}
-
-            {data ? (
-                <>
-                    <ExperienceSection
-                        rows={data.cv.experience}
-                        locale={locale}
-                        onChanged={() => refetch({ requestPolicy: 'network-only' })}
-                    />
-                    <EducationSection
-                        rows={data.cv.education}
-                        locale={locale}
-                        onChanged={() => refetch({ requestPolicy: 'network-only' })}
-                    />
-                    <SkillSection rows={data.cv.skills} locale={locale} onChanged={() => refetch({ requestPolicy: 'network-only' })} />
-                    <HobbySection rows={data.cv.hobbies} locale={locale} onChanged={() => refetch({ requestPolicy: 'network-only' })} />
-                </>
-            ) : null}
+            <ExperienceSection rows={data.cv.experience} locale={locale} onChanged={onChanged} />
+            <EducationSection rows={data.cv.education} locale={locale} onChanged={onChanged} />
+            <SkillSection rows={data.cv.skills} locale={locale} onChanged={onChanged} />
+            <HobbySection rows={data.cv.hobbies} locale={locale} onChanged={onChanged} />
         </main>
     );
 }

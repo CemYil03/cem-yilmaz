@@ -86,6 +86,12 @@ On the loaded route, a sidebar (lg+ only) shows the same recent-chats list with 
 conversations without bouncing through the empty state. The sidebar is hidden under `lg` — the row is the primary surface on narrow
 viewports, and the sheet is one tap away.
 
+The route locks its `<main>` to `h-[calc(100dvh-5rem)]` (the workspace header eats the missing 5rem of flow) so the page is the size of one
+viewport rather than growing with the transcript. The transcript wrapper takes the leftover space as `flex-1 min-h-0` and scrolls
+internally; the composer parks at the bottom — standard chat-surface posture. Without the explicit `dvh` clamp, the workspace shell's
+`min-h-screen` (a minimum, not a fixed height) would let the page grow past the viewport once the transcript filled, and the composer would
+ride that growth instead of staying glued to the bottom edge.
+
 ## Full-screen route handoff
 
 Clicking "Open full-screen" in the sheet:

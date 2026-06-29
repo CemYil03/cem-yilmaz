@@ -288,6 +288,44 @@
     animation: chat-button-pulse 1.2s ease-out 1;
 }
 
+/*
+ * World-reach map — region marker halos breathe and dashed arcs drift along
+ * their stroke length. Both motions are slow (3.4s / 14s) and stay opacity-
+ * or stroke-only, so the map reads as "alive" without anything visibly
+ * moving frame-to-frame. The arcs share a `stroke-dashoffset` loop that lasts
+ * long enough to feel like signal propagation rather than a marquee.
+ */
+@keyframes world-reach-halo {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.18;
+    }
+    50% {
+        transform: scale(1.35);
+        opacity: 0.32;
+    }
+}
+
+.animate-world-reach-halo {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: world-reach-halo 3.4s ease-in-out infinite;
+}
+
+@keyframes world-reach-arc {
+    from {
+        stroke-dashoffset: 0;
+    }
+    to {
+        stroke-dashoffset: -36;
+    }
+}
+
+.animate-world-reach-arc {
+    animation: world-reach-arc 14s linear infinite;
+}
+
 /* Honour the user's OS-level preference. Reduce-motion gets a still page —
    the AmbientBackdrop drift, the dot pulse, and the halo drift all stop.
    The Reveal component handles its own reduce-motion fallback at the
@@ -295,7 +333,9 @@
 @media (prefers-reduced-motion: reduce) {
     .animate-pulse-dot,
     .animate-portrait-halo,
-    .animate-chat-button-pulse {
+    .animate-chat-button-pulse,
+    .animate-world-reach-halo,
+    .animate-world-reach-arc {
         animation: none;
     }
 }

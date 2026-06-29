@@ -175,9 +175,12 @@ the card-wide hover state all still read as "this is clickable."
 
 ### Stub layout
 
-Each focus-area stub has its own `COPY` constant (title, description, body, "coming soon") and a single `<main>` block: icon + h1 → body
-paragraph → muted "Coming soon" line. They are intentionally tiny — the goal of Phase 1 is for the navigation to exist, not for the rooms to
-be furnished. Stubs don't render their own header or back-link; the workspace header above the outlet provides both.
+Each focus-area stub has its own `COPY` constant (title, description, body, "coming soon") and a single `<main>` block: body paragraph →
+muted "Coming soon" line. They are intentionally tiny — the goal of Phase 1 is for the navigation to exist, not for the rooms to be
+furnished. Stubs don't render their own header, back-link, or on-page title row; the workspace header above the outlet provides the
+breadcrumb (with the focus area's icon on the trailing crumb), so a duplicate `icon + h1` inside the page would only repeat what the chrome
+already shows. The breadcrumb-with-icon contract is owned by `Header`'s `Crumb` type and rendered by `WorkspaceHeader` via `WORKSPACE_ICONS`
+— see `src/web/components/WorkspaceHeader.tsx`.
 
 ### Wiring `ChatComposer` to the admin namespace
 
@@ -207,7 +210,8 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
 3. Create a new stub file under `src/routes/{-$locale}/workspace/` mirroring one of the existing stubs (`software.tsx`, etc.). Use the same
    `COPY` shape and `seoMeta({ ..., noindex: true })`. The stub does **not** render its own `<Header />` or back-link — both come from the
    layout.
-4. Add the new path-segment to `WORKSPACE_TITLES` in `src/web/components/WorkspaceHeader.tsx` so the breadcrumb has a label.
+4. Add the new path-segment to `WORKSPACE_TITLES` in `src/web/components/WorkspaceHeader.tsx` so the breadcrumb has a label, and to
+   `WORKSPACE_ICONS` in the same file so the trailing crumb gets the same Lucide icon used on the hub tile.
 5. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap until they are public.
 
 ## Open TODOs
