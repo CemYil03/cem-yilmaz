@@ -170,12 +170,20 @@ function formatHms(totalSec: number): string {
 
 // URL state for this page. `tab` selects the active section; `inboxView`
 // toggles the archive/inbox split on the Inbox tab and is absent (= `inbox`)
-// when at the default. State that survives reload sits here; ephemeral local
-// state (which row is expanded, which form is being edited) stays in
-// `useState`.
+// when at the default. `focus` deep-links to a single row across any tab —
+// the page scrolls it into view and flashes it briefly on land, then drops
+// the param so a refresh doesn't re-flash. Emitted by the personal-assistant
+// chat (`agentPersonalAssistant`'s system prompt formats every mentioned
+// project/task/inbox row as `?focus=<id>`). State that survives reload sits
+// here; ephemeral local state (which row is expanded, which form is being
+// edited) stays in `useState`.
 const projectsSearchSchema = z.object({
     tab: z.enum(TABS).optional(),
     inboxView: z.enum(['archive']).optional(),
+    // Free-form id; an unmatched value is a no-op (no row, no flash). We
+    // don't validate as `uuid()` so a future non-UUID surface (e.g.
+    // `focus=tasks-summary`) doesn't need a schema change.
+    focus: z.string().optional(),
 });
 
 type ProjectsSearch = z.infer<typeof projectsSearchSchema>;
@@ -201,12 +209,50 @@ export const Route = createFileRoute('/{-$locale}/workspace/projects')({
 function WorkspaceProjects() {
     const locale = useLocale();
     const search = Route.useSearch();
+    const navigate = Route.useNavigate();
     const tab: Tab = search.tab ?? 'projects';
     const data = Route.useLoaderData();
     const router = useRouter();
     const onChanged = () => router.invalidate();
 
     const inboxCount = data.admin.projectRequests.filter((r) => r.status === 'emailVerified').length;
+
+    // Deep-link focus: the chat assistant emits links like
+    // `/workspace/projects?tab=projects&focus=<id>`. When `focus` is set we
+    // find the matching `<li data-row-id>` once the active tab has rendered
+    // it, scroll it into view, flash it for ~1500ms, then drop the search
+    // param so a refresh doesn't re-flash. If the id doesn't match anything
+    // on the active tab (wrong tab, or the row was deleted), no-op silently.
+    // See `docs/architecture/agent-delegation.md` ("Deep links").
+    useEffect(() => {
+        const focusId = search.focus;
+        if (!focusId) return;
+        // `requestAnimationFrame` lets the active tab's list render before
+        // we query the DOM — the user might have navigated straight to the
+        // page with `?tab=todos&focus=...` and the Todos list mounts on
+        // commit.
+        let cancelled = false;
+        const frame = requestAnimationFrame(() => {
+            if (cancelled) return;
+            const el = document.querySelector<HTMLElement>(`[data-row-id="${focusId}"]`);
+            if (!el) {
+                // Row missing on this tab — clear the param so we don't keep
+                // re-running this effect when the user later changes tabs.
+                void navigate({ search: (prev) => ({ ...prev, focus: undefined }), replace: true });
+                return;
+            }
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.setAttribute('data-focused', 'true');
+            window.setTimeout(() => {
+                el.removeAttribute('data-focused');
+                void navigate({ search: (prev) => ({ ...prev, focus: undefined }), replace: true });
+            }, 1500);
+        });
+        return () => {
+            cancelled = true;
+            cancelAnimationFrame(frame);
+        };
+    }, [search.focus, tab, navigate]);
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full py-12 leading-relaxed">
@@ -337,7 +383,7 @@ function InboxSection({
             ) : (
                 <ul className="mt-6 flex flex-col gap-3">
                     {visible.map((row) => (
-                        <li key={row.projectRequestId}>
+                        <li key={row.projectRequestId} data-row-id={row.projectRequestId}>
                             <InboxRow row={row} locale={locale} onChanged={onChanged} />
                         </li>
                     ))}
@@ -540,7 +586,7 @@ function ProjectsBoard({
                             {group.rows.length === 0 ? null : (
                                 <ul className="mt-3 flex flex-col gap-3">
                                     {group.rows.map((row) => (
-                                        <li key={row.projectId}>
+                                        <li key={row.projectId} data-row-id={row.projectId}>
                                             {editing && editing !== 'new' && editing.projectId === row.projectId ? (
                                                 <ProjectForm
                                                     row={row}
@@ -1289,7 +1335,7 @@ function TaskItem({ task, locale, onChanged }: { task: TaskRow; locale: Locale; 
     }
 
     return (
-        <li className="group flex items-center gap-2 rounded-md px-1 py-1 hover:bg-background/40">
+        <li data-row-id={task.taskId} className="group flex items-center gap-2 rounded-md px-1 py-1 hover:bg-background/40">
             <button
                 type="button"
                 onClick={onToggle}

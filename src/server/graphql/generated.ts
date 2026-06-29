@@ -412,6 +412,7 @@ export interface GqlSChatMessageToolCall {
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlSChatMessageGeneration>;
+    parentChatMessageId?: Maybe<Scalars['ID']['output']>;
     toolName: Scalars['String']['output'];
 }
 
@@ -1624,6 +1625,7 @@ export type GqlSChatMessageToolCallResolvers<
     chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     generation?: Resolver<Maybe<GqlSResolversTypes['ChatMessageGeneration']>, ParentType, ContextType>;
+    parentChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
     toolName?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

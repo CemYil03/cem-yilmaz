@@ -1,3 +1,4 @@
+import type { ToolLoopAgentOnStepFinishCallback } from 'ai';
 import { ToolLoopAgent, stepCountIs } from 'ai';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
@@ -12,17 +13,22 @@ import { toolTaskUpsert } from './toolTaskUpsert';
 
 // First domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside the
-// `toolDelegateToProjects` tool's `execute`, never sees `chatId`, never
-// writes chat-message rows, and never has `onStepFinish` plumbed in. Its
-// final text and the closure-shared `mutations` array are the only outputs
+// `toolDelegateToProjects` tool's `execute`. As of the "Nested tool calls"
+// change it now receives an `onStepFinish` from the delegate tool — every
+// regular tool call this sub-agent makes is persisted as a
+// `chatMessagesToolCall` row with `parentChatMessageId` set to the delegate
+// row's id, so the transcript renders them indented under the parent card.
+// It still never sees `chatId` directly (the delegate tool owns the closure);
+// its final text (or `{ status: 'needsMoreInfo' | 'noOp' }` JSON sentinel) is
+// returned through the delegate tool's `toolResult` and is the only artifact
 // the orchestrator sees.
 //
 // Deliberately omits `promptUserForInput` — asking the user mid-delegation
 // would require persisting `chatMessagesAssistantInputCollection` rows from
-// a context that has no chat persistence wired. Instead the sub-agent
-// returns a `{ status: 'needsMoreInfo', missingFields: [...] }` JSON
-// sentinel as its final text; the orchestrator parses it and asks the user
-// via its own `promptUserForInput`.
+// a context that has no `generationId` plumbing back into the orchestrator's
+// turn-runner. Instead the sub-agent returns the `needsMoreInfo` JSON
+// sentinel and the orchestrator owns the back-and-forth via its own
+// `promptUserForInput` tool.
 
 export type ProjectsAgentMutationKind = 'projectCreate' | 'projectUpdate' | 'projectDelete' | 'taskCreate' | 'taskUpdate' | 'taskDelete';
 
@@ -45,6 +51,12 @@ export interface ProjectsAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
     mutations: ProjectsAgentMutationLog;
+    // Plumbed through from the delegate tool. Receives every step the
+    // sub-agent takes and writes each tool call as a `chatMessagesToolCall`
+    // row stamped with the delegate row's id as `parentChatMessageId`. The
+    // delegate tool builds this from the shared `chatPersistStep` helper —
+    // see `toolDelegateToProjects.ts`.
+    onStepFinish?: ToolLoopAgentOnStepFinishCallback<any>;
 }
 
 function buildSystemPrompt(snapshot: string): string {
@@ -82,12 +94,13 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantProjects({ session, serverRuntime, mutations }: ProjectsAgentOptions) {
+export async function agentPersonalAssistantProjects({ session, serverRuntime, mutations, onStepFinish }: ProjectsAgentOptions) {
     const snapshot = await projectsSnapshotForAgent(serverRuntime);
     const readContext = { serverRuntime, session };
     const mutationContext = { serverRuntime, session, mutations };
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(),
+        onStepFinish,
         providerOptions: googleAgentProviderOptions,
         // Tight ceiling — the sub-agent should rarely need more than a list +
         // 2-3 mutations + a final text. If it runs out of steps, the delegate

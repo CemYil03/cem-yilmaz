@@ -88,6 +88,7 @@ export async function chatToolApprovalRespond(
             chatId,
             kind: 'toolApprovalResponse',
             authorUserId: null,
+            parentChatMessageId: null,
             createdAt: new Date(),
         };
         const responseVariant: ChatMessageToolApprovalResponseCreate = {

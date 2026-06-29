@@ -415,6 +415,7 @@ export interface GqlCChatMessageToolCall {
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlCChatMessageGeneration>;
+    parentChatMessageId?: Maybe<Scalars['ID']['output']>;
     toolName: Scalars['String']['output'];
 }
 
@@ -952,7 +953,14 @@ export type GqlCWorkspaceVisitorChatQuery = {
                       reason: string | null;
                       createdAt: string;
                   }
-                | { __typename: 'ChatMessageToolCall'; chatMessageId: string; toolName: string; args: unknown; createdAt: string }
+                | {
+                      __typename: 'ChatMessageToolCall';
+                      chatMessageId: string;
+                      toolName: string;
+                      args: unknown;
+                      parentChatMessageId: string | null;
+                      createdAt: string;
+                  }
                 | {
                       __typename: 'ChatMessageUser';
                       chatMessageId: string;
@@ -1073,6 +1081,7 @@ type GqlCWorkspaceChatMessageFields_ChatMessageToolCall_Fragment = {
     chatMessageId: string;
     toolName: string;
     args: unknown;
+    parentChatMessageId: string | null;
     createdAt: string;
 };
 
@@ -1202,7 +1211,14 @@ export type GqlCWorkspaceChatPageQuery = {
                       reason: string | null;
                       createdAt: string;
                   }
-                | { __typename: 'ChatMessageToolCall'; chatMessageId: string; toolName: string; args: unknown; createdAt: string }
+                | {
+                      __typename: 'ChatMessageToolCall';
+                      chatMessageId: string;
+                      toolName: string;
+                      args: unknown;
+                      parentChatMessageId: string | null;
+                      createdAt: string;
+                  }
                 | {
                       __typename: 'ChatMessageUser';
                       chatMessageId: string;
@@ -1739,6 +1755,7 @@ type GqlCChatMessageFields_ChatMessageToolCall_Fragment = {
     chatMessageId: string;
     toolName: string;
     args: unknown;
+    parentChatMessageId: string | null;
     createdAt: string;
 };
 
@@ -1861,7 +1878,14 @@ export type GqlCChatPageQuery = {
                   reason: string | null;
                   createdAt: string;
               }
-            | { __typename: 'ChatMessageToolCall'; chatMessageId: string; toolName: string; args: unknown; createdAt: string }
+            | {
+                  __typename: 'ChatMessageToolCall';
+                  chatMessageId: string;
+                  toolName: string;
+                  args: unknown;
+                  parentChatMessageId: string | null;
+                  createdAt: string;
+              }
             | {
                   __typename: 'ChatMessageUser';
                   chatMessageId: string;
@@ -2002,7 +2026,14 @@ export type GqlCChatUpdatesSubscription = {
                         reason: string | null;
                         createdAt: string;
                     }
-                  | { __typename: 'ChatMessageToolCall'; chatMessageId: string; toolName: string; args: unknown; createdAt: string }
+                  | {
+                        __typename: 'ChatMessageToolCall';
+                        chatMessageId: string;
+                        toolName: string;
+                        args: unknown;
+                        parentChatMessageId: string | null;
+                        createdAt: string;
+                    }
                   | {
                         __typename: 'ChatMessageUser';
                         chatMessageId: string;
@@ -2168,6 +2199,7 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                             ],
                         },
@@ -2669,6 +2701,7 @@ export const ChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                             ],
                         },
@@ -3411,6 +3444,7 @@ export const WorkspaceVisitorChatDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                             ],
                         },
@@ -3975,6 +4009,7 @@ export const WorkspaceChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                             ],
                         },
@@ -6996,6 +7031,7 @@ export const ChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                             ],
                         },
@@ -7771,6 +7807,7 @@ export const ChatUpdatesDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                             ],
                         },

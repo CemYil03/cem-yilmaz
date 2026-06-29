@@ -16,6 +16,7 @@ function assistantTextRow(overrides: Partial<NonNullable<ChatMessageRowJoined['a
             chatId: 'c',
             kind: 'assistantText',
             authorUserId: null,
+            parentChatMessageId: null,
             createdAt: new Date('2026-06-01T00:00:00Z'),
         },
         assistantText: {

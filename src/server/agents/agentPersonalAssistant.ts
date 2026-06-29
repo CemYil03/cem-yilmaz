@@ -44,6 +44,18 @@ const BASE_SYSTEM_PROMPT = [
     '- Reply in the language Cem wrote in (German or English).',
     '- Be concise and direct. Skip pleasantries and corporate filler.',
     '- Push back when an instruction looks wrong; ask for clarification when ambiguous.',
+    '',
+    'Deep-link templates — whenever you mention a row Cem might want to open right now, format it as a markdown',
+    'link to its deep-link URL. The chat renderer turns these into clickable anchors. Use the ids surfaced in',
+    "`delegateToProjects`'s `mutations` array (each entry has `id` and `title`), or ids the sub-agent named in its",
+    '`summary`. Never invent an id; if you do not have one, just name the thing in plain text.',
+    '- Project              → `[<title>](/workspace/projects?tab=projects&focus=<projectId>)`',
+    '- Inbox row            → `[<title>](/workspace/projects?tab=inbox&focus=<projectRequestId>)`',
+    '- Standalone task      → `[<title>](/workspace/projects?tab=todos&focus=<taskId>)`',
+    '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
+    'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
+    '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',
+    '- Bad:  "Created Acme rebuild." (no link — the user has to hunt for the card)',
 ].join('\n');
 
 function buildSystemPrompt(profileSummary: string): string {
@@ -61,9 +73,11 @@ function buildSystemPrompt(profileSummary: string): string {
 }
 
 export async function agentPersonalAssistant({
-    assistantOptions: _assistantOptions,
+    assistantOptions,
     session,
     serverRuntime,
+    chatId,
+    preWrittenToolCallIds,
     onStepFinish,
 }: AgentChatOptions) {
     const profileSummary = await profileSummaryGet(serverRuntime);
@@ -81,7 +95,17 @@ export async function agentPersonalAssistant({
         instructions: buildSystemPrompt(profileSummary),
         tools: {
             promptUserForInput: toolPromptUserForInput(),
-            delegateToProjects: toolDelegateToProjects({ serverRuntime, session }),
+            // Delegate tool persists sub-agent tool calls under its own
+            // pre-written row via the `chatId` + `preWrittenToolCallIds` it
+            // receives here. See
+            // `docs/architecture/agent-delegation.md` ("Nested tool calls").
+            delegateToProjects: toolDelegateToProjects({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
         },
     });
 }

@@ -173,6 +173,17 @@ Tool **results** stay private. The schema therefore has no `ChatMessageToolResul
 follow-up `ChatMessageAssistantText` or input collection. Adding a result variant would leak structured payloads to the client and duplicate
 work the LLM already does.
 
+### Nested tool calls
+
+`ChatMessageToolCall` carries an optional `parentChatMessageId: ID`. When a tool's `execute` runs a sub-agent in-process (today only
+`delegateToProjects` does this), every tool call the sub-agent makes is persisted with `parentChatMessageId` set to the parent tool-call
+row's id. The transcript groups these via `partitionByParent` (`src/web/chat/chatTranscript.ts`): child rows are filtered out of the
+top-level day-grouped list and rendered as an indented block inside the parent's `<ChatMessageToolCall>` view. LLM replay
+(`toModelMessages`) ignores the column — each row is still a valid AI-SDK `tool-call` / `tool-result` pair on its own.
+
+The pattern, the FK ordering trick (`preWrittenToolCallIds`), and the shared `chatPersistStep` helper that powers both the orchestrator's
+and the sub-agent's `onStepFinish` are documented in [`agent-delegation.md`](./agent-delegation.md#nested-tool-calls).
+
 ### Human-in-the-loop approval is a request/response pair, executed by the SDK
 
 Some tools are safe to run autonomously (read-only lookups, idempotent calculations). Others have real-world side effects — DB writes,

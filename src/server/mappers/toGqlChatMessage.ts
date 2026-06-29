@@ -112,6 +112,10 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
                 // `toolArgs` is JSONB (unknown shape per tool); the GraphQL
                 // `JSON` scalar passes it through verbatim.
                 args: variant.toolArgs,
+                // Children of a sub-agent delegation point at the delegate
+                // row; top-level orchestrator tool calls are null. See
+                // `docs/architecture/agent-delegation.md` ("Nested tool calls").
+                parentChatMessageId: spine.parentChatMessageId,
                 generation: toGqlChatMessageGeneration(variant),
                 createdAt: spine.createdAt,
             };

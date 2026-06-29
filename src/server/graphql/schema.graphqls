@@ -82,6 +82,14 @@ type ChatMessageToolCall {
     # render them in an inspect dialog. The shape is only validated at the
     # tool boundary by Zod.
     args: JSON!
+    # When a sub-agent runs inside a parent tool's `execute` (today:
+    # `delegateToProjects` running `agentPersonalAssistantProjects`), each
+    # child tool call is persisted with `parentChatMessageId` set to the
+    # parent delegate row's id. The transcript filters child rows out of the
+    # top-level list and renders them indented under the parent's card. Null
+    # for top-level tool calls. See `docs/architecture/agent-delegation.md`
+    # ("Nested tool calls").
+    parentChatMessageId: ID
     generation: ChatMessageGeneration
     createdAt: DateTime!
 }

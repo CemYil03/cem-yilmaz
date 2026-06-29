@@ -85,6 +85,182 @@ function stepGenerationMeta(step: { usage: LanguageModelUsage; model: { modelId:
     };
 }
 
+// Step shape `onStepFinish` receives. We only consume three structurally-
+// uniform bits (`content`, `toolCalls`, `toolResults`) plus `usage` and
+// `model`; the SDK's true type carries a heterogeneous tool-set generic that
+// would force every caller to thread it through. Wide structural typing here
+// matches the `any` already carried by `AgentChatOptions.onStepFinish` and
+// keeps the call sites simple.
+export type OnStepFinishStep = {
+    content: ReadonlyArray<any>;
+    toolCalls: ReadonlyArray<{ toolCallId: string; toolName: string; input: unknown }>;
+    toolResults: ReadonlyArray<{ toolCallId: string; output: unknown }>;
+    usage: LanguageModelUsage;
+    model: { modelId: string };
+};
+
+export interface OnStepFinishContext {
+    chatId: string;
+    generationId: string | null | undefined;
+    requestingSession: GqlSSession;
+    serverRuntime: ServerRuntime;
+    // When the sub-agent of a delegating tool runs, every tool call it makes
+    // is persisted with `parentChatMessageId` pointing at the delegate row.
+    // Null at the orchestrator level — top-level tool calls have no parent.
+    parentChatMessageId: string | null;
+    // Tool-call ids the caller has pre-written rows for (today: the delegate
+    // tool's own `chatMessagesToolCall` row). The orchestrator's
+    // `onStepFinish` must skip them so we don't insert a second row for the
+    // same call. The set may be empty.
+    preWrittenToolCallIds: ReadonlySet<string>;
+    // Mutated by the helper: flips to `true` if the step ended on a
+    // `promptUserForInput` call. The runner uses this flag after the stream
+    // ends to suppress the trailing assistant-text row that would otherwise
+    // push the input-collection out of the transcript tail. Only the
+    // orchestrator passes a slot for this; sub-agents don't include the tool.
+    endedOnPromptForInput?: { value: boolean };
+    // Mutated by the helper: caches the most recent step's generation
+    // snapshot so the runner can stamp it onto the post-stream
+    // `chatMessagesAssistantText` row outside of `onStepFinish`.
+    lastStepGeneration?: { value: StepGenerationMeta | null };
+}
+
+/**
+ * Persist every persistable artifact of one `onStepFinish` step:
+ *
+ * 1. `tool-approval-request` content parts → `chatMessagesToolApprovalRequest`
+ *    rows (suspended calls; matching tool-call rows are written later by
+ *    `chatToolApprovalRespond`).
+ * 2. `promptUserForInput` tool calls → `chatMessagesAssistantInputCollection`
+ *    rows (the runner stops the loop after these — see the `hasToolCall`
+ *    stop condition on each agent).
+ * 3. Other tool calls → `chatMessagesToolCall` rows, stamped with
+ *    `parentChatMessageId` from the context.
+ *
+ * Used by the orchestrator's outer `onStepFinish` (context: top-level,
+ * `parentChatMessageId: null`) AND by sub-agents running inside a delegating
+ * tool's `execute` (context: parent-pointer set to the delegate row id, and
+ * `preWrittenToolCallIds` containing the delegate tool's own call id so the
+ * orchestrator's later step doesn't double-insert). See
+ * `docs/architecture/agent-delegation.md` ("Nested tool calls").
+ */
+export async function chatPersistStep(step: OnStepFinishStep, context: OnStepFinishContext): Promise<void> {
+    const { chatId, generationId, requestingSession, serverRuntime, parentChatMessageId, preWrittenToolCallIds } = context;
+    const generation = stepGenerationMeta(step);
+    if (context.lastStepGeneration) context.lastStepGeneration.value = generation;
+    const { db } = serverRuntime;
+
+    // Phase A — approval requests. When a tool is gated by `needsApproval`,
+    // the AI SDK emits a `tool-approval-request` content part instead of
+    // executing. Persist a `chatMessagesToolApprovalRequest` row so the UI
+    // can render the Approve/Decline card; record the suspended call's
+    // `toolCallId` so `chatToolApprovalRespond` can later write a
+    // `chatMessagesToolCall` row whose id matches what the agent originally
+    // produced.
+    const approvalRequestedToolCallIds = new Set<string>();
+    for (const part of step.content) {
+        if (part.type !== 'tool-approval-request') continue;
+        const approvalPart = part as unknown as {
+            approvalId: string;
+            toolCall: { toolCallId: string; toolName: string; input: unknown };
+        };
+        const { approvalId, toolCall } = approvalPart;
+        approvalRequestedToolCallIds.add(toolCall.toolCallId);
+        const requestSpine: ChatMessageRowCreate = {
+            chatMessageId: crypto.randomUUID(),
+            chatId,
+            kind: 'toolApprovalRequest',
+            authorUserId: null,
+            parentChatMessageId,
+            createdAt: new Date(),
+        };
+        const requestVariant: ChatMessageToolApprovalRequestCreate = {
+            chatMessageId: requestSpine.chatMessageId,
+            approvalId,
+            toolCallId: toolCall.toolCallId,
+            toolName: toolCall.toolName,
+            toolArgs: toolCall.input as JSONValue,
+            ...generation,
+        };
+        await chatMessageAppend(db, serverRuntime, generationId, requestSpine, async (transaction) => {
+            await transaction.insert(chatMessagesToolApprovalRequest).values(requestVariant);
+        });
+    }
+
+    // Phase B — regular tool-call persistence. Skip:
+    // - calls with a pending approval request (no result yet; the respond
+    //   command will write the row when the human decides);
+    // - calls whose ids the caller already persisted (today: the delegate
+    //   tool, which pre-writes its own row so child rows can FK to it).
+    for (const call of step.toolCalls) {
+        if (approvalRequestedToolCallIds.has(call.toolCallId)) continue;
+        if (preWrittenToolCallIds.has(call.toolCallId)) continue;
+        if (call.toolName === PROMPT_USER_FOR_INPUT_TOOL_NAME) {
+            if (context.endedOnPromptForInput) context.endedOnPromptForInput.value = true;
+            // Validate the LLM-supplied args before persisting. Even
+            // with `structuredOutputs: true`, providers can ship
+            // malformed args (renamed fields, missing discriminator,
+            // ...). A bad call here would produce a row whose `inputs`
+            // JSONB returns `undefined` slots from `toGqlChatMessage`,
+            // tripping the non-nullable
+            // `ChatMessageAssistantInputCollection.inputs` resolver —
+            // fail loud instead.
+            const parsed = chatAssistantInputCollectionInputSchema.safeParse(call.input);
+            if (!parsed.success) {
+                serverRuntime.log.error(
+                    new Error(`promptUserForInput call rejected: ${parsed.error.message}; raw=${JSON.stringify(call.input)}`),
+                    requestingSession,
+                );
+                continue;
+            }
+            const collectionSpine: ChatMessageRowCreate = {
+                chatMessageId: crypto.randomUUID(),
+                chatId,
+                kind: 'assistantInputCollection',
+                authorUserId: null,
+                parentChatMessageId,
+                createdAt: new Date(),
+            };
+            // Slots are persisted with a fresh `inputId` per slot so the
+            // eventual `ChatMessageUserInput` answers can key back even
+            // if the LLM reorders.
+            const collectionVariant: ChatMessageAssistantInputCollectionCreate = {
+                chatMessageId: collectionSpine.chatMessageId,
+                prompt: parsed.data.prompt,
+                inputs: parsed.data.inputs.map(chatAssistantInputSlotPromote),
+                mode: parsed.data.mode,
+                ...generation,
+            };
+            await chatMessageAppend(db, serverRuntime, generationId, collectionSpine, async (transaction) => {
+                await transaction.insert(chatMessagesAssistantInputCollection).values(collectionVariant);
+            });
+            continue;
+        }
+
+        const toolCallSpine: ChatMessageRowCreate = {
+            chatMessageId: crypto.randomUUID(),
+            chatId,
+            kind: 'toolCall',
+            authorUserId: null,
+            parentChatMessageId,
+            createdAt: new Date(),
+        };
+        const matchingResult = step.toolResults.find((r) => r.toolCallId === call.toolCallId);
+        const toolCallVariant: ChatMessageToolCallCreate = {
+            chatMessageId: toolCallSpine.chatMessageId,
+            toolCallId: call.toolCallId,
+            toolName: call.toolName,
+            toolArgs: call.input as JSONValue,
+            toolResult: matchingResult ? (matchingResult.output as JSONValue) : null,
+            resultedAt: matchingResult ? new Date() : null,
+            ...generation,
+        };
+        await chatMessageAppend(db, serverRuntime, generationId, toolCallSpine, async (transaction) => {
+            await transaction.insert(chatMessagesToolCall).values(toolCallVariant);
+        });
+    }
+}
+
 interface ChatAssistantTurnRunOptions {
     chatId: string;
     coreMessages: ModelMessage[];
@@ -221,116 +397,39 @@ async function runAgentTurn({
     // interactive). The streaming preview still surfaces the preamble during
     // the turn; `TurnEnded` clears it client-side.
     const endedOnPromptForInput = { value: false };
+    // Mutable set of `toolCallId`s the orchestrator's `onStepFinish` must skip
+    // because some tool's `execute` already persisted its own
+    // `chatMessagesToolCall` row up front. Today only `toolDelegateToProjects`
+    // does this — it pre-writes the row so the sub-agent's child rows have an
+    // existing parent to FK against, then mutates this set before returning
+    // from `execute`. The orchestrator's later step (which surfaces the
+    // delegate call) reads from here. See
+    // `docs/architecture/agent-delegation.md` ("Nested tool calls").
+    const preWrittenToolCallIds = new Set<string>();
     const agent = await agentFactory({
         session: requestingSession,
         serverRuntime,
         assistantOptions,
         chatId,
-        onStepFinish: async (step) => {
-            const generation = stepGenerationMeta(step);
-            lastStepGeneration.value = generation;
-            // Phase A — approval requests. When a tool is gated by
-            // `needsApproval`, the AI SDK emits a `tool-approval-request`
-            // content part instead of executing. Persist a
-            // `chatMessagesToolApprovalRequest` row so the UI can render the
-            // Approve/Decline card; record the suspended call's `toolCallId`
-            // so `chatToolApprovalRespond` can later write a
-            // `chatMessagesToolCall` row whose id matches what the agent
-            // originally produced.
-            const approvalRequestedToolCallIds = new Set<string>();
-            for (const part of step.content) {
-                if (part.type !== 'tool-approval-request') continue;
-                const { approvalId, toolCall } = part;
-                approvalRequestedToolCallIds.add(toolCall.toolCallId);
-                const requestSpine: ChatMessageRowCreate = {
-                    chatMessageId: crypto.randomUUID(),
-                    chatId,
-                    kind: 'toolApprovalRequest',
-                    authorUserId: null,
-                    createdAt: new Date(),
-                };
-                const requestVariant: ChatMessageToolApprovalRequestCreate = {
-                    chatMessageId: requestSpine.chatMessageId,
-                    approvalId,
-                    toolCallId: toolCall.toolCallId,
-                    toolName: toolCall.toolName,
-                    toolArgs: toolCall.input as JSONValue,
-                    ...generation,
-                };
-                await chatMessageAppend(db, serverRuntime, generationId, requestSpine, async (transaction) => {
-                    await transaction.insert(chatMessagesToolApprovalRequest).values(requestVariant);
-                });
-            }
-
-            // Phase B — regular tool-call persistence. Skip any call that has
-            // a pending approval request: it has no result yet, and writing a
-            // `chatMessagesToolCall` row for it would be replayed as a stuck
-            // tool-call by `toModelMessages`. The respond command writes the
-            // tool-call row when the human decides.
-            for (const call of step.toolCalls) {
-                if (approvalRequestedToolCallIds.has(call.toolCallId)) continue;
-                if (call.toolName === PROMPT_USER_FOR_INPUT_TOOL_NAME) {
-                    endedOnPromptForInput.value = true;
-                    // Validate the LLM-supplied args before persisting. Even
-                    // with `structuredOutputs: true`, providers can ship
-                    // malformed args (renamed fields, missing discriminator,
-                    // ...). A bad call here would produce a row whose `inputs`
-                    // JSONB returns `undefined` slots from `toGqlChatMessage`,
-                    // tripping the non-nullable
-                    // `ChatMessageAssistantInputCollection.inputs` resolver —
-                    // fail loud instead.
-                    const parsed = chatAssistantInputCollectionInputSchema.safeParse(call.input);
-                    if (!parsed.success) {
-                        serverRuntime.log.error(
-                            new Error(`promptUserForInput call rejected: ${parsed.error.message}; raw=${JSON.stringify(call.input)}`),
-                            requestingSession,
-                        );
-                        continue;
-                    }
-                    const collectionSpine: ChatMessageRowCreate = {
-                        chatMessageId: crypto.randomUUID(),
-                        chatId,
-                        kind: 'assistantInputCollection',
-                        authorUserId: null,
-                        createdAt: new Date(),
-                    };
-                    // Slots are persisted with a fresh `inputId` per slot so
-                    // the eventual `ChatMessageUserInput` answers can key back
-                    // even if the LLM reorders.
-                    const collectionVariant: ChatMessageAssistantInputCollectionCreate = {
-                        chatMessageId: collectionSpine.chatMessageId,
-                        prompt: parsed.data.prompt,
-                        inputs: parsed.data.inputs.map(chatAssistantInputSlotPromote),
-                        mode: parsed.data.mode,
-                        ...generation,
-                    };
-                    await chatMessageAppend(db, serverRuntime, generationId, collectionSpine, async (transaction) => {
-                        await transaction.insert(chatMessagesAssistantInputCollection).values(collectionVariant);
-                    });
-                    continue;
-                }
-
-                const toolCallSpine: ChatMessageRowCreate = {
-                    chatMessageId: crypto.randomUUID(),
-                    chatId,
-                    kind: 'toolCall',
-                    authorUserId: null,
-                    createdAt: new Date(),
-                };
-                const matchingResult = step.toolResults.find((r) => r.toolCallId === call.toolCallId);
-                const toolCallVariant: ChatMessageToolCallCreate = {
-                    chatMessageId: toolCallSpine.chatMessageId,
-                    toolCallId: call.toolCallId,
-                    toolName: call.toolName,
-                    toolArgs: call.input,
-                    toolResult: matchingResult ? matchingResult.output : null,
-                    resultedAt: matchingResult ? new Date() : null,
-                    ...generation,
-                };
-                await chatMessageAppend(db, serverRuntime, generationId, toolCallSpine, async (transaction) => {
-                    await transaction.insert(chatMessagesToolCall).values(toolCallVariant);
-                });
-            }
+        preWrittenToolCallIds,
+        // The orchestrator-level `onStepFinish`. All tool-call/approval/input-
+        // collection persistence is the shared `chatPersistStep` helper, which
+        // also serves sub-agents running inside a delegating tool's `execute`.
+        // At this level there is no parent row (top-level tool calls aren't
+        // nested) and no pre-written ids unless a delegating tool's `execute`
+        // pushed onto `preWrittenToolCallIds` before returning — see
+        // `toolDelegateToProjects` for the one tool that does this today.
+        onStepFinish: async (step: OnStepFinishStep) => {
+            await chatPersistStep(step, {
+                chatId,
+                generationId,
+                requestingSession,
+                serverRuntime,
+                parentChatMessageId: null,
+                preWrittenToolCallIds,
+                endedOnPromptForInput,
+                lastStepGeneration,
+            });
         },
     });
 
@@ -370,6 +469,7 @@ async function runAgentTurn({
             chatId,
             kind: 'assistantText',
             authorUserId: null,
+            parentChatMessageId: null,
             createdAt: new Date(),
         };
         // `onStepFinish` for the final step has already run by the time we

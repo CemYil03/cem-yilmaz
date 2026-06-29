@@ -17,6 +17,7 @@ function userRow(
             chatId: 'c',
             kind: 'user',
             authorUserId: 'u',
+            parentChatMessageId: null,
             createdAt: new Date('2026-06-01T00:00:00Z'),
         },
         user: { chatMessageId, body },

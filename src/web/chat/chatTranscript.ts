@@ -93,3 +93,36 @@ export function findPendingApprovalIds(messages: ReadonlyArray<TranscriptMessage
     }
     return pending;
 }
+
+/** Group child tool-call rows by their `parentChatMessageId`. The transcript
+ *  uses this to (a) filter children out of the top-level message list and (b)
+ *  hand each parent's children to its `<ChatMessageToolCall>` render for
+ *  indented display. See `docs/architecture/agent-delegation.md`
+ *  ("Nested tool calls").
+ *
+ *  Only `ChatMessageToolCall` carries the column today; other variants are
+ *  always rendered at the top level. Children are sorted by `createdAt` —
+ *  same monotonic order the merge guarantees on the parent list — so live
+ *  updates appear under their parent in the order the sub-agent emitted
+ *  them. */
+export function partitionByParent(messages: ReadonlyArray<TranscriptMessage>): {
+    topLevel: ReadonlyArray<TranscriptMessage>;
+    childrenByParentId: ReadonlyMap<string, ReadonlyArray<TranscriptMessage>>;
+} {
+    const childrenByParentId = new Map<string, TranscriptMessage[]>();
+    const topLevel: TranscriptMessage[] = [];
+    for (const message of messages) {
+        const parentId = message.__typename === 'ChatMessageToolCall' ? message.parentChatMessageId : null;
+        if (parentId) {
+            const bucket = childrenByParentId.get(parentId);
+            if (bucket) bucket.push(message);
+            else childrenByParentId.set(parentId, [message]);
+        } else {
+            topLevel.push(message);
+        }
+    }
+    for (const bucket of childrenByParentId.values()) {
+        bucket.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    }
+    return { topLevel, childrenByParentId };
+}

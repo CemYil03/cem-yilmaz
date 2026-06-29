@@ -49,6 +49,7 @@ fragment ChatMessageFields on ChatMessage {
         chatMessageId
         toolName
         args
+        parentChatMessageId
         createdAt
     }
     ... on ChatMessageToolApprovalRequest {

@@ -132,6 +132,20 @@ All mutations go through the `admin.*` namespace so the server dispatches to `ag
 `requireToolCallApprovals` defaults to `false` on the sheet's composer (auto-mode). The dedicated `/workspace/assistant` route exposes the
 auto/manual selector via the shared `<ChatComposer />`; the sheet keeps the surface minimal.
 
+## Transcript affordances tied to the agent-delegation pattern
+
+Two surface-level conveniences flow from [`architecture/agent-delegation.md`](../architecture/agent-delegation.md):
+
+- **Deep links to workspace rows.** Whenever the assistant mentions a project, inbox row, task, or visitor chat, the orchestrator
+  (`agentPersonalAssistant`) is prompted to format it as a markdown link with a `?focus=<id>` search param. The destination page scrolls the
+  matching row into view and flashes it for ~1500ms before dropping the param. The links appear in the assistant-text bubbles in this sheet
+  just like any other markdown — `<AssistantMarkdown>` renders them through Streamdown. See
+  [Deep links](../architecture/agent-delegation.md#deep-links).
+- **Nested tool-call rows.** When the orchestrator delegates project work to its sub-agent, the resulting `delegateToProjects` tool-call row
+  in the transcript shows the sub-agent's own tool calls (`projectsList`, `projectUpsert`, `taskUpsert`, …) indented under it. The user
+  reads "Created project X" plus the actual sequence of DB writes that produced it. See
+  [Nested tool calls](../architecture/agent-delegation.md#nested-tool-calls).
+
 ## Anti-patterns avoided
 
 - **No second `useChatLiveUpdates` in the sheet.** The listener lives once in the provider, not in the sheet, so the SSE stream is immune to

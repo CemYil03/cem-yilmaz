@@ -95,6 +95,7 @@ export async function chatMessageCreate(
             chatId,
             kind: 'user',
             authorUserId: userId,
+            parentChatMessageId: null,
             createdAt: now,
         };
 
@@ -187,6 +188,7 @@ export async function chatMessageCreate(
                 chatId,
                 kind: 'userInput',
                 authorUserId: userId,
+                parentChatMessageId: null,
                 createdAt: skipCreatedAt,
             };
             const skipVariant: ChatMessageUserInput = {

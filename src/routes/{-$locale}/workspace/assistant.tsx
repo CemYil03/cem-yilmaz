@@ -14,6 +14,7 @@ import {
     findUserInputByCollectionId,
     groupMessagesByDate,
     mergeTranscriptMessages,
+    partitionByParent,
 } from '../../../web/chat/chatTranscript';
 import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
@@ -381,7 +382,10 @@ function ChatTranscript({
     const latestCollectionId = findLatestCollectionId(allMessages);
     const pendingApprovalIds = findPendingApprovalIds(allMessages);
     const userInputByCollection = findUserInputByCollectionId(allMessages);
-    const groupedMessages = groupMessagesByDate(allMessages);
+    // Sub-agent tool-call children render under their parent's card — see
+    // `docs/architecture/agent-delegation.md` ("Nested tool calls").
+    const { topLevel, childrenByParentId } = partitionByParent(allMessages);
+    const groupedMessages = groupMessagesByDate(topLevel);
 
     const streamingEntries = Object.entries(streamingTexts);
 
@@ -429,6 +433,8 @@ function ChatTranscript({
                                 message.__typename === 'ChatMessageAssistantInputCollection'
                                     ? userInputByCollection.get(message.chatMessageId)
                                     : undefined;
+                            const children =
+                                message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
                             return (
                                 <ChatMessage
                                     key={message.chatMessageId}
@@ -440,6 +446,7 @@ function ChatTranscript({
                                     collectionUserInput={collectionUserInput}
                                     onCollectionSubmit={onCollectionSubmit}
                                     onApprovalRespond={approvalRespondHandler}
+                                    children={children}
                                 />
                             );
                         })}

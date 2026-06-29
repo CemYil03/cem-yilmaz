@@ -28,15 +28,17 @@ This doc adopts the UI shape as the source of truth and confines AI SDK types to
 
 ### UI-shaped source of truth: base table + per-variant tables
 
-A spine table `ChatMessages` holds shared columns (id, chat membership, kind discriminator, author, createdAt). Each variant gets its own
-table keyed by the same `chatMessageId`, carrying only its variant-specific columns.
+A spine table `ChatMessages` holds shared columns (id, chat membership, kind discriminator, author, optional parent pointer, createdAt).
+Each variant gets its own table keyed by the same `chatMessageId`, carrying only its variant-specific columns.
 
 ```text
 chats
   chatId, title, lastModifiedAt, createdAt
 
 chatMessages                                          -- spine
-  chatMessageId PK, chatId FK, kind, authorUserId?, createdAt
+  chatMessageId PK, chatId FK, kind, authorUserId?,
+  parentChatMessageId? FK → self (ON DELETE CASCADE),
+  createdAt
 
 chatMessagesUser                                      -- 1:1 with spine row
   chatMessageId PK FK, body
@@ -54,6 +56,10 @@ chatMessagesAssistantInputCollection
 chatMessagesUserInput
   chatMessageId PK FK, collectionMessageId FK → collection, answers jsonb
 ```
+
+`parentChatMessageId` is the self-FK on the spine that powers nested tool calls — sub-agents running inside a delegating tool's `execute`
+persist each call with this column set to the parent delegate row's id. See
+[`agent-delegation.md`](./agent-delegation.md#nested-tool-calls). Added in `drizzle/0006_funny_slyde.sql`.
 
 Why not a single wide `ChatMessages` table with a `kind` discriminator and many nullable columns:
 

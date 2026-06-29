@@ -21,6 +21,7 @@ import {
     findPendingApprovalIds,
     findUserInputByCollectionId,
     groupMessagesByDate,
+    partitionByParent,
     mergeTranscriptMessages,
 } from './chatTranscript';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
@@ -425,7 +426,11 @@ function ChatTranscript({
     const latestCollectionId = findLatestCollectionId(messages);
     const pendingApprovalIds = findPendingApprovalIds(messages);
     const userInputByCollection = findUserInputByCollectionId(messages);
-    const groupedMessages = groupMessagesByDate(messages);
+    // Children rendered under their parent's `<ChatMessageToolCall>` — filter
+    // them out of the day-grouped top level. See
+    // `docs/architecture/agent-delegation.md` ("Nested tool calls").
+    const { topLevel, childrenByParentId } = partitionByParent(messages);
+    const groupedMessages = groupMessagesByDate(topLevel);
     const streamingEntries = Object.entries(streamingTexts);
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -472,6 +477,8 @@ function ChatTranscript({
                                 message.__typename === 'ChatMessageAssistantInputCollection'
                                     ? userInputByCollection.get(message.chatMessageId)
                                     : undefined;
+                            const children =
+                                message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
                             return (
                                 <ChatMessage
                                     key={message.chatMessageId}
@@ -483,6 +490,7 @@ function ChatTranscript({
                                     collectionUserInput={collectionUserInput}
                                     onCollectionSubmit={onCollectionSubmit}
                                     onApprovalRespond={approvalRespondHandler}
+                                    children={children}
                                 />
                             );
                         })}

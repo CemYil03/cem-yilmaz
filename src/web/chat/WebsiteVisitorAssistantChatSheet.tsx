@@ -32,6 +32,7 @@ import {
     findPendingApprovalIds,
     findUserInputByCollectionId,
     groupMessagesByDate,
+    partitionByParent,
     mergeTranscriptMessages,
 } from './chatTranscript';
 import { useChatLiveUpdates } from './useChatLiveUpdates';
@@ -528,7 +529,12 @@ function ChatTranscript({
     const latestCollectionId = findLatestCollectionId(allMessages);
     const pendingApprovalIds = findPendingApprovalIds(allMessages);
     const userInputByCollection = findUserInputByCollectionId(allMessages);
-    const groupedMessages = groupMessagesByDate(allMessages);
+    // Visitor agent doesn't delegate today, so `childrenByParentId` is always
+    // empty here; threading it through keeps the render parity with the
+    // workspace transcript so a future delegation pattern lands without UI
+    // changes.
+    const { topLevel, childrenByParentId } = partitionByParent(allMessages);
+    const groupedMessages = groupMessagesByDate(topLevel);
 
     const streamingEntries = Object.entries(streamingTexts);
 
@@ -586,6 +592,8 @@ function ChatTranscript({
                                 message.__typename === 'ChatMessageAssistantInputCollection'
                                     ? userInputByCollection.get(message.chatMessageId)
                                     : undefined;
+                            const children =
+                                message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
                             return (
                                 <ChatMessage
                                     key={message.chatMessageId}
@@ -597,6 +605,7 @@ function ChatTranscript({
                                     collectionUserInput={collectionUserInput}
                                     onCollectionSubmit={onCollectionSubmit}
                                     onApprovalRespond={approvalRespondHandler}
+                                    children={children}
                                 />
                             );
                         })}

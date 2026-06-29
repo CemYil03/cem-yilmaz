@@ -1,0 +1,3 @@
+ALTER TABLE "ChatMessages" ADD COLUMN "parentChatMessageId" uuid;--> statement-breakpoint
+ALTER TABLE "ChatMessages" ADD CONSTRAINT "ChatMessages_parentChatMessageId_ChatMessages_chatMessageId_fk" FOREIGN KEY ("parentChatMessageId") REFERENCES "public"."ChatMessages"("chatMessageId") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+CREATE INDEX "ChatMessages_parentChatMessageId_createdAt_idx" ON "ChatMessages" USING btree ("parentChatMessageId","createdAt");

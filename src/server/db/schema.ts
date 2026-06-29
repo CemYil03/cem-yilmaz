@@ -156,6 +156,16 @@ export const chatMessages = pgTable(
         chatId: uuid().notNull(),
         kind: varchar().$type<ChatMessageKind>().notNull(),
         authorUserId: uuid(),
+        // Self-FK: when a sub-agent runs inside a parent tool's `execute`
+        // (today: `toolDelegateToProjects` runs `agentPersonalAssistantProjects`),
+        // each child tool call this sub-agent makes is persisted with
+        // `parentChatMessageId` set to the parent delegate row's id. The
+        // transcript filters child rows out of the top-level list and renders
+        // them indented under the parent's tool-call card. LLM replay
+        // (`toModelMessages`) ignores this column — the rows are still valid
+        // AI-SDK tool-call/tool-result pairs on their own. See
+        // `docs/architecture/agent-delegation.md` ("Nested tool calls").
+        parentChatMessageId: uuid(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
     (table) => [
@@ -171,8 +181,19 @@ export const chatMessages = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
+        // Self-FK on `parentChatMessageId`. `ON DELETE CASCADE` so deleting a
+        // parent (e.g. retention cleanup) takes its children with it.
+        foreignKey({
+            columns: [table.parentChatMessageId],
+            foreignColumns: [table.chatMessageId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
         index('ChatMessages_chatId_createdAt_idx').on(table.chatId, table.createdAt),
         index('ChatMessages_kind_idx').on(table.kind),
+        // Powers "load children of X in insertion order" inside the transcript
+        // and the live-updates merge — see `chatMessageRowsLoad`.
+        index('ChatMessages_parentChatMessageId_createdAt_idx').on(table.parentChatMessageId, table.createdAt),
     ],
 );
 

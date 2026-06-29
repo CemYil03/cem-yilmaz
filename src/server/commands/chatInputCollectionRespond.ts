@@ -115,6 +115,7 @@ export async function chatInputCollectionRespond(
             chatId,
             kind: 'userInput',
             authorUserId: userId,
+            parentChatMessageId: null,
             createdAt: now,
         };
         const userInputVariant: ChatMessageUserInputCreate = {

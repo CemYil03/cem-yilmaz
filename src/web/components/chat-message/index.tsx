@@ -36,6 +36,12 @@ interface ChatMessageProps {
         answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>,
     ) => void;
     onApprovalRespond?: (approvalId: string, approved: boolean, reason?: string) => void;
+    /** Child tool-call rows whose `parentChatMessageId` points at this row.
+     *  Threaded in by the transcript via `partitionByParent`; only consumed
+     *  by the `ChatMessageToolCall` branch (the only variant that can have
+     *  children today). See `docs/architecture/agent-delegation.md`
+     *  ("Nested tool calls"). */
+    children?: ReadonlyArray<GqlCChatMessage>;
 }
 
 export function ChatMessage({
@@ -44,6 +50,7 @@ export function ChatMessage({
     collectionUserInput,
     onCollectionSubmit,
     onApprovalRespond,
+    children,
 }: ChatMessageProps) {
     switch (message.__typename) {
         case 'ChatMessageUser':
@@ -51,7 +58,7 @@ export function ChatMessage({
         case 'ChatMessageAssistantText':
             return <ChatMessageAssistantTextView message={message} />;
         case 'ChatMessageToolCall':
-            return <ChatMessageToolCallView message={message} />;
+            return <ChatMessageToolCallView message={message} childMessages={children} />;
         case 'ChatMessageToolApprovalRequest':
             return <ChatMessageToolApprovalRequestView message={message} onRespond={onApprovalRespond} />;
         case 'ChatMessageToolApprovalResponse':

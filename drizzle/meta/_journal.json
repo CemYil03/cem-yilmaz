@@ -43,6 +43,13 @@
             "when": 1782741608590,
             "tag": "0005_chunky_switch",
             "breakpoints": true
+        },
+        {
+            "idx": 6,
+            "version": "7",
+            "when": 1782763579286,
+            "tag": "0006_funny_slyde",
+            "breakpoints": true
         }
     ]
 }

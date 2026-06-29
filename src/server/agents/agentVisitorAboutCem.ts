@@ -18,6 +18,14 @@ export interface AgentChatOptions {
     // that persist side-effect rows (`submitProjectRequest`) can record the
     // originating conversation; tools that don't need it ignore the value.
     chatId: string;
+    // Shared mutable set the orchestrator uses to skip persisting a tool
+    // call whose row some tool's `execute` already wrote up front (today:
+    // `toolDelegateToProjects`, which pre-writes its delegate row so the
+    // sub-agent's child tool-call rows have a parent to FK against). Agents
+    // that don't host any such tool ignore the value; the orchestrator on
+    // `agentPersonalAssistant` is the only one that passes it into a tool.
+    // See `docs/architecture/agent-delegation.md` ("Nested tool calls").
+    preWrittenToolCallIds: Set<string>;
     // The tool set the agent is built with is heterogeneous (one entry per
     // approval-gated tool plus `promptUserForInput`), each with its own Zod
     // input schema. There is no single concrete `ToolSet` the caller can name
@@ -105,6 +113,7 @@ export async function agentVisitorAboutCem({
     session: _session,
     serverRuntime,
     chatId,
+    preWrittenToolCallIds: _preWrittenToolCallIds,
     onStepFinish,
 }: AgentChatOptions) {
     const cvSummary = await cvSummaryForAgent(serverRuntime);

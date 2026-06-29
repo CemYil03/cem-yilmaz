@@ -134,6 +134,15 @@ The personal assistant at `/workspace/assistant` can read and mutate this board 
 dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `projectUpsert` / `projectDelete` / `taskUpsert` /
 `taskDelete` commands the page uses. See [architecture/agent-delegation.md](../architecture/agent-delegation.md).
 
+### Deep linking from the assistant
+
+The orchestrator formats every project / inbox row / task it names as a markdown link with a `?focus=<id>` search param —
+`/workspace/projects?tab=projects&focus=<projectId>`, `…&tab=inbox&focus=<projectRequestId>`, `…&tab=todos&focus=<taskId>`. The page's
+`validateSearch` schema picks `focus` up, a `useEffect` scrolls the `<li data-row-id="<id>">` for the active tab into view, and
+`@keyframes focus-flash` in `src/styles.css` runs a single primary-tinted breath for ~1500ms before the param is dropped via a
+replace-navigate so a refresh doesn't re-flash. Missing or wrong-tab ids no-op silently. See
+[Deep links](../architecture/agent-delegation.md#deep-links).
+
 ## Project activity timeline & work timer
 
 A project's "history" is more than its tasks. Cem's typical flow is: a client writes on Malt → he sends a first offer → the client

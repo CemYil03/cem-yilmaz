@@ -335,7 +335,37 @@
     .animate-portrait-halo,
     .animate-chat-button-pulse,
     .animate-world-reach-halo,
-    .animate-world-reach-arc {
+    .animate-world-reach-arc,
+    [data-focused='true'] {
         animation: none;
     }
+}
+
+/*
+ * Deep-link focus flash — applied by `/workspace/projects` (and any future
+ * page that picks up `?focus=<id>` from a personal-assistant link). The
+ * attribute is toggled for ~1500ms after the row scrolls into view, then
+ * removed; the animation is a single breath of the primary tint that
+ * answers "this is the row you asked about" without sustained colour. See
+ * `docs/styles/motion.md` for the principle and
+ * `docs/architecture/agent-delegation.md` ("Deep links").
+ */
+@keyframes focus-flash {
+    0% {
+        box-shadow: 0 0 0 0 transparent;
+        background-color: color-mix(in oklab, var(--color-primary) 0%, transparent);
+    }
+    30% {
+        box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 40%, transparent);
+        background-color: color-mix(in oklab, var(--color-primary) 14%, transparent);
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+        background-color: color-mix(in oklab, var(--color-primary) 0%, transparent);
+    }
+}
+
+[data-focused='true'] {
+    border-radius: 0.5rem;
+    animation: focus-flash 1.5s ease-out 1;
 }
