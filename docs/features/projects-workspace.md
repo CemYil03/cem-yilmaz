@@ -16,9 +16,11 @@ the daily-work surface):
 
 - **Inbox** — every `ProjectRequest` whose visitor verified their email but Cem hasn't triaged yet. Each row shows the visitor, project
   type, submission date, and (on expand) the full brief plus budget/timeline. Two actions: **Archive** flips the request to `archived`
-  without creating a project; **Convert to project** creates a new `Project` in state `planning` linked back to the request, archives the
-  request in the same transaction, and the row reappears under the Projects board. A toggle reveals archived rows. Rows that have already
-  been converted are filtered out of the default view (they're visible on the linked Project as a "Source request" backlink instead).
+  without creating a project; **Convert to project** opens the project editor inline, prefilled with a title of
+  `<project-type-label>: <company-or-name>`, description copied from the brief, and Budget / Timeline / Contact lines pre-pasted into
+  `notes`. The admin reviews, edits anything they want, and on save the editor's normal `projectUpsert` mutation creates the project in the
+  chosen status and archives the source request in the same transaction. A toggle reveals archived rows. Rows already converted are filtered
+  out of the default view (they're visible on the linked Project as a "Source request" backlink instead).
 - **Projects** — board grouped by project status (`idea | planning | active | paused | done | archived`). Each card carries title, short
   description, source-request backlink when applicable, and a tasks-done counter (`3/7`). Clicking "Show tasks" reveals an inline task list
   grouped by `todo | doing | done`. Tasks have a checkbox that cycles status (todo → doing → done → todo), an optional due date, and a small
@@ -42,8 +44,9 @@ opening the page.
 ## Option chosen
 
 Dedicated `Projects` and `Tasks` tables. `Tasks.projectId` is nullable — `IS NULL` rows are standalone todos surfaced on the Todos tab.
-Convert flow runs in a single drizzle transaction and stamps `Projects.sourceRequestId`. Single-language (English only) — the page is
-admin-only and never surfaced publicly, so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
+Convert flow runs through `projectUpsert` with `sourceRequestId` set; a single drizzle transaction inserts the project, stamps
+`Projects.sourceRequestId`, and archives the request. Single-language (English only) — the page is admin-only and never surfaced publicly,
+so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
 
 ## Implementation details
 
@@ -88,27 +91,30 @@ Read namespace under `Admin` (gated by `guardAdmin`):
 Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 
 - `projectRequestArchive(projectRequestId)`, `projectRequestDelete(projectRequestId)`
-- `projectFromRequest(projectRequestId)` — atomic convert: inserts a `Project` in state `planning` with `sourceRequestId` set and flips the
-  request to `archived`. Pre-fills `title` from `<project-type-label>: <company-or-name>`, `description` from the brief's body, and appends
-  Budget / Timeline / Contact lines to `notes`. Rejects requests not in `emailVerified` state.
-- `projectUpsert(input)`, `projectDelete(projectId)`, `projectReorder(orderedIds)`
+- `projectUpsert(input)` — single entry point for both hand-authored projects and conversions from an inbox request. When `input.projectId`
+  is absent it creates; when present it updates. When `input.sourceRequestId` is also set on a create the resolver loads the source request
+  inside the same transaction, requires it to be `emailVerified`, links the new project back via `sourceRequestId`, and flips the request to
+  `archived`. The visitor's brief lives in `input.description` / `input.notes` because the inbox UI prefills the editor from the request
+  before the admin submits; no synthesis happens server-side. `input.position` is optional on create — when omitted the row lands at the end
+  of the `planning` column (max position + 1).
+- `projectDelete(projectId)`, `projectReorder(orderedIds)`
 - `taskUpsert(input)`, `taskDelete(taskId)`, `taskReorder(orderedIds)` — reorder is bucket-scoped at the call site (caller passes a single
   status column's worth of ids).
 
 ### Where things live
 
-| Concern         | File                                                                                                                                                    |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                      |
-| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                     |
-| Mappers         | `src/server/mappers/toGqlProjectRequest.ts`, `toGqlProject.ts`, `toGqlTask.ts`                                                                          |
-| Queries         | `src/server/queries/projectRequestsList.ts`, `projectRequestsInboxCount.ts`, `projectsList.ts`, `standaloneTasksList.ts`                                |
-| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `projectFromRequest.ts`, `project{Upsert,Delete,Reorder}.ts`, `task{Upsert,Delete,Reorder}.ts` |
-| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                                 |
-| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                          |
-| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                      |
-| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                           |
-| Tests           | `src/server/commands/projectFromRequest.test.ts`, `taskReorder.test.ts`                                                                                 |
+| Concern         | File                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                             |
+| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                            |
+| Mappers         | `src/server/mappers/toGqlProjectRequest.ts`, `toGqlProject.ts`, `toGqlTask.ts`                                                 |
+| Queries         | `src/server/queries/projectRequestsList.ts`, `projectRequestsInboxCount.ts`, `projectsList.ts`, `standaloneTasksList.ts`       |
+| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `project{Upsert,Delete,Reorder}.ts`, `task{Upsert,Delete,Reorder}.ts` |
+| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                        |
+| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                 |
+| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                             |
+| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                  |
+| Tests           | `src/server/commands/projectUpsert.test.ts`, `taskReorder.test.ts`                                                             |
 
 ## Out of scope (v1)
 

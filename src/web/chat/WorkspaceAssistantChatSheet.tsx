@@ -1,9 +1,20 @@
-import { useNavigate } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
-import { ArrowDownIcon, ExternalLinkIcon, Maximize2Icon, Minimize2Icon, MessageSquarePlusIcon, SparklesIcon } from 'lucide-react';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
+import {
+    ArrowDownIcon,
+    ArrowUpRightIcon,
+    ExternalLinkIcon,
+    Maximize2Icon,
+    MessageSquarePlusIcon,
+    MessageSquareTextIcon,
+    Minimize2Icon,
+    SparklesIcon,
+} from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useMutation } from 'urql';
+import { useMutation, useQuery } from 'urql';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
+import { uploadFile } from './fileUpload';
 import type { TranscriptMessage } from './chatTranscript';
 import {
     findLatestCollectionId,
@@ -18,8 +29,13 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/base/tooltip';
 import { ChatMessage } from '../components/chat-message';
 import { MessageComposer } from '../components/MessageComposer';
-import type { GqlCChatAssistantInputValue } from '../graphql/generated';
-import { WorkspaceChatInputCollectionRespondDocument, WorkspaceChatToolApprovalRespondDocument } from '../graphql/generated';
+import type { ComposerAttachment } from '../components/MessageComposer';
+import type { GqlCChatAssistantInputValue, GqlCWorkspaceChatListItemFragment } from '../graphql/generated';
+import {
+    WorkspaceAssistantChatsDocument,
+    WorkspaceChatInputCollectionRespondDocument,
+    WorkspaceChatToolApprovalRespondDocument,
+} from '../graphql/generated';
 import { useIsMobile } from '../hooks/use-mobile';
 import { useVisualViewport } from '../hooks/useVisualViewport';
 import { cn } from '../utils/cn';
@@ -47,13 +63,26 @@ const newChatLabel = { de: 'Neuen Chat starten', en: 'Start new chat' };
 const openFullscreenLabel = { de: 'Im Vollbild öffnen', en: 'Open full-screen' };
 const expandLabel = { de: 'Chat vergrößern', en: 'Expand chat' };
 const collapseLabel = { de: 'Chat verkleinern', en: 'Collapse chat' };
+const previousChatsLabel = { de: 'Frühere Chats', en: 'Previous chats' };
+const allChatsLabel = { de: 'Alle Chats ansehen', en: 'View all chats' };
+const untitledLabel = { de: 'Ohne Titel', en: 'Untitled' };
+const noPreviousChatsLabel = { de: 'Noch keine Chats.', en: 'No chats yet.' };
+
+const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
+
+// Recent-chats fan-out cap. The query returns every admin chat newest-first;
+// the sheet renders a small at-a-glance list, so we slice to ten. The same
+// cap is mirrored on `/workspace/assistant` empty state — once the list grows
+// past a screen of rows, both surfaces should switch to a scrollable column
+// rather than nudging this number up.
+const RECENT_CHATS_LIMIT = 10;
 
 interface WorkspaceAssistantChatSheetProps {
     locale: Locale;
 }
 
 export function WorkspaceAssistantChatSheet({ locale }: WorkspaceAssistantChatSheetProps) {
-    const { isOpen, setOpen, chatId, loadedMessages, live, resetChat } = useWorkspaceAssistantChat();
+    const { isOpen, setOpen, chatId, loadedMessages, live, resetChat, loadChat } = useWorkspaceAssistantChat();
     const navigate = useNavigate();
 
     // Desktop-only expand toggle. Same posture as the visitor sheet —
@@ -151,7 +180,7 @@ export function WorkspaceAssistantChatSheet({ locale }: WorkspaceAssistantChatSh
                     )}
                 >
                     {allMessages.length === 0 && !live.isGenerating ? (
-                        <EmptyState locale={locale} />
+                        <EmptyState locale={locale} onResume={loadChat} onNavigateAway={() => setOpen(false)} />
                     ) : (
                         <ChatTranscript messages={allMessages} streamingTexts={live.streamingTexts} locale={locale} />
                     )}
@@ -162,11 +191,83 @@ export function WorkspaceAssistantChatSheet({ locale }: WorkspaceAssistantChatSh
     );
 }
 
-function EmptyState({ locale }: { locale: Locale }) {
+function EmptyState({
+    locale,
+    onResume,
+    onNavigateAway,
+}: {
+    locale: Locale;
+    onResume: (chatId: string) => void | Promise<void>;
+    onNavigateAway: () => void;
+}) {
+    // Show the most-recent chats so the admin can resume one in place
+    // instead of jumping out to the dedicated route just to find a row.
+    // `cache-and-network` keeps the list reactive — a fresh send updates
+    // `lastModifiedAt`, the next time the sheet shows its empty state the
+    // resumed chat lands at the top without a hard reload.
+    const [{ data }] = useQuery({ query: WorkspaceAssistantChatsDocument, requestPolicy: 'cache-and-network' });
+    const chats = (data?.admin.chats ?? []).slice(0, RECENT_CHATS_LIMIT);
+
     return (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-sm text-muted-foreground">
-            <p>{{ de: 'Wie kann ich helfen?', en: 'How can I help?' }[locale]}</p>
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
+            <div className="grid place-items-center py-6 text-sm text-muted-foreground">
+                <p>{{ de: 'Wie kann ich helfen?', en: 'How can I help?' }[locale]}</p>
+            </div>
+            <section className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-3">
+                    <h3 className="text-xs uppercase tracking-wide text-muted-foreground">{previousChatsLabel[locale]}</h3>
+                    <Link
+                        to="/{-$locale}/workspace/assistant"
+                        search={{ chatId: undefined }}
+                        onClick={onNavigateAway}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        {allChatsLabel[locale]}
+                        <ArrowUpRightIcon className="size-3" aria-hidden />
+                    </Link>
+                </div>
+                {chats.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{noPreviousChatsLabel[locale]}</p>
+                ) : (
+                    <ul className="flex flex-col gap-1.5">
+                        {chats.map((chat) => (
+                            <li key={chat.chatId}>
+                                <PreviousChatButton chat={chat} locale={locale} onResume={onResume} />
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
         </div>
+    );
+}
+
+function PreviousChatButton({
+    chat,
+    locale,
+    onResume,
+}: {
+    chat: GqlCWorkspaceChatListItemFragment;
+    locale: Locale;
+    onResume: (chatId: string) => void | Promise<void>;
+}) {
+    const relative = formatDistanceToNow(parseISO(chat.lastModifiedAt as unknown as string), {
+        addSuffix: true,
+        locale: DATE_FNS_LOCALE[locale],
+    });
+    const title = chat.title.trim() ? chat.title : untitledLabel[locale];
+    return (
+        <button
+            type="button"
+            onClick={() => void onResume(chat.chatId)}
+            className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-input bg-white px-3 py-2 text-left text-sm hover:bg-accent dark:bg-black"
+        >
+            <MessageSquareTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-foreground">{title}</span>
+                <span className="text-xs text-muted-foreground">{relative}</span>
+            </span>
+        </button>
     );
 }
 
@@ -180,13 +281,60 @@ function EmptyState({ locale }: { locale: Locale }) {
 function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Locale; hasChat: boolean; onReset: () => void }) {
     const { sendMessage, live } = useWorkspaceAssistantChat();
     const [draft, setDraft] = useState('');
+    // Attachments are owned by the composer, not the provider — uploads
+    // are kicked off on attach (so the user can keep typing while files
+    // settle) and the resolved `fileUploadId`s are forwarded through the
+    // provider's `sendMessage`. Same shape as the route composer in
+    // `ChatComposer.tsx`; the duplication is small enough that a shared
+    // wrapper would obscure more than it would save.
+    const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+
+    const updateAttachment = useCallback((localId: string, patch: Partial<ComposerAttachment>) => {
+        setAttachments((current) =>
+            current.map((attachment) => (attachment.localId === localId ? { ...attachment, ...patch } : attachment)),
+        );
+    }, []);
+
+    const onAttachmentsAdd = useCallback(
+        (files: File[]) => {
+            const additions: ComposerAttachment[] = files.map((file) => ({
+                localId: crypto.randomUUID(),
+                file,
+                status: 'uploading' as const,
+            }));
+            setAttachments((current) => [...current, ...additions]);
+            for (const attachment of additions) {
+                void (async () => {
+                    try {
+                        const uploaded = await uploadFile(attachment.file);
+                        updateAttachment(attachment.localId, {
+                            status: 'uploaded',
+                            fileUploadId: uploaded.fileUploadId,
+                        });
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Upload failed';
+                        updateAttachment(attachment.localId, { status: 'error', error: message });
+                    }
+                })();
+            }
+        },
+        [updateAttachment],
+    );
+
+    const onAttachmentRemove = useCallback((localId: string) => {
+        setAttachments((current) => current.filter((attachment) => attachment.localId !== localId));
+    }, []);
 
     const submit = useCallback(async () => {
         const message = draft.trim();
-        if (!message) return;
+        const fileUploadIds = attachments
+            .filter((attachment) => attachment.status === 'uploaded' && attachment.fileUploadId)
+            .map((attachment) => attachment.fileUploadId!);
+        if (!message && fileUploadIds.length === 0) return;
         setDraft('');
-        await sendMessage(message);
-    }, [draft, sendMessage]);
+        setAttachments([]);
+        await sendMessage(message, fileUploadIds);
+    }, [attachments, draft, sendMessage]);
 
     return (
         <MessageComposer
@@ -197,6 +345,9 @@ function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Loca
             busy={live.isGenerating}
             placeholder={{ de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' }[locale]}
             sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
+            attachments={attachments}
+            onAttachmentsAdd={onAttachmentsAdd}
+            onAttachmentRemove={onAttachmentRemove}
             addonStart={
                 hasChat ? (
                     <Tooltip>

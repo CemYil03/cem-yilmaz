@@ -38,6 +38,7 @@ Mounting the provider at the `workspace.tsx` layout — one level above every wo
 | Header chat button (every workspace page that renders `<Header />`)            | `useWorkspaceAssistantChat().open()`                | Same right-side cluster button as the public site's visitor-chat button, but on workspace surfaces the header reroutes it to the admin assistant via `<Header chatVariant="workspace" />`. The visitor sheet is irrelevant inside the workspace, so its entry point is replaced rather than duplicated. |
 | Floating launcher (every workspace page except hub and `/workspace/assistant`) | `useWorkspaceAssistantChat().open()`                | FAB-style circle, bottom-right of the viewport. Hidden on the hub (the hero composer is the launcher there) and on `/workspace/assistant` (the route IS the chat). Pulses while a turn is generating.                                                                                                   |
 | Sheet's **"Open full-screen"** button                                          | Navigates to `/workspace/assistant?chatId=<id>`     | Hands the conversation off to the dedicated full-screen route — the chat row is the same on both sides.                                                                                                                                                                                                 |
+| Sheet's recent-chats "View all chats" link                                     | Navigates to `/workspace/assistant`                 | The empty state's bridge to the dedicated route. Same destination as a fresh-start send: the route's empty state is the at-a-glance list, not a chat-in-progress.                                                                                                                                       |
 
 The provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`.
 
@@ -57,12 +58,34 @@ on mobile, so the header stays pinned at the top of the visible area and the com
 ## Composer
 
 The sheet's composer is `WorkspaceAssistantComposer`, a small wrapper around `<MessageComposer />` that submits into the provider's
-`sendMessage(text)`. The provider owns the `chatId`, the live-updates hook, the mutation, and the chat-id ref that makes back-to-back sends
-append to the same `chats` row (the same pattern `VisitorChatProvider` uses).
+`sendMessage(text, fileUploadIds?)`. The provider owns the `chatId`, the live-updates hook, the mutation, and the chat-id ref that makes
+back-to-back sends append to the same `chats` row (the same pattern `VisitorChatProvider` uses).
 
-The composer has one addon-start control: a "Start new chat" icon button that appears once a chat is active. Clicking it calls
-`resetChat()`, which drops `chatId` and `loadedMessages` so the next send creates a fresh row. The previous chat is still in the database —
-admins can resume it from the dedicated route once a previous-chats list lands there.
+The composer has two addon-start controls:
+
+- **"Start new chat"** — an icon button that appears once a chat is active. Clicking it calls `resetChat()`, which drops `chatId` and
+  `loadedMessages` so the next send creates a fresh row. The previous chat is still in the database; the recent-chats list (see below) lets
+  the admin resume it from the same surface.
+- **Attachments** — paperclip button + drag-and-drop. The composer owns the upload lifecycle: each picked/dropped file is uploaded
+  immediately through `uploadFile()` (`POST /api/file-uploads`), the per-tile UI reflects `uploading` / `uploaded` / `error`, and the
+  resolved `fileUploadId`s are forwarded through `sendMessage(message, fileUploadIds)` on submit. The provider's mutation passes the ids to
+  the `admin.chatMessageCreate` resolver, same shape as the route composer's path. Errored tiles stay on screen so the user can decide
+  whether to remove-and-retry; only `uploaded` ids ride the mutation.
+
+## Recent chats
+
+The sheet's empty state and the dedicated route both render the last 10 admin chats so the user can resume a conversation in place instead
+of routing back through a list. The list is driven by the lightweight `WorkspaceAssistantChats` query (admin namespace, metadata only — no
+transcript). Both surfaces:
+
+- Use `cache-and-network` so a fresh send bumps the resumed chat to the top of the list on the next visit without a hard reload.
+- Slice client-side to `RECENT_CHATS_LIMIT = 10`. The cap is mirrored on both surfaces — they graduate together when the list grows.
+- Resume a row through different code paths: the sheet calls `loadChat(chatId)` on the provider (fetches the transcript, seeds
+  `loadedMessages`), while the route navigates to `/workspace/assistant?chatId=<id>` and lets its own page-query take over.
+
+On the loaded route, a sidebar (lg+ only) shows the same recent-chats list with the active chat highlighted so the user can switch
+conversations without bouncing through the empty state. The sidebar is hidden under `lg` — the row is the primary surface on narrow
+viewports, and the sheet is one tap away.
 
 ## Full-screen route handoff
 

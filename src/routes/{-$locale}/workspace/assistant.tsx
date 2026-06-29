@@ -1,6 +1,7 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
-import { ArrowDownIcon } from 'lucide-react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
+import { ArrowDownIcon, MessageSquareTextIcon } from 'lucide-react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
 import { toFlatAnswerInput } from '../../../web/chat/chatAssistantInputKinds';
@@ -17,8 +18,13 @@ import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Spinner } from '../../../web/components/base/spinner';
 import { ChatMessage } from '../../../web/components/chat-message';
-import type { GqlCChatAssistantInputValue, GqlCWorkspaceChatPageQuery } from '../../../web/graphql/generated';
+import type {
+    GqlCChatAssistantInputValue,
+    GqlCWorkspaceChatListItemFragment,
+    GqlCWorkspaceChatPageQuery,
+} from '../../../web/graphql/generated';
 import {
+    WorkspaceAssistantChatsDocument,
     WorkspaceChatInputCollectionRespondDocument,
     WorkspaceChatMessageCreateDocument,
     WorkspaceChatPageDocument,
@@ -42,6 +48,18 @@ import type { Locale } from '../../../web/utils/locale';
 // `docs/features/workspace-hub.md`.
 
 const composerPlaceholder = { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' };
+const previousChatsLabel = { de: 'Frühere Chats', en: 'Previous chats' };
+const noPreviousChatsLabel = { de: 'Noch keine Chats.', en: 'No chats yet.' };
+const untitledLabel = { de: 'Ohne Titel', en: 'Untitled' };
+
+// Mirror the sheet's cap so both empty surfaces show the same horizon. The
+// route's empty state has more vertical space than the sheet, but ten rows
+// is still a comfortable single-screen list — beyond that it becomes a
+// scrolling chore. Once the list gets large enough to need filtering both
+// surfaces graduate together.
+const RECENT_CHATS_LIMIT = 10;
+
+const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 const extractMessageCreateResult = (data: unknown): { chatId: string } | null => {
     const wrapper = data as { admin?: { chatMessageCreate?: { chatId: string } | null } | null } | null | undefined;
@@ -92,14 +110,32 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
 
 function WorkspaceAssistantEmpty({ live, locale }: { live: ReturnType<typeof useChatLiveUpdates>; locale: Locale }) {
     const navigate = useNavigate();
+    const [{ data }] = useQuery({ query: WorkspaceAssistantChatsDocument, requestPolicy: 'cache-and-network' });
+    const chats = (data?.admin.chats ?? []).slice(0, RECENT_CHATS_LIMIT);
     return (
         <main className="mx-auto grid h-dvh w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
-            <div className="grid place-items-center text-sm text-muted-foreground">
-                {live.isGenerating ? (
-                    <Spinner className="size-4 text-muted-foreground" />
-                ) : (
-                    { de: 'Wie kann ich helfen?', en: 'How can I help?' }[locale]
-                )}
+            <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pr-2">
+                <div className="grid place-items-center py-8 text-sm text-muted-foreground">
+                    {live.isGenerating ? (
+                        <Spinner className="size-4 text-muted-foreground" />
+                    ) : (
+                        { de: 'Wie kann ich helfen?', en: 'How can I help?' }[locale]
+                    )}
+                </div>
+                <section className="flex flex-col gap-2">
+                    <h2 className="text-xs uppercase tracking-wide text-muted-foreground">{previousChatsLabel[locale]}</h2>
+                    {chats.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">{noPreviousChatsLabel[locale]}</p>
+                    ) : (
+                        <ul className="flex flex-col gap-1.5">
+                            {chats.map((chat) => (
+                                <li key={chat.chatId}>
+                                    <PreviousChatLink chat={chat} locale={locale} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
             </div>
             <ChatComposer
                 onMessageSent={(newChatId) => navigate({ to: '/{-$locale}/workspace/assistant', search: { chatId: newChatId } })}
@@ -113,6 +149,40 @@ function WorkspaceAssistantEmpty({ live, locale }: { live: ReturnType<typeof use
                 autoFocus
             />
         </main>
+    );
+}
+
+function PreviousChatLink({
+    chat,
+    locale,
+    isActive = false,
+}: {
+    chat: GqlCWorkspaceChatListItemFragment;
+    locale: Locale;
+    isActive?: boolean;
+}) {
+    const relative = formatDistanceToNow(parseISO(chat.lastModifiedAt as unknown as string), {
+        addSuffix: true,
+        locale: DATE_FNS_LOCALE[locale],
+    });
+    const title = chat.title.trim() ? chat.title : untitledLabel[locale];
+    return (
+        <Link
+            to="/{-$locale}/workspace/assistant"
+            search={{ chatId: chat.chatId }}
+            aria-current={isActive ? 'page' : undefined}
+            className={
+                isActive
+                    ? 'flex w-full items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm text-foreground'
+                    : 'flex w-full items-center gap-2 rounded-md border border-input bg-white px-3 py-2 text-left text-sm hover:bg-accent dark:bg-black'
+            }
+        >
+            <MessageSquareTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-foreground">{title}</span>
+                <span className="text-xs text-muted-foreground">{relative}</span>
+            </span>
+        </Link>
     );
 }
 
@@ -177,33 +247,69 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
     }
 
     return (
-        <main className="mx-auto grid h-dvh w-full min-w-0 max-w-2xl grid-rows-[auto_1fr_auto] gap-4 p-6">
-            <header className="flex items-baseline justify-between">
-                <h1 className="text-lg font-semibold">{chat.title || { de: 'Neuer Chat', en: 'New chat' }[locale]}</h1>
-                {fetching ? <Spinner className="size-3 text-muted-foreground" /> : null}
-            </header>
+        <main className="mx-auto grid h-dvh w-full min-w-0 max-w-6xl grid-cols-1 gap-6 p-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+            {/* Desktop sidebar: at-a-glance list of recent chats so the
+             *  admin can jump between conversations without bouncing back
+             *  through the empty state. Hidden under `lg` — the row is the
+             *  primary surface on narrow viewports, and the same list is
+             *  one tap away from the sheet. */}
+            <aside className="hidden min-h-0 lg:block">
+                <ChatsSidebar locale={locale} activeChatId={chat.chatId} />
+            </aside>
+            <div className="grid min-h-0 grid-rows-[auto_1fr_auto] gap-4">
+                <header className="flex items-baseline justify-between">
+                    <h1 className="text-lg font-semibold">{chat.title || { de: 'Neuer Chat', en: 'New chat' }[locale]}</h1>
+                    {fetching ? <Spinner className="size-3 text-muted-foreground" /> : null}
+                </header>
 
-            <ChatTranscript
-                chat={chat}
-                appendedMessages={live.appendedMessages}
-                streamingTexts={live.streamingTexts}
-                onCollectionSubmit={onCollectionSubmit}
-                onApprovalRespond={onApprovalRespond}
-                jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
-            />
+                <ChatTranscript
+                    chat={chat}
+                    appendedMessages={live.appendedMessages}
+                    streamingTexts={live.streamingTexts}
+                    onCollectionSubmit={onCollectionSubmit}
+                    onApprovalRespond={onApprovalRespond}
+                    jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
+                />
 
-            <ChatComposer
-                chatId={chat.chatId}
-                isLocked={live.isGenerating}
-                beginTurn={live.beginTurn}
-                endTurn={live.endTurn}
-                locale={locale}
-                sendMutation={WorkspaceChatMessageCreateDocument}
-                extractResult={extractMessageCreateResult}
-                placeholder={composerPlaceholder[locale]}
-                autoFocus
-            />
+                <ChatComposer
+                    chatId={chat.chatId}
+                    isLocked={live.isGenerating}
+                    beginTurn={live.beginTurn}
+                    endTurn={live.endTurn}
+                    locale={locale}
+                    sendMutation={WorkspaceChatMessageCreateDocument}
+                    extractResult={extractMessageCreateResult}
+                    placeholder={composerPlaceholder[locale]}
+                    autoFocus
+                />
+            </div>
         </main>
+    );
+}
+
+// Sidebar list of admin chats shown on the loaded route. The active chat is
+// highlighted so the user always knows where they are in the list; clicking
+// any other row just updates the `chatId` search param and the route's own
+// `useQuery` handles the fetch. The list shares its cap (`RECENT_CHATS_LIMIT`)
+// with the sheet's empty state — both surfaces stay in lockstep.
+function ChatsSidebar({ locale, activeChatId }: { locale: Locale; activeChatId: string }) {
+    const [{ data }] = useQuery({ query: WorkspaceAssistantChatsDocument, requestPolicy: 'cache-and-network' });
+    const chats = (data?.admin.chats ?? []).slice(0, RECENT_CHATS_LIMIT);
+    return (
+        <div className="flex h-full min-h-0 flex-col gap-2">
+            <h2 className="text-xs uppercase tracking-wide text-muted-foreground">{previousChatsLabel[locale]}</h2>
+            <ul className="flex min-h-0 flex-col gap-1.5 overflow-y-auto pr-1">
+                {chats.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{noPreviousChatsLabel[locale]}</p>
+                ) : (
+                    chats.map((chat) => (
+                        <li key={chat.chatId}>
+                            <PreviousChatLink chat={chat} locale={locale} isActive={chat.chatId === activeChatId} />
+                        </li>
+                    ))
+                )}
+            </ul>
+        </div>
     );
 }
 

@@ -65,7 +65,6 @@ export interface GqlSAdminMutation {
     profileObservationDismiss: GqlSMutationResult;
     profileSynthesizeRequest: GqlSMutationResult;
     projectDelete: GqlSMutationResult;
-    projectFromRequest: GqlSProject;
     projectReorder: GqlSMutationResult;
     projectRequestArchive: GqlSMutationResult;
     projectRequestDelete: GqlSMutationResult;
@@ -151,10 +150,6 @@ export type GqlSAdminMutationProjectDeleteArgs = {
     projectId: Scalars['ID']['input'];
 };
 
-export type GqlSAdminMutationProjectFromRequestArgs = {
-    projectRequestId: Scalars['ID']['input'];
-};
-
 export type GqlSAdminMutationProjectReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
@@ -168,7 +163,7 @@ export type GqlSAdminMutationProjectRequestDeleteArgs = {
 };
 
 export type GqlSAdminMutationProjectUpsertArgs = {
-    input: GqlSProjectInput;
+    input: GqlSProjectCreate;
 };
 
 export type GqlSAdminMutationTaskDeleteArgs = {
@@ -180,7 +175,7 @@ export type GqlSAdminMutationTaskReorderArgs = {
 };
 
 export type GqlSAdminMutationTaskUpsertArgs = {
-    input: GqlSTaskInput;
+    input: GqlSTaskCreate;
 };
 
 export interface GqlSAdminProfile {
@@ -637,11 +632,11 @@ export interface GqlSProject {
     updatedAt: Scalars['DateTime']['output'];
 }
 
-export type GqlSProjectInput = {
+export type GqlSProjectCreate = {
     completedAt?: InputMaybe<Scalars['DateTime']['input']>;
     description?: InputMaybe<Scalars['String']['input']>;
     notes?: InputMaybe<Scalars['String']['input']>;
-    position: Scalars['Int']['input'];
+    position?: InputMaybe<Scalars['Int']['input']>;
     projectId?: InputMaybe<Scalars['ID']['input']>;
     sourceRequestId?: InputMaybe<Scalars['ID']['input']>;
     startedAt?: InputMaybe<Scalars['DateTime']['input']>;
@@ -717,7 +712,7 @@ export interface GqlSTask {
     updatedAt: Scalars['DateTime']['output'];
 }
 
-export type GqlSTaskInput = {
+export type GqlSTaskCreate = {
     completedAt?: InputMaybe<Scalars['DateTime']['input']>;
     dueAt?: InputMaybe<Scalars['DateTime']['input']>;
     notes?: InputMaybe<Scalars['String']['input']>;
@@ -965,7 +960,7 @@ export type GqlSResolversTypes = ResolversObject<{
     ProfileObservation: ResolverTypeWrapper<GqlSProfileObservation>;
     ProfileObservationCategory: GqlSProfileObservationCategory;
     Project: ResolverTypeWrapper<GqlSProject>;
-    ProjectInput: GqlSProjectInput;
+    ProjectCreate: GqlSProjectCreate;
     ProjectRequest: ResolverTypeWrapper<GqlSProjectRequest>;
     ProjectRequestStatus: GqlSProjectRequestStatus;
     ProjectRequestType: GqlSProjectRequestType;
@@ -975,7 +970,7 @@ export type GqlSResolversTypes = ResolversObject<{
     String: ResolverTypeWrapper<Scalars['String']['output']>;
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Task: ResolverTypeWrapper<GqlSTask>;
-    TaskInput: GqlSTaskInput;
+    TaskCreate: GqlSTaskCreate;
     TaskStatus: GqlSTaskStatus;
     User: ResolverTypeWrapper<GqlSUser>;
     UserCreate: GqlSUserCreate;
@@ -1056,14 +1051,14 @@ export type GqlSResolversParentTypes = ResolversObject<{
     MutationResult: GqlSMutationResult;
     ProfileObservation: GqlSProfileObservation;
     Project: GqlSProject;
-    ProjectInput: GqlSProjectInput;
+    ProjectCreate: GqlSProjectCreate;
     ProjectRequest: GqlSProjectRequest;
     Query: Record<PropertyKey, never>;
     Session: Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversParentTypes['Chat']> };
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
     Task: GqlSTask;
-    TaskInput: GqlSTaskInput;
+    TaskCreate: GqlSTaskCreate;
     User: GqlSUser;
     UserCreate: GqlSUserCreate;
     UserMutation: GqlSUserMutation;
@@ -1192,12 +1187,6 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationProjectDeleteArgs, 'projectId'>
-    >;
-    projectFromRequest?: Resolver<
-        GqlSResolversTypes['Project'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProjectFromRequestArgs, 'projectRequestId'>
     >;
     projectReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -2060,12 +2049,12 @@ export function GqlSCvSkillInputSchema(): z.ZodObject<Properties<GqlSCvSkillInpu
     });
 }
 
-export function GqlSProjectInputSchema(): z.ZodObject<Properties<GqlSProjectInput>> {
+export function GqlSProjectCreateSchema(): z.ZodObject<Properties<GqlSProjectCreate>> {
     return z.object({
         completedAt: z.date().nullish(),
         description: z.string().nullish(),
         notes: z.string().nullish(),
-        position: z.number(),
+        position: z.number().nullish(),
         projectId: z.string().nullish(),
         sourceRequestId: z.string().nullish(),
         startedAt: z.date().nullish(),
@@ -2074,7 +2063,7 @@ export function GqlSProjectInputSchema(): z.ZodObject<Properties<GqlSProjectInpu
     });
 }
 
-export function GqlSTaskInputSchema(): z.ZodObject<Properties<GqlSTaskInput>> {
+export function GqlSTaskCreateSchema(): z.ZodObject<Properties<GqlSTaskCreate>> {
     return z.object({
         completedAt: z.date().nullish(),
         dueAt: z.date().nullish(),

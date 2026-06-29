@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from './base/breadcrumb';
 import { GlassCard } from './GlassCard';
 import { HeaderChatButton } from './HeaderChatButton';
 import { LanguageSelector } from './LanguageSelector';
@@ -21,6 +22,15 @@ type NavItem = {
     href: string;
 };
 
+/** A single breadcrumb crumb. The last crumb is rendered as the current page
+ *  (inert); every earlier crumb is a link. `to` uses the TanStack-style typed
+ *  path with `{-$locale}` so the locale param is preserved automatically. */
+export type Crumb = {
+    label: string;
+    /** Set on every crumb except the last (which is the current page). */
+    to?: string;
+};
+
 type Props = {
     /** Optional secondary label rendered after the brand (e.g. "/ design preview"). */
     subtitle?: string;
@@ -32,6 +42,16 @@ type Props = {
      *  where the label is "Workspace") so the brand name doesn't shout over
      *  the page's own heading. */
     brandLabel?: string;
+    /** When set, replaces the brand cluster with just the logo (linked home)
+     *  followed by a breadcrumb trail. Used on workspace pages where the
+     *  page's location in the hierarchy is the brand. Mutually exclusive
+     *  with `brandLabel`. */
+    breadcrumbs?: ReadonlyArray<Crumb>;
+    /** Hide the language and theme selectors. Used on the workspace, where
+     *  the header is the workspace's own chrome and locale/theme controls
+     *  belong to the public surface. The chat button is kept — it is the
+     *  only header affordance the workspace needs. */
+    hideSelectors?: boolean;
     /** Which chat sheet the header chat button opens. Defaults to `'visitor'`
      *  for the public site; workspace surfaces pass `'workspace'` so the
      *  button leads to the admin assistant sheet instead of the irrelevant
@@ -52,7 +72,7 @@ type Props = {
  * `overflow-x-clip` instead.
  * ------------------------------------------------------------------------- */
 
-export function Header({ subtitle, navItems, brandLabel, chatVariant = 'visitor' }: Props) {
+export function Header({ subtitle, navItems, brandLabel, breadcrumbs, hideSelectors, chatVariant = 'visitor' }: Props) {
     const locale = useLocale();
     const scrolled = useHasScrolled();
     const { pathname } = useLocation();
@@ -69,7 +89,45 @@ export function Header({ subtitle, navItems, brandLabel, chatVariant = 'visitor'
                     )}
                 >
                     <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-                        {brandLabel ? (
+                        {breadcrumbs && breadcrumbs.length > 0 ? (
+                            // Breadcrumb variant: the logo is the only home link,
+                            // and the trail to the right shows the user where they
+                            // are inside the hierarchy. Used on workspace surfaces,
+                            // where the page's location *is* the brand.
+                            <div className="flex min-w-0 items-center gap-3">
+                                <Link
+                                    to="/{-$locale}"
+                                    aria-label="Home"
+                                    className="flex shrink-0 items-center transition-opacity hover:opacity-80 active:opacity-70"
+                                >
+                                    <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
+                                    <img src="/favicon-dark.ico" className="hidden size-8 dark:block" alt="" />
+                                </Link>
+                                <Breadcrumb className="min-w-0">
+                                    <BreadcrumbList className="flex-nowrap">
+                                        {breadcrumbs.map((crumb, index) => {
+                                            const isLast = index === breadcrumbs.length - 1;
+                                            return (
+                                                <span key={`${crumb.label}-${index}`} className="contents">
+                                                    <BreadcrumbItem className="min-w-0">
+                                                        {isLast || !crumb.to ? (
+                                                            <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                                                        ) : (
+                                                            <BreadcrumbLink asChild>
+                                                                <Link to={crumb.to as never} className="truncate">
+                                                                    {crumb.label}
+                                                                </Link>
+                                                            </BreadcrumbLink>
+                                                        )}
+                                                    </BreadcrumbItem>
+                                                    {isLast ? null : <BreadcrumbSeparator />}
+                                                </span>
+                                            );
+                                        })}
+                                    </BreadcrumbList>
+                                </Breadcrumb>
+                            </div>
+                        ) : brandLabel ? (
                             // Brand-as-label variant: only the logo links home;
                             // the label itself is inert text so the page's own
                             // identity (e.g. "Workspace") doesn't double as a
@@ -120,8 +178,8 @@ export function Header({ subtitle, navItems, brandLabel, chatVariant = 'visitor'
 
                         <div className="flex items-center gap-1.5 sm:gap-2">
                             <HeaderChatButton variant={chatVariant} />
-                            <LanguageSelector />
-                            <ThemeSelector />
+                            {!hideSelectors && <LanguageSelector />}
+                            {!hideSelectors && <ThemeSelector />}
                         </div>
                     </div>
                 </GlassCard>

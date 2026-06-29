@@ -68,7 +68,6 @@ export interface GqlCAdminMutation {
     profileObservationDismiss: GqlCMutationResult;
     profileSynthesizeRequest: GqlCMutationResult;
     projectDelete: GqlCMutationResult;
-    projectFromRequest: GqlCProject;
     projectReorder: GqlCMutationResult;
     projectRequestArchive: GqlCMutationResult;
     projectRequestDelete: GqlCMutationResult;
@@ -154,10 +153,6 @@ export type GqlCAdminMutationProjectDeleteArgs = {
     projectId: Scalars['ID']['input'];
 };
 
-export type GqlCAdminMutationProjectFromRequestArgs = {
-    projectRequestId: Scalars['ID']['input'];
-};
-
 export type GqlCAdminMutationProjectReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
@@ -171,7 +166,7 @@ export type GqlCAdminMutationProjectRequestDeleteArgs = {
 };
 
 export type GqlCAdminMutationProjectUpsertArgs = {
-    input: GqlCProjectInput;
+    input: GqlCProjectCreate;
 };
 
 export type GqlCAdminMutationTaskDeleteArgs = {
@@ -183,7 +178,7 @@ export type GqlCAdminMutationTaskReorderArgs = {
 };
 
 export type GqlCAdminMutationTaskUpsertArgs = {
-    input: GqlCTaskInput;
+    input: GqlCTaskCreate;
 };
 
 export interface GqlCAdminProfile {
@@ -640,11 +635,11 @@ export interface GqlCProject {
     updatedAt: Scalars['DateTime']['output'];
 }
 
-export type GqlCProjectInput = {
+export type GqlCProjectCreate = {
     completedAt?: InputMaybe<Scalars['DateTime']['input']>;
     description?: InputMaybe<Scalars['String']['input']>;
     notes?: InputMaybe<Scalars['String']['input']>;
-    position: Scalars['Int']['input'];
+    position?: InputMaybe<Scalars['Int']['input']>;
     projectId?: InputMaybe<Scalars['ID']['input']>;
     sourceRequestId?: InputMaybe<Scalars['ID']['input']>;
     startedAt?: InputMaybe<Scalars['DateTime']['input']>;
@@ -720,7 +715,7 @@ export interface GqlCTask {
     updatedAt: Scalars['DateTime']['output'];
 }
 
-export type GqlCTaskInput = {
+export type GqlCTaskCreate = {
     completedAt?: InputMaybe<Scalars['DateTime']['input']>;
     dueAt?: InputMaybe<Scalars['DateTime']['input']>;
     notes?: InputMaybe<Scalars['String']['input']>;
@@ -1489,19 +1484,13 @@ export type GqlCWorkspaceProjectRequestDeleteMutationVariables = Exact<{
 
 export type GqlCWorkspaceProjectRequestDeleteMutation = { admin: { projectRequestDelete: { success: boolean } } };
 
-export type GqlCWorkspaceProjectFromRequestMutationVariables = Exact<{
-    projectRequestId: string;
-}>;
-
-export type GqlCWorkspaceProjectFromRequestMutation = { admin: { projectFromRequest: { projectId: string } } };
-
 export type GqlCWorkspaceProjectUpsertMutationVariables = Exact<{
     projectId?: string | null | undefined;
     title: string;
     description?: string | null | undefined;
     notes?: string | null | undefined;
     status: Schema.GqlCProjectStatus;
-    position: number;
+    position?: number | null | undefined;
     sourceRequestId?: string | null | undefined;
     startedAt?: string | null | undefined;
     completedAt?: string | null | undefined;
@@ -5916,52 +5905,6 @@ export const WorkspaceProjectRequestDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectRequestDeleteMutation, GqlCWorkspaceProjectRequestDeleteMutationVariables>;
-export const WorkspaceProjectFromRequestDocument = {
-    kind: 'Document',
-    definitions: [
-        {
-            kind: 'OperationDefinition',
-            operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectFromRequest' },
-            variableDefinitions: [
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectRequestId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-                },
-            ],
-            selectionSet: {
-                kind: 'SelectionSet',
-                selections: [
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectFromRequest' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'projectRequestId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectRequestId' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'projectId' } }],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectFromRequestMutation, GqlCWorkspaceProjectFromRequestMutationVariables>;
 export const WorkspaceProjectUpsertDocument = {
     kind: 'Document',
     definitions: [
@@ -5998,7 +5941,7 @@ export const WorkspaceProjectUpsertDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
                 },
                 {
                     kind: 'VariableDefinition',

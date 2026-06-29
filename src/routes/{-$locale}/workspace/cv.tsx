@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import { FileTextIcon, GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -78,10 +78,7 @@ function WorkspaceCvEditor() {
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full py-12 leading-relaxed">
-            <Link to="/{-$locale}/workspace" className="text-sm text-muted-foreground hover:text-foreground">
-                {{ de: '← Workspace', en: '← Workspace' }[locale]}
-            </Link>
-            <div className="mt-6 flex items-center gap-3 text-primary">
+            <div className="flex items-center gap-3 text-primary">
                 <FileTextIcon className="size-6" />
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">{pageTitle[locale]}</h1>
             </div>

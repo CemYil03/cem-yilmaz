@@ -82,21 +82,13 @@ mutation WorkspaceProjectRequestDelete($projectRequestId: ID!) {
     }
 }
 
-mutation WorkspaceProjectFromRequest($projectRequestId: ID!) {
-    admin {
-        projectFromRequest(projectRequestId: $projectRequestId) {
-            projectId
-        }
-    }
-}
-
 mutation WorkspaceProjectUpsert(
     $projectId: ID
     $title: String!
     $description: String
     $notes: String
     $status: ProjectStatus!
-    $position: Int!
+    $position: Int
     $sourceRequestId: ID
     $startedAt: DateTime
     $completedAt: DateTime

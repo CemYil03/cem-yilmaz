@@ -828,7 +828,7 @@ export const projects = pgTable(
         // through the editor, not a drag.
         position: integer().notNull().default(0),
         // Source request this project was created from, when applicable.
-        // `projectFromRequest` stamps this in the same transaction that
+        // `projectUpsert` stamps this in the same transaction that
         // archives the request, so the board can render a "Source request"
         // backlink. Null for hand-created projects.
         sourceRequestId: uuid(),

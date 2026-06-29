@@ -46,9 +46,11 @@ interface WorkspaceAssistantChatContextValue {
      *  a fresh chat — the subscription buffer is the source of truth there. */
     loadedMessages: ReadonlyArray<TranscriptMessage>;
     live: ChatLiveUpdates;
-    /** Sends a free-text message. Awaits the mutation; on success captures
-     *  `chatId` for subsequent sends. */
-    sendMessage: (message: string) => Promise<void>;
+    /** Sends a free-text message, optionally with file-upload ids attached.
+     *  Awaits the mutation; on success captures `chatId` for subsequent
+     *  sends. The caller owns the upload lifecycle (the composer uploads
+     *  on attach and forwards only the resolved `fileUploadId`s). */
+    sendMessage: (message: string, fileUploadIds?: ReadonlyArray<string>) => Promise<void>;
     /** Open the sheet AND immediately fire `message` as the first user
      *  turn. Used by the hub composer when the user submits from the
      *  workspace landing page. */
@@ -109,14 +111,17 @@ export function WorkspaceAssistantChatProvider({ children }: { children: ReactNo
     const open = useCallback(() => setOpen(true), []);
 
     const sendMessage = useCallback(
-        async (message: string) => {
+        async (message: string, fileUploadIds?: ReadonlyArray<string>) => {
             const trimmed = message.trim();
-            if (!trimmed) return;
+            const hasAttachments = !!fileUploadIds && fileUploadIds.length > 0;
+            // Same gate the route composer enforces — either text or at
+            // least one resolved upload, never an empty send.
+            if (!trimmed && !hasAttachments) return;
             const generationId = live.beginTurn();
             const result = await sendMutation({
                 chatId: chatIdRef.current,
                 message: trimmed,
-                fileUploadIds: null,
+                fileUploadIds: fileUploadIds ? [...fileUploadIds] : null,
                 generationId,
                 requireToolCallApprovals: false,
             });

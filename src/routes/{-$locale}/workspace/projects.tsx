@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
     ArchiveIcon,
@@ -25,7 +25,6 @@ import { GlassCard } from '../../../web/components/GlassCard';
 import type { GqlCProjectStatus, GqlCTaskStatus, GqlCWorkspaceProjectsPageQuery } from '../../../web/graphql/generated';
 import {
     WorkspaceProjectDeleteDocument,
-    WorkspaceProjectFromRequestDocument,
     WorkspaceProjectRequestArchiveDocument,
     WorkspaceProjectRequestDeleteDocument,
     WorkspaceProjectUpsertDocument,
@@ -43,8 +42,9 @@ import { localeFromParam } from '../../../web/utils/locale';
 // Workspace projects hub — three tabs glued to one read query: Inbox
 // triages incoming visitor `ProjectRequest`s, Projects is a status-grouped
 // board of ongoing personal work, Todos lists standalone tasks (no
-// project attached). Convert from inbox → project is one mutation that
-// archives the request and creates a `planning` project linked back.
+// project attached). Convert from inbox → project opens the project
+// editor prefilled from the request; on submit `projectUpsert` inserts
+// the project and archives the source request in one transaction.
 // Admin-only, single-language (no DE/EN pairs); the page itself is
 // noindex and reachable only by typing the URL until Phase 2 OAuth.
 // See `docs/features/projects-workspace.md`.
@@ -124,10 +124,7 @@ function WorkspaceProjects() {
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full py-12 leading-relaxed">
-            <Link to="/{-$locale}/workspace" className="text-sm text-muted-foreground hover:text-foreground">
-                {{ de: '← Workspace', en: '← Workspace' }[locale]}
-            </Link>
-            <div className="mt-6 flex items-center gap-3 text-primary">
+            <div className="flex items-center gap-3 text-primary">
                 <FolderKanbanIcon className="size-6" />
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">{title[locale]}</h1>
             </div>
@@ -233,9 +230,9 @@ function InboxSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Request
 
 function InboxRow({ row, locale, onChanged }: { row: RequestRow; locale: Locale; onChanged: () => void }) {
     const [expanded, setExpanded] = useState(false);
+    const [converting, setConverting] = useState(false);
     const [, archive] = useMutation(WorkspaceProjectRequestArchiveDocument);
     const [, del] = useMutation(WorkspaceProjectRequestDeleteDocument);
-    const [, convert] = useMutation(WorkspaceProjectFromRequestDocument);
     const [busy, setBusy] = useState(false);
 
     const typeLabel = PROJECT_TYPE_LABELS[row.projectType]?.[locale] ?? row.projectType;
@@ -268,16 +265,7 @@ function InboxRow({ row, locale, onChanged }: { row: RequestRow; locale: Locale;
                 </button>
                 <div className="flex shrink-0 gap-1">
                     {row.status === 'emailVerified' && !row.convertedProject ? (
-                        <Button
-                            size="sm"
-                            onClick={async () => {
-                                setBusy(true);
-                                await convert({ projectRequestId: row.projectRequestId });
-                                setBusy(false);
-                                onChanged();
-                            }}
-                            disabled={busy}
-                        >
+                        <Button size="sm" onClick={() => setConverting(true)} disabled={busy || converting}>
                             <ArrowRightIcon />
                             {{ de: 'In Projekt umwandeln', en: 'Convert to project' }[locale]}
                         </Button>
@@ -325,8 +313,45 @@ function InboxRow({ row, locale, onChanged }: { row: RequestRow; locale: Locale;
                     </dl>
                 </div>
             ) : null}
+            {converting ? (
+                <ProjectForm
+                    row={null}
+                    locale={locale}
+                    nextPosition={null}
+                    initialValues={projectDraftFromRequest(row, locale)}
+                    sourceRequestId={row.projectRequestId}
+                    onClose={() => setConverting(false)}
+                    onSaved={() => {
+                        setConverting(false);
+                        onChanged();
+                    }}
+                />
+            ) : null}
         </GlassCard>
     );
+}
+
+// Synthesizes a sensible draft so the inbox can prefill the project
+// editor when converting a request: the admin reviews and tweaks before
+// the project lands on the board, rather than committing the auto-built
+// title/notes blindly. The server-side merge keeps the description and
+// notes intact when `projectUpsert` archives the source request.
+function projectDraftFromRequest(
+    row: RequestRow,
+    locale: Locale,
+): { title: string; description: string; notes: string; status: GqlCProjectStatus } {
+    const typeLabel = PROJECT_TYPE_LABELS[row.projectType]?.[locale] ?? row.projectType;
+    const subject = row.company?.trim() ? row.company : row.name;
+    const parts: string[] = [];
+    if (row.budget) parts.push(`Budget: ${row.budget}`);
+    if (row.timeline) parts.push(`Timeline: ${row.timeline}`);
+    parts.push(`Contact: ${row.name} <${row.email}>`);
+    return {
+        title: `${typeLabel}: ${subject}`,
+        description: row.description,
+        notes: parts.join('\n'),
+        status: 'planning',
+    };
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -477,21 +502,25 @@ function ProjectForm({
     row,
     locale,
     nextPosition,
+    initialValues,
+    sourceRequestId,
     onClose,
     onSaved,
 }: {
     row: ProjectRow | null;
     locale: Locale;
-    nextPosition: number;
+    nextPosition: number | null;
+    initialValues?: { title?: string; description?: string; notes?: string; status?: GqlCProjectStatus };
+    sourceRequestId?: string | null;
     onClose: () => void;
     onSaved: () => void;
 }) {
     const [, upsert] = useMutation(WorkspaceProjectUpsertDocument);
     const [form, setForm] = useState({
-        title: row?.title ?? '',
-        description: row?.description ?? '',
-        notes: row?.notes ?? '',
-        status: row?.status ?? ('idea' as GqlCProjectStatus),
+        title: row?.title ?? initialValues?.title ?? '',
+        description: row?.description ?? initialValues?.description ?? '',
+        notes: row?.notes ?? initialValues?.notes ?? '',
+        status: row?.status ?? initialValues?.status ?? ('idea' as GqlCProjectStatus),
     });
     const [busy, setBusy] = useState(false);
 
@@ -506,8 +535,11 @@ function ProjectForm({
                     description: form.description || null,
                     notes: form.notes || null,
                     status: form.status,
-                    position: row?.position ?? nextPosition,
-                    sourceRequestId: null,
+                    // Updates pass the existing position; new hand-authored rows
+                    // fall back to nextPosition; conversions from a request omit
+                    // it entirely (server appends to `planning`).
+                    position: row?.position ?? nextPosition ?? null,
+                    sourceRequestId: sourceRequestId ?? null,
                     startedAt: row?.startedAt ?? null,
                     completedAt: row?.completedAt ?? null,
                 });

@@ -17,7 +17,6 @@ import { useQuery } from 'urql';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { CardContent, CardDescription, CardTitle } from '../../../web/components/base/card';
 import { GlassCard } from '../../../web/components/GlassCard';
-import { Header } from '../../../web/components/Header';
 import { MessageComposer } from '../../../web/components/MessageComposer';
 import { workspaceQuotePick } from '../../../web/content/workspaceQuotes';
 import { WorkspaceHubDocument } from '../../../web/graphql/generated';
@@ -173,13 +172,10 @@ function WorkspaceHub() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col">
-            {/* `brandLabel="Workspace"` swaps the public "Cem Yilmaz" wordmark
-             * for an inert "Workspace" label — the logo stays clickable (back
-             * to landing) but the label itself doesn't pretend to be a link
-             * to nowhere. On a single-user private surface the wordmark is
-             * decoration; the page already knows whose workspace it is. */}
-            <Header brandLabel={title[locale]} chatVariant="workspace" />
+        <>
+            {/* The workspace `<Header />` (logo + breadcrumbs + assistant
+             * button) is mounted once at the layout (`workspace.tsx`), so the
+             * hub renders only its own body content. */}
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <AssistantHero
                     locale={locale}
@@ -189,7 +185,7 @@ function WorkspaceHub() {
                 />
                 <FocusAreaGrid locale={locale} badges={badges} />
             </main>
-        </div>
+        </>
     );
 }
 

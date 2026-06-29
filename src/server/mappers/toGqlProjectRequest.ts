@@ -3,10 +3,11 @@ import type { GqlSProjectRequest } from '../graphql/generated';
 import { toGqlProject } from './toGqlProject';
 
 // `convertedProject` is the workspace projects row that was created from
-// this request (via `projectFromRequest`). The list query joins it in;
-// pass `null` for the hand-built admin view that has no project context.
-// The OTP columns are intentionally omitted from the GraphQL surface —
-// the admin UI is read-only triage, not OTP introspection.
+// this request (via `projectUpsert` with `sourceRequestId`). The list
+// query joins it in; pass `null` for the hand-built admin view that has
+// no project context. The OTP columns are intentionally omitted from the
+// GraphQL surface — the admin UI is read-only triage, not OTP
+// introspection.
 export function toGqlProjectRequest(row: ProjectRequest, convertedProject: Project | null): GqlSProjectRequest {
     return {
         projectRequestId: row.projectRequestId,

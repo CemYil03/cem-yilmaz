@@ -20,7 +20,6 @@ import { cvSkillUpsert } from '../commands/cvSkillUpsert';
 import { profileObservationDismiss } from '../commands/profileObservationDismiss';
 import { profileSynthesizeRequest } from '../commands/profileSynthesizeRequest';
 import { projectDelete } from '../commands/projectDelete';
-import { projectFromRequest } from '../commands/projectFromRequest';
 import { projectRequestArchive } from '../commands/projectRequestArchive';
 import { projectRequestDelete } from '../commands/projectRequestDelete';
 import { projectReorder } from '../commands/projectReorder';
@@ -72,7 +71,6 @@ import type {
     GqlSAdminMutationCvSkillUpsertArgs,
     GqlSAdminMutationProfileObservationDismissArgs,
     GqlSAdminMutationProjectDeleteArgs,
-    GqlSAdminMutationProjectFromRequestArgs,
     GqlSAdminMutationProjectReorderArgs,
     GqlSAdminMutationProjectRequestArchiveArgs,
     GqlSAdminMutationProjectRequestDeleteArgs,
@@ -294,9 +292,6 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return projectRequestDelete(args, requestingSession, serverRuntime);
-            },
-            projectFromRequest(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectFromRequestArgs, requestingSession: GqlSSession) {
-                return projectFromRequest(args, requestingSession, serverRuntime);
             },
             projectUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectUpsertArgs, requestingSession: GqlSSession) {
                 return projectUpsert(args, requestingSession, serverRuntime);
