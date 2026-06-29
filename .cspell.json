@@ -13,9 +13,7 @@
         ".env*",
         ".claude"
     ],
-    "import": [
-        "@cspell/dict-de-de/cspell-ext.json"
-    ],
+    "import": ["@cspell/dict-de-de/cspell-ext.json"],
     "words": [
         "ABAP",
         "abteilungsinternen",
@@ -170,11 +168,5 @@
         "zodv"
     ],
     // https://cspell.org/docs/dictionaries/
-    "dictionaries": [
-        "typescript",
-        "node",
-        "html",
-        "css",
-        "de-de"
-    ]
+    "dictionaries": ["typescript", "node", "html", "css", "de-de"]
 }
