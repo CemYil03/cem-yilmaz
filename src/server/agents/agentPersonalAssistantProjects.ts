@@ -30,7 +30,7 @@ import { toolTaskUpsert } from './toolTaskUpsert';
 // sentinel and the orchestrator owns the back-and-forth via its own
 // `promptUserForInput` tool.
 
-export type ProjectsAgentMutationKind = 'projectCreate' | 'projectUpdate' | 'projectDelete' | 'taskCreate' | 'taskUpdate' | 'taskDelete';
+type ProjectsAgentMutationKind = 'projectCreate' | 'projectUpdate' | 'projectDelete' | 'taskCreate' | 'taskUpdate' | 'taskDelete';
 
 export interface ProjectsAgentMutation {
     kind: ProjectsAgentMutationKind;
