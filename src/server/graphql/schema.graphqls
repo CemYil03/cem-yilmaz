@@ -678,6 +678,142 @@ input CvHobbyInput {
     position: Int!
 }
 
+# --- Projects, Tasks, Project requests ---------------------------------------
+#
+# Workspace projects surface: incoming visitor `ProjectRequest`s plus
+# admin-only `Project` and `Task` rows. Single-language (no `*De` / `*En`
+# pairs — never surfaced publicly). See `docs/features/projects-workspace.md`.
+
+enum ProjectRequestStatus {
+    pendingOtp
+    emailVerified
+    archived
+}
+
+enum ProjectRequestType {
+    webApp
+    mobile
+    consulting
+    aiIntegration
+    other
+}
+
+# A visitor-submitted project brief. Surfaced on the workspace projects
+# Inbox tab once `status = emailVerified`. The `otpHash` / `otpSalt`
+# columns are deliberately not exposed — the GraphQL surface is read-only
+# triage, not OTP introspection.
+type ProjectRequest {
+    projectRequestId: ID!
+    chatId: ID
+    name: String!
+    email: String!
+    company: String
+    projectType: ProjectRequestType!
+    description: String!
+    budget: String
+    timeline: String
+    status: ProjectRequestStatus!
+    verifiedAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    # Project this request was converted into, if any. Lets the Inbox row
+    # render a "Converted →" backlink. Set by `projectFromRequest`; null
+    # otherwise.
+    convertedProject: Project
+}
+
+enum ProjectStatus {
+    idea
+    planning
+    active
+    paused
+    done
+    archived
+}
+
+type Project {
+    projectId: ID!
+    title: String!
+    description: String
+    notes: String
+    status: ProjectStatus!
+    position: Int!
+    # Source visitor request this project was created from, when applicable.
+    # Null for hand-created projects.
+    sourceRequest: ProjectRequest
+    startedAt: DateTime
+    completedAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    # Project-bound tasks, ordered by `position` within their status bucket.
+    tasks: [Task!]!
+}
+
+enum TaskStatus {
+    todo
+    doing
+    done
+}
+
+type Task {
+    taskId: ID!
+    # Owning project. Null = standalone todo (surfaced on the Todos tab).
+    projectId: ID
+    title: String!
+    notes: String
+    status: TaskStatus!
+    position: Int!
+    dueAt: DateTime
+    completedAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# Workspace projects read namespace — mounted under `Admin.projects` so
+# the existing `guardAdmin` gate covers it.
+extend type Admin {
+    # Incoming visitor project briefs, newest first. The `status` argument
+    # filters server-side; omit to return every state (including the
+    # half-baked `pendingOtp` rows, mostly useful for debugging).
+    projectRequests(status: ProjectRequestStatus): [ProjectRequest!]!
+    # Lightweight count of verified-and-untriaged requests. Drives the
+    # inbox badge on the workspace hub. Equivalent to
+    # `projectRequests(status: emailVerified)` minus rows already
+    # converted into a project — but a single `count(*)` round-trip
+    # instead of materialising every row + its join.
+    projectRequestsInboxCount: Int!
+    # All projects, ordered by status then `position`. The board groups
+    # client-side by status. `status` argument narrows server-side when set.
+    projects(status: ProjectStatus): [Project!]!
+    # Standalone todos: rows with `projectId IS NULL`. Project-bound tasks
+    # are reached through `Project.tasks` so the Todos tab and the project
+    # board don't fight over the same list.
+    standaloneTasks: [Task!]!
+}
+
+input ProjectCreate {
+    projectId: ID
+    title: String!
+    description: String
+    notes: String
+    status: ProjectStatus!
+    position: Int!
+    sourceRequestId: ID
+    startedAt: DateTime
+    completedAt: DateTime
+}
+
+input TaskCreate {
+    taskId: ID
+    projectId: ID
+    title: String!
+    notes: String
+    status: TaskStatus!
+    position: Int!
+    dueAt: DateTime
+    completedAt: DateTime
+}
+
 # CV admin namespace — mounted under `AdminMutation.cv` so the existing
 # `guardAdminMutation` gate covers it without a parallel Mutation entry.
 extend type AdminMutation {
@@ -701,4 +837,24 @@ extend type AdminMutation {
     # Force a synthesis pass now. Enqueues the `profileSynthesize` job. The
     # job updates the `Profile` row and resets `observationsSinceSynthesis`.
     profileSynthesizeRequest: MutationResult!
+    # --- Workspace projects -------------------------------------------------
+    # Archive an incoming request without converting it to a project. Flips
+    # `status = archived` so the Inbox tab can hide it by default.
+    projectRequestArchive(projectRequestId: ID!): MutationResult!
+    # Permanent delete. Use for spam that survived OTP verification.
+    projectRequestDelete(projectRequestId: ID!): MutationResult!
+    # Convert an incoming request into a `Project` in state `planning`,
+    # pre-filling `title` / `description` from the request and stamping
+    # `sourceRequestId`. The request is archived in the same transaction.
+    projectFromRequest(projectRequestId: ID!): Project!
+    projectUpsert(input: ProjectCreate!): Project!
+    projectDelete(projectId: ID!): MutationResult!
+    projectReorder(orderedIds: [ID!]!): MutationResult!
+    taskUpsert(input: TaskCreate!): Task!
+    taskDelete(taskId: ID!): MutationResult!
+    # Rewrite `position` on the given task ids in array order. Caller scopes
+    # the list to a single `(projectId, status)` bucket — the server does
+    # not enforce membership in one bucket, but mixing buckets in one call
+    # is meaningless.
+    taskReorder(orderedIds: [ID!]!): MutationResult!
 }

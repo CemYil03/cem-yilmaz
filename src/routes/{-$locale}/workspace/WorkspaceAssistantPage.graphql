@@ -160,6 +160,25 @@ fragment WorkspaceChatMessageFields on ChatMessage {
     }
 }
 
+# Lightweight metadata list — used by the sheet's "recent chats" section
+# and by the dedicated route's empty / sidebar surfaces. Returns every
+# admin chat newest-first; callers slice the list to ten before rendering
+# so the wire shape stays stable when the cap shifts later. The full
+# transcript is fetched on demand via `WorkspaceChatPage(chatId)`.
+fragment WorkspaceChatListItem on Chat {
+    chatId
+    title
+    lastModifiedAt
+}
+
+query WorkspaceAssistantChats {
+    admin {
+        chats {
+            ...WorkspaceChatListItem
+        }
+    }
+}
+
 query WorkspaceChatPage($chatId: ID!) {
     currentSession {
         sessionId

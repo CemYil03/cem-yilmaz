@@ -22,7 +22,13 @@ export function AssistantMarkdown({ text, className, streaming = false }: { text
                 mermaid: { download: false, copy: true, fullscreen: true, panZoom: true },
             }}
             parseIncompleteMarkdown
-            className={cn('text-sm leading-relaxed wrap-break-word *:first:mt-0 *:last:mb-0', className)}
+            className={cn(
+                'text-sm leading-relaxed wrap-break-word *:first:mt-0 *:last:mb-0',
+                // Tailwind's preflight strips list markers and padding, so wrapped lines fall back under the bullet.
+                // `list-outside` + left padding puts the marker in a gutter and aligns wrapped text under the first line.
+                '[&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-6 [&_ol]:pl-6 [&_li]:pl-1 [&_li]:marker:text-foreground/60 [&_ul]:list-outside [&_ol]:list-outside',
+                className,
+            )}
         >
             {text}
         </Streamdown>

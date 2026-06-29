@@ -19,7 +19,8 @@ Split by editing cadence:
 - **Static**: typed config file under `src/web/content/`. Read directly from both server and client (it's pure data, no runtime). Edited via
   PR. Used today by `personalInfo.ts` (CV identity facts).
 - **DB-backed**: Drizzle table + CQRS layer (queries, commands, mappers, resolver) + admin form on `/workspace/<thing>`. Used today by the
-  CV timeline tables (`cvExperience`, `cvEducation`, `cvSkill`, `cvHobby`); will be used by Phase 3's projects/blog/tools.
+  CV timeline tables (`cvExperience`, `cvEducation`, `cvSkill`, `cvHobby`) and the workspace projects tables (`projects`, `tasks`); will be
+  used by Phase 3's blog/tools.
 
 ## Conventions for DB-backed editable lists
 
@@ -66,3 +67,11 @@ to whatever order Postgres chose, which is acceptable for the row counts here.
 
 - **Anything Cem will edit more than twice a year**. Static content edits ship through CI, with a commit log and review. That's the right
   weight for a phone number, the wrong weight for a job entry.
+
+## When a DB-backed list skips bilingual columns
+
+The `*De` / `*En` column pair is the rule for surfaces visitors render — the visitor's locale picks the half they see. **Admin-only**
+surfaces drop the pair. The workspace projects feature is the canonical example: `Projects` and `Tasks` are never rendered to the public
+site (the page is `noindex` and the data feeds nothing on the visitor surface in Phase 1–2), so paired columns would cost typing without
+buying anything. The schema uses single `title` / `description` / `notes` text columns; the GraphQL types do the same. The CV tables stay
+bilingual because their rows feed `/cv` and `/about` directly. See [features/projects-workspace.md](../features/projects-workspace.md).

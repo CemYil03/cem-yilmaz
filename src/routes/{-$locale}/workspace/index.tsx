@@ -13,12 +13,14 @@ import {
     WalletIcon,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { useQuery } from 'urql';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { CardContent, CardDescription, CardTitle } from '../../../web/components/base/card';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Header } from '../../../web/components/Header';
 import { MessageComposer } from '../../../web/components/MessageComposer';
 import { workspaceQuotePick } from '../../../web/content/workspaceQuotes';
+import { WorkspaceHubDocument } from '../../../web/graphql/generated';
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
@@ -63,6 +65,9 @@ type FocusArea = {
     icon: typeof CodeXmlIcon;
     title: { de: string; en: string };
     description: { de: string; en: string };
+    // Badge value driven by the hub query (e.g. inbox count). Resolved at
+    // render time so a card definition is still a static literal.
+    badgeKey?: 'projectsInbox';
 };
 
 const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
@@ -83,6 +88,7 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         icon: FolderKanbanIcon,
         title: { de: 'Projekte', en: 'Projects' },
         description: { de: 'Persönliche Projekte und nächste Schritte.', en: 'Personal projects and next steps.' },
+        badgeKey: 'projectsInbox',
     },
     {
         to: '/{-$locale}/workspace/finances',
@@ -159,6 +165,12 @@ function WorkspaceHub() {
     // focus area to consult something and coming back keeps the
     // transcript intact.
     const { openWithMessage, live } = useWorkspaceAssistantChat();
+    // `cache-and-network` so returning to the hub shows the last-known
+    // badge value instantly while a fresh count fetches in the background.
+    const [{ data }] = useQuery({ query: WorkspaceHubDocument, requestPolicy: 'cache-and-network' });
+    const badges: Record<NonNullable<FocusArea['badgeKey']>, number> = {
+        projectsInbox: data?.admin.projectRequestsInboxCount ?? 0,
+    };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -175,7 +187,7 @@ function WorkspaceHub() {
                         <HubComposer locale={locale} disabled={live.isGenerating} onSubmit={(message) => void openWithMessage(message)} />
                     }
                 />
-                <FocusAreaGrid locale={locale} />
+                <FocusAreaGrid locale={locale} badges={badges} />
             </main>
         </div>
     );
@@ -239,7 +251,7 @@ function AssistantHero({ locale, composer }: { locale: Locale; composer: React.R
     );
 }
 
-function FocusAreaGrid({ locale }: { locale: Locale }) {
+function FocusAreaGrid({ locale, badges }: { locale: Locale; badges: Record<NonNullable<FocusArea['badgeKey']>, number> }) {
     return (
         <div className="flex flex-col gap-10 md:gap-12">
             {/* Personal focus areas — daily-use surfaces. Uniform tiling: 1
@@ -247,7 +259,7 @@ function FocusAreaGrid({ locale }: { locale: Locale }) {
              * grid fills 4 + 3; the trailing gap on the second row is fine
              * because the next subgroup starts beneath it anyway. */}
             <section aria-label={{ de: 'Persönliche Bereiche', en: 'Personal areas' }[locale]}>
-                <FocusCardGrid locale={locale} areas={PERSONAL_FOCUS_AREAS} columnsClass="lg:grid-cols-4" />
+                <FocusCardGrid locale={locale} areas={PERSONAL_FOCUS_AREAS} columnsClass="lg:grid-cols-4" badges={badges} />
             </section>
             {/* Public-site management — content that feeds cem-yilmaz.de.
              * Visited rarely (CV updates, scanning visitor chats), so it sits
@@ -269,17 +281,28 @@ function FocusAreaGrid({ locale }: { locale: Locale }) {
                         }
                     </p>
                 </div>
-                <FocusCardGrid locale={locale} areas={PUBLIC_SITE_FOCUS_AREAS} columnsClass="lg:grid-cols-2" />
+                <FocusCardGrid locale={locale} areas={PUBLIC_SITE_FOCUS_AREAS} columnsClass="lg:grid-cols-2" badges={badges} />
             </section>
         </div>
     );
 }
 
-function FocusCardGrid({ locale, areas, columnsClass }: { locale: Locale; areas: ReadonlyArray<FocusArea>; columnsClass: string }) {
+function FocusCardGrid({
+    locale,
+    areas,
+    columnsClass,
+    badges,
+}: {
+    locale: Locale;
+    areas: ReadonlyArray<FocusArea>;
+    columnsClass: string;
+    badges: Record<NonNullable<FocusArea['badgeKey']>, number>;
+}) {
     return (
         <div className={cn('grid gap-4 md:grid-cols-2', columnsClass)}>
             {areas.map((area) => {
                 const { to, icon: Icon } = area;
+                const badge = area.badgeKey ? badges[area.badgeKey] : 0;
                 return (
                     <Link key={to} to={to} className="group">
                         <GlassCard className="h-full transition-colors hover:bg-white/55 dark:hover:bg-white/8">
@@ -295,6 +318,14 @@ function FocusCardGrid({ locale, areas, columnsClass }: { locale: Locale; areas:
                                     <div className="flex items-center gap-2 text-primary">
                                         <Icon className="size-5 shrink-0" />
                                         <CardTitle className="text-base md:text-lg leading-tight">{area.title[locale]}</CardTitle>
+                                        {badge > 0 ? (
+                                            <span
+                                                className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+                                                aria-label={{ de: `${badge} neue Anfragen`, en: `${badge} new requests` }[locale]}
+                                            >
+                                                {badge}
+                                            </span>
+                                        ) : null}
                                     </div>
                                     <ArrowUpRightIcon
                                         className="size-4 shrink-0 text-muted-foreground/60 transition-[color,transform] duration-200 ease-out group-hover:text-foreground group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0"

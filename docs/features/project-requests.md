@@ -73,25 +73,41 @@ sixth, returning `tooManyAttempts`. The expected brute-force probability across 
 The cap is independent of expiry: an attempt against an expired row returns `expired` without bumping the counter. Expiry is the more
 important gate; the cap exists to keep the assistant honest when it tries to be helpful.
 
+## Admin triage
+
+Verified requests surface on the workspace projects page as the **Inbox** tab — see
+[features/projects-workspace.md](./projects-workspace.md). From there the row can be:
+
+- **Archived** (`projectRequestArchive`) — flips status to `archived` without creating a project. Hidden by default.
+- **Converted to a project** (`projectFromRequest`) — atomically creates a `Projects` row in state `planning` with `sourceRequestId`
+  pointing back, and archives the source request in the same transaction. The new project pre-fills its title from the project-type label +
+  company/visitor name, body from the brief's `description`, and appends Budget / Timeline / Contact lines to `notes`. Refuses to act on
+  rows that are not `emailVerified`.
+- **Deleted** (`projectRequestDelete`) — permanent. Use only for spam that survived OTP verification. Projects converted earlier from this
+  request keep their row but lose the FK backlink (the FK is `ON DELETE SET NULL`).
+
+The workspace hub's Projects card carries a badge with the un-triaged count, fed by `admin.projectRequestsInboxCount` — a single `count(*)`
+round-trip, not the full request list.
+
 ## Where things live
 
-| Concern                              | File                                                              |
-| ------------------------------------ | ----------------------------------------------------------------- |
-| Table definition + types             | `src/server/db/schema.ts` (`projectRequests`, `ProjectRequest*`)  |
-| Migration (initial)                  | `drizzle/0003_giant_sentinels.sql`                                |
-| Submit tool (state → `pendingOtp`)   | `src/server/agents/toolSubmitProjectRequest.ts`                   |
-| Verify tool (`pendingOtp` → next)    | `src/server/agents/toolVerifyProjectRequestOtp.ts`                |
-| OTP send job                         | `src/server/jobs/handlers/projectRequestOtpSend.ts`               |
-| Notification send job (after verify) | `src/server/jobs/handlers/projectRequestNotifySend.ts`            |
-| OTP slot in the chat form            | `Otp` kind in `toolPromptUserForInput.ts` + GraphQL union member  |
-| OTP UI                               | `src/web/components/base/input-otp.tsx` (existing base primitive) |
+| Concern                              | File                                                                             |
+| ------------------------------------ | -------------------------------------------------------------------------------- |
+| Table definition + types             | `src/server/db/schema.ts` (`projectRequests`, `ProjectRequest*`)                 |
+| Migration (initial)                  | `drizzle/0003_giant_sentinels.sql`                                               |
+| Submit tool (state → `pendingOtp`)   | `src/server/agents/toolSubmitProjectRequest.ts`                                  |
+| Verify tool (`pendingOtp` → next)    | `src/server/agents/toolVerifyProjectRequestOtp.ts`                               |
+| OTP send job                         | `src/server/jobs/handlers/projectRequestOtpSend.ts`                              |
+| Notification send job (after verify) | `src/server/jobs/handlers/projectRequestNotifySend.ts`                           |
+| OTP slot in the chat form            | `Otp` kind in `toolPromptUserForInput.ts` + GraphQL union member                 |
+| OTP UI                               | `src/web/components/base/input-otp.tsx` (existing base primitive)                |
+| Admin triage UI                      | `src/routes/{-$locale}/workspace/projects.tsx` (Inbox tab)                       |
+| Admin triage commands                | `src/server/commands/projectRequest{Archive,Delete}.ts`, `projectFromRequest.ts` |
 
 ## Open questions / future work
 
 - **Reaping stale `pendingOtp` rows.** A row whose OTP expired and which the visitor never returned to retry stays around. A periodic job
   similar to `staleSessionsCleanup` could move them to `archived` after a few days.
-- **Admin review surface.** No `/workspace` page exists yet to read `ProjectRequests` directly. Phase 3 (the broader admin content editor)
-  is the right home for that.
 - **Rate limiting.** The visitor chat already caps user messages at 10 per 24h per IP-hash, which transitively caps project submissions —
   every submission needs at least 2-3 user messages, so a single IP-hash can produce at most ~3-4 briefs in a day before the chat itself
   stops accepting their input. No separate cap was added.

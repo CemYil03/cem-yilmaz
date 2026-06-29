@@ -1,0 +1,9 @@
+# Workspace hub query — fetches lightweight counts for the focus-area
+# tile badges (currently just the projects inbox). Hub is rendered on
+# every workspace surface visit, so this stays cheap and `cache-first`.
+
+query WorkspaceHub {
+    admin {
+        projectRequestsInboxCount
+    }
+}

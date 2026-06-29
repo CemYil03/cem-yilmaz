@@ -1,0 +1,181 @@
+# Workspace projects operations — co-located with the `/workspace/projects`
+# editor route. Drives the Inbox (`projectRequests`), Projects board
+# (`projects` + nested `tasks`), and standalone Todos tab (`standaloneTasks`).
+# See `docs/features/projects-workspace.md`.
+
+query WorkspaceProjectsPage {
+    admin {
+        projectRequests {
+            projectRequestId
+            chatId
+            name
+            email
+            company
+            projectType
+            description
+            budget
+            timeline
+            status
+            verifiedAt
+            createdAt
+            convertedProject {
+                projectId
+                title
+                status
+            }
+        }
+        projects {
+            projectId
+            title
+            description
+            notes
+            status
+            position
+            startedAt
+            completedAt
+            createdAt
+            updatedAt
+            sourceRequest {
+                projectRequestId
+                name
+                email
+                company
+                projectType
+            }
+            tasks {
+                taskId
+                projectId
+                title
+                notes
+                status
+                position
+                dueAt
+                completedAt
+            }
+        }
+        standaloneTasks {
+            taskId
+            projectId
+            title
+            notes
+            status
+            position
+            dueAt
+            completedAt
+        }
+    }
+}
+
+mutation WorkspaceProjectRequestArchive($projectRequestId: ID!) {
+    admin {
+        projectRequestArchive(projectRequestId: $projectRequestId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceProjectRequestDelete($projectRequestId: ID!) {
+    admin {
+        projectRequestDelete(projectRequestId: $projectRequestId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceProjectFromRequest($projectRequestId: ID!) {
+    admin {
+        projectFromRequest(projectRequestId: $projectRequestId) {
+            projectId
+        }
+    }
+}
+
+mutation WorkspaceProjectUpsert(
+    $projectId: ID
+    $title: String!
+    $description: String
+    $notes: String
+    $status: ProjectStatus!
+    $position: Int!
+    $sourceRequestId: ID
+    $startedAt: DateTime
+    $completedAt: DateTime
+) {
+    admin {
+        projectUpsert(
+            input: {
+                projectId: $projectId
+                title: $title
+                description: $description
+                notes: $notes
+                status: $status
+                position: $position
+                sourceRequestId: $sourceRequestId
+                startedAt: $startedAt
+                completedAt: $completedAt
+            }
+        ) {
+            projectId
+        }
+    }
+}
+
+mutation WorkspaceProjectDelete($projectId: ID!) {
+    admin {
+        projectDelete(projectId: $projectId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceProjectReorder($orderedIds: [ID!]!) {
+    admin {
+        projectReorder(orderedIds: $orderedIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTaskUpsert(
+    $taskId: ID
+    $projectId: ID
+    $title: String!
+    $notes: String
+    $status: TaskStatus!
+    $position: Int!
+    $dueAt: DateTime
+    $completedAt: DateTime
+) {
+    admin {
+        taskUpsert(
+            input: {
+                taskId: $taskId
+                projectId: $projectId
+                title: $title
+                notes: $notes
+                status: $status
+                position: $position
+                dueAt: $dueAt
+                completedAt: $completedAt
+            }
+        ) {
+            taskId
+        }
+    }
+}
+
+mutation WorkspaceTaskDelete($taskId: ID!) {
+    admin {
+        taskDelete(taskId: $taskId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTaskReorder($orderedIds: [ID!]!) {
+    admin {
+        taskReorder(orderedIds: $orderedIds) {
+            success
+        }
+    }
+}

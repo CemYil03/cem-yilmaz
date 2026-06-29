@@ -21,12 +21,24 @@ export interface GqlSAdmin {
     chat: GqlSChat;
     chats: Array<GqlSChat>;
     profile: GqlSAdminProfile;
+    projectRequests: Array<GqlSProjectRequest>;
+    projectRequestsInboxCount: Scalars['Int']['output'];
+    projects: Array<GqlSProject>;
     publicChat: GqlSChat;
     publicChats: Array<GqlSChat>;
+    standaloneTasks: Array<GqlSTask>;
 }
 
 export type GqlSAdminChatArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminProjectRequestsArgs = {
+    status?: InputMaybe<GqlSProjectRequestStatus>;
+};
+
+export type GqlSAdminProjectsArgs = {
+    status?: InputMaybe<GqlSProjectStatus>;
 };
 
 export type GqlSAdminPublicChatArgs = {
@@ -52,6 +64,15 @@ export interface GqlSAdminMutation {
     cvSkillUpsert: GqlSCvSkill;
     profileObservationDismiss: GqlSMutationResult;
     profileSynthesizeRequest: GqlSMutationResult;
+    projectDelete: GqlSMutationResult;
+    projectFromRequest: GqlSProject;
+    projectReorder: GqlSMutationResult;
+    projectRequestArchive: GqlSMutationResult;
+    projectRequestDelete: GqlSMutationResult;
+    projectUpsert: GqlSProject;
+    taskDelete: GqlSMutationResult;
+    taskReorder: GqlSMutationResult;
+    taskUpsert: GqlSTask;
 }
 
 export type GqlSAdminMutationChatInputCollectionRespondArgs = {
@@ -124,6 +145,42 @@ export type GqlSAdminMutationCvSkillUpsertArgs = {
 
 export type GqlSAdminMutationProfileObservationDismissArgs = {
     observationId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectDeleteArgs = {
+    projectId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectFromRequestArgs = {
+    projectRequestId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationProjectRequestArchiveArgs = {
+    projectRequestId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectRequestDeleteArgs = {
+    projectRequestId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectUpsertArgs = {
+    input: GqlSProjectInput;
+};
+
+export type GqlSAdminMutationTaskDeleteArgs = {
+    taskId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationTaskReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationTaskUpsertArgs = {
+    input: GqlSTaskInput;
 };
 
 export interface GqlSAdminProfile {
@@ -564,6 +621,58 @@ export interface GqlSProfileObservation {
 
 export type GqlSProfileObservationCategory = 'behavioral' | 'factual' | 'psychological';
 
+export interface GqlSProject {
+    __typename?: 'Project';
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    description?: Maybe<Scalars['String']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    projectId: Scalars['ID']['output'];
+    sourceRequest?: Maybe<GqlSProjectRequest>;
+    startedAt?: Maybe<Scalars['DateTime']['output']>;
+    status: GqlSProjectStatus;
+    tasks: Array<GqlSTask>;
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSProjectInput = {
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    description?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position: Scalars['Int']['input'];
+    projectId?: InputMaybe<Scalars['ID']['input']>;
+    sourceRequestId?: InputMaybe<Scalars['ID']['input']>;
+    startedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    status: GqlSProjectStatus;
+    title: Scalars['String']['input'];
+};
+
+export interface GqlSProjectRequest {
+    __typename?: 'ProjectRequest';
+    budget?: Maybe<Scalars['String']['output']>;
+    chatId?: Maybe<Scalars['ID']['output']>;
+    company?: Maybe<Scalars['String']['output']>;
+    convertedProject?: Maybe<GqlSProject>;
+    createdAt: Scalars['DateTime']['output'];
+    description: Scalars['String']['output'];
+    email: Scalars['String']['output'];
+    name: Scalars['String']['output'];
+    projectRequestId: Scalars['ID']['output'];
+    projectType: GqlSProjectRequestType;
+    status: GqlSProjectRequestStatus;
+    timeline?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    verifiedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlSProjectRequestStatus = 'archived' | 'emailVerified' | 'pendingOtp';
+
+export type GqlSProjectRequestType = 'aiIntegration' | 'consulting' | 'mobile' | 'other' | 'webApp';
+
+export type GqlSProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'paused' | 'planning';
+
 export interface GqlSQuery {
     __typename?: 'Query';
     admin: GqlSAdmin;
@@ -593,6 +702,33 @@ export interface GqlSSubscription {
 export type GqlSSubscriptionChatUpdatesArgs = {
     generationId: Scalars['ID']['input'];
 };
+
+export interface GqlSTask {
+    __typename?: 'Task';
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    dueAt?: Maybe<Scalars['DateTime']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    projectId?: Maybe<Scalars['ID']['output']>;
+    status: GqlSTaskStatus;
+    taskId: Scalars['ID']['output'];
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSTaskInput = {
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position: Scalars['Int']['input'];
+    projectId?: InputMaybe<Scalars['ID']['input']>;
+    status: GqlSTaskStatus;
+    taskId?: InputMaybe<Scalars['ID']['input']>;
+    title: Scalars['String']['input'];
+};
+
+export type GqlSTaskStatus = 'doing' | 'done' | 'todo';
 
 export interface GqlSUser {
     __typename?: 'User';
@@ -828,10 +964,19 @@ export type GqlSResolversTypes = ResolversObject<{
     MutationResult: ResolverTypeWrapper<GqlSMutationResult>;
     ProfileObservation: ResolverTypeWrapper<GqlSProfileObservation>;
     ProfileObservationCategory: GqlSProfileObservationCategory;
+    Project: ResolverTypeWrapper<GqlSProject>;
+    ProjectInput: GqlSProjectInput;
+    ProjectRequest: ResolverTypeWrapper<GqlSProjectRequest>;
+    ProjectRequestStatus: GqlSProjectRequestStatus;
+    ProjectRequestType: GqlSProjectRequestType;
+    ProjectStatus: GqlSProjectStatus;
     Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Session: ResolverTypeWrapper<Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversTypes['Chat']> }>;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
+    Task: ResolverTypeWrapper<GqlSTask>;
+    TaskInput: GqlSTaskInput;
+    TaskStatus: GqlSTaskStatus;
     User: ResolverTypeWrapper<GqlSUser>;
     UserCreate: GqlSUserCreate;
     UserMutation: ResolverTypeWrapper<GqlSUserMutation>;
@@ -910,10 +1055,15 @@ export type GqlSResolversParentTypes = ResolversObject<{
     Mutation: Record<PropertyKey, never>;
     MutationResult: GqlSMutationResult;
     ProfileObservation: GqlSProfileObservation;
+    Project: GqlSProject;
+    ProjectInput: GqlSProjectInput;
+    ProjectRequest: GqlSProjectRequest;
     Query: Record<PropertyKey, never>;
     Session: Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversParentTypes['Chat']> };
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
+    Task: GqlSTask;
+    TaskInput: GqlSTaskInput;
     User: GqlSUser;
     UserCreate: GqlSUserCreate;
     UserMutation: GqlSUserMutation;
@@ -928,8 +1078,12 @@ export type GqlSAdminResolvers<
     chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminChatArgs, 'chatId'>>;
     chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
     profile?: Resolver<GqlSResolversTypes['AdminProfile'], ParentType, ContextType>;
+    projectRequests?: Resolver<Array<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType, Partial<GqlSAdminProjectRequestsArgs>>;
+    projectRequestsInboxCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    projects?: Resolver<Array<GqlSResolversTypes['Project']>, ParentType, ContextType, Partial<GqlSAdminProjectsArgs>>;
     publicChat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminPublicChatArgs, 'chatId'>>;
     publicChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    standaloneTasks?: Resolver<Array<GqlSResolversTypes['Task']>, ParentType, ContextType>;
 }>;
 
 export type GqlSAdminMutationResolvers<
@@ -1033,6 +1187,55 @@ export type GqlSAdminMutationResolvers<
         RequireFields<GqlSAdminMutationProfileObservationDismissArgs, 'observationId'>
     >;
     profileSynthesizeRequest?: Resolver<GqlSResolversTypes['MutationResult'], ParentType, ContextType>;
+    projectDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectDeleteArgs, 'projectId'>
+    >;
+    projectFromRequest?: Resolver<
+        GqlSResolversTypes['Project'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectFromRequestArgs, 'projectRequestId'>
+    >;
+    projectReorder?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectReorderArgs, 'orderedIds'>
+    >;
+    projectRequestArchive?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectRequestArchiveArgs, 'projectRequestId'>
+    >;
+    projectRequestDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectRequestDeleteArgs, 'projectRequestId'>
+    >;
+    projectUpsert?: Resolver<
+        GqlSResolversTypes['Project'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectUpsertArgs, 'input'>
+    >;
+    taskDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTaskDeleteArgs, 'taskId'>
+    >;
+    taskReorder?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTaskReorderArgs, 'orderedIds'>
+    >;
+    taskUpsert?: Resolver<GqlSResolversTypes['Task'], ParentType, ContextType, RequireFields<GqlSAdminMutationTaskUpsertArgs, 'input'>>;
 }>;
 
 export type GqlSAdminProfileResolvers<
@@ -1556,6 +1759,44 @@ export type GqlSProfileObservationResolvers<
     sourceChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
 }>;
 
+export type GqlSProjectResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Project'] = GqlSResolversParentTypes['Project'],
+> = ResolversObject<{
+    completedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    description?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    projectId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    sourceRequest?: Resolver<Maybe<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType>;
+    startedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['ProjectStatus'], ParentType, ContextType>;
+    tasks?: Resolver<Array<GqlSResolversTypes['Task']>, ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSProjectRequestResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ProjectRequest'] = GqlSResolversParentTypes['ProjectRequest'],
+> = ResolversObject<{
+    budget?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    chatId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    company?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    convertedProject?: Resolver<Maybe<GqlSResolversTypes['Project']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    description?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    email?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    projectRequestId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    projectType?: Resolver<GqlSResolversTypes['ProjectRequestType'], ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['ProjectRequestStatus'], ParentType, ContextType>;
+    timeline?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    verifiedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+}>;
+
 export type GqlSQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Query'] = GqlSResolversParentTypes['Query'],
@@ -1588,6 +1829,22 @@ export type GqlSSubscriptionResolvers<
         RequireFields<GqlSSubscriptionChatUpdatesArgs, 'generationId'>
     >;
     userUpdates?: SubscriptionResolver<GqlSResolversTypes['User'], 'userUpdates', ParentType, ContextType>;
+}>;
+
+export type GqlSTaskResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Task'] = GqlSResolversParentTypes['Task'],
+> = ResolversObject<{
+    completedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    dueAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    projectId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['TaskStatus'], ParentType, ContextType>;
+    taskId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
 }>;
 
 export type GqlSUserResolvers<
@@ -1675,9 +1932,12 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Mutation?: GqlSMutationResolvers<ContextType>;
     MutationResult?: GqlSMutationResultResolvers<ContextType>;
     ProfileObservation?: GqlSProfileObservationResolvers<ContextType>;
+    Project?: GqlSProjectResolvers<ContextType>;
+    ProjectRequest?: GqlSProjectRequestResolvers<ContextType>;
     Query?: GqlSQueryResolvers<ContextType>;
     Session?: GqlSSessionResolvers<ContextType>;
     Subscription?: GqlSSubscriptionResolvers<ContextType>;
+    Task?: GqlSTaskResolvers<ContextType>;
     User?: GqlSUserResolvers<ContextType>;
     UserMutation?: GqlSUserMutationResolvers<ContextType>;
     VisitorChatQuota?: GqlSVisitorChatQuotaResolvers<ContextType>;
@@ -1707,6 +1967,23 @@ export const GqlSProfileObservationCategorySchema: z.ZodType<
     'behavioral' | 'factual' | 'psychological',
     'behavioral' | 'factual' | 'psychological'
 > = z.enum(['behavioral', 'factual', 'psychological']);
+
+export const GqlSProjectRequestStatusSchema: z.ZodType<
+    'archived' | 'emailVerified' | 'pendingOtp',
+    'archived' | 'emailVerified' | 'pendingOtp'
+> = z.enum(['archived', 'emailVerified', 'pendingOtp']);
+
+export const GqlSProjectRequestTypeSchema: z.ZodType<
+    'aiIntegration' | 'consulting' | 'mobile' | 'other' | 'webApp',
+    'aiIntegration' | 'consulting' | 'mobile' | 'other' | 'webApp'
+> = z.enum(['aiIntegration', 'consulting', 'mobile', 'other', 'webApp']);
+
+export const GqlSProjectStatusSchema: z.ZodType<
+    'active' | 'archived' | 'done' | 'idea' | 'paused' | 'planning',
+    'active' | 'archived' | 'done' | 'idea' | 'paused' | 'planning'
+> = z.enum(['active', 'archived', 'done', 'idea', 'paused', 'planning']);
+
+export const GqlSTaskStatusSchema: z.ZodType<'doing' | 'done' | 'todo', 'doing' | 'done' | 'todo'> = z.enum(['doing', 'done', 'todo']);
 
 export function GqlSChatAssistantOptionsSchema(): z.ZodObject<Properties<GqlSChatAssistantOptions>> {
     return z.object({
@@ -1780,6 +2057,33 @@ export function GqlSCvSkillInputSchema(): z.ZodObject<Properties<GqlSCvSkillInpu
         cvSkillId: z.string().nullish(),
         label: z.string(),
         position: z.number(),
+    });
+}
+
+export function GqlSProjectInputSchema(): z.ZodObject<Properties<GqlSProjectInput>> {
+    return z.object({
+        completedAt: z.date().nullish(),
+        description: z.string().nullish(),
+        notes: z.string().nullish(),
+        position: z.number(),
+        projectId: z.string().nullish(),
+        sourceRequestId: z.string().nullish(),
+        startedAt: z.date().nullish(),
+        status: GqlSProjectStatusSchema,
+        title: z.string(),
+    });
+}
+
+export function GqlSTaskInputSchema(): z.ZodObject<Properties<GqlSTaskInput>> {
+    return z.object({
+        completedAt: z.date().nullish(),
+        dueAt: z.date().nullish(),
+        notes: z.string().nullish(),
+        position: z.number(),
+        projectId: z.string().nullish(),
+        status: GqlSTaskStatusSchema,
+        taskId: z.string().nullish(),
+        title: z.string(),
     });
 }
 

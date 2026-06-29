@@ -792,3 +792,100 @@ export const projectRequests = pgTable(
 
 export type ProjectRequest = typeof projectRequests.$inferSelect;
 export type ProjectRequestCreate = typeof projectRequests.$inferInsert;
+
+// --- Projects & Tasks --------------------------------------------------------
+//
+// Workspace-only project tracking. Distinct from the public `/projects`
+// portfolio surface (static `portfolioProjects.ts` today, DB-backed in
+// Phase 3) — these rows are admin-only, single-language, and shaped for
+// triaging incoming `ProjectRequests` plus running ongoing personal work.
+//
+// `Tasks.projectId` is nullable: a row with `projectId IS NULL` is a
+// standalone todo (no parent project), surfaced on the workspace projects
+// page's Todos tab. Project-bound tasks cascade away with their project;
+// standalone todos live on independently.
+//
+// See `docs/features/projects-workspace.md`.
+
+export const projectStatuses = ['idea', 'planning', 'active', 'paused', 'done', 'archived'] as const;
+export type ProjectStatus = (typeof projectStatuses)[number];
+
+export const projects = pgTable(
+    'Projects',
+    {
+        projectId: uuid().primaryKey(),
+        title: varchar().notNull(),
+        // Short single-line summary surfaced on cards in the projects board.
+        // Null when the row was hand-created without one — the editor never
+        // forces it. Long-form context lives in `notes`.
+        description: text(),
+        // Long-form markdown notes. Plain text in v1; rendered with the same
+        // markdown pipeline used elsewhere when the editor lands a preview.
+        notes: text(),
+        status: varchar().$type<ProjectStatus>().notNull().default('idea'),
+        // Within-status ordering. The board reorders inside a single column
+        // only in v1 — moving a project across columns is a status change
+        // through the editor, not a drag.
+        position: integer().notNull().default(0),
+        // Source request this project was created from, when applicable.
+        // `projectFromRequest` stamps this in the same transaction that
+        // archives the request, so the board can render a "Source request"
+        // backlink. Null for hand-created projects.
+        sourceRequestId: uuid(),
+        startedAt: timestamp({ withTimezone: true }),
+        completedAt: timestamp({ withTimezone: true }),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.sourceRequestId],
+            foreignColumns: [projectRequests.projectRequestId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('Projects_status_position_idx').on(table.status, table.position),
+        index('Projects_sourceRequestId_idx').on(table.sourceRequestId),
+    ],
+);
+
+export type Project = typeof projects.$inferSelect;
+export type ProjectCreate = typeof projects.$inferInsert;
+
+export const taskStatuses = ['todo', 'doing', 'done'] as const;
+export type TaskStatus = (typeof taskStatuses)[number];
+
+export const tasks = pgTable(
+    'Tasks',
+    {
+        taskId: uuid().primaryKey(),
+        // Owning project. Null = standalone todo, surfaced on the Todos tab.
+        // On project delete the rows cascade away with the project; standalone
+        // rows are unaffected.
+        projectId: uuid(),
+        title: varchar().notNull(),
+        notes: text(),
+        status: varchar().$type<TaskStatus>().notNull().default('todo'),
+        // Position is scoped per `(projectId, status)` bucket on screen but
+        // stored as a single integer per row — reorder rewrites the whole
+        // bucket. Standalone todos share the `projectId IS NULL` bucket.
+        position: integer().notNull().default(0),
+        dueAt: timestamp({ withTimezone: true }),
+        completedAt: timestamp({ withTimezone: true }),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.projectId],
+            foreignColumns: [projects.projectId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('Tasks_projectId_position_idx').on(table.projectId, table.position),
+        index('Tasks_status_dueAt_idx').on(table.status, table.dueAt),
+    ],
+);
+
+export type Task = typeof tasks.$inferSelect;
+export type TaskCreate = typeof tasks.$inferInsert;

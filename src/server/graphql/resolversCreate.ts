@@ -19,6 +19,15 @@ import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillUpsert } from '../commands/cvSkillUpsert';
 import { profileObservationDismiss } from '../commands/profileObservationDismiss';
 import { profileSynthesizeRequest } from '../commands/profileSynthesizeRequest';
+import { projectDelete } from '../commands/projectDelete';
+import { projectFromRequest } from '../commands/projectFromRequest';
+import { projectRequestArchive } from '../commands/projectRequestArchive';
+import { projectRequestDelete } from '../commands/projectRequestDelete';
+import { projectReorder } from '../commands/projectReorder';
+import { projectUpsert } from '../commands/projectUpsert';
+import { taskDelete } from '../commands/taskDelete';
+import { taskReorder } from '../commands/taskReorder';
+import { taskUpsert } from '../commands/taskUpsert';
 import { userSessionTerminateMany } from '../commands/userSessionTerminateMany';
 import { userUpdate } from '../commands/userUpdate';
 import type { ServerRuntime } from '../domain/ServerRuntime';
@@ -36,7 +45,11 @@ import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
 import { profileGet } from '../queries/profileGet';
 import { profileObservationList } from '../queries/profileObservationList';
+import { projectRequestsList } from '../queries/projectRequestsList';
+import { projectRequestsInboxCount } from '../queries/projectRequestsInboxCount';
+import { projectsList } from '../queries/projectsList';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
+import { standaloneTasksList } from '../queries/standaloneTasksList';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 import type {
     GqlSAdmin,
@@ -58,8 +71,19 @@ import type {
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillUpsertArgs,
     GqlSAdminMutationProfileObservationDismissArgs,
+    GqlSAdminMutationProjectDeleteArgs,
+    GqlSAdminMutationProjectFromRequestArgs,
+    GqlSAdminMutationProjectReorderArgs,
+    GqlSAdminMutationProjectRequestArchiveArgs,
+    GqlSAdminMutationProjectRequestDeleteArgs,
+    GqlSAdminMutationProjectUpsertArgs,
+    GqlSAdminMutationTaskDeleteArgs,
+    GqlSAdminMutationTaskReorderArgs,
+    GqlSAdminMutationTaskUpsertArgs,
     GqlSAdminProfile,
     GqlSAdminProfileObservationsArgs,
+    GqlSAdminProjectRequestsArgs,
+    GqlSAdminProjectsArgs,
     GqlSAdminPublicChatArgs,
     GqlSChatAssistantInput,
     GqlSChatAssistantInputValue,
@@ -149,6 +173,18 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             async profile(): Promise<GqlSAdminProfile> {
                 const row = await profileGet(serverRuntime.db);
                 return { ...toGqlProfile(row), observations: [] };
+            },
+            projectRequests(_parent: GqlSAdmin, args: GqlSAdminProjectRequestsArgs, requestingSession: GqlSSession) {
+                return projectRequestsList(args.status ?? null, requestingSession, serverRuntime);
+            },
+            projectRequestsInboxCount(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return projectRequestsInboxCount(requestingSession, serverRuntime);
+            },
+            projects(_parent: GqlSAdmin, args: GqlSAdminProjectsArgs, requestingSession: GqlSSession) {
+                return projectsList(args.status ?? null, requestingSession, serverRuntime);
+            },
+            standaloneTasks(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return standaloneTasksList(requestingSession, serverRuntime);
             },
         },
         AdminProfile: {
@@ -244,6 +280,41 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             profileSynthesizeRequest(_parent: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
                 return profileSynthesizeRequest(requestingSession, serverRuntime);
+            },
+            projectRequestArchive(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationProjectRequestArchiveArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return projectRequestArchive(args, requestingSession, serverRuntime);
+            },
+            projectRequestDelete(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationProjectRequestDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return projectRequestDelete(args, requestingSession, serverRuntime);
+            },
+            projectFromRequest(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectFromRequestArgs, requestingSession: GqlSSession) {
+                return projectFromRequest(args, requestingSession, serverRuntime);
+            },
+            projectUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectUpsertArgs, requestingSession: GqlSSession) {
+                return projectUpsert(args, requestingSession, serverRuntime);
+            },
+            projectDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectDeleteArgs, requestingSession: GqlSSession) {
+                return projectDelete(args, requestingSession, serverRuntime);
+            },
+            projectReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectReorderArgs, requestingSession: GqlSSession) {
+                return projectReorder(args, requestingSession, serverRuntime);
+            },
+            taskUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationTaskUpsertArgs, requestingSession: GqlSSession) {
+                return taskUpsert(args, requestingSession, serverRuntime);
+            },
+            taskDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationTaskDeleteArgs, requestingSession: GqlSSession) {
+                return taskDelete(args, requestingSession, serverRuntime);
+            },
+            taskReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationTaskReorderArgs, requestingSession: GqlSSession) {
+                return taskReorder(args, requestingSession, serverRuntime);
             },
         },
         Query: {

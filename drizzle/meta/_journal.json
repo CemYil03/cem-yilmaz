@@ -29,6 +29,13 @@
             "when": 1782730916863,
             "tag": "0003_giant_sentinels",
             "breakpoints": true
+        },
+        {
+            "idx": 4,
+            "version": "7",
+            "when": 1782736690377,
+            "tag": "0004_secret_butterfly",
+            "breakpoints": true
         }
     ]
 }

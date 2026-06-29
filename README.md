@@ -65,17 +65,18 @@ Notes:
 
 ## Project Surfaces
 
-| Surface                                     | Status   | Auth                                                 |
-| ------------------------------------------- | -------- | ---------------------------------------------------- |
-| `/` — landing page (incl. visitor AI chat)  | Phase 1  | Public                                               |
-| `/impressum`, `/datenschutz`                | Phase 1  | Public                                               |
-| `/projects` — static portfolio list         | Phase 1  | Public                                               |
-| `/projects/$id` — DB-backed detail pages    | Phase 3  | Public                                               |
-| `/blog`, `/blog/$slug`                      | Phase 3  | Public                                               |
-| `/tools`                                    | Phase 3  | Public                                               |
-| `/workspace` — hub + assistant composer     | Phase 1  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
-| `/workspace/assistant` — personal assistant | Phase 1  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
-| `/workspace/*` — focus-area stubs           | Phase 2+ | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
+| Surface                                          | Status   | Auth                                                 |
+| ------------------------------------------------ | -------- | ---------------------------------------------------- |
+| `/` — landing page (incl. visitor AI chat)       | Phase 1  | Public                                               |
+| `/impressum`, `/datenschutz`                     | Phase 1  | Public                                               |
+| `/projects` — static portfolio list              | Phase 1  | Public                                               |
+| `/projects/$id` — DB-backed detail pages         | Phase 3  | Public                                               |
+| `/blog`, `/blog/$slug`                           | Phase 3  | Public                                               |
+| `/tools`                                         | Phase 3  | Public                                               |
+| `/workspace` — hub + assistant composer          | Phase 1  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
+| `/workspace/assistant` — personal assistant      | Phase 1  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
+| `/workspace/projects` — inbox + projects + todos | Phase 2  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
+| `/workspace/*` — focus-area stubs                | Phase 2+ | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
 
 Phases are tracked in the implementation plan; each lands as its own PR.
 
