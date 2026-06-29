@@ -1,0 +1,104 @@
+import { ToolLoopAgent, stepCountIs } from 'ai';
+import type { ServerRuntime } from '../domain/ServerRuntime';
+import type { GqlSSession } from '../graphql/generated';
+import { googleAgentProviderOptions } from './agentScaffolding';
+import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
+import { toolProjectDelete } from './toolProjectDelete';
+import { toolProjectsList } from './toolProjectsList';
+import { toolProjectUpsert } from './toolProjectUpsert';
+import { toolStandaloneTasksList } from './toolStandaloneTasksList';
+import { toolTaskDelete } from './toolTaskDelete';
+import { toolTaskUpsert } from './toolTaskUpsert';
+
+// First domain sub-agent under the orchestrator pattern documented in
+// `docs/architecture/agent-delegation.md`. Runs in-process inside the
+// `toolDelegateToProjects` tool's `execute`, never sees `chatId`, never
+// writes chat-message rows, and never has `onStepFinish` plumbed in. Its
+// final text and the closure-shared `mutations` array are the only outputs
+// the orchestrator sees.
+//
+// Deliberately omits `promptUserForInput` — asking the user mid-delegation
+// would require persisting `chatMessagesAssistantInputCollection` rows from
+// a context that has no chat persistence wired. Instead the sub-agent
+// returns a `{ status: 'needsMoreInfo', missingFields: [...] }` JSON
+// sentinel as its final text; the orchestrator parses it and asks the user
+// via its own `promptUserForInput`.
+
+export type ProjectsAgentMutationKind = 'projectCreate' | 'projectUpdate' | 'projectDelete' | 'taskCreate' | 'taskUpdate' | 'taskDelete';
+
+export interface ProjectsAgentMutation {
+    kind: ProjectsAgentMutationKind;
+    // Project id or task id depending on `kind`.
+    id: string;
+    // Best-effort label for the orchestrator's user-facing narration. Mutation
+    // tools fill this from the GraphQL result (create/update) or the input
+    // (delete, where the row is already gone by the time we look).
+    title?: string;
+}
+
+// Mutable list shared between the delegate tool and each mutation tool's
+// `execute`. Allocated fresh in `toolDelegateToProjects` per delegation —
+// never module-scoped (would leak across turns).
+export type ProjectsAgentMutationLog = ProjectsAgentMutation[];
+
+export interface ProjectsAgentOptions {
+    session: GqlSSession;
+    serverRuntime: ServerRuntime;
+    mutations: ProjectsAgentMutationLog;
+}
+
+function buildSystemPrompt(snapshot: string): string {
+    return [
+        "You are the projects sub-agent inside Cem's personal workspace. You handle every project- and task-related",
+        'instruction the orchestrator delegates to you. Your tools touch the workspace DB directly — only use them',
+        'when the user has unambiguously asked you to change something.',
+        '',
+        'You have six tools:',
+        '- `projectsList`, `standaloneTasksList` — read the current board when you need ids or full task details',
+        '  the snapshot below does not include.',
+        '- `projectUpsert`, `projectDelete` — create / edit / archive / delete projects.',
+        '- `taskUpsert`, `taskDelete` — create / edit / delete tasks (project-bound or standalone).',
+        '',
+        'Rules:',
+        '- Reply in the language the user wrote in (German or English).',
+        '- Be concise: your final text becomes the orchestrator narration to the user. One or two sentences naming',
+        '  what you did. No prose preamble.',
+        '- Never invent an id. Use ids from the snapshot below or from a tool result earlier in this turn.',
+        "- If the request is missing information you genuinely need (e.g. 'add a task' with no target project and",
+        '  no title), do NOT guess. Stop calling tools and return EXACTLY this JSON as your final text, nothing',
+        '  else (no code fence, no prose):',
+        '  {"status":"needsMoreInfo","missingFields":["..."],"summary":"..."}',
+        '  where `missingFields` is an array of short keys identifying what you still need (e.g. ["title",',
+        '  "projectId"]) and `summary` is a one-sentence explanation of what you understood so far.',
+        "- If the request asks for something outside the project/task surface (e.g. 'schedule a meeting',",
+        "  'log a workout'), return the same JSON sentinel with status `noOp` and an empty `missingFields`",
+        '  array — the orchestrator will handle it.',
+        '',
+        'Current board snapshot (refreshed at the start of this turn):',
+        '',
+        snapshot,
+    ].join('\n');
+}
+
+export async function agentPersonalAssistantProjects({ session, serverRuntime, mutations }: ProjectsAgentOptions) {
+    const snapshot = await projectsSnapshotForAgent(serverRuntime);
+    const readContext = { serverRuntime, session };
+    const mutationContext = { serverRuntime, session, mutations };
+    return new ToolLoopAgent({
+        model: serverRuntime.ai.userConversationModel(),
+        providerOptions: googleAgentProviderOptions,
+        // Tight ceiling — the sub-agent should rarely need more than a list +
+        // 2-3 mutations + a final text. If it runs out of steps, the delegate
+        // tool surfaces the partial mutation log to the orchestrator.
+        stopWhen: [stepCountIs(8)],
+        instructions: buildSystemPrompt(snapshot),
+        tools: {
+            projectsList: toolProjectsList(readContext),
+            standaloneTasksList: toolStandaloneTasksList(readContext),
+            projectUpsert: toolProjectUpsert(mutationContext),
+            projectDelete: toolProjectDelete(mutationContext),
+            taskUpsert: toolTaskUpsert(mutationContext),
+            taskDelete: toolTaskDelete(mutationContext),
+        },
+    });
+}

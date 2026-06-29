@@ -35,6 +35,7 @@ query WorkspaceProjectsPage {
             completedAt
             createdAt
             updatedAt
+            totalWorkSec
             sourceRequest {
                 projectRequestId
                 name
@@ -52,6 +53,20 @@ query WorkspaceProjectsPage {
                 dueAt
                 completedAt
             }
+            activities {
+                activityId
+                projectId
+                taskId
+                kind
+                channel
+                title
+                notes
+                occurredAt
+                startedAt
+                endedAt
+                durationSec
+                createdAt
+            }
         }
         standaloneTasks {
             taskId
@@ -62,6 +77,17 @@ query WorkspaceProjectsPage {
             position
             dueAt
             completedAt
+        }
+        activeTimer {
+            activityId
+            projectId
+            taskId
+            kind
+            title
+            occurredAt
+            startedAt
+            endedAt
+            durationSec
         }
     }
 }
@@ -168,6 +194,64 @@ mutation WorkspaceTaskReorder($orderedIds: [ID!]!) {
     admin {
         taskReorder(orderedIds: $orderedIds) {
             success
+        }
+    }
+}
+
+mutation WorkspaceProjectActivityUpsert(
+    $activityId: ID
+    $projectId: ID!
+    $taskId: ID
+    $kind: ProjectActivityKind!
+    $channel: ProjectActivityChannel
+    $title: String!
+    $notes: String
+    $occurredAt: DateTime!
+    $durationSec: Int
+) {
+    admin {
+        projectActivityUpsert(
+            input: {
+                activityId: $activityId
+                projectId: $projectId
+                taskId: $taskId
+                kind: $kind
+                channel: $channel
+                title: $title
+                notes: $notes
+                occurredAt: $occurredAt
+                durationSec: $durationSec
+            }
+        ) {
+            activityId
+        }
+    }
+}
+
+mutation WorkspaceProjectActivityDelete($activityId: ID!) {
+    admin {
+        projectActivityDelete(activityId: $activityId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceProjectTimerStart($projectId: ID!, $taskId: ID, $title: String) {
+    admin {
+        projectTimerStart(projectId: $projectId, taskId: $taskId, title: $title) {
+            activityId
+            projectId
+            startedAt
+        }
+    }
+}
+
+mutation WorkspaceProjectTimerStop($activityId: ID!) {
+    admin {
+        projectTimerStop(activityId: $activityId) {
+            activityId
+            endedAt
+            durationSec
         }
     }
 }

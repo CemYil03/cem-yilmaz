@@ -330,6 +330,9 @@ function ChatEmptyState({
                     placeholder={{ de: 'Stell eine Frage…', en: 'Ask a question…' }[locale]}
                     onMessageSent={setChatId}
                     showApprovalMode={false}
+                    // Sheet opens → composer mounts fresh → focus the
+                    // textarea so the visitor can start typing immediately.
+                    autoFocus
                 />
                 <VisitorChatQuotaStatus quota={quota} locale={locale} />
             </div>
@@ -481,6 +484,9 @@ function ChatLoaded({
                 endTurn={live.endTurn}
                 placeholder={{ de: 'Stelle eine weitere Frage…', en: 'Ask another question…' }[locale]}
                 showApprovalMode={false}
+                // Sheet opens fresh on resume → focus the textarea so the
+                // visitor can keep typing without reaching for the input.
+                autoFocus
                 addonStart={
                     <Button onClick={onResetToOverview} disabled={live.isGenerating} aria-label={newChatLabel[locale]} variant="ghost">
                         <PlusIcon className="size-3.5" />

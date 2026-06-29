@@ -77,12 +77,6 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         description: { de: 'Was dein Assistent über dich weiß.', en: 'What your assistant knows about you.' },
     },
     {
-        to: '/{-$locale}/workspace/software',
-        icon: CodeXmlIcon,
-        title: { de: 'Software', en: 'Software' },
-        description: { de: 'Code, Architektur-Notizen, Werkzeuge.', en: 'Code, architecture notes, tools.' },
-    },
-    {
         to: '/{-$locale}/workspace/projects',
         icon: FolderKanbanIcon,
         title: { de: 'Projekte', en: 'Projects' },
@@ -90,16 +84,22 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         badgeKey: 'projectsInbox',
     },
     {
-        to: '/{-$locale}/workspace/finances',
-        icon: WalletIcon,
-        title: { de: 'Finanzen', en: 'Finances' },
-        description: { de: 'Ziele, Überblick, Trading.', en: 'Goals, overview, trading.' },
-    },
-    {
         to: '/{-$locale}/workspace/tax',
         icon: ReceiptTextIcon,
         title: { de: 'Steuern', en: 'Tax' },
         description: { de: 'Belege, Fristen, Notizen.', en: 'Receipts, deadlines, notes.' },
+    },
+    {
+        to: '/{-$locale}/workspace/software',
+        icon: CodeXmlIcon,
+        title: { de: 'Software', en: 'Software' },
+        description: { de: 'Code, Architektur-Notizen, Werkzeuge.', en: 'Code, architecture notes, tools.' },
+    },
+    {
+        to: '/{-$locale}/workspace/finances',
+        icon: WalletIcon,
+        title: { de: 'Finanzen', en: 'Finances' },
+        description: { de: 'Ziele, Überblick, Trading.', en: 'Goals, overview, trading.' },
     },
     {
         to: '/{-$locale}/workspace/fitness',

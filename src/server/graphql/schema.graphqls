@@ -747,6 +747,11 @@ type Project {
     updatedAt: DateTime!
     # Project-bound tasks, ordered by `position` within their status bucket.
     tasks: [Task!]!
+    # Timeline of events and work sessions, newest first.
+    activities: [ProjectActivity!]!
+    # Sum of `durationSec` across `kind = work` activities, in seconds.
+    # Zero when no timer has ever run against the project.
+    totalWorkSec: Int!
 }
 
 enum TaskStatus {
@@ -765,6 +770,55 @@ type Task {
     position: Int!
     dueAt: DateTime
     completedAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# Categorizes an entry on the project timeline. `clientContact` and
+# `meeting` carry a `channel`; the others omit it.
+enum ProjectActivityKind {
+    clientContact
+    meeting
+    work
+    offer
+    milestone
+    note
+}
+
+# How the contact / meeting happened. Only meaningful on
+# `clientContact` / `meeting` rows.
+enum ProjectActivityChannel {
+    malt
+    email
+    phone
+    videoCall
+    inPerson
+    aiAssistant
+    other
+}
+
+# A single entry on a project's timeline. Covers both logged events
+# (call, email, offer sent) and timed work sessions — the latter populate
+# `startedAt` / `endedAt` and have `kind = work`.
+type ProjectActivity {
+    activityId: ID!
+    projectId: ID!
+    # Optional task this activity is attached to. Lets totals roll up per
+    # task without forcing every activity to pick one.
+    taskId: ID
+    kind: ProjectActivityKind!
+    channel: ProjectActivityChannel
+    title: String!
+    notes: String
+    # When the event happened. Equals `startedAt` on timer rows.
+    occurredAt: DateTime!
+    # Set on work-timer rows; null on event rows.
+    startedAt: DateTime
+    # Null while a timer is running.
+    endedAt: DateTime
+    # Cached `endedAt - startedAt` in seconds. Settable directly on event
+    # rows ("the call was 45 min") without running a timer.
+    durationSec: Int
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -789,6 +843,11 @@ extend type Admin {
     # are reached through `Project.tasks` so the Todos tab and the project
     # board don't fight over the same list.
     standaloneTasks: [Task!]!
+    # The single currently-running work timer, or null if none. Drives the
+    # header badge and per-project timer pill. At most one row exists with
+    # `endedAt IS NULL AND kind = 'work'` — the DB enforces this via a
+    # partial unique index.
+    activeTimer: ProjectActivity
 }
 
 input ProjectCreate {
@@ -819,6 +878,22 @@ input TaskCreate {
     position: Int!
     dueAt: DateTime
     completedAt: DateTime
+}
+
+# Activity create / update payload. `activityId` toggles upsert mode.
+# Server validates that `channel` is set only when `kind` is
+# `clientContact` or `meeting`. For event rows leave `startedAt` /
+# `endedAt` null; the timer mutations write those columns directly.
+input ProjectActivityCreate {
+    activityId: ID
+    projectId: ID!
+    taskId: ID
+    kind: ProjectActivityKind!
+    channel: ProjectActivityChannel
+    title: String!
+    notes: String
+    occurredAt: DateTime!
+    durationSec: Int
 }
 
 # CV admin namespace — mounted under `AdminMutation.cv` so the existing
@@ -864,4 +939,18 @@ extend type AdminMutation {
     # not enforce membership in one bucket, but mixing buckets in one call
     # is meaningless.
     taskReorder(orderedIds: [ID!]!): MutationResult!
+    # --- Project activities & timer ----------------------------------------
+    # Create or update an activity row (call logged, email sent, offer
+    # drafted, freeform note). `kind = work` rows are reserved for the
+    # timer mutations and rejected here.
+    projectActivityUpsert(input: ProjectActivityCreate!): ProjectActivity!
+    projectActivityDelete(activityId: ID!): MutationResult!
+    # Start a work timer on the given project. Atomically stops the
+    # currently-running timer (if any) before inserting the new row, so
+    # the one-active-timer invariant holds even across rapid taps.
+    # `title` defaults to "Work session" when omitted.
+    projectTimerStart(projectId: ID!, taskId: ID, title: String): ProjectActivity!
+    # Stamp `endedAt = now` and write `durationSec` on the running timer.
+    # Idempotent on an already-stopped row — returns the row untouched.
+    projectTimerStop(activityId: ID!): ProjectActivity!
 }

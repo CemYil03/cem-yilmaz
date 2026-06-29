@@ -36,6 +36,13 @@
             "when": 1782736690377,
             "tag": "0004_secret_butterfly",
             "breakpoints": true
+        },
+        {
+            "idx": 5,
+            "version": "7",
+            "when": 1782741608590,
+            "tag": "0005_chunky_switch",
+            "breakpoints": true
         }
     ]
 }

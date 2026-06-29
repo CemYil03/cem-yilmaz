@@ -61,10 +61,10 @@ side-effect of overlapping the focus-area cards. Removing the sticky composer al
 bottom padding `<main>` used to reserve; neither was carrying weight once the composer left the bottom of the viewport. The composer is
 rendered with `autoFocus` so the textarea is the active element on landing — the user can start typing immediately without clicking.
 
-Submitting the hub composer opens the **workspace assistant sheet** (the same sheet the floating launcher on every other workspace page
-opens) and fires the first message into it. The conversation stays in the sheet across navigation between focus areas; clicking **"Open
+Submitting the hub composer opens the **workspace assistant sheet** (the same sheet the header's assistant button on every other workspace
+page opens) and fires the first message into it. The conversation stays in the sheet across navigation between focus areas; clicking **"Open
 full-screen"** in the sheet's header navigates to `/workspace/assistant?chatId=<id>` for a dedicated full-screen surface. See
-[Workspace Chat](./chat-workspace.md) for the sheet, launcher, and full-screen jump-off behaviour.
+[Workspace Chat](./chat-workspace.md) for the sheet, header entry point, and full-screen jump-off behaviour.
 
 ## `/workspace/assistant`
 

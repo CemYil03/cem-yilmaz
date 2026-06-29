@@ -1,9 +1,9 @@
-import type { GoogleLanguageModelOptions } from '@ai-sdk/google';
 import type { ToolLoopAgentOnStepFinishCallback } from 'ai';
 import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
 import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
+import { googleAgentProviderOptions } from './agentScaffolding';
 import { cvSummaryForAgent } from './cvSummaryForAgent';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 import { toolSendEmailToCem } from './toolSendEmailToCem';
@@ -113,21 +113,7 @@ export async function agentVisitorAboutCem({
         // endpoint.
         model: serverRuntime.ai.userConversationModel(),
         onStepFinish,
-        providerOptions: {
-            google: {
-                // Disabling thinking prevents MALFORMED_FUNCTION_CALL errors where
-                // Gemini 2.5 Flash generates Python-style calls instead of JSON.
-                // See: https://github.com/googleapis/python-genai/issues/2081
-                thinkingConfig: { thinkingBudget: 0 },
-                // Constrained decoding so tool calls are valid JSON matching the
-                // declared schema. Without this Gemini freely invents field
-                // names (e.g. `input_type: "DATE"` with `name`/`label`) instead
-                // of using the schema's `kind` discriminator. Pairs with the
-                // intentionally-flat (non-discriminatedUnion) shape in
-                // `toolPromptUserForInput.ts`.
-                structuredOutputs: true,
-            } satisfies GoogleLanguageModelOptions,
-        },
+        providerOptions: googleAgentProviderOptions,
         stopWhen: [
             // Hard ceiling so a runaway loop can't burn through quota. Raised
             // from 5 to 8 because the email/project-request flows can chain

@@ -345,6 +345,10 @@ function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Loca
             busy={live.isGenerating}
             placeholder={{ de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' }[locale]}
             sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
+            // Sheet opens → composer mounts fresh (Radix unmounts on close)
+            // → focus the textarea so the user can start typing immediately
+            // without first reaching for the input.
+            autoFocus
             attachments={attachments}
             onAttachmentsAdd={onAttachmentsAdd}
             onAttachmentRemove={onAttachmentRemove}

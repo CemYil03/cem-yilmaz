@@ -5,16 +5,24 @@ import {
     ArrowRightIcon,
     CheckSquare2Icon,
     CircleDotIcon,
+    FlagIcon,
     FolderKanbanIcon,
+    HandshakeIcon,
     InboxIcon,
     ListTodoIcon,
     MailIcon,
     PencilIcon,
+    PhoneCallIcon,
+    PlayIcon,
     PlusIcon,
     SquareIcon,
+    StickyNoteIcon,
+    StopCircleIcon,
+    TimerIcon,
     Trash2Icon,
+    VideoIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
@@ -22,11 +30,21 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
-import type { GqlCProjectStatus, GqlCTaskStatus, GqlCWorkspaceProjectsPageQuery } from '../../../web/graphql/generated';
+import type {
+    GqlCProjectActivityChannel,
+    GqlCProjectActivityKind,
+    GqlCProjectStatus,
+    GqlCTaskStatus,
+    GqlCWorkspaceProjectsPageQuery,
+} from '../../../web/graphql/generated';
 import {
+    WorkspaceProjectActivityDeleteDocument,
+    WorkspaceProjectActivityUpsertDocument,
     WorkspaceProjectDeleteDocument,
     WorkspaceProjectRequestArchiveDocument,
     WorkspaceProjectRequestDeleteDocument,
+    WorkspaceProjectTimerStartDocument,
+    WorkspaceProjectTimerStopDocument,
     WorkspaceProjectUpsertDocument,
     WorkspaceProjectsPageDocument,
     WorkspaceTaskDeleteDocument,
@@ -92,6 +110,61 @@ const PROJECT_TYPE_LABELS: Record<string, { de: string; en: string }> = {
     aiIntegration: { de: 'KI-Integration', en: 'AI integration' },
     other: { de: 'Sonstiges', en: 'Other' },
 };
+
+const ACTIVITY_KIND_ORDER: ReadonlyArray<GqlCProjectActivityKind> = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'];
+const ACTIVITY_KIND_LABELS: Record<GqlCProjectActivityKind, { de: string; en: string }> = {
+    clientContact: { de: 'Kundenkontakt', en: 'Client contact' },
+    meeting: { de: 'Meeting', en: 'Meeting' },
+    work: { de: 'Arbeit', en: 'Work' },
+    offer: { de: 'Angebot', en: 'Offer' },
+    milestone: { de: 'Meilenstein', en: 'Milestone' },
+    note: { de: 'Notiz', en: 'Note' },
+};
+const ACTIVITY_KIND_ICONS: Record<GqlCProjectActivityKind, typeof PhoneCallIcon> = {
+    clientContact: PhoneCallIcon,
+    meeting: VideoIcon,
+    work: TimerIcon,
+    offer: HandshakeIcon,
+    milestone: FlagIcon,
+    note: StickyNoteIcon,
+};
+const ACTIVITY_CHANNEL_ORDER: ReadonlyArray<GqlCProjectActivityChannel> = [
+    'malt',
+    'email',
+    'phone',
+    'videoCall',
+    'inPerson',
+    'aiAssistant',
+    'other',
+];
+const ACTIVITY_CHANNEL_LABELS: Record<GqlCProjectActivityChannel, { de: string; en: string }> = {
+    malt: { de: 'Malt', en: 'Malt' },
+    email: { de: 'E-Mail', en: 'Email' },
+    phone: { de: 'Telefon', en: 'Phone' },
+    videoCall: { de: 'Videoanruf', en: 'Video call' },
+    inPerson: { de: 'Vor Ort', en: 'In person' },
+    aiAssistant: { de: 'KI-Assistent', en: 'AI assistant' },
+    other: { de: 'Sonstiges', en: 'Other' },
+};
+
+// Renders a seconds total as `Hh Mm` or `Mm Ss` for short stretches. The
+// activity timeline and the project's `Total: …` pill both use this.
+function formatDuration(totalSec: number): string {
+    if (totalSec < 60) return `${totalSec}s`;
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    return `${minutes}m`;
+}
+
+// HH:MM:SS — used for the live ticking timer pill, where seconds are
+// visible (the static badge above uses `formatDuration` for terse totals).
+function formatHms(totalSec: number): string {
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
 
 export const Route = createFileRoute('/{-$locale}/workspace/projects')({
     validateSearch: (search: Record<string, unknown>) => {
@@ -165,7 +238,14 @@ function WorkspaceProjects() {
             {data ? (
                 <div className="mt-8">
                     {tab === 'inbox' ? <InboxSection rows={data.admin.projectRequests} locale={locale} onChanged={onChanged} /> : null}
-                    {tab === 'projects' ? <ProjectsBoard rows={data.admin.projects} locale={locale} onChanged={onChanged} /> : null}
+                    {tab === 'projects' ? (
+                        <ProjectsBoard
+                            rows={data.admin.projects}
+                            activeTimer={data.admin.activeTimer ?? null}
+                            locale={locale}
+                            onChanged={onChanged}
+                        />
+                    ) : null}
                     {tab === 'todos' ? <TodosSection rows={data.admin.standaloneTasks} locale={locale} onChanged={onChanged} /> : null}
                 </div>
             ) : null}
@@ -366,8 +446,20 @@ function Fact({ label, value }: { label: string; value: string }) {
 // --- Projects board ---------------------------------------------------------
 
 type ProjectRow = GqlCWorkspaceProjectsPageQuery['admin']['projects'][number];
+type ActivityRow = ProjectRow['activities'][number];
+type ActiveTimer = NonNullable<GqlCWorkspaceProjectsPageQuery['admin']['activeTimer']>;
 
-function ProjectsBoard({ rows, locale, onChanged }: { rows: ReadonlyArray<ProjectRow>; locale: Locale; onChanged: () => void }) {
+function ProjectsBoard({
+    rows,
+    activeTimer,
+    locale,
+    onChanged,
+}: {
+    rows: ReadonlyArray<ProjectRow>;
+    activeTimer: ActiveTimer | null;
+    locale: Locale;
+    onChanged: () => void;
+}) {
     const [editing, setEditing] = useState<ProjectRow | 'new' | null>(null);
     const grouped = PROJECT_STATUS_ORDER.map((status) => ({
         status,
@@ -424,6 +516,7 @@ function ProjectsBoard({ rows, locale, onChanged }: { rows: ReadonlyArray<Projec
                                             ) : (
                                                 <ProjectCard
                                                     row={row}
+                                                    activeTimer={activeTimer}
                                                     locale={locale}
                                                     onEdit={() => setEditing(row)}
                                                     onChanged={onChanged}
@@ -441,12 +534,29 @@ function ProjectsBoard({ rows, locale, onChanged }: { rows: ReadonlyArray<Projec
     );
 }
 
-function ProjectCard({ row, locale, onEdit, onChanged }: { row: ProjectRow; locale: Locale; onEdit: () => void; onChanged: () => void }) {
+function ProjectCard({
+    row,
+    activeTimer,
+    locale,
+    onEdit,
+    onChanged,
+}: {
+    row: ProjectRow;
+    activeTimer: ActiveTimer | null;
+    locale: Locale;
+    onEdit: () => void;
+    onChanged: () => void;
+}) {
     const [, del] = useMutation(WorkspaceProjectDeleteDocument);
     const [tasksOpen, setTasksOpen] = useState(false);
+    const [activityOpen, setActivityOpen] = useState(false);
 
     const doneCount = row.tasks.filter((t) => t.status === 'done').length;
     const totalCount = row.tasks.length;
+
+    // Live total = stored seconds + (now - startedAt) when *this* project's
+    // timer is running. Other-project timers don't bleed into this number.
+    const isOwnTimerRunning = activeTimer?.projectId === row.projectId;
 
     return (
         <GlassCard className="px-5 py-4">
@@ -463,6 +573,13 @@ function ProjectCard({ row, locale, onEdit, onChanged }: { row: ProjectRow; loca
                     ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                    <TimerPill
+                        projectId={row.projectId}
+                        activeTimer={activeTimer}
+                        totalWorkSec={row.totalWorkSec}
+                        locale={locale}
+                        onChanged={onChanged}
+                    />
                     {totalCount > 0 ? (
                         <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground">
                             {doneCount}/{totalCount}
@@ -484,17 +601,460 @@ function ProjectCard({ row, locale, onEdit, onChanged }: { row: ProjectRow; loca
                     </Button>
                 </div>
             </div>
-            <button
-                type="button"
-                onClick={() => setTasksOpen(!tasksOpen)}
-                className="mt-2 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-                {tasksOpen
-                    ? { de: 'Aufgaben ausblenden', en: 'Hide tasks' }[locale]
-                    : { de: 'Aufgaben anzeigen', en: 'Show tasks' }[locale]}
-            </button>
+            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                <button
+                    type="button"
+                    onClick={() => setTasksOpen(!tasksOpen)}
+                    className="underline-offset-2 hover:text-foreground hover:underline"
+                >
+                    {tasksOpen
+                        ? { de: 'Aufgaben ausblenden', en: 'Hide tasks' }[locale]
+                        : { de: 'Aufgaben anzeigen', en: 'Show tasks' }[locale]}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActivityOpen(!activityOpen)}
+                    className="underline-offset-2 hover:text-foreground hover:underline"
+                >
+                    {activityOpen
+                        ? { de: 'Verlauf ausblenden', en: 'Hide timeline' }[locale]
+                        : {
+                              de: `Verlauf anzeigen (${row.activities.length})`,
+                              en: `Show timeline (${row.activities.length})`,
+                          }[locale]}
+                </button>
+                {row.totalWorkSec > 0 || isOwnTimerRunning ? (
+                    <span className="ml-auto text-[11px] text-muted-foreground">
+                        {{ de: 'Gesamt', en: 'Total' }[locale]}:{' '}
+                        <TotalWorkLabel totalWorkSec={row.totalWorkSec} activeTimer={isOwnTimerRunning ? activeTimer : null} />
+                    </span>
+                ) : null}
+            </div>
             {tasksOpen ? <TaskList tasks={row.tasks} projectId={row.projectId} locale={locale} onChanged={onChanged} /> : null}
+            {activityOpen ? (
+                <ActivityTimeline
+                    activities={row.activities}
+                    projectId={row.projectId}
+                    tasks={row.tasks}
+                    locale={locale}
+                    onChanged={onChanged}
+                />
+            ) : null}
         </GlassCard>
+    );
+}
+
+// --- Timer & activity --------------------------------------------------------
+
+// Per-card timer button. Three states:
+// - This project's timer is running   → ticking HH:MM:SS pill with a stop button
+// - Another project has the timer     → muted "Timer on …" hint with a switch action
+// - No timer is running                → "Start timer" button
+function TimerPill({
+    projectId,
+    activeTimer,
+    locale,
+    onChanged,
+}: {
+    projectId: string;
+    activeTimer: ActiveTimer | null;
+    totalWorkSec: number;
+    locale: Locale;
+    onChanged: () => void;
+}) {
+    const [, start] = useMutation(WorkspaceProjectTimerStartDocument);
+    const [, stop] = useMutation(WorkspaceProjectTimerStopDocument);
+    const [busy, setBusy] = useState(false);
+
+    const isOwn = activeTimer?.projectId === projectId;
+    const isOther = activeTimer && !isOwn;
+
+    if (isOwn && activeTimer.startedAt) {
+        return (
+            <LiveTimerPill
+                startedAt={activeTimer.startedAt as unknown as string}
+                onStop={async () => {
+                    if (busy) return;
+                    setBusy(true);
+                    await stop({ activityId: activeTimer.activityId });
+                    onChanged();
+                    setBusy(false);
+                }}
+                locale={locale}
+            />
+        );
+    }
+
+    if (isOther) {
+        return (
+            <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                className="text-[11px] text-muted-foreground"
+                onClick={async () => {
+                    setBusy(true);
+                    await start({ projectId, taskId: null, title: null });
+                    onChanged();
+                    setBusy(false);
+                }}
+                aria-label={{ de: 'Timer hierher wechseln', en: 'Switch timer here' }[locale]}
+                title={{ de: 'Anderer Timer läuft. Klicken zum Wechseln.', en: 'Another timer is running. Click to switch.' }[locale]}
+            >
+                <TimerIcon className="size-3 opacity-60" />
+                <span className="ml-1">{{ de: 'Wechseln', en: 'Switch' }[locale]}</span>
+            </Button>
+        );
+    }
+
+    return (
+        <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy}
+            onClick={async () => {
+                setBusy(true);
+                await start({ projectId, taskId: null, title: null });
+                onChanged();
+                setBusy(false);
+            }}
+            aria-label={{ de: 'Timer starten', en: 'Start timer' }[locale]}
+        >
+            <PlayIcon className="size-3" />
+            <span className="ml-1 text-[11px]">{{ de: 'Start', en: 'Start' }[locale]}</span>
+        </Button>
+    );
+}
+
+// Live ticker. Runs a 1s interval against `startedAt` so the parent's
+// query state stays cached — the seconds display updates without
+// re-fetching.
+function LiveTimerPill({ startedAt, onStop, locale }: { startedAt: string; onStop: () => void; locale: Locale }) {
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, []);
+    const elapsed = Math.max(0, Math.floor((now - parseISO(startedAt).getTime()) / 1000));
+    return (
+        <button
+            type="button"
+            onClick={onStop}
+            className="flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 font-mono text-[11px] text-primary hover:bg-primary/25"
+            aria-label={{ de: 'Timer stoppen', en: 'Stop timer' }[locale]}
+        >
+            <StopCircleIcon className="size-3" />
+            <span>{formatHms(elapsed)}</span>
+        </button>
+    );
+}
+
+// "Total: 4h 32m" — adds the running seconds when this project's timer
+// is the active one, so the total ticks visibly during work.
+function TotalWorkLabel({ totalWorkSec, activeTimer }: { totalWorkSec: number; activeTimer: ActiveTimer | null }) {
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        if (!activeTimer?.startedAt) return;
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [activeTimer?.startedAt]);
+    const live = activeTimer?.startedAt
+        ? Math.max(0, Math.floor((now - parseISO(activeTimer.startedAt as unknown as string).getTime()) / 1000))
+        : 0;
+    return <span className="font-medium text-foreground">{formatDuration(totalWorkSec + live)}</span>;
+}
+
+function ActivityTimeline({
+    activities,
+    projectId,
+    tasks,
+    locale,
+    onChanged,
+}: {
+    activities: ReadonlyArray<ActivityRow>;
+    projectId: string;
+    tasks: ReadonlyArray<TaskRow>;
+    locale: Locale;
+    onChanged: () => void;
+}) {
+    const [adding, setAdding] = useState(false);
+    const [editing, setEditing] = useState<ActivityRow | null>(null);
+    const [, del] = useMutation(WorkspaceProjectActivityDeleteDocument);
+
+    return (
+        <div className="mt-3 border-t border-border/40 pt-3">
+            <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {{ de: 'Verlauf', en: 'Timeline' }[locale]}
+                </h3>
+                <Button size="sm" variant="ghost" onClick={() => setAdding(true)} disabled={adding || editing !== null}>
+                    <PlusIcon />
+                    {{ de: 'Eintrag hinzufügen', en: 'Add entry' }[locale]}
+                </Button>
+            </div>
+
+            {adding ? (
+                <ActivityForm
+                    activity={null}
+                    projectId={projectId}
+                    tasks={tasks}
+                    locale={locale}
+                    onClose={() => setAdding(false)}
+                    onSaved={() => {
+                        setAdding(false);
+                        onChanged();
+                    }}
+                />
+            ) : null}
+
+            {activities.length === 0 && !adding ? (
+                <p className="mt-3 text-xs text-muted-foreground">{{ de: 'Noch keine Einträge.', en: 'No entries yet.' }[locale]}</p>
+            ) : (
+                <ul className="mt-3 flex flex-col gap-2">
+                    {activities.map((activity) => (
+                        <li key={activity.activityId}>
+                            {editing?.activityId === activity.activityId ? (
+                                <ActivityForm
+                                    activity={activity}
+                                    projectId={projectId}
+                                    tasks={tasks}
+                                    locale={locale}
+                                    onClose={() => setEditing(null)}
+                                    onSaved={() => {
+                                        setEditing(null);
+                                        onChanged();
+                                    }}
+                                />
+                            ) : (
+                                <ActivityRowView
+                                    activity={activity}
+                                    locale={locale}
+                                    onEdit={() => setEditing(activity)}
+                                    onDelete={async () => {
+                                        await del({ activityId: activity.activityId });
+                                        onChanged();
+                                    }}
+                                />
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
+function ActivityRowView({
+    activity,
+    locale,
+    onEdit,
+    onDelete,
+}: {
+    activity: ActivityRow;
+    locale: Locale;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
+    const Icon = ACTIVITY_KIND_ICONS[activity.kind];
+    const occurredAt = format(parseISO(activity.occurredAt as unknown as string), 'yyyy-MM-dd HH:mm');
+    const isRunning = activity.kind === 'work' && activity.endedAt === null;
+    // Work rows can't be hand-edited via the activity form — the timer
+    // mutations own them. The delete button still applies (removes the
+    // session from the total).
+    return (
+        <div className="flex items-start gap-2 text-xs">
+            <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <span className="font-medium">{activity.title}</span>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {ACTIVITY_KIND_LABELS[activity.kind][locale]}
+                    </span>
+                    {activity.channel ? (
+                        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">
+                            {ACTIVITY_CHANNEL_LABELS[activity.channel][locale]}
+                        </span>
+                    ) : null}
+                    {activity.durationSec ? (
+                        <span className="text-[10px] text-muted-foreground">· {formatDuration(activity.durationSec)}</span>
+                    ) : null}
+                    {isRunning ? (
+                        <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                            {{ de: 'läuft', en: 'running' }[locale]}
+                        </span>
+                    ) : null}
+                </div>
+                {activity.notes ? <div className="mt-0.5 whitespace-pre-line text-muted-foreground">{activity.notes}</div> : null}
+                <div className="mt-0.5 text-[10px] text-muted-foreground">{occurredAt}</div>
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5">
+                {activity.kind === 'work' ? null : (
+                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} onClick={onEdit}>
+                        <PencilIcon />
+                    </Button>
+                )}
+                <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Löschen', en: 'Delete' }[locale]} onClick={onDelete}>
+                    <Trash2Icon />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+function ActivityForm({
+    activity,
+    projectId,
+    tasks,
+    locale,
+    onClose,
+    onSaved,
+}: {
+    activity: ActivityRow | null;
+    projectId: string;
+    tasks: ReadonlyArray<TaskRow>;
+    locale: Locale;
+    onClose: () => void;
+    onSaved: () => void;
+}) {
+    const [, upsert] = useMutation(WorkspaceProjectActivityUpsertDocument);
+    // The default `occurredAt` for a new entry is "now, rounded to the
+    // minute" — what Cem would type if asked.
+    const defaultOccurredAt = () => {
+        const d = new Date();
+        d.setSeconds(0, 0);
+        return d.toISOString().slice(0, 16);
+    };
+    const [form, setForm] = useState({
+        kind: (activity?.kind ?? 'clientContact') as Exclude<GqlCProjectActivityKind, 'work'>,
+        channel: activity?.channel ?? null,
+        title: activity?.title ?? '',
+        notes: activity?.notes ?? '',
+        occurredAt: activity?.occurredAt
+            ? format(parseISO(activity.occurredAt as unknown as string), "yyyy-MM-dd'T'HH:mm")
+            : defaultOccurredAt(),
+        taskId: activity?.taskId ?? null,
+        durationMin: activity?.durationSec ? Math.round(activity.durationSec / 60).toString() : '',
+    });
+    const [busy, setBusy] = useState(false);
+
+    // Channel is only meaningful for contact / meeting kinds; clear it on
+    // any other selection so the server-side guard never fires on user
+    // input.
+    const channelRelevant = form.kind === 'clientContact' || form.kind === 'meeting';
+
+    return (
+        <form
+            onSubmit={async (event) => {
+                event.preventDefault();
+                setBusy(true);
+                const durationSec = form.durationMin ? Math.max(0, Math.round(Number(form.durationMin) * 60)) : null;
+                await upsert({
+                    activityId: activity?.activityId ?? null,
+                    projectId,
+                    taskId: form.taskId,
+                    kind: form.kind,
+                    channel: channelRelevant ? form.channel : null,
+                    title: form.title,
+                    notes: form.notes || null,
+                    occurredAt: new Date(form.occurredAt).toISOString(),
+                    durationSec,
+                });
+                setBusy(false);
+                onSaved();
+            }}
+            className="mt-3"
+        >
+            <GlassCard className="px-4 py-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <Field label={{ de: 'Art', en: 'Kind' }[locale]}>
+                        <Select value={form.kind} onValueChange={(value) => setForm({ ...form, kind: value as typeof form.kind })}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ACTIVITY_KIND_ORDER.filter((k) => k !== 'work').map((k) => (
+                                    <SelectItem key={k} value={k}>
+                                        {ACTIVITY_KIND_LABELS[k][locale]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    {channelRelevant ? (
+                        <Field label={{ de: 'Kanal', en: 'Channel' }[locale]}>
+                            <Select
+                                value={form.channel ?? ''}
+                                onValueChange={(value) =>
+                                    setForm({ ...form, channel: (value || null) as GqlCProjectActivityChannel | null })
+                                }
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder={{ de: 'Bitte wählen', en: 'Pick one' }[locale]} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ACTIVITY_CHANNEL_ORDER.map((c) => (
+                                        <SelectItem key={c} value={c}>
+                                            {ACTIVITY_CHANNEL_LABELS[c][locale]}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    ) : (
+                        <div />
+                    )}
+                    <Field label={{ de: 'Titel', en: 'Title' }[locale]} fullWidth>
+                        <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+                    </Field>
+                    <Field label={{ de: 'Wann', en: 'When' }[locale]}>
+                        <Input
+                            type="datetime-local"
+                            value={form.occurredAt}
+                            onChange={(e) => setForm({ ...form, occurredAt: e.target.value })}
+                            required
+                        />
+                    </Field>
+                    <Field label={{ de: 'Dauer (Minuten)', en: 'Duration (min)' }[locale]}>
+                        <Input
+                            type="number"
+                            min="0"
+                            value={form.durationMin}
+                            onChange={(e) => setForm({ ...form, durationMin: e.target.value })}
+                            placeholder={{ de: 'optional', en: 'optional' }[locale]}
+                        />
+                    </Field>
+                    {tasks.length > 0 ? (
+                        <Field label={{ de: 'Aufgabe', en: 'Task' }[locale]} fullWidth>
+                            <Select value={form.taskId ?? ''} onValueChange={(value) => setForm({ ...form, taskId: value || null })}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue
+                                        placeholder={{ de: 'Optional: an Aufgabe binden', en: 'Optional: attach to task' }[locale]}
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {tasks.map((t) => (
+                                        <SelectItem key={t.taskId} value={t.taskId}>
+                                            {t.title}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    ) : null}
+                    <Field label={{ de: 'Notizen', en: 'Notes' }[locale]} fullWidth>
+                        <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
+                    </Field>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                    <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={busy}>
+                        {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
+                    </Button>
+                    <Button type="submit" size="sm" disabled={busy || !form.title.trim()}>
+                        {{ de: 'Speichern', en: 'Save' }[locale]}
+                    </Button>
+                </div>
+            </GlassCard>
+        </form>
     );
 }
 

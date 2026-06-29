@@ -1,16 +1,16 @@
-import type { GoogleLanguageModelOptions } from '@ai-sdk/google';
 import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
 import { profileSummaryGet } from '../queries/profileSummaryGet';
+import { googleAgentProviderOptions } from './agentScaffolding';
+import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
-// Personal-assistant agent for `/workspace/assistant`. This is Cem's own
-// assistant — the one that will eventually own DB-mutating tools (calendar,
-// notes, project content) gated by `needsApproval`. Phase 1 ships this as a
-// stub: same scaffolding as the visitor agent, different system prompt, no
-// extra tools yet. Real workspace tools land in Phase 2 alongside the
-// `/workspace` route and the GitHub OAuth login. See
-// `docs/architecture/multi-agent-chat.md`.
+// Personal-assistant agent for `/workspace/assistant`. This is the
+// orchestrator in the agent-delegation pattern: it owns the user-facing
+// turn but does not directly own most domain tools. Project/task work is
+// handed off to `agentPersonalAssistantProjects` via `delegateToProjects`;
+// future domains (calendar, notes, fitness, …) follow the same shape. See
+// `docs/architecture/agent-delegation.md` and `multi-agent-chat.md`.
 //
 // The base prompt is rendered with a `{profile}` block at the end. On each
 // turn the agent reads `profile.summary` via `profileSummaryGet` and the
@@ -22,15 +22,28 @@ const BASE_SYSTEM_PROMPT = [
     "You are Cem Yilmaz's personal AI assistant inside his private workspace at cem-yilmaz.de.",
     'You speak directly to Cem (the site owner), not to a visitor.',
     '',
-    'Capabilities (Phase 2 will expand this list):',
+    'Capabilities:',
     '- Plain conversational answers and reasoning.',
-    '- Future: notes, calendar entries, content edits — each gated by an explicit approval before any write.',
+    '- Project and task management via `delegateToProjects` — see "When to delegate" below.',
+    '- Future: notes, calendar entries, content edits — each in its own sub-agent under the same delegation pattern.',
+    '',
+    'When to delegate:',
+    '- ANY ask that touches the workspace projects board or its tasks — listing, creating, updating, archiving,',
+    '  deleting, summarizing progress, moving tasks across projects — goes to `delegateToProjects` with a',
+    "  natural-language brief. Pass the user's request verbatim plus any context from earlier turns (an id you",
+    '  resolved, a date the user named). The sub-agent has the live board snapshot in its own prompt.',
+    "- The delegate result is `{ status, summary, mutations?, missingFields? }`. On `status: 'needsMoreInfo'`,",
+    '  call `promptUserForInput` to gather the slots named in `missingFields`, then call `delegateToProjects`',
+    "  again with the brief enriched by the answers. On `status: 'noOp'`, handle the ask yourself (it was not",
+    "  really about projects). On `status: 'completed'`, narrate `summary` back to Cem; mention specific",
+    '  mutations (created/updated/deleted) when they help him confirm what happened.',
+    '- Do NOT try to do project/task work by chatting — always delegate. Conversely, do not delegate non-project',
+    '  questions (small talk, code help, general reasoning).',
     '',
     'Style:',
     '- Reply in the language Cem wrote in (German or English).',
     '- Be concise and direct. Skip pleasantries and corporate filler.',
     '- Push back when an instruction looks wrong; ask for clarification when ambiguous.',
-    "- Never run a write-side tool without first surfacing the intended change for approval — the SDK enforces this; don't try to work around it.",
 ].join('\n');
 
 function buildSystemPrompt(profileSummary: string): string {
@@ -45,7 +58,7 @@ function buildSystemPrompt(profileSummary: string): string {
 
 export async function agentPersonalAssistant({
     assistantOptions: _assistantOptions,
-    session: _session,
+    session,
     serverRuntime,
     onStepFinish,
 }: AgentChatOptions) {
@@ -56,16 +69,15 @@ export async function agentPersonalAssistant({
         // same Gemini binding.
         model: serverRuntime.ai.userConversationModel(),
         onStepFinish,
-        providerOptions: {
-            google: {
-                thinkingConfig: { thinkingBudget: 0 },
-                structuredOutputs: true,
-            } satisfies GoogleLanguageModelOptions,
-        },
-        stopWhen: [stepCountIs(5), hasToolCall('promptUserForInput')],
+        providerOptions: googleAgentProviderOptions,
+        // Bumped to 8 — a single user turn can now chain "delegate → user
+        // input → delegate again" plus a final-text step, and 5 ran out in
+        // practice.
+        stopWhen: [stepCountIs(8), hasToolCall('promptUserForInput')],
         instructions: buildSystemPrompt(profileSummary),
         tools: {
             promptUserForInput: toolPromptUserForInput(),
+            delegateToProjects: toolDelegateToProjects({ serverRuntime, session }),
         },
     });
 }

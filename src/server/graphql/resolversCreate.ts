@@ -19,10 +19,14 @@ import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillUpsert } from '../commands/cvSkillUpsert';
 import { profileObservationDismiss } from '../commands/profileObservationDismiss';
 import { profileSynthesizeRequest } from '../commands/profileSynthesizeRequest';
+import { projectActivityDelete } from '../commands/projectActivityDelete';
+import { projectActivityUpsert } from '../commands/projectActivityUpsert';
 import { projectDelete } from '../commands/projectDelete';
 import { projectRequestArchive } from '../commands/projectRequestArchive';
 import { projectRequestDelete } from '../commands/projectRequestDelete';
 import { projectReorder } from '../commands/projectReorder';
+import { projectTimerStart } from '../commands/projectTimerStart';
+import { projectTimerStop } from '../commands/projectTimerStop';
 import { projectUpsert } from '../commands/projectUpsert';
 import { taskDelete } from '../commands/taskDelete';
 import { taskReorder } from '../commands/taskReorder';
@@ -47,6 +51,7 @@ import { profileObservationList } from '../queries/profileObservationList';
 import { projectRequestsList } from '../queries/projectRequestsList';
 import { projectRequestsInboxCount } from '../queries/projectRequestsInboxCount';
 import { projectsList } from '../queries/projectsList';
+import { activeTimerGet } from '../queries/activeTimerGet';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
 import { standaloneTasksList } from '../queries/standaloneTasksList';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
@@ -70,10 +75,14 @@ import type {
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillUpsertArgs,
     GqlSAdminMutationProfileObservationDismissArgs,
+    GqlSAdminMutationProjectActivityDeleteArgs,
+    GqlSAdminMutationProjectActivityUpsertArgs,
     GqlSAdminMutationProjectDeleteArgs,
     GqlSAdminMutationProjectReorderArgs,
     GqlSAdminMutationProjectRequestArchiveArgs,
     GqlSAdminMutationProjectRequestDeleteArgs,
+    GqlSAdminMutationProjectTimerStartArgs,
+    GqlSAdminMutationProjectTimerStopArgs,
     GqlSAdminMutationProjectUpsertArgs,
     GqlSAdminMutationTaskDeleteArgs,
     GqlSAdminMutationTaskReorderArgs,
@@ -183,6 +192,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             standaloneTasks(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
                 return standaloneTasksList(requestingSession, serverRuntime);
+            },
+            activeTimer(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return activeTimerGet(requestingSession, serverRuntime);
             },
         },
         AdminProfile: {
@@ -310,6 +322,26 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             taskReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationTaskReorderArgs, requestingSession: GqlSSession) {
                 return taskReorder(args, requestingSession, serverRuntime);
+            },
+            projectActivityUpsert(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationProjectActivityUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return projectActivityUpsert(args, requestingSession, serverRuntime);
+            },
+            projectActivityDelete(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationProjectActivityDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return projectActivityDelete(args, requestingSession, serverRuntime);
+            },
+            projectTimerStart(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectTimerStartArgs, requestingSession: GqlSSession) {
+                return projectTimerStart(args, requestingSession, serverRuntime);
+            },
+            projectTimerStop(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectTimerStopArgs, requestingSession: GqlSSession) {
+                return projectTimerStop(args, requestingSession, serverRuntime);
             },
         },
         Query: {

@@ -13,6 +13,7 @@ import {
     uuid,
     varchar,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // Drizzle has no first-class `bytea` builder; the `customType` helper wraps
 // `bytea` so the column round-trips as a Node `Buffer` on read and accepts
@@ -889,3 +890,90 @@ export const tasks = pgTable(
 
 export type Task = typeof tasks.$inferSelect;
 export type TaskCreate = typeof tasks.$inferInsert;
+
+// --- Project activities ------------------------------------------------------
+//
+// Unified per-project timeline. One row covers both event-style entries
+// (client wrote on Malt, offer sent, call held) and timed work sessions
+// produced by the work timer — same shape, different columns populated.
+//
+// For event rows: `occurredAt` is when it happened, `durationSec` is optional
+// and lets Cem record "the call was 45 min" without running a timer. The
+// `startedAt` / `endedAt` columns stay null.
+//
+// For work-timer rows: `kind = 'work'`, `startedAt = occurredAt`, `endedAt`
+// is null while the timer runs and stamped on stop. `durationSec` is a cached
+// `endedAt - startedAt` so the sum query stays index-only.
+//
+// `channel` is meaningful only for `clientContact` / `meeting` rows; the UI
+// hides it for other kinds. Stored as plain varchar against the enum list
+// below so adding a channel later is a schema-free deploy.
+//
+// The partial unique index `(endedAt IS NULL) WHERE kind = 'work'` enforces
+// the one-global-active-timer invariant at the DB level — even with two tabs
+// open, the second `projectTimerStart` raises a unique-violation that the
+// command handler catches and retries after stopping the existing timer.
+//
+// See `docs/features/projects-workspace.md`.
+
+export const projectActivityKinds = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'] as const;
+export type ProjectActivityKind = (typeof projectActivityKinds)[number];
+
+export const projectActivityChannels = ['malt', 'email', 'phone', 'videoCall', 'inPerson', 'aiAssistant', 'other'] as const;
+export type ProjectActivityChannel = (typeof projectActivityChannels)[number];
+
+export const projectActivities = pgTable(
+    'ProjectActivities',
+    {
+        activityId: uuid().primaryKey(),
+        projectId: uuid().notNull(),
+        // Optional link to a specific task — lets totals roll up per task
+        // without forcing every activity to pick one. Cascade-set-null on
+        // task delete so removing a task doesn't shred its history.
+        taskId: uuid(),
+        kind: varchar().$type<ProjectActivityKind>().notNull(),
+        // Communication channel; null when kind is `work` / `offer` /
+        // `milestone` / `note`. Free to fill for `clientContact` / `meeting`.
+        channel: varchar().$type<ProjectActivityChannel>(),
+        title: varchar().notNull(),
+        notes: text(),
+        // When the event happened (call start, email send). For timer rows
+        // this equals `startedAt`. The timeline orders strictly on this column.
+        occurredAt: timestamp({ withTimezone: true }).notNull(),
+        // Set on work-timer rows; null on event rows.
+        startedAt: timestamp({ withTimezone: true }),
+        // Null while a timer is running; stamped by `projectTimerStop`.
+        endedAt: timestamp({ withTimezone: true }),
+        // Cached `endedAt - startedAt` in seconds, written on stop. Also
+        // settable directly on event rows when Cem logs a known duration
+        // ("the call was 45 min") without running a timer.
+        durationSec: integer(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.projectId],
+            foreignColumns: [projects.projectId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.taskId],
+            foreignColumns: [tasks.taskId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('ProjectActivities_projectId_occurredAt_idx').on(table.projectId, table.occurredAt),
+        index('ProjectActivities_taskId_idx').on(table.taskId),
+        // Partial unique enforces the single-active-timer invariant. The
+        // `kind = 'work' AND endedAt IS NULL` predicate matches at most one
+        // row across the whole table; a concurrent second start fails fast.
+        uniqueIndex('ProjectActivities_singleActiveTimer_uniq')
+            .on(table.kind)
+            .where(sql`${table.endedAt} IS NULL AND ${table.kind} = 'work'`),
+    ],
+);
+
+export type ProjectActivity = typeof projectActivities.$inferSelect;
+export type ProjectActivityCreate = typeof projectActivities.$inferInsert;

@@ -28,6 +28,9 @@ the daily-work surface):
 - **Todos** — flat task list with the same task primitive, filtered to `projectId IS NULL`. For quick captures that don't (yet) belong to a
   project.
 
+Each project card on the **Projects** tab also opens a **Timeline** strip and a **Timer pill** — both detailed below under
+[Project activity timeline & work timer](#project-activity-timeline--work-timer).
+
 The workspace hub's Projects card carries a small primary-coloured badge with the un-triaged inbox count, so the count is visible without
 opening the page.
 
@@ -124,3 +127,94 @@ Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 - **AI summarization** of an Inbox request before conversion. Phase-2 candidate for the personal-assistant agent.
 - **Cross-status drag** on the projects board.
 - **Public `/projects/$id`** detail pages — separate Phase 3 deliverable.
+
+## Assistant control
+
+The personal assistant at `/workspace/assistant` can read and mutate this board on Cem's instruction. It delegates project/task work to a
+dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `projectUpsert` / `projectDelete` / `taskUpsert` /
+`taskDelete` commands the page uses. See [architecture/agent-delegation.md](../architecture/agent-delegation.md).
+
+## Project activity timeline & work timer
+
+A project's "history" is more than its tasks. Cem's typical flow is: a client writes on Malt → he sends a first offer → the client
+re-contacts via the site's AI chat → a call happens → an email lands → a revised offer goes out. Some of those moments have a duration (the
+call, the offer-drafting block); most are just timestamps with a sentence of context. The activity timeline captures all of them in one
+chronological stream per project, and the work timer feeds the same stream from the other end — pressing **Start** anywhere puts a running
+`kind = 'work'` row on the project's timeline, pressing **Stop** stamps its duration, and the project's `Total` pill rolls everything up.
+
+### Model
+
+One unified `ProjectActivities` table backs both shapes. The same row covers a logged event (a 12-minute call) and a timed work session (75
+minutes of offer writing); only the columns that are populated differ.
+
+| Column        | Purpose                                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `kind`        | `clientContact \| meeting \| work \| offer \| milestone \| note` — drives the icon, label, and timer ownership    |
+| `channel`     | nullable `malt \| email \| phone \| videoCall \| inPerson \| aiAssistant \| other` — only set for contact/meeting |
+| `title`       | one-line summary, always required                                                                                 |
+| `notes`       | freeform                                                                                                          |
+| `occurredAt`  | when it happened; the timeline sorts on this column                                                               |
+| `startedAt`   | set on `kind = 'work'` rows; equals `occurredAt`                                                                  |
+| `endedAt`     | null while a timer is running                                                                                     |
+| `durationSec` | cached `endedAt - startedAt`, written on stop; settable directly on event rows to log a known duration            |
+| `taskId`      | optional link to a specific `Task` for finer-grained reporting later                                              |
+
+A partial unique index `(kind) WHERE endedAt IS NULL AND kind = 'work'` enforces the **one global active timer** invariant at the DB level —
+even if two tabs race a Start, only one row can exist. The `projectTimerStart` command runs inside a transaction that first stops the open
+row then inserts the new one, so the invariant holds without ever surfacing a unique-violation to the user.
+
+### Unified stream vs. two tables
+
+A separate `ProjectTimeEntry` table would have split the timeline into two parallel feeds — events on one, timed sessions on the other — and
+made every "total time and history" view a UNION. Folding both into `ProjectActivities` keeps the timeline a single
+`ORDER BY occurredAt DESC` and lets `kind` decide the rendering. The cost is a few null columns on event rows; the win is that a card-level
+timer button and the event log share the same code path.
+
+### GraphQL
+
+Read additions on `Admin`:
+
+- `Project.activities: [ProjectActivity!]!` — newest first.
+- `Project.totalWorkSec: Int!` — sum of `durationSec` over `kind = 'work'` rows. Running timers contribute 0 server-side; the client adds
+  the live seconds for the currently-running timer.
+- `admin.activeTimer: ProjectActivity` — the one running timer, or null.
+
+Mutations on `AdminMutation`:
+
+- `projectActivityUpsert(input)` — for event-style rows. Rejects `kind = 'work'` so the timer mutations stay the only path into a work row.
+- `projectActivityDelete(activityId)`.
+- `projectTimerStart(projectId, taskId, title)` — atomically stops any running timer, then inserts the new one. Default title is
+  `Work session`.
+- `projectTimerStop(activityId)` — stamps `endedAt = now`, computes `durationSec`. Idempotent on an already-stopped row.
+
+### UI
+
+Each project card on the **Projects** tab carries:
+
+- A **Timer pill** in the header — when this project owns the running timer it shows a live HH:MM:SS counter (ticking client-side from
+  `startedAt`) and clicking it stops; when another project owns the timer it shows a "Switch" hint that re-starts on this project; otherwise
+  a small "Start" button.
+- A **Timeline** strip below the tasks list, openable from the card footer. Each entry shows a kind icon, the title, the channel chip when
+  set, the duration when known, and the `occurredAt` timestamp. Event rows can be edited inline; work rows are owned by the timer and can
+  only be deleted.
+- A **Total** label in the footer — `formatDuration(totalWorkSec + liveSeconds)` so the number ticks while the timer runs.
+
+### Out of scope (v1)
+
+- **Cross-project totals / reports.** No "this month" view yet — every roll-up lives on its project card.
+- **Subscriptions.** The active-timer state is read on page load and after every mutation; a tab open for hours without interaction re-syncs
+  on the next refetch. A `PubSubPostgres` channel can be added if multi-device sync becomes a need.
+- **Per-task time totals.** The `taskId` link is captured but not yet surfaced as "time spent on task X". The data is there for when it is.
+- **Editing work-row metadata.** The timer mutations write the row; today there is no way to retitle a finished work session through the UI.
+  A `projectActivityUpdateWorkMeta` mutation can land when needed without touching duration math.
+
+Files:
+
+- Table + types: `src/server/db/schema.ts` (`projectActivities`, `projectActivityKinds`, `projectActivityChannels`)
+- Migration: `drizzle/0005_chunky_switch.sql`
+- Mapper: `src/server/mappers/toGqlProjectActivity.ts` (and the extended `toGqlProject.ts`)
+- Queries: `src/server/queries/activeTimerGet.ts`; activities + totals are loaded by `projectsList.ts`
+- Commands: `src/server/commands/projectActivityUpsert.ts`, `projectActivityDelete.ts`, `projectTimerStart.ts`, `projectTimerStop.ts`
+- Tests: `src/server/commands/projectTimerStart.test.ts`
+- Resolver wiring: `src/server/graphql/resolversCreate.ts`
+- UI: timeline + timer pill in `src/routes/{-$locale}/workspace/projects.tsx`; operations in `projects.graphql`

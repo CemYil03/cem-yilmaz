@@ -186,6 +186,15 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
 - The chat-related architecture docs (`chat.md`, `chat-persistence.md`) keep their links to this doc; the dispatch model described here
   supersedes the older `agentKind`-driven sketch.
 
+## Sub-agent delegation
+
+The personal-assistant agent is itself a router: it owns the user-facing turn but delegates domain work (projects/tasks today, future
+calendar/notes/fitness/finances/medical/media) to focused sub-agents via per-domain `delegateTo<Domain>` tools whose `execute` runs the
+sub-agent in-process. The first sub-agent built on the pattern is `agentPersonalAssistantProjects`.
+
+See [agent-delegation.md](./agent-delegation.md) for the full pattern — the sub-agent contract, the mutation-log return shape, the
+`needsMoreInfo` / `noOp` sentinels, and the alternatives considered.
+
 ## Profile injection (Phase 2 onwards)
 
 The personal assistant additionally reads a short synthesized summary on each turn and prepends it to its instructions. The summary is one

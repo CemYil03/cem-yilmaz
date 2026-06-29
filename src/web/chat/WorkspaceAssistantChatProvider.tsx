@@ -61,10 +61,10 @@ interface WorkspaceAssistantChatContextValue {
     /** Resume a previous admin chat by id — fetches its transcript and
      *  seeds `loadedMessages` + `chatId`. */
     loadChat: (chatId: string) => Promise<void>;
-    /** Counter bumped every time the sheet closes. The floating launcher
-     *  pulses for ~1.4s on each new value so the user knows "your
-     *  conversation went there, the launcher is how you come back." See
-     *  `WorkspaceAssistantLauncher.tsx`. */
+    /** Counter bumped every time the sheet closes. The header's
+     *  assistant button pulses for ~1.4s on each new value so the user
+     *  knows "your conversation went there, the header button is how
+     *  you come back." See `HeaderChatButton.tsx`. */
     highlightSignal: number;
 }
 
