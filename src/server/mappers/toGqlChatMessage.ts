@@ -197,11 +197,13 @@ function toGqlChatAssistantInput(slot: ChatAssistantInputSlot): GqlSChatAssistan
             return { gqlTypeName: 'ChatAssistantInputBoolean', ...shared };
         case 'Text':
             return { gqlTypeName: 'ChatAssistantInputText', ...shared };
+        case 'Otp':
+            return { gqlTypeName: 'ChatAssistantInputOtp', ...shared };
     }
 }
 
 const SLOT_KINDS_WITH_OPTIONS = new Set(['SingleSelect', 'MultiSelect']);
-const SLOT_KINDS_WITHOUT_OPTIONS = new Set(['Date', 'DateRange', 'DateTime', 'Time', 'Boolean', 'Text']);
+const SLOT_KINDS_WITHOUT_OPTIONS = new Set(['Date', 'DateRange', 'DateTime', 'Time', 'Boolean', 'Text', 'Otp']);
 
 // Defensive guard for the JSONB `inputs` payload — drops any row written
 // before validation existed (or by a future bug) so the GraphQL resolver

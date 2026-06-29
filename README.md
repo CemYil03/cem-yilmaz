@@ -56,9 +56,10 @@ Notes:
   [`docs/architecture/environment.md`](./docs/architecture/environment.md).
 - **Production** values are configured in Coolify, not in any `.env*` file. The example files exist for local dev only. In production,
   `WEB_PAGE_URL` must be `https://cem-yilmaz.de`.
-- **Capability vars** are optional in the type but required when their feature runs: `GOOGLE_GENERATIVE_AI_API_KEY` (chat) and
-  `SERVER_TOKEN_SECRET` (server-side rendering). Phase 2 adds `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, and
-  `WORKSPACE_GITHUB_LOGINS` for the workspace.
+- **Capability vars** are optional in the type but required when their feature runs: `GOOGLE_GENERATIVE_AI_API_KEY` (chat),
+  `SERVER_TOKEN_SECRET` (server-side rendering), and `RESEND_API_KEY` + `EMAIL_FROM_ADDRESS` (visitor chat email tools — see
+  [`docs/features/chat-email-tools.md`](./docs/features/chat-email-tools.md)). Phase 2 adds `GITHUB_OAUTH_CLIENT_ID`,
+  `GITHUB_OAUTH_CLIENT_SECRET`, and `WORKSPACE_GITHUB_LOGINS` for the workspace.
 
 ---
 

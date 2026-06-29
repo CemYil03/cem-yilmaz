@@ -25,6 +25,11 @@ export function environmentVariablesCreate(source: NodeJS.ProcessEnv = process.e
         // site, not at boot. See `docs/architecture/server-side-rendering.md`.
         serverTokenSecret: source.SERVER_TOKEN_SECRET,
         visitorIpHashSalt: source.VISITOR_IP_HASH_SALT!,
+        // Capability-specific — required only when the visitor chat's email
+        // tools are actually invoked. Validated in `emailServiceCreate`. See
+        // `docs/features/chat-email-tools.md`.
+        resendApiKey: source.RESEND_API_KEY,
+        emailFromAddress: source.EMAIL_FROM_ADDRESS,
     };
 }
 

@@ -717,3 +717,78 @@ export const profileMessageAnalysis = pgTable(
 
 export type ProfileMessageAnalysis = typeof profileMessageAnalysis.$inferSelect;
 export type ProfileMessageAnalysisCreate = typeof profileMessageAnalysis.$inferInsert;
+
+// --- Project requests --------------------------------------------------------
+//
+// Verified contact channel for the visitor chat's `submitProjectRequest`
+// tool. A visitor who describes a project in the chat lands here in state
+// `pendingOtp`; a 6-digit code is emailed to the address they gave; only
+// once the matching code comes back does the row flip to `emailVerified` and
+// the notification job email Cem the full brief. Spam, impersonation, and
+// typos all get caught at the cheapest point — before Cem's inbox.
+//
+// `otpHash` is `sha256(otp + otpSalt)` with a per-row salt — plaintext OTPs
+// never hit the DB, and re-running sha256 on a leaked row without the salt
+// is a brute-force across 1M values per row. `otpAttempts` caps at 5 (the
+// verify handler archives the row on the 6th wrong submission). 10-minute
+// expiry; once consumed (`emailVerified`) the row is no longer accepted by
+// verify.
+//
+// See `docs/features/project-requests.md` for the full state machine and
+// `docs/features/chat-email-tools.md` for the chat-tool flow.
+
+export const projectRequestStatuses = ['pendingOtp', 'emailVerified', 'archived'] as const;
+export type ProjectRequestStatus = (typeof projectRequestStatuses)[number];
+
+export const projectRequestTypes = ['webApp', 'mobile', 'consulting', 'aiIntegration', 'other'] as const;
+export type ProjectRequestType = (typeof projectRequestTypes)[number];
+
+export const projectRequests = pgTable(
+    'ProjectRequests',
+    {
+        projectRequestId: uuid().primaryKey(),
+        // Owning visitor chat, when one exists. Set to null if the chat is
+        // ever deleted — the row still serves as a historical record of the
+        // brief Cem received.
+        chatId: uuid(),
+        name: varchar().notNull(),
+        // The visitor-supplied address. Treated as unverified until
+        // `status = 'emailVerified'`; the notification job to Cem refuses
+        // to fire until then.
+        email: varchar().notNull(),
+        company: varchar(),
+        projectType: varchar().$type<ProjectRequestType>().notNull(),
+        description: text().notNull(),
+        budget: varchar(),
+        timeline: varchar(),
+        status: varchar().$type<ProjectRequestStatus>().notNull().default('pendingOtp'),
+        // `sha256(otp + otpSalt)` — plaintext OTP never stored. The salt is
+        // per-row crypto.randomBytes(16) hex, regenerated on every project
+        // request, so two requests with the same OTP produce different
+        // hashes. The verify handler compares with `crypto.timingSafeEqual`.
+        otpHash: varchar().notNull(),
+        otpSalt: varchar().notNull(),
+        otpExpiresAt: timestamp({ withTimezone: true }).notNull(),
+        // Increments per wrong submission. The verify handler archives the
+        // row when this would exceed 5, so legitimate fat-fingering survives
+        // a handful of typos and brute-force tops out at 5×10^-6.
+        otpAttempts: integer().notNull().default(0),
+        // Null until verification succeeds; stamped by `toolVerifyProjectRequestOtp`.
+        verifiedAt: timestamp({ withTimezone: true }),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.chatId],
+            foreignColumns: [chats.chatId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('ProjectRequests_status_createdAt_idx').on(table.status, table.createdAt),
+        index('ProjectRequests_chatId_idx').on(table.chatId),
+    ],
+);
+
+export type ProjectRequest = typeof projectRequests.$inferSelect;
+export type ProjectRequestCreate = typeof projectRequests.$inferInsert;

@@ -31,7 +31,7 @@ import { z } from 'zod';
 //
 // Reused across agents — keep agent-specific behavior out of here.
 
-const SLOT_KINDS = ['Date', 'DateRange', 'DateTime', 'Time', 'SingleSelect', 'MultiSelect', 'Boolean', 'Text'] as const;
+const SLOT_KINDS = ['Date', 'DateRange', 'DateTime', 'Time', 'SingleSelect', 'MultiSelect', 'Boolean', 'Text', 'Otp'] as const;
 
 const COLLECTION_MODES = ['form', 'stepThrough'] as const;
 
@@ -49,7 +49,9 @@ const inputSlotSchema = z
                     '`SingleSelect` (pick exactly one of `options`),',
                     '`MultiSelect` (pick zero or more of `options`),',
                     '`Boolean` (yes/no answer, rendered as a Yes/No button pair),',
-                    '`Text` (free-form string).',
+                    '`Text` (free-form string),',
+                    '`Otp` (a 6-digit one-time code, rendered as a six-box code input — use this',
+                    'ONLY for verifying ownership of an email after `submitProjectRequest`).',
                 ].join(' '),
             ),
         prompt: z.string().describe('Label shown next to this specific input slot.'),
@@ -83,10 +85,12 @@ export function toolPromptUserForInput() {
     return tool({
         description: [
             'Ask the user for one or more structured values in a single chat turn.',
-            'Use this instead of asking for values in prose whenever the values have a known shape',
-            '(dates, time ranges, picking from a list, yes/no, free text, ...).',
-            'Group related questions into one call — do not call this tool multiple times in a row',
-            'when the questions could be answered together.',
+            'Use this WHENEVER the value you need has a known shape — a single email address, a date, a yes/no, a',
+            'pick from a list, a 6-digit code, a name. One slot is enough; do not wait until you have a full form',
+            'worth of fields to call this tool. Asking for a typed value in prose is a bug, even for a single value.',
+            'Group tightly-related questions into one call (e.g. subject + body + reply email for a contact email),',
+            'but it is fine and expected to make several calls over a conversation as new information becomes',
+            'relevant — collect what you can ask for now, then ask for the rest in a follow-up call.',
             'Each slot MUST set `kind` to one of the allowed enum values; never invent fields like `name`,',
             '`label`, or `input_type`.',
             'Set `mode` to `stepThrough` when the form has many slots or works best as a guided sequence;',

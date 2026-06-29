@@ -2,6 +2,7 @@ import type { LanguageModel } from 'ai';
 import type { Database, DatabaseTransaction } from '../db';
 import type { GqlSChatUpdate } from '../graphql/generated';
 import type { QueuedJobDefinition } from '../jobs/types';
+import type { EmailService } from '../services/emailServiceCreate';
 import type { BrowserCaptureOptions } from '../utils/browserCapture';
 import type { Logger } from '../utils/loggerCreate';
 
@@ -46,4 +47,11 @@ export interface ServerRuntime {
     browser: {
         capture: (options: BrowserCaptureOptions) => Promise<Buffer>;
     };
+    // Transactional email transport. Lazy: the underlying Resend client is
+    // only constructed when a tool actually fires a send, so test runtimes
+    // and CI builds work without `RESEND_API_KEY`. The visitor chat's three
+    // email-shaped jobs (`emailToCemSend`, `projectRequestOtpSend`,
+    // `projectRequestNotifySend`) are the only callers. See
+    // `docs/features/chat-email-tools.md`.
+    emailService: EmailService;
 }

@@ -112,6 +112,10 @@ fragment ChatMessageFields on ChatMessage {
                 inputId
                 prompt
             }
+            ... on ChatAssistantInputOtp {
+                inputId
+                prompt
+            }
         }
     }
     ... on ChatMessageUserInput {

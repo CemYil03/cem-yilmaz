@@ -173,6 +173,12 @@ completes, with the final body. The row is the durable artifact; the subscriptio
 This avoids row mutation per chunk (high write amplification) and keeps the message log append-only — every row, once written, is final. A
 client that reconnects mid-stream sees no partial row in history; it sees the live subscription pick up where it left off.
 
+**Exception: a turn that ended on `promptUserForInput` does not persist its trailing text.** When the stopping step contained a
+`promptUserForInput` tool call, the runner skips the post-stream `chatMessagesAssistantText` insert. The model is coached to narrate briefly
+before the call and tends to emit a few words of preamble; persisting them would push the freshly-inserted `assistantInputCollection` row
+out of the transcript tail, and the UI's interactivity rule locks any collection that isn't the tail. The streaming preview still surfaces
+the preamble during the turn — only the durable row is dropped. See [Chat Foundation](./chat.md#produced-by-the-promptuserforinput-tool).
+
 ### `chatMessageCreate` owns the "ensure chat" step
 
 Per the schema, `chatId` on `chatMessageCreate` is optional — passing `null` means "start a new chat". The command inserts the `chats` row

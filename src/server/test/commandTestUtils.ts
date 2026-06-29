@@ -67,6 +67,15 @@ function serverRuntimeStubCreate(): ServerRuntime {
                 throw new Error('browser.capture not used');
             }),
         },
+        // Email is wired through pg-boss jobs, so the chat commands themselves
+        // never touch it — only the job handlers do. Throw to surface a test
+        // that accidentally reached the email surface.
+        emailService: {
+            cemPrimaryAddress: 'test@example.com',
+            sendEmail: vi.fn(async () => {
+                throw new Error('emailService.sendEmail not used');
+            }) as unknown as ServerRuntime['emailService']['sendEmail'],
+        },
     };
 }
 

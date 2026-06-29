@@ -91,6 +91,13 @@ union above; the tool has no `execute`. Two pieces of plumbing turn the tool cal
    in `stopWhen`. Because the tool has no `execute`, there is no result to feed back into the loop — the next turn-taker is the human.
    Without this stop condition, Gemini would keep stepping and tend to apologize that "the tool failed", producing a phantom assistant text
    right next to the form.
+3. **Any preamble text from the stopping step is dropped at persistence time.** The system prompt coaches the model to narrate briefly
+   before calling `promptUserForInput` ("respond briefly, then ..."), so Gemini almost always emits a few words alongside the tool call.
+   `chatAssistantTurnRun` tracks whether the stopping step contained a `promptUserForInput` call and, when it did, skips the trailing
+   `chatMessagesAssistantText` insert. Persisting that preamble would push the freshly-inserted `assistantInputCollection` row out of the
+   transcript tail, and the interactivity rule (next bullet, plus `findLatestCollectionId` in `web/chat/chatTranscript.ts`) locks every
+   collection that isn't the tail — the Submit button would never render. The streaming preview still surfaces the preamble live during the
+   turn; `TurnEnded` clears it client-side.
 
 The user's reply is a `ChatMessageUserInput`. On the next round, `toModelMessages` replays the collection as a `promptUserForInput`
 tool-call and the `ChatMessageUserInput` as the matching tool-result, so the LLM sees its own original turn shape — see

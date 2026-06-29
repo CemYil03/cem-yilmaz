@@ -34,3 +34,6 @@ export { signupReminderSend } from './handlers/signupReminderSend';
 export { staleSessionsCleanup } from './handlers/staleSessionsCleanup';
 export { profileAnalyze } from './handlers/profileAnalyze';
 export { profileSynthesize } from './handlers/profileSynthesize';
+export { emailToCemSend } from './handlers/emailToCemSend';
+export { projectRequestOtpSend } from './handlers/projectRequestOtpSend';
+export { projectRequestNotifySend } from './handlers/projectRequestNotifySend';

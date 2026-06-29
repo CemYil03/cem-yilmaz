@@ -33,4 +33,16 @@ export interface EnvironmentVariables {
     // Required at boot — refusing a missing salt up front is safer than
     // silently dropping the IP bucket of the rate limiter.
     visitorIpHashSalt: string;
+    // Optional at the env layer, fail-fast required at the email-capability
+    // call site (`emailServiceCreate`). Same rationale as
+    // `googleGenerativeAiApiKey`: tests and build-time tooling build a typed
+    // env without a key, and the missing-key error surfaces with
+    // provider-specific context where it can be acted on. See
+    // `docs/features/chat-email-tools.md`.
+    resendApiKey: string | undefined;
+    // From-address Resend sends as. The Resend account must own the sending
+    // domain (DNS + SPF + DKIM). Format is `"Name <local@domain>"` or a bare
+    // address. Optional at the env layer for the same reason as
+    // `resendApiKey` — fail-fast happens in `emailServiceCreate`.
+    emailFromAddress: string | undefined;
 }

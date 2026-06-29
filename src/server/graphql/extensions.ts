@@ -66,6 +66,9 @@ declare module './generated' {
     export interface GqlSChatAssistantInputText {
         gqlTypeName: 'ChatAssistantInputText';
     }
+    export interface GqlSChatAssistantInputOtp {
+        gqlTypeName: 'ChatAssistantInputOtp';
+    }
 
     // --- ChatUpdate union --------------------------------------------------
     export interface GqlSChatUpdateMessageAppended {

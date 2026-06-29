@@ -159,6 +159,7 @@ export type GqlCChatAssistantInput =
     | GqlCChatAssistantInputDateRange
     | GqlCChatAssistantInputDateTime
     | GqlCChatAssistantInputMultiSelect
+    | GqlCChatAssistantInputOtp
     | GqlCChatAssistantInputSingleSelect
     | GqlCChatAssistantInputText
     | GqlCChatAssistantInputTime;
@@ -191,6 +192,12 @@ export interface GqlCChatAssistantInputMultiSelect {
     __typename?: 'ChatAssistantInputMultiSelect';
     inputId: Scalars['ID']['output'];
     options: Array<Scalars['String']['output']>;
+    prompt: Scalars['String']['output'];
+}
+
+export interface GqlCChatAssistantInputOtp {
+    __typename?: 'ChatAssistantInputOtp';
+    inputId: Scalars['ID']['output'];
     prompt: Scalars['String']['output'];
 }
 
@@ -712,6 +719,7 @@ export type GqlCWorkspaceVisitorChatQuery = {
                           | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+                          | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
                           | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
@@ -823,6 +831,7 @@ type GqlCWorkspaceChatMessageFields_ChatMessageAssistantInputCollection_Fragment
         | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+        | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
         | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
@@ -954,6 +963,7 @@ export type GqlCWorkspaceChatPageQuery = {
                           | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+                          | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
                           | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
                           | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
@@ -1289,6 +1299,7 @@ type GqlCChatMessageFields_ChatMessageAssistantInputCollection_Fragment = {
         | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+        | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
         | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
         | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
@@ -1419,6 +1430,7 @@ export type GqlCChatPageQuery = {
                       | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
                       | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
                       | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+                      | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
                       | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
                       | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
                       | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
@@ -1559,6 +1571,7 @@ export type GqlCChatUpdatesSubscription = {
                             | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
                             | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
                             | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+                            | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
                             | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
                             | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
                             | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
@@ -1942,6 +1955,20 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                                                 typeCondition: {
                                                     kind: 'NamedType',
                                                     name: { kind: 'Name', value: 'ChatAssistantInputText' },
+                                                },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'inputId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'InlineFragment',
+                                                typeCondition: {
+                                                    kind: 'NamedType',
+                                                    name: { kind: 'Name', value: 'ChatAssistantInputOtp' },
                                                 },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
@@ -2407,6 +2434,20 @@ export const ChatMessageFieldsFragmentDoc = {
                                                 typeCondition: {
                                                     kind: 'NamedType',
                                                     name: { kind: 'Name', value: 'ChatAssistantInputText' },
+                                                },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'inputId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'InlineFragment',
+                                                typeCondition: {
+                                                    kind: 'NamedType',
+                                                    name: { kind: 'Name', value: 'ChatAssistantInputOtp' },
                                                 },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
@@ -3148,6 +3189,20 @@ export const WorkspaceVisitorChatDocument = {
                                                     ],
                                                 },
                                             },
+                                            {
+                                                kind: 'InlineFragment',
+                                                typeCondition: {
+                                                    kind: 'NamedType',
+                                                    name: { kind: 'Name', value: 'ChatAssistantInputOtp' },
+                                                },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'inputId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
+                                                    ],
+                                                },
+                                            },
                                         ],
                                     },
                                 },
@@ -3644,6 +3699,20 @@ export const WorkspaceChatPageDocument = {
                                                 typeCondition: {
                                                     kind: 'NamedType',
                                                     name: { kind: 'Name', value: 'ChatAssistantInputText' },
+                                                },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'inputId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'InlineFragment',
+                                                typeCondition: {
+                                                    kind: 'NamedType',
+                                                    name: { kind: 'Name', value: 'ChatAssistantInputOtp' },
                                                 },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
@@ -5620,6 +5689,20 @@ export const ChatPageDocument = {
                                                     ],
                                                 },
                                             },
+                                            {
+                                                kind: 'InlineFragment',
+                                                typeCondition: {
+                                                    kind: 'NamedType',
+                                                    name: { kind: 'Name', value: 'ChatAssistantInputOtp' },
+                                                },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'inputId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
+                                                    ],
+                                                },
+                                            },
                                         ],
                                     },
                                 },
@@ -6372,6 +6455,20 @@ export const ChatUpdatesDocument = {
                                                 typeCondition: {
                                                     kind: 'NamedType',
                                                     name: { kind: 'Name', value: 'ChatAssistantInputText' },
+                                                },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'inputId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'InlineFragment',
+                                                typeCondition: {
+                                                    kind: 'NamedType',
+                                                    name: { kind: 'Name', value: 'ChatAssistantInputOtp' },
                                                 },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',

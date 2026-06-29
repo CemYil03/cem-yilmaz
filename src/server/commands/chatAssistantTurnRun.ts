@@ -212,10 +212,20 @@ async function runAgentTurn({
     // closure-blind narrowing of a plain `let`-bound `null`. Empty when the
     // turn produced no steps at all (e.g. an immediate agent throw).
     const lastStepGeneration: { value: StepGenerationMeta | null } = { value: null };
+    // Tracks whether the turn ended on a `promptUserForInput` tool call. When
+    // it did, any text the model produced alongside the call is preamble to a
+    // form the user is now expected to fill — persisting it as a trailing
+    // `chatMessagesAssistantText` row would push the input-collection out of
+    // the tail position and lock the form (see `findLatestCollectionId` in
+    // `web/chat/chatTranscript.ts`: only the last message of the transcript is
+    // interactive). The streaming preview still surfaces the preamble during
+    // the turn; `TurnEnded` clears it client-side.
+    const endedOnPromptForInput = { value: false };
     const agent = await agentFactory({
         session: requestingSession,
         serverRuntime,
         assistantOptions,
+        chatId,
         onStepFinish: async (step) => {
             const generation = stepGenerationMeta(step);
             lastStepGeneration.value = generation;
@@ -260,6 +270,7 @@ async function runAgentTurn({
             for (const call of step.toolCalls) {
                 if (approvalRequestedToolCallIds.has(call.toolCallId)) continue;
                 if (call.toolName === PROMPT_USER_FOR_INPUT_TOOL_NAME) {
+                    endedOnPromptForInput.value = true;
                     // Validate the LLM-supplied args before persisting. Even
                     // with `structuredOutputs: true`, providers can ship
                     // malformed args (renamed fields, missing discriminator,
@@ -344,7 +355,16 @@ async function runAgentTurn({
         assistantText = result.text;
     }
 
-    if (assistantText.length > 0) {
+    // Suppress the trailing assistant-text row when the turn ended on a
+    // `promptUserForInput` tool call. The model is coached (in
+    // `agentVisitorAboutCem.buildSystemPrompt`) to narrate briefly before
+    // calling the tool, and Gemini emits a few words of preamble in practice.
+    // Persisting that preamble would push the freshly-inserted
+    // `chatMessagesAssistantInputCollection` row out of the transcript tail,
+    // and `findLatestCollectionId` locks any collection that isn't the tail —
+    // the user would never see the Submit button. The form's own `prompt` is
+    // the framing; the preamble's loss is acceptable.
+    if (assistantText.length > 0 && !endedOnPromptForInput.value) {
         const assistantSpine: ChatMessageRowCreate = {
             chatMessageId: assistantTextMessageId,
             chatId,
@@ -382,6 +402,7 @@ function chatAssistantInputSlotPromote(slot: ChatAssistantInputCollectionInput['
         case 'Time':
         case 'Boolean':
         case 'Text':
+        case 'Otp':
             return { ...shared, kind: slot.kind };
         case 'SingleSelect':
         case 'MultiSelect':

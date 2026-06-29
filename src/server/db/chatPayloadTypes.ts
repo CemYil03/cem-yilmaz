@@ -22,7 +22,8 @@ export type ChatAssistantInputSlot =
     | (ChatAssistantInputSlotShared & { kind: 'SingleSelect'; options: string[] })
     | (ChatAssistantInputSlotShared & { kind: 'MultiSelect'; options: string[] })
     | (ChatAssistantInputSlotShared & { kind: 'Boolean' })
-    | (ChatAssistantInputSlotShared & { kind: 'Text' });
+    | (ChatAssistantInputSlotShared & { kind: 'Text' })
+    | (ChatAssistantInputSlotShared & { kind: 'Otp' });
 
 // Answer values mirror the `ChatAssistantInputValue` GraphQL union. Date /
 // DateTime values are stored as ISO strings; the mapper passes Date-shaped

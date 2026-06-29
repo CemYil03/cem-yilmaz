@@ -156,6 +156,7 @@ export type GqlSChatAssistantInput =
     | GqlSChatAssistantInputDateRange
     | GqlSChatAssistantInputDateTime
     | GqlSChatAssistantInputMultiSelect
+    | GqlSChatAssistantInputOtp
     | GqlSChatAssistantInputSingleSelect
     | GqlSChatAssistantInputText
     | GqlSChatAssistantInputTime;
@@ -188,6 +189,12 @@ export interface GqlSChatAssistantInputMultiSelect {
     __typename?: 'ChatAssistantInputMultiSelect';
     inputId: Scalars['ID']['output'];
     options: Array<Scalars['String']['output']>;
+    prompt: Scalars['String']['output'];
+}
+
+export interface GqlSChatAssistantInputOtp {
+    __typename?: 'ChatAssistantInputOtp';
+    inputId: Scalars['ID']['output'];
     prompt: Scalars['String']['output'];
 }
 
@@ -717,6 +724,7 @@ export type GqlSResolversUnionTypes<_RefType extends Record<string, unknown>> = 
         | GqlSChatAssistantInputDateRange
         | GqlSChatAssistantInputDateTime
         | GqlSChatAssistantInputMultiSelect
+        | GqlSChatAssistantInputOtp
         | GqlSChatAssistantInputSingleSelect
         | GqlSChatAssistantInputText
         | GqlSChatAssistantInputTime;
@@ -762,6 +770,7 @@ export type GqlSResolversTypes = ResolversObject<{
     ChatAssistantInputDateRange: ResolverTypeWrapper<GqlSChatAssistantInputDateRange>;
     ChatAssistantInputDateTime: ResolverTypeWrapper<GqlSChatAssistantInputDateTime>;
     ChatAssistantInputMultiSelect: ResolverTypeWrapper<GqlSChatAssistantInputMultiSelect>;
+    ChatAssistantInputOtp: ResolverTypeWrapper<GqlSChatAssistantInputOtp>;
     ChatAssistantInputSingleSelect: ResolverTypeWrapper<GqlSChatAssistantInputSingleSelect>;
     ChatAssistantInputText: ResolverTypeWrapper<GqlSChatAssistantInputText>;
     ChatAssistantInputTime: ResolverTypeWrapper<GqlSChatAssistantInputTime>;
@@ -848,6 +857,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ChatAssistantInputDateRange: GqlSChatAssistantInputDateRange;
     ChatAssistantInputDateTime: GqlSChatAssistantInputDateTime;
     ChatAssistantInputMultiSelect: GqlSChatAssistantInputMultiSelect;
+    ChatAssistantInputOtp: GqlSChatAssistantInputOtp;
     ChatAssistantInputSingleSelect: GqlSChatAssistantInputSingleSelect;
     ChatAssistantInputText: GqlSChatAssistantInputText;
     ChatAssistantInputTime: GqlSChatAssistantInputTime;
@@ -1063,6 +1073,7 @@ export type GqlSChatAssistantInputResolvers<
         | 'ChatAssistantInputDateRange'
         | 'ChatAssistantInputDateTime'
         | 'ChatAssistantInputMultiSelect'
+        | 'ChatAssistantInputOtp'
         | 'ChatAssistantInputSingleSelect'
         | 'ChatAssistantInputText'
         | 'ChatAssistantInputTime',
@@ -1114,6 +1125,15 @@ export type GqlSChatAssistantInputMultiSelectResolvers<
 > = ResolversObject<{
     inputId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     options?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    prompt?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSChatAssistantInputOtpResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ChatAssistantInputOtp'] = GqlSResolversParentTypes['ChatAssistantInputOtp'],
+> = ResolversObject<{
+    inputId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     prompt?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1616,6 +1636,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ChatAssistantInputDateRange?: GqlSChatAssistantInputDateRangeResolvers<ContextType>;
     ChatAssistantInputDateTime?: GqlSChatAssistantInputDateTimeResolvers<ContextType>;
     ChatAssistantInputMultiSelect?: GqlSChatAssistantInputMultiSelectResolvers<ContextType>;
+    ChatAssistantInputOtp?: GqlSChatAssistantInputOtpResolvers<ContextType>;
     ChatAssistantInputSingleSelect?: GqlSChatAssistantInputSingleSelectResolvers<ContextType>;
     ChatAssistantInputText?: GqlSChatAssistantInputTextResolvers<ContextType>;
     ChatAssistantInputTime?: GqlSChatAssistantInputTimeResolvers<ContextType>;

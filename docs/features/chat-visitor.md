@@ -8,6 +8,9 @@ See also:
 
 - [features/chat.md](./chat.md) — the chat surface itself (transcript, composer, live updates).
 - [features/chat-workspace.md](./chat-workspace.md) — the parallel personal-assistant chat for the workspace.
+- [features/chat-email-tools.md](./chat-email-tools.md) — the visitor agent's three email-shaped tools (contact, project request, OTP
+  verify).
+- [features/project-requests.md](./project-requests.md) — the OTP-gated project-request flow.
 - [architecture/multi-agent-chat.md](../architecture/multi-agent-chat.md) — how visitor and admin chats split at the GraphQL namespace level
   and which agent each one dispatches to.
 

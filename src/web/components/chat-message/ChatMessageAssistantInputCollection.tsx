@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../base/card';
 import { DatePicker } from '../base/date-picker';
 import { DateRangePicker } from '../base/date-range-picker';
 import { Input } from '../base/input';
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '../base/input-otp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../base/select';
 import { Textarea } from '../base/textarea';
 import { MessageRow, Timestamp } from './shared';
@@ -360,6 +361,8 @@ function ChatAssistantInputControl({
             return <BooleanControl value={draftOf(draft, 'Boolean')?.value} onChange={(value) => onChange({ kind: 'Boolean', value })} />;
         case 'ChatAssistantInputText':
             return <TextControl value={draftOf(draft, 'Text')?.text ?? ''} onChange={(text) => onChange({ kind: 'Text', text })} />;
+        case 'ChatAssistantInputOtp':
+            return <OtpControl value={draftOf(draft, 'Otp')?.code ?? ''} onChange={(code) => onChange({ kind: 'Otp', code })} />;
         case undefined:
             return null;
     }
@@ -525,6 +528,31 @@ function TimeControl({ value, onChange }: { value: string; onChange: (next: stri
 
 function TextControl({ value, onChange }: { value: string; onChange: (next: string) => void }) {
     return <Textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder="Type your answer…" rows={2} />;
+}
+
+/** Six-digit OTP entry, used for verifying ownership of an email after
+ *  `submitProjectRequest`. Wraps the existing `<InputOTP>` base primitive
+ *  (`src/web/components/base/input-otp.tsx`). The draft holds the raw
+ *  six-character string; `serializeSlotAnswer` is the submit gate (only
+ *  emits a value once six digits are present). The pattern restriction is
+ *  enforced both visually (digit-only input mode) and at serialize time
+ *  with `/^\d{6}$/`. */
+function OtpControl({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+    return (
+        <InputOTP maxLength={6} value={value} onChange={onChange} pattern="^[0-9]*$" inputMode="numeric" aria-label="Verification code">
+            <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+            </InputOTPGroup>
+            <InputOTPSeparator />
+            <InputOTPGroup>
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+            </InputOTPGroup>
+        </InputOTP>
+    );
 }
 
 /** Yes / No button pair. The selected button becomes filled (`default`

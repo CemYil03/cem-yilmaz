@@ -14,7 +14,7 @@
 // typed `value` without ad-hoc type guards.
 
 import { format, parseISO } from 'date-fns';
-import { CalendarIcon, CalendarRangeIcon, ClockIcon, ListChecksIcon, ListIcon, ToggleLeftIcon, TypeIcon } from 'lucide-react';
+import { CalendarIcon, CalendarRangeIcon, ClockIcon, KeyRoundIcon, ListChecksIcon, ListIcon, ToggleLeftIcon, TypeIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { GqlCChatAssistantInput, GqlCChatAssistantInputValue, GqlCChatMessageUserInputAnswerCreate } from '../graphql/generated';
 
@@ -36,6 +36,7 @@ const INPUT_SLOT_REGISTRY: Record<SlotTypename, InputSlotEntry> = {
     ChatAssistantInputMultiSelect: { Icon: ListChecksIcon, label: 'Choose any' },
     ChatAssistantInputBoolean: { Icon: ToggleLeftIcon, label: 'Yes / no' },
     ChatAssistantInputText: { Icon: TypeIcon, label: 'Text' },
+    ChatAssistantInputOtp: { Icon: KeyRoundIcon, label: 'Verification code' },
 };
 
 export function describeInputSlot(slot: GqlCChatAssistantInput): InputSlotEntry {
@@ -64,7 +65,8 @@ export type SlotDraft =
     | { kind: 'SingleSelect'; selected?: string }
     | { kind: 'MultiSelect'; selected?: ReadonlyArray<string> }
     | { kind: 'Boolean'; value?: boolean }
-    | { kind: 'Text'; text?: string };
+    | { kind: 'Text'; text?: string }
+    | { kind: 'Otp'; code?: string };
 
 export type SlotDraftOf<TKind extends SlotDraft['kind']> = Extract<SlotDraft, { kind: TKind }>;
 
@@ -114,6 +116,12 @@ export function serializeSlotAnswer(draft: SlotDraft): GqlCChatAssistantInputVal
             return typeof draft.value === 'boolean' ? { __typename: 'ChatAssistantInputValueBoolean', boolean: draft.value } : null;
         case 'Text':
             return draft.text && draft.text.trim().length > 0 ? { __typename: 'ChatAssistantInputValueString', value: draft.text } : null;
+        case 'Otp':
+            // Submit only when exactly six digits are present — the
+            // `<InputOTP>` component already enforces digits via its
+            // `pattern`, but the gate here doubles as the "is the form
+            // submittable" check the parent reads off of `null`.
+            return draft.code && /^\d{6}$/.test(draft.code) ? { __typename: 'ChatAssistantInputValueString', value: draft.code } : null;
     }
 }
 

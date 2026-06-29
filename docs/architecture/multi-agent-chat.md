@@ -96,7 +96,10 @@ Existing rows get `'public'` by the column default — Phase 1 only ever wrote v
 
 Replace `agentUserConversation.ts` with two siblings:
 
-- `src/server/agents/agentVisitorAboutCem.ts` — visitor system prompt, no DB tools, no approval gating in practice.
+- `src/server/agents/agentVisitorAboutCem.ts` — visitor system prompt, three transactional tools (`sendEmailToCem`, `submitProjectRequest`,
+  `verifyProjectRequestOtp`) plus `promptUserForInput`. The tools have `execute` functions whose return values land in
+  `chatMessagesToolCall.toolResult` via the existing runner branch — no approval gating because the side effects are bounded by the existing
+  visitor rate-limit + OTP firewall. See [features/chat-email-tools.md](../features/chat-email-tools.md).
 - `src/server/agents/agentPersonalAssistant.ts` — personal-assistant system prompt, real tools (e.g. `toolNoteCreate`,
   `toolCalendarEventCreate`), all gated by `needsApproval` per the existing approval lifecycle.
 

@@ -3,6 +3,7 @@ import { db } from '../db';
 import { environmentVariables } from '../env/environmentVariablesCreate';
 import { PubSubPostgres } from '../graphql/PubSubPostgres';
 import { jobEnqueue } from '../jobs/boss';
+import { emailServiceCreate } from '../services/emailServiceCreate';
 import { browserCapture } from '../utils/browserCapture';
 import { loggerCreate } from '../utils/loggerCreate';
 import type { ServerRuntime } from './ServerRuntime';
@@ -66,6 +67,11 @@ export function serverRuntimeCreate(): ServerRuntime {
             // never launch a real Chromium.
             capture: browserCapture,
         },
+        // Email transport for the visitor chat's email-shaped tools. The
+        // factory itself is cheap — the Resend client is only constructed
+        // on the first `sendEmail` call, so a runtime that never calls into
+        // it never reads `RESEND_API_KEY`. Tests stub this with a fake.
+        emailService: emailServiceCreate(),
     };
 
     return serverRuntime;

@@ -115,6 +115,10 @@ fragment WorkspaceChatMessageFields on ChatMessage {
                 inputId
                 prompt
             }
+            ... on ChatAssistantInputOtp {
+                inputId
+                prompt
+            }
         }
     }
     ... on ChatMessageUserInput {

@@ -144,6 +144,7 @@ union ChatAssistantInput =
     | ChatAssistantInputMultiSelect
     | ChatAssistantInputBoolean
     | ChatAssistantInputText
+    | ChatAssistantInputOtp
 
 type ChatAssistantInputDate {
     inputId: ID!
@@ -183,6 +184,17 @@ type ChatAssistantInputBoolean {
 }
 
 type ChatAssistantInputText {
+    inputId: ID!
+    prompt: String!
+}
+
+# Six-digit one-time code. Wire-shape is identical to `ChatAssistantInputText`
+# (the answer is a `ChatAssistantInputValueString`), but the slot kind is
+# distinct so the UI can render the six-box `<InputOTP>` component instead of
+# a free-text field. Used exclusively by the visitor chat after
+# `submitProjectRequest` to verify ownership of the supplied email address —
+# see `docs/features/project-requests.md`.
+type ChatAssistantInputOtp {
     inputId: ID!
     prompt: String!
 }
