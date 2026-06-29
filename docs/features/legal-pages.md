@@ -35,16 +35,17 @@ German legal terms are recognizable to a German visitor in either UI language; a
 the URL contain `impressum`. We could have rewritten the EN paths to `/imprint` and `/privacy`, but the cost (locale-aware route names,
 special casing in `seoMeta`) outweighs the benefit. The page **content** switches language; the URL doesn't.
 
-### Placeholder content
+### Content state
 
-The Phase 1 ship contains **placeholders** for the real legal data:
+- `impressum.tsx` reads provider data (name, address, email, phone) from `src/web/content/personalInfo.ts` plus the local `IMPRESSUM_STREET`
+  constant. Real values are committed.
+- `datenschutz.tsx` ships a GDPR notice covering: controller, hosting (IONOS SE, Montabaur — Art. 28 DPA in place, German servers), the
+  technically-necessary session cookie (12 months), the visitor AI chat against Google Gemini (Google Ireland Limited; SCCs for the US
+  transfer; 12 months inactivity), chat file attachments, server logs (14 days), and data-subject rights (Art. 15–21) with the LfDI
+  Rheinland-Pfalz as the supervisory authority.
 
-- `impressum.tsx` — `PLACEHOLDER` constant at the top of the file with `name`, `addressLines`, `email`, `phone`. Marked `TODO(launch):`.
-- `datenschutz.tsx` — a baseline GDPR notice that covers what the site actually does today (session cookie, visitor chat hitting Google
-  Gemini, server logs, planned workspace OAuth). Marked `TODO(launch):` to expand once analytics / contact form / additional data flows are
-  added.
-
-These placeholders **must be replaced before pointing DNS at production.** See the README's "Open TODOs Before Public Launch" section.
+The page must be revisited whenever the data-processing surface grows — e.g. when GitHub OAuth lands for `/workspace/*`, when analytics is
+added, or when a contact form / third-party embed appears. See the README's "Open TODOs Before Public Launch" section.
 
 ## Why it matters
 

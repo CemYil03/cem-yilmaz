@@ -48,69 +48,21 @@ import { localeFromParam } from '../../../web/utils/locale';
 // editing the row's category field; visitor-side rendering ignores
 // position across categories anyway).
 
-const COPY = {
-    title: { de: 'Lebenslauf bearbeiten', en: 'Edit CV' },
-    description: {
-        de: 'Quelle für /cv und /about. Änderungen sind sofort öffentlich sichtbar.',
-        en: 'Source of truth for /cv and /about. Changes go public immediately.',
-    },
-    back: { de: '← Workspace', en: '← Workspace' },
-    sections: {
-        experience: { de: 'Berufserfahrung', en: 'Experience' },
-        education: { de: 'Ausbildung', en: 'Education' },
-        skills: { de: 'Skills', en: 'Skills' },
-        hobbies: { de: 'Hobbys', en: 'Hobbies' },
-    },
-    actions: {
-        addExperience: { de: 'Stelle hinzufügen', en: 'Add experience' },
-        addEducation: { de: 'Ausbildung hinzufügen', en: 'Add education' },
-        addSkill: { de: 'Skill hinzufügen', en: 'Add skill' },
-        addHobby: { de: 'Hobby hinzufügen', en: 'Add hobby' },
-        save: { de: 'Speichern', en: 'Save' },
-        cancel: { de: 'Abbrechen', en: 'Cancel' },
-        edit: { de: 'Bearbeiten', en: 'Edit' },
-        delete: { de: 'Löschen', en: 'Delete' },
-        dragHandle: { de: 'Ziehen zum Sortieren', en: 'Drag to reorder' },
-    },
-    fields: {
-        roleDe: { de: 'Rolle (DE)', en: 'Role (DE)' },
-        roleEn: { de: 'Rolle (EN)', en: 'Role (EN)' },
-        companyDe: { de: 'Unternehmen (DE)', en: 'Company (DE)' },
-        companyEn: { de: 'Unternehmen (EN)', en: 'Company (EN)' },
-        startDate: { de: 'Beginn', en: 'Start' },
-        endDate: { de: 'Ende (leer = heute)', en: 'End (blank = ongoing)' },
-        descriptionDe: { de: 'Beschreibung (DE)', en: 'Description (DE)' },
-        descriptionEn: { de: 'Beschreibung (EN)', en: 'Description (EN)' },
-        technologies: { de: 'Technologien (kommagetrennt)', en: 'Technologies (comma-separated)' },
-        managerName: { de: 'Manager (optional)', en: 'Manager (optional)' },
-        degreeDe: { de: 'Abschluss (DE)', en: 'Degree (DE)' },
-        degreeEn: { de: 'Abschluss (EN)', en: 'Degree (EN)' },
-        institutionDe: { de: 'Institution (DE)', en: 'Institution (DE)' },
-        institutionEn: { de: 'Institution (EN)', en: 'Institution (EN)' },
-        subjectDe: { de: 'Fach (DE)', en: 'Subject (DE)' },
-        subjectEn: { de: 'Fach (EN)', en: 'Subject (EN)' },
-        startDateOptional: { de: 'Beginn (optional)', en: 'Start (optional)' },
-        endDateRequired: { de: 'Ende', en: 'End' },
-        notesDe: { de: 'Notizen (DE)', en: 'Notes (DE)' },
-        notesEn: { de: 'Notizen (EN)', en: 'Notes (EN)' },
-        category: { de: 'Kategorie', en: 'Category' },
-        label: { de: 'Bezeichnung', en: 'Label' },
-        textDe: { de: 'Text (DE)', en: 'Text (DE)' },
-        textEn: { de: 'Text (EN)', en: 'Text (EN)' },
-        since: { de: 'Seit Jahr (optional)', en: 'Since year (optional)' },
-    },
-    auth: {
-        de: 'Hinweis: Schreibzugriff ist in Phase 1 offen. Der Wechsel auf GitHub OAuth folgt in Phase 2.',
-        en: 'Note: write access is open in Phase 1. GitHub OAuth follows in Phase 2.',
-    },
+const pageTitle = { de: 'Lebenslauf bearbeiten', en: 'Edit CV' };
+const description = {
+    de: 'Quelle für /cv und /about. Änderungen sind sofort öffentlich sichtbar.',
+    en: 'Source of truth for /cv and /about. Changes go public immediately.',
 };
+const rowEditLabel = { de: 'Bearbeiten', en: 'Edit' };
+const rowDeleteLabel = { de: 'Löschen', en: 'Delete' };
+const dragHandleLabel = { de: 'Ziehen zum Sortieren', en: 'Drag to reorder' };
 
 export const Route = createFileRoute('/{-$locale}/workspace/cv')({
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: COPY.title[locale],
-            description: COPY.description[locale],
+            title: pageTitle[locale],
+            description: description[locale],
             path: '/workspace/cv',
             locale,
             webPageUrl: webPageUrlGet(),
@@ -127,14 +79,21 @@ function WorkspaceCvEditor() {
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full py-12 leading-relaxed">
             <Link to="/{-$locale}/workspace" className="text-sm text-muted-foreground hover:text-foreground">
-                {COPY.back[locale]}
+                {{ de: '← Workspace', en: '← Workspace' }[locale]}
             </Link>
             <div className="mt-6 flex items-center gap-3 text-primary">
                 <FileTextIcon className="size-6" />
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">{COPY.title[locale]}</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">{pageTitle[locale]}</h1>
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">{COPY.description[locale]}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{COPY.auth[locale]}</p>
+            <p className="mt-3 text-sm text-muted-foreground">{description[locale]}</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+                {
+                    {
+                        de: 'Hinweis: Schreibzugriff ist in Phase 1 offen. Der Wechsel auf GitHub OAuth folgt in Phase 2.',
+                        en: 'Note: write access is open in Phase 1. GitHub OAuth follows in Phase 2.',
+                    }[locale]
+                }
+            </p>
 
             {fetching && !data ? <p className="mt-8 text-sm text-muted-foreground">…</p> : null}
             {error ? <p className="mt-8 text-sm text-destructive">{error.message}</p> : null}
@@ -179,8 +138,8 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
     return (
         <section className="mt-12">
             <SectionHeader
-                title={COPY.sections.experience[locale]}
-                addLabel={COPY.actions.addExperience[locale]}
+                title={{ de: 'Berufserfahrung', en: 'Experience' }[locale]}
+                addLabel={{ de: 'Stelle hinzufügen', en: 'Add experience' }[locale]}
                 onAdd={() => setEditing('new')}
                 disabled={editing !== null}
             />
@@ -209,8 +168,8 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
                                     await deleteMutation({ cvExperienceId: row.cvExperienceId });
                                     onChanged();
                                 }}
-                                editLabel={COPY.actions.edit[locale]}
-                                deleteLabel={COPY.actions.delete[locale]}
+                                editLabel={rowEditLabel[locale]}
+                                deleteLabel={rowDeleteLabel[locale]}
                             />
                         </DraggableItem>
                     ),
@@ -279,34 +238,34 @@ function ExperienceForm({
             locale={locale}
         >
             <FormGrid>
-                <Field label={COPY.fields.roleDe[locale]}>
+                <Field label={{ de: 'Rolle (DE)', en: 'Role (DE)' }[locale]}>
                     <Input value={form.roleDe} onChange={(e) => setForm({ ...form, roleDe: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.roleEn[locale]}>
+                <Field label={{ de: 'Rolle (EN)', en: 'Role (EN)' }[locale]}>
                     <Input value={form.roleEn} onChange={(e) => setForm({ ...form, roleEn: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.companyDe[locale]}>
+                <Field label={{ de: 'Unternehmen (DE)', en: 'Company (DE)' }[locale]}>
                     <Input value={form.companyDe} onChange={(e) => setForm({ ...form, companyDe: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.companyEn[locale]}>
+                <Field label={{ de: 'Unternehmen (EN)', en: 'Company (EN)' }[locale]}>
                     <Input value={form.companyEn} onChange={(e) => setForm({ ...form, companyEn: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.startDate[locale]}>
+                <Field label={{ de: 'Beginn', en: 'Start' }[locale]}>
                     <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} required />
                 </Field>
-                <Field label={COPY.fields.endDate[locale]}>
+                <Field label={{ de: 'Ende (leer = heute)', en: 'End (blank = ongoing)' }[locale]}>
                     <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} />
                 </Field>
-                <Field label={COPY.fields.descriptionDe[locale]} fullWidth>
+                <Field label={{ de: 'Beschreibung (DE)', en: 'Description (DE)' }[locale]} fullWidth>
                     <Textarea value={form.descriptionDe} onChange={(e) => setForm({ ...form, descriptionDe: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.descriptionEn[locale]} fullWidth>
+                <Field label={{ de: 'Beschreibung (EN)', en: 'Description (EN)' }[locale]} fullWidth>
                     <Textarea value={form.descriptionEn} onChange={(e) => setForm({ ...form, descriptionEn: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.technologies[locale]} fullWidth>
+                <Field label={{ de: 'Technologien (kommagetrennt)', en: 'Technologies (comma-separated)' }[locale]} fullWidth>
                     <Input value={form.technologies} onChange={(e) => setForm({ ...form, technologies: e.target.value })} />
                 </Field>
-                <Field label={COPY.fields.managerName[locale]}>
+                <Field label={{ de: 'Manager (optional)', en: 'Manager (optional)' }[locale]}>
                     <Input value={form.managerName} onChange={(e) => setForm({ ...form, managerName: e.target.value })} />
                 </Field>
             </FormGrid>
@@ -334,8 +293,8 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
     return (
         <section className="mt-12">
             <SectionHeader
-                title={COPY.sections.education[locale]}
-                addLabel={COPY.actions.addEducation[locale]}
+                title={{ de: 'Ausbildung', en: 'Education' }[locale]}
+                addLabel={{ de: 'Ausbildung hinzufügen', en: 'Add education' }[locale]}
                 onAdd={() => setEditing('new')}
                 disabled={editing !== null}
             />
@@ -364,8 +323,8 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
                                     await deleteMutation({ cvEducationId: row.cvEducationId });
                                     onChanged();
                                 }}
-                                editLabel={COPY.actions.edit[locale]}
-                                deleteLabel={COPY.actions.delete[locale]}
+                                editLabel={rowEditLabel[locale]}
+                                deleteLabel={rowDeleteLabel[locale]}
                             />
                         </DraggableItem>
                     ),
@@ -430,34 +389,34 @@ function EducationForm({
             locale={locale}
         >
             <FormGrid>
-                <Field label={COPY.fields.degreeDe[locale]}>
+                <Field label={{ de: 'Abschluss (DE)', en: 'Degree (DE)' }[locale]}>
                     <Input value={form.degreeDe} onChange={(e) => setForm({ ...form, degreeDe: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.degreeEn[locale]}>
+                <Field label={{ de: 'Abschluss (EN)', en: 'Degree (EN)' }[locale]}>
                     <Input value={form.degreeEn} onChange={(e) => setForm({ ...form, degreeEn: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.institutionDe[locale]}>
+                <Field label={{ de: 'Institution (DE)', en: 'Institution (DE)' }[locale]}>
                     <Input value={form.institutionDe} onChange={(e) => setForm({ ...form, institutionDe: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.institutionEn[locale]}>
+                <Field label={{ de: 'Institution (EN)', en: 'Institution (EN)' }[locale]}>
                     <Input value={form.institutionEn} onChange={(e) => setForm({ ...form, institutionEn: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.subjectDe[locale]}>
+                <Field label={{ de: 'Fach (DE)', en: 'Subject (DE)' }[locale]}>
                     <Input value={form.subjectDe} onChange={(e) => setForm({ ...form, subjectDe: e.target.value })} />
                 </Field>
-                <Field label={COPY.fields.subjectEn[locale]}>
+                <Field label={{ de: 'Fach (EN)', en: 'Subject (EN)' }[locale]}>
                     <Input value={form.subjectEn} onChange={(e) => setForm({ ...form, subjectEn: e.target.value })} />
                 </Field>
-                <Field label={COPY.fields.startDateOptional[locale]}>
+                <Field label={{ de: 'Beginn (optional)', en: 'Start (optional)' }[locale]}>
                     <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} />
                 </Field>
-                <Field label={COPY.fields.endDateRequired[locale]}>
+                <Field label={{ de: 'Ende', en: 'End' }[locale]}>
                     <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} required />
                 </Field>
-                <Field label={COPY.fields.notesDe[locale]} fullWidth>
+                <Field label={{ de: 'Notizen (DE)', en: 'Notes (DE)' }[locale]} fullWidth>
                     <Textarea value={form.notesDe} onChange={(e) => setForm({ ...form, notesDe: e.target.value })} />
                 </Field>
-                <Field label={COPY.fields.notesEn[locale]} fullWidth>
+                <Field label={{ de: 'Notizen (EN)', en: 'Notes (EN)' }[locale]} fullWidth>
                     <Textarea value={form.notesEn} onChange={(e) => setForm({ ...form, notesEn: e.target.value })} />
                 </Field>
             </FormGrid>
@@ -503,8 +462,8 @@ function SkillSection({ rows, locale, onChanged }: { rows: ReadonlyArray<SkillRo
     return (
         <section className="mt-12">
             <SectionHeader
-                title={COPY.sections.skills[locale]}
-                addLabel={COPY.actions.addSkill[locale]}
+                title={{ de: 'Skills', en: 'Skills' }[locale]}
+                addLabel={{ de: 'Skill hinzufügen', en: 'Add skill' }[locale]}
                 onAdd={() => setEditing('new')}
                 disabled={editing !== null}
             />
@@ -639,7 +598,7 @@ function SkillForm({
             locale={locale}
         >
             <FormGrid>
-                <Field label={COPY.fields.category[locale]}>
+                <Field label={{ de: 'Kategorie', en: 'Category' }[locale]}>
                     <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value as SkillCategory })}>
                         <SelectTrigger className="w-full">
                             <SelectValue />
@@ -653,7 +612,7 @@ function SkillForm({
                         </SelectContent>
                     </Select>
                 </Field>
-                <Field label={COPY.fields.label[locale]}>
+                <Field label={{ de: 'Bezeichnung', en: 'Label' }[locale]}>
                     <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} required />
                 </Field>
             </FormGrid>
@@ -681,8 +640,8 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
     return (
         <section className="mt-12 mb-16">
             <SectionHeader
-                title={COPY.sections.hobbies[locale]}
-                addLabel={COPY.actions.addHobby[locale]}
+                title={{ de: 'Hobbys', en: 'Hobbies' }[locale]}
+                addLabel={{ de: 'Hobby hinzufügen', en: 'Add hobby' }[locale]}
                 onAdd={() => setEditing('new')}
                 disabled={editing !== null}
             />
@@ -711,8 +670,8 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
                                     await deleteMutation({ cvHobbyId: row.cvHobbyId });
                                     onChanged();
                                 }}
-                                editLabel={COPY.actions.edit[locale]}
-                                deleteLabel={COPY.actions.delete[locale]}
+                                editLabel={rowEditLabel[locale]}
+                                deleteLabel={rowDeleteLabel[locale]}
                             />
                         </DraggableItem>
                     ),
@@ -763,13 +722,13 @@ function HobbyForm({
             locale={locale}
         >
             <FormGrid>
-                <Field label={COPY.fields.textDe[locale]} fullWidth>
+                <Field label={{ de: 'Text (DE)', en: 'Text (DE)' }[locale]} fullWidth>
                     <Textarea value={form.textDe} onChange={(e) => setForm({ ...form, textDe: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.textEn[locale]} fullWidth>
+                <Field label={{ de: 'Text (EN)', en: 'Text (EN)' }[locale]} fullWidth>
                     <Textarea value={form.textEn} onChange={(e) => setForm({ ...form, textEn: e.target.value })} required />
                 </Field>
-                <Field label={COPY.fields.since[locale]}>
+                <Field label={{ de: 'Seit Jahr (optional)', en: 'Since year (optional)' }[locale]}>
                     <Input type="number" value={form.since} onChange={(e) => setForm({ ...form, since: e.target.value })} />
                 </Field>
             </FormGrid>
@@ -896,8 +855,8 @@ function DraggableItem<T>({
             <button
                 type="button"
                 tabIndex={-1}
-                aria-label={COPY.actions.dragHandle[locale]}
-                title={COPY.actions.dragHandle[locale]}
+                aria-label={dragHandleLabel[locale]}
+                title={dragHandleLabel[locale]}
                 className={cn(
                     'flex shrink-0 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:text-foreground active:cursor-grabbing',
                     compact ? 'w-6' : 'w-7',
@@ -976,10 +935,10 @@ function FormCard({
                 {children}
                 <div className="mt-4 flex justify-end gap-2">
                     <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
-                        {COPY.actions.cancel[locale]}
+                        {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
                     </Button>
                     <Button type="submit" disabled={busy}>
-                        {COPY.actions.save[locale]}
+                        {{ de: 'Speichern', en: 'Save' }[locale]}
                     </Button>
                 </div>
             </GlassCard>

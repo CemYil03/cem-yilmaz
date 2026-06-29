@@ -30,92 +30,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // keeps the surface out of search engines and the public sitemap, and the
 // landing page does not link here — it is reachable only by typing the URL.
 
-const COPY = {
-    hero: {
-        // Title still feeds `seoMeta` and the browser tab — keep "Workspace"
-        // there so the page identity is unambiguous in tabs and shared links.
-        title: { de: 'Workspace', en: 'Workspace' },
-        // SEO description only — the on-page hero shows a rotating motivational
-        // quote from `workspaceQuotes.ts`, not a welcome-back greeting.
-        intro: {
-            de: 'Frag deinen Assistenten oder spring direkt in einen Themenbereich.',
-            en: 'Ask your assistant, or jump straight into a focus area.',
-        },
-        composerPlaceholder: { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' },
-    },
-    publicSiteSection: {
-        title: { de: 'Öffentliche Website', en: 'Public site' },
-        subtitle: {
-            de: 'Inhalte, die auf der öffentlichen Seite erscheinen.',
-            en: 'Content that appears on the public site.',
-        },
-    },
-    areas: {
-        cv: {
-            title: { de: 'Lebenslauf', en: 'CV' },
-            description: {
-                de: 'Bearbeite die Inhalte für /cv und /about.',
-                en: 'Edit the content shown on /cv and /about.',
-            },
-        },
-        software: {
-            title: { de: 'Software', en: 'Software' },
-            description: {
-                de: 'Code, Architektur-Notizen, Werkzeuge.',
-                en: 'Code, architecture notes, tools.',
-            },
-        },
-        projects: {
-            title: { de: 'Projekte', en: 'Projects' },
-            description: {
-                de: 'Persönliche Projekte und nächste Schritte.',
-                en: 'Personal projects and next steps.',
-            },
-        },
-        finances: {
-            title: { de: 'Finanzen', en: 'Finances' },
-            description: {
-                de: 'Ziele, Überblick, Trading.',
-                en: 'Goals, overview, trading.',
-            },
-        },
-        tax: {
-            title: { de: 'Steuern', en: 'Tax' },
-            description: {
-                de: 'Belege, Fristen, Notizen.',
-                en: 'Receipts, deadlines, notes.',
-            },
-        },
-        fitness: {
-            title: { de: 'Fitness', en: 'Fitness' },
-            description: {
-                de: 'Trainingspläne, Fortschritt.',
-                en: 'Training plans, progress.',
-            },
-        },
-        medical: {
-            title: { de: 'Medizinisches', en: 'Medical' },
-            description: {
-                de: 'Termine, Befunde, Notizen.',
-                en: 'Appointments, results, notes.',
-            },
-        },
-        media: {
-            title: { de: 'Filme & Serien', en: 'Movies & TV' },
-            description: {
-                de: 'Watchlist und Gesehenes.',
-                en: 'Watchlist and watched.',
-            },
-        },
-        visitorChats: {
-            title: { de: 'Besucher-Chats', en: 'Visitor chats' },
-            description: {
-                de: 'Was Besucher meinen KI-Assistenten gefragt haben.',
-                en: 'What visitors have asked my AI assistant.',
-            },
-        },
-    },
-};
+const title = { de: 'Workspace', en: 'Workspace' };
 
 // `admin.chatMessageCreate` returns the chat row wrapped in the admin
 // namespace; the provider in `WorkspaceAssistantChatProvider` extracts
@@ -142,32 +57,81 @@ type FocusAreaRoute =
     | '/{-$locale}/workspace/visitor-chats';
 
 type FocusArea = {
-    key: keyof typeof COPY.areas;
     to: FocusAreaRoute;
     icon: typeof CodeXmlIcon;
+    title: { de: string; en: string };
+    description: { de: string; en: string };
 };
 
 const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
-    { key: 'software', to: '/{-$locale}/workspace/software', icon: CodeXmlIcon },
-    { key: 'projects', to: '/{-$locale}/workspace/projects', icon: FolderKanbanIcon },
-    { key: 'finances', to: '/{-$locale}/workspace/finances', icon: WalletIcon },
-    { key: 'tax', to: '/{-$locale}/workspace/tax', icon: ReceiptTextIcon },
-    { key: 'fitness', to: '/{-$locale}/workspace/fitness', icon: DumbbellIcon },
-    { key: 'medical', to: '/{-$locale}/workspace/medical', icon: StethoscopeIcon },
-    { key: 'media', to: '/{-$locale}/workspace/media', icon: FilmIcon },
+    {
+        to: '/{-$locale}/workspace/software',
+        icon: CodeXmlIcon,
+        title: { de: 'Software', en: 'Software' },
+        description: { de: 'Code, Architektur-Notizen, Werkzeuge.', en: 'Code, architecture notes, tools.' },
+    },
+    {
+        to: '/{-$locale}/workspace/projects',
+        icon: FolderKanbanIcon,
+        title: { de: 'Projekte', en: 'Projects' },
+        description: { de: 'Persönliche Projekte und nächste Schritte.', en: 'Personal projects and next steps.' },
+    },
+    {
+        to: '/{-$locale}/workspace/finances',
+        icon: WalletIcon,
+        title: { de: 'Finanzen', en: 'Finances' },
+        description: { de: 'Ziele, Überblick, Trading.', en: 'Goals, overview, trading.' },
+    },
+    {
+        to: '/{-$locale}/workspace/tax',
+        icon: ReceiptTextIcon,
+        title: { de: 'Steuern', en: 'Tax' },
+        description: { de: 'Belege, Fristen, Notizen.', en: 'Receipts, deadlines, notes.' },
+    },
+    {
+        to: '/{-$locale}/workspace/fitness',
+        icon: DumbbellIcon,
+        title: { de: 'Fitness', en: 'Fitness' },
+        description: { de: 'Trainingspläne, Fortschritt.', en: 'Training plans, progress.' },
+    },
+    {
+        to: '/{-$locale}/workspace/medical',
+        icon: StethoscopeIcon,
+        title: { de: 'Medizinisches', en: 'Medical' },
+        description: { de: 'Termine, Befunde, Notizen.', en: 'Appointments, results, notes.' },
+    },
+    {
+        to: '/{-$locale}/workspace/media',
+        icon: FilmIcon,
+        title: { de: 'Filme & Serien', en: 'Movies & TV' },
+        description: { de: 'Watchlist und Gesehenes.', en: 'Watchlist and watched.' },
+    },
 ];
 
 const PUBLIC_SITE_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
-    { key: 'cv', to: '/{-$locale}/workspace/cv', icon: FileTextIcon },
-    { key: 'visitorChats', to: '/{-$locale}/workspace/visitor-chats', icon: MessageSquareTextIcon },
+    {
+        to: '/{-$locale}/workspace/cv',
+        icon: FileTextIcon,
+        title: { de: 'Lebenslauf', en: 'CV' },
+        description: { de: 'Bearbeite die Inhalte für /cv und /about.', en: 'Edit the content shown on /cv and /about.' },
+    },
+    {
+        to: '/{-$locale}/workspace/visitor-chats',
+        icon: MessageSquareTextIcon,
+        title: { de: 'Besucher-Chats', en: 'Visitor chats' },
+        description: { de: 'Was Besucher meinen KI-Assistenten gefragt haben.', en: 'What visitors have asked my AI assistant.' },
+    },
 ];
 
 export const Route = createFileRoute('/{-$locale}/workspace/')({
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: COPY.hero.title[locale],
-            description: COPY.hero.intro[locale],
+            title: title[locale],
+            description: {
+                de: 'Frag deinen Assistenten oder spring direkt in einen Themenbereich.',
+                en: 'Ask your assistant, or jump straight into a focus area.',
+            }[locale],
             path: '/workspace',
             locale,
             webPageUrl: webPageUrlGet(),
@@ -195,7 +159,7 @@ function WorkspaceHub() {
              * to landing) but the label itself doesn't pretend to be a link
              * to nowhere. On a single-user private surface the wordmark is
              * decoration; the page already knows whose workspace it is. */}
-            <Header brandLabel={COPY.hero.title[locale]} chatVariant="workspace" />
+            <Header brandLabel={title[locale]} chatVariant="workspace" />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <AssistantHero
                     locale={locale}
@@ -227,7 +191,7 @@ function HubComposer({ locale, disabled, onSubmit }: { locale: Locale; disabled:
             onSubmit={submit}
             disabled={disabled}
             busy={disabled}
-            placeholder={COPY.hero.composerPlaceholder[locale]}
+            placeholder={{ de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' }[locale]}
             autoFocus
             sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
         />
@@ -255,7 +219,7 @@ function AssistantHero({ locale, composer }: { locale: Locale; composer: React.R
     const quote = workspaceQuotePick();
     return (
         <section className="pt-8 md:pt-10 pb-10 md:pb-12 mx-auto max-w-3xl">
-            <h1 className="sr-only">{COPY.hero.title[locale]}</h1>
+            <h1 className="sr-only">{title[locale]}</h1>
             <blockquote className="text-base md:text-lg leading-relaxed text-muted-foreground italic">
                 <p>“{quote[locale]}”</p>
                 {quote.attribution ? (
@@ -287,9 +251,15 @@ function FocusAreaGrid({ locale }: { locale: Locale }) {
             <section aria-labelledby="workspace-public-site-heading">
                 <div className="mb-3 flex flex-col gap-0.5">
                     <h2 id="workspace-public-site-heading" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {COPY.publicSiteSection.title[locale]}
+                        {{ de: 'Öffentliche Website', en: 'Public site' }[locale]}
                     </h2>
-                    <p className="text-sm text-muted-foreground/80">{COPY.publicSiteSection.subtitle[locale]}</p>
+                    <p className="text-sm text-muted-foreground/80">
+                        {
+                            { de: 'Inhalte, die auf der öffentlichen Seite erscheinen.', en: 'Content that appears on the public site.' }[
+                                locale
+                            ]
+                        }
+                    </p>
                 </div>
                 <FocusCardGrid locale={locale} areas={PUBLIC_SITE_FOCUS_AREAS} columnsClass="lg:grid-cols-2" />
             </section>
@@ -300,10 +270,10 @@ function FocusAreaGrid({ locale }: { locale: Locale }) {
 function FocusCardGrid({ locale, areas, columnsClass }: { locale: Locale; areas: ReadonlyArray<FocusArea>; columnsClass: string }) {
     return (
         <div className={cn('grid gap-4 md:grid-cols-2', columnsClass)}>
-            {areas.map(({ key, to, icon: Icon }) => {
-                const area = COPY.areas[key];
+            {areas.map((area) => {
+                const { to, icon: Icon } = area;
                 return (
-                    <Link key={key} to={to} className="group">
+                    <Link key={to} to={to} className="group">
                         <GlassCard className="h-full transition-colors hover:bg-white/55 dark:hover:bg-white/8">
                             <CardContent className="flex h-full flex-col gap-1.5 py-5">
                                 {/* Icon + title on one row, arrow tucked into

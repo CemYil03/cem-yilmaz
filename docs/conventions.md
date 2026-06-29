@@ -64,6 +64,32 @@ Headlines render in **Plus Jakarta Sans**, body and UI copy in **Inter**. Both a
 and no layout shift. See [docs/styles/fonts.md](./styles/fonts.md) for the rationale, the Tailwind utilities (`font-display` / `font-sans`),
 and how to add a font.
 
+## Bilingual Copy
+
+The site ships in DE and EN with no i18n library. The convention is the inline `{ de: '…', en: '…' }[locale]` literal, placed **at the call
+site** in JSX:
+
+```tsx
+<h1>{{ de: 'Über mich', en: 'About me' }[locale]}</h1>
+```
+
+Colocating the strings with the elements that render them keeps context obvious, makes dead-code removal automatic, and avoids the naming
+tax of a centralised `COPY` object (`hero.title`, `hero.subtitle`, …). Do **not** hoist a page-level `COPY` const — it has been explicitly
+removed from this project.
+
+Hoist a string to a small local `const` only when one of the following narrow exceptions applies:
+
+- **Reused inside the same file.** A title that appears in both `seoMeta()` inside `head()` and an `<h1>` inside the component is the
+  canonical case. Give it a descriptive name (`title`, `intro`, `closeLabel`) — one const per string, not a god-object.
+- **Needed outside JSX.** `seoMeta()` titles/descriptions, `aria-label`, `title`, `alt`, JSON-LD answers, anything passed to a non-JSX API.
+  If the same string is also visible in JSX, the previous rule already applies; otherwise assign the literal to a local const just above the
+  `return`.
+- **Long enough to drown out the JSX.** A multi-line marketing paragraph reads better as a named const above the `return` than wedged inside
+  an element. Use judgement — a single sentence stays inline.
+
+For bilingual **data** (CV rows, future projects/blog/tools), the rule is different — paired `*De` / `*En` columns in Postgres and the
+GraphQL schema. See [Bilingual columns](#bilingual-columns) above.
+
 ## Theming
 
 The site supports **light, dark, and `auto`** (follow OS) themes, persisted in `localStorage`. Color tokens live as CSS custom properties in

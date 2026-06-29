@@ -16,29 +16,7 @@ import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
 import type { Locale } from '../../web/utils/locale';
 import { localeFromParam } from '../../web/utils/locale';
 
-const COPY = {
-    title: { de: 'Über mich', en: 'About me' },
-    intro: {
-        de: 'Wer ich bin, woran ich arbeite, und wie du mich erreichst.',
-        en: 'Who I am, what I work on, and how to reach me.',
-    },
-    sections: {
-        identity: { de: 'Profil', en: 'Profile' },
-        skills: { de: 'Skills & Werkzeuge', en: 'Skills & tools' },
-        hobbies: { de: 'Freizeit', en: 'Hobbies' },
-        contact: { de: 'Kontakt', en: 'Contact' },
-        faq: { de: 'Häufige Fragen', en: 'Common questions' },
-    },
-    facts: {
-        born: { de: 'Geboren', en: 'Born' },
-        residence: { de: 'Wohnort', en: 'Based in' },
-        nationality: { de: 'Staatsangehörigkeit', en: 'Nationality' },
-        languages: { de: 'Sprachen', en: 'Languages' },
-    },
-    cta: {
-        cv: { de: 'Vollständigen Lebenslauf ansehen', en: 'View the full CV' },
-    },
-};
+const title = { de: 'Über mich', en: 'About me' };
 
 // Q&A block rendered on /about and mirrored into the page's FAQPage JSON-LD.
 // Crawler-friendly answers: discrete, factual, ~1-3 sentences each. AI
@@ -109,8 +87,11 @@ export const Route = createFileRoute('/{-$locale}/about')({
         const locale = localeFromParam(params);
         const webPageUrl = webPageUrlGet();
         const seo = seoMeta({
-            title: COPY.title[locale],
-            description: COPY.intro[locale],
+            title: title[locale],
+            description: {
+                de: 'Wer ich bin, woran ich arbeite, und wie du mich erreichst.',
+                en: 'Who I am, what I work on, and how to reach me.',
+            }[locale],
             path: '/about',
             locale,
             webPageUrl,
@@ -139,10 +120,10 @@ function AboutPage() {
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header subtitle={`/ ${COPY.title[locale].toLowerCase()}`} />
+            <Header subtitle={`/ ${title[locale].toLowerCase()}`} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <header className="py-12 md:py-16">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{COPY.title[locale]}</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{title[locale]}</h1>
                     <p className="mt-4 text-lg md:text-xl text-muted-foreground">
                         {personalInfo.tagline[locale]} {personalInfo.subtitle[locale]}
                     </p>
@@ -154,12 +135,14 @@ function AboutPage() {
                 </Reveal>
 
                 <Reveal as="section" className="mt-12">
-                    <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.skills[locale]}</h2>
+                    <h2 className="mb-4 text-2xl font-semibold tracking-tight">
+                        {{ de: 'Skills & Werkzeuge', en: 'Skills & tools' }[locale]}
+                    </h2>
                     <CvSkillGroup skills={data.cv.skills} locale={locale} />
                 </Reveal>
 
                 <Reveal as="section" className="mt-12">
-                    <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.hobbies[locale]}</h2>
+                    <h2 className="mb-4 text-2xl font-semibold tracking-tight">{{ de: 'Freizeit', en: 'Hobbies' }[locale]}</h2>
                     <GlassCard className="px-6 py-5">
                         <ul className="flex flex-col gap-2 text-sm leading-relaxed">
                             {data.cv.hobbies.map((hobby) => {
@@ -178,7 +161,7 @@ function AboutPage() {
                 <Reveal as="section" className="mt-12">
                     <Button asChild size="lg">
                         <Link to="/{-$locale}/cv" className="group">
-                            {COPY.cta.cv[locale]}
+                            {{ de: 'Vollständigen Lebenslauf ansehen', en: 'View the full CV' }[locale]}
                             <ArrowRightIcon className="size-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
                         </Link>
                     </Button>
@@ -195,13 +178,13 @@ function IdentityFacts({ locale }: { locale: Locale }) {
     const languages = personalInfo.spokenLanguages.map((l) => l[locale]).join(', ');
     return (
         <>
-            <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.identity[locale]}</h2>
+            <h2 className="mb-4 text-2xl font-semibold tracking-tight">{{ de: 'Profil', en: 'Profile' }[locale]}</h2>
             <GlassCard className="px-6 py-5">
                 <dl className="grid grid-cols-1 gap-x-8 gap-y-3 md:grid-cols-2">
-                    <Fact label={COPY.facts.born[locale]} value={born} />
-                    <Fact label={COPY.facts.residence[locale]} value={residence} />
-                    <Fact label={COPY.facts.nationality[locale]} value={personalInfo.nationality[locale]} />
-                    <Fact label={COPY.facts.languages[locale]} value={languages} />
+                    <Fact label={{ de: 'Geboren', en: 'Born' }[locale]} value={born} />
+                    <Fact label={{ de: 'Wohnort', en: 'Based in' }[locale]} value={residence} />
+                    <Fact label={{ de: 'Staatsangehörigkeit', en: 'Nationality' }[locale]} value={personalInfo.nationality[locale]} />
+                    <Fact label={{ de: 'Sprachen', en: 'Languages' }[locale]} value={languages} />
                 </dl>
             </GlassCard>
         </>
@@ -245,7 +228,7 @@ function ContactBlock({ locale }: { locale: Locale }) {
     return (
         <section className="mt-12">
             <Reveal>
-                <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.contact[locale]}</h2>
+                <h2 className="mb-4 text-2xl font-semibold tracking-tight">{{ de: 'Kontakt', en: 'Contact' }[locale]}</h2>
             </Reveal>
             <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {items.map(({ key, icon: Icon, label, href, body }, i) => (
@@ -280,7 +263,7 @@ function FaqBlock({ locale }: { locale: Locale }) {
     return (
         <section className="mt-12">
             <Reveal>
-                <h2 className="mb-4 text-2xl font-semibold tracking-tight">{COPY.sections.faq[locale]}</h2>
+                <h2 className="mb-4 text-2xl font-semibold tracking-tight">{{ de: 'Häufige Fragen', en: 'Common questions' }[locale]}</h2>
             </Reveal>
             <ul className="flex flex-col gap-2">
                 {entries.map((entry, i) => (

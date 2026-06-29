@@ -11,14 +11,16 @@ laptops. The layout deliberately trusts the screenshot to carry the row; copy is
 
 A row contains:
 
-- **Hero image** (16:9) plus a **thumbnail strip** below — clicking a thumb cross-fades the inline hero to the chosen shot. Clicking the
-  hero itself opens a **lightbox dialog** that shows the active image in isolation on a dark overlay, with prev/next buttons, arrow-key
-  navigation and a `1 / 3` position indicator. Inline hero and lightbox share `activeIndex` — closing the dialog leaves the inline gallery
-  on whichever image the visitor last viewed. Software products (peopleeat, Draw Schema) get a faked browser-window chrome around the inline
-  hero — three traffic-light dots, the hostname in a URL bar, the screenshot inside. Real-world businesses (the podiatry practice) get the
-  photo edge-to-edge inside a `<GlassCard>`. Behind every inline hero sits a soft per-project accent glow that brightens on hover (the frame
-  itself does not move — earlier iterations lifted it on hover, but the effect read as cheap). The "Visit site" button (not the hero click)
-  takes visitors to the live URL.
+- **Hero image** (16:9 for `'browser'` / `'photo'`, 4:3 for `'ipad'`) plus a **thumbnail strip** below — clicking a thumb cross-fades the
+  inline hero to the chosen shot. Clicking the hero itself opens a **lightbox dialog** that shows the active image in isolation on a dark
+  overlay, with prev/next buttons, arrow-key navigation and a `1 / 3` position indicator. Inline hero and lightbox share `activeIndex` —
+  closing the dialog leaves the inline gallery on whichever image the visitor last viewed. Software products (peopleeat, Draw Schema) get a
+  faked browser-window chrome around the inline hero — three traffic-light dots, the hostname in a URL bar, the screenshot inside.
+  Real-world businesses (the podiatry practice) get the photo edge-to-edge inside a `<GlassCard>`. iPad-only apps (Arm Skill Training) get a
+  landscape iPad bezel — a rounded slate-glass outer shell with a small camera dot above the screen, no chrome inside. Behind every inline
+  hero sits a soft per-project accent glow that brightens on hover (the frame itself does not move — earlier iterations lifted it on hover,
+  but the effect read as cheap). The "Visit site" button (not the hero click) takes visitors to the live URL — when `url` is omitted
+  (showcase-only projects), no primary button renders.
 - **Role / counter strip** above the gallery — a tabular-nums `01 / 03` counter on the left, a thin divider, and the role on the right
   (`Founding architect`). The hostname is intentionally not repeated here — it already lives inside the faked browser URL bar on `'browser'`
   rows, and the "Visit site" button below carries the link itself. An earlier iteration put `role · hostname` directly under the title; the
@@ -36,7 +38,9 @@ A row contains:
   confidently because each item gets its own shape and the eye groups them as a coherent stack. Predecessor to both was a labelled
   Frontend/Backend/Integrations grouped layout, which read as a CV table and wrapped awkwardly in a narrow column.
 - **Primary "Visit site" button** linking to the live URL (`target="_blank" rel="noopener noreferrer"`). Sits directly under the description
-  on the left column so the eye doesn't have to jump across the row to commit to the action.
+  on the left column so the eye doesn't have to jump across the row to commit to the action. Skipped when `url` is omitted (showcase-only
+  projects like Arm Skill Training, which don't have a public landing page); the entire action row collapses when neither `url` nor
+  `repoUrl` is set.
 - **Secondary "View source" button** rendered only when `repoUrl` is set (currently Draw Schema, since it's open source). Sits next to the
   primary action on wider screens, stacks below it on mobile.
 
@@ -61,10 +65,11 @@ The landing page (`/`) links into the page from its section grid; before this ch
 
 Static content + plain route, replaced by Phase 3 when it lands.
 
-- **Data**: `src/web/content/portfolioProjects.ts` — typed `ReadonlyArray<PortfolioProject>` with `id`, `name`, `url`, optional `repoUrl`,
-  paired `*De` / `*En` text fields, an optional `facts: string[]` array of chip-sized tags, a flat ordered `techStack: string[]`
-  (most-distinctive items first, rendered in order), and the visual fields (`images: ReadonlyArray<{ src; altDe; altEn }>`, `imageKind`,
-  `accent`). The first entry of `images` is the hero; subsequent entries fill the thumbnail strip. Imported directly by the route.
+- **Data**: `src/web/content/portfolioProjects.ts` — typed `ReadonlyArray<PortfolioProject>` with `id`, `name`, optional `url` (omitted for
+  showcase-only projects), optional `repoUrl`, paired `*De` / `*En` text fields, an optional `facts: string[]` array of chip-sized tags, a
+  flat ordered `techStack: string[]` (most-distinctive items first, rendered in order), and the visual fields
+  (`images: ReadonlyArray<{ src; altDe; altEn }>`, `imageKind`, `accent`). The first entry of `images` is the hero; subsequent entries fill
+  the thumbnail strip. Imported directly by the route.
 - **Route**: `src/routes/{-$locale}/projects.tsx` — single file, no GraphQL loader. Bilingual copy follows the inline `{ de, en }[locale]`
   pattern used by `about.tsx` and `cv.tsx`.
 - **SEO**: `seoMeta()` in `head()`; `/projects` listed in `src/web/seo/sitemapRoutes.ts`.
@@ -74,12 +79,15 @@ Static content + plain route, replaced by Phase 3 when it lands.
 
 ### Visual treatment
 
-Two image kinds, set per-project via `imageKind`:
+Three image kinds, set per-project via `imageKind`:
 
-- **`'browser'`** — software products. The image sits inside an inline `<BrowserFrame>` component (defined in the route file), which fakes
-  macOS browser chrome with three traffic-light circles and a centered hostname pill. Same translucent border / blur / shadow tokens as
-  `<GlassCard>` so it reads as part of the same visual family.
+- **`'browser'`** — software products with a live URL. The image sits inside an inline `<BrowserFrame>` component (defined in the route
+  file), which fakes macOS browser chrome with three traffic-light circles and a centered hostname pill. Same translucent border / blur /
+  shadow tokens as `<GlassCard>` so it reads as part of the same visual family.
 - **`'photo'`** — real-world businesses. The image sits edge-to-edge inside a regular `<GlassCard>`. Cropped to 16:9 with `object-cover`.
+- **`'ipad'`** — iPad-only apps without a public URL. The image sits at its native 4:3 aspect inside an `<IPadFrame>` (defined alongside
+  `<BrowserFrame>` in the route file): a rounded slate-glass outer shell, an inner darker bezel, a small camera dot centred above the
+  screen. No chrome inside the bezel — the screenshot speaks for itself. Reads as a device, not a browser. Used for Arm Skill Training.
 
 Behind every image, an absolutely-positioned `<div>` paints a `radial-gradient` using the project's `accent` color. Blurred and offset
 behind the frame, it reads as a soft glow that brightens on hover (`opacity-50 → opacity-90`). The frame itself stays put — an earlier
@@ -91,6 +99,7 @@ Per-project accent colors are defined as raw `oklch(...)` strings in `portfolioP
 - peopleeat — warm orange (`oklch(0.78 0.16 55)`)
 - Draw Schema — cool slate-blue (`oklch(0.7 0.13 240)`)
 - Podologie Dudenhofen — calm green-teal (`oklch(0.75 0.1 165)`)
+- Arm Skill Training — calm cyan (`oklch(0.74 0.13 200)`)
 
 ### Fact badges and tech line
 
@@ -158,7 +167,7 @@ detail pages today; the "Visit site" button takes visitors directly to the live 
 
 ### Hero images
 
-Hero images live under `public/projects/<id>/`. There are three sources:
+Hero images live under `public/projects/<id>/`. There are four sources:
 
 1. **Live capture** — the script `scripts/captureProjectScreenshots.ts` uses Playwright Chromium to grab `1600×900` screenshots. Run with
    `npx tsx scripts/captureProjectScreenshots.ts` whenever a target site's design changes. Currently captures four routes for `peopleeat`
@@ -168,6 +177,8 @@ Hero images live under `public/projects/<id>/`. There are three sources:
    script so they aren't overwritten.
 3. **Photo from sibling repo** — `Podologie Dudenhofen` reuses two photos from the practice's own `public/`: the treatment-room shot and a
    portrait of the owner Annette Yilmaz. Honest, on-brand, and doesn't depend on the live site being reachable from the build host.
+4. **iPad simulator export** — `Arm Skill Training` uses 4:3 landscape iPad screenshots exported from the Simulator (`landing-page.png`,
+   `exercise-aiming.png`). Not in the capture script; refreshed by hand whenever the app changes.
 
 ### Scroll-in animation
 

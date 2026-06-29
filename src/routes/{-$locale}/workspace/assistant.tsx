@@ -41,18 +41,7 @@ import type { Locale } from '../../../web/utils/locale';
 // `docs/architecture/multi-agent-chat.md` and
 // `docs/features/workspace-hub.md`.
 
-const COPY = {
-    title: { de: 'Persönlicher Assistent', en: 'Personal assistant' },
-    description: {
-        de: 'Mein persönlicher KI-Assistent für den Arbeitsbereich.',
-        en: 'My personal AI assistant for the workspace.',
-    },
-    emptyHint: { de: 'Wie kann ich helfen?', en: 'How can I help?' },
-    composerPlaceholder: { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' },
-    untitledChat: { de: 'Neuer Chat', en: 'New chat' },
-    loadFailed: { de: 'Chat konnte nicht geladen werden:', en: 'Failed to load chat:' },
-    jumpToLatest: { de: 'Zum neuesten springen', en: 'Jump to latest' },
-};
+const composerPlaceholder = { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' };
 
 const extractMessageCreateResult = (data: unknown): { chatId: string } | null => {
     const wrapper = data as { admin?: { chatMessageCreate?: { chatId: string } | null } | null } | null | undefined;
@@ -65,8 +54,11 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: COPY.title[locale],
-            description: COPY.description[locale],
+            title: { de: 'Persönlicher Assistent', en: 'Personal assistant' }[locale],
+            description: {
+                de: 'Mein persönlicher KI-Assistent für den Arbeitsbereich.',
+                en: 'My personal AI assistant for the workspace.',
+            }[locale],
             path: '/workspace/assistant',
             locale,
             webPageUrl: webPageUrlGet(),
@@ -103,7 +95,11 @@ function WorkspaceAssistantEmpty({ live, locale }: { live: ReturnType<typeof use
     return (
         <main className="mx-auto grid h-dvh w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
             <div className="grid place-items-center text-sm text-muted-foreground">
-                {live.isGenerating ? <Spinner className="size-4 text-muted-foreground" /> : COPY.emptyHint[locale]}
+                {live.isGenerating ? (
+                    <Spinner className="size-4 text-muted-foreground" />
+                ) : (
+                    { de: 'Wie kann ich helfen?', en: 'How can I help?' }[locale]
+                )}
             </div>
             <ChatComposer
                 onMessageSent={(newChatId) => navigate({ to: '/{-$locale}/workspace/assistant', search: { chatId: newChatId } })}
@@ -112,7 +108,7 @@ function WorkspaceAssistantEmpty({ live, locale }: { live: ReturnType<typeof use
                 endTurn={live.endTurn}
                 sendMutation={WorkspaceChatMessageCreateDocument}
                 extractResult={extractMessageCreateResult}
-                placeholder={COPY.composerPlaceholder[locale]}
+                placeholder={composerPlaceholder[locale]}
                 autoFocus
             />
         </main>
@@ -167,7 +163,7 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
     if (error) {
         return (
             <main className="grid place-items-center p-8 text-sm text-destructive">
-                {COPY.loadFailed[locale]} {error.message}
+                {{ de: 'Chat konnte nicht geladen werden:', en: 'Failed to load chat:' }[locale]} {error.message}
             </main>
         );
     }
@@ -182,7 +178,7 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
     return (
         <main className="mx-auto grid h-dvh w-full min-w-0 max-w-2xl grid-rows-[auto_1fr_auto] gap-4 p-6">
             <header className="flex items-baseline justify-between">
-                <h1 className="text-lg font-semibold">{chat.title || COPY.untitledChat[locale]}</h1>
+                <h1 className="text-lg font-semibold">{chat.title || { de: 'Neuer Chat', en: 'New chat' }[locale]}</h1>
                 {fetching ? <Spinner className="size-3 text-muted-foreground" /> : null}
             </header>
 
@@ -192,7 +188,7 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
                 streamingTexts={live.streamingTexts}
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
-                jumpToLatestLabel={COPY.jumpToLatest[locale]}
+                jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
             />
 
             <ChatComposer
@@ -202,7 +198,7 @@ function WorkspaceAssistantPage({ chatId, live, locale }: { chatId: string; live
                 endTurn={live.endTurn}
                 sendMutation={WorkspaceChatMessageCreateDocument}
                 extractResult={extractMessageCreateResult}
-                placeholder={COPY.composerPlaceholder[locale]}
+                placeholder={composerPlaceholder[locale]}
                 autoFocus
             />
         </main>

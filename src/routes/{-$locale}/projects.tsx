@@ -18,59 +18,18 @@ import { localeFromParam } from '../../web/utils/locale';
 
 const PRIMARY_EMAIL = personalInfo.contact.emails[0] ?? '';
 
-const COPY = {
-    title: { de: 'Projekte', en: 'Projects' },
-    intro: {
-        de: 'Eine Auswahl meiner Projekte — die, die ich öffentlich zeigen kann.',
-        en: 'A selection of my projects — the ones I can share publicly.',
-    },
-    visitLabel: { de: 'Besuchen', en: 'Visit site' },
-    repoLabel: { de: 'Quellcode', en: 'View source' },
-    galleryLabel: { de: 'Bildergalerie', en: 'Gallery' },
-    openImage: { de: 'Bild vergrößern', en: 'Open image' },
-    previousImage: { de: 'Vorheriges Bild', en: 'Previous image' },
-    nextImage: { de: 'Nächstes Bild', en: 'Next image' },
-    imagePosition: { de: 'Bild {current} von {total}', en: 'Image {current} of {total}' },
-    cta: {
-        availability: {
-            de: 'Aktuell Kapazität für 1 Projekt ab {month}',
-            en: 'Currently capacity for 1 project from {month}',
-        },
-        heading: {
-            de: 'Etwas Ähnliches im Kopf?',
-            en: 'Got something similar in mind?',
-        },
-        subheading: {
-            de: 'Skizziere kurz, woran du arbeitest — der Assistent stellt ein paar gezielte Fragen, fasst das Briefing zusammen und schickt es mir per E-Mail. Du bekommst eine Antwort von mir, in der Regel innerhalb von 24 Stunden.',
-            en: 'Describe what you’re working on in a few sentences — the assistant asks a couple of focused questions, summarises the brief and sends it to me by email. You hear back from me, usually within 24 hours.',
-        },
-        primary: {
-            label: { de: 'Projekt anfragen', en: 'Request a project' },
-            seed: {
-                de: 'Ich möchte ein Projekt mit Cem besprechen.',
-                en: 'I’d like to discuss a project with Cem.',
-            },
-        },
-        secondary: {
-            label: { de: 'Erstgespräch buchen', en: 'Book an intro call' },
-            seed: {
-                de: 'Ich würde gerne ein kurzes Erstgespräch mit Cem vereinbaren.',
-                en: 'I’d like to schedule a short intro call with Cem.',
-            },
-        },
-        emailLabel: {
-            de: 'Lieber direkt per E-Mail',
-            en: 'Prefer email instead',
-        },
-    },
+const title = { de: 'Projekte', en: 'Projects' };
+const intro = {
+    de: 'Eine Auswahl meiner Projekte — die, die ich öffentlich zeigen kann.',
+    en: 'A selection of my projects — the ones I can share publicly.',
 };
 
 export const Route = createFileRoute('/{-$locale}/projects')({
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: COPY.title[locale],
-            description: COPY.intro[locale],
+            title: title[locale],
+            description: intro[locale],
             path: '/projects',
             locale,
             webPageUrl: webPageUrlGet(),
@@ -85,11 +44,11 @@ function ProjectsPage() {
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header subtitle={`/ ${COPY.title[locale].toLowerCase()}`} />
+            <Header subtitle={`/ ${title[locale].toLowerCase()}`} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full pb-24">
                 <header className="py-12 md:py-16">
-                    <h1 className="text-2xl font-bold tracking-tight">{COPY.title[locale]}</h1>
-                    <p className="mt-4 text-lg text-muted-foreground">{COPY.intro[locale]}</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{title[locale]}</h1>
+                    <p className="mt-4 text-lg text-muted-foreground">{intro[locale]}</p>
                 </header>
 
                 <div className="flex flex-col gap-20 md:gap-28">
@@ -137,22 +96,26 @@ function ProjectRow({ project, locale, index, total }: { project: Project; local
                         {project.facts && project.facts.length > 0 && <FactBadges items={project.facts} />}
                     </div>
                     <p className="text-base leading-relaxed text-foreground/85">{description}</p>
-                    <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                        <Button asChild size="lg" className="w-full sm:w-auto">
-                            <a href={project.url} target="_blank" rel="noopener noreferrer">
-                                {COPY.visitLabel[locale]}
-                                <ExternalLinkIcon className="size-4" />
-                            </a>
-                        </Button>
-                        {project.repoUrl && (
-                            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-                                <a href={project.repoUrl} target="_blank" rel="noopener noreferrer">
-                                    <CodeXmlIcon className="size-4" />
-                                    {COPY.repoLabel[locale]}
-                                </a>
-                            </Button>
-                        )}
-                    </div>
+                    {(project.url || project.repoUrl) && (
+                        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                            {project.url && (
+                                <Button asChild size="lg" className="w-full sm:w-auto">
+                                    <a href={project.url} target="_blank" rel="noopener noreferrer">
+                                        {{ de: 'Besuchen', en: 'Visit site' }[locale]}
+                                        <ExternalLinkIcon className="size-4" />
+                                    </a>
+                                </Button>
+                            )}
+                            {project.repoUrl && (
+                                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                                    <a href={project.repoUrl} target="_blank" rel="noopener noreferrer">
+                                        <CodeXmlIcon className="size-4" />
+                                        {{ de: 'Quellcode', en: 'View source' }[locale]}
+                                    </a>
+                                </Button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="md:col-span-4 md:pt-1">
@@ -217,11 +180,12 @@ function ProjectHero({
                     alt={image.src === active.src ? activeAlt : ''}
                     aria-hidden={image.src !== active.src}
                     width={1600}
-                    height={900}
+                    height={project.imageKind === 'ipad' ? 1200 : 900}
                     loading={i === 0 ? 'eager' : 'lazy'}
                     decoding={i === 0 ? 'async' : 'async'}
                     className={cn(
-                        'block w-full aspect-video object-cover max-h-[64vh]',
+                        'block w-full object-cover max-h-[64vh]',
+                        project.imageKind === 'ipad' ? 'aspect-[4/3]' : 'aspect-video',
                         project.imageKind === 'browser' ? 'object-top' : 'object-center',
                         i === 0 ? 'relative' : 'absolute inset-0',
                         'transition-opacity duration-500 motion-reduce:transition-none',
@@ -236,7 +200,7 @@ function ProjectHero({
         <button
             type="button"
             onClick={onOpen}
-            aria-label={`${activeAlt} — ${COPY.openImage[locale]}`}
+            aria-label={`${activeAlt} — ${{ de: 'Bild vergrößern', en: 'Open image' }[locale]}`}
             className="relative block w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl group/hero"
         >
             {/* accent glow — sits behind the frame, brightens on hover */}
@@ -246,10 +210,14 @@ function ProjectHero({
                 style={{ background: `radial-gradient(closest-side, ${project.accent}, transparent 70%)` }}
             />
             <div className="relative">
-                {project.imageKind === 'browser' ? (
+                {project.imageKind === 'browser' && project.url ? (
                     <BrowserFrame url={project.url}>
                         <div className="relative">{inner}</div>
                     </BrowserFrame>
+                ) : project.imageKind === 'ipad' ? (
+                    <IPadFrame>
+                        <div className="relative">{inner}</div>
+                    </IPadFrame>
                 ) : (
                     <GlassCard className="overflow-hidden">
                         <div className="relative">{inner}</div>
@@ -272,7 +240,10 @@ function ThumbStrip({
     onSelect: (index: number) => void;
 }) {
     return (
-        <ul aria-label={COPY.galleryLabel[locale]} className="flex gap-2 overflow-x-auto scrollbar-thin pb-1 -mx-1 px-1">
+        <ul
+            aria-label={{ de: 'Bildergalerie', en: 'Gallery' }[locale]}
+            className="flex gap-2 overflow-x-auto scrollbar-thin pb-1 -mx-1 px-1"
+        >
             {project.images.map((image, i) => {
                 const alt = locale === 'de' ? image.altDe : image.altEn;
                 const isActive = i === activeIndex;
@@ -296,11 +267,12 @@ function ThumbStrip({
                                 alt=""
                                 aria-hidden
                                 width={1600}
-                                height={900}
+                                height={project.imageKind === 'ipad' ? 1200 : 900}
                                 loading="lazy"
                                 decoding="async"
                                 className={cn(
-                                    'block h-16 w-28 object-cover md:h-20 md:w-32',
+                                    'block object-cover',
+                                    project.imageKind === 'ipad' ? 'h-20 w-28 md:h-24 md:w-32' : 'h-16 w-28 md:h-20 md:w-32',
                                     project.imageKind === 'browser' ? 'object-top' : 'object-center',
                                 )}
                             />
@@ -355,7 +327,9 @@ function ProjectLightbox({
 
     if (!active) return null;
     const activeAlt = locale === 'de' ? active.altDe : active.altEn;
-    const positionLabel = COPY.imagePosition[locale].replace('{current}', String(activeIndex + 1)).replace('{total}', String(total));
+    const positionLabel = { de: 'Bild {current} von {total}', en: 'Image {current} of {total}' }[locale]
+        .replace('{current}', String(activeIndex + 1))
+        .replace('{total}', String(total));
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -382,7 +356,7 @@ function ProjectLightbox({
                                 <button
                                     type="button"
                                     onClick={goPrev}
-                                    aria-label={COPY.previousImage[locale]}
+                                    aria-label={{ de: 'Vorheriges Bild', en: 'Previous image' }[locale]}
                                     className="absolute top-1/2 left-3 -translate-y-1/2 inline-flex items-center justify-center size-10 rounded-full bg-black/40 text-white backdrop-blur-md transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
                                 >
                                     <ChevronLeftIcon className="size-5" />
@@ -390,7 +364,7 @@ function ProjectLightbox({
                                 <button
                                     type="button"
                                     onClick={goNext}
-                                    aria-label={COPY.nextImage[locale]}
+                                    aria-label={{ de: 'Nächstes Bild', en: 'Next image' }[locale]}
                                     className="absolute top-1/2 right-3 -translate-y-1/2 inline-flex items-center justify-center size-10 rounded-full bg-black/40 text-white backdrop-blur-md transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
                                 >
                                     <ChevronRightIcon className="size-5" />
@@ -435,6 +409,28 @@ function hostnameOf(url: string) {
     } catch {
         return url;
     }
+}
+
+// Landscape iPad bezel for `'ipad'` image kind — used by showcase-only
+// projects (iPad apps without a public URL). A thick rounded outer shell
+// in slate-toned glass, an inner darker bezel and a small camera dot
+// centred above the screen so the eye reads it as a device, not a
+// browser. The child renders at the screen's 4:3 ratio (no inner border
+// crops it). The frame itself is purely decorative — visitors can't
+// interact with the device chrome, only with the screenshot inside via
+// the lightbox.
+function IPadFrame({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="rounded-[2.25rem] border border-white/55 bg-white/40 p-3 shadow-[0_24px_60px_-30px_oklch(0.4_0.1_260/0.45)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-white/4 dark:shadow-[0_24px_60px_-20px_oklch(0_0_0/0.6)] md:p-4">
+            <div className="relative overflow-hidden rounded-[1.5rem] bg-[oklch(0.18_0.02_260)] ring-1 ring-black/40 dark:ring-white/10">
+                <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-1/2 top-2 z-10 size-1.5 -translate-x-1/2 rounded-full bg-white/30 ring-1 ring-black/30"
+                />
+                {children}
+            </div>
+        </div>
+    );
 }
 
 function FactBadges({ items }: { items: ReadonlyArray<string> }) {
@@ -482,7 +478,9 @@ function TechStack({ items, locale }: { items: ReadonlyArray<string>; locale: Lo
 
 function CallToAction({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: string) => void }) {
     const monthLabel = availabilityMonthLabel(locale);
-    const availability = COPY.cta.availability[locale].replace('{month}', monthLabel);
+    const availability = { de: 'Aktuell Kapazität für 1 Projekt ab {month}', en: 'Currently capacity for 1 project from {month}' }[
+        locale
+    ].replace('{month}', monthLabel);
 
     return (
         <section className="pt-24 md:pt-32">
@@ -494,23 +492,50 @@ function CallToAction({ locale, onOpenChat }: { locale: Locale; onOpenChat: (tex
                                 <CalendarClockIcon className="size-3.5 text-primary" />
                                 {availability}
                             </span>
-                            <h2 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">{COPY.cta.heading[locale]}</h2>
-                            <p className="mt-3 text-sm md:text-base text-foreground/75 leading-relaxed">{COPY.cta.subheading[locale]}</p>
+                            <h2 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">
+                                {{ de: 'Etwas Ähnliches im Kopf?', en: 'Got something similar in mind?' }[locale]}
+                            </h2>
+                            <p className="mt-3 text-sm md:text-base text-foreground/75 leading-relaxed">
+                                {
+                                    {
+                                        de: 'Skizziere kurz, woran du arbeitest — der Assistent stellt ein paar gezielte Fragen, fasst das Briefing zusammen und schickt es mir per E-Mail. Du bekommst eine Antwort von mir, in der Regel innerhalb von 24 Stunden.',
+                                        en: 'Describe what you’re working on in a few sentences — the assistant asks a couple of focused questions, summarises the brief and sends it to me by email. You hear back from me, usually within 24 hours.',
+                                    }[locale]
+                                }
+                            </p>
                         </div>
                         <div className="flex w-full flex-col gap-3 md:w-auto md:min-w-[16rem]">
-                            <Button type="button" size="lg" onClick={() => onOpenChat(COPY.cta.primary.seed[locale])} className="w-full">
+                            <Button
+                                type="button"
+                                size="lg"
+                                onClick={() =>
+                                    onOpenChat(
+                                        { de: 'Ich möchte ein Projekt mit Cem besprechen.', en: 'I’d like to discuss a project with Cem.' }[
+                                            locale
+                                        ],
+                                    )
+                                }
+                                className="w-full"
+                            >
                                 <SendIcon className="size-4" />
-                                {COPY.cta.primary.label[locale]}
+                                {{ de: 'Projekt anfragen', en: 'Request a project' }[locale]}
                             </Button>
                             <Button
                                 type="button"
                                 size="lg"
                                 variant="outline"
-                                onClick={() => onOpenChat(COPY.cta.secondary.seed[locale])}
+                                onClick={() =>
+                                    onOpenChat(
+                                        {
+                                            de: 'Ich würde gerne ein kurzes Erstgespräch mit Cem vereinbaren.',
+                                            en: 'I’d like to schedule a short intro call with Cem.',
+                                        }[locale],
+                                    )
+                                }
                                 className="w-full"
                             >
                                 <CalendarClockIcon className="size-4" />
-                                {COPY.cta.secondary.label[locale]}
+                                {{ de: 'Erstgespräch buchen', en: 'Book an intro call' }[locale]}
                             </Button>
                             {PRIMARY_EMAIL.length > 0 && (
                                 <a
@@ -518,7 +543,7 @@ function CallToAction({ locale, onOpenChat }: { locale: Locale; onOpenChat: (tex
                                     className="mt-1 inline-flex items-center justify-center gap-2 text-xs text-foreground/65 transition-colors hover:text-primary"
                                 >
                                     <MailIcon className="size-3.5" />
-                                    {COPY.cta.emailLabel[locale]}
+                                    {{ de: 'Lieber direkt per E-Mail', en: 'Prefer email instead' }[locale]}
                                 </a>
                             )}
                         </div>

@@ -70,41 +70,7 @@ import type { VisitorChatIntent } from './VisitorChatProvider';
 // every fresh open gets a fresh `ChatSurface` instance — no manual reset
 // of the seeded-once ref or chatId.
 
-const COPY = {
-    title: { de: 'Frag mich was', en: 'Ask me anything' },
-    description: {
-        de: 'Mein KI-Assistent kennt meine Stationen, Projekte und Arbeitsweise.',
-        en: 'My AI assistant knows my career, projects, and how I work.',
-    },
-    loadFailed: { de: 'Chat konnte nicht geladen werden:', en: 'Failed to load chat:' },
-    sendFailed: {
-        de: 'Frage konnte nicht gesendet werden. Bitte versuche es erneut.',
-        en: 'Could not send your question. Please try again.',
-    },
-    placeholder: { de: 'Stelle eine weitere Frage…', en: 'Ask another question…' },
-    composerEmpty: { de: 'Stell eine Frage…', en: 'Ask a question…' },
-    jumpToLatest: { de: 'Zum neuesten springen', en: 'Jump to latest' },
-    previousChats: { de: 'Frühere Chats', en: 'Previous chats' },
-    newChat: { de: 'Neuer Chat', en: 'New chat' },
-    expand: { de: 'Chat vergrößern', en: 'Expand chat' },
-    collapse: { de: 'Chat verkleinern', en: 'Collapse chat' },
-    emptyIntroNoPrevious: {
-        de: 'Stell eine Frage zu meinem Werdegang, meinen Projekten oder meiner Arbeitsweise.',
-        en: 'Ask a question about my career, projects, or how I work.',
-    },
-    emptyIntroWithPrevious: { de: 'Oder stell eine neue Frage.', en: 'Or ask a new question.' },
-    quotaUsed: {
-        de: (used: number, limit: number, resetsIn: string) => `${used} / ${limit} Nachrichten heute · zurückgesetzt in ${resetsIn}`,
-        en: (used: number, limit: number, resetsIn: string) => `${used} / ${limit} messages today · resets in ${resetsIn}`,
-    },
-    quotaAtLimit: {
-        de: (used: number, limit: number, resetsIn: string) =>
-            `Tageslimit erreicht (${used} / ${limit}). Neue Nachricht in ${resetsIn} möglich.`,
-        en: (used: number, limit: number, resetsIn: string) =>
-            `Daily limit reached (${used} / ${limit}). You can send again in ${resetsIn}.`,
-    },
-    quotaFallbackResetsIn: { de: '24 Std.', en: '24 h' },
-};
+const newChatLabel = { de: 'Neuer Chat', en: 'New chat' };
 
 const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
@@ -157,7 +123,11 @@ export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssis
                 <button
                     type="button"
                     onClick={() => setIsExpanded((value) => !value)}
-                    aria-label={isExpanded ? COPY.collapse[locale] : COPY.expand[locale]}
+                    aria-label={
+                        isExpanded
+                            ? { de: 'Chat verkleinern', en: 'Collapse chat' }[locale]
+                            : { de: 'Chat vergrößern', en: 'Expand chat' }[locale]
+                    }
                     aria-pressed={isExpanded}
                     className="absolute right-12 top-4 z-10 hidden rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:block"
                 >
@@ -170,9 +140,16 @@ export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssis
                     <div className={isExpanded ? 'mx-auto flex w-full max-w-3xl flex-col gap-1.5' : 'flex flex-col gap-1.5'}>
                         <div className="flex items-center gap-2 text-primary">
                             <SparklesIcon className="size-4" />
-                            <SheetTitle>{COPY.title[locale]}</SheetTitle>
+                            <SheetTitle>{{ de: 'Frag mich was', en: 'Ask me anything' }[locale]}</SheetTitle>
                         </div>
-                        <SheetDescription>{COPY.description[locale]}</SheetDescription>
+                        <SheetDescription>
+                            {
+                                {
+                                    de: 'Mein KI-Assistent kennt meine Stationen, Projekte und Arbeitsweise.',
+                                    en: 'My AI assistant knows my career, projects, and how I work.',
+                                }[locale]
+                            }
+                        </SheetDescription>
                     </div>
                 </SheetHeader>
                 {isOpen && intent ? <ChatSurface locale={locale} intent={intent} isExpanded={isExpanded} /> : null}
@@ -224,7 +201,12 @@ function ChatSurface({ locale, intent, isExpanded }: { locale: Locale; intent: V
             const created = result.data?.chatMessageCreate ?? null;
             if (result.error || !created) {
                 live.endTurn();
-                setSendError(COPY.sendFailed[locale]);
+                setSendError(
+                    {
+                        de: 'Frage konnte nicht gesendet werden. Bitte versuche es erneut.',
+                        en: 'Could not send your question. Please try again.',
+                    }[locale],
+                );
                 return;
             }
             setChatId(created.chatId);
@@ -316,7 +298,9 @@ function ChatEmptyState({
             <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2 text-sm text-muted-foreground">
                 {previousChats.length > 0 ? (
                     <section className="flex flex-col gap-2">
-                        <h3 className="text-xs uppercase tracking-wide text-muted-foreground">{COPY.previousChats[locale]}</h3>
+                        <h3 className="text-xs uppercase tracking-wide text-muted-foreground">
+                            {{ de: 'Frühere Chats', en: 'Previous chats' }[locale]}
+                        </h3>
                         <ul className="flex flex-col gap-1.5">
                             {previousChats.map((chat) => (
                                 <li key={chat.chatId}>
@@ -327,7 +311,12 @@ function ChatEmptyState({
                     </section>
                 ) : null}
                 <p className="max-w-md">
-                    {previousChats.length > 0 ? COPY.emptyIntroWithPrevious[locale] : COPY.emptyIntroNoPrevious[locale]}
+                    {previousChats.length > 0
+                        ? { de: 'Oder stell eine neue Frage.', en: 'Or ask a new question.' }[locale]
+                        : {
+                              de: 'Stell eine Frage zu meinem Werdegang, meinen Projekten oder meiner Arbeitsweise.',
+                              en: 'Ask a question about my career, projects, or how I work.',
+                          }[locale]}
                 </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -336,7 +325,7 @@ function ChatEmptyState({
                     isLocked={live.isGenerating || isAtLimit}
                     beginTurn={live.beginTurn}
                     endTurn={live.endTurn}
-                    placeholder={COPY.composerEmpty[locale]}
+                    placeholder={{ de: 'Stell eine Frage…', en: 'Ask a question…' }[locale]}
                     onMessageSent={setChatId}
                     showApprovalMode={false}
                 />
@@ -383,10 +372,16 @@ function VisitorChatQuotaStatus({ quota, locale }: { quota: GqlCVisitorChatQuota
               addSuffix: false,
               locale: DATE_FNS_LOCALE[locale],
           })
-        : COPY.quotaFallbackResetsIn[locale];
+        : { de: '24 Std.', en: '24 h' }[locale];
     const text = isAtLimit
-        ? COPY.quotaAtLimit[locale](quota.used, quota.limit, resetsIn)
-        : COPY.quotaUsed[locale](quota.used, quota.limit, resetsIn);
+        ? {
+              de: `Tageslimit erreicht (${quota.used} / ${quota.limit}). Neue Nachricht in ${resetsIn} möglich.`,
+              en: `Daily limit reached (${quota.used} / ${quota.limit}). You can send again in ${resetsIn}.`,
+          }[locale]
+        : {
+              de: `${quota.used} / ${quota.limit} Nachrichten heute · zurückgesetzt in ${resetsIn}`,
+              en: `${quota.used} / ${quota.limit} messages today · resets in ${resetsIn}`,
+          }[locale];
     return (
         <p role="status" className="text-xs text-muted-foreground">
             {text}
@@ -453,7 +448,7 @@ function ChatLoaded({
     if (error) {
         return (
             <div className="grid flex-1 place-items-center p-8 text-sm text-destructive">
-                {COPY.loadFailed[locale]} {error.message}
+                {{ de: 'Chat konnte nicht geladen werden:', en: 'Failed to load chat:' }[locale]} {error.message}
             </div>
         );
     }
@@ -474,25 +469,25 @@ function ChatLoaded({
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
                 fetching={fetching}
-                jumpToLatestLabel={COPY.jumpToLatest[locale]}
+                jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
             />
             <ChatComposer
                 chatId={chat.chatId}
                 isLocked={live.isGenerating}
                 beginTurn={live.beginTurn}
                 endTurn={live.endTurn}
-                placeholder={COPY.placeholder[locale]}
+                placeholder={{ de: 'Stelle eine weitere Frage…', en: 'Ask another question…' }[locale]}
                 showApprovalMode={false}
                 addonStart={
                     <button
                         type="button"
                         onClick={onResetToOverview}
                         disabled={live.isGenerating}
-                        aria-label={COPY.newChat[locale]}
+                        aria-label={newChatLabel[locale]}
                         className="flex h-7 items-center gap-1 rounded-md border border-input bg-background px-2 text-xs font-medium text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <PlusIcon className="size-3.5" />
-                        {COPY.newChat[locale]}
+                        {newChatLabel[locale]}
                     </button>
                 }
             />

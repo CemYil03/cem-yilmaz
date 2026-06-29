@@ -55,213 +55,16 @@ import type { Locale } from '../../web/utils/locale';
  *   5. Explore — secondary nav cards (About / CV / Projects).
  *   6. Footer — contact + legal.
  *
- * All visitor-facing copy lives in the single `COPY` constant below, keyed by
- * locale. No i18n library — see docs/architecture/i18n.md.
+ * All visitor-facing copy is inlined at the call site as
+ * `{ de: '…', en: '…' }[locale]` — no central COPY object. See
+ * docs/architecture/i18n.md.
  * ------------------------------------------------------------------------- */
 
 const PRIMARY_EMAIL = personalInfo.contact.emails[0] ?? '';
 
-const COPY = {
-    hero: {
-        eyebrow: {
-            de: 'Freelance · Beratung & Architektur',
-            en: 'Freelance · Consulting & Architecture',
-        },
-        headline: {
-            de: 'Digitalisierung, KI-Workflows und Web-Architektur.',
-            en: 'Digitalisation, AI workflows and web architecture.',
-        },
-        subheadline: {
-            de: 'Digitalisierung und KI für Unternehmen, die liefern müssen.',
-            en: 'Digitalisation and AI for companies that need to ship.',
-        },
-        body: {
-            de: 'Manuelle Abläufe werden zu sauberen digitalen Workflows — und KI kommt dort zum Einsatz, wo sie messbar Wert schafft. Dazu kommen klassische Webprojekte, freiberuflich begleitet als Architekt und Entwickler.',
-            en: 'Manual operations turn into clean digital workflows — and AI gets embedded exactly where it measurably pays off. Plus classic web projects, taken on freelance as architect and developer.',
-        },
-        assistantName: { de: 'KI-Assistent von Cem', en: 'Cem’s assistant' },
-        assistantStatus: { de: 'jetzt verfügbar · rund um die Uhr', en: 'available now · around the clock' },
-        placeholder: { de: 'Stelle deine Frage…', en: 'Ask your question…' },
-        send: { de: 'Senden', en: 'Send' },
-        suggestionsLabel: { de: 'Beliebte Fragen', en: 'Popular questions' },
-        suggestions: [
-            {
-                de: 'Kann ich dich für ein Projekt buchen?',
-                en: 'Can I hire you for a project?',
-            },
-            {
-                de: 'Wie läuft eine Zusammenarbeit ab?',
-                en: 'How does an engagement work?',
-            },
-            {
-                de: 'Was hast du bei peopleeat gebaut?',
-                en: 'What did you build at peopleeat?',
-            },
-            {
-                de: 'Wo hat KI in meinem Unternehmen den größten Hebel?',
-                en: 'Where does AI have the biggest leverage in my business?',
-            },
-        ],
-        disclaimer: {
-            de: 'Schildere dein Anliegen direkt im Chat — der Assistent leitet konkrete Anfragen an Cem weiter.',
-            en: 'Share your request in the chat — the assistant forwards concrete enquiries to Cem.',
-        },
-    },
-    services: {
-        heading: { de: 'Schwerpunkte', en: 'Focus areas' },
-        subheading: {
-            de: 'Drei Schwerpunkte. Wähle einen — oder kombiniere sie zu einem Programm, das zu deinem Unternehmen passt.',
-            en: 'Three focus areas. Pick one — or combine them into a programme that fits your business.',
-        },
-        items: [
-            {
-                icon: WorkflowIcon,
-                title: { de: 'Prozess-Digitalisierung', en: 'Process digitalisation' },
-                description: {
-                    de: 'Excel-Workarounds, manuelle Übergaben und E-Mail-Pingpong durch saubere interne Tools ersetzen. Vom Pain Point über die Lösungsskizze bis zur produktiven Software.',
-                    en: 'Replace Excel workarounds, manual handovers and email ping-pong with clean internal tools. From the pain point through the solution sketch to production software.',
-                },
-                bullets: {
-                    de: [
-                        'Excel-Workarounds raus, internes Tool rein',
-                        'Stunden Bearbeitungszeit pro Vorgang gespart',
-                        'Eine saubere Datenquelle statt drei',
-                    ],
-                    en: [
-                        'Excel workarounds out, internal tool in',
-                        'Hours saved per case, every case',
-                        'One clean source of truth instead of three',
-                    ],
-                },
-            },
-            {
-                icon: SparklesIcon,
-                title: { de: 'KI-Workflows', en: 'AI workflows' },
-                description: {
-                    de: 'Sprachmodelle und Agenten dort einbauen, wo sie messbar Zeit sparen oder neue Produktwerte schaffen — Assistenten, Dokumenten-Pipelines, RAG, automatische Triage.',
-                    en: 'Embed language models and agents where they measurably save time or open new product value — assistants, document pipelines, RAG, auto-triage.',
-                },
-                bullets: {
-                    de: [
-                        'Wiederkehrende Aufgaben übernimmt ein Assistent',
-                        'Wissen aus PDFs und Wikis wird abrufbar — per Frage statt per Suche',
-                        'KI läuft produktiv im Stack, nicht im Sandbox-Demo',
-                    ],
-                    en: [
-                        'Recurring tasks handled by an assistant',
-                        'Knowledge in PDFs and wikis becomes ask-able, not just searchable',
-                        'AI running in production, not stuck in a sandbox demo',
-                    ],
-                },
-            },
-            {
-                icon: LayersIcon,
-                title: { de: 'Web-Architektur & -Entwicklung', en: 'Web architecture & development' },
-                description: {
-                    de: 'Klassische Webprojekte als freiberuflicher Architekt oder Full-Stack-Engineer. Von der Produktidee bis zur Produktion oder eingebettet in dein bestehendes Team.',
-                    en: 'Standard web projects as a freelance architect or full-stack engineer. From product idea to production, or embedded with your existing team.',
-                },
-                bullets: {
-                    de: [
-                        'Ein neues Produkt live — vom leeren Repo zur ersten Nutzergruppe',
-                        'Eine Architektur, die in drei Jahren noch trägt',
-                        'Technische Führung auf Zeit, ohne ein Senior-Gehalt fest zu binden',
-                    ],
-                    en: [
-                        'A new product live — from empty repo to first user cohort',
-                        'An architecture that still holds in three years',
-                        'Technical leadership on demand, without locking in a senior salary',
-                    ],
-                },
-            },
-        ],
-    },
-    cta: {
-        availability: {
-            de: 'Aktuell Kapazität für 1 Projekt ab {month}',
-            en: 'Currently capacity for 1 project from {month}',
-        },
-        heading: {
-            de: 'Reden wir über dein Projekt',
-            en: 'Let’s talk about your project',
-        },
-        subheading: {
-            de: 'Skizziere kurz, woran du gerade arbeitest — der Assistent stellt ein paar gezielte Fragen, fasst das Briefing zusammen und schickt es mir per E-Mail. Du bekommst eine Antwort von mir, in der Regel innerhalb von 24 Stunden.',
-            en: 'Describe what you’re working on in a few sentences — the assistant asks a couple of focused questions, summarises the brief and sends it to me by email. You hear back from me, usually within 24 hours.',
-        },
-        primary: {
-            label: { de: 'Projekt anfragen', en: 'Request a project' },
-            seed: {
-                de: 'Ich möchte ein Projekt mit Cem besprechen.',
-                en: 'I’d like to discuss a project with Cem.',
-            },
-        },
-        secondary: {
-            label: { de: 'Erstgespräch buchen', en: 'Book an intro call' },
-            seed: {
-                de: 'Ich würde gerne ein kurzes Erstgespräch mit Cem vereinbaren.',
-                en: 'I’d like to schedule a short intro call with Cem.',
-            },
-        },
-        emailLabel: {
-            de: 'Lieber direkt per E-Mail',
-            en: 'Prefer email instead',
-        },
-    },
-    whyMe: {
-        heading: { de: 'Tiefe und Tempo', en: 'Depth and speed' },
-        subheading: {
-            de: 'Enterprise-Disziplin trifft auf Startup-Geschwindigkeit. Saubere Audit-Trails dort, wo der Prozess sie braucht — und „in zwei Wochen live", wenn das die wichtigere Kennzahl ist.',
-            en: 'Enterprise discipline meets startup speed. Clean audit trails where the process demands them — and "live in two weeks" when that is the metric that matters.',
-        },
-        enterprise: {
-            icon: Building2Icon,
-            title: { de: 'Enterprise-Tiefe', en: 'Enterprise depth' },
-            body: {
-                de: 'Langjährige Enterprise-Erfahrung in großen, regulierten Umgebungen: komplexe Domänen, kritische Integrationen, event-basierte Systeme mit voller Nachvollziehbarkeit, langlebige Codebasen. Software, die fünf Jahre lang wartbar bleiben muss — gebaut mit dem entsprechenden Anspruch.',
-                en: 'Years of enterprise experience inside large, regulated environments: complex domains, critical integrations, event-sourced systems with full traceability, long-lived codebases. Software built to the standard required when it has to be maintained for five years.',
-            },
-        },
-        startup: {
-            icon: RocketIcon,
-            title: { de: 'Startup-Tempo · peopleeat', en: 'Startup speed · peopleeat' },
-            body: {
-                de: 'Gründungs-Architekt einer Food-Tech-Plattform — Architekturentscheidungen unter Unsicherheit, schnelle Iterationen, MVP zu Produkt. Liefern, ohne den nächsten Schritt zu verbauen.',
-                en: 'Founding architect of a food-tech platform — architecture calls under uncertainty, fast iterations, MVP to product. Shipping without painting the next step into a corner.',
-            },
-        },
-    },
-    explore: {
-        heading: { de: 'Mehr über mich', en: 'More about me' },
-        subheading: {
-            de: 'Schau dich um — wer ich bin, was ich gebaut habe und wie meine Stationen aussahen.',
-            en: 'Look around — who I am, what I have built, and where I have worked.',
-        },
-        about: {
-            title: { de: 'Über mich', en: 'About me' },
-            description: {
-                de: 'Wer ich bin, was ich kann und wie du mich erreichst.',
-                en: 'Who I am, what I do, and how to reach me.',
-            },
-            cta: { de: 'Mehr erfahren', en: 'Read more' },
-        },
-        cv: {
-            title: { de: 'Lebenslauf', en: 'CV' },
-            description: {
-                de: 'Stationen, Skills und Ausbildung — chronologisch.',
-                en: 'Roles, skills, and education — in chronological order.',
-            },
-            cta: { de: 'Lebenslauf ansehen', en: 'View CV' },
-        },
-        projects: {
-            title: { de: 'Projekte', en: 'Projects' },
-            description: {
-                de: 'Eine Auswahl meiner Projekte — die, die ich öffentlich zeigen kann.',
-                en: 'A selection of my projects — the ones I can share publicly.',
-            },
-            cta: { de: 'Projekte ansehen', en: 'View projects' },
-        },
-    },
+const heroBody = {
+    de: 'Manuelle Abläufe werden zu sauberen digitalen Workflows — und KI kommt dort zum Einsatz, wo sie messbar Wert schafft. Dazu kommen klassische Webprojekte, freiberuflich begleitet als Architekt und Entwickler.',
+    en: 'Manual operations turn into clean digital workflows — and AI gets embedded exactly where it measurably pays off. Plus classic web projects, taken on freelance as architect and developer.',
 };
 
 // Search params for the homepage. `?ask=…` deep-links into the visitor chat
@@ -285,7 +88,7 @@ export const Route = createFileRoute('/{-$locale}/')({
                 de: 'Cem Yilmaz — Beratung für Digitalisierung & KI · Freelance Software-Architekt',
                 en: 'Cem Yilmaz — Digitalisation & AI consulting · Freelance software architect',
             }[locale],
-            description: COPY.hero.body[locale],
+            description: heroBody[locale],
             path: '/',
             locale,
             webPageUrl,
@@ -349,17 +152,50 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
 
     const [question, setQuestion] = useState('');
 
+    const suggestions: ReadonlyArray<{ de: string; en: string }> = [
+        {
+            de: 'Kann ich dich für ein Projekt buchen?',
+            en: 'Can I hire you for a project?',
+        },
+        {
+            de: 'Wie läuft eine Zusammenarbeit ab?',
+            en: 'How does an engagement work?',
+        },
+        {
+            de: 'Was hast du bei peopleeat gebaut?',
+            en: 'What did you build at peopleeat?',
+        },
+        {
+            de: 'Wo hat KI in meinem Unternehmen den größten Hebel?',
+            en: 'Where does AI have the biggest leverage in my business?',
+        },
+    ];
+
     return (
         <section className="py-12 md:py-16">
             <div className="grid items-start gap-10 md:grid-cols-[minmax(0,1fr)_auto] md:gap-12">
                 <div>
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/55 bg-white/40 px-3 py-1 text-xs font-medium tracking-wide text-foreground/80 backdrop-blur-md dark:border-white/10 dark:bg-white/4">
                         <SparklesIcon className="size-3.5 text-primary" />
-                        {COPY.hero.eyebrow[locale]}
+                        {{ de: 'Freelance · Beratung & Architektur', en: 'Freelance · Consulting & Architecture' }[locale]}
                     </span>
-                    <h1 className="mt-5 text-3xl md:text-5xl font-bold tracking-tight leading-[1.1]">{COPY.hero.headline[locale]}</h1>
-                    <p className="mt-4 max-w-2xl text-lg md:text-xl text-foreground/90 leading-snug">{COPY.hero.subheadline[locale]}</p>
-                    <p className="mt-5 max-w-3xl text-base md:text-lg leading-relaxed text-foreground/75">{COPY.hero.body[locale]}</p>
+                    <h1 className="mt-5 text-3xl md:text-5xl font-bold tracking-tight leading-[1.1]">
+                        {
+                            {
+                                de: 'Digitalisierung, KI-Workflows und Web-Architektur.',
+                                en: 'Digitalisation, AI workflows and web architecture.',
+                            }[locale]
+                        }
+                    </h1>
+                    <p className="mt-4 max-w-2xl text-lg md:text-xl text-foreground/90 leading-snug">
+                        {
+                            {
+                                de: 'Digitalisierung und KI für Unternehmen, die liefern müssen.',
+                                en: 'Digitalisation and AI for companies that need to ship.',
+                            }[locale]
+                        }
+                    </p>
+                    <p className="mt-5 max-w-3xl text-base md:text-lg leading-relaxed text-foreground/75">{heroBody[locale]}</p>
                 </div>
                 <HeroPortrait alt={portraitAlt} />
             </div>
@@ -371,10 +207,12 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
                             <SparklesIcon className="size-4" />
                         </div>
                         <div>
-                            <div className="text-sm font-semibold tracking-tight">{COPY.hero.assistantName[locale]}</div>
+                            <div className="text-sm font-semibold tracking-tight">
+                                {{ de: 'KI-Assistent von Cem', en: 'Cem’s assistant' }[locale]}
+                            </div>
                             <div className="mt-0.5 flex items-center gap-1.5 text-xs text-foreground/65">
                                 <span className="inline-block size-1.5 rounded-full bg-emerald-500 animate-pulse-dot" aria-hidden />
-                                {COPY.hero.assistantStatus[locale]}
+                                {{ de: 'jetzt verfügbar · rund um die Uhr', en: 'available now · around the clock' }[locale]}
                             </div>
                         </div>
                     </div>
@@ -384,18 +222,18 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
                             value={question}
                             onValueChange={setQuestion}
                             onSubmit={() => onOpenChat(question)}
-                            placeholder={COPY.hero.placeholder[locale]}
-                            sendLabel={COPY.hero.send[locale]}
+                            placeholder={{ de: 'Stelle deine Frage…', en: 'Ask your question…' }[locale]}
+                            sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
                             rows={3}
                         />
                     </div>
 
                     <div className="mt-5">
                         <div className="text-xs font-medium tracking-[0.18em] uppercase text-foreground/60">
-                            {COPY.hero.suggestionsLabel[locale]}
+                            {{ de: 'Beliebte Fragen', en: 'Popular questions' }[locale]}
                         </div>
                         <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                            {COPY.hero.suggestions.map((s) => (
+                            {suggestions.map((s) => (
                                 <button
                                     key={s.en}
                                     type="button"
@@ -413,7 +251,14 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
                     </div>
                 </GlassCard>
 
-                <p className="mt-4 text-center text-xs text-foreground/55">{COPY.hero.disclaimer[locale]}</p>
+                <p className="mt-4 text-center text-xs text-foreground/55">
+                    {
+                        {
+                            de: 'Schildere dein Anliegen direkt im Chat — der Assistent leitet konkrete Anfragen an Cem weiter.',
+                            en: 'Share your request in the chat — the assistant forwards concrete enquiries to Cem.',
+                        }[locale]
+                    }
+                </p>
             </div>
         </section>
     );
@@ -443,13 +288,83 @@ function HeroPortrait({ alt }: { alt: string }) {
 }
 
 function Services({ locale }: { locale: Locale }) {
+    const items = [
+        {
+            icon: WorkflowIcon,
+            title: { de: 'Prozess-Digitalisierung', en: 'Process digitalisation' },
+            description: {
+                de: 'Excel-Workarounds, manuelle Übergaben und E-Mail-Pingpong durch saubere interne Tools ersetzen. Vom Pain Point über die Lösungsskizze bis zur produktiven Software.',
+                en: 'Replace Excel workarounds, manual handovers and email ping-pong with clean internal tools. From the pain point through the solution sketch to production software.',
+            },
+            bullets: {
+                de: [
+                    'Excel-Workarounds raus, internes Tool rein',
+                    'Stunden Bearbeitungszeit pro Vorgang gespart',
+                    'Eine saubere Datenquelle statt drei',
+                ],
+                en: [
+                    'Excel workarounds out, internal tool in',
+                    'Hours saved per case, every case',
+                    'One clean source of truth instead of three',
+                ],
+            },
+        },
+        {
+            icon: SparklesIcon,
+            title: { de: 'KI-Workflows', en: 'AI workflows' },
+            description: {
+                de: 'Sprachmodelle und Agenten dort einbauen, wo sie messbar Zeit sparen oder neue Produktwerte schaffen — Assistenten, Dokumenten-Pipelines, RAG, automatische Triage.',
+                en: 'Embed language models and agents where they measurably save time or open new product value — assistants, document pipelines, RAG, auto-triage.',
+            },
+            bullets: {
+                de: [
+                    'Wiederkehrende Aufgaben übernimmt ein Assistent',
+                    'Wissen aus PDFs und Wikis wird abrufbar — per Frage statt per Suche',
+                    'KI läuft produktiv im Stack, nicht im Sandbox-Demo',
+                ],
+                en: [
+                    'Recurring tasks handled by an assistant',
+                    'Knowledge in PDFs and wikis becomes ask-able, not just searchable',
+                    'AI running in production, not stuck in a sandbox demo',
+                ],
+            },
+        },
+        {
+            icon: LayersIcon,
+            title: { de: 'Web-Architektur & -Entwicklung', en: 'Web architecture & development' },
+            description: {
+                de: 'Klassische Webprojekte als freiberuflicher Architekt oder Full-Stack-Engineer. Von der Produktidee bis zur Produktion oder eingebettet in dein bestehendes Team.',
+                en: 'Standard web projects as a freelance architect or full-stack engineer. From product idea to production, or embedded with your existing team.',
+            },
+            bullets: {
+                de: [
+                    'Ein neues Produkt live — vom leeren Repo zur ersten Nutzergruppe',
+                    'Eine Architektur, die in drei Jahren noch trägt',
+                    'Technische Führung auf Zeit, ohne ein Senior-Gehalt fest zu binden',
+                ],
+                en: [
+                    'A new product live — from empty repo to first user cohort',
+                    'An architecture that still holds in three years',
+                    'Technical leadership on demand, without locking in a senior salary',
+                ],
+            },
+        },
+    ];
     return (
         <section className="pb-12 md:pb-16">
             <Reveal>
-                <SectionHeading title={COPY.services.heading[locale]} subtitle={COPY.services.subheading[locale]} />
+                <SectionHeading
+                    title={{ de: 'Schwerpunkte', en: 'Focus areas' }[locale]}
+                    subtitle={
+                        {
+                            de: 'Drei Schwerpunkte. Wähle einen — oder kombiniere sie zu einem Programm, das zu deinem Unternehmen passt.',
+                            en: 'Three focus areas. Pick one — or combine them into a programme that fits your business.',
+                        }[locale]
+                    }
+                />
             </Reveal>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
-                {COPY.services.items.map((item, i) => (
+                {items.map((item, i) => (
                     <Reveal key={item.title.en} index={i} className="h-full">
                         <ServiceCard
                             icon={item.icon}
@@ -500,21 +415,39 @@ function WhyMe({ locale }: { locale: Locale }) {
     return (
         <section className="pb-12 md:pb-16">
             <Reveal>
-                <SectionHeading title={COPY.whyMe.heading[locale]} subtitle={COPY.whyMe.subheading[locale]} />
+                <SectionHeading
+                    title={{ de: 'Tiefe und Tempo', en: 'Depth and speed' }[locale]}
+                    subtitle={
+                        {
+                            de: 'Enterprise-Disziplin trifft auf Startup-Geschwindigkeit. Saubere Audit-Trails dort, wo der Prozess sie braucht — und „in zwei Wochen live", wenn das die wichtigere Kennzahl ist.',
+                            en: 'Enterprise discipline meets startup speed. Clean audit trails where the process demands them — and "live in two weeks" when that is the metric that matters.',
+                        }[locale]
+                    }
+                />
             </Reveal>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
                 <Reveal index={0} className="h-full">
                     <WhyMeCard
-                        icon={COPY.whyMe.enterprise.icon}
-                        title={COPY.whyMe.enterprise.title[locale]}
-                        body={COPY.whyMe.enterprise.body[locale]}
+                        icon={Building2Icon}
+                        title={{ de: 'Enterprise-Tiefe', en: 'Enterprise depth' }[locale]}
+                        body={
+                            {
+                                de: 'Langjährige Enterprise-Erfahrung in großen, regulierten Umgebungen: komplexe Domänen, kritische Integrationen, event-basierte Systeme mit voller Nachvollziehbarkeit, langlebige Codebasen. Software, die fünf Jahre lang wartbar bleiben muss — gebaut mit dem entsprechenden Anspruch.',
+                                en: 'Years of enterprise experience inside large, regulated environments: complex domains, critical integrations, event-sourced systems with full traceability, long-lived codebases. Software built to the standard required when it has to be maintained for five years.',
+                            }[locale]
+                        }
                     />
                 </Reveal>
                 <Reveal index={1} className="h-full">
                     <WhyMeCard
-                        icon={COPY.whyMe.startup.icon}
-                        title={COPY.whyMe.startup.title[locale]}
-                        body={COPY.whyMe.startup.body[locale]}
+                        icon={RocketIcon}
+                        title={{ de: 'Startup-Tempo · peopleeat', en: 'Startup speed · peopleeat' }[locale]}
+                        body={
+                            {
+                                de: 'Gründungs-Architekt einer Food-Tech-Plattform — Architekturentscheidungen unter Unsicherheit, schnelle Iterationen, MVP zu Produkt. Liefern, ohne den nächsten Schritt zu verbauen.',
+                                en: 'Founding architect of a food-tech platform — architecture calls under uncertainty, fast iterations, MVP to product. Shipping without painting the next step into a corner.',
+                            }[locale]
+                        }
                     />
                 </Reveal>
             </div>
@@ -538,7 +471,9 @@ function WhyMeCard({ icon: Icon, title, body }: { icon: typeof CodeXmlIcon; titl
 
 function CallToAction({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: string) => void }) {
     const monthLabel = availabilityMonthLabel(locale);
-    const availability = COPY.cta.availability[locale].replace('{month}', monthLabel);
+    const availability = { de: 'Aktuell Kapazität für 1 Projekt ab {month}', en: 'Currently capacity for 1 project from {month}' }[
+        locale
+    ].replace('{month}', monthLabel);
 
     return (
         <section className="pb-12 md:pb-16">
@@ -550,23 +485,50 @@ function CallToAction({ locale, onOpenChat }: { locale: Locale; onOpenChat: (tex
                                 <CalendarClockIcon className="size-3.5 text-primary" />
                                 {availability}
                             </span>
-                            <h2 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">{COPY.cta.heading[locale]}</h2>
-                            <p className="mt-3 text-sm md:text-base text-foreground/75 leading-relaxed">{COPY.cta.subheading[locale]}</p>
+                            <h2 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">
+                                {{ de: 'Reden wir über dein Projekt', en: 'Let’s talk about your project' }[locale]}
+                            </h2>
+                            <p className="mt-3 text-sm md:text-base text-foreground/75 leading-relaxed">
+                                {
+                                    {
+                                        de: 'Skizziere kurz, woran du gerade arbeitest — der Assistent stellt ein paar gezielte Fragen, fasst das Briefing zusammen und schickt es mir per E-Mail. Du bekommst eine Antwort von mir, in der Regel innerhalb von 24 Stunden.',
+                                        en: 'Describe what you’re working on in a few sentences — the assistant asks a couple of focused questions, summarises the brief and sends it to me by email. You hear back from me, usually within 24 hours.',
+                                    }[locale]
+                                }
+                            </p>
                         </div>
                         <div className="flex w-full flex-col gap-3 md:w-auto md:min-w-[16rem]">
-                            <Button type="button" size="lg" onClick={() => onOpenChat(COPY.cta.primary.seed[locale])} className="w-full">
+                            <Button
+                                type="button"
+                                size="lg"
+                                onClick={() =>
+                                    onOpenChat(
+                                        { de: 'Ich möchte ein Projekt mit Cem besprechen.', en: 'I’d like to discuss a project with Cem.' }[
+                                            locale
+                                        ],
+                                    )
+                                }
+                                className="w-full"
+                            >
                                 <SendIcon className="size-4" />
-                                {COPY.cta.primary.label[locale]}
+                                {{ de: 'Projekt anfragen', en: 'Request a project' }[locale]}
                             </Button>
                             <Button
                                 type="button"
                                 size="lg"
                                 variant="outline"
-                                onClick={() => onOpenChat(COPY.cta.secondary.seed[locale])}
+                                onClick={() =>
+                                    onOpenChat(
+                                        {
+                                            de: 'Ich würde gerne ein kurzes Erstgespräch mit Cem vereinbaren.',
+                                            en: 'I’d like to schedule a short intro call with Cem.',
+                                        }[locale],
+                                    )
+                                }
                                 className="w-full"
                             >
                                 <CalendarClockIcon className="size-4" />
-                                {COPY.cta.secondary.label[locale]}
+                                {{ de: 'Erstgespräch buchen', en: 'Book an intro call' }[locale]}
                             </Button>
                             {PRIMARY_EMAIL.length > 0 && (
                                 <a
@@ -574,7 +536,7 @@ function CallToAction({ locale, onOpenChat }: { locale: Locale; onOpenChat: (tex
                                     className="mt-1 inline-flex items-center justify-center gap-2 text-xs text-foreground/65 transition-colors hover:text-primary"
                                 >
                                     <MailIcon className="size-3.5" />
-                                    {COPY.cta.emailLabel[locale]}
+                                    {{ de: 'Lieber direkt per E-Mail', en: 'Prefer email instead' }[locale]}
                                 </a>
                             )}
                         </div>
@@ -611,30 +573,46 @@ function Explore({ locale }: { locale: Locale }) {
         {
             to: '/{-$locale}/about',
             icon: UserRoundIcon,
-            title: COPY.explore.about.title[locale],
-            description: COPY.explore.about.description[locale],
-            cta: COPY.explore.about.cta[locale],
+            title: { de: 'Über mich', en: 'About me' }[locale],
+            description: { de: 'Wer ich bin, was ich kann und wie du mich erreichst.', en: 'Who I am, what I do, and how to reach me.' }[
+                locale
+            ],
+            cta: { de: 'Mehr erfahren', en: 'Read more' }[locale],
         },
         {
             to: '/{-$locale}/cv',
             icon: FileTextIcon,
-            title: COPY.explore.cv.title[locale],
-            description: COPY.explore.cv.description[locale],
-            cta: COPY.explore.cv.cta[locale],
+            title: { de: 'Lebenslauf', en: 'CV' }[locale],
+            description: {
+                de: 'Stationen, Skills und Ausbildung — chronologisch.',
+                en: 'Roles, skills, and education — in chronological order.',
+            }[locale],
+            cta: { de: 'Lebenslauf ansehen', en: 'View CV' }[locale],
         },
         {
             to: '/{-$locale}/projects',
             icon: FolderGitIcon,
-            title: COPY.explore.projects.title[locale],
-            description: COPY.explore.projects.description[locale],
-            cta: COPY.explore.projects.cta[locale],
+            title: { de: 'Projekte', en: 'Projects' }[locale],
+            description: {
+                de: 'Eine Auswahl meiner Projekte — die, die ich öffentlich zeigen kann.',
+                en: 'A selection of my projects — the ones I can share publicly.',
+            }[locale],
+            cta: { de: 'Projekte ansehen', en: 'View projects' }[locale],
         },
     ];
 
     return (
         <section className="pb-16">
             <Reveal>
-                <SectionHeading title={COPY.explore.heading[locale]} subtitle={COPY.explore.subheading[locale]} />
+                <SectionHeading
+                    title={{ de: 'Mehr über mich', en: 'More about me' }[locale]}
+                    subtitle={
+                        {
+                            de: 'Schau dich um — wer ich bin, was ich gebaut habe und wie meine Stationen aussahen.',
+                            en: 'Look around — who I am, what I have built, and where I have worked.',
+                        }[locale]
+                    }
+                />
             </Reveal>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
                 {items.map((item, i) => (

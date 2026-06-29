@@ -52,8 +52,9 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
   the guardrails, anti-patterns, and reduced-motion stance. No motion library; reuse `Reveal` / `useInView`.
 - **GraphQL schema**: SDL-first in `src/server/graphql/schema.graphqls`. Run `npm run graphql:generate` after any schema change.
 - **Resolver wiring**: all in `src/server/graphql/resolversCreate.ts` — the only file that imports from commands/, queries/, and guards/
-- **Bilingual copy**: this site is DE + EN. Use the inline `{ de: '…', en: '…' }[locale]` pattern (no i18n library). Every visitor- facing
-  string ships in both locales.
+- **Bilingual copy**: this site is DE + EN. Use the inline `{ de: '…', en: '…' }[locale]` literal **at the call site** — no i18n library and
+  no page-level `COPY` const. Hoist a small named const only for strings reused within the file (e.g. shared by `seoMeta()` and the `<h1>`)
+  or needed outside JSX (`aria-label`, `alt`, JSON-LD). See [docs/conventions.md](./docs/conventions.md#bilingual-copy).
 - **Bilingual DB content**: paired `*De` / `*En` text columns (e.g. `roleDe`, `roleEn`), exposed as paired `*De` / `*En` GraphQL fields. See
   [docs/architecture/content-model.md](./docs/architecture/content-model.md).
 - **Static identity content**: lives under `src/web/content/` (e.g. `personalInfo.ts`). Imported by both server and client. PR-edited.

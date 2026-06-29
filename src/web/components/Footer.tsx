@@ -19,42 +19,19 @@ import { useLocale } from '../hooks/useLocale';
  *   - Generous padding (`py-12 md:py-16`) so the footer feels like the page's
  *     close, not a strip pasted at the bottom.
  *
- * Owns its own bilingual copy and social-link config — the landing page's
- * `COPY` constant doesn't need to know about the footer, and other public
+ * Owns its own bilingual copy and social-link config so other public
  * routes can drop the component in without threading copy through props.
  * ------------------------------------------------------------------------- */
 
 const PRIMARY_EMAIL = personalInfo.contact.emails[0] ?? '';
 
-const COPY = {
-    blurb: {
-        de: 'Freelance Software-Architekt und KI-Engineer. Digitalisierung, KI-Workflows und Web-Architektur — für Unternehmen, die liefern müssen.',
-        en: 'Freelance software architect and AI engineer. Digitalisation, AI workflows and web architecture — for companies that need to ship.',
-    },
-    explore: {
-        heading: { de: 'Entdecken', en: 'Explore' },
-        items: [
-            { to: '/{-$locale}/about', label: { de: 'Über mich', en: 'About me' }, icon: UserRoundIcon },
-            { to: '/{-$locale}/cv', label: { de: 'Lebenslauf', en: 'CV' }, icon: FileTextIcon },
-            { to: '/{-$locale}/projects', label: { de: 'Projekte', en: 'Projects' }, icon: FolderGitIcon },
-        ] as const,
-    },
-    contact: {
-        heading: { de: 'Kontakt', en: 'Get in touch' },
-    },
-    legal: {
-        impressum: { de: 'Impressum', en: 'Impressum' },
-        datenschutz: { de: 'Datenschutz', en: 'Privacy' },
-    },
-    madeIn: {
-        de: 'Gestaltet und gebaut in Deutschland.',
-        en: 'Designed and built in Germany.',
-    },
-    copyright: {
-        de: 'Alle Rechte vorbehalten.',
-        en: 'All rights reserved.',
-    },
-};
+const exploreHeading = { de: 'Entdecken', en: 'Explore' };
+
+const exploreItems = [
+    { to: '/{-$locale}/about', label: { de: 'Über mich', en: 'About me' }, icon: UserRoundIcon },
+    { to: '/{-$locale}/cv', label: { de: 'Lebenslauf', en: 'CV' }, icon: FileTextIcon },
+    { to: '/{-$locale}/projects', label: { de: 'Projekte', en: 'Projects' }, icon: FolderGitIcon },
+] as const;
 
 const SOCIAL_LINKS: ReadonlyArray<{
     href: string;
@@ -104,15 +81,20 @@ export function Footer() {
                             <img src="/favicon-dark.ico" className="hidden size-9 dark:block" alt="" />
                             <span className="font-display text-base font-semibold tracking-tight">Cem Yilmaz</span>
                         </Link>
-                        <p className="max-w-sm text-sm leading-relaxed text-foreground/70">{COPY.blurb[locale]}</p>
+                        <p className="max-w-sm text-sm leading-relaxed text-foreground/70">
+                            {
+                                {
+                                    de: 'Freelance Software-Architekt und KI-Engineer. Digitalisierung, KI-Workflows und Web-Architektur — für Unternehmen, die liefern müssen.',
+                                    en: 'Freelance software architect and AI engineer. Digitalisation, AI workflows and web architecture — for companies that need to ship.',
+                                }[locale]
+                            }
+                        </p>
                     </div>
 
-                    <nav aria-label={COPY.explore.heading[locale]} className="flex flex-col gap-3">
-                        <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/55">
-                            {COPY.explore.heading[locale]}
-                        </h2>
+                    <nav aria-label={exploreHeading[locale]} className="flex flex-col gap-3">
+                        <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/55">{exploreHeading[locale]}</h2>
                         <ul className="flex flex-col gap-2 text-sm">
-                            {COPY.explore.items.map(({ to, label, icon: Icon }) => (
+                            {exploreItems.map(({ to, label, icon: Icon }) => (
                                 <li key={to}>
                                     <Link
                                         to={to}
@@ -128,7 +110,7 @@ export function Footer() {
 
                     <div className="flex flex-col gap-3">
                         <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/55">
-                            {COPY.contact.heading[locale]}
+                            {{ de: 'Kontakt', en: 'Get in touch' }[locale]}
                         </h2>
                         <ul className="flex flex-wrap gap-2">
                             {SOCIAL_LINKS.filter((link) => link.visible).map(({ href, label, icon: Icon }) => {
@@ -154,25 +136,25 @@ export function Footer() {
                 <div className="mt-10 flex flex-col gap-3 border-t border-foreground/10 pt-6 text-xs text-muted-foreground md:mt-12 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span>
-                            © {year} Cem Yilmaz. {COPY.copyright[locale]}
+                            © {year} Cem Yilmaz. {{ de: 'Alle Rechte vorbehalten.', en: 'All rights reserved.' }[locale]}
                         </span>
                         <span aria-hidden className="hidden md:inline">
                             ·
                         </span>
-                        <span>{COPY.madeIn[locale]}</span>
+                        <span>{{ de: 'Gestaltet und gebaut in Deutschland.', en: 'Designed and built in Germany.' }[locale]}</span>
                     </div>
                     <nav className="-mx-2 flex gap-2">
                         <Link
                             to="/{-$locale}/impressum"
                             className="rounded-md px-2 py-1.5 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 active:text-foreground"
                         >
-                            {COPY.legal.impressum[locale]}
+                            {{ de: 'Impressum', en: 'Impressum' }[locale]}
                         </Link>
                         <Link
                             to="/{-$locale}/datenschutz"
                             className="rounded-md px-2 py-1.5 transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 active:text-foreground"
                         >
-                            {COPY.legal.datenschutz[locale]}
+                            {{ de: 'Datenschutz', en: 'Privacy' }[locale]}
                         </Link>
                     </nav>
                 </div>

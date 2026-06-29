@@ -25,20 +25,13 @@ import type { Locale } from '../../../web/utils/locale';
 // itself is `noindex` and (Phase 2) sits behind the workspace OAuth gate.
 // See `docs/features/chat-visitor.md`.
 
-const COPY = {
-    title: { de: 'Besucher-Chats', en: 'Visitor chats' },
-    description: {
-        de: 'Übersicht aller Konversationen, die Besucher mit dem KI-Assistenten geführt haben.',
-        en: 'Every conversation visitors have had with the AI assistant.',
-    },
-    backToList: { de: 'Zurück zur Liste', en: 'Back to list' },
-    empty: {
-        de: 'Noch keine Besucher-Chats.',
-        en: 'No visitor chats yet.',
-    },
-    untitled: { de: 'Ohne Titel', en: 'Untitled' },
-    loadFailed: { de: 'Chat konnte nicht geladen werden:', en: 'Failed to load chat:' },
+const title = { de: 'Besucher-Chats', en: 'Visitor chats' };
+const description = {
+    de: 'Übersicht aller Konversationen, die Besucher mit dem KI-Assistenten geführt haben.',
+    en: 'Every conversation visitors have had with the AI assistant.',
 };
+const untitled = { de: 'Ohne Titel', en: 'Untitled' };
+const loadFailed = { de: 'Chat konnte nicht geladen werden:', en: 'Failed to load chat:' };
 
 const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
@@ -48,8 +41,8 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: COPY.title[locale],
-            description: COPY.description[locale],
+            title: title[locale],
+            description: description[locale],
             path: '/workspace/visitor-chats',
             locale,
             webPageUrl: webPageUrlGet(),
@@ -80,12 +73,12 @@ function VisitorChatsList({ locale }: { locale: Locale }) {
 
     return (
         <section className="py-10">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{COPY.title[locale]}</h1>
-            <p className="mt-3 max-w-2xl text-base text-muted-foreground">{COPY.description[locale]}</p>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{title[locale]}</h1>
+            <p className="mt-3 max-w-2xl text-base text-muted-foreground">{description[locale]}</p>
 
             {error ? (
                 <p className="mt-8 text-sm text-destructive">
-                    {COPY.loadFailed[locale]} {error.message}
+                    {loadFailed[locale]} {error.message}
                 </p>
             ) : null}
             {fetching && chats.length === 0 ? (
@@ -94,7 +87,11 @@ function VisitorChatsList({ locale }: { locale: Locale }) {
                 </div>
             ) : null}
 
-            {!fetching && chats.length === 0 ? <p className="mt-10 text-sm text-muted-foreground">{COPY.empty[locale]}</p> : null}
+            {!fetching && chats.length === 0 ? (
+                <p className="mt-10 text-sm text-muted-foreground">
+                    {{ de: 'Noch keine Besucher-Chats.', en: 'No visitor chats yet.' }[locale]}
+                </p>
+            ) : null}
 
             <ul className="mt-8 flex flex-col gap-2">
                 {chats.map((chat) => {
@@ -102,7 +99,7 @@ function VisitorChatsList({ locale }: { locale: Locale }) {
                         addSuffix: true,
                         locale: DATE_FNS_LOCALE[locale],
                     });
-                    const title = chat.title.trim() ? chat.title : COPY.untitled[locale];
+                    const chatTitle = chat.title.trim() ? chat.title : untitled[locale];
                     return (
                         <li key={chat.chatId}>
                             <Link
@@ -112,7 +109,7 @@ function VisitorChatsList({ locale }: { locale: Locale }) {
                             >
                                 <MessageSquareTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                                 <span className="flex min-w-0 flex-1 flex-col">
-                                    <span className="truncate font-medium text-foreground">{title}</span>
+                                    <span className="truncate font-medium text-foreground">{chatTitle}</span>
                                     <span className="text-xs text-muted-foreground">{relative}</span>
                                 </span>
                             </Link>
@@ -141,12 +138,12 @@ function VisitorChatDetail({ chatId, locale }: { chatId: string; locale: Locale 
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
             >
                 <ArrowLeftIcon className="size-4" />
-                {COPY.backToList[locale]}
+                {{ de: 'Zurück zur Liste', en: 'Back to list' }[locale]}
             </Link>
 
             {error ? (
                 <p className="mt-8 text-sm text-destructive">
-                    {COPY.loadFailed[locale]} {error.message}
+                    {loadFailed[locale]} {error.message}
                 </p>
             ) : null}
             {fetching && !chat ? (
@@ -157,7 +154,7 @@ function VisitorChatDetail({ chatId, locale }: { chatId: string; locale: Locale 
 
             {chat ? (
                 <>
-                    <h1 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">{chat.title.trim() || COPY.untitled[locale]}</h1>
+                    <h1 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">{chat.title.trim() || untitled[locale]}</h1>
                     <GlassCard className="mt-6 px-4 py-6">
                         <ReadOnlyTranscript chat={chat} />
                     </GlassCard>

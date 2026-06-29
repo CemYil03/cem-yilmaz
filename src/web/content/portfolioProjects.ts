@@ -22,12 +22,17 @@
 // headless traffic are flagged `manualOnly` there and the asset is dropped
 // in by hand. Each project carries a small gallery (`images`) — the first
 // entry is the hero, the rest render in a thumbnail strip below. `imageKind`
-// switches the route between two visual treatments:
+// switches the route between three visual treatments:
 //   - `'browser'` frames the image in a faked browser-window chrome (used
-//     for software products)
+//     for software products with a live URL)
 //   - `'photo'` renders the image edge-to-edge inside the rounded card
 //     (used for real-world businesses where the live URL is a brochure
 //     for a place)
+//   - `'ipad'` wraps the image in a landscape iPad bezel (used for
+//     iPad-only apps with no public URL — the hero is the product)
+//
+// `url` is optional: showcase-only projects (e.g. internal iPad apps) omit
+// it and the route renders no "Visit site" button.
 // `accent` is a CSS color expression applied as a soft glow behind the
 // image — keeps each row distinct without per-component theming.
 //
@@ -42,7 +47,10 @@ interface ProjectImage {
 interface PortfolioProject {
     id: string;
     name: string;
-    url: string;
+    /** Live URL. Omitted for showcase-only projects (e.g. iPad apps without
+     *  a public landing page) — the route then renders no "Visit site"
+     *  button and skips the hostname pill on `'browser'` frames. */
+    url?: string;
     repoUrl?: string;
     roleDe: string;
     roleEn: string;
@@ -56,7 +64,7 @@ interface PortfolioProject {
      *  a wrapping row of subtle chips. */
     techStack: ReadonlyArray<string>;
     images: ReadonlyArray<ProjectImage>;
-    imageKind: 'browser' | 'photo';
+    imageKind: 'browser' | 'photo' | 'ipad';
     /** Soft glow color behind the image. Any valid CSS color expression. */
     accent: string;
 }
@@ -195,6 +203,36 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
                 src: '/projects/draw-schema/3.png',
                 altDe: 'Landing-Page von Draw Schema mit dem Slogan „The blueprint for your team\'s data"',
                 altEn: 'Draw Schema landing page with the headline "The blueprint for your team\'s data"',
+            },
+        ],
+    },
+    {
+        id: 'arm-skill-training',
+        name: 'Arm Skill Training',
+        // No public URL — iPad-only research tool, distributed inside the
+        // study cohort. The row renders without a "Visit site" button.
+        roleDe: 'Kundenprojekt — stiftungsfinanziert',
+        roleEn: 'Client work — foundation-funded',
+        taglineDe: 'iPad-App für die ergotherapeutische Armtrainings-Forschung.',
+        taglineEn: 'iPad app for occupational-therapy arm-training research.',
+        descriptionDe:
+            'Nativ in SwiftUI entwickelte iPad-App, die einen neuen ergotherapeutischen Trainingsansatz für die Doktorarbeit einer Doktorandin überprüfbar macht. Übungen, Patientenakten und Verlaufsdaten werden lokal über SwiftData persistiert; Swift Charts visualisiert Fortschritt und Bewegungsmuster über die Zeit. Vollständig auf Querformat und Tablet-Workflows optimiert.',
+        descriptionEn:
+            'A native iPad app built in SwiftUI to validate a new occupational-therapy training approach as part of a doctoral dissertation. Exercises, patient records and progress data are persisted locally via SwiftData; Swift Charts visualises progress and movement patterns over time. Built entirely around landscape and tablet-first workflows.',
+        facts: ['iPad only', 'Landscape', 'Research tool'],
+        techStack: ['Swift', 'SwiftUI', 'SwiftData', 'Swift Charts', 'iPadOS'],
+        imageKind: 'ipad',
+        accent: 'oklch(0.74 0.13 200)', // calm cyan — clinical, not corporate
+        images: [
+            {
+                src: '/projects/arm-skill-training/landing-page.png',
+                altDe: 'Startbildschirm der Arm Skill Training iPad-App mit Patientenübersicht',
+                altEn: 'Arm Skill Training iPad app home screen with patient overview',
+            },
+            {
+                src: '/projects/arm-skill-training/exercise-aiming.png',
+                altDe: 'Zielübung der Arm Skill Training App mit Bewegungs-Feedback in Echtzeit',
+                altEn: 'Aiming exercise in Arm Skill Training with real-time movement feedback',
             },
         ],
     },

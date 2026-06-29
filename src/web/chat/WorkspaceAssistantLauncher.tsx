@@ -28,10 +28,6 @@ import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 // for ~1.4s so the user knows the conversation went here, not into
 // the void. See `docs/styles/motion.md`.
 
-const COPY = {
-    label: { de: 'Assistent öffnen', en: 'Open assistant' },
-};
-
 // Match the CSS animation total duration in `styles.css`
 // (.animate-chat-button-pulse runs `chat-button-pulse 1.2s ease-out 1`).
 // Slightly longer here so the class strips after the final frame paints.
@@ -64,7 +60,7 @@ export function WorkspaceAssistantLauncher({ locale }: { locale: Locale }) {
     // No second launcher while the sheet is already open — the X on the
     // sheet itself is the close affordance.
     if (isOpen) return null;
-    const label = COPY.label[locale];
+    const label = { de: 'Assistent öffnen', en: 'Open assistant' }[locale];
 
     return (
         <Tooltip>

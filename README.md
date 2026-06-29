@@ -111,17 +111,10 @@ npm run storybook            # storybook dev, port 6006
 
 ## Open TODOs Before Public Launch
 
-The Phase 1 work shipped placeholder content in a few legally-sensitive places. **Fill these in before pointing DNS at production:**
+**Fill these in before pointing DNS at production:**
 
-- `src/routes/{-$locale}/impressum.tsx` — replace the `<Straße + Hausnummer>` / `<PLZ> <Stadt>` placeholders with real address data (TMG
-  §5).
-- `src/routes/{-$locale}/datenschutz.tsx` — review and extend to match the data processing actually live at launch (cookies, OAuth scopes,
-  analytics).
-- `src/server/agents/agentVisitorAboutCem.ts` — the visitor-chat system prompt ships with a placeholder bio block. Replace with real
-  biographical text.
-- `src/routes/{-$locale}/index.tsx` — the social-link footer points at placeholder URLs (`github.com/cem-yilmaz`, generic LinkedIn,
-  `hello@cem-yilmaz.de`). Confirm or replace.
-- `public/favicon.ico` — still the generic TanStack icon. Replace with a brand asset.
+- `src/routes/{-$locale}/datenschutz.tsx` — the page covers hosting (IONOS), the session cookie, the visitor AI chat, chat file attachments,
+  server logs, and data-subject rights. **Verify** the retention periods and the IONOS DPA reference reflect the live setup before launch.
 - `src/routes/{-$locale}/workspace/` — the workspace hub and its focus-area stubs ship **ungated** in Phase 1 (only `noindex` keeps them out
   of search engines). Wrap the entire `/workspace/*` tree behind the GitHub OAuth gate before pointing DNS at production. See
   `docs/features/workspace-hub.md`.
@@ -130,4 +123,6 @@ The Phase 1 work shipped placeholder content in a few legally-sensitive places. 
 
 ## License
 
-No `LICENSE` file is shipped yet — TODO before any code goes public on its own.
+All rights reserved. No `LICENSE` file is shipped, and none is intended — the code in this repository is not open source. You may view and
+fork it through GitHub's interface (as GitHub's terms allow), but you may not copy, modify, redistribute, or use it in any other way without
+explicit written permission from Cem Yilmaz.

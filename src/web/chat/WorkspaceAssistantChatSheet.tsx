@@ -42,21 +42,11 @@ import type { Locale } from '../utils/locale';
 // gets long. The chat row is the same on both sides; the sheet is the
 // in-context surface, the route is the bookmark-able deep-link.
 
-const COPY = {
-    title: { de: 'Persönlicher Assistent', en: 'Personal assistant' },
-    description: {
-        de: 'Frag deinen Assistenten — der Chat läuft weiter, während du zwischen den Bereichen wechselst.',
-        en: 'Ask your assistant — the chat keeps running while you move between focus areas.',
-    },
-    placeholder: { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' },
-    emptyHint: { de: 'Wie kann ich helfen?', en: 'How can I help?' },
-    jumpToLatest: { de: 'Zum neuesten springen', en: 'Jump to latest' },
-    newChat: { de: 'Neuen Chat starten', en: 'Start new chat' },
-    openFullscreen: { de: 'Im Vollbild öffnen', en: 'Open full-screen' },
-    expand: { de: 'Chat vergrößern', en: 'Expand chat' },
-    collapse: { de: 'Chat verkleinern', en: 'Collapse chat' },
-    send: { de: 'Senden', en: 'Send' },
-};
+const jumpToLatestLabel = { de: 'Zum neuesten springen', en: 'Jump to latest' };
+const newChatLabel = { de: 'Neuen Chat starten', en: 'Start new chat' };
+const openFullscreenLabel = { de: 'Im Vollbild öffnen', en: 'Open full-screen' };
+const expandLabel = { de: 'Chat vergrößern', en: 'Expand chat' };
+const collapseLabel = { de: 'Chat verkleinern', en: 'Collapse chat' };
 
 interface WorkspaceAssistantChatSheetProps {
     locale: Locale;
@@ -114,36 +104,43 @@ export function WorkspaceAssistantChatSheet({ locale }: WorkspaceAssistantChatSh
                                 type="button"
                                 onClick={onOpenFullscreen}
                                 disabled={live.isGenerating}
-                                aria-label={COPY.openFullscreen[locale]}
+                                aria-label={openFullscreenLabel[locale]}
                                 className="grid size-7 place-items-center rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <ExternalLinkIcon className="size-4" />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent>{COPY.openFullscreen[locale]}</TooltipContent>
+                        <TooltipContent>{openFullscreenLabel[locale]}</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button
                                 type="button"
                                 onClick={() => setIsExpanded((value) => !value)}
-                                aria-label={isExpanded ? COPY.collapse[locale] : COPY.expand[locale]}
+                                aria-label={isExpanded ? collapseLabel[locale] : expandLabel[locale]}
                                 aria-pressed={isExpanded}
                                 className="hidden size-7 place-items-center rounded-xs text-foreground/70 ring-offset-background transition-opacity hover:text-foreground hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 sm:grid"
                             >
                                 {isExpanded ? <Minimize2Icon className="size-4" /> : <Maximize2Icon className="size-4" />}
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent>{isExpanded ? COPY.collapse[locale] : COPY.expand[locale]}</TooltipContent>
+                        <TooltipContent>{isExpanded ? collapseLabel[locale] : expandLabel[locale]}</TooltipContent>
                     </Tooltip>
                 </div>
                 <SheetHeader className="border-b px-6 py-4">
                     <div className={isExpanded ? 'mx-auto flex w-full max-w-3xl flex-col gap-1.5' : 'flex flex-col gap-1.5'}>
                         <div className="flex items-center gap-2 text-primary">
                             <SparklesIcon className="size-4" />
-                            <SheetTitle>{COPY.title[locale]}</SheetTitle>
+                            <SheetTitle>{{ de: 'Persönlicher Assistent', en: 'Personal assistant' }[locale]}</SheetTitle>
                         </div>
-                        <SheetDescription>{COPY.description[locale]}</SheetDescription>
+                        <SheetDescription>
+                            {
+                                {
+                                    de: 'Frag deinen Assistenten — der Chat läuft weiter, während du zwischen den Bereichen wechselst.',
+                                    en: 'Ask your assistant — the chat keeps running while you move between focus areas.',
+                                }[locale]
+                            }
+                        </SheetDescription>
                     </div>
                 </SheetHeader>
 
@@ -168,7 +165,7 @@ export function WorkspaceAssistantChatSheet({ locale }: WorkspaceAssistantChatSh
 function EmptyState({ locale }: { locale: Locale }) {
     return (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-sm text-muted-foreground">
-            <p>{COPY.emptyHint[locale]}</p>
+            <p>{{ de: 'Wie kann ich helfen?', en: 'How can I help?' }[locale]}</p>
         </div>
     );
 }
@@ -198,8 +195,8 @@ function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Loca
             onSubmit={() => void submit()}
             disabled={live.isGenerating}
             busy={live.isGenerating}
-            placeholder={COPY.placeholder[locale]}
-            sendLabel={COPY.send[locale]}
+            placeholder={{ de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' }[locale]}
+            sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
             addonStart={
                 hasChat ? (
                     <Tooltip>
@@ -208,13 +205,13 @@ function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Loca
                                 type="button"
                                 onClick={onReset}
                                 disabled={live.isGenerating}
-                                aria-label={COPY.newChat[locale]}
+                                aria-label={newChatLabel[locale]}
                                 className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <MessageSquarePlusIcon className="size-4" />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{COPY.newChat[locale]}</TooltipContent>
+                        <TooltipContent side="top">{newChatLabel[locale]}</TooltipContent>
                     </Tooltip>
                 ) : null
             }
@@ -348,11 +345,11 @@ function ChatTranscript({
                 <button
                     type="button"
                     onClick={jumpToLatest}
-                    aria-label={COPY.jumpToLatest[locale]}
+                    aria-label={jumpToLatestLabel[locale]}
                     className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-md hover:bg-accent"
                 >
                     <ArrowDownIcon className="size-3.5" />
-                    {COPY.jumpToLatest[locale]}
+                    {jumpToLatestLabel[locale]}
                 </button>
             ) : null}
         </div>
