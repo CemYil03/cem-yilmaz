@@ -20,6 +20,7 @@ export interface GqlSAdmin {
     __typename?: 'Admin';
     chat: GqlSChat;
     chats: Array<GqlSChat>;
+    profile: GqlSAdminProfile;
     publicChat: GqlSChat;
     publicChats: Array<GqlSChat>;
 }
@@ -49,6 +50,8 @@ export interface GqlSAdminMutation {
     cvSkillDelete: GqlSMutationResult;
     cvSkillReorder: GqlSMutationResult;
     cvSkillUpsert: GqlSCvSkill;
+    profileObservationDismiss: GqlSMutationResult;
+    profileSynthesizeRequest: GqlSMutationResult;
 }
 
 export type GqlSAdminMutationChatInputCollectionRespondArgs = {
@@ -117,6 +120,26 @@ export type GqlSAdminMutationCvSkillReorderArgs = {
 
 export type GqlSAdminMutationCvSkillUpsertArgs = {
     input: GqlSCvSkillInput;
+};
+
+export type GqlSAdminMutationProfileObservationDismissArgs = {
+    observationId: Scalars['ID']['input'];
+};
+
+export interface GqlSAdminProfile {
+    __typename?: 'AdminProfile';
+    observations: Array<GqlSProfileObservation>;
+    observationsSinceSynthesis: Scalars['Int']['output'];
+    prose: Scalars['String']['output'];
+    psychProfile: Scalars['String']['output'];
+    summary: Scalars['String']['output'];
+    synthesisModelId?: Maybe<Scalars['String']['output']>;
+    synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlSAdminProfileObservationsArgs = {
+    category?: InputMaybe<GqlSProfileObservationCategory>;
+    includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export interface GqlSChat {
@@ -317,6 +340,7 @@ export interface GqlSChatMessageUser {
     body: Scalars['String']['output'];
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
+    profileObservations: Array<GqlSProfileObservation>;
 }
 
 export interface GqlSChatMessageUserInput {
@@ -518,6 +542,21 @@ export interface GqlSMutationResult {
     success: Scalars['Boolean']['output'];
 }
 
+export interface GqlSProfileObservation {
+    __typename?: 'ProfileObservation';
+    analyzerModelId?: Maybe<Scalars['String']['output']>;
+    category: GqlSProfileObservationCategory;
+    confidence?: Maybe<Scalars['Int']['output']>;
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    dismissedAt?: Maybe<Scalars['DateTime']['output']>;
+    observationId: Scalars['ID']['output'];
+    sourceChatId?: Maybe<Scalars['ID']['output']>;
+    sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
+}
+
+export type GqlSProfileObservationCategory = 'behavioral' | 'factual' | 'psychological';
+
 export interface GqlSQuery {
     __typename?: 'Query';
     admin: GqlSAdmin;
@@ -714,6 +753,7 @@ export type GqlSResolversTypes = ResolversObject<{
         }
     >;
     AdminMutation: ResolverTypeWrapper<GqlSAdminMutation>;
+    AdminProfile: ResolverTypeWrapper<GqlSAdminProfile>;
     Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
     Chat: ResolverTypeWrapper<Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversTypes['ChatMessage']> }>;
     ChatAssistantInput: ResolverTypeWrapper<GqlSResolversUnionTypes<GqlSResolversTypes>['ChatAssistantInput']>;
@@ -777,6 +817,8 @@ export type GqlSResolversTypes = ResolversObject<{
     JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
     Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
     MutationResult: ResolverTypeWrapper<GqlSMutationResult>;
+    ProfileObservation: ResolverTypeWrapper<GqlSProfileObservation>;
+    ProfileObservationCategory: GqlSProfileObservationCategory;
     Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Session: ResolverTypeWrapper<Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversTypes['Chat']> }>;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -797,6 +839,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
         publicChats: Array<GqlSResolversParentTypes['Chat']>;
     };
     AdminMutation: GqlSAdminMutation;
+    AdminProfile: GqlSAdminProfile;
     Boolean: Scalars['Boolean']['output'];
     Chat: Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversParentTypes['ChatMessage']> };
     ChatAssistantInput: GqlSResolversUnionTypes<GqlSResolversParentTypes>['ChatAssistantInput'];
@@ -856,6 +899,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     JSON: Scalars['JSON']['output'];
     Mutation: Record<PropertyKey, never>;
     MutationResult: GqlSMutationResult;
+    ProfileObservation: GqlSProfileObservation;
     Query: Record<PropertyKey, never>;
     Session: Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversParentTypes['Chat']> };
     String: Scalars['String']['output'];
@@ -873,6 +917,7 @@ export type GqlSAdminResolvers<
 > = ResolversObject<{
     chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminChatArgs, 'chatId'>>;
     chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    profile?: Resolver<GqlSResolversTypes['AdminProfile'], ParentType, ContextType>;
     publicChat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminPublicChatArgs, 'chatId'>>;
     publicChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
 }>;
@@ -971,6 +1016,31 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationCvSkillUpsertArgs, 'input'>
     >;
+    profileObservationDismiss?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProfileObservationDismissArgs, 'observationId'>
+    >;
+    profileSynthesizeRequest?: Resolver<GqlSResolversTypes['MutationResult'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminProfileResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminProfile'] = GqlSResolversParentTypes['AdminProfile'],
+> = ResolversObject<{
+    observations?: Resolver<
+        Array<GqlSResolversTypes['ProfileObservation']>,
+        ParentType,
+        ContextType,
+        Partial<GqlSAdminProfileObservationsArgs>
+    >;
+    observationsSinceSynthesis?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    prose?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    psychProfile?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    summary?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    synthesisModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    synthesizedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
 }>;
 
 export type GqlSChatResolvers<
@@ -1266,6 +1336,7 @@ export type GqlSChatMessageUserResolvers<
     body?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    profileObservations?: Resolver<Array<GqlSResolversTypes['ProfileObservation']>, ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1450,6 +1521,21 @@ export type GqlSMutationResultResolvers<
     success?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 
+export type GqlSProfileObservationResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ProfileObservation'] = GqlSResolversParentTypes['ProfileObservation'],
+> = ResolversObject<{
+    analyzerModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    category?: Resolver<GqlSResolversTypes['ProfileObservationCategory'], ParentType, ContextType>;
+    confidence?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    content?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    dismissedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    observationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    sourceChatId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    sourceChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+}>;
+
 export type GqlSQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Query'] = GqlSResolversParentTypes['Query'],
@@ -1522,6 +1608,7 @@ export type GqlSVisitorChatQuotaResolvers<
 export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Admin?: GqlSAdminResolvers<ContextType>;
     AdminMutation?: GqlSAdminMutationResolvers<ContextType>;
+    AdminProfile?: GqlSAdminProfileResolvers<ContextType>;
     Chat?: GqlSChatResolvers<ContextType>;
     ChatAssistantInput?: GqlSChatAssistantInputResolvers<ContextType>;
     ChatAssistantInputBoolean?: GqlSChatAssistantInputBooleanResolvers<ContextType>;
@@ -1566,6 +1653,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     JSON?: GraphQLScalarType;
     Mutation?: GqlSMutationResolvers<ContextType>;
     MutationResult?: GqlSMutationResultResolvers<ContextType>;
+    ProfileObservation?: GqlSProfileObservationResolvers<ContextType>;
     Query?: GqlSQueryResolvers<ContextType>;
     Session?: GqlSSessionResolvers<ContextType>;
     Subscription?: GqlSSubscriptionResolvers<ContextType>;
@@ -1593,6 +1681,11 @@ export const GqlSCvSkillCategorySchema: z.ZodType<
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools',
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools'
 > = z.enum(['capabilities', 'frameworks', 'languages', 'services', 'tools']);
+
+export const GqlSProfileObservationCategorySchema: z.ZodType<
+    'behavioral' | 'factual' | 'psychological',
+    'behavioral' | 'factual' | 'psychological'
+> = z.enum(['behavioral', 'factual', 'psychological']);
 
 export function GqlSChatAssistantOptionsSchema(): z.ZodObject<Properties<GqlSChatAssistantOptions>> {
     return z.object({

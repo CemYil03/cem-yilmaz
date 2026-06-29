@@ -29,6 +29,14 @@ export interface ServerRuntime {
     // `serverRuntimeStubCreate` in command tests.
     ai: {
         userConversationModel: () => LanguageModel;
+        // Cheap model used by the profile analyzer (one call per admin user
+        // message). Should be inexpensive and structured-output friendly.
+        // See `docs/features/profile.md`.
+        profileAnalyzerModel: () => LanguageModel;
+        // More capable model for the periodic profile synthesizer. Runs far
+        // less often than the analyzer (threshold-triggered) and reads every
+        // active observation, so the higher per-call cost is amortized.
+        profileSynthesizerModel: () => LanguageModel;
     };
     // Server-side rendering capability — drives a singleton headless
     // Chromium against an internal `/server/*` route to produce an image

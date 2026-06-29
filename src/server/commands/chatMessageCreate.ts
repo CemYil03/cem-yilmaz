@@ -14,6 +14,7 @@ import type {
 import { fileUploads, chatMessageUserAttachments, chatMessagesUser, chatMessagesUserInput, chats } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatMessageCreateResult, GqlSMutationChatMessageCreateArgs, GqlSSession } from '../graphql/generated';
+import { profileAnalyze } from '../jobs/handlers/profileAnalyze';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
@@ -233,6 +234,16 @@ export async function chatMessageCreate(
             serverRuntime,
             agentFactory: dispatch.agentFactory,
         });
+
+        // Phase 6 — Profile analyzer. Admin-scope only. Fire-and-forget
+        // enqueue: the analyzer reads the user message we just persisted and
+        // records any observations. Failures here MUST NOT propagate to the
+        // chat path. See `docs/features/profile.md`.
+        if (dispatch.scope === 'admin') {
+            serverRuntime.jobs.enqueue(profileAnalyze, { chatMessageId: userMessageId }).catch((enqueueError) => {
+                serverRuntime.log.error(enqueueError, requestingSession);
+            });
+        }
 
         return {
             chatId,

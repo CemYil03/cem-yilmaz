@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import type { GqlCChatMessageUser } from '../../graphql/generated';
+import { useLocale } from '../../hooks/useLocale';
 import { ChatAttachmentPreviewDialog } from './ChatAttachmentPreviewDialog';
 import { ChatAttachmentTileGrid } from './ChatAttachmentTileGrid';
+import { ChatMessageUserObservations } from './ChatMessageUserObservations';
 import { Bubble, MessageRow, Timestamp } from './shared';
 
 export function ChatMessageUserView({ message }: { message: GqlCChatMessageUser }) {
+    const locale = useLocale();
     const hasAttachments = message.attachments.length > 0;
+    const observations = message.profileObservations;
     // Open + index live here so the bubble owns the open lifecycle and the
     // grid stays purely presentational. Index is preserved across close/reopen
     // — closing and re-clicking the same tile is a no-op against the cache
@@ -20,24 +24,27 @@ export function ChatMessageUserView({ message }: { message: GqlCChatMessageUser 
 
     return (
         <MessageRow side="user">
-            <Bubble tone="user">
+            <div className="flex flex-col items-end max-w-full">
+                <Bubble tone="user">
+                    {hasAttachments ? (
+                        <div className="mb-2">
+                            <ChatAttachmentTileGrid attachments={message.attachments} onTileClick={openPreviewAt} />
+                        </div>
+                    ) : null}
+                    {message.body.length > 0 ? <div className="whitespace-pre-wrap wrap-break-word">{message.body}</div> : null}
+                    <Timestamp iso={message.createdAt} />
+                </Bubble>
+                <ChatMessageUserObservations observations={observations} locale={locale} />
                 {hasAttachments ? (
-                    <div className="mb-2">
-                        <ChatAttachmentTileGrid attachments={message.attachments} onTileClick={openPreviewAt} />
-                    </div>
+                    <ChatAttachmentPreviewDialog
+                        open={previewOpen}
+                        onOpenChange={setPreviewOpen}
+                        attachments={message.attachments}
+                        index={previewIndex}
+                        onIndexChange={setPreviewIndex}
+                    />
                 ) : null}
-                {message.body.length > 0 ? <div className="whitespace-pre-wrap wrap-break-word">{message.body}</div> : null}
-                <Timestamp iso={message.createdAt} />
-            </Bubble>
-            {hasAttachments ? (
-                <ChatAttachmentPreviewDialog
-                    open={previewOpen}
-                    onOpenChange={setPreviewOpen}
-                    attachments={message.attachments}
-                    index={previewIndex}
-                    onIndexChange={setPreviewIndex}
-                />
-            ) : null}
+            </div>
         </MessageRow>
     );
 }

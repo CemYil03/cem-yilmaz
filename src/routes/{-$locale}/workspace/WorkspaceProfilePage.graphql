@@ -1,0 +1,54 @@
+# Operations for the workspace profile page (`/workspace/profile`).
+#
+# `WorkspaceProfilePage` is the main read query — three text artifacts, plus
+# the observations list filtered by category. The list refetches when the
+# category filter changes because URQL's policy plays it safe with arg-change
+# misses; the synthesized text artifacts never change with category so they
+# are loaded once and cached.
+#
+# See `docs/features/profile.md`.
+
+fragment WorkspaceProfileObservation on ProfileObservation {
+    observationId
+    category
+    content
+    confidence
+    sourceChatId
+    sourceChatMessageId
+    analyzerModelId
+    dismissedAt
+    createdAt
+}
+
+query WorkspaceProfilePage($category: ProfileObservationCategory, $includeDismissed: Boolean) {
+    admin {
+        profile {
+            summary
+            prose
+            psychProfile
+            synthesizedAt
+            synthesisModelId
+            observationsSinceSynthesis
+            observations(category: $category, includeDismissed: $includeDismissed) {
+                ...WorkspaceProfileObservation
+            }
+        }
+    }
+}
+
+mutation WorkspaceProfileObservationDismiss($observationId: ID!) {
+    admin {
+        profileObservationDismiss(observationId: $observationId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceProfileSynthesizeRequest {
+    admin {
+        profileSynthesizeRequest {
+            success
+            referenceId
+        }
+    }
+}

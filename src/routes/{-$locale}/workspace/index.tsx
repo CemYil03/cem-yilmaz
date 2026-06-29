@@ -8,6 +8,7 @@ import {
     FolderKanbanIcon,
     MessageSquareTextIcon,
     ReceiptTextIcon,
+    SparklesIcon,
     StethoscopeIcon,
     WalletIcon,
 } from 'lucide-react';
@@ -54,6 +55,7 @@ type FocusAreaRoute =
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/media'
+    | '/{-$locale}/workspace/profile'
     | '/{-$locale}/workspace/visitor-chats';
 
 type FocusArea = {
@@ -64,6 +66,12 @@ type FocusArea = {
 };
 
 const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
+    {
+        to: '/{-$locale}/workspace/profile',
+        icon: SparklesIcon,
+        title: { de: 'Profil', en: 'Profile' },
+        description: { de: 'Was dein Assistent über dich weiß.', en: 'What your assistant knows about you.' },
+    },
     {
         to: '/{-$locale}/workspace/software',
         icon: CodeXmlIcon,

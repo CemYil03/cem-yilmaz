@@ -599,3 +599,121 @@ export const cvHobby = pgTable(
 
 export type CvHobby = typeof cvHobby.$inferSelect;
 export type CvHobbyCreate = typeof cvHobby.$inferInsert;
+
+// --- Profile -----------------------------------------------------------------
+//
+// AI-built profile of Cem, fed by an analyzer job that watches the admin
+// assistant chat. Three artifacts ride on a single singleton row:
+//
+// - `summary` — short, factual, INJECTED into the personal assistant's system
+//   prompt on every turn (`agentPersonalAssistant`). Read by exactly one
+//   command: `profileSummaryGet`.
+// - `prose` — long-form, human-readable insight for Cem. Never injected.
+// - `psychProfile` — psychological synthesis. Firewall: never injected and
+//   never fed back to any agent.
+//
+// The firewall is enforced by storage separation: the agent factory only ever
+// reads `summary`; `prose` / `psychProfile` are surfaced exclusively at
+// `/workspace/profile`. See `docs/features/profile.md`.
+//
+// One row in the table. We model it as a regular table (not a key/value blob)
+// so the four big text fields stay typed, and so a future Phase 2 split into
+// per-user profiles is a column addition rather than a schema move.
+
+export const profile = pgTable('Profile', {
+    profileId: uuid().primaryKey(),
+    summary: text().notNull().default(''),
+    prose: text().notNull().default(''),
+    psychProfile: text().notNull().default(''),
+    // Timestamp of the last successful synthesis; null until the synthesizer
+    // has run at least once. Renders the "Last synthesized · 2 days ago"
+    // label on the profile page.
+    synthesizedAt: timestamp({ withTimezone: true }),
+    synthesisModelId: varchar(),
+    // Count of non-dismissed observations recorded since the last synthesis.
+    // The analyzer increments this; the synthesizer resets it to 0. The
+    // synthesizer auto-triggers when this crosses
+    // `PROFILE_SYNTHESIS_THRESHOLD` (`src/server/agents/profileConfig.ts`).
+    observationsSinceSynthesis: integer().notNull().default(0),
+    createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+});
+
+export type Profile = typeof profile.$inferSelect;
+export type ProfileCreate = typeof profile.$inferInsert;
+
+// Categories the analyzer LLM is told to choose from. Stored as a flat enum
+// in a `varchar` (mirrors the GraphQL `ProfileObservationCategory` enum).
+//
+// - `factual`     — concrete facts (skills, preferences, life events, plans)
+// - `behavioral`  — communication style, decision patterns, working habits
+// - `psychological` — state of mind, stress markers, recurring emotional themes
+export const profileObservationCategories = ['factual', 'behavioral', 'psychological'] as const;
+export type ProfileObservationCategory = (typeof profileObservationCategories)[number];
+
+// One row per observation extracted by the analyzer. `sourceChatMessageId`
+// FKs the user-side message the observation was derived from; the UI uses it
+// to render the inline "N observations" pill in the chat thread and to
+// deep-link from the profile page back to the source.
+//
+// `dismissedAt` is a soft delete: dismissed rows skip the synthesizer pass
+// but are kept around as an audit trail so Cem can revisit what the model
+// once thought.
+export const profileObservations = pgTable(
+    'ProfileObservations',
+    {
+        observationId: uuid().primaryKey(),
+        // `set null` so an observation outlives a chat message delete — the
+        // synthesis already absorbed it. The UI's "open source message"
+        // affordance just degrades gracefully when this is null.
+        sourceChatMessageId: uuid(),
+        category: varchar().$type<ProfileObservationCategory>().notNull(),
+        content: text().notNull(),
+        // Optional 0..1 confidence the analyzer reported. Displayed as a
+        // faint indicator on the observation card; never used to filter.
+        confidence: integer(),
+        analyzerModelId: varchar(),
+        dismissedAt: timestamp({ withTimezone: true }),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.sourceChatMessageId],
+            foreignColumns: [chatMessages.chatMessageId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('ProfileObservations_category_createdAt_idx').on(table.category, table.createdAt),
+        index('ProfileObservations_sourceChatMessageId_idx').on(table.sourceChatMessageId),
+        index('ProfileObservations_createdAt_idx').on(table.createdAt),
+    ],
+);
+
+export type ProfileObservation = typeof profileObservations.$inferSelect;
+export type ProfileObservationCreate = typeof profileObservations.$inferInsert;
+
+// Tracks which chat messages have already been seen by the analyzer. Keyed
+// by `chatMessageId` so re-runs are idempotent — the job handler short-circuits
+// when a row already exists. `observationsCreated` records how many rows the
+// analyzer produced for this message: zero is a legitimate "looked, nothing
+// to log" outcome and distinguishes the message from "not yet processed."
+export const profileMessageAnalysis = pgTable(
+    'ProfileMessageAnalysis',
+    {
+        chatMessageId: uuid().primaryKey(),
+        observationsCreated: integer().notNull().default(0),
+        analyzerModelId: varchar(),
+        analyzedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.chatMessageId],
+            foreignColumns: [chatMessages.chatMessageId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+    ],
+);
+
+export type ProfileMessageAnalysis = typeof profileMessageAnalysis.$inferSelect;
+export type ProfileMessageAnalysisCreate = typeof profileMessageAnalysis.$inferInsert;

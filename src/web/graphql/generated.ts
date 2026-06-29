@@ -23,6 +23,7 @@ export interface GqlCAdmin {
     __typename?: 'Admin';
     chat: GqlCChat;
     chats: Array<GqlCChat>;
+    profile: GqlCAdminProfile;
     publicChat: GqlCChat;
     publicChats: Array<GqlCChat>;
 }
@@ -52,6 +53,8 @@ export interface GqlCAdminMutation {
     cvSkillDelete: GqlCMutationResult;
     cvSkillReorder: GqlCMutationResult;
     cvSkillUpsert: GqlCCvSkill;
+    profileObservationDismiss: GqlCMutationResult;
+    profileSynthesizeRequest: GqlCMutationResult;
 }
 
 export type GqlCAdminMutationChatInputCollectionRespondArgs = {
@@ -120,6 +123,26 @@ export type GqlCAdminMutationCvSkillReorderArgs = {
 
 export type GqlCAdminMutationCvSkillUpsertArgs = {
     input: GqlCCvSkillInput;
+};
+
+export type GqlCAdminMutationProfileObservationDismissArgs = {
+    observationId: Scalars['ID']['input'];
+};
+
+export interface GqlCAdminProfile {
+    __typename?: 'AdminProfile';
+    observations: Array<GqlCProfileObservation>;
+    observationsSinceSynthesis: Scalars['Int']['output'];
+    prose: Scalars['String']['output'];
+    psychProfile: Scalars['String']['output'];
+    summary: Scalars['String']['output'];
+    synthesisModelId?: Maybe<Scalars['String']['output']>;
+    synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlCAdminProfileObservationsArgs = {
+    category?: InputMaybe<GqlCProfileObservationCategory>;
+    includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export interface GqlCChat {
@@ -320,6 +343,7 @@ export interface GqlCChatMessageUser {
     body: Scalars['String']['output'];
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
+    profileObservations: Array<GqlCProfileObservation>;
 }
 
 export interface GqlCChatMessageUserInput {
@@ -520,6 +544,21 @@ export interface GqlCMutationResult {
     referenceId?: Maybe<Scalars['ID']['output']>;
     success: Scalars['Boolean']['output'];
 }
+
+export interface GqlCProfileObservation {
+    __typename?: 'ProfileObservation';
+    analyzerModelId?: Maybe<Scalars['String']['output']>;
+    category: GqlCProfileObservationCategory;
+    confidence?: Maybe<Scalars['Int']['output']>;
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    dismissedAt?: Maybe<Scalars['DateTime']['output']>;
+    observationId: Scalars['ID']['output'];
+    sourceChatId?: Maybe<Scalars['ID']['output']>;
+    sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
+}
+
+export type GqlCProfileObservationCategory = 'behavioral' | 'factual' | 'psychological';
 
 export interface GqlCQuery {
     __typename?: 'Query';
@@ -724,6 +763,13 @@ export type GqlCWorkspaceVisitorChatQuery = {
                       createdAt: string;
                       author: { userId: string; name: string } | null;
                       attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+                      profileObservations: Array<{
+                          observationId: string;
+                          category: Schema.GqlCProfileObservationCategory;
+                          content: string;
+                          confidence: number | null;
+                          createdAt: string;
+                      }>;
                   }
                 | {
                       __typename: 'ChatMessageUserInput';
@@ -839,6 +885,13 @@ type GqlCWorkspaceChatMessageFields_ChatMessageUser_Fragment = {
     createdAt: string;
     author: { userId: string; name: string } | null;
     attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+    profileObservations: Array<{
+        observationId: string;
+        category: Schema.GqlCProfileObservationCategory;
+        content: string;
+        confidence: number | null;
+        createdAt: string;
+    }>;
 };
 
 type GqlCWorkspaceChatMessageFields_ChatMessageUserInput_Fragment = {
@@ -952,6 +1005,13 @@ export type GqlCWorkspaceChatPageQuery = {
                       createdAt: string;
                       author: { userId: string; name: string } | null;
                       attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+                      profileObservations: Array<{
+                          observationId: string;
+                          category: Schema.GqlCProfileObservationCategory;
+                          content: string;
+                          confidence: number | null;
+                          createdAt: string;
+                      }>;
                   }
                 | {
                       __typename: 'ChatMessageUserInput';
@@ -1007,6 +1067,59 @@ export type GqlCWorkspaceChatToolApprovalRespondMutationVariables = Exact<{
 
 export type GqlCWorkspaceChatToolApprovalRespondMutation = {
     admin: { chatToolApprovalRespond: { chatId: string; chatMessageId: string } | null };
+};
+
+export type GqlCWorkspaceProfileObservationFragment = {
+    observationId: string;
+    category: Schema.GqlCProfileObservationCategory;
+    content: string;
+    confidence: number | null;
+    sourceChatId: string | null;
+    sourceChatMessageId: string | null;
+    analyzerModelId: string | null;
+    dismissedAt: string | null;
+    createdAt: string;
+};
+
+export type GqlCWorkspaceProfilePageQueryVariables = Exact<{
+    category?: Schema.GqlCProfileObservationCategory | null | undefined;
+    includeDismissed?: boolean | null | undefined;
+}>;
+
+export type GqlCWorkspaceProfilePageQuery = {
+    admin: {
+        profile: {
+            summary: string;
+            prose: string;
+            psychProfile: string;
+            synthesizedAt: string | null;
+            synthesisModelId: string | null;
+            observationsSinceSynthesis: number;
+            observations: Array<{
+                observationId: string;
+                category: Schema.GqlCProfileObservationCategory;
+                content: string;
+                confidence: number | null;
+                sourceChatId: string | null;
+                sourceChatMessageId: string | null;
+                analyzerModelId: string | null;
+                dismissedAt: string | null;
+                createdAt: string;
+            }>;
+        };
+    };
+};
+
+export type GqlCWorkspaceProfileObservationDismissMutationVariables = Exact<{
+    observationId: string;
+}>;
+
+export type GqlCWorkspaceProfileObservationDismissMutation = { admin: { profileObservationDismiss: { success: boolean } } };
+
+export type GqlCWorkspaceProfileSynthesizeRequestMutationVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceProfileSynthesizeRequestMutation = {
+    admin: { profileSynthesizeRequest: { success: boolean; referenceId: string | null } };
 };
 
 export type GqlCWorkspaceCvPageQueryVariables = Exact<{ [key: string]: never }>;
@@ -1238,6 +1351,13 @@ type GqlCChatMessageFields_ChatMessageUser_Fragment = {
     createdAt: string;
     author: { userId: string; name: string } | null;
     attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+    profileObservations: Array<{
+        observationId: string;
+        category: Schema.GqlCProfileObservationCategory;
+        content: string;
+        confidence: number | null;
+        createdAt: string;
+    }>;
 };
 
 type GqlCChatMessageFields_ChatMessageUserInput_Fragment = {
@@ -1350,6 +1470,13 @@ export type GqlCChatPageQuery = {
                   createdAt: string;
                   author: { userId: string; name: string } | null;
                   attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+                  profileObservations: Array<{
+                      observationId: string;
+                      category: Schema.GqlCProfileObservationCategory;
+                      content: string;
+                      confidence: number | null;
+                      createdAt: string;
+                  }>;
               }
             | {
                   __typename: 'ChatMessageUserInput';
@@ -1483,6 +1610,13 @@ export type GqlCChatUpdatesSubscription = {
                         createdAt: string;
                         author: { userId: string; name: string } | null;
                         attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+                        profileObservations: Array<{
+                            observationId: string;
+                            category: Schema.GqlCProfileObservationCategory;
+                            content: string;
+                            confidence: number | null;
+                            createdAt: string;
+                        }>;
                     }
                   | {
                         __typename: 'ChatMessageUserInput';
@@ -1583,6 +1717,20 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'size' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                         ],
                                     },
                                 },
@@ -1953,6 +2101,30 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceChatMessageFieldsFragment, unknown>;
+export const WorkspaceProfileObservationFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProfileObservation' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'ProfileObservation' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'analyzerModelId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dismissedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProfileObservationFragment, unknown>;
 export const ChatMessageGenerationFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -2016,6 +2188,20 @@ export const ChatMessageFieldsFragmentDoc = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'size' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                         ],
                                     },
                                 },
@@ -2731,6 +2917,20 @@ export const WorkspaceVisitorChatDocument = {
                                         ],
                                     },
                                 },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                        ],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -3219,6 +3419,20 @@ export const WorkspaceChatPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'size' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                         ],
                                     },
                                 },
@@ -3878,6 +4092,182 @@ export const WorkspaceChatToolApprovalRespondDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceChatToolApprovalRespondMutation, GqlCWorkspaceChatToolApprovalRespondMutationVariables>;
+export const WorkspaceProfilePageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceProfilePage' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProfileObservationCategory' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'includeDismissed' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profile' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'psychProfile' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationsSinceSynthesis' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'observations' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'category' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                                                    },
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'includeDismissed' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'includeDismissed' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceProfileObservation' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProfileObservation' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'ProfileObservation' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'analyzerModelId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dismissedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProfilePageQuery, GqlCWorkspaceProfilePageQueryVariables>;
+export const WorkspaceProfileObservationDismissDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProfileObservationDismiss' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'observationId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileObservationDismiss' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'observationId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'observationId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProfileObservationDismissMutation, GqlCWorkspaceProfileObservationDismissMutationVariables>;
+export const WorkspaceProfileSynthesizeRequestDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProfileSynthesizeRequest' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileSynthesizeRequest' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceId' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProfileSynthesizeRequestMutation, GqlCWorkspaceProfileSynthesizeRequestMutationVariables>;
 export const WorkspaceCvPageDocument = {
     kind: 'Document',
     definitions: [
@@ -5005,6 +5395,20 @@ export const ChatPageDocument = {
                                         ],
                                     },
                                 },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                        ],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -5749,6 +6153,20 @@ export const ChatUpdatesDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'size' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                         ],
                                     },
                                 },

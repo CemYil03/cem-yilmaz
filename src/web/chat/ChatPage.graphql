@@ -29,6 +29,13 @@ fragment ChatMessageFields on ChatMessage {
             size
             url
         }
+        profileObservations {
+            observationId
+            category
+            content
+            confidence
+            createdAt
+        }
     }
     ... on ChatMessageAssistantText {
         chatMessageId

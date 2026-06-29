@@ -29,6 +29,8 @@ export const testLogger = loggerCreate(testDb);
 function aiForTest(): ServerRuntime['ai'] {
     return {
         userConversationModel: () => new MockLanguageModelV3(),
+        profileAnalyzerModel: () => new MockLanguageModelV3(),
+        profileSynthesizerModel: () => new MockLanguageModelV3(),
     };
 }
 

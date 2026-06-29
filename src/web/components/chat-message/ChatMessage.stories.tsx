@@ -19,6 +19,7 @@ const userMessage: GqlCChatMessage = {
     author,
     body: 'Can you book me a table for two on Friday at 7pm in the city?',
     attachments: [],
+    profileObservations: [],
     createdAt: '2026-06-03T18:30:00.000Z',
 };
 
@@ -48,6 +49,7 @@ const userMessageWithAttachments: GqlCChatMessage = {
             url: '/api/file-uploads/attach-2',
         },
     ],
+    profileObservations: [],
     createdAt: '2026-06-03T18:30:01.000Z',
 };
 
@@ -69,6 +71,7 @@ const userMessageWithOneAttachment: GqlCChatMessage = {
             url: '/profile-picture.png',
         },
     ],
+    profileObservations: [],
     createdAt: '2026-06-03T18:30:01.000Z',
 };
 
@@ -106,6 +109,7 @@ const userMessageWithThreeAttachments: GqlCChatMessage = {
             url: '/api/file-uploads/attach-three-3',
         },
     ],
+    profileObservations: [],
     createdAt: '2026-06-03T18:30:01.000Z',
 };
 
@@ -151,6 +155,7 @@ const userMessageWithFourAttachments: GqlCChatMessage = {
             url: '/api/file-uploads/attach-four-4',
         },
     ],
+    profileObservations: [],
     createdAt: '2026-06-03T18:30:01.000Z',
 };
 
@@ -204,6 +209,7 @@ const userMessageWithManyAttachments: GqlCChatMessage = {
             url: '/profile-picture.png',
         },
     ],
+    profileObservations: [],
     createdAt: '2026-06-03T18:30:02.000Z',
 };
 

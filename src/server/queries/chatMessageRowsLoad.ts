@@ -1,7 +1,7 @@
-import { asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { Database, DatabaseTransaction } from '../db';
-import { fileUploads, chatMessageUserAttachments, chatMessages } from '../db/schema';
-import type { FileUpload } from '../db/schema';
+import { fileUploads, chatMessageUserAttachments, chatMessages, profileObservations } from '../db/schema';
+import type { FileUpload, ProfileObservation } from '../db/schema';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageRowsBaseQuery, toChatMessageRowJoined } from './chatMessageRowsBaseQuery';
 
@@ -16,12 +16,19 @@ import { chatMessageRowsBaseQuery, toChatMessageRowJoined } from './chatMessageR
 // and force a `GROUP BY` / array_agg shuffle for an N-row table that is
 // already small per chat.
 //
+// Profile observations (admin chats only) follow the same bulk-load pattern:
+// a single `IN (...)` query against `ProfileObservations` keyed by user
+// message id, then bucketed back onto the joined row. The analyzer never
+// records observations against visitor messages, so for `scope = 'public'`
+// chats the secondary query returns zero rows and the field renders empty.
+//
 // Shared between the GraphQL read path (`chatFindOne`) and the command path
 // (`chatMessageCreate`, which loads prior turns to feed `toModelMessages`).
 export async function chatMessageRowsLoad(dbOrTx: Database | DatabaseTransaction, chatId: string): Promise<ChatMessageRowJoined[]> {
     const joined = await chatMessageRowsBaseQuery(dbOrTx).where(eq(chatMessages.chatId, chatId)).orderBy(asc(chatMessages.createdAt));
     const rows = joined.map(toChatMessageRowJoined);
     await attachUserAttachments(dbOrTx, rows);
+    await attachProfileObservations(dbOrTx, rows);
     return rows;
 }
 
@@ -50,5 +57,33 @@ export async function attachUserAttachments(dbOrTx: Database | DatabaseTransacti
     for (const row of rows) {
         if (row.spine.kind !== 'user') continue;
         row.userAttachments = byMessageId.get(row.spine.chatMessageId) ?? [];
+    }
+}
+
+// Bulk-load active profile observations for every user message in `rows`.
+// Newest first per message. Visitor chats never have observations — the
+// analyzer is admin-scope only — so the `IN` query is cheap regardless and
+// the field renders as an empty array on visitor reads.
+async function attachProfileObservations(dbOrTx: Database | DatabaseTransaction, rows: ChatMessageRowJoined[]): Promise<void> {
+    const userMessageIds = rows.filter((r) => r.spine.kind === 'user').map((r) => r.spine.chatMessageId);
+    if (userMessageIds.length === 0) return;
+
+    const observations = await dbOrTx
+        .select()
+        .from(profileObservations)
+        .where(and(inArray(profileObservations.sourceChatMessageId, userMessageIds), isNull(profileObservations.dismissedAt)))
+        .orderBy(desc(profileObservations.createdAt));
+
+    const byMessageId = new Map<string, ProfileObservation[]>();
+    for (const obs of observations) {
+        if (!obs.sourceChatMessageId) continue;
+        const list = byMessageId.get(obs.sourceChatMessageId) ?? [];
+        list.push(obs);
+        byMessageId.set(obs.sourceChatMessageId, list);
+    }
+
+    for (const row of rows) {
+        if (row.spine.kind !== 'user') continue;
+        row.profileObservations = byMessageId.get(row.spine.chatMessageId) ?? [];
     }
 }

@@ -17,6 +17,8 @@ import { cvHobbyUpsert } from '../commands/cvHobbyUpsert';
 import { cvSkillDelete } from '../commands/cvSkillDelete';
 import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillUpsert } from '../commands/cvSkillUpsert';
+import { profileObservationDismiss } from '../commands/profileObservationDismiss';
+import { profileSynthesizeRequest } from '../commands/profileSynthesizeRequest';
 import { userSessionTerminateMany } from '../commands/userSessionTerminateMany';
 import { userUpdate } from '../commands/userUpdate';
 import type { ServerRuntime } from '../domain/ServerRuntime';
@@ -24,6 +26,7 @@ import { guardAdmin } from '../guards/guardAdmin';
 import { guardAdminMutation } from '../guards/guardAdminMutation';
 import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
+import { toGqlProfile } from '../mappers/toGqlProfile';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
 import { chatsFindBySession } from '../queries/chatsFindBySession';
@@ -31,6 +34,8 @@ import { cvEducationList } from '../queries/cvEducationList';
 import { cvExperienceList } from '../queries/cvExperienceList';
 import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
+import { profileGet } from '../queries/profileGet';
+import { profileObservationList } from '../queries/profileObservationList';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 import type {
@@ -52,6 +57,9 @@ import type {
     GqlSAdminMutationCvSkillDeleteArgs,
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillUpsertArgs,
+    GqlSAdminMutationProfileObservationDismissArgs,
+    GqlSAdminProfile,
+    GqlSAdminProfileObservationsArgs,
     GqlSAdminPublicChatArgs,
     GqlSChatAssistantInput,
     GqlSChatAssistantInputValue,
@@ -135,6 +143,25 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             chat(_parent: GqlSAdmin, args: GqlSAdminChatArgs, requestingSession: GqlSSession) {
                 return chatFindByScope(args.chatId, 'admin', requestingSession, serverRuntime);
             },
+            // Profile shell — the four scalar fields come straight off the row;
+            // the `observations` field is resolved separately so it can take
+            // arguments and run its own join.
+            async profile(): Promise<GqlSAdminProfile> {
+                const row = await profileGet(serverRuntime.db);
+                return { ...toGqlProfile(row), observations: [] };
+            },
+        },
+        AdminProfile: {
+            observations(_parent: GqlSAdminProfile, args: GqlSAdminProfileObservationsArgs, requestingSession: GqlSSession) {
+                return profileObservationList(
+                    {
+                        category: args.category ?? null,
+                        includeDismissed: args.includeDismissed ?? false,
+                    },
+                    requestingSession,
+                    serverRuntime,
+                );
+            },
         },
         CvQuery: {
             experience(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
@@ -207,6 +234,16 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             cvHobbyReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyReorderArgs, requestingSession: GqlSSession) {
                 return cvHobbyReorder(args, requestingSession, serverRuntime);
+            },
+            profileObservationDismiss(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationProfileObservationDismissArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return profileObservationDismiss(args, requestingSession, serverRuntime);
+            },
+            profileSynthesizeRequest(_parent: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
+                return profileSynthesizeRequest(requestingSession, serverRuntime);
             },
         },
         Query: {

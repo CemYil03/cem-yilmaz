@@ -32,3 +32,5 @@ export async function ensureJobsStarted(serverRuntime: ServerRuntime): Promise<v
 
 export { signupReminderSend } from './handlers/signupReminderSend';
 export { staleSessionsCleanup } from './handlers/staleSessionsCleanup';
+export { profileAnalyze } from './handlers/profileAnalyze';
+export { profileSynthesize } from './handlers/profileSynthesize';

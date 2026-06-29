@@ -18,6 +18,13 @@ type ChatMessageUser {
     # `FileUpload.url` points at `/api/file-uploads/:id` which streams them
     # back behind the same session cookie that authorized the upload.
     attachments: [FileUpload!]!
+    # Observations the profile analyzer extracted from this user message.
+    # Empty when the analyzer hasn't run yet, or ran and found nothing to
+    # record. Populated only on admin (`scope = 'admin'`) chats — the
+    # analyzer never runs on visitor messages. The UI uses this to render an
+    # inline "N observations" pill below the message body. See
+    # `docs/features/profile.md`.
+    profileObservations: [ProfileObservation!]!
     createdAt: DateTime!
 }
 
@@ -382,6 +389,72 @@ type Admin {
     chats: [Chat!]!
     # A single admin chat by id. Rejects `scope = 'public'` chats.
     chat(chatId: ID!): Chat!
+    # The AI-built profile of Cem. Reads three synthesized text artifacts
+    # (`summary`, `prose`, `psychProfile`) plus the underlying observations
+    # the analyzer extracted from admin chats. The `summary` field is the
+    # only piece fed back into the personal-assistant system prompt; the
+    # rest is read-only insight surfaced at `/workspace/profile`. See
+    # `docs/features/profile.md`.
+    profile: AdminProfile!
+}
+
+# Profile artifacts surfaced at `/workspace/profile`. Three text fields
+# produced by the synthesizer plus a list-and-count view onto the underlying
+# observations.
+#
+# Firewall: the resolver behind `summary` is the SAME row the analyzer reads
+# into the assistant prompt — by design. `prose` and `psychProfile` are
+# surfaced ONLY through this namespace and are never injected anywhere.
+type AdminProfile {
+    # Short factual summary (≤ ~500 tokens), used as system-prompt context for
+    # admin chats. Empty until the first synthesis.
+    summary: String!
+    # Long-form, human-readable profile. Read by Cem on /workspace/profile.
+    prose: String!
+    # Psychological synthesis. NEVER fed back to any agent.
+    psychProfile: String!
+    # Null until the synthesizer has run at least once.
+    synthesizedAt: DateTime
+    # Model id that produced the latest synthesis. Surfaced as a faint
+    # subtitle next to the timestamp so Cem knows which LLM generated the
+    # text he is reading.
+    synthesisModelId: String
+    # Non-dismissed observations recorded since the last synthesis. Drives
+    # the "Synthesize now" CTA's badge ("12 new observations").
+    observationsSinceSynthesis: Int!
+    # Observations, newest first. `category` filters server-side; `dismissed`
+    # toggles between active rows (default, null = active only),
+    # `dismissed: true` shows dismissed rows, `dismissed` omitted with
+    # `includeDismissed: true` shows both.
+    observations(category: ProfileObservationCategory, includeDismissed: Boolean): [ProfileObservation!]!
+}
+
+enum ProfileObservationCategory {
+    factual
+    behavioral
+    psychological
+}
+
+# One row produced by the analyzer per admin user-message that revealed
+# something new. `sourceChatMessage` is the user message it came from — null
+# only if that message has since been deleted.
+type ProfileObservation {
+    observationId: ID!
+    category: ProfileObservationCategory!
+    content: String!
+    # 0..100 (percent) confidence the analyzer reported. Null when the
+    # analyzer omitted the field. The UI renders this as a faint dot row.
+    confidence: Int
+    analyzerModelId: String
+    # Source message this observation was derived from. Null only when the
+    # message has been deleted since (the observation outlives the message —
+    # the synthesizer has already absorbed it).
+    sourceChatMessageId: ID
+    sourceChatId: ID
+    # `null` while active, set on dismiss. Dismissed observations are
+    # excluded from synthesis input but kept as an audit trail.
+    dismissedAt: DateTime
+    createdAt: DateTime!
 }
 
 type Mutation {
@@ -608,4 +681,12 @@ extend type AdminMutation {
     cvHobbyUpsert(input: CvHobbyInput!): CvHobby!
     cvHobbyDelete(cvHobbyId: ID!): MutationResult!
     cvHobbyReorder(orderedIds: [ID!]!): MutationResult!
+    # Soft-dismiss an observation. The row stays in the DB but is excluded
+    # from the synthesizer's input. A future "undismiss" mutation could clear
+    # `dismissedAt`; today the page treats dismiss as final but reversible by
+    # a re-run of the synthesizer over the older data.
+    profileObservationDismiss(observationId: ID!): MutationResult!
+    # Force a synthesis pass now. Enqueues the `profileSynthesize` job. The
+    # job updates the `Profile` row and resets `observationsSinceSynthesis`.
+    profileSynthesizeRequest: MutationResult!
 }

@@ -82,6 +82,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Static identity       | Typed config under `src/web/content/`                                      | `src/web/content/personalInfo.ts`              |
 | AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                              | `src/server/agents/agentVisitorAboutCem.ts`    |
 | AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                        | `docs/architecture/multi-agent-chat.md`        |
+| Profile (Phase 2+)    | AI-built summary / prose / psych profile from admin chats; firewalled      | `docs/features/profile.md`                     |
 
 ## How to Add Things
 
@@ -151,6 +152,7 @@ src/
 │   │   └── workspace/          Personal workspace hub + focus areas (noindex; Phase 2 OAuth-gated)
 │   │       ├── index.tsx       Hub: greeting + assistant composer + links to each focus area
 │   │       ├── assistant.tsx   Personal-assistant chat (admin-scope)
+│   │       ├── profile.tsx     AI-built profile (summary / prose / psych) — see docs/features/profile.md
 │   │       ├── cv.tsx          CV editor (writes the `Cv*` tables)
 │   │       ├── software.tsx    Software development & architecture
 │   │       ├── projects.tsx    Personal projects

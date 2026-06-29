@@ -51,6 +51,13 @@ export function serverRuntimeCreate(): ServerRuntime {
             // place. Swapping models (or adding a second LLM for a specific
             // flow) is a single edit on this object.
             userConversationModel: () => google('gemini-2.5-flash'),
+            // The analyzer runs once per admin user message — pick a cheap
+            // fast model. See `docs/features/profile.md`.
+            profileAnalyzerModel: () => google('gemini-2.5-flash'),
+            // The synthesizer reads every active observation and rewrites
+            // four text fields; runs only when the threshold trips or on
+            // explicit request, so a more capable model is worth it.
+            profileSynthesizerModel: () => google('gemini-2.5-pro'),
         },
         browser: {
             // The renderer is a long-lived singleton inside `browserCapture`;

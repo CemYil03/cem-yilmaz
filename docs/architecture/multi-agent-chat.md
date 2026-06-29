@@ -182,3 +182,16 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
   workspace system prompt.
 - The chat-related architecture docs (`chat.md`, `chat-persistence.md`) keep their links to this doc; the dispatch model described here
   supersedes the older `agentKind`-driven sketch.
+
+## Profile injection (Phase 2 onwards)
+
+The personal assistant additionally reads a short synthesized summary on each turn and prepends it to its instructions. The summary is one
+of three artifacts produced by an out-of-loop profiler that watches admin chat messages — see
+[`docs/features/profile.md`](../features/profile.md).
+
+- **Read path**: `agentPersonalAssistant` calls `profileSummaryGet(serverRuntime)` once per turn and prepends the returned text to its
+  system prompt. That is the only profile data that crosses back into a prompt.
+- **Write path**: `chatMessageCreate` on the admin namespace enqueues a `profileAnalyze` background job after the assistant turn fires. The
+  job records observations and may auto-trigger a synthesis. The visitor agent never enqueues this job.
+- **Firewall**: `profileSummaryGet` reads exactly one column (`Profile.summary`). The richer `prose` and `psychProfile` fields are surfaced
+  only at `/workspace/profile` and never reach any agent. Storage separation, not prompt hygiene, is what enforces the boundary.
