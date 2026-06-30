@@ -76,6 +76,20 @@ The sheet's instance owns two extras:
 The sheet's instance reads the provider's `chatId` and uses `setChatIdFromHub` as its `onMessageSent` handler, so the first send adopts the
 freshly-allocated chatId into the provider — every subsequent send from any admin composer reuses the same row.
 
+## Page context
+
+Every `WorkspaceChatMessageCreate` carries a `currentPagePath` argument — the workspace route the user was on when they hit Send
+(`/workspace/projects`, `/workspace/projects/<projectId>`, `/workspace/cv`, `/workspace/visitor-chats`, …). Each surface that mounts
+`<WorkspaceChatComposer />` reads `useLocation().pathname` and passes it through: the sheet composer reads it inside
+`WorkspaceAssistantComposer`, the hub composer reads it in `WorkspaceHub`, and the dedicated route reads it in both the empty and loaded
+components. Server-side, the path is threaded through `chatMessageCreate` → `chatAssistantTurnRunDetached` → the `agentPersonalAssistant`
+factory, which inlines it into the system prompt for that turn only. Nothing is persisted.
+
+The win is that short references resolve against the right surface: "this project" on `/workspace/projects/abc…` is the project whose id
+encodes in the path, and "what am I looking at" on `/workspace/projects` is the projects board. The agent is told the path is the only
+signal — no rendered DOM, no row payload — so it must not invent specifics it wasn't otherwise given. It already has
+`delegateToProjects` to fetch the live board snapshot when it actually needs structured project data.
+
 ## Recent chats
 
 The sheet's empty state and the dedicated route both render the last 10 admin chats so the user can resume a conversation in place instead

@@ -66,6 +66,29 @@ Surface-specific extras still plug into the wrapper's `addonStart` slot — the 
 chat" button (plus icon) that calls `resetChat()` on the provider and drops the sheet back into its empty state. The button is disabled
 while a turn is generating; the empty state's own composer creates a fresh chat on first send, just like opening the sheet from the header.
 
+## Page context
+
+Every `chatMessageCreate` carries a `currentPagePath` argument — the route the visitor was on when they hit Send (`/`, `/projects`,
+`/en/cv`, `/about`, …). The sheet reads it once with `useLocation().pathname` and threads it down through `<VisitorChatComposer />` →
+`<ChatComposer />`, where it rides the mutation alongside the message body. Server-side, `chatMessageCreate` forwards the value into
+`chatAssistantTurnRunDetached({ …, currentPagePath })` and the agent factory inlines it into `agentVisitorAboutCem`'s system prompt for that
+turn only. Nothing is persisted — the path is a per-turn signal.
+
+The motivating behaviour is "the visitor just scrolled through my projects page and asks 'tell me more'." Without the path, the agent has
+to guess; with it, the agent can anchor the answer to the route the visitor was probably reading on. The prompt explicitly tells the agent
+that the path itself is the only signal — it has no rendered DOM, no list of what's on the page — so it must not invent contents it
+hasn't been given elsewhere in the prompt.
+
+Cadence notes:
+
+- The pathname is captured at submit time, not at sheet open. A visitor who opens the chat on the landing page, navigates to `/projects`,
+  and asks a follow-up sees the agent pick up the new path. The sheet stays mounted across SPA navigation, so the same component reads the
+  fresh `useLocation()` on each render.
+- The locale prefix is forwarded verbatim (`/en/projects`, not stripped). The agent still answers in the visitor's chosen language; the
+  prefix is informative ("English projects page").
+- `chatInputCollectionRespond` and `chatToolApprovalRespond` pass `currentPagePath: null` — those mutations resume an existing turn from a
+  form submit or approval card already inside the chat surface; there's no fresh user prose to anchor.
+
 ## Anonymous authoring
 
 Visitors are not logged in. The server identifies a visitor by the session cookie alone — there is no `User` row and `sessions.userId` stays
