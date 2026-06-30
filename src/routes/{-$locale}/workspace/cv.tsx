@@ -1,15 +1,16 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation } from 'urql';
+import { createRequest, useClient, useMutation } from 'urql';
+import { pipe, subscribe } from 'wonka';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
-import type { GqlCWorkspaceCvPageQuery } from '../../../web/graphql/generated';
+import type { GqlCWorkspaceCvPageUpdatesSubscription, GqlCWorkspaceCvPageUserFragment } from '../../../web/graphql/generated';
 import {
     WorkspaceCvEducationDeleteDocument,
     WorkspaceCvEducationReorderDocument,
@@ -21,6 +22,7 @@ import {
     WorkspaceCvHobbyReorderDocument,
     WorkspaceCvHobbyUpsertDocument,
     WorkspaceCvPageDocument,
+    WorkspaceCvPageUpdatesDocument,
     WorkspaceCvSkillDeleteDocument,
     WorkspaceCvSkillReorderDocument,
     WorkspaceCvSkillUpsertDocument,
@@ -80,8 +82,14 @@ export const Route = createFileRoute('/{-$locale}/workspace/cv')({
 function WorkspaceCvEditor() {
     const locale = useLocale();
     const data = Route.useLoaderData();
-    const router = useRouter();
-    const onChanged = () => router.invalidate();
+
+    // Server-authoritative state: seed once from the route loader, then let
+    // the `userUpdates` subscription replace it on every server push. Every
+    // CV mutation already calls `serverRuntime.publish.userUpdates` server-side,
+    // so we never need to re-fetch from the client.
+    // See `docs/architecture/state-synchronization.md` — Seed-and-Subscribe.
+    const user = useWorkspaceCvPageLiveUser(data.currentSession.user);
+    const cv = user?.admin?.cv;
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
@@ -95,19 +103,21 @@ function WorkspaceCvEditor() {
                 }
             </p>
 
-            <ExperienceSection rows={data.cv.experience} locale={locale} onChanged={onChanged} />
-            <EducationSection rows={data.cv.education} locale={locale} onChanged={onChanged} />
-            <SkillSection rows={data.cv.skills} locale={locale} onChanged={onChanged} />
-            <HobbySection rows={data.cv.hobbies} locale={locale} onChanged={onChanged} />
+            <ExperienceSection rows={cv?.experience ?? []} locale={locale} />
+            <EducationSection rows={cv?.education ?? []} locale={locale} />
+            <SkillSection rows={cv?.skills ?? []} locale={locale} />
+            <HobbySection rows={cv?.hobbies ?? []} locale={locale} />
         </main>
     );
 }
 
 // --- Experience -------------------------------------------------------------
 
-type ExperienceRow = GqlCWorkspaceCvPageQuery['cv']['experience'][number];
+type WorkspaceCvAdmin = NonNullable<GqlCWorkspaceCvPageUserFragment['admin']>;
+type CvData = WorkspaceCvAdmin['cv'];
+type ExperienceRow = CvData['experience'][number];
 
-function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<ExperienceRow>; locale: Locale; onChanged: () => void }) {
+function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow>; locale: Locale }) {
     const [editing, setEditing] = useState<ExperienceRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvExperienceDeleteDocument);
     const [, reorderMutation] = useMutation(WorkspaceCvExperienceReorderDocument);
@@ -116,7 +126,6 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
         (r) => r.cvExperienceId,
         async (ids) => {
             await reorderMutation({ orderedIds: ids });
-            onChanged();
         },
     );
 
@@ -129,19 +138,13 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
                 disabled={editing !== null}
             />
             {editing === 'new' ? (
-                <ExperienceForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
+                <ExperienceForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} />
             ) : null}
             <ul className="mt-4 flex flex-col gap-3">
                 {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvExperienceId === row.cvExperienceId ? (
                         <li key={row.cvExperienceId}>
-                            <ExperienceForm
-                                row={row}
-                                position={row.position}
-                                locale={locale}
-                                onClose={() => setEditing(null)}
-                                onSaved={onChanged}
-                            />
+                            <ExperienceForm row={row} position={row.position} locale={locale} onClose={() => setEditing(null)} />
                         </li>
                     ) : (
                         <DraggableItem key={row.cvExperienceId} id={row.cvExperienceId} index={index} state={ordered} locale={locale}>
@@ -151,7 +154,6 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
                                     await deleteMutation({ cvExperienceId: row.cvExperienceId });
-                                    onChanged();
                                 }}
                                 editLabel={rowEditLabel[locale]}
                                 deleteLabel={rowDeleteLabel[locale]}
@@ -169,13 +171,11 @@ function ExperienceForm({
     position,
     locale,
     onClose,
-    onSaved,
 }: {
     row: ExperienceRow | null;
     position: number;
     locale: Locale;
     onClose: () => void;
-    onSaved: () => void;
 }) {
     const [, upsert] = useMutation(WorkspaceCvExperienceUpsertDocument);
     const [form, setForm] = useState({
@@ -214,7 +214,6 @@ function ExperienceForm({
                 });
                 setBusy(false);
                 onClose();
-                onSaved();
             }}
             onCancel={onClose}
             busy={busy}
@@ -255,9 +254,9 @@ function ExperienceForm({
 
 // --- Education --------------------------------------------------------------
 
-type EducationRow = GqlCWorkspaceCvPageQuery['cv']['education'][number];
+type EducationRow = CvData['education'][number];
 
-function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<EducationRow>; locale: Locale; onChanged: () => void }) {
+function EducationSection({ rows, locale }: { rows: ReadonlyArray<EducationRow>; locale: Locale }) {
     const [editing, setEditing] = useState<EducationRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvEducationDeleteDocument);
     const [, reorderMutation] = useMutation(WorkspaceCvEducationReorderDocument);
@@ -266,7 +265,6 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
         (r) => r.cvEducationId,
         async (ids) => {
             await reorderMutation({ orderedIds: ids });
-            onChanged();
         },
     );
 
@@ -279,19 +277,13 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
                 disabled={editing !== null}
             />
             {editing === 'new' ? (
-                <EducationForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
+                <EducationForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} />
             ) : null}
             <ul className="mt-4 flex flex-col gap-3">
                 {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvEducationId === row.cvEducationId ? (
                         <li key={row.cvEducationId}>
-                            <EducationForm
-                                row={row}
-                                position={row.position}
-                                locale={locale}
-                                onClose={() => setEditing(null)}
-                                onSaved={onChanged}
-                            />
+                            <EducationForm row={row} position={row.position} locale={locale} onClose={() => setEditing(null)} />
                         </li>
                     ) : (
                         <DraggableItem key={row.cvEducationId} id={row.cvEducationId} index={index} state={ordered} locale={locale}>
@@ -301,7 +293,6 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
                                     await deleteMutation({ cvEducationId: row.cvEducationId });
-                                    onChanged();
                                 }}
                                 editLabel={rowEditLabel[locale]}
                                 deleteLabel={rowDeleteLabel[locale]}
@@ -319,13 +310,11 @@ function EducationForm({
     position,
     locale,
     onClose,
-    onSaved,
 }: {
     row: EducationRow | null;
     position: number;
     locale: Locale;
     onClose: () => void;
-    onSaved: () => void;
 }) {
     const [, upsert] = useMutation(WorkspaceCvEducationUpsertDocument);
     const [form, setForm] = useState({
@@ -360,7 +349,6 @@ function EducationForm({
                 });
                 setBusy(false);
                 onClose();
-                onSaved();
             }}
             onCancel={onClose}
             busy={busy}
@@ -401,7 +389,7 @@ function EducationForm({
 
 // --- Skills -----------------------------------------------------------------
 
-type SkillRow = GqlCWorkspaceCvPageQuery['cv']['skills'][number];
+type SkillRow = CvData['skills'][number];
 type SkillCategory = SkillRow['category'];
 
 const SKILL_CATEGORIES: ReadonlyArray<SkillCategory> = ['capabilities', 'frameworks', 'services', 'tools', 'languages'];
@@ -413,7 +401,7 @@ const SKILL_CATEGORY_LABELS: Record<SkillCategory, { de: string; en: string }> =
     languages: { de: 'Programmiersprachen', en: 'Programming Languages' },
 };
 
-function SkillSection({ rows, locale, onChanged }: { rows: ReadonlyArray<SkillRow>; locale: Locale; onChanged: () => void }) {
+function SkillSection({ rows, locale }: { rows: ReadonlyArray<SkillRow>; locale: Locale }) {
     const [editing, setEditing] = useState<SkillRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvSkillDeleteDocument);
     const [, reorderMutation] = useMutation(WorkspaceCvSkillReorderDocument);
@@ -442,9 +430,7 @@ function SkillSection({ rows, locale, onChanged }: { rows: ReadonlyArray<SkillRo
                 onAdd={() => setEditing('new')}
                 disabled={editing !== null}
             />
-            {editing === 'new' ? (
-                <SkillForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
-            ) : null}
+            {editing === 'new' ? <SkillForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} /> : null}
             <div className="mt-4 flex flex-col gap-6">
                 {SKILL_CATEGORIES.filter((c) => grouped[c].length > 0).map((category) => (
                     <SkillCategoryGroup
@@ -455,10 +441,8 @@ function SkillSection({ rows, locale, onChanged }: { rows: ReadonlyArray<SkillRo
                         editing={editing}
                         onEdit={(row) => setEditing(row)}
                         onCancel={() => setEditing(null)}
-                        onSaved={onChanged}
                         onDelete={async (cvSkillId) => {
                             await deleteMutation({ cvSkillId });
-                            onChanged();
                         }}
                         onReorder={async (newOrderForCategory) => {
                             const orderedIds: string[] = [];
@@ -470,7 +454,6 @@ function SkillSection({ rows, locale, onChanged }: { rows: ReadonlyArray<SkillRo
                                 }
                             }
                             await reorderMutation({ orderedIds });
-                            onChanged();
                         }}
                     />
                 ))}
@@ -486,7 +469,6 @@ function SkillCategoryGroup({
     editing,
     onEdit,
     onCancel,
-    onSaved,
     onDelete,
     onReorder,
 }: {
@@ -496,7 +478,6 @@ function SkillCategoryGroup({
     editing: SkillRow | 'new' | null;
     onEdit: (row: SkillRow) => void;
     onCancel: () => void;
-    onSaved: () => void;
     onDelete: (cvSkillId: string) => Promise<void>;
     onReorder: (orderedIds: string[]) => Promise<void>;
 }) {
@@ -511,7 +492,7 @@ function SkillCategoryGroup({
                 {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvSkillId === row.cvSkillId ? (
                         <li key={row.cvSkillId}>
-                            <SkillForm row={row} position={row.position} locale={locale} onClose={onCancel} onSaved={onSaved} />
+                            <SkillForm row={row} position={row.position} locale={locale} onClose={onCancel} />
                         </li>
                     ) : (
                         <DraggableItem key={row.cvSkillId} id={row.cvSkillId} index={index} state={ordered} locale={locale} compact>
@@ -534,19 +515,7 @@ function SkillCategoryGroup({
     );
 }
 
-function SkillForm({
-    row,
-    position,
-    locale,
-    onClose,
-    onSaved,
-}: {
-    row: SkillRow | null;
-    position: number;
-    locale: Locale;
-    onClose: () => void;
-    onSaved: () => void;
-}) {
+function SkillForm({ row, position, locale, onClose }: { row: SkillRow | null; position: number; locale: Locale; onClose: () => void }) {
     const [, upsert] = useMutation(WorkspaceCvSkillUpsertDocument);
     const [form, setForm] = useState({
         category: row?.category ?? ('frameworks' as SkillCategory),
@@ -566,7 +535,6 @@ function SkillForm({
                 });
                 setBusy(false);
                 onClose();
-                onSaved();
             }}
             onCancel={onClose}
             busy={busy}
@@ -597,9 +565,9 @@ function SkillForm({
 
 // --- Hobbies ----------------------------------------------------------------
 
-type HobbyRow = GqlCWorkspaceCvPageQuery['cv']['hobbies'][number];
+type HobbyRow = CvData['hobbies'][number];
 
-function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRow>; locale: Locale; onChanged: () => void }) {
+function HobbySection({ rows, locale }: { rows: ReadonlyArray<HobbyRow>; locale: Locale }) {
     const [editing, setEditing] = useState<HobbyRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvHobbyDeleteDocument);
     const [, reorderMutation] = useMutation(WorkspaceCvHobbyReorderDocument);
@@ -608,7 +576,6 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
         (r) => r.cvHobbyId,
         async (ids) => {
             await reorderMutation({ orderedIds: ids });
-            onChanged();
         },
     );
 
@@ -620,20 +587,12 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
                 onAdd={() => setEditing('new')}
                 disabled={editing !== null}
             />
-            {editing === 'new' ? (
-                <HobbyForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} onSaved={onChanged} />
-            ) : null}
+            {editing === 'new' ? <HobbyForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} /> : null}
             <ul className="mt-4 flex flex-col gap-3">
                 {ordered.items.map((row, index) =>
                     editing && editing !== 'new' && editing.cvHobbyId === row.cvHobbyId ? (
                         <li key={row.cvHobbyId}>
-                            <HobbyForm
-                                row={row}
-                                position={row.position}
-                                locale={locale}
-                                onClose={() => setEditing(null)}
-                                onSaved={onChanged}
-                            />
+                            <HobbyForm row={row} position={row.position} locale={locale} onClose={() => setEditing(null)} />
                         </li>
                     ) : (
                         <DraggableItem key={row.cvHobbyId} id={row.cvHobbyId} index={index} state={ordered} locale={locale}>
@@ -643,7 +602,6 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
                                     await deleteMutation({ cvHobbyId: row.cvHobbyId });
-                                    onChanged();
                                 }}
                                 editLabel={rowEditLabel[locale]}
                                 deleteLabel={rowDeleteLabel[locale]}
@@ -656,19 +614,7 @@ function HobbySection({ rows, locale, onChanged }: { rows: ReadonlyArray<HobbyRo
     );
 }
 
-function HobbyForm({
-    row,
-    position,
-    locale,
-    onClose,
-    onSaved,
-}: {
-    row: HobbyRow | null;
-    position: number;
-    locale: Locale;
-    onClose: () => void;
-    onSaved: () => void;
-}) {
+function HobbyForm({ row, position, locale, onClose }: { row: HobbyRow | null; position: number; locale: Locale; onClose: () => void }) {
     const [, upsert] = useMutation(WorkspaceCvHobbyUpsertDocument);
     const [form, setForm] = useState({
         textDe: row?.textDe ?? '',
@@ -690,7 +636,6 @@ function HobbyForm({
                 });
                 setBusy(false);
                 onClose();
-                onSaved();
             }}
             onCancel={onClose}
             busy={busy}
@@ -960,4 +905,30 @@ function DateField({ value, onChange, required }: { value: string; onChange: (ne
             ) : null}
         </div>
     );
+}
+
+// Seed-and-Subscribe: the route loader provides the initial `user`, then the
+// `userUpdates` subscription replaces it with the same fragment shape on every
+// server push. Imperative URQL — not `useSubscription` — for the same reason
+// `useChatLiveUpdates.tsx` does: URQL's declarative hook can deliver each event
+// more than once under concurrent React. See `docs/architecture/state-synchronization.md`.
+function useWorkspaceCvPageLiveUser(
+    seed: GqlCWorkspaceCvPageUserFragment | null | undefined,
+): GqlCWorkspaceCvPageUserFragment | null | undefined {
+    const [user, setUser] = useState(seed);
+
+    const client = useClient();
+    useEffect(() => {
+        const request = createRequest(WorkspaceCvPageUpdatesDocument, {});
+        const operation = client.executeSubscription<GqlCWorkspaceCvPageUpdatesSubscription>(request);
+        const { unsubscribe } = pipe(
+            operation,
+            subscribe((result) => {
+                if (result.data) setUser(result.data.userUpdates);
+            }),
+        );
+        return unsubscribe;
+    }, [client]);
+
+    return user;
 }

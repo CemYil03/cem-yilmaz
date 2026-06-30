@@ -1,49 +1,67 @@
-# CV admin operations — co-located with the `/workspace/cv` editor route. The
-# read query overlaps with `CvPage` / `AboutPage` but is named separately so
-# the editor's URQL cache is independent from the public surfaces (an admin
-# save invalidates the editor's view without churning the public page caches).
+# Workspace CV editor operations. Co-located with `/workspace/cv`. The page's
+# read shape lives in the `WorkspaceCvPageUser` fragment so both the route
+# loader query and the live `userUpdates` subscription deliver the exact same
+# payload — mutations no longer trigger `router.invalidate()`; the server
+# pushes the new state over SSE and the page replaces its `useState` with the
+# subscription payload. See `docs/architecture/state-synchronization.md`.
+
+fragment WorkspaceCvPageUser on User {
+    admin {
+        cv {
+            experience {
+                cvExperienceId
+                roleDe
+                roleEn
+                company
+                startDate
+                endDate
+                descriptionDe
+                descriptionEn
+                technologies
+                managerName
+                position
+            }
+            education {
+                cvEducationId
+                degreeDe
+                degreeEn
+                institution
+                subjectDe
+                subjectEn
+                startDate
+                endDate
+                notesDe
+                notesEn
+                position
+            }
+            skills {
+                cvSkillId
+                category
+                label
+                position
+            }
+            hobbies {
+                cvHobbyId
+                textDe
+                textEn
+                since
+                position
+            }
+        }
+    }
+}
 
 query WorkspaceCvPage {
-    cv {
-        experience {
-            cvExperienceId
-            roleDe
-            roleEn
-            company
-            startDate
-            endDate
-            descriptionDe
-            descriptionEn
-            technologies
-            managerName
-            position
+    currentSession {
+        user {
+            ...WorkspaceCvPageUser
         }
-        education {
-            cvEducationId
-            degreeDe
-            degreeEn
-            institution
-            subjectDe
-            subjectEn
-            startDate
-            endDate
-            notesDe
-            notesEn
-            position
-        }
-        skills {
-            cvSkillId
-            category
-            label
-            position
-        }
-        hobbies {
-            cvHobbyId
-            textDe
-            textEn
-            since
-            position
-        }
+    }
+}
+
+subscription WorkspaceCvPageUpdates {
+    userUpdates {
+        ...WorkspaceCvPageUser
     }
 }
 

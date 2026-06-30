@@ -33,6 +33,7 @@ function aiForTest(): ServerRuntime['ai'] {
         userConversationModel: () => new MockLanguageModelV3(),
         compassAnalyzerModel: () => new MockLanguageModelV3(),
         compassSynthesizerModel: () => new MockLanguageModelV3(),
+        compassInterviewerModel: () => new MockLanguageModelV3(),
         // Web-search is provider-executed in production (Gemini runs the
         // search server-side). Tests never reach a real model — this stub
         // returns a no-op tool so the runtime shape type-checks and any test

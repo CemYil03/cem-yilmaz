@@ -1,7 +1,7 @@
 import { generateText, Output } from 'ai';
 import { asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { compass, compassObservations } from '../../db/schema';
+import { compass, compassObservations, users } from '../../db/schema';
 import type { QueuedJobDefinition } from '../types';
 import { compassGet } from '../../queries/compassGet';
 import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
@@ -123,6 +123,15 @@ export const compassSynthesize: QueuedJobDefinition<CompassSynthesizeData> = {
                 .where(eq(compass.compassId, COMPASS_SINGLETON_ID));
 
             serverRuntime.log.info(`compassSynthesize: synthesized from ${observations.length} observations`);
+
+            // Notify every admin's `/workspace/compass` subscription that the
+            // three artifacts changed. The seed-and-subscribe pattern in
+            // `docs/architecture/state-synchronization.md` relies on this —
+            // without it the page would have to poll waiting for the job to
+            // finish. Cheap one-row select; compass is single-admin in
+            // practice but the query stays correct if that changes.
+            const admins = await serverRuntime.db.select({ userId: users.userId }).from(users).where(eq(users.isAdmin, true));
+            await Promise.all(admins.map(({ userId }) => serverRuntime.publish.userUpdates({ userId })));
         } catch (error) {
             serverRuntime.log.error(error, null);
             throw error;

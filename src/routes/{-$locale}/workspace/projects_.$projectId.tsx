@@ -34,7 +34,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useMutation } from 'urql';
+import { createRequest, useClient, useMutation } from 'urql';
+import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
 import { uploadFile } from '../../../web/chat/fileUpload';
 import { previewKindFor } from '../../../web/chat/chatAttachmentPreview';
@@ -64,7 +65,8 @@ import type {
     GqlCProjectOfferStatus,
     GqlCProjectStatus,
     GqlCTaskStatus,
-    GqlCWorkspaceProjectDetailQuery,
+    GqlCWorkspaceProjectDetailUpdatesSubscription,
+    GqlCWorkspaceProjectDetailUserFragment,
 } from '../../../web/graphql/generated';
 import {
     WorkspaceProjectDetailDeleteActivityDocument,
@@ -73,6 +75,7 @@ import {
     WorkspaceProjectDetailDocument,
     WorkspaceProjectDetailTimerStartDocument,
     WorkspaceProjectDetailTimerStopDocument,
+    WorkspaceProjectDetailUpdatesDocument,
     WorkspaceProjectDetailUpsertActivityDocument,
     WorkspaceProjectDetailUpsertProjectDocument,
     WorkspaceProjectDetailUpsertTaskDocument,
@@ -96,7 +99,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // the kanban card on `/workspace/projects`. Single-language, admin-only,
 // noindex. See `docs/features/projects-workspace.md`.
 
-type WorkspaceProjectDetailAdmin = NonNullable<NonNullable<GqlCWorkspaceProjectDetailQuery['currentSession']['user']>['admin']>;
+type WorkspaceProjectDetailAdmin = NonNullable<GqlCWorkspaceProjectDetailUserFragment['admin']>;
 type ProjectRow = WorkspaceProjectDetailAdmin['project'];
 type TaskRow = ProjectRow['tasks'][number];
 type ActivityRow = ProjectRow['activities'][number];
@@ -304,11 +307,16 @@ function WorkspaceProjectDetail() {
     const data = Route.useLoaderData();
     const search = Route.useSearch();
     const navigate = Route.useNavigate();
-    const router = useRouter();
+    const { projectId } = Route.useParams();
     const tab: DetailTab = search.tab ?? 'overview';
-    const onChanged = () => router.invalidate();
 
-    const admin = data.currentSession.user?.admin;
+    // Server-authoritative state: seed once from the route loader, then let
+    // the `userUpdates` subscription replace it on every server push. Every
+    // mutation on this page already calls `serverRuntime.publish.userUpdates`
+    // server-side, so we never need to re-fetch from the client.
+    // See `docs/architecture/state-synchronization.md` — Seed-and-Subscribe.
+    const user = useWorkspaceProjectDetailLiveUser(projectId, data.currentSession.user);
+    const admin = user?.admin;
     const project = admin?.project ?? null;
     const activeTimer = admin?.activeTimer ?? null;
 
@@ -353,12 +361,12 @@ function WorkspaceProjectDetail() {
 
     return (
         <main className="mx-auto w-full max-w-8xl px-4 py-8 leading-relaxed md:px-8 md:py-10 lg:px-12 lg:py-12">
-            <ProjectTitleBlock project={project} locale={locale} onChanged={onChanged} />
+            <ProjectTitleBlock project={project} locale={locale} />
 
             <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
                 {/* Main content column */}
                 <GlassCard className="p-5 sm:p-6 lg:p-8">
-                    <ProjectDescription project={project} locale={locale} onChanged={onChanged} />
+                    <ProjectDescription project={project} locale={locale} />
 
                     <nav
                         className="mt-6 flex flex-wrap gap-x-1 gap-y-1 border-b border-border/60"
@@ -391,54 +399,76 @@ function WorkspaceProjectDetail() {
 
                     <div className="mt-6">
                         {tab === 'overview' ? (
-                            <OverviewSection
-                                project={project}
-                                pinnedLinks={pinnedLinks}
-                                pinnedFiles={pinnedFiles}
-                                locale={locale}
-                                onChanged={onChanged}
-                            />
+                            <OverviewSection project={project} pinnedLinks={pinnedLinks} pinnedFiles={pinnedFiles} locale={locale} />
                         ) : null}
-                        {tab === 'tasks' ? (
-                            <TasksSection tasks={project.tasks} projectId={project.projectId} locale={locale} onChanged={onChanged} />
-                        ) : null}
+                        {tab === 'tasks' ? <TasksSection tasks={project.tasks} projectId={project.projectId} locale={locale} /> : null}
                         {tab === 'activity' ? (
                             <ActivitySection
                                 activities={project.activities}
                                 tasks={project.tasks}
                                 projectId={project.projectId}
                                 locale={locale}
-                                onChanged={onChanged}
                             />
                         ) : null}
-                        {tab === 'notes' ? <NotesSection project={project} locale={locale} onChanged={onChanged} /> : null}
-                        {tab === 'links' ? (
-                            <LinksSection links={project.links} projectId={project.projectId} locale={locale} onChanged={onChanged} />
-                        ) : null}
-                        {tab === 'files' ? (
-                            <FilesSection files={project.files} projectId={project.projectId} locale={locale} onChanged={onChanged} />
-                        ) : null}
+                        {tab === 'notes' ? <NotesSection project={project} locale={locale} /> : null}
+                        {tab === 'links' ? <LinksSection links={project.links} projectId={project.projectId} locale={locale} /> : null}
+                        {tab === 'files' ? <FilesSection files={project.files} projectId={project.projectId} locale={locale} /> : null}
                     </div>
                 </GlassCard>
 
                 {/* Right rail — sticky on lg+, stacks under content on mobile (grid handles
                     the stacking; the rail itself doesn't try to be sticky on mobile). */}
                 <div className="lg:sticky lg:top-24">
-                    <ProjectRail project={project} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
+                    <ProjectRail project={project} activeTimer={activeTimer} locale={locale} />
                 </div>
             </div>
         </main>
     );
 }
 
+// Seed-and-Subscribe: the route loader provides the initial `user`, then the
+// `userUpdates` subscription replaces it with the same fragment shape on every
+// server push. Imperative URQL — not `useSubscription` — for the same reason
+// `useChatLiveUpdates.tsx` does: URQL's declarative hook can deliver each event
+// more than once under concurrent React. See `docs/architecture/state-synchronization.md`.
+function useWorkspaceProjectDetailLiveUser(
+    projectId: string,
+    seed: GqlCWorkspaceProjectDetailUserFragment | null | undefined,
+): GqlCWorkspaceProjectDetailUserFragment | null | undefined {
+    const [user, setUser] = useState(seed);
+
+    // Adopt the fresh seed when navigating between sibling projects — the
+    // route loader runs again, but the component instance may survive.
+    const lastProjectIdRef = useRef(projectId);
+    if (lastProjectIdRef.current !== projectId) {
+        lastProjectIdRef.current = projectId;
+        queueMicrotask(() => setUser(seed));
+    }
+
+    const client = useClient();
+    useEffect(() => {
+        const request = createRequest(WorkspaceProjectDetailUpdatesDocument, { projectId });
+        const operation = client.executeSubscription<GqlCWorkspaceProjectDetailUpdatesSubscription>(request);
+        const { unsubscribe } = pipe(
+            operation,
+            subscribe((result) => {
+                if (result.data) setUser(result.data.userUpdates);
+            }),
+        );
+        return unsubscribe;
+    }, [client, projectId]);
+
+    return user;
+}
+
 // ---------- Title block & rail ----------------------------------------------
 
-function ProjectTitleBlock({ project, locale, onChanged }: { project: ProjectRow; locale: Locale; onChanged: () => void }) {
+function ProjectTitleBlock({ project, locale }: { project: ProjectRow; locale: Locale }) {
     return (
         <header>
             <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">{project.title}</h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-                <ProjectStatusPill project={project} locale={locale} onChanged={onChanged} />
+                <ProjectStatusPill project={project} locale={locale} />
                 {project.sourceRequest ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/40 px-2.5 py-1 text-xs text-muted-foreground">
                         <MailIcon className="size-3" />
@@ -451,7 +481,7 @@ function ProjectTitleBlock({ project, locale, onChanged }: { project: ProjectRow
     );
 }
 
-function ProjectStatusPill({ project, locale, onChanged }: { project: ProjectRow; locale: Locale; onChanged: () => void }) {
+function ProjectStatusPill({ project, locale }: { project: ProjectRow; locale: Locale }) {
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertProjectDocument);
     const tint = PROJECT_STATUS_TINTS[project.status];
     return (
@@ -498,7 +528,6 @@ function ProjectStatusPill({ project, locale, onChanged }: { project: ProjectRow
                                 startedAt: project.startedAt,
                                 completedAt: project.completedAt,
                             });
-                            onChanged();
                         }}
                     >
                         {PROJECT_STATUS_LABELS[s][locale]}
@@ -509,17 +538,7 @@ function ProjectStatusPill({ project, locale, onChanged }: { project: ProjectRow
     );
 }
 
-function ProjectRail({
-    project,
-    activeTimer,
-    locale,
-    onChanged,
-}: {
-    project: ProjectRow;
-    activeTimer: ActiveTimer;
-    locale: Locale;
-    onChanged: () => void;
-}) {
+function ProjectRail({ project, activeTimer, locale }: { project: ProjectRow; activeTimer: ActiveTimer; locale: Locale }) {
     const router = useRouter();
     const [, del] = useMutation(WorkspaceProjectDetailDeleteProjectDocument);
 
@@ -530,7 +549,7 @@ function ProjectRail({
 
     return (
         <GlassCard className="p-5">
-            <RailTimerButton projectId={project.projectId} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
+            <RailTimerButton projectId={project.projectId} activeTimer={activeTimer} locale={locale} />
 
             <div className="mt-3 flex justify-end">
                 <DropdownMenu>
@@ -659,17 +678,7 @@ function RailSourceRequest({ sourceRequest, locale }: { sourceRequest: NonNullab
     );
 }
 
-function RailTimerButton({
-    projectId,
-    activeTimer,
-    locale,
-    onChanged,
-}: {
-    projectId: string;
-    activeTimer: ActiveTimer;
-    locale: Locale;
-    onChanged: () => void;
-}) {
+function RailTimerButton({ projectId, activeTimer, locale }: { projectId: string; activeTimer: ActiveTimer; locale: Locale }) {
     const [, start] = useMutation(WorkspaceProjectDetailTimerStartDocument);
     const [, stop] = useMutation(WorkspaceProjectDetailTimerStopDocument);
     const [busy, setBusy] = useState(false);
@@ -683,7 +692,6 @@ function RailTimerButton({
                     if (busy) return;
                     setBusy(true);
                     await stop({ activityId: activeTimer.activityId });
-                    onChanged();
                     setBusy(false);
                 }}
                 locale={locale}
@@ -698,7 +706,6 @@ function RailTimerButton({
             onClick={async () => {
                 setBusy(true);
                 await start({ projectId, taskId: null, title: null });
-                onChanged();
                 setBusy(false);
             }}
         >
@@ -732,7 +739,7 @@ function RailLiveTimer({ startedAt, onStop, locale }: { startedAt: string; onSto
 
 // ---------- Description -----------------------------------------------------
 
-function ProjectDescription({ project, locale, onChanged }: { project: ProjectRow; locale: Locale; onChanged: () => void }) {
+function ProjectDescription({ project, locale }: { project: ProjectRow; locale: Locale }) {
     const [editing, setEditing] = useState(false);
     if (editing) {
         return (
@@ -742,7 +749,6 @@ function ProjectDescription({ project, locale, onChanged }: { project: ProjectRo
                 onClose={() => setEditing(false)}
                 onSaved={() => {
                     setEditing(false);
-                    onChanged();
                 }}
             />
         );
@@ -796,13 +802,11 @@ function OverviewSection({
     pinnedLinks,
     pinnedFiles,
     locale,
-    onChanged,
 }: {
     project: ProjectRow;
     pinnedLinks: ReadonlyArray<LinkRow>;
     pinnedFiles: ReadonlyArray<FileRow>;
     locale: Locale;
-    onChanged: () => void;
 }) {
     // Top 3 open tasks — todo first, then doing, dueAt-nulls-last so the rows the user
     // is most likely to act on bubble up. Mirrors the "next concrete step" framing of
@@ -880,7 +884,7 @@ function OverviewSection({
                     <ul className="mt-3 flex flex-col gap-2">
                         {upNext.map((task) => (
                             <li key={task.taskId}>
-                                <OverviewUpNextRow task={task} projectId={project.projectId} locale={locale} onChanged={onChanged} />
+                                <OverviewUpNextRow task={task} projectId={project.projectId} locale={locale} />
                             </li>
                         ))}
                     </ul>
@@ -912,10 +916,10 @@ function OverviewSection({
                     <OverviewSectionHeader title={{ de: 'Angepinnt', en: 'Pinned' }[locale]} />
                     <div className="mt-3 flex flex-wrap gap-2">
                         {pinnedLinks.map((link) => (
-                            <LinkChip key={link.projectLinkId} link={link} locale={locale} onChanged={onChanged} />
+                            <LinkChip key={link.projectLinkId} link={link} locale={locale} />
                         ))}
                         {pinnedFiles.map((file) => (
-                            <FileChip key={file.projectFileId} file={file} locale={locale} onChanged={onChanged} />
+                            <FileChip key={file.projectFileId} file={file} locale={locale} />
                         ))}
                     </div>
                 </Reveal>
@@ -959,17 +963,7 @@ function OverviewSectionHeader({ title, action }: { title: string; action?: { la
     );
 }
 
-function OverviewUpNextRow({
-    task,
-    projectId,
-    locale,
-    onChanged,
-}: {
-    task: TaskRow;
-    projectId: string;
-    locale: Locale;
-    onChanged: () => void;
-}) {
+function OverviewUpNextRow({ task, projectId, locale }: { task: TaskRow; projectId: string; locale: Locale }) {
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
     const StatusIcon = task.status === 'doing' ? CircleDotIcon : SquareIcon;
     return (
@@ -990,7 +984,6 @@ function OverviewUpNextRow({
                         dueAt: task.dueAt,
                         completedAt: next === 'done' ? new Date().toISOString() : null,
                     });
-                    onChanged();
                 }}
             >
                 <StatusIcon className="size-4" />
@@ -1097,7 +1090,7 @@ function TotalWorkLabel({ totalWorkSec, activeTimer }: { totalWorkSec: number; a
     return <span>{formatDuration(totalWorkSec + live)}</span>;
 }
 
-function LinkChip({ link, locale, onChanged }: { link: LinkRow; locale: Locale; onChanged: () => void }) {
+function LinkChip({ link, locale }: { link: LinkRow; locale: Locale }) {
     const [, togglePin] = useMutation(WorkspaceProjectLinkTogglePinDocument);
     const label = link.label || link.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
     return (
@@ -1117,7 +1110,6 @@ function LinkChip({ link, locale, onChanged }: { link: LinkRow; locale: Locale; 
                 className="opacity-60 group-hover:opacity-100"
                 onClick={async () => {
                     await togglePin({ projectLinkId: link.projectLinkId });
-                    onChanged();
                 }}
             >
                 <PinOffIcon />
@@ -1126,7 +1118,7 @@ function LinkChip({ link, locale, onChanged }: { link: LinkRow; locale: Locale; 
     );
 }
 
-function FileChip({ file, locale, onChanged }: { file: FileRow; locale: Locale; onChanged: () => void }) {
+function FileChip({ file, locale }: { file: FileRow; locale: Locale }) {
     const [, togglePin] = useMutation(WorkspaceProjectFileTogglePinDocument);
     const label = file.label || file.fileUpload.filename;
     return (
@@ -1146,7 +1138,6 @@ function FileChip({ file, locale, onChanged }: { file: FileRow; locale: Locale; 
                 className="opacity-60 group-hover:opacity-100"
                 onClick={async () => {
                     await togglePin({ projectFileId: file.projectFileId });
-                    onChanged();
                 }}
             >
                 <PinOffIcon />
@@ -1157,17 +1148,7 @@ function FileChip({ file, locale, onChanged }: { file: FileRow; locale: Locale; 
 
 // --- Tasks tab ---------------------------------------------------------------
 
-function TasksSection({
-    tasks,
-    projectId,
-    locale,
-    onChanged,
-}: {
-    tasks: ReadonlyArray<TaskRow>;
-    projectId: string;
-    locale: Locale;
-    onChanged: () => void;
-}) {
+function TasksSection({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskRow>; projectId: string; locale: Locale }) {
     const [adding, setAdding] = useState(false);
     return (
         <section>
@@ -1187,7 +1168,6 @@ function TasksSection({
                     onClose={() => setAdding(false)}
                     onSaved={() => {
                         setAdding(false);
-                        onChanged();
                     }}
                 />
             ) : null}
@@ -1202,7 +1182,7 @@ function TasksSection({
                         <ul className="mt-2 flex flex-col gap-1">
                             {bucket.map((task) => (
                                 <li key={task.taskId} data-row-id={task.taskId}>
-                                    <TaskRow task={task} projectId={projectId} locale={locale} onChanged={onChanged} />
+                                    <TaskRow task={task} projectId={projectId} locale={locale} />
                                 </li>
                             ))}
                         </ul>
@@ -1221,7 +1201,7 @@ function TasksSection({
     );
 }
 
-function TaskRow({ task, projectId, locale, onChanged }: { task: TaskRow; projectId: string; locale: Locale; onChanged: () => void }) {
+function TaskRow({ task, projectId, locale }: { task: TaskRow; projectId: string; locale: Locale }) {
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
     const [, del] = useMutation(WorkspaceProjectDetailDeleteTaskDocument);
     const [editing, setEditing] = useState(false);
@@ -1236,7 +1216,6 @@ function TaskRow({ task, projectId, locale, onChanged }: { task: TaskRow; projec
                 onClose={() => setEditing(false)}
                 onSaved={() => {
                     setEditing(false);
-                    onChanged();
                 }}
             />
         );
@@ -1261,7 +1240,6 @@ function TaskRow({ task, projectId, locale, onChanged }: { task: TaskRow; projec
                         dueAt: task.dueAt,
                         completedAt: next === 'done' ? new Date().toISOString() : null,
                     });
-                    onChanged();
                 }}
             >
                 <StatusIcon className="size-4" />
@@ -1290,7 +1268,6 @@ function TaskRow({ task, projectId, locale, onChanged }: { task: TaskRow; projec
                     aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
                     onClick={async () => {
                         await del({ taskId: task.taskId });
-                        onChanged();
                     }}
                 >
                     <Trash2Icon />
@@ -1393,13 +1370,11 @@ function ActivitySection({
     tasks,
     projectId,
     locale,
-    onChanged,
 }: {
     activities: ReadonlyArray<ActivityRow>;
     tasks: ReadonlyArray<TaskRow>;
     projectId: string;
     locale: Locale;
-    onChanged: () => void;
 }) {
     const [adding, setAdding] = useState(false);
     const [editing, setEditing] = useState<ActivityRow | null>(null);
@@ -1454,7 +1429,6 @@ function ActivitySection({
                                             onClose={() => setEditing(null)}
                                             onSaved={() => {
                                                 setEditing(null);
-                                                onChanged();
                                             }}
                                         />
                                     ) : (
@@ -1464,7 +1438,6 @@ function ActivitySection({
                                             onEdit={() => setEditing(a)}
                                             onDelete={async () => {
                                                 await del({ activityId: a.activityId });
-                                                onChanged();
                                             }}
                                         />
                                     )}
@@ -1485,7 +1458,6 @@ function ActivitySection({
                         onClose={() => setAdding(false)}
                         onSaved={() => {
                             setAdding(false);
-                            onChanged();
                         }}
                     />
                 </div>
@@ -2011,7 +1983,7 @@ function ActivityForm({
 
 // --- Notes tab ---------------------------------------------------------------
 
-function NotesSection({ project, locale, onChanged }: { project: ProjectRow; locale: Locale; onChanged: () => void }) {
+function NotesSection({ project, locale }: { project: ProjectRow; locale: Locale }) {
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertProjectDocument);
     const [notes, setNotes] = useState(project.notes ?? '');
     const [saving, setSaving] = useState(false);
@@ -2046,7 +2018,6 @@ function NotesSection({ project, locale, onChanged }: { project: ProjectRow; loc
                             completedAt: project.completedAt,
                         });
                         setSaving(false);
-                        onChanged();
                     }}
                 >
                     {{ de: 'Speichern', en: 'Save' }[locale]}
@@ -2058,17 +2029,7 @@ function NotesSection({ project, locale, onChanged }: { project: ProjectRow; loc
 
 // --- Links tab ---------------------------------------------------------------
 
-function LinksSection({
-    links,
-    projectId,
-    locale,
-    onChanged,
-}: {
-    links: ReadonlyArray<LinkRow>;
-    projectId: string;
-    locale: Locale;
-    onChanged: () => void;
-}) {
+function LinksSection({ links, projectId, locale }: { links: ReadonlyArray<LinkRow>; projectId: string; locale: Locale }) {
     const [adding, setAdding] = useState(false);
     return (
         <section>
@@ -2087,7 +2048,6 @@ function LinksSection({
                     onClose={() => setAdding(false)}
                     onSaved={() => {
                         setAdding(false);
-                        onChanged();
                     }}
                 />
             ) : null}
@@ -2107,7 +2067,7 @@ function LinksSection({
                 <ul className="mt-3 flex flex-col gap-2">
                     {links.map((link) => (
                         <li key={link.projectLinkId} data-row-id={link.projectLinkId}>
-                            <LinkCard link={link} projectId={projectId} locale={locale} onChanged={onChanged} />
+                            <LinkCard link={link} projectId={projectId} locale={locale} />
                         </li>
                     ))}
                 </ul>
@@ -2116,7 +2076,7 @@ function LinksSection({
     );
 }
 
-function LinkCard({ link, projectId, locale, onChanged }: { link: LinkRow; projectId: string; locale: Locale; onChanged: () => void }) {
+function LinkCard({ link, projectId, locale }: { link: LinkRow; projectId: string; locale: Locale }) {
     const [, togglePin] = useMutation(WorkspaceProjectLinkTogglePinDocument);
     const [, del] = useMutation(WorkspaceProjectLinkDeleteDocument);
     const [editing, setEditing] = useState(false);
@@ -2129,7 +2089,6 @@ function LinkCard({ link, projectId, locale, onChanged }: { link: LinkRow; proje
                 onClose={() => setEditing(false)}
                 onSaved={() => {
                     setEditing(false);
-                    onChanged();
                 }}
             />
         );
@@ -2154,7 +2113,6 @@ function LinkCard({ link, projectId, locale, onChanged }: { link: LinkRow; proje
                     aria-label={link.pinned ? { de: 'Lösen', en: 'Unpin' }[locale] : { de: 'Anpinnen', en: 'Pin' }[locale]}
                     onClick={async () => {
                         await togglePin({ projectLinkId: link.projectLinkId });
-                        onChanged();
                     }}
                 >
                     {link.pinned ? <PinOffIcon /> : <PinIcon />}
@@ -2173,7 +2131,6 @@ function LinkCard({ link, projectId, locale, onChanged }: { link: LinkRow; proje
                     aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
                     onClick={async () => {
                         await del({ projectLinkId: link.projectLinkId });
-                        onChanged();
                     }}
                 >
                     <Trash2Icon />
@@ -2260,17 +2217,7 @@ function LinkForm({
 
 // --- Files tab ---------------------------------------------------------------
 
-function FilesSection({
-    files,
-    projectId,
-    locale,
-    onChanged,
-}: {
-    files: ReadonlyArray<FileRow>;
-    projectId: string;
-    locale: Locale;
-    onChanged: () => void;
-}) {
+function FilesSection({ files, projectId, locale }: { files: ReadonlyArray<FileRow>; projectId: string; locale: Locale }) {
     const [adding, setAdding] = useState(false);
     // Single dialog instance + open/index lifted here so arrow-key navigation
     // walks every file on the tab, mirroring how `ChatMessageUser` hosts the
@@ -2299,7 +2246,6 @@ function FilesSection({
                     onClose={() => setAdding(false)}
                     onSaved={() => {
                         setAdding(false);
-                        onChanged();
                     }}
                 />
             ) : null}
@@ -2322,7 +2268,6 @@ function FilesSection({
                             <FileCard
                                 file={file}
                                 locale={locale}
-                                onChanged={onChanged}
                                 onOpenPreview={() => {
                                     setPreviewIndex(index);
                                     setPreviewOpen(true);
@@ -2345,17 +2290,7 @@ function FilesSection({
     );
 }
 
-function FileCard({
-    file,
-    locale,
-    onChanged,
-    onOpenPreview,
-}: {
-    file: FileRow;
-    locale: Locale;
-    onChanged: () => void;
-    onOpenPreview: () => void;
-}) {
+function FileCard({ file, locale, onOpenPreview }: { file: FileRow; locale: Locale; onOpenPreview: () => void }) {
     const [, togglePin] = useMutation(WorkspaceProjectFileTogglePinDocument);
     const [, del] = useMutation(WorkspaceProjectFileDeleteDocument);
     // Image / markdown / text formats get an inline preview (same dialog the
@@ -2390,7 +2325,6 @@ function FileCard({
                     aria-label={file.pinned ? { de: 'Lösen', en: 'Unpin' }[locale] : { de: 'Anpinnen', en: 'Pin' }[locale]}
                     onClick={async () => {
                         await togglePin({ projectFileId: file.projectFileId });
-                        onChanged();
                     }}
                 >
                     {file.pinned ? <PinOffIcon /> : <PinIcon />}
@@ -2401,7 +2335,6 @@ function FileCard({
                     aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
                     onClick={async () => {
                         await del({ projectFileId: file.projectFileId });
-                        onChanged();
                     }}
                 >
                     <Trash2Icon />

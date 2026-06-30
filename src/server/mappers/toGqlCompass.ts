@@ -1,13 +1,14 @@
 import type { Compass } from '../db/schema';
 import type { GqlSAdminCompass } from '../graphql/generated';
 
-// Three text artifacts plus the synthesis bookkeeping. The `observations`
-// and `synthesisInProgress` fields on `AdminCompass` are resolved separately
-// — the parent shell returned here carries placeholders that the dedicated
-// field resolvers overwrite. `observations` is omitted because it takes
-// arguments and runs its own join; `synthesisInProgress` is omitted because
-// it is derived from pg-boss state, not the `Compass` row.
-export function toGqlCompass(row: Compass): Omit<GqlSAdminCompass, 'observations' | 'synthesisInProgress'> {
+// Three text artifacts plus the synthesis bookkeeping. Several `AdminCompass`
+// fields are resolved separately by the parent's field resolvers — `observations`
+// (parameterized join), `synthesisInProgress` (derived from pg-boss), and the
+// `interviews` / `interview` / `interviewPending` rails (their own queries) —
+// so they're all omitted from this shell mapper.
+export function toGqlCompass(
+    row: Compass,
+): Omit<GqlSAdminCompass, 'observations' | 'synthesisInProgress' | 'interviews' | 'interview' | 'interviewPending'> {
     return {
         summary: row.summary,
         prose: row.prose,

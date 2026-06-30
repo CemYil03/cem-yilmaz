@@ -1,29 +1,44 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import {
     BrainIcon,
     EyeOffIcon,
     InfoIcon,
+    MessageCircleQuestionIcon,
     MessageSquareTextIcon,
     RefreshCwIcon,
+    SendIcon,
     ShieldCheckIcon,
     UserRoundIcon,
     WavesIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useMemo, useEffect, useState } from 'react';
-import { useMutation } from 'urql';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createRequest, useClient, useMutation } from 'urql';
+import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
-import type { GqlCCompassObservationCategory, GqlCWorkspaceCompassPageQuery } from '../../../web/graphql/generated';
+import type {
+    GqlCCompassObservationCategory,
+    GqlCWorkspaceCompassInterviewSummaryFragment,
+    GqlCWorkspaceCompassInterviewWithMessagesFragment,
+    GqlCWorkspaceCompassPageUpdatesSubscription,
+    GqlCWorkspaceCompassPageUpdatesSubscriptionVariables,
+    GqlCWorkspaceCompassPageUserFragment,
+} from '../../../web/graphql/generated';
 import {
+    WorkspaceCompassInterviewEndDocument,
+    WorkspaceCompassInterviewMessageSendDocument,
+    WorkspaceCompassInterviewSkipDocument,
+    WorkspaceCompassInterviewStartDocument,
     WorkspaceCompassObservationDismissDocument,
     WorkspaceCompassPageDocument,
+    WorkspaceCompassPageUpdatesDocument,
     WorkspaceCompassSynthesizeRequestDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
@@ -39,13 +54,15 @@ import { localeFromParam } from '../../../web/utils/locale';
 // Only the `summary` artifact crosses back into the personal-assistant prompt
 // — see `docs/features/compass.md`.
 //
-// Data flow follows the standard workspace pattern: filter state lives in the
-// URL via `validateSearch`, the loader sees those filters through
-// `loaderDeps`, and `routeLoaderGraphqlClient` does the fetch server-side so
-// the first paint already carries filtered data. Mutations call
-// `router.invalidate()` to re-run the loader rather than imperatively
-// refetching. Reloading the page keeps the user's filter view; chip clicks
-// produce shareable URLs.
+// Data flow: filter state lives in the URL via `validateSearch`, the loader
+// sees those filters through `loaderDeps`, and `routeLoaderGraphqlClient`
+// does the fetch server-side so the first paint already carries filtered
+// data. The loader payload then seeds a `useState` that the
+// `userUpdates` subscription replaces on every server push — both the
+// dismissal mutation and the background synthesis job publish to that
+// stream, so the page never needs to poll or invalidate. Reloading the page
+// keeps the user's filter view; chip clicks produce shareable URLs. See
+// `docs/architecture/state-synchronization.md` — Seed-and-Subscribe.
 
 const pageTitle = { de: 'Kompass', en: 'Compass' };
 const pageDescription = {
@@ -55,18 +72,25 @@ const pageDescription = {
 
 const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
-type CompassQueryData = NonNullable<NonNullable<GqlCWorkspaceCompassPageQuery['currentSession']['user']>['admin']>;
+type CompassQueryData = NonNullable<GqlCWorkspaceCompassPageUserFragment['admin']>;
 type CompassData = CompassQueryData['compass'];
 type ObservationRow = CompassData['observations'][number];
-type CompassTab = 'summary' | 'prose' | 'psychology';
+type InterviewSummary = GqlCWorkspaceCompassInterviewSummaryFragment;
+type InterviewWithMessages = GqlCWorkspaceCompassInterviewWithMessagesFragment;
+type CompassTab = 'summary' | 'prose' | 'psychology' | 'interviews';
 
 const OBSERVATION_CATEGORIES = ['factual', 'behavioral', 'psychological'] as const satisfies ReadonlyArray<GqlCCompassObservationCategory>;
+const COMPASS_TABS = ['summary', 'prose', 'psychology', 'interviews'] as const satisfies ReadonlyArray<CompassTab>;
 
 // `category` is absent when "all" is selected — one canonical URL per state.
 // `includeDismissed` is absent when false for the same reason.
+// `tab` is absent when the default `summary` tab is active; `interviewId`
+// rides alongside `tab=interviews` when a specific interview is open.
 const compassSearchSchema = z.object({
     category: z.enum(OBSERVATION_CATEGORIES).optional(),
     includeDismissed: z.boolean().optional(),
+    tab: z.enum(COMPASS_TABS).optional(),
+    interviewId: z.string().uuid().optional(),
 });
 
 type CompassSearch = z.infer<typeof compassSearchSchema>;
@@ -101,12 +125,18 @@ function WorkspaceCompassPage() {
     const locale = useLocale();
     const data = Route.useLoaderData();
     const search = Route.useSearch();
-    const router = useRouter();
     const filter: ObservationFilter = search.category ?? 'all';
     const includeDismissed = search.includeDismissed ?? false;
-    const invalidate = () => router.invalidate();
+    const activeTab: CompassTab = search.tab ?? 'summary';
+    const activeInterviewId = search.interviewId ?? null;
 
-    const compass = data.currentSession.user?.admin?.compass;
+    // Server-authoritative state: seed once from the route loader, then let
+    // the `userUpdates` subscription replace it on every server push. The
+    // synthesis job publishes `userUpdates` on completion, so the page never
+    // needs to poll. See `docs/architecture/state-synchronization.md` —
+    // Seed-and-Subscribe.
+    const user = useWorkspaceCompassPageLiveUser({ category: search.category ?? null, includeDismissed }, data.currentSession.user);
+    const compass = user?.admin?.compass;
     if (!compass) return <WorkspaceUnauthorized locale={locale} />;
 
     return (
@@ -115,26 +145,31 @@ function WorkspaceCompassPage() {
                 <p className="max-w-2xl text-base text-muted-foreground">{pageDescription[locale]}</p>
             </header>
 
-            <SynthesisHero compass={compass} locale={locale} onSynthesized={invalidate} />
-            <ObservationsSection
-                observations={compass.observations}
-                filter={filter}
-                includeDismissed={includeDismissed}
-                locale={locale}
-                onChanged={invalidate}
-            />
+            <SynthesisHero compass={compass} locale={locale} activeTab={activeTab} />
+
+            {activeTab === 'interviews' ? (
+                <InterviewsSection compass={compass} locale={locale} activeInterviewId={activeInterviewId} />
+            ) : (
+                <ObservationsSection
+                    observations={compass.observations}
+                    filter={filter}
+                    includeDismissed={includeDismissed}
+                    locale={locale}
+                />
+            )}
         </main>
     );
 }
 
 // --- Synthesis hero ---------------------------------------------------------
 
-// Three artifacts in a tab strip. Summary first because it's the one fed
-// back to the agent — Cem should see it before reading further. The
-// firewall is signposted on the psych tab so the meta-meaning ("this is
-// private to me") is part of the layout, not a buried explanation.
-function SynthesisHero({ compass, locale, onSynthesized }: { compass: CompassData; locale: Locale; onSynthesized: () => void }) {
-    const [tab, setTab] = useState<CompassTab>('summary');
+// Synthesis hero — three artifact tabs plus the new Interviews tab. The
+// synthesis card itself only renders for the three artifact tabs; the
+// Interviews tab's body lives below the hero (see `InterviewsSection`).
+// Summary first because it's the one fed back to the agent — Cem should
+// see it before reading further. The firewall is signposted on the psych
+// tab so the meta-meaning ("this is private to me") is part of the layout.
+function SynthesisHero({ compass, locale, activeTab }: { compass: CompassData; locale: Locale; activeTab: CompassTab }) {
     const [{ fetching: enqueuing }, synthesize] = useMutation(WorkspaceCompassSynthesizeRequestDocument);
 
     const isEmpty = !compass.summary && !compass.prose && !compass.psychology;
@@ -142,20 +177,14 @@ function SynthesisHero({ compass, locale, onSynthesized }: { compass: CompassDat
     // backend exposes the real liveness via `synthesisInProgress` (derived
     // from pg-boss), so the button reflects "actually running" rather than
     // a hand-tuned timeout. We OR `enqueuing` so the spinner appears the
-    // instant the user clicks — before the next loader refresh confirms
-    // the queued state.
+    // instant the user clicks — before the server's `userUpdates` push
+    // confirms the queued state.
     const running = compass.synthesisInProgress || enqueuing;
-
-    // While a synthesis is queued/active, poll the route loader so the page
-    // picks up the new artifacts the moment the job finishes. The effect
-    // self-cancels as soon as `running` flips back to `false`.
-    useEffect(() => {
-        if (!running) return;
-        const id = setInterval(() => {
-            onSynthesized();
-        }, 1500);
-        return () => clearInterval(id);
-    }, [running, onSynthesized]);
+    const isInterviewsTab = activeTab === 'interviews';
+    // When the Interviews tab is active, narrow the artifact body to one of
+    // the three "real" artifacts so type inference holds. The Interviews
+    // body renders in `InterviewsSection`, not here.
+    const artifactTab: 'summary' | 'prose' | 'psychology' = isInterviewsTab ? 'summary' : activeTab;
 
     const synthesizedLabel = compass.synthesizedAt
         ? formatDistanceToNow(parseISO(compass.synthesizedAt as unknown as string), {
@@ -167,61 +196,70 @@ function SynthesisHero({ compass, locale, onSynthesized }: { compass: CompassDat
     return (
         <section aria-label={{ de: 'Synthese', en: 'Synthesis' }[locale]}>
             <div className="flex flex-wrap items-end justify-between gap-4">
-                <TabStrip locale={locale} active={tab} onChange={setTab} />
-                <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-                    {synthesizedLabel ? (
-                        <span>
-                            {{ de: 'Synthetisiert', en: 'Synthesized' }[locale]} · {synthesizedLabel}
-                        </span>
-                    ) : (
-                        <span>{{ de: 'Noch nicht synthetisiert', en: 'Not synthesized yet' }[locale]}</span>
-                    )}
-                    {compass.observationsSinceSynthesis > 0 ? (
-                        <span className="text-amber-600 dark:text-amber-400">
-                            {compass.observationsSinceSynthesis}{' '}
-                            {compass.observationsSinceSynthesis === 1
-                                ? { de: 'neue Beobachtung', en: 'new observation' }[locale]
-                                : { de: 'neue Beobachtungen', en: 'new observations' }[locale]}
-                        </span>
-                    ) : null}
-                </div>
+                <TabStrip locale={locale} active={activeTab} hasPendingInterview={compass.interviewPending != null} />
+                {!isInterviewsTab ? (
+                    <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
+                        {synthesizedLabel ? (
+                            <span>
+                                {{ de: 'Synthetisiert', en: 'Synthesized' }[locale]} · {synthesizedLabel}
+                            </span>
+                        ) : (
+                            <span>{{ de: 'Noch nicht synthetisiert', en: 'Not synthesized yet' }[locale]}</span>
+                        )}
+                        {compass.observationsSinceSynthesis > 0 ? (
+                            <span className="text-amber-600 dark:text-amber-400">
+                                {compass.observationsSinceSynthesis}{' '}
+                                {compass.observationsSinceSynthesis === 1
+                                    ? { de: 'neue Beobachtung', en: 'new observation' }[locale]
+                                    : { de: 'neue Beobachtungen', en: 'new observations' }[locale]}
+                            </span>
+                        ) : null}
+                    </div>
+                ) : null}
             </div>
 
-            <GlassCard className="mt-4 px-6 py-6 md:px-8 md:py-7">
-                {isEmpty ? <EmptyState locale={locale} /> : <ArtifactBody tab={tab} compass={compass} locale={locale} />}
+            {!isInterviewsTab ? (
+                <GlassCard className="mt-4 px-6 py-6 md:px-8 md:py-7">
+                    {isEmpty ? <EmptyState locale={locale} /> : <ArtifactBody tab={artifactTab} compass={compass} locale={locale} />}
 
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4">
-                    <TabExplainer tab={tab} locale={locale} />
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={running}
-                        onClick={async () => {
-                            const result = await synthesize({});
-                            // Refresh once on enqueue so `synthesisInProgress`
-                            // flips to `true` from the loader; the poll
-                            // effect above keeps the page fresh from there.
-                            if (result.data?.admin.compassSynthesizeRequest.success) {
-                                onSynthesized();
-                            }
-                        }}
-                    >
-                        <RefreshCwIcon className={cn(running && 'animate-spin')} />
-                        {running
-                            ? { de: 'Wird verarbeitet…', en: 'Processing…' }[locale]
-                            : { de: 'Jetzt neu synthetisieren', en: 'Re-synthesize now' }[locale]}
-                    </Button>
-                </div>
-            </GlassCard>
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4">
+                        <TabExplainer tab={artifactTab} locale={locale} />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={running}
+                            onClick={async () => {
+                                await synthesize({});
+                                // The server publishes `userUpdates` from the
+                                // synthesis command on enqueue and from the
+                                // background job on completion — both flow into
+                                // the seed-and-subscribe hook without any
+                                // imperative refresh from the client.
+                            }}
+                        >
+                            <RefreshCwIcon className={cn(running && 'animate-spin')} />
+                            {running
+                                ? { de: 'Wird verarbeitet…', en: 'Processing…' }[locale]
+                                : { de: 'Jetzt neu synthetisieren', en: 'Re-synthesize now' }[locale]}
+                        </Button>
+                    </div>
+                </GlassCard>
+            ) : null}
         </section>
     );
 }
 
-function TabStrip({ locale, active, onChange }: { locale: Locale; active: CompassTab; onChange: (tab: CompassTab) => void }) {
-    const tabs: { id: CompassTab; label: { de: string; en: string }; icon: LucideIcon }[] = [
+function TabStrip({ locale, active, hasPendingInterview }: { locale: Locale; active: CompassTab; hasPendingInterview: boolean }) {
+    const tabs: { id: CompassTab; label: { de: string; en: string }; icon: LucideIcon; badge?: boolean }[] = [
         { id: 'summary', label: { de: 'Kurz', en: 'Summary' }, icon: ShieldCheckIcon },
         { id: 'prose', label: { de: 'Porträt', en: 'Portrait' }, icon: UserRoundIcon },
         { id: 'psychology', label: { de: 'Psychologisch', en: 'Psychological' }, icon: WavesIcon },
+        {
+            id: 'interviews',
+            label: { de: 'Interviews', en: 'Interviews' },
+            icon: MessageCircleQuestionIcon,
+            badge: hasPendingInterview,
+        },
     ];
     return (
         <div
@@ -233,12 +271,21 @@ function TabStrip({ locale, active, onChange }: { locale: Locale; active: Compas
                 const isActive = active === t.id;
                 const Icon = t.icon;
                 return (
-                    <button
+                    <Link
                         key={t.id}
-                        type="button"
+                        to="/{-$locale}/workspace/compass"
+                        from="/{-$locale}/workspace/compass"
+                        // Drop `tab` on the default `summary` view to keep the
+                        // canonical URL clean; drop `interviewId` whenever
+                        // the user navigates away from the Interviews tab.
+                        search={(prev: CompassSearch): CompassSearch => ({
+                            ...prev,
+                            tab: t.id === 'summary' ? undefined : t.id,
+                            interviewId: t.id === 'interviews' ? prev.interviewId : undefined,
+                        })}
+                        replace
                         role="tab"
                         aria-selected={isActive}
-                        onClick={() => onChange(t.id)}
                         className={cn(
                             'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                             isActive
@@ -248,14 +295,15 @@ function TabStrip({ locale, active, onChange }: { locale: Locale; active: Compas
                     >
                         <Icon className="size-3.5" />
                         {t.label[locale]}
-                    </button>
+                        {t.badge ? <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" /> : null}
+                    </Link>
                 );
             })}
         </div>
     );
 }
 
-function ArtifactBody({ tab, compass, locale }: { tab: CompassTab; compass: CompassData; locale: Locale }) {
+function ArtifactBody({ tab, compass, locale }: { tab: 'summary' | 'prose' | 'psychology'; compass: CompassData; locale: Locale }) {
     const content = compass[tab];
     if (!content || !content.trim()) {
         return (
@@ -272,8 +320,8 @@ function ArtifactBody({ tab, compass, locale }: { tab: CompassTab; compass: Comp
     return <AssistantMarkdown text={content} className="text-base leading-relaxed" />;
 }
 
-function TabExplainer({ tab, locale }: { tab: CompassTab; locale: Locale }) {
-    const explainers: Record<CompassTab, { de: string; en: string; tone: 'fed' | 'private' }> = {
+function TabExplainer({ tab, locale }: { tab: 'summary' | 'prose' | 'psychology'; locale: Locale }) {
+    const explainers: Record<'summary' | 'prose' | 'psychology', { de: string; en: string; tone: 'fed' | 'private' }> = {
         summary: {
             de: 'Dieser Text wird in den Systemprompt deines persönlichen Assistenten injiziert.',
             en: "This text is injected into your personal assistant's system prompt.",
@@ -330,13 +378,11 @@ function ObservationsSection({
     filter,
     includeDismissed,
     locale,
-    onChanged,
 }: {
     observations: ReadonlyArray<ObservationRow>;
     filter: ObservationFilter;
     includeDismissed: boolean;
     locale: Locale;
-    onChanged: () => void;
 }) {
     return (
         <section className="mt-12" aria-label={{ de: 'Beobachtungen', en: 'Observations' }[locale]}>
@@ -371,7 +417,7 @@ function ObservationsSection({
             ) : (
                 <ul className="mt-6 flex flex-col gap-3">
                     {observations.map((obs) => (
-                        <ObservationCard key={obs.observationId} observation={obs} locale={locale} onChanged={onChanged} />
+                        <ObservationCard key={obs.observationId} observation={obs} locale={locale} />
                     ))}
                 </ul>
             )}
@@ -455,7 +501,7 @@ function FilterChips({ active, locale }: { active: ObservationFilter; locale: Lo
     );
 }
 
-function ObservationCard({ observation, locale, onChanged }: { observation: ObservationRow; locale: Locale; onChanged: () => void }) {
+function ObservationCard({ observation, locale }: { observation: ObservationRow; locale: Locale }) {
     const [, dismiss] = useMutation(WorkspaceCompassObservationDismissDocument);
     const [busy, setBusy] = useState(false);
     const isDismissed = !!observation.dismissedAt;
@@ -513,7 +559,6 @@ function ObservationCard({ observation, locale, onChanged }: { observation: Obse
                                 onClick={async () => {
                                     setBusy(true);
                                     await dismiss({ observationId: observation.observationId });
-                                    onChanged();
                                     setBusy(false);
                                 }}
                             >
@@ -548,5 +593,480 @@ function ConfidenceMeter({ confidence, locale }: { confidence: number; locale: L
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
+    );
+}
+
+// Seed-and-Subscribe: the route loader provides the initial `user`, then the
+// `userUpdates` subscription replaces it with the same fragment shape on every
+// server push. Imperative URQL — not `useSubscription` — for the same reason
+// `useChatLiveUpdates.tsx` does: URQL's declarative hook can deliver each event
+// more than once under concurrent React. See `docs/architecture/state-synchronization.md`.
+function useWorkspaceCompassPageLiveUser(
+    variables: GqlCWorkspaceCompassPageUpdatesSubscriptionVariables,
+    seed: GqlCWorkspaceCompassPageUserFragment | null | undefined,
+): GqlCWorkspaceCompassPageUserFragment | null | undefined {
+    const [user, setUser] = useState(seed);
+
+    // Adopt the fresh seed when the filter changes — the route loader re-runs
+    // and hands us a new payload before the new subscription has connected.
+    const variablesKey = `${variables.category ?? ''}:${variables.includeDismissed ?? false}`;
+    const lastKeyRef = useRef(variablesKey);
+    if (lastKeyRef.current !== variablesKey) {
+        lastKeyRef.current = variablesKey;
+        queueMicrotask(() => setUser(seed));
+    }
+
+    const client = useClient();
+    useEffect(() => {
+        const request = createRequest(WorkspaceCompassPageUpdatesDocument, variables);
+        const operation = client.executeSubscription<GqlCWorkspaceCompassPageUpdatesSubscription>(request);
+        const { unsubscribe } = pipe(
+            operation,
+            subscribe((result) => {
+                if (result.data) setUser(result.data.userUpdates);
+            }),
+        );
+        return unsubscribe;
+    }, [client, variablesKey]);
+
+    return user;
+}
+
+// --- Interviews tab ---------------------------------------------------------
+//
+// Renders one of three states:
+//
+//   - There is no active interview and no open `pending` row →
+//     a short empty state explaining how interviews work.
+//   - There is an open interview (`pending` or `in_progress`) and the URL
+//     does NOT pin one via `?interviewId=` → a prominent "waiting" card
+//     with Start / Skip (pending) or Resume / End (in_progress).
+//   - The URL pins a specific interview via `?interviewId=` → the transcript
+//     + composer for that interview (live for in-progress, read-only when
+//     completed/skipped).
+//
+// Past interviews always render as a quiet list beneath. See
+// `docs/features/compass.md` ("Psychological-interview agent").
+function InterviewsSection({
+    compass,
+    locale,
+    activeInterviewId,
+}: {
+    compass: CompassData;
+    locale: Locale;
+    activeInterviewId: string | null;
+}) {
+    const interviews = compass.interviews;
+    const pending = compass.interviewPending;
+    // The URL pin overrides everything — when set, show that interview's view.
+    // Otherwise prefer the open interview if there is one. The list rail
+    // shows every past interview so the user can deep-link backwards.
+    const focusedFromList = activeInterviewId ? (interviews.find((i) => i.interviewId === activeInterviewId) ?? null) : null;
+    const focusedFromPending = activeInterviewId && pending?.interviewId === activeInterviewId ? pending : null;
+    // Past-interview rows in `interviews` are summaries (no messages); the
+    // pending one carries messages. When the user clicked a past row we
+    // surface a thin variant that has `messages: []` — the InterviewView
+    // handles that with an empty-transcript fallback.
+    const focusedInterview: InterviewWithMessages | null = focusedFromPending
+        ? focusedFromPending
+        : focusedFromList
+          ? { ...focusedFromList, messages: [] }
+          : null;
+
+    return (
+        <section className="mt-12" aria-label={{ de: 'Interviews', en: 'Interviews' }[locale]}>
+            <div>
+                <h2 className="text-xl md:text-2xl font-semibold tracking-tight">
+                    {{ de: 'Psychologische Interviews', en: 'Psychological interviews' }[locale]}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
+                    {
+                        {
+                            de: 'Wöchentlich stellt dir ein Interviewer-Agent gezielte Fragen, um Lücken im Kompass zu füllen. Deine Antworten landen — wie alle Beobachtungen — in der Synthese.',
+                            en: "Once a week an interviewer agent asks you a handful of directed questions to fill in gaps the passive analyzer can't see. Your replies feed the same observations / synthesis pipeline as regular chats.",
+                        }[locale]
+                    }
+                </p>
+            </div>
+
+            {focusedInterview ? (
+                <InterviewView interview={focusedInterview} locale={locale} />
+            ) : pending ? (
+                <PendingInterviewCard interview={pending} locale={locale} />
+            ) : (
+                <NoInterviewCard locale={locale} hasHistory={interviews.length > 0} />
+            )}
+
+            <PastInterviewsRail interviews={interviews} locale={locale} activeInterviewId={activeInterviewId} />
+        </section>
+    );
+}
+
+function NoInterviewCard({ locale, hasHistory }: { locale: Locale; hasHistory: boolean }) {
+    return (
+        <GlassCard className="mt-6 px-6 py-8 text-center">
+            <div className="mx-auto max-w-md flex flex-col items-center gap-3">
+                <div className="rounded-full bg-primary/10 p-3 text-primary">
+                    <MessageCircleQuestionIcon className="size-6" />
+                </div>
+                <h3 className="font-semibold text-foreground">
+                    {hasHistory
+                        ? { de: 'Kein laufendes Interview', en: 'No interview waiting' }[locale]
+                        : { de: 'Noch kein Interview', en: 'No interviews yet' }[locale]}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                    {
+                        {
+                            de: 'Das nächste planmäßige Interview erscheint hier automatisch, sobald der Wochen-Cron es einplant.',
+                            en: 'The next scheduled interview will surface here automatically when the weekly cron creates it.',
+                        }[locale]
+                    }
+                </p>
+            </div>
+        </GlassCard>
+    );
+}
+
+function PendingInterviewCard({ interview, locale }: { interview: InterviewWithMessages; locale: Locale }) {
+    const navigate = useNavigate();
+    const [, startMutation] = useMutation(WorkspaceCompassInterviewStartDocument);
+    const [, skipMutation] = useMutation(WorkspaceCompassInterviewSkipDocument);
+    const [, endMutation] = useMutation(WorkspaceCompassInterviewEndDocument);
+    const [busy, setBusy] = useState<'start' | 'skip' | 'end' | null>(null);
+
+    const dueAge = useMemo(
+        () =>
+            formatDistanceToNow(parseISO(interview.dueAt as unknown as string), {
+                addSuffix: true,
+                locale: DATE_FNS_LOCALE[locale],
+            }),
+        [interview.dueAt, locale],
+    );
+
+    const isPending = interview.status === 'pending';
+
+    return (
+        <GlassCard className="mt-6 px-6 py-6 md:px-8 md:py-7">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="flex flex-col gap-2 max-w-xl">
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                        {isPending
+                            ? { de: 'Interview wartet', en: 'Interview waiting' }[locale]
+                            : { de: 'Interview läuft', en: 'Interview in progress' }[locale]}
+                    </span>
+                    <h3 className="text-lg font-semibold tracking-tight">
+                        {isPending
+                            ? { de: 'Bereit, ein paar Fragen zu beantworten?', en: 'Ready for a few directed questions?' }[locale]
+                            : { de: 'Setze dein Interview fort', en: 'Resume your interview' }[locale]}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                        {isPending
+                            ? {
+                                  de: `Geplant ${dueAge}. Der Interviewer stellt 4–8 gezielte Fragen, fügt dem Kompass aber nur das hinzu, was er nicht ohnehin schon sieht.`,
+                                  en: `Scheduled ${dueAge}. The interviewer asks 4–8 directed questions and only adds to the compass what it doesn't already see.`,
+                              }[locale]
+                            : {
+                                  de: `Begonnen ${interview.startedAt ? formatDistanceToNow(parseISO(interview.startedAt as unknown as string), { addSuffix: true, locale: DATE_FNS_LOCALE[locale] }) : dueAge}.`,
+                                  en: `Started ${interview.startedAt ? formatDistanceToNow(parseISO(interview.startedAt as unknown as string), { addSuffix: true, locale: DATE_FNS_LOCALE[locale] }) : dueAge}.`,
+                              }[locale]}
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        variant="default"
+                        size="sm"
+                        disabled={busy != null}
+                        onClick={async () => {
+                            setBusy('start');
+                            if (isPending) {
+                                await startMutation({ interviewId: interview.interviewId });
+                            }
+                            await navigate({
+                                to: '/{-$locale}/workspace/compass',
+                                from: '/{-$locale}/workspace/compass',
+                                search: (prev: CompassSearch): CompassSearch => ({
+                                    ...prev,
+                                    tab: 'interviews',
+                                    interviewId: interview.interviewId,
+                                }),
+                                replace: true,
+                            });
+                            setBusy(null);
+                        }}
+                    >
+                        {isPending
+                            ? { de: 'Interview starten', en: 'Start interview' }[locale]
+                            : { de: 'Fortsetzen', en: 'Resume' }[locale]}
+                    </Button>
+                    {isPending ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={busy != null}
+                            onClick={async () => {
+                                setBusy('skip');
+                                await skipMutation({ interviewId: interview.interviewId });
+                                setBusy(null);
+                            }}
+                        >
+                            {{ de: 'Diese Woche überspringen', en: 'Skip this week' }[locale]}
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={busy != null}
+                            onClick={async () => {
+                                setBusy('end');
+                                await endMutation({ interviewId: interview.interviewId });
+                                setBusy(null);
+                            }}
+                        >
+                            {{ de: 'Beenden', en: 'End' }[locale]}
+                        </Button>
+                    )}
+                </div>
+            </div>
+        </GlassCard>
+    );
+}
+
+function InterviewView({ interview, locale }: { interview: InterviewWithMessages; locale: Locale }) {
+    const navigate = useNavigate();
+    const [{ fetching: sending }, sendMutation] = useMutation(WorkspaceCompassInterviewMessageSendDocument);
+    const [, startMutation] = useMutation(WorkspaceCompassInterviewStartDocument);
+    const [, endMutation] = useMutation(WorkspaceCompassInterviewEndDocument);
+    const [draft, setDraft] = useState('');
+    const transcriptRef = useRef<HTMLDivElement | null>(null);
+
+    const isActive = interview.status === 'pending' || interview.status === 'in_progress';
+    const messageCount = interview.messages.length;
+
+    // The page subscription replaces `interview.messages` on every server
+    // push. Scroll the transcript when the count grows.
+    useEffect(() => {
+        const el = transcriptRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+    }, [messageCount]);
+
+    // If the interview is still `pending` (the user navigated in via a deep
+    // link before clicking Start), transition it on mount so the agent's
+    // opener lands automatically.
+    useEffect(() => {
+        if (interview.status === 'pending') {
+            void startMutation({ interviewId: interview.interviewId });
+        }
+    }, [interview.interviewId, interview.status, startMutation]);
+
+    return (
+        <GlassCard className="mt-6 px-6 py-6 md:px-8 md:py-7">
+            <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border/40 pb-4">
+                <div>
+                    <h3 className="text-base font-semibold tracking-tight">
+                        {{ de: 'Interview', en: 'Interview' }[locale]} ·{' '}
+                        <span className="text-muted-foreground font-normal">
+                            {formatDistanceToNow(parseISO(interview.dueAt as unknown as string), {
+                                addSuffix: true,
+                                locale: DATE_FNS_LOCALE[locale],
+                            })}
+                        </span>
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        <InterviewStatusBadge status={interview.status} locale={locale} />
+                        {interview.observationCount > 0 ? (
+                            <>
+                                {' · '}
+                                {interview.observationCount}{' '}
+                                {interview.observationCount === 1
+                                    ? { de: 'Beobachtung', en: 'observation' }[locale]
+                                    : { de: 'Beobachtungen', en: 'observations' }[locale]}
+                            </>
+                        ) : null}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Link
+                        to="/{-$locale}/workspace/compass"
+                        from="/{-$locale}/workspace/compass"
+                        search={(prev: CompassSearch): CompassSearch => ({ ...prev, interviewId: undefined })}
+                        replace
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        {{ de: '← Zurück zur Liste', en: '← Back to list' }[locale]}
+                    </Link>
+                    {isActive ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                                await endMutation({ interviewId: interview.interviewId });
+                            }}
+                        >
+                            {{ de: 'Interview beenden', en: 'End interview' }[locale]}
+                        </Button>
+                    ) : null}
+                </div>
+            </header>
+
+            <div
+                ref={transcriptRef}
+                className="mt-4 flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2"
+                aria-label={{ de: 'Transkript', en: 'Transcript' }[locale]}
+            >
+                {messageCount === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                        {
+                            {
+                                de: 'Warte einen Moment — der Interviewer formuliert die erste Frage.',
+                                en: 'Hold on — the interviewer is composing the first question.',
+                            }[locale]
+                        }
+                    </p>
+                ) : (
+                    interview.messages.map((m) => (
+                        <div
+                            key={m.interviewMessageId}
+                            className={cn(
+                                'rounded-lg px-4 py-3 text-sm leading-relaxed',
+                                m.role === 'user' ? 'bg-primary/10 self-end max-w-[80%]' : 'bg-muted/60 self-start max-w-[80%]',
+                            )}
+                        >
+                            <AssistantMarkdown text={m.content} />
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {isActive ? (
+                <form
+                    className="mt-4 flex items-end gap-2 border-t border-border/40 pt-4"
+                    onSubmit={async (event) => {
+                        event.preventDefault();
+                        const trimmed = draft.trim();
+                        if (!trimmed || sending) return;
+                        setDraft('');
+                        await sendMutation({ interviewId: interview.interviewId, content: trimmed });
+                    }}
+                >
+                    <textarea
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        rows={2}
+                        placeholder={{ de: 'Deine Antwort…', en: 'Your reply…' }[locale]}
+                        className="flex-1 resize-none rounded-md border border-border/60 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onKeyDown={(event) => {
+                            // Submit on plain Enter, leave Shift+Enter for newlines.
+                            if (event.key === 'Enter' && !event.shiftKey) {
+                                event.preventDefault();
+                                event.currentTarget.form?.requestSubmit();
+                            }
+                        }}
+                    />
+                    <Button type="submit" size="sm" disabled={sending || !draft.trim()}>
+                        <SendIcon className="size-3.5" />
+                        {{ de: 'Senden', en: 'Send' }[locale]}
+                    </Button>
+                </form>
+            ) : (
+                <div className="mt-4 border-t border-border/40 pt-4 text-xs text-muted-foreground italic flex items-center justify-between">
+                    <span>
+                        {interview.status === 'completed'
+                            ? { de: 'Dieses Interview ist abgeschlossen.', en: 'This interview is complete.' }[locale]
+                            : { de: 'Dieses Interview wurde übersprungen.', en: 'This interview was skipped.' }[locale]}
+                    </span>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                            await navigate({
+                                to: '/{-$locale}/workspace/compass',
+                                from: '/{-$locale}/workspace/compass',
+                                search: (prev: CompassSearch): CompassSearch => ({ ...prev, interviewId: undefined }),
+                                replace: true,
+                            });
+                        }}
+                    >
+                        {{ de: 'Schließen', en: 'Close' }[locale]}
+                    </Button>
+                </div>
+            )}
+        </GlassCard>
+    );
+}
+
+function InterviewStatusBadge({ status, locale }: { status: InterviewSummary['status']; locale: Locale }) {
+    const label: { de: string; en: string } =
+        status === 'pending'
+            ? { de: 'Wartet', en: 'Pending' }
+            : status === 'in_progress'
+              ? { de: 'Läuft', en: 'In progress' }
+              : status === 'completed'
+                ? { de: 'Abgeschlossen', en: 'Completed' }
+                : { de: 'Übersprungen', en: 'Skipped' };
+    return <span>{label[locale]}</span>;
+}
+
+function PastInterviewsRail({
+    interviews,
+    locale,
+    activeInterviewId,
+}: {
+    interviews: ReadonlyArray<InterviewSummary>;
+    locale: Locale;
+    activeInterviewId: string | null;
+}) {
+    const past = interviews.filter((i) => i.status === 'completed' || i.status === 'skipped');
+    if (past.length === 0) return null;
+
+    return (
+        <section className="mt-10">
+            <h3 className="text-sm font-medium text-muted-foreground">{{ de: 'Frühere Interviews', en: 'Past interviews' }[locale]}</h3>
+            <ul className="mt-3 flex flex-col gap-2">
+                {past.map((i) => {
+                    const isActive = activeInterviewId === i.interviewId;
+                    return (
+                        <li key={i.interviewId}>
+                            <Link
+                                to="/{-$locale}/workspace/compass"
+                                from="/{-$locale}/workspace/compass"
+                                search={(prev: CompassSearch): CompassSearch => ({
+                                    ...prev,
+                                    tab: 'interviews',
+                                    interviewId: isActive ? undefined : i.interviewId,
+                                })}
+                                replace
+                                className={cn(
+                                    'flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm transition-colors',
+                                    isActive ? 'border-primary/40 bg-primary/5' : 'border-border/40 hover:border-border hover:bg-muted/40',
+                                )}
+                            >
+                                <span className="flex flex-col">
+                                    <span className="font-medium text-foreground">
+                                        {formatDistanceToNow(parseISO(i.dueAt as unknown as string), {
+                                            addSuffix: true,
+                                            locale: DATE_FNS_LOCALE[locale],
+                                        })}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        <InterviewStatusBadge status={i.status} locale={locale} />
+                                        {i.observationCount > 0 ? (
+                                            <>
+                                                {' · '}
+                                                {i.observationCount}{' '}
+                                                {i.observationCount === 1
+                                                    ? { de: 'Beobachtung', en: 'observation' }[locale]
+                                                    : { de: 'Beobachtungen', en: 'observations' }[locale]}
+                                            </>
+                                        ) : null}
+                                    </span>
+                                </span>
+                                <MessageSquareTextIcon className="size-4 text-muted-foreground" />
+                            </Link>
+                        </li>
+                    );
+                })}
+            </ul>
+        </section>
     );
 }

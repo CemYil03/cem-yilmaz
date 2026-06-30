@@ -33,6 +33,9 @@ src/server/jobs/
 ├── jobDefinitions.ts           Central registry (all jobs imported here)
 └── handlers/
     ├── staleSessionsCleanup.ts Example recurring job
+    ├── compassInterviewWeeklyDue.ts  Weekly cron — inserts a `pending` compass interview
+    ├── compassAnalyze.ts       Queued, per admin user message OR interview reply
+    ├── compassSynthesize.ts    Queued, threshold- or manually-triggered
     └── signupReminderSend.ts   Example queued job
 ```
 

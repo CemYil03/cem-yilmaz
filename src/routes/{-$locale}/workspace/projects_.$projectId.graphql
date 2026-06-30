@@ -1,126 +1,136 @@
 # Workspace project detail page operations. Co-located with
-# `/workspace/projects/$projectId`. The query is the single-project counterpart
-# to `WorkspaceProjectsPage` — it loads the same nested shape (tasks,
-# activities, source request) plus the new `links` / `files` surfaces and the
-# offer fields. Mutations are listed beneath it; the kanban board on
-# `/workspace/projects` mutates through its own neighbouring file so the two
-# pages stay independently invalidatable.
+# `/workspace/projects/$projectId`. The page's read shape lives in the
+# `WorkspaceProjectDetailUser` fragment so both the route loader query and
+# the live `userUpdates` subscription deliver the exact same payload —
+# mutations no longer trigger `router.invalidate()`; the server pushes the
+# new state over SSE and the page replaces its `useState` with the
+# subscription payload. See `docs/architecture/state-synchronization.md`.
+
+fragment WorkspaceProjectDetailUser on User {
+    admin {
+        activeTimer {
+            activityId
+            projectId
+            taskId
+            kind
+            title
+            occurredAt
+            startedAt
+            endedAt
+            durationSec
+        }
+        project(projectId: $projectId) {
+            projectId
+            title
+            description
+            notes
+            status
+            position
+            startedAt
+            completedAt
+            createdAt
+            updatedAt
+            totalWorkSec
+            sourceRequest {
+                projectRequestId
+                name
+                email
+                company
+                projectType
+                description
+                budget
+                timeline
+            }
+            tasks {
+                taskId
+                projectId
+                title
+                notes
+                status
+                position
+                dueAt
+                completedAt
+            }
+            activities {
+                activityId
+                projectId
+                taskId
+                kind
+                channel
+                direction
+                title
+                notes
+                occurredAt
+                startedAt
+                endedAt
+                durationSec
+                amountCents
+                offerStatus
+                createdAt
+                links {
+                    projectLinkId
+                    url
+                    label
+                    kind
+                    pinned
+                }
+                files {
+                    projectFileId
+                    label
+                    kind
+                    pinned
+                    fileUpload {
+                        fileUploadId
+                        filename
+                        mediaType
+                        size
+                        url
+                    }
+                }
+            }
+            links {
+                projectLinkId
+                projectId
+                activityId
+                url
+                label
+                kind
+                pinned
+                createdAt
+                updatedAt
+            }
+            files {
+                projectFileId
+                projectId
+                activityId
+                label
+                kind
+                pinned
+                createdAt
+                updatedAt
+                fileUpload {
+                    fileUploadId
+                    filename
+                    mediaType
+                    size
+                    url
+                }
+            }
+        }
+    }
+}
 
 query WorkspaceProjectDetail($projectId: ID!) {
     currentSession {
         user {
-            admin {
-                activeTimer {
-                    activityId
-                    projectId
-                    taskId
-                    kind
-                    title
-                    occurredAt
-                    startedAt
-                    endedAt
-                    durationSec
-                }
-                project(projectId: $projectId) {
-                    projectId
-                    title
-                    description
-                    notes
-                    status
-                    position
-                    startedAt
-                    completedAt
-                    createdAt
-                    updatedAt
-                    totalWorkSec
-                    sourceRequest {
-                        projectRequestId
-                        name
-                        email
-                        company
-                        projectType
-                        description
-                        budget
-                        timeline
-                    }
-                    tasks {
-                        taskId
-                        projectId
-                        title
-                        notes
-                        status
-                        position
-                        dueAt
-                        completedAt
-                    }
-                    activities {
-                        activityId
-                        projectId
-                        taskId
-                        kind
-                        channel
-                        direction
-                        title
-                        notes
-                        occurredAt
-                        startedAt
-                        endedAt
-                        durationSec
-                        amountCents
-                        offerStatus
-                        createdAt
-                        links {
-                            projectLinkId
-                            url
-                            label
-                            kind
-                            pinned
-                        }
-                        files {
-                            projectFileId
-                            label
-                            kind
-                            pinned
-                            fileUpload {
-                                fileUploadId
-                                filename
-                                mediaType
-                                size
-                                url
-                            }
-                        }
-                    }
-                    links {
-                        projectLinkId
-                        projectId
-                        activityId
-                        url
-                        label
-                        kind
-                        pinned
-                        createdAt
-                        updatedAt
-                    }
-                    files {
-                        projectFileId
-                        projectId
-                        activityId
-                        label
-                        kind
-                        pinned
-                        createdAt
-                        updatedAt
-                        fileUpload {
-                            fileUploadId
-                            filename
-                            mediaType
-                            size
-                            url
-                        }
-                    }
-                }
-            }
+            ...WorkspaceProjectDetailUser
         }
+    }
+}
+
+subscription WorkspaceProjectDetailUpdates($projectId: ID!) {
+    userUpdates {
+        ...WorkspaceProjectDetailUser
     }
 }
 

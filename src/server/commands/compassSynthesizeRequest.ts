@@ -3,9 +3,11 @@ import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
 import { compassSynthesize } from '../jobs/handlers/compassSynthesize';
 
 // Enqueues a `compassSynthesize` job and returns immediately. The job rewrites
-// the three compass artifacts and resets `observationsSinceSynthesis`. The
-// `/workspace/compass` page polls (or re-queries on focus) to pick up the
-// updated row. See `docs/features/compass.md`.
+// the three compass artifacts and resets `observationsSinceSynthesis`. This
+// initial publish announces the queued state (`synthesisInProgress` flips to
+// true); the handler publishes again on completion so `/workspace/compass`
+// receives the new artifacts over its `userUpdates` subscription without
+// polling. See `docs/features/compass.md`.
 export async function compassSynthesizeRequest(
     userId: string,
     requestingSession: GqlSSession,

@@ -26,6 +26,7 @@ export interface GqlCAdmin {
     chatConfig: GqlCAdminChatConfig;
     chats: Array<GqlCChat>;
     compass: GqlCAdminCompass;
+    cv: GqlCCvQuery;
     logs: Array<GqlCLog>;
     project: GqlCProject;
     projectRequests: Array<GqlCProjectRequest>;
@@ -77,6 +78,9 @@ export interface GqlCAdminChatModel {
 
 export interface GqlCAdminCompass {
     __typename?: 'AdminCompass';
+    interview?: Maybe<GqlCCompassInterview>;
+    interviewPending?: Maybe<GqlCCompassInterview>;
+    interviews: Array<GqlCCompassInterview>;
     observations: Array<GqlCCompassObservation>;
     observationsSinceSynthesis: Scalars['Int']['output'];
     prose: Scalars['String']['output'];
@@ -86,6 +90,10 @@ export interface GqlCAdminCompass {
     synthesisModelId?: Maybe<Scalars['String']['output']>;
     synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
 }
+
+export type GqlCAdminCompassInterviewArgs = {
+    interviewId: Scalars['ID']['input'];
+};
 
 export type GqlCAdminCompassObservationsArgs = {
     category?: InputMaybe<GqlCCompassObservationCategory>;
@@ -98,6 +106,10 @@ export interface GqlCAdminMutation {
     chatInputCollectionRespond?: Maybe<GqlCChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlCChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlCChatMessageCreateResult>;
+    compassInterviewEnd: GqlCMutationResult;
+    compassInterviewMessageSend: GqlCMutationResult;
+    compassInterviewSkip: GqlCMutationResult;
+    compassInterviewStart: GqlCMutationResult;
     compassObservationDismiss: GqlCMutationResult;
     compassSynthesizeRequest: GqlCMutationResult;
     cvEducationDelete: GqlCMutationResult;
@@ -155,6 +167,23 @@ export type GqlCAdminMutationChatToolApprovalRespondArgs = {
     approved: Scalars['Boolean']['input'];
     assistantOptions: GqlCChatAssistantOptions;
     reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminMutationCompassInterviewEndArgs = {
+    interviewId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCompassInterviewMessageSendArgs = {
+    content: Scalars['String']['input'];
+    interviewId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCompassInterviewSkipArgs = {
+    interviewId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCompassInterviewStartArgs = {
+    interviewId: Scalars['ID']['input'];
 };
 
 export type GqlCAdminMutationCompassObservationDismissArgs = {
@@ -539,6 +568,36 @@ export interface GqlCChatUpdateTurnEnded {
     generationId: Scalars['ID']['output'];
 }
 
+export interface GqlCCompassInterview {
+    __typename?: 'CompassInterview';
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    dueAt: Scalars['DateTime']['output'];
+    endReason?: Maybe<GqlCCompassInterviewEndReason>;
+    interviewId: Scalars['ID']['output'];
+    messages: Array<GqlCCompassInterviewMessage>;
+    observationCount: Scalars['Int']['output'];
+    startedAt?: Maybe<Scalars['DateTime']['output']>;
+    status: GqlCCompassInterviewStatus;
+    triggerReason: GqlCCompassInterviewTriggerReason;
+}
+
+export type GqlCCompassInterviewEndReason = 'agent_satisfied' | 'skipped' | 'user_ended';
+
+export interface GqlCCompassInterviewMessage {
+    __typename?: 'CompassInterviewMessage';
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    interviewMessageId: Scalars['ID']['output'];
+    modelId?: Maybe<Scalars['String']['output']>;
+    role: GqlCCompassInterviewMessageRole;
+}
+
+export type GqlCCompassInterviewMessageRole = 'assistant' | 'user';
+
+export type GqlCCompassInterviewStatus = 'completed' | 'in_progress' | 'pending' | 'skipped';
+
+export type GqlCCompassInterviewTriggerReason = 'manual' | 'weekly_cron';
+
 export interface GqlCCompassObservation {
     __typename?: 'CompassObservation';
     analyzerModelId?: Maybe<Scalars['String']['output']>;
@@ -550,6 +609,8 @@ export interface GqlCCompassObservation {
     observationId: Scalars['ID']['output'];
     sourceChatId?: Maybe<Scalars['ID']['output']>;
     sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
+    sourceInterviewId?: Maybe<Scalars['ID']['output']>;
+    sourceInterviewMessageId?: Maybe<Scalars['ID']['output']>;
 }
 
 export type GqlCCompassObservationCategory = 'behavioral' | 'factual' | 'psychological';
@@ -1516,9 +1577,94 @@ export type GqlCWorkspaceCompassObservationFragment = {
     confidence: number | null;
     sourceChatId: string | null;
     sourceChatMessageId: string | null;
+    sourceInterviewId: string | null;
+    sourceInterviewMessageId: string | null;
     analyzerModelId: string | null;
     dismissedAt: string | null;
     createdAt: string;
+};
+
+export type GqlCWorkspaceCompassInterviewMessageFragment = {
+    interviewMessageId: string;
+    role: Schema.GqlCCompassInterviewMessageRole;
+    content: string;
+    createdAt: string;
+};
+
+export type GqlCWorkspaceCompassInterviewSummaryFragment = {
+    interviewId: string;
+    status: Schema.GqlCCompassInterviewStatus;
+    dueAt: string;
+    startedAt: string | null;
+    completedAt: string | null;
+    endReason: Schema.GqlCCompassInterviewEndReason | null;
+    triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+    observationCount: number;
+};
+
+export type GqlCWorkspaceCompassInterviewWithMessagesFragment = {
+    interviewId: string;
+    status: Schema.GqlCCompassInterviewStatus;
+    dueAt: string;
+    startedAt: string | null;
+    completedAt: string | null;
+    endReason: Schema.GqlCCompassInterviewEndReason | null;
+    triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+    observationCount: number;
+    messages: Array<{ interviewMessageId: string; role: Schema.GqlCCompassInterviewMessageRole; content: string; createdAt: string }>;
+};
+
+export type GqlCWorkspaceCompassPageUserFragment = {
+    admin: {
+        compass: {
+            summary: string;
+            prose: string;
+            psychology: string;
+            synthesizedAt: string | null;
+            synthesisModelId: string | null;
+            observationsSinceSynthesis: number;
+            synthesisInProgress: boolean;
+            observations: Array<{
+                observationId: string;
+                category: Schema.GqlCCompassObservationCategory;
+                content: string;
+                confidence: number | null;
+                sourceChatId: string | null;
+                sourceChatMessageId: string | null;
+                sourceInterviewId: string | null;
+                sourceInterviewMessageId: string | null;
+                analyzerModelId: string | null;
+                dismissedAt: string | null;
+                createdAt: string;
+            }>;
+            interviewPending: {
+                interviewId: string;
+                status: Schema.GqlCCompassInterviewStatus;
+                dueAt: string;
+                startedAt: string | null;
+                completedAt: string | null;
+                endReason: Schema.GqlCCompassInterviewEndReason | null;
+                triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                observationCount: number;
+                messages: Array<{
+                    interviewMessageId: string;
+                    role: Schema.GqlCCompassInterviewMessageRole;
+                    content: string;
+                    createdAt: string;
+                }>;
+            } | null;
+            interviews: Array<{
+                interviewId: string;
+                status: Schema.GqlCCompassInterviewStatus;
+                dueAt: string;
+                startedAt: string | null;
+                completedAt: string | null;
+                endReason: Schema.GqlCCompassInterviewEndReason | null;
+                triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                observationCount: number;
+            }>;
+        };
+    } | null;
 };
 
 export type GqlCWorkspaceCompassPageQueryVariables = Exact<{
@@ -1545,10 +1691,129 @@ export type GqlCWorkspaceCompassPageQuery = {
                         confidence: number | null;
                         sourceChatId: string | null;
                         sourceChatMessageId: string | null;
+                        sourceInterviewId: string | null;
+                        sourceInterviewMessageId: string | null;
                         analyzerModelId: string | null;
                         dismissedAt: string | null;
                         createdAt: string;
                     }>;
+                    interviewPending: {
+                        interviewId: string;
+                        status: Schema.GqlCCompassInterviewStatus;
+                        dueAt: string;
+                        startedAt: string | null;
+                        completedAt: string | null;
+                        endReason: Schema.GqlCCompassInterviewEndReason | null;
+                        triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                        observationCount: number;
+                        messages: Array<{
+                            interviewMessageId: string;
+                            role: Schema.GqlCCompassInterviewMessageRole;
+                            content: string;
+                            createdAt: string;
+                        }>;
+                    } | null;
+                    interviews: Array<{
+                        interviewId: string;
+                        status: Schema.GqlCCompassInterviewStatus;
+                        dueAt: string;
+                        startedAt: string | null;
+                        completedAt: string | null;
+                        endReason: Schema.GqlCCompassInterviewEndReason | null;
+                        triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                        observationCount: number;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceCompassPageUpdatesSubscriptionVariables = Exact<{
+    category?: Schema.GqlCCompassObservationCategory | null | undefined;
+    includeDismissed?: boolean | null | undefined;
+}>;
+
+export type GqlCWorkspaceCompassPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            compass: {
+                summary: string;
+                prose: string;
+                psychology: string;
+                synthesizedAt: string | null;
+                synthesisModelId: string | null;
+                observationsSinceSynthesis: number;
+                synthesisInProgress: boolean;
+                observations: Array<{
+                    observationId: string;
+                    category: Schema.GqlCCompassObservationCategory;
+                    content: string;
+                    confidence: number | null;
+                    sourceChatId: string | null;
+                    sourceChatMessageId: string | null;
+                    sourceInterviewId: string | null;
+                    sourceInterviewMessageId: string | null;
+                    analyzerModelId: string | null;
+                    dismissedAt: string | null;
+                    createdAt: string;
+                }>;
+                interviewPending: {
+                    interviewId: string;
+                    status: Schema.GqlCCompassInterviewStatus;
+                    dueAt: string;
+                    startedAt: string | null;
+                    completedAt: string | null;
+                    endReason: Schema.GqlCCompassInterviewEndReason | null;
+                    triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                    observationCount: number;
+                    messages: Array<{
+                        interviewMessageId: string;
+                        role: Schema.GqlCCompassInterviewMessageRole;
+                        content: string;
+                        createdAt: string;
+                    }>;
+                } | null;
+                interviews: Array<{
+                    interviewId: string;
+                    status: Schema.GqlCCompassInterviewStatus;
+                    dueAt: string;
+                    startedAt: string | null;
+                    completedAt: string | null;
+                    endReason: Schema.GqlCCompassInterviewEndReason | null;
+                    triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                    observationCount: number;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceCompassInterviewQueryVariables = Exact<{
+    interviewId: string;
+}>;
+
+export type GqlCWorkspaceCompassInterviewQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                compass: {
+                    interview: {
+                        interviewId: string;
+                        status: Schema.GqlCCompassInterviewStatus;
+                        dueAt: string;
+                        startedAt: string | null;
+                        completedAt: string | null;
+                        endReason: Schema.GqlCCompassInterviewEndReason | null;
+                        triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                        observationCount: number;
+                        messages: Array<{
+                            interviewMessageId: string;
+                            role: Schema.GqlCCompassInterviewMessageRole;
+                            content: string;
+                            createdAt: string;
+                        }>;
+                    } | null;
                 };
             } | null;
         } | null;
@@ -1567,38 +1832,147 @@ export type GqlCWorkspaceCompassSynthesizeRequestMutation = {
     admin: { compassSynthesizeRequest: { success: boolean; referenceId: string | null } };
 };
 
+export type GqlCWorkspaceCompassInterviewStartMutationVariables = Exact<{
+    interviewId: string;
+}>;
+
+export type GqlCWorkspaceCompassInterviewStartMutation = {
+    admin: { compassInterviewStart: { success: boolean; referenceId: string | null } };
+};
+
+export type GqlCWorkspaceCompassInterviewMessageSendMutationVariables = Exact<{
+    interviewId: string;
+    content: string;
+}>;
+
+export type GqlCWorkspaceCompassInterviewMessageSendMutation = {
+    admin: { compassInterviewMessageSend: { success: boolean; referenceId: string | null } };
+};
+
+export type GqlCWorkspaceCompassInterviewEndMutationVariables = Exact<{
+    interviewId: string;
+}>;
+
+export type GqlCWorkspaceCompassInterviewEndMutation = { admin: { compassInterviewEnd: { success: boolean } } };
+
+export type GqlCWorkspaceCompassInterviewSkipMutationVariables = Exact<{
+    interviewId: string;
+}>;
+
+export type GqlCWorkspaceCompassInterviewSkipMutation = { admin: { compassInterviewSkip: { success: boolean } } };
+
+export type GqlCWorkspaceCvPageUserFragment = {
+    admin: {
+        cv: {
+            experience: Array<{
+                cvExperienceId: string;
+                roleDe: string;
+                roleEn: string;
+                company: string;
+                startDate: string;
+                endDate: string | null;
+                descriptionDe: string;
+                descriptionEn: string;
+                technologies: Array<string>;
+                managerName: string | null;
+                position: number;
+            }>;
+            education: Array<{
+                cvEducationId: string;
+                degreeDe: string;
+                degreeEn: string;
+                institution: string;
+                subjectDe: string;
+                subjectEn: string;
+                startDate: string | null;
+                endDate: string;
+                notesDe: string;
+                notesEn: string;
+                position: number;
+            }>;
+            skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+            hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+        };
+    } | null;
+};
+
 export type GqlCWorkspaceCvPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceCvPageQuery = {
-    cv: {
-        experience: Array<{
-            cvExperienceId: string;
-            roleDe: string;
-            roleEn: string;
-            company: string;
-            startDate: string;
-            endDate: string | null;
-            descriptionDe: string;
-            descriptionEn: string;
-            technologies: Array<string>;
-            managerName: string | null;
-            position: number;
-        }>;
-        education: Array<{
-            cvEducationId: string;
-            degreeDe: string;
-            degreeEn: string;
-            institution: string;
-            subjectDe: string;
-            subjectEn: string;
-            startDate: string | null;
-            endDate: string;
-            notesDe: string;
-            notesEn: string;
-            position: number;
-        }>;
-        skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
-        hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+    currentSession: {
+        user: {
+            admin: {
+                cv: {
+                    experience: Array<{
+                        cvExperienceId: string;
+                        roleDe: string;
+                        roleEn: string;
+                        company: string;
+                        startDate: string;
+                        endDate: string | null;
+                        descriptionDe: string;
+                        descriptionEn: string;
+                        technologies: Array<string>;
+                        managerName: string | null;
+                        position: number;
+                    }>;
+                    education: Array<{
+                        cvEducationId: string;
+                        degreeDe: string;
+                        degreeEn: string;
+                        institution: string;
+                        subjectDe: string;
+                        subjectEn: string;
+                        startDate: string | null;
+                        endDate: string;
+                        notesDe: string;
+                        notesEn: string;
+                        position: number;
+                    }>;
+                    skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+                    hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceCvPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceCvPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            cv: {
+                experience: Array<{
+                    cvExperienceId: string;
+                    roleDe: string;
+                    roleEn: string;
+                    company: string;
+                    startDate: string;
+                    endDate: string | null;
+                    descriptionDe: string;
+                    descriptionEn: string;
+                    technologies: Array<string>;
+                    managerName: string | null;
+                    position: number;
+                }>;
+                education: Array<{
+                    cvEducationId: string;
+                    degreeDe: string;
+                    degreeEn: string;
+                    institution: string;
+                    subjectDe: string;
+                    subjectEn: string;
+                    startDate: string | null;
+                    endDate: string;
+                    notesDe: string;
+                    notesEn: string;
+                    position: number;
+                }>;
+                skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+                hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+            };
+        } | null;
     };
 };
 
@@ -1705,6 +2079,91 @@ export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceHubQuery = { currentSession: { user: { admin: { projectRequestsInboxCount: number } | null } | null } };
 
+export type GqlCWorkspaceProjectsPageUserFragment = {
+    admin: {
+        projectRequests: Array<{
+            projectRequestId: string;
+            chatId: string | null;
+            name: string;
+            email: string;
+            company: string | null;
+            projectType: Schema.GqlCProjectRequestType;
+            description: string;
+            budget: string | null;
+            timeline: string | null;
+            status: Schema.GqlCProjectRequestStatus;
+            verifiedAt: string | null;
+            createdAt: string;
+            convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
+        }>;
+        projects: Array<{
+            projectId: string;
+            title: string;
+            description: string | null;
+            notes: string | null;
+            status: Schema.GqlCProjectStatus;
+            position: number;
+            startedAt: string | null;
+            completedAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+            totalWorkSec: number;
+            sourceRequest: {
+                projectRequestId: string;
+                name: string;
+                email: string;
+                company: string | null;
+                projectType: Schema.GqlCProjectRequestType;
+            } | null;
+            tasks: Array<{
+                taskId: string;
+                projectId: string | null;
+                title: string;
+                notes: string | null;
+                status: Schema.GqlCTaskStatus;
+                position: number;
+                dueAt: string | null;
+                completedAt: string | null;
+            }>;
+            activities: Array<{
+                activityId: string;
+                projectId: string;
+                taskId: string | null;
+                kind: Schema.GqlCProjectActivityKind;
+                channel: Schema.GqlCProjectActivityChannel | null;
+                title: string;
+                notes: string | null;
+                occurredAt: string;
+                startedAt: string | null;
+                endedAt: string | null;
+                durationSec: number | null;
+                createdAt: string;
+            }>;
+        }>;
+        standaloneTasks: Array<{
+            taskId: string;
+            projectId: string | null;
+            title: string;
+            notes: string | null;
+            status: Schema.GqlCTaskStatus;
+            position: number;
+            dueAt: string | null;
+            completedAt: string | null;
+        }>;
+        activeTimer: {
+            activityId: string;
+            projectId: string;
+            taskId: string | null;
+            kind: Schema.GqlCProjectActivityKind;
+            title: string;
+            occurredAt: string;
+            startedAt: string | null;
+            endedAt: string | null;
+            durationSec: number | null;
+        } | null;
+    } | null;
+};
+
 export type GqlCWorkspaceProjectsPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceProjectsPageQuery = {
@@ -1796,6 +2255,95 @@ export type GqlCWorkspaceProjectsPageQuery = {
     };
 };
 
+export type GqlCWorkspaceProjectsPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            projectRequests: Array<{
+                projectRequestId: string;
+                chatId: string | null;
+                name: string;
+                email: string;
+                company: string | null;
+                projectType: Schema.GqlCProjectRequestType;
+                description: string;
+                budget: string | null;
+                timeline: string | null;
+                status: Schema.GqlCProjectRequestStatus;
+                verifiedAt: string | null;
+                createdAt: string;
+                convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
+            }>;
+            projects: Array<{
+                projectId: string;
+                title: string;
+                description: string | null;
+                notes: string | null;
+                status: Schema.GqlCProjectStatus;
+                position: number;
+                startedAt: string | null;
+                completedAt: string | null;
+                createdAt: string;
+                updatedAt: string;
+                totalWorkSec: number;
+                sourceRequest: {
+                    projectRequestId: string;
+                    name: string;
+                    email: string;
+                    company: string | null;
+                    projectType: Schema.GqlCProjectRequestType;
+                } | null;
+                tasks: Array<{
+                    taskId: string;
+                    projectId: string | null;
+                    title: string;
+                    notes: string | null;
+                    status: Schema.GqlCTaskStatus;
+                    position: number;
+                    dueAt: string | null;
+                    completedAt: string | null;
+                }>;
+                activities: Array<{
+                    activityId: string;
+                    projectId: string;
+                    taskId: string | null;
+                    kind: Schema.GqlCProjectActivityKind;
+                    channel: Schema.GqlCProjectActivityChannel | null;
+                    title: string;
+                    notes: string | null;
+                    occurredAt: string;
+                    startedAt: string | null;
+                    endedAt: string | null;
+                    durationSec: number | null;
+                    createdAt: string;
+                }>;
+            }>;
+            standaloneTasks: Array<{
+                taskId: string;
+                projectId: string | null;
+                title: string;
+                notes: string | null;
+                status: Schema.GqlCTaskStatus;
+                position: number;
+                dueAt: string | null;
+                completedAt: string | null;
+            }>;
+            activeTimer: {
+                activityId: string;
+                projectId: string;
+                taskId: string | null;
+                kind: Schema.GqlCProjectActivityKind;
+                title: string;
+                occurredAt: string;
+                startedAt: string | null;
+                endedAt: string | null;
+                durationSec: number | null;
+            } | null;
+        } | null;
+    };
+};
+
 export type GqlCWorkspaceProjectRequestArchiveMutationVariables = Exact<{
     projectRequestId: string;
 }>;
@@ -1872,6 +2420,108 @@ export type GqlCWorkspaceProjectActivityDeleteMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProjectActivityDeleteMutation = { admin: { projectActivityDelete: { success: boolean } } };
+
+export type GqlCWorkspaceProjectDetailUserFragment = {
+    admin: {
+        activeTimer: {
+            activityId: string;
+            projectId: string;
+            taskId: string | null;
+            kind: Schema.GqlCProjectActivityKind;
+            title: string;
+            occurredAt: string;
+            startedAt: string | null;
+            endedAt: string | null;
+            durationSec: number | null;
+        } | null;
+        project: {
+            projectId: string;
+            title: string;
+            description: string | null;
+            notes: string | null;
+            status: Schema.GqlCProjectStatus;
+            position: number;
+            startedAt: string | null;
+            completedAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+            totalWorkSec: number;
+            sourceRequest: {
+                projectRequestId: string;
+                name: string;
+                email: string;
+                company: string | null;
+                projectType: Schema.GqlCProjectRequestType;
+                description: string;
+                budget: string | null;
+                timeline: string | null;
+            } | null;
+            tasks: Array<{
+                taskId: string;
+                projectId: string | null;
+                title: string;
+                notes: string | null;
+                status: Schema.GqlCTaskStatus;
+                position: number;
+                dueAt: string | null;
+                completedAt: string | null;
+            }>;
+            activities: Array<{
+                activityId: string;
+                projectId: string;
+                taskId: string | null;
+                kind: Schema.GqlCProjectActivityKind;
+                channel: Schema.GqlCProjectActivityChannel | null;
+                direction: Schema.GqlCProjectActivityDirection;
+                title: string;
+                notes: string | null;
+                occurredAt: string;
+                startedAt: string | null;
+                endedAt: string | null;
+                durationSec: number | null;
+                amountCents: number | null;
+                offerStatus: Schema.GqlCProjectOfferStatus | null;
+                createdAt: string;
+                links: Array<{
+                    projectLinkId: string;
+                    url: string;
+                    label: string | null;
+                    kind: Schema.GqlCProjectLinkKind;
+                    pinned: boolean;
+                }>;
+                files: Array<{
+                    projectFileId: string;
+                    label: string | null;
+                    kind: Schema.GqlCProjectFileKind;
+                    pinned: boolean;
+                    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                }>;
+            }>;
+            links: Array<{
+                projectLinkId: string;
+                projectId: string;
+                activityId: string | null;
+                url: string;
+                label: string | null;
+                kind: Schema.GqlCProjectLinkKind;
+                pinned: boolean;
+                createdAt: string;
+                updatedAt: string;
+            }>;
+            files: Array<{
+                projectFileId: string;
+                projectId: string;
+                activityId: string | null;
+                label: string | null;
+                kind: Schema.GqlCProjectFileKind;
+                pinned: boolean;
+                createdAt: string;
+                updatedAt: string;
+                fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+            }>;
+        };
+    } | null;
+};
 
 export type GqlCWorkspaceProjectDetailQueryVariables = Exact<{
     projectId: string;
@@ -1979,6 +2629,114 @@ export type GqlCWorkspaceProjectDetailQuery = {
                     }>;
                 };
             } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceProjectDetailUpdatesSubscriptionVariables = Exact<{
+    projectId: string;
+}>;
+
+export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            activeTimer: {
+                activityId: string;
+                projectId: string;
+                taskId: string | null;
+                kind: Schema.GqlCProjectActivityKind;
+                title: string;
+                occurredAt: string;
+                startedAt: string | null;
+                endedAt: string | null;
+                durationSec: number | null;
+            } | null;
+            project: {
+                projectId: string;
+                title: string;
+                description: string | null;
+                notes: string | null;
+                status: Schema.GqlCProjectStatus;
+                position: number;
+                startedAt: string | null;
+                completedAt: string | null;
+                createdAt: string;
+                updatedAt: string;
+                totalWorkSec: number;
+                sourceRequest: {
+                    projectRequestId: string;
+                    name: string;
+                    email: string;
+                    company: string | null;
+                    projectType: Schema.GqlCProjectRequestType;
+                    description: string;
+                    budget: string | null;
+                    timeline: string | null;
+                } | null;
+                tasks: Array<{
+                    taskId: string;
+                    projectId: string | null;
+                    title: string;
+                    notes: string | null;
+                    status: Schema.GqlCTaskStatus;
+                    position: number;
+                    dueAt: string | null;
+                    completedAt: string | null;
+                }>;
+                activities: Array<{
+                    activityId: string;
+                    projectId: string;
+                    taskId: string | null;
+                    kind: Schema.GqlCProjectActivityKind;
+                    channel: Schema.GqlCProjectActivityChannel | null;
+                    direction: Schema.GqlCProjectActivityDirection;
+                    title: string;
+                    notes: string | null;
+                    occurredAt: string;
+                    startedAt: string | null;
+                    endedAt: string | null;
+                    durationSec: number | null;
+                    amountCents: number | null;
+                    offerStatus: Schema.GqlCProjectOfferStatus | null;
+                    createdAt: string;
+                    links: Array<{
+                        projectLinkId: string;
+                        url: string;
+                        label: string | null;
+                        kind: Schema.GqlCProjectLinkKind;
+                        pinned: boolean;
+                    }>;
+                    files: Array<{
+                        projectFileId: string;
+                        label: string | null;
+                        kind: Schema.GqlCProjectFileKind;
+                        pinned: boolean;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                }>;
+                links: Array<{
+                    projectLinkId: string;
+                    projectId: string;
+                    activityId: string | null;
+                    url: string;
+                    label: string | null;
+                    kind: Schema.GqlCProjectLinkKind;
+                    pinned: boolean;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+                files: Array<{
+                    projectFileId: string;
+                    projectId: string;
+                    activityId: string | null;
+                    label: string | null;
+                    kind: Schema.GqlCProjectFileKind;
+                    pinned: boolean;
+                    createdAt: string;
+                    updatedAt: string;
+                    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                }>;
+            };
         } | null;
     };
 };
@@ -3036,6 +3794,8 @@ export const WorkspaceCompassObservationFragmentDoc = {
                     { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'sourceChatId' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'sourceChatMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewMessageId' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'analyzerModelId' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'dismissedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
@@ -3044,6 +3804,757 @@ export const WorkspaceCompassObservationFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCompassObservationFragment, unknown>;
+export const WorkspaceCompassInterviewSummaryFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewSummaryFragment, unknown>;
+export const WorkspaceCompassInterviewMessageFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewMessage' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewMessageFragment, unknown>;
+export const WorkspaceCompassInterviewWithMessagesFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'messages' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewMessage' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewWithMessagesFragment, unknown>;
+export const WorkspaceCompassPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compass' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'psychology' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationsSinceSynthesis' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'observations' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'category' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                                                    },
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'includeDismissed' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'includeDismissed' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'interviewPending' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'interviews' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewMessage' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservation' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'analyzerModelId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dismissedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'messages' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' } }],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassPageUserFragment, unknown>;
+export const WorkspaceCvPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCvPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cv' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'experience' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'education' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'institution' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notesDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notesEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'skills' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvSkillId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'hobbies' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvHobbyId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'textDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'textEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'since' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvPageUserFragment, unknown>;
+export const WorkspaceProjectsPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProjectsPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectRequests' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'verifiedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'convertedProject' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projects' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'sourceRequest' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'tasks' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'activities' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'standaloneTasks' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectsPageUserFragment, unknown>;
+export const WorkspaceProjectDetailUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'project' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'sourceRequest' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'tasks' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'activities' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'direction' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'offerStatus' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'links' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'files' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'links' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'files' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'fileUpload' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUserFragment, unknown>;
 export const ChatMessageGenerationFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -5446,6 +6957,396 @@ export const WorkspaceCompassPageDocument = {
                                     name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassPageUser' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservation' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'analyzerModelId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dismissedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewMessage' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'messages' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compass' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'psychology' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationsSinceSynthesis' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'observations' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'category' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                                                    },
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'includeDismissed' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'includeDismissed' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'interviewPending' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'interviews' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassPageQuery, GqlCWorkspaceCompassPageQueryVariables>;
+export const WorkspaceCompassPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceCompassPageUpdates' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservationCategory' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'includeDismissed' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservation' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceInterviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'analyzerModelId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dismissedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewMessage' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'messages' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compass' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'psychology' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'observationsSinceSynthesis' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'observations' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'category' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
+                                                    },
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'includeDismissed' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'includeDismissed' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'interviewPending' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'interviews' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassPageUpdatesSubscription, GqlCWorkspaceCompassPageUpdatesSubscriptionVariables>;
+export const WorkspaceCompassInterviewDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterview' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
@@ -5459,34 +7360,16 @@ export const WorkspaceCompassPageDocument = {
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'psychology' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
                                                                     {
                                                                         kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'observationsSinceSynthesis' },
-                                                                    },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'observations' },
+                                                                        name: { kind: 'Name', value: 'interview' },
                                                                         arguments: [
                                                                             {
                                                                                 kind: 'Argument',
-                                                                                name: { kind: 'Name', value: 'category' },
+                                                                                name: { kind: 'Name', value: 'interviewId' },
                                                                                 value: {
                                                                                     kind: 'Variable',
-                                                                                    name: { kind: 'Name', value: 'category' },
-                                                                                },
-                                                                            },
-                                                                            {
-                                                                                kind: 'Argument',
-                                                                                name: { kind: 'Name', value: 'includeDismissed' },
-                                                                                value: {
-                                                                                    kind: 'Variable',
-                                                                                    name: { kind: 'Name', value: 'includeDismissed' },
+                                                                                    name: { kind: 'Name', value: 'interviewId' },
                                                                                 },
                                                                             },
                                                                         ],
@@ -5497,7 +7380,7 @@ export const WorkspaceCompassPageDocument = {
                                                                                     kind: 'FragmentSpread',
                                                                                     name: {
                                                                                         kind: 'Name',
-                                                                                        value: 'WorkspaceCompassObservation',
+                                                                                        value: 'WorkspaceCompassInterviewWithMessages',
                                                                                     },
                                                                                 },
                                                                             ],
@@ -5520,25 +7403,57 @@ export const WorkspaceCompassPageDocument = {
         },
         {
             kind: 'FragmentDefinition',
-            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservation' } },
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
-                    { kind: 'Field', name: { kind: 'Name', value: 'observationId' } },
-                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewMessage' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'role' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'content' } },
-                    { kind: 'Field', name: { kind: 'Name', value: 'confidence' } },
-                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatId' } },
-                    { kind: 'Field', name: { kind: 'Name', value: 'sourceChatMessageId' } },
-                    { kind: 'Field', name: { kind: 'Name', value: 'analyzerModelId' } },
-                    { kind: 'Field', name: { kind: 'Name', value: 'dismissedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                 ],
             },
         },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewWithMessages' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterview' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewSummary' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'messages' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' } }],
+                        },
+                    },
+                ],
+            },
+        },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceCompassPageQuery, GqlCWorkspaceCompassPageQueryVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewQuery, GqlCWorkspaceCompassInterviewQueryVariables>;
 export const WorkspaceCompassObservationDismissDocument = {
     kind: 'Document',
     definitions: [
@@ -5620,6 +7535,206 @@ export const WorkspaceCompassSynthesizeRequestDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCompassSynthesizeRequestMutation, GqlCWorkspaceCompassSynthesizeRequestMutationVariables>;
+export const WorkspaceCompassInterviewStartDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewStart' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compassInterviewStart' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'interviewId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceId' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewStartMutation, GqlCWorkspaceCompassInterviewStartMutationVariables>;
+export const WorkspaceCompassInterviewMessageSendDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessageSend' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'content' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compassInterviewMessageSend' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'interviewId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'content' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'content' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceId' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewMessageSendMutation, GqlCWorkspaceCompassInterviewMessageSendMutationVariables>;
+export const WorkspaceCompassInterviewEndDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewEnd' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compassInterviewEnd' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'interviewId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewEndMutation, GqlCWorkspaceCompassInterviewEndMutationVariables>;
+export const WorkspaceCompassInterviewSkipDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewSkip' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compassInterviewSkip' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'interviewId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewSkipMutation, GqlCWorkspaceCompassInterviewSkipMutationVariables>;
 export const WorkspaceCvPageDocument = {
     kind: 'Document',
     definitions: [
@@ -5632,74 +7747,110 @@ export const WorkspaceCvPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'cv' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'experience' },
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'company' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                        ],
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCvPageUser' } }],
                                     },
                                 },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCvPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'education' },
+                                    name: { kind: 'Name', value: 'cv' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'institution' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'notesDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'notesEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'skills' },
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'cvSkillId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'category' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'label' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'hobbies' },
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'cvHobbyId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'textDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'textEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'since' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'experience' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'education' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'institution' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notesDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notesEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'skills' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvSkillId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'hobbies' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvHobbyId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'textDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'textEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'since' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
                                         ],
                                     },
                                 },
@@ -5711,6 +7862,124 @@ export const WorkspaceCvPageDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCvPageQuery, GqlCWorkspaceCvPageQueryVariables>;
+export const WorkspaceCvPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceCvPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceCvPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCvPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'cv' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'experience' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'education' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'institution' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notesDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notesEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'skills' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvSkillId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'hobbies' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cvHobbyId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'textDe' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'textEn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'since' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCvPageUpdatesSubscription, GqlCWorkspaceCvPageUpdatesSubscriptionVariables>;
 export const WorkspaceCvExperienceUpsertDocument = {
     kind: 'Document',
     definitions: [
@@ -6664,191 +8933,166 @@ export const WorkspaceProjectsPageDocument = {
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceProjectsPageUser' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProjectsPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectRequests' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'verifiedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'admin' },
+                                                name: { kind: 'Name', value: 'convertedProject' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
-                                                        {
-                                                            kind: 'Field',
-                                                            name: { kind: 'Name', value: 'projectRequests' },
-                                                            selectionSet: {
-                                                                kind: 'SelectionSet',
-                                                                selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'email' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'company' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'verifiedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'convertedProject' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectId' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                ],
-                                                            },
-                                                        },
-                                                        {
-                                                            kind: 'Field',
-                                                            name: { kind: 'Name', value: 'projects' },
-                                                            selectionSet: {
-                                                                kind: 'SelectionSet',
-                                                                selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'sourceRequest' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectRequestId' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'company' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectType' },
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'tasks' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectId' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'position' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'completedAt' },
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'activities' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'activityId' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectId' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'occurredAt' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'startedAt' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'durationSec' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'createdAt' },
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                ],
-                                                            },
-                                                        },
-                                                        {
-                                                            kind: 'Field',
-                                                            name: { kind: 'Name', value: 'standaloneTasks' },
-                                                            selectionSet: {
-                                                                kind: 'SelectionSet',
-                                                                selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                                                ],
-                                                            },
-                                                        },
-                                                        {
-                                                            kind: 'Field',
-                                                            name: { kind: 'Name', value: 'activeTimer' },
-                                                            selectionSet: {
-                                                                kind: 'SelectionSet',
-                                                                selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
-                                                                ],
-                                                            },
-                                                        },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
                                                     ],
                                                 },
                                             },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projects' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'sourceRequest' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'tasks' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'activities' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'standaloneTasks' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
                                         ],
                                     },
                                 },
@@ -6860,6 +9104,188 @@ export const WorkspaceProjectsPageDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectsPageQuery, GqlCWorkspaceProjectsPageQueryVariables>;
+export const WorkspaceProjectsPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceProjectsPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceProjectsPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProjectsPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectRequests' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'verifiedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'convertedProject' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projects' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'sourceRequest' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'tasks' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'activities' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'standaloneTasks' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectsPageUpdatesSubscription, GqlCWorkspaceProjectsPageUpdatesSubscriptionVariables>;
 export const WorkspaceProjectRequestArchiveDocument = {
     kind: 'Document',
     definitions: [
@@ -7572,361 +9998,222 @@ export const WorkspaceProjectDetailDocument = {
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceProjectDetailUser' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'project' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'admin' },
+                                                name: { kind: 'Name', value: 'sourceRequest' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'tasks' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'activities' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'direction' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'offerStatus' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'activeTimer' },
+                                                            name: { kind: 'Name', value: 'links' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
                                                                 ],
                                                             },
                                                         },
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'project' },
-                                                            arguments: [
-                                                                {
-                                                                    kind: 'Argument',
-                                                                    name: { kind: 'Name', value: 'projectId' },
-                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
-                                                                },
-                                                            ],
+                                                            name: { kind: 'Name', value: 'files' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
                                                                     {
                                                                         kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'sourceRequest' },
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
                                                                         selectionSet: {
                                                                             kind: 'SelectionSet',
                                                                             selections: [
                                                                                 {
                                                                                     kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectRequestId' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'company' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectType' },
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
                                                                                 },
                                                                                 {
                                                                                     kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'description' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'timeline' },
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'tasks' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectId' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'position' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'completedAt' },
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'activities' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'activityId' },
+                                                                                    name: { kind: 'Name', value: 'filename' },
                                                                                 },
                                                                                 {
                                                                                     kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
                                                                                 },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'direction' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'occurredAt' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'startedAt' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'durationSec' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'amountCents' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'offerStatus' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'createdAt' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'links' },
-                                                                                    selectionSet: {
-                                                                                        kind: 'SelectionSet',
-                                                                                        selections: [
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: {
-                                                                                                    kind: 'Name',
-                                                                                                    value: 'projectLinkId',
-                                                                                                },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'url' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'label' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'kind' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'pinned' },
-                                                                                            },
-                                                                                        ],
-                                                                                    },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'files' },
-                                                                                    selectionSet: {
-                                                                                        kind: 'SelectionSet',
-                                                                                        selections: [
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: {
-                                                                                                    kind: 'Name',
-                                                                                                    value: 'projectFileId',
-                                                                                                },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'label' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'kind' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'pinned' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'fileUpload' },
-                                                                                                selectionSet: {
-                                                                                                    kind: 'SelectionSet',
-                                                                                                    selections: [
-                                                                                                        {
-                                                                                                            kind: 'Field',
-                                                                                                            name: {
-                                                                                                                kind: 'Name',
-                                                                                                                value: 'fileUploadId',
-                                                                                                            },
-                                                                                                        },
-                                                                                                        {
-                                                                                                            kind: 'Field',
-                                                                                                            name: {
-                                                                                                                kind: 'Name',
-                                                                                                                value: 'filename',
-                                                                                                            },
-                                                                                                        },
-                                                                                                        {
-                                                                                                            kind: 'Field',
-                                                                                                            name: {
-                                                                                                                kind: 'Name',
-                                                                                                                value: 'mediaType',
-                                                                                                            },
-                                                                                                        },
-                                                                                                        {
-                                                                                                            kind: 'Field',
-                                                                                                            name: {
-                                                                                                                kind: 'Name',
-                                                                                                                value: 'size',
-                                                                                                            },
-                                                                                                        },
-                                                                                                        {
-                                                                                                            kind: 'Field',
-                                                                                                            name: {
-                                                                                                                kind: 'Name',
-                                                                                                                value: 'url',
-                                                                                                            },
-                                                                                                        },
-                                                                                                    ],
-                                                                                                },
-                                                                                            },
-                                                                                        ],
-                                                                                    },
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'links' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectLinkId' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectId' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'activityId' },
-                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
                                                                                 { kind: 'Field', name: { kind: 'Name', value: 'url' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'createdAt' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'updatedAt' },
-                                                                                },
                                                                             ],
                                                                         },
                                                                     },
-                                                                    {
-                                                                        kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'files' },
-                                                                        selectionSet: {
-                                                                            kind: 'SelectionSet',
-                                                                            selections: [
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectFileId' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'projectId' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'activityId' },
-                                                                                },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'createdAt' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'updatedAt' },
-                                                                                },
-                                                                                {
-                                                                                    kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'fileUpload' },
-                                                                                    selectionSet: {
-                                                                                        kind: 'SelectionSet',
-                                                                                        selections: [
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: {
-                                                                                                    kind: 'Name',
-                                                                                                    value: 'fileUploadId',
-                                                                                                },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'filename' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'mediaType' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'size' },
-                                                                                            },
-                                                                                            {
-                                                                                                kind: 'Field',
-                                                                                                name: { kind: 'Name', value: 'url' },
-                                                                                            },
-                                                                                        ],
-                                                                                    },
-                                                                                },
-                                                                            ],
-                                                                        },
-                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'links' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'files' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'fileUpload' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
                                                                 ],
                                                             },
                                                         },
@@ -7944,6 +10231,257 @@ export const WorkspaceProjectDetailDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectDetailQuery, GqlCWorkspaceProjectDetailQueryVariables>;
+export const WorkspaceProjectDetailUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpdates' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceProjectDetailUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'project' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'sourceRequest' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'tasks' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'activities' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'direction' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'offerStatus' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'links' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'files' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'links' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'files' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'fileUpload' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUpdatesSubscription, GqlCWorkspaceProjectDetailUpdatesSubscriptionVariables>;
 export const WorkspaceProjectDetailUpsertProjectDocument = {
     kind: 'Document',
     definitions: [

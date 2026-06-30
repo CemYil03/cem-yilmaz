@@ -23,6 +23,7 @@ export interface GqlSAdmin {
     chatConfig: GqlSAdminChatConfig;
     chats: Array<GqlSChat>;
     compass: GqlSAdminCompass;
+    cv: GqlSCvQuery;
     logs: Array<GqlSLog>;
     project: GqlSProject;
     projectRequests: Array<GqlSProjectRequest>;
@@ -74,6 +75,9 @@ export interface GqlSAdminChatModel {
 
 export interface GqlSAdminCompass {
     __typename?: 'AdminCompass';
+    interview?: Maybe<GqlSCompassInterview>;
+    interviewPending?: Maybe<GqlSCompassInterview>;
+    interviews: Array<GqlSCompassInterview>;
     observations: Array<GqlSCompassObservation>;
     observationsSinceSynthesis: Scalars['Int']['output'];
     prose: Scalars['String']['output'];
@@ -83,6 +87,10 @@ export interface GqlSAdminCompass {
     synthesisModelId?: Maybe<Scalars['String']['output']>;
     synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
 }
+
+export type GqlSAdminCompassInterviewArgs = {
+    interviewId: Scalars['ID']['input'];
+};
 
 export type GqlSAdminCompassObservationsArgs = {
     category?: InputMaybe<GqlSCompassObservationCategory>;
@@ -95,6 +103,10 @@ export interface GqlSAdminMutation {
     chatInputCollectionRespond?: Maybe<GqlSChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlSChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlSChatMessageCreateResult>;
+    compassInterviewEnd: GqlSMutationResult;
+    compassInterviewMessageSend: GqlSMutationResult;
+    compassInterviewSkip: GqlSMutationResult;
+    compassInterviewStart: GqlSMutationResult;
     compassObservationDismiss: GqlSMutationResult;
     compassSynthesizeRequest: GqlSMutationResult;
     cvEducationDelete: GqlSMutationResult;
@@ -152,6 +164,23 @@ export type GqlSAdminMutationChatToolApprovalRespondArgs = {
     approved: Scalars['Boolean']['input'];
     assistantOptions: GqlSChatAssistantOptions;
     reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSAdminMutationCompassInterviewEndArgs = {
+    interviewId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationCompassInterviewMessageSendArgs = {
+    content: Scalars['String']['input'];
+    interviewId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationCompassInterviewSkipArgs = {
+    interviewId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationCompassInterviewStartArgs = {
+    interviewId: Scalars['ID']['input'];
 };
 
 export type GqlSAdminMutationCompassObservationDismissArgs = {
@@ -536,6 +565,36 @@ export interface GqlSChatUpdateTurnEnded {
     generationId: Scalars['ID']['output'];
 }
 
+export interface GqlSCompassInterview {
+    __typename?: 'CompassInterview';
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    dueAt: Scalars['DateTime']['output'];
+    endReason?: Maybe<GqlSCompassInterviewEndReason>;
+    interviewId: Scalars['ID']['output'];
+    messages: Array<GqlSCompassInterviewMessage>;
+    observationCount: Scalars['Int']['output'];
+    startedAt?: Maybe<Scalars['DateTime']['output']>;
+    status: GqlSCompassInterviewStatus;
+    triggerReason: GqlSCompassInterviewTriggerReason;
+}
+
+export type GqlSCompassInterviewEndReason = 'agent_satisfied' | 'skipped' | 'user_ended';
+
+export interface GqlSCompassInterviewMessage {
+    __typename?: 'CompassInterviewMessage';
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    interviewMessageId: Scalars['ID']['output'];
+    modelId?: Maybe<Scalars['String']['output']>;
+    role: GqlSCompassInterviewMessageRole;
+}
+
+export type GqlSCompassInterviewMessageRole = 'assistant' | 'user';
+
+export type GqlSCompassInterviewStatus = 'completed' | 'in_progress' | 'pending' | 'skipped';
+
+export type GqlSCompassInterviewTriggerReason = 'manual' | 'weekly_cron';
+
 export interface GqlSCompassObservation {
     __typename?: 'CompassObservation';
     analyzerModelId?: Maybe<Scalars['String']['output']>;
@@ -547,6 +606,8 @@ export interface GqlSCompassObservation {
     observationId: Scalars['ID']['output'];
     sourceChatId?: Maybe<Scalars['ID']['output']>;
     sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
+    sourceInterviewId?: Maybe<Scalars['ID']['output']>;
+    sourceInterviewMessageId?: Maybe<Scalars['ID']['output']>;
 }
 
 export type GqlSCompassObservationCategory = 'behavioral' | 'factual' | 'psychological';
@@ -1150,6 +1211,12 @@ export type GqlSResolversTypes = ResolversObject<{
         Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversTypes['ChatMessage'] }
     >;
     ChatUpdateTurnEnded: ResolverTypeWrapper<GqlSChatUpdateTurnEnded>;
+    CompassInterview: ResolverTypeWrapper<GqlSCompassInterview>;
+    CompassInterviewEndReason: GqlSCompassInterviewEndReason;
+    CompassInterviewMessage: ResolverTypeWrapper<GqlSCompassInterviewMessage>;
+    CompassInterviewMessageRole: GqlSCompassInterviewMessageRole;
+    CompassInterviewStatus: GqlSCompassInterviewStatus;
+    CompassInterviewTriggerReason: GqlSCompassInterviewTriggerReason;
     CompassObservation: ResolverTypeWrapper<GqlSCompassObservation>;
     CompassObservationCategory: GqlSCompassObservationCategory;
     CvEducation: ResolverTypeWrapper<GqlSCvEducation>;
@@ -1266,6 +1333,8 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ChatUpdateAssistantTextChunk: GqlSChatUpdateAssistantTextChunk;
     ChatUpdateMessageAppended: Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversParentTypes['ChatMessage'] };
     ChatUpdateTurnEnded: GqlSChatUpdateTurnEnded;
+    CompassInterview: GqlSCompassInterview;
+    CompassInterviewMessage: GqlSCompassInterviewMessage;
     CompassObservation: GqlSCompassObservation;
     CvEducation: GqlSCvEducation;
     CvEducationInput: GqlSCvEducationInput;
@@ -1320,6 +1389,7 @@ export type GqlSAdminResolvers<
     chatConfig?: Resolver<GqlSResolversTypes['AdminChatConfig'], ParentType, ContextType>;
     chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
     compass?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
+    cv?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
     logs?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminLogsArgs>>;
     project?: Resolver<GqlSResolversTypes['Project'], ParentType, ContextType, RequireFields<GqlSAdminProjectArgs, 'projectId'>>;
     projectRequests?: Resolver<Array<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType, Partial<GqlSAdminProjectRequestsArgs>>;
@@ -1351,6 +1421,14 @@ export type GqlSAdminCompassResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminCompass'] = GqlSResolversParentTypes['AdminCompass'],
 > = ResolversObject<{
+    interview?: Resolver<
+        Maybe<GqlSResolversTypes['CompassInterview']>,
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminCompassInterviewArgs, 'interviewId'>
+    >;
+    interviewPending?: Resolver<Maybe<GqlSResolversTypes['CompassInterview']>, ParentType, ContextType>;
+    interviews?: Resolver<Array<GqlSResolversTypes['CompassInterview']>, ParentType, ContextType>;
     observations?: Resolver<
         Array<GqlSResolversTypes['CompassObservation']>,
         ParentType,
@@ -1393,6 +1471,30 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationChatToolApprovalRespondArgs, 'approvalId' | 'approved' | 'assistantOptions'>
+    >;
+    compassInterviewEnd?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCompassInterviewEndArgs, 'interviewId'>
+    >;
+    compassInterviewMessageSend?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCompassInterviewMessageSendArgs, 'content' | 'interviewId'>
+    >;
+    compassInterviewSkip?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCompassInterviewSkipArgs, 'interviewId'>
+    >;
+    compassInterviewStart?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCompassInterviewStartArgs, 'interviewId'>
     >;
     compassObservationDismiss?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -1942,6 +2044,32 @@ export type GqlSChatUpdateTurnEndedResolvers<
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlSCompassInterviewResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CompassInterview'] = GqlSResolversParentTypes['CompassInterview'],
+> = ResolversObject<{
+    completedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    dueAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    endReason?: Resolver<Maybe<GqlSResolversTypes['CompassInterviewEndReason']>, ParentType, ContextType>;
+    interviewId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    messages?: Resolver<Array<GqlSResolversTypes['CompassInterviewMessage']>, ParentType, ContextType>;
+    observationCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    startedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['CompassInterviewStatus'], ParentType, ContextType>;
+    triggerReason?: Resolver<GqlSResolversTypes['CompassInterviewTriggerReason'], ParentType, ContextType>;
+}>;
+
+export type GqlSCompassInterviewMessageResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CompassInterviewMessage'] = GqlSResolversParentTypes['CompassInterviewMessage'],
+> = ResolversObject<{
+    content?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    interviewMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    modelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    role?: Resolver<GqlSResolversTypes['CompassInterviewMessageRole'], ParentType, ContextType>;
+}>;
+
 export type GqlSCompassObservationResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['CompassObservation'] = GqlSResolversParentTypes['CompassObservation'],
@@ -1955,6 +2083,8 @@ export type GqlSCompassObservationResolvers<
     observationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     sourceChatId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
     sourceChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    sourceInterviewId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    sourceInterviewMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
 }>;
 
 export type GqlSCvEducationResolvers<
@@ -2313,6 +2443,8 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ChatUpdateAssistantTextChunk?: GqlSChatUpdateAssistantTextChunkResolvers<ContextType>;
     ChatUpdateMessageAppended?: GqlSChatUpdateMessageAppendedResolvers<ContextType>;
     ChatUpdateTurnEnded?: GqlSChatUpdateTurnEndedResolvers<ContextType>;
+    CompassInterview?: GqlSCompassInterviewResolvers<ContextType>;
+    CompassInterviewMessage?: GqlSCompassInterviewMessageResolvers<ContextType>;
     CompassObservation?: GqlSCompassObservationResolvers<ContextType>;
     CvEducation?: GqlSCvEducationResolvers<ContextType>;
     CvExperience?: GqlSCvExperienceResolvers<ContextType>;
@@ -2354,6 +2486,23 @@ export const GqlSChatAssistantInputValueKindSchema: z.ZodType<
     'Boolean' | 'Date' | 'DateRange' | 'DateTime' | 'String' | 'StringList' | 'Time',
     'Boolean' | 'Date' | 'DateRange' | 'DateTime' | 'String' | 'StringList' | 'Time'
 > = z.enum(['Boolean', 'Date', 'DateRange', 'DateTime', 'String', 'StringList', 'Time']);
+
+export const GqlSCompassInterviewEndReasonSchema: z.ZodType<
+    'agent_satisfied' | 'skipped' | 'user_ended',
+    'agent_satisfied' | 'skipped' | 'user_ended'
+> = z.enum(['agent_satisfied', 'skipped', 'user_ended']);
+
+export const GqlSCompassInterviewMessageRoleSchema: z.ZodType<'assistant' | 'user', 'assistant' | 'user'> = z.enum(['assistant', 'user']);
+
+export const GqlSCompassInterviewStatusSchema: z.ZodType<
+    'completed' | 'in_progress' | 'pending' | 'skipped',
+    'completed' | 'in_progress' | 'pending' | 'skipped'
+> = z.enum(['completed', 'in_progress', 'pending', 'skipped']);
+
+export const GqlSCompassInterviewTriggerReasonSchema: z.ZodType<'manual' | 'weekly_cron', 'manual' | 'weekly_cron'> = z.enum([
+    'manual',
+    'weekly_cron',
+]);
 
 export const GqlSCompassObservationCategorySchema: z.ZodType<
     'behavioral' | 'factual' | 'psychological',

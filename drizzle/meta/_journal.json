@@ -92,6 +92,13 @@
             "when": 1782914000000,
             "tag": "0012_compass_rename",
             "breakpoints": true
+        },
+        {
+            "idx": 13,
+            "version": "7",
+            "when": 1782845153106,
+            "tag": "0013_oval_guardian",
+            "breakpoints": true
         }
     ]
 }

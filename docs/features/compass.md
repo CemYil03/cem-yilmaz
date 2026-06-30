@@ -204,19 +204,154 @@ Bilingual UI copy (DE/EN) follows the inline `{ de, en }[locale]` pattern; the s
   prompt-building hot path.
 - The DB grows one row per admin user message that revealed something, plus one row per analyzed message. No retention policy in Phase 1 —
   admin chats are low-volume.
-- `ServerRuntime.ai` gains two model factories (`compassAnalyzerModel`, `compassSynthesizerModel`). The test stub returns
-  `MockLanguageModelV3` for each so existing command tests don't touch real LLMs.
+- `ServerRuntime.ai` gains three model factories (`compassAnalyzerModel`, `compassSynthesizerModel`, `compassInterviewerModel`). The test
+  stub returns `MockLanguageModelV3` for each so existing command tests don't touch real LLMs.
 - Tests for the analyzer/synthesizer are deferred; they're job handlers reading the same shape as commands and the model is stubbed via the
   existing utilities when needed.
 
+## Psychological-interview agent
+
+The passive analyzer can only see what Cem volunteers to his personal assistant. Topics he doesn't naturally bring up (mood, recent
+stressors, goals shifting, things weighing on him) never land in the picture, and the picture stales as his life moves on. The interview
+agent fixes that: a recurring job creates a "due" interview, Cem opens it from `/workspace/compass`, an interviewer agent asks 4–8 directed
+questions, replies feed the same observations / synthesis pipeline as everything else. The name "compass" was chosen partly to accommodate
+this — an interview is a way to _take a bearing_.
+
+### User behavior
+
+A new **Interviews** tab on `/workspace/compass`, alongside Summary / Portrait / Psychological. Three states:
+
+1. No open interview → quiet empty state explaining the cadence.
+2. Open interview waiting (`pending`) → prominent card with "Start interview" / "Skip this week". A small amber dot on the tab itself flags
+   that something is waiting so Cem sees it from any of the other tabs.
+3. Active interview (`in_progress`) → transcript + composer (pinned by `?interviewId=…`); the agent asks one question per turn, Cem replies,
+   the agent decides when it has enough and calls `concludeInterview`. He can also click "End interview" any time.
+
+Beneath all three states sits a quiet "Past interviews" rail with status, due-date, and observation count per row.
+
+### Options considered
+
+#### Storage
+
+- **Dedicated tables (chosen).** `CompassInterviews` + `CompassInterviewMessages` + `CompassInterviewMessageAnalysis`. Keeps `chats.scope`
+  strictly `'public' | 'admin'` (which is what the multi-agent-chat dispatch rests on — see
+  [`docs/architecture/multi-agent-chat.md`](../architecture/multi-agent-chat.md)), and gives the interview row its own status / dueAt /
+  endReason fields. Interview turns don't need approval, tool-call streaming, generations, or input collection — a flat user/assistant log
+  is enough.
+- **Reusing `Chats` with a new scope.** Rejected. Adding a third value contradicts the binary access-path dispatch and would force scope
+  checks at every chat command call site.
+
+#### Trigger
+
+- **Recurring `compassInterviewWeeklyDue` cron + pull-based page prompt (chosen).** Fires Monday 09:00 server time (`0 9 * * 1`).
+  Idempotent: the handler short-circuits if a `pending` or `in_progress` interview already exists, so a missed week (worker offline, busy
+  week) just resumes next week. No email or push notification — Cem sees the waiting card next time he opens the page.
+- **Manual-only.** Rejected for now; defeats the "refresh the picture on a cadence" goal. The schema retains `triggerReason='manual'` so a
+  future "Start a new interview now" button can land without a migration.
+- **Email / push notification.** Rejected. Pulls are calm; pushes are not. Can revisit if the cadence rises.
+
+#### Firewall stance (the deliberate exception)
+
+The personal assistant still reads only `Compass.summary` (via `compassSummaryGet`). The interview agent — and **only** the interview agent
+— sees `summary` + `psychology` + recent non-dismissed observations, because its whole job is to probe gaps in the existing picture without
+repeating itself. Without `psychology` and recent observations it would ask redundant questions every cadence.
+
+The widening is anchored in exactly one query:
+
+```text
+src/server/queries/compassInterviewContextGet.ts   ← FIREWALL EXCEPTION ANCHOR
+                                                     called only by agentCompassInterviewer
+```
+
+If you find yourself wanting another reader of this richer slice — don't. Write a narrower query.
+
+### Implementation
+
+Schema (`src/server/db/schema.ts`):
+
+```text
+CompassInterviews
+  interviewId PK
+  status        varchar  -- 'pending' | 'in_progress' | 'completed' | 'skipped'
+  dueAt, startedAt?, completedAt?
+  endReason     varchar?  -- 'agent_satisfied' | 'user_ended' | 'skipped'
+  triggerReason varchar   -- 'weekly_cron' | 'manual'
+  observationCount int    -- denormalized; bumped by the analyzer
+  indexes: (status, dueAt), createdAt
+
+CompassInterviewMessages
+  interviewMessageId PK
+  interviewId FK → CompassInterviews (ON DELETE CASCADE)
+  role varchar -- 'user' | 'assistant'
+  content text, modelId varchar?, createdAt
+  index: (interviewId, createdAt)
+
+CompassInterviewMessageAnalysis        -- idempotency log, mirrors CompassMessageAnalysis
+  interviewMessageId PK FK → CompassInterviewMessages (CASCADE)
+  observationsCreated int, analyzerModelId, analyzedAt
+```
+
+`CompassObservations.sourceChatMessageId` was widened with a sibling `sourceInterviewMessageId` (FK SET NULL, exactly one of the two set per
+row). The mapper exposes both plus the resolved parent ids so the page can deep-link from any observation back into its source thread.
+
+Code:
+
+```text
+src/server/agents/
+  compassInterviewConfig.ts          cron expression, min/max question counts, recent-obs cap
+  agentCompassInterviewer.ts         the interview agent — one turn per call, single tool
+                                     `concludeInterview`. Reads compassInterviewContextGet.
+
+src/server/queries/
+  compassInterviewGet.ts             load one interview + its messages
+  compassInterviewList.ts            newest-first list for the past-interviews rail
+  compassInterviewActiveDueGet.ts    the single open interview (pending or in_progress)
+  compassInterviewContextGet.ts      FIREWALL EXCEPTION ANCHOR
+
+src/server/commands/
+  compassInterviewStart.ts           pending → in_progress; runs the agent's opening turn
+  compassInterviewMessageSend.ts     appends user msg; runs one agent turn; enqueues
+                                     compassAnalyze fire-and-forget; transitions to
+                                     'completed' if the agent called concludeInterview.
+  compassInterviewEnd.ts             user-initiated end (endReason='user_ended')
+  compassInterviewSkip.ts            pending → skipped
+
+src/server/jobs/handlers/
+  compassInterviewWeeklyDue.ts       RecurringJobDefinition, cron '0 9 * * 1'.
+                                     Idempotent — short-circuits when an open row exists.
+  compassAnalyze.ts                  Extended: accepts { chatMessageId } | { interviewMessageId };
+                                     branches on which idempotency table / context block / source
+                                     FK to use. The interview branch loads BOTH user + assistant
+                                     turns as rolling context (the interviewer's question is
+                                     exactly what gives the reply its meaning).
+```
+
+### Agent shape
+
+`agentCompassInterviewer` uses `generateText` (not `ToolLoopAgent`) because each "step" is Cem typing his reply, which arrives on a separate
+command call. Single sentinel tool `concludeInterview({ note })` that the command branches on — its `note` is logged for audit, not
+persisted on the row. System prompt is anchored to the soft 4–8 question target, asks for one question per turn, matches Cem's reply
+language, and explicitly tells the agent NOT to summarize answers back (the analyzer does that).
+
+Model: `serverRuntime.ai.compassInterviewerModel()` — Gemini 2.5 Pro by default. The interviewer fires only a few times a week and the
+question-quality bar is high (probe gaps, don't repeat), so the higher tier is worth it.
+
+### Cadence and idempotency
+
+At most one open interview exists at a time. The cron handler reads `(status IN ('pending', 'in_progress'))` and exits if one is already
+there, so two firings in the same minute, a worker replay, or a busy week with an un-started interview all converge on one row. The skip
+command transitions `pending → skipped`, clearing the guard so next week's cron creates a fresh row.
+
+Phase-2 follow-up (future): per-user compasses once OAuth lands — the cron then creates one row per active user, gated by per-user
+preferences.
+
 ## Phase 2 follow-ups
 
-- **Psychological-interview agent.** A specialized sub-agent that periodically interviews Cem to draw out new bearings — mood, recent
-  stressors, goals he hasn't surfaced unprompted. Same observations / synthesis pipeline; the agent simply contributes more diverse
-  observations on a cadence (weekly? monthly?) instead of waiting for him to mention things in passing. The name "compass" was chosen partly
-  to accommodate this: an interview is a way to _take a bearing_.
+- **~~Psychological-interview agent.~~ Done — see "Psychological-interview agent" above.**
 - Per-user compasses once GitHub OAuth lands. Today's `COMPASS_SINGLETON_ID` becomes "the owner's id" and new users get fresh rows.
 - Optional weekly cron synthesis as a backstop for idle weeks (currently only threshold + manual).
 - "Undismiss" mutation if Cem changes his mind on an observation.
 - Possibly a low-frequency analyzer pass over assistant messages once their reasoning is rich enough to be informative (today: avoided to
   prevent hall-of-mirrors bias).
+- "Start a new interview now" button for off-cycle, manually-triggered interviews. The schema's `triggerReason='manual'` is reserved for
+  this; no migration needed when it lands.

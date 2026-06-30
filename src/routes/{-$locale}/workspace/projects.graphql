@@ -1,98 +1,114 @@
 # Workspace projects operations — co-located with the `/workspace/projects`
 # editor route. Drives the Inbox (`projectRequests`), Projects board
 # (`projects` + nested `tasks`), and standalone Todos tab (`standaloneTasks`).
-# See `docs/features/projects-workspace.md`.
+# The page's read shape lives in the `WorkspaceProjectsPageUser` fragment so
+# both the route loader query and the live `userUpdates` subscription deliver
+# the exact same payload — mutations no longer trigger `router.invalidate()`;
+# the server pushes the new state over SSE and the page replaces its
+# `useState` with the subscription payload. See
+# `docs/features/projects-workspace.md` and
+# `docs/architecture/state-synchronization.md`.
+
+fragment WorkspaceProjectsPageUser on User {
+    admin {
+        projectRequests {
+            projectRequestId
+            chatId
+            name
+            email
+            company
+            projectType
+            description
+            budget
+            timeline
+            status
+            verifiedAt
+            createdAt
+            convertedProject {
+                projectId
+                title
+                status
+            }
+        }
+        projects {
+            projectId
+            title
+            description
+            notes
+            status
+            position
+            startedAt
+            completedAt
+            createdAt
+            updatedAt
+            totalWorkSec
+            sourceRequest {
+                projectRequestId
+                name
+                email
+                company
+                projectType
+            }
+            tasks {
+                taskId
+                projectId
+                title
+                notes
+                status
+                position
+                dueAt
+                completedAt
+            }
+            activities {
+                activityId
+                projectId
+                taskId
+                kind
+                channel
+                title
+                notes
+                occurredAt
+                startedAt
+                endedAt
+                durationSec
+                createdAt
+            }
+        }
+        standaloneTasks {
+            taskId
+            projectId
+            title
+            notes
+            status
+            position
+            dueAt
+            completedAt
+        }
+        activeTimer {
+            activityId
+            projectId
+            taskId
+            kind
+            title
+            occurredAt
+            startedAt
+            endedAt
+            durationSec
+        }
+    }
+}
 
 query WorkspaceProjectsPage {
     currentSession {
         user {
-            admin {
-                projectRequests {
-                    projectRequestId
-                    chatId
-                    name
-                    email
-                    company
-                    projectType
-                    description
-                    budget
-                    timeline
-                    status
-                    verifiedAt
-                    createdAt
-                    convertedProject {
-                        projectId
-                        title
-                        status
-                    }
-                }
-                projects {
-                    projectId
-                    title
-                    description
-                    notes
-                    status
-                    position
-                    startedAt
-                    completedAt
-                    createdAt
-                    updatedAt
-                    totalWorkSec
-                    sourceRequest {
-                        projectRequestId
-                        name
-                        email
-                        company
-                        projectType
-                    }
-                    tasks {
-                        taskId
-                        projectId
-                        title
-                        notes
-                        status
-                        position
-                        dueAt
-                        completedAt
-                    }
-                    activities {
-                        activityId
-                        projectId
-                        taskId
-                        kind
-                        channel
-                        title
-                        notes
-                        occurredAt
-                        startedAt
-                        endedAt
-                        durationSec
-                        createdAt
-                    }
-                }
-                standaloneTasks {
-                    taskId
-                    projectId
-                    title
-                    notes
-                    status
-                    position
-                    dueAt
-                    completedAt
-                }
-                activeTimer {
-                    activityId
-                    projectId
-                    taskId
-                    kind
-                    title
-                    occurredAt
-                    startedAt
-                    endedAt
-                    durationSec
-                }
-            }
+            ...WorkspaceProjectsPageUser
         }
+    }
+}
+
+subscription WorkspaceProjectsPageUpdates {
+    userUpdates {
+        ...WorkspaceProjectsPageUser
     }
 }
 

@@ -21,6 +21,10 @@ import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillUpsert } from '../commands/cvSkillUpsert';
 import { compassObservationDismiss } from '../commands/compassObservationDismiss';
 import { compassSynthesizeRequest } from '../commands/compassSynthesizeRequest';
+import { compassInterviewStart } from '../commands/compassInterviewStart';
+import { compassInterviewMessageSend } from '../commands/compassInterviewMessageSend';
+import { compassInterviewEnd } from '../commands/compassInterviewEnd';
+import { compassInterviewSkip } from '../commands/compassInterviewSkip';
 import { projectActivityDelete } from '../commands/projectActivityDelete';
 import { projectActivityUpsert } from '../commands/projectActivityUpsert';
 import { projectDelete } from '../commands/projectDelete';
@@ -48,6 +52,7 @@ import { guardAdminMutation } from '../guards/guardAdminMutation';
 import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
 import { toGqlCompass } from '../mappers/toGqlCompass';
+import { toGqlCompassInterview } from '../mappers/toGqlCompassInterview';
 import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
@@ -59,6 +64,9 @@ import { cvExperienceList } from '../queries/cvExperienceList';
 import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
 import { compassGet } from '../queries/compassGet';
+import { compassInterviewActiveDueGet } from '../queries/compassInterviewActiveDueGet';
+import { compassInterviewGet } from '../queries/compassInterviewGet';
+import { compassInterviewList } from '../queries/compassInterviewList';
 import { logsList } from '../queries/logsList';
 import { compassObservationList } from '../queries/compassObservationList';
 import { compassSynthesisInProgressGet } from '../queries/compassSynthesisInProgressGet';
@@ -93,6 +101,11 @@ import type {
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillUpsertArgs,
     GqlSAdminMutationCompassObservationDismissArgs,
+    GqlSAdminMutationCompassInterviewStartArgs,
+    GqlSAdminMutationCompassInterviewMessageSendArgs,
+    GqlSAdminMutationCompassInterviewEndArgs,
+    GqlSAdminMutationCompassInterviewSkipArgs,
+    GqlSAdminCompassInterviewArgs,
     GqlSAdminMutationProjectActivityDeleteArgs,
     GqlSAdminMutationProjectActivityUpsertArgs,
     GqlSAdminMutationProjectDeleteArgs,
@@ -225,12 +238,22 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 return chatFindByScope(args.chatId, 'admin', requestingSession, serverRuntime);
             },
             // Compass shell — the scalar fields come straight off the row;
-            // `observations` is resolved separately so it can take arguments
-            // and run its own join, and `synthesisInProgress` is resolved
-            // separately because it reads pg-boss, not the `Compass` row.
+            // `observations`, `interviews`, `interview`, and
+            // `interviewPending` resolve separately so they can take
+            // arguments and run their own queries, and `synthesisInProgress`
+            // is resolved separately because it reads pg-boss, not the
+            // `Compass` row. We pass placeholders here that the field
+            // resolvers below overwrite.
             async compass(): Promise<GqlSAdminCompass> {
                 const row = await compassGet(serverRuntime.db);
-                return { ...toGqlCompass(row), observations: [], synthesisInProgress: false };
+                return {
+                    ...toGqlCompass(row),
+                    observations: [],
+                    synthesisInProgress: false,
+                    interviews: [],
+                    interview: null,
+                    interviewPending: null,
+                };
             },
             projectRequests(_parent: GqlSAdmin, args: GqlSAdminProjectRequestsArgs, requestingSession: GqlSSession) {
                 return projectRequestsList(args.status ?? null, requestingSession, serverRuntime);
@@ -249,6 +272,14 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             activeTimer(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
                 return activeTimerGet(requestingSession, serverRuntime);
+            },
+            // CV editor reads the same `CvQuery` the public surfaces use. The
+            // resolver chain on `User.admin` already gated this with
+            // `guardAdmin`, and `CvQuery` field resolvers run on every
+            // request regardless of parent — the empty object is just a
+            // shell, identical to `Query.cv()` below.
+            cv(): GqlSCvQuery {
+                return {} as GqlSCvQuery;
             },
             async chatConfig(_parent: GqlSAdmin) {
                 // Catalog is server-static — same array on every read. The
@@ -283,6 +314,31 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             // Derived from pg-boss — see `compassSynthesisInProgressGet`.
             synthesisInProgress() {
                 return compassSynthesisInProgressGet(serverRuntime);
+            },
+            // Psychological-interview rails. Each resolver returns one shape
+            // of `CompassInterview`; the `messages` field is populated only
+            // by the `interview(interviewId)` lookup (the list/pending forms
+            // hand `[]`, and the `CompassInterview.messages` field resolver
+            // below lazily loads them on demand).
+            async interviews() {
+                const rows = await compassInterviewList(serverRuntime);
+                return rows.map((row) => toGqlCompassInterview(row));
+            },
+            async interview(_parent: GqlSAdminCompass, args: GqlSAdminCompassInterviewArgs) {
+                const loaded = await compassInterviewGet(args.interviewId, serverRuntime);
+                if (!loaded) return null;
+                return toGqlCompassInterview(loaded.interview, loaded.messages);
+            },
+            async interviewPending() {
+                const row = await compassInterviewActiveDueGet(serverRuntime);
+                if (!row) return null;
+                // Caller almost always wants the messages to render the
+                // in-progress card's transcript inline; load them here so the
+                // page query doesn't need a second round-trip. For a freshly
+                // `pending` row this returns `[]`, which is correct.
+                const loaded = await compassInterviewGet(row.interviewId, serverRuntime);
+                if (!loaded) return toGqlCompassInterview(row);
+                return toGqlCompassInterview(loaded.interview, loaded.messages);
             },
         },
         CvQuery: {
@@ -378,6 +434,34 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             compassSynthesizeRequest({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
                 return compassSynthesizeRequest(userId, requestingSession, serverRuntime);
+            },
+            compassInterviewStart(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCompassInterviewStartArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return compassInterviewStart(userId, args, requestingSession, serverRuntime);
+            },
+            compassInterviewMessageSend(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCompassInterviewMessageSendArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return compassInterviewMessageSend(userId, args, requestingSession, serverRuntime);
+            },
+            compassInterviewEnd(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCompassInterviewEndArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return compassInterviewEnd(userId, args, requestingSession, serverRuntime);
+            },
+            compassInterviewSkip(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCompassInterviewSkipArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return compassInterviewSkip(userId, args, requestingSession, serverRuntime);
             },
             projectRequestArchive(
                 { userId }: GqlSAdminMutation,

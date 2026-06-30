@@ -1,10 +1,10 @@
 # Operations for the workspace compass page (`/workspace/compass`).
-#
-# `WorkspaceCompassPage` is the main read query — three text artifacts, plus
-# the observations list filtered by category. The list refetches when the
-# category filter changes because URQL's policy plays it safe with arg-change
-# misses; the synthesized text artifacts never change with category so they
-# are loaded once and cached.
+# Co-located with `/workspace/compass`. The page's read shape lives in the
+# `WorkspaceCompassPageUser` fragment so both the route loader query and the
+# live `userUpdates` subscription deliver the exact same payload — mutations
+# no longer trigger `router.invalidate()`; the synthesis job publishes
+# `userUpdates` on completion and the page replaces its `useState` with the
+# subscription payload. See `docs/architecture/state-synchronization.md`.
 #
 # See `docs/features/compass.md`.
 
@@ -15,25 +15,82 @@ fragment WorkspaceCompassObservation on CompassObservation {
     confidence
     sourceChatId
     sourceChatMessageId
+    sourceInterviewId
+    sourceInterviewMessageId
     analyzerModelId
     dismissedAt
     createdAt
 }
 
+fragment WorkspaceCompassInterviewMessage on CompassInterviewMessage {
+    interviewMessageId
+    role
+    content
+    createdAt
+}
+
+fragment WorkspaceCompassInterviewSummary on CompassInterview {
+    interviewId
+    status
+    dueAt
+    startedAt
+    completedAt
+    endReason
+    triggerReason
+    observationCount
+}
+
+fragment WorkspaceCompassInterviewWithMessages on CompassInterview {
+    ...WorkspaceCompassInterviewSummary
+    messages {
+        ...WorkspaceCompassInterviewMessage
+    }
+}
+
+fragment WorkspaceCompassPageUser on User {
+    admin {
+        compass {
+            summary
+            prose
+            psychology
+            synthesizedAt
+            synthesisModelId
+            observationsSinceSynthesis
+            synthesisInProgress
+            observations(category: $category, includeDismissed: $includeDismissed) {
+                ...WorkspaceCompassObservation
+            }
+            interviewPending {
+                ...WorkspaceCompassInterviewWithMessages
+            }
+            interviews {
+                ...WorkspaceCompassInterviewSummary
+            }
+        }
+    }
+}
+
 query WorkspaceCompassPage($category: CompassObservationCategory, $includeDismissed: Boolean) {
+    currentSession {
+        user {
+            ...WorkspaceCompassPageUser
+        }
+    }
+}
+
+subscription WorkspaceCompassPageUpdates($category: CompassObservationCategory, $includeDismissed: Boolean) {
+    userUpdates {
+        ...WorkspaceCompassPageUser
+    }
+}
+
+query WorkspaceCompassInterview($interviewId: ID!) {
     currentSession {
         user {
             admin {
                 compass {
-                    summary
-                    prose
-                    psychology
-                    synthesizedAt
-                    synthesisModelId
-                    observationsSinceSynthesis
-                    synthesisInProgress
-                    observations(category: $category, includeDismissed: $includeDismissed) {
-                        ...WorkspaceCompassObservation
+                    interview(interviewId: $interviewId) {
+                        ...WorkspaceCompassInterviewWithMessages
                     }
                 }
             }
@@ -54,6 +111,40 @@ mutation WorkspaceCompassSynthesizeRequest {
         compassSynthesizeRequest {
             success
             referenceId
+        }
+    }
+}
+
+mutation WorkspaceCompassInterviewStart($interviewId: ID!) {
+    admin {
+        compassInterviewStart(interviewId: $interviewId) {
+            success
+            referenceId
+        }
+    }
+}
+
+mutation WorkspaceCompassInterviewMessageSend($interviewId: ID!, $content: String!) {
+    admin {
+        compassInterviewMessageSend(interviewId: $interviewId, content: $content) {
+            success
+            referenceId
+        }
+    }
+}
+
+mutation WorkspaceCompassInterviewEnd($interviewId: ID!) {
+    admin {
+        compassInterviewEnd(interviewId: $interviewId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceCompassInterviewSkip($interviewId: ID!) {
+    admin {
+        compassInterviewSkip(interviewId: $interviewId) {
+            success
         }
     }
 }

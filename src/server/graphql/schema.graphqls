@@ -466,6 +466,17 @@ type AdminCompass {
     # `dismissed: true` shows dismissed rows, `dismissed` omitted with
     # `includeDismissed: true` shows both.
     observations(category: CompassObservationCategory, includeDismissed: Boolean): [CompassObservation!]!
+    # All psychological-interview rows newest-first — pending + in-progress at
+    # the top, then completed/skipped history beneath. See
+    # `docs/features/compass.md` ("Psychological-interview agent").
+    interviews: [CompassInterview!]!
+    # A single interview by id, including its message transcript. Returns
+    # null when the id doesn't resolve.
+    interview(interviewId: ID!): CompassInterview
+    # The open interview if one exists — `pending` (Cem hasn't started yet)
+    # or `in_progress` (mid-conversation). The page surfaces this as the
+    # "interview waiting" / "resume" card. Null when no open interview.
+    interviewPending: CompassInterview
 }
 
 enum CompassObservationCategory {
@@ -490,10 +501,76 @@ type CompassObservation {
     # the synthesizer has already absorbed it).
     sourceChatMessageId: ID
     sourceChatId: ID
+    # Source interview message — set when the analyzer extracted this row
+    # from a psychological-interview reply rather than an admin chat. Exactly
+    # one of `sourceChatMessageId` / `sourceInterviewMessageId` is set per row.
+    # Null when the originating message has been deleted (cascades to null
+    # like the chat-side FK).
+    sourceInterviewMessageId: ID
+    # Interview the source message belongs to, surfaced for deep-linking
+    # from the observations stream back into the originating interview's
+    # transcript. Null when `sourceInterviewMessageId` is null.
+    sourceInterviewId: ID
     # `null` while active, set on dismiss. Dismissed observations are
     # excluded from synthesis input but kept as an audit trail.
     dismissedAt: DateTime
     createdAt: DateTime!
+}
+
+# --- Compass psychological interviews ---------------------------------------
+#
+# A recurring job creates a `pending` row on a cadence; Cem starts it from
+# `/workspace/compass`; the interviewer agent and his replies fill
+# `CompassInterviewMessages` until the agent calls `concludeInterview` or
+# Cem ends early. See `docs/features/compass.md`.
+type CompassInterview {
+    interviewId: ID!
+    status: CompassInterviewStatus!
+    dueAt: DateTime!
+    startedAt: DateTime
+    completedAt: DateTime
+    endReason: CompassInterviewEndReason
+    triggerReason: CompassInterviewTriggerReason!
+    # Denormalized count of observations the analyzer extracted from this
+    # interview's user replies. Surfaced on the past-interviews list so Cem
+    # sees at a glance how much signal a given week produced.
+    observationCount: Int!
+    # Full transcript in chronological order. Cem's replies and the
+    # interviewer's questions interleave. Always present (empty array
+    # before the first turn lands).
+    messages: [CompassInterviewMessage!]!
+}
+
+type CompassInterviewMessage {
+    interviewMessageId: ID!
+    role: CompassInterviewMessageRole!
+    content: String!
+    # Model id used to produce assistant turns. Null on user turns.
+    modelId: String
+    createdAt: DateTime!
+}
+
+enum CompassInterviewStatus {
+    pending
+    in_progress
+    completed
+    skipped
+}
+
+enum CompassInterviewEndReason {
+    agent_satisfied
+    user_ended
+    skipped
+}
+
+enum CompassInterviewTriggerReason {
+    weekly_cron
+    manual
+}
+
+enum CompassInterviewMessageRole {
+    user
+    assistant
 }
 
 type Mutation {
@@ -992,6 +1069,13 @@ extend type Admin {
     # `endedAt IS NULL AND kind = 'work'` — the DB enforces this via a
     # partial unique index.
     activeTimer: ProjectActivity
+    # CV editor read namespace — mounts the same `CvQuery` shape the public
+    # `/cv` and `/about` surfaces consume, but reached through `User.admin`
+    # so the workspace CV page can seed-and-subscribe under `userUpdates`
+    # like every other admin surface. The mutations stay on
+    # `AdminMutation.cv*` and continue to publish `userUpdates` after commit.
+    # See `docs/architecture/state-synchronization.md`.
+    cv: CvQuery!
 }
 
 input ProjectCreate {
@@ -1118,6 +1202,24 @@ extend type AdminMutation {
     # Force a synthesis pass now. Enqueues the `compassSynthesize` job. The
     # job updates the `Compass` row and resets `observationsSinceSynthesis`.
     compassSynthesizeRequest: MutationResult!
+    # Start a `pending` psychological interview — transitions it to
+    # `in_progress` and runs the agent's opening turn. Idempotent: a repeat
+    # call on an already-started interview is a no-op rather than a second
+    # opener. See `docs/features/compass.md`.
+    compassInterviewStart(interviewId: ID!): MutationResult!
+    # Append Cem's reply to an in-progress interview, run the next agent
+    # turn, and persist the assistant's reply. Enqueues `compassAnalyze`
+    # fire-and-forget for the user message. When the agent calls
+    # `concludeInterview`, the interview row transitions to `completed`
+    # automatically in the same call.
+    compassInterviewMessageSend(interviewId: ID!, content: String!): MutationResult!
+    # User-initiated early end — moves an `in_progress` interview to
+    # `completed` with `endReason='user_ended'`. Already-analyzed user
+    # turns keep their observations; no new agent turn fires.
+    compassInterviewEnd(interviewId: ID!): MutationResult!
+    # Skip a `pending` interview without starting it. Clears the cron's
+    # idempotency check so next week's invocation creates a fresh one.
+    compassInterviewSkip(interviewId: ID!): MutationResult!
 
     # --- Workspace projects -------------------------------------------------
     # Archive an incoming request without converting it to a project. Flips

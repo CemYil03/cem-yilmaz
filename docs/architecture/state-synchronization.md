@@ -78,3 +78,43 @@ directly against the user id with no prefix.
 - PostgreSQL NOTIFY payload is limited to ~8000 bytes — large payloads must be chunked or referenced by ID
 - Single listener connection means a single point of failure for all subscriptions — the reconnection logic handles this but there is a
   brief gap
+
+## Client Consumption: Seed-and-Subscribe
+
+The pub-sub plumbing is only half the contract. The other half is that the client treats the subscription payload as the source of truth —
+the route loader seeds initial state, and every server push **replaces** that state. Mutations never re-fetch from the client side.
+
+### The Pattern
+
+For any workspace page that displays admin-owned data:
+
+1. Define a `fragment <Page>User on User` in the page's `.graphql` file capturing the page's exact selection.
+2. The route's load query spreads that fragment under `currentSession.user`:
+   ```graphql
+   query <Page>($projectId: ID!) {
+       currentSession { user { ...<Page>User } }
+   }
+   ```
+3. A sibling subscription on `userUpdates` spreads the same fragment — the payload type matches the seed type:
+   ```graphql
+   subscription <Page>Updates($projectId: ID!) {
+       userUpdates { ...<Page>User }
+   }
+   ```
+4. The page seeds `useState<GqlC<Page>UserFragment>(loaderData.currentSession.user)` once on mount.
+5. An imperative URQL subscription replaces that state on every push. Use `client.executeSubscription` + `pipe(subscribe(...))` from `wonka`
+   — **never** `useSubscription`. URQL's declarative hook can deliver each event more than once under concurrent React (its reducer runs
+   inside a state-updater callback that React may invoke multiple times); production-tested in `useChatLiveUpdates.tsx`.
+6. Mutations call the server and return. They do **not** call `router.invalidate()`, refetch, or set state. Every workspace command already
+   calls `serverRuntime.publish.userUpdates({ userId })` after commit — the subscription closes the loop.
+
+### Reference Implementations
+
+- `src/web/chat/useChatLiveUpdates.tsx` — the chat-updates blueprint (per-turn `generationId` channel).
+- `src/routes/{-$locale}/workspace/projects_.$projectId.tsx` — the `userUpdates` blueprint, with the hook inlined at file scope because it
+  has a single consumer. Extract a shared helper only when a third consumer appears.
+
+### Why Inline, Not a Generic Hook
+
+The hook is ~25 lines and the body is mostly the fragment-specific type parameter. A premature abstraction would either erase the type
+(`unknown` payload) or thread a generic that adds friction without saving code. When the third consumer lands, extract then.

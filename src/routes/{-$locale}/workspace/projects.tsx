@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
     ArchiveIcon,
@@ -16,7 +16,8 @@ import {
     Trash2Icon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useMutation } from 'urql';
+import { createRequest, useClient, useMutation } from 'urql';
+import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
@@ -25,12 +26,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
-import type { GqlCProjectStatus, GqlCTaskStatus, GqlCWorkspaceProjectsPageQuery } from '../../../web/graphql/generated';
+import type {
+    GqlCProjectStatus,
+    GqlCTaskStatus,
+    GqlCWorkspaceProjectsPageUpdatesSubscription,
+    GqlCWorkspaceProjectsPageUserFragment,
+} from '../../../web/graphql/generated';
 import {
     WorkspaceProjectRequestArchiveDocument,
     WorkspaceProjectRequestDeleteDocument,
     WorkspaceProjectUpsertDocument,
     WorkspaceProjectsPageDocument,
+    WorkspaceProjectsPageUpdatesDocument,
     WorkspaceTaskDeleteDocument,
     WorkspaceTaskUpsertDocument,
 } from '../../../web/graphql/generated';
@@ -135,7 +142,7 @@ const projectsSearchSchema = z.object({
 
 type ProjectsSearch = z.infer<typeof projectsSearchSchema>;
 
-type WorkspaceProjectsAdmin = NonNullable<NonNullable<GqlCWorkspaceProjectsPageQuery['currentSession']['user']>['admin']>;
+type WorkspaceProjectsAdmin = NonNullable<GqlCWorkspaceProjectsPageUserFragment['admin']>;
 
 export const Route = createFileRoute('/{-$locale}/workspace/projects')({
     validateSearch: projectsSearchSchema,
@@ -161,10 +168,14 @@ function WorkspaceProjects() {
     const navigate = Route.useNavigate();
     const tab: Tab = search.tab ?? 'projects';
     const data = Route.useLoaderData();
-    const router = useRouter();
-    const onChanged = () => router.invalidate();
 
-    const admin = data.currentSession.user?.admin;
+    // Server-authoritative state: seed once from the route loader, then let
+    // the `userUpdates` subscription replace it on every server push. Every
+    // mutation on this page already calls `serverRuntime.publish.userUpdates`
+    // server-side, so we never need to re-fetch from the client.
+    // See `docs/architecture/state-synchronization.md` — Seed-and-Subscribe.
+    const user = useWorkspaceProjectsPageLiveUser(data.currentSession.user);
+    const admin = user?.admin;
     const projectRequests = admin?.projectRequests ?? [];
     const projects = admin?.projects ?? [];
     const standaloneTasks = admin?.standaloneTasks ?? [];
@@ -251,17 +262,10 @@ function WorkspaceProjects() {
 
             <div className="mt-8">
                 {tab === 'inbox' ? (
-                    <InboxSection
-                        rows={projectRequests}
-                        showArchived={search.inboxView === 'archive'}
-                        locale={locale}
-                        onChanged={onChanged}
-                    />
+                    <InboxSection rows={projectRequests} showArchived={search.inboxView === 'archive'} locale={locale} />
                 ) : null}
-                {tab === 'projects' ? (
-                    <ProjectsBoard rows={projects} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
-                ) : null}
-                {tab === 'todos' ? <TodosSection rows={standaloneTasks} locale={locale} onChanged={onChanged} /> : null}
+                {tab === 'projects' ? <ProjectsBoard rows={projects} activeTimer={activeTimer} locale={locale} /> : null}
+                {tab === 'todos' ? <TodosSection rows={standaloneTasks} locale={locale} /> : null}
             </div>
         </main>
     );
@@ -271,17 +275,7 @@ function WorkspaceProjects() {
 
 type RequestRow = WorkspaceProjectsAdmin['projectRequests'][number];
 
-function InboxSection({
-    rows,
-    showArchived,
-    locale,
-    onChanged,
-}: {
-    rows: ReadonlyArray<RequestRow>;
-    showArchived: boolean;
-    locale: Locale;
-    onChanged: () => void;
-}) {
+function InboxSection({ rows, showArchived, locale }: { rows: ReadonlyArray<RequestRow>; showArchived: boolean; locale: Locale }) {
     const visible = rows.filter((r) => (showArchived ? r.status === 'archived' : r.status === 'emailVerified' && !r.convertedProject));
     const convertedCount = rows.filter((r) => r.convertedProject).length;
 
@@ -335,7 +329,7 @@ function InboxSection({
                 <ul className="mt-6 flex flex-col gap-3">
                     {visible.map((row) => (
                         <li key={row.projectRequestId} data-row-id={row.projectRequestId}>
-                            <InboxRow row={row} locale={locale} onChanged={onChanged} />
+                            <InboxRow row={row} locale={locale} />
                         </li>
                     ))}
                 </ul>
@@ -344,7 +338,7 @@ function InboxSection({
     );
 }
 
-function InboxRow({ row, locale, onChanged }: { row: RequestRow; locale: Locale; onChanged: () => void }) {
+function InboxRow({ row, locale }: { row: RequestRow; locale: Locale }) {
     const [expanded, setExpanded] = useState(false);
     const [converting, setConverting] = useState(false);
     const [, archive] = useMutation(WorkspaceProjectRequestArchiveDocument);
@@ -395,7 +389,6 @@ function InboxRow({ row, locale, onChanged }: { row: RequestRow; locale: Locale;
                                 setBusy(true);
                                 await archive({ projectRequestId: row.projectRequestId });
                                 setBusy(false);
-                                onChanged();
                             }}
                             disabled={busy}
                         >
@@ -410,7 +403,6 @@ function InboxRow({ row, locale, onChanged }: { row: RequestRow; locale: Locale;
                             setBusy(true);
                             await del({ projectRequestId: row.projectRequestId });
                             setBusy(false);
-                            onChanged();
                         }}
                         disabled={busy}
                     >
@@ -439,7 +431,6 @@ function InboxRow({ row, locale, onChanged }: { row: RequestRow; locale: Locale;
                     onClose={() => setConverting(false)}
                     onSaved={() => {
                         setConverting(false);
-                        onChanged();
                     }}
                 />
             ) : null}
@@ -488,12 +479,10 @@ function ProjectsBoard({
     rows,
     activeTimer,
     locale,
-    onChanged,
 }: {
     rows: ReadonlyArray<ProjectRow>;
     activeTimer: ActiveTimer | null;
     locale: Locale;
-    onChanged: () => void;
 }) {
     const [adding, setAdding] = useState(false);
     const grouped = PROJECT_STATUS_ORDER.map((status) => ({
@@ -521,7 +510,6 @@ function ProjectsBoard({
                     onClose={() => setAdding(false)}
                     onSaved={() => {
                         setAdding(false);
-                        onChanged();
                     }}
                 />
             ) : null}
@@ -751,7 +739,7 @@ function ProjectForm({
 
 type TaskRow = WorkspaceProjectsAdmin['standaloneTasks'][number];
 
-function TaskItem({ task, locale, onChanged }: { task: TaskRow; locale: Locale; onChanged: () => void }) {
+function TaskItem({ task, locale }: { task: TaskRow; locale: Locale }) {
     const [, upsert] = useMutation(WorkspaceTaskUpsertDocument);
     const [, del] = useMutation(WorkspaceTaskDeleteDocument);
     const [editing, setEditing] = useState(false);
@@ -771,7 +759,6 @@ function TaskItem({ task, locale, onChanged }: { task: TaskRow; locale: Locale; 
             dueAt: task.dueAt ?? null,
             completedAt: target === 'done' ? new Date().toISOString() : null,
         });
-        onChanged();
     };
 
     if (editing) {
@@ -785,7 +772,6 @@ function TaskItem({ task, locale, onChanged }: { task: TaskRow; locale: Locale; 
                     onClose={() => setEditing(false)}
                     onSaved={() => {
                         setEditing(false);
-                        onChanged();
                     }}
                 />
             </li>
@@ -828,7 +814,6 @@ function TaskItem({ task, locale, onChanged }: { task: TaskRow; locale: Locale; 
                     aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
                     onClick={async () => {
                         await del({ taskId: task.taskId });
-                        onChanged();
                     }}
                 >
                     <Trash2Icon />
@@ -927,7 +912,7 @@ function TaskForm({
 
 // --- Standalone todos -------------------------------------------------------
 
-function TodosSection({ rows, locale, onChanged }: { rows: ReadonlyArray<TaskRow>; locale: Locale; onChanged: () => void }) {
+function TodosSection({ rows, locale }: { rows: ReadonlyArray<TaskRow>; locale: Locale }) {
     const [adding, setAdding] = useState(false);
     return (
         <section>
@@ -949,7 +934,6 @@ function TodosSection({ rows, locale, onChanged }: { rows: ReadonlyArray<TaskRow
                     onClose={() => setAdding(false)}
                     onSaved={() => {
                         setAdding(false);
-                        onChanged();
                     }}
                 />
             ) : null}
@@ -964,7 +948,7 @@ function TodosSection({ rows, locale, onChanged }: { rows: ReadonlyArray<TaskRow
                             </h2>
                             <ul className="mt-2 flex flex-col gap-1">
                                 {bucket.map((task) => (
-                                    <TaskItem key={task.taskId} task={task} locale={locale} onChanged={onChanged} />
+                                    <TaskItem key={task.taskId} task={task} locale={locale} />
                                 ))}
                             </ul>
                         </div>
@@ -989,4 +973,30 @@ function Field({ label, children, fullWidth }: { label: string; children: React.
             {children}
         </label>
     );
+}
+
+// Seed-and-Subscribe: the route loader provides the initial `user`, then the
+// `userUpdates` subscription replaces it with the same fragment shape on every
+// server push. Imperative URQL — not `useSubscription` — for the same reason
+// `useChatLiveUpdates.tsx` does: URQL's declarative hook can deliver each event
+// more than once under concurrent React. See `docs/architecture/state-synchronization.md`.
+function useWorkspaceProjectsPageLiveUser(
+    seed: GqlCWorkspaceProjectsPageUserFragment | null | undefined,
+): GqlCWorkspaceProjectsPageUserFragment | null | undefined {
+    const [user, setUser] = useState(seed);
+
+    const client = useClient();
+    useEffect(() => {
+        const request = createRequest(WorkspaceProjectsPageUpdatesDocument, {});
+        const operation = client.executeSubscription<GqlCWorkspaceProjectsPageUpdatesSubscription>(request);
+        const { unsubscribe } = pipe(
+            operation,
+            subscribe((result) => {
+                if (result.data) setUser(result.data.userUpdates);
+            }),
+        );
+        return unsubscribe;
+    }, [client]);
+
+    return user;
 }

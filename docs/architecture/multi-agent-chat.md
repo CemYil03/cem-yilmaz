@@ -240,6 +240,24 @@ of three artifacts produced by an out-of-loop profiler that watches admin chat m
 - **Firewall**: `compassSummaryGet` reads exactly one column (`Compass.summary`). The richer `prose` and `psychology` fields are surfaced
   only at `/workspace/compass` and never reach any agent. Storage separation, not prompt hygiene, is what enforces the boundary.
 
+## Compass psychological-interview agent
+
+A third agent — `agentCompassInterviewer` — lives alongside the visitor and personal-assistant agents but **deliberately does NOT ride the
+`Chats` table**. It owns its own persistence (`CompassInterviews` + `CompassInterviewMessages`) and runs out-of-band from the chat runner,
+one turn per `compassInterviewMessageSend` command call.
+
+- **Why a separate table**: the `chats.scope` discriminator stays a strict `'public' | 'admin'` binary (the access-path-driven dispatch is
+  the whole point of this doc). Interview turns also don't need approval, tool-call streaming, generations, or input collection — a flat
+  user/assistant log is enough. Splitting keeps both schemas clean.
+- **Why a separate agent factory**: same shape category as the other two (system prompt + tools + model binding) but a different read
+  surface — the interviewer is the only place that intentionally widens the firewall to see `summary` + `psychology` + recent observations,
+  via the single `compassInterviewContextGet` query. The personal-assistant agent's `compassSummaryGet` read is unchanged.
+- **Trigger**: a recurring `compassInterviewWeeklyDue` pg-boss job creates a `pending` interview row on a cadence. Cem starts it from
+  `/workspace/compass`'s Interviews tab; replies feed the same `compassAnalyze` job (now interview-aware) the admin chat does, so
+  observations land in the same stream.
+
+See [`docs/features/compass.md`](../features/compass.md) for the full feature surface and the firewall-exception anchor.
+
 ## Per-turn model selection (admin only)
 
 The admin composer surfaces a dropdown of available chat models; the picked id rides on each mutation through

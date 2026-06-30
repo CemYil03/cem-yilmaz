@@ -1,32 +1,52 @@
 import { generateText, Output } from 'ai';
-import { and, asc, eq, lt } from 'drizzle-orm';
+import { and, asc, desc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { compassObservationCreate } from '../../commands/compassObservationCreate';
-import { chatMessages, chatMessagesUser, compassMessageAnalysis, compassObservationCategories } from '../../db/schema';
-import type { CompassMessageAnalysisCreate } from '../../db/schema';
+import type { ServerRuntime } from '../../domain/ServerRuntime';
+import {
+    chatMessages,
+    chatMessagesUser,
+    compassInterviewMessageAnalysis,
+    compassInterviewMessages,
+    compassMessageAnalysis,
+    compassObservationCategories,
+} from '../../db/schema';
+import type { CompassInterviewMessageAnalysisCreate, CompassMessageAnalysisCreate } from '../../db/schema';
 import { COMPASS_SYNTHESIS_THRESHOLD } from '../../agents/compassConfig';
 import { compassGet } from '../../queries/compassGet';
 import type { QueuedJobDefinition } from '../types';
 import { compassSynthesize } from './compassSynthesize';
 
-// One enqueue per admin user message. The handler:
+// One enqueue per source user message — either an admin chat user message
+// (`chatMessageId`) or a psychological-interview user turn
+// (`interviewMessageId`). Exactly one of the two is set per enqueue; the
+// handler branches on which one is present.
+//
+// The handler:
 //   1. Bails if the message has already been analyzed (idempotent re-runs).
-//   2. Loads the message and a small rolling context (the last 6 turns).
+//   2. Loads the message body plus a small rolling context.
 //   3. Asks the analyzer LLM to extract zero-or-more observations — explicit
 //      "return nothing if nothing is new" instruction in the prompt to fight
 //      the model's bias toward producing output.
-//   4. Persists each observation; records the per-message analysis row.
+//   4. Persists each observation with the matching source FK; records the
+//      per-message analysis row in the matching idempotency table.
 //   5. Auto-enqueues `compassSynthesize` if the counter crossed the threshold.
 //
 // Errors are logged and swallowed: a failed analyzer pass must NEVER block the
-// chat path. The chat surface already returned to the user by the time this
-// runs.
+// chat path or the interview path. The originating surface already returned
+// to the user by the time this runs.
 //
 // See `docs/features/compass.md`.
 
-interface CompassAnalyzeData {
+interface CompassAnalyzeChatData {
     chatMessageId: string;
+    interviewMessageId?: never;
 }
+interface CompassAnalyzeInterviewData {
+    chatMessageId?: never;
+    interviewMessageId: string;
+}
+type CompassAnalyzeData = CompassAnalyzeChatData | CompassAnalyzeInterviewData;
 
 const OBSERVATION_SCHEMA = z.object({
     observations: z
@@ -42,7 +62,7 @@ const OBSERVATION_SCHEMA = z.object({
         .describe('Zero or more observations. RETURN AN EMPTY ARRAY when the message reveals nothing new.'),
 });
 
-const SYSTEM_PROMPT = [
+const SYSTEM_PROMPT_CHAT = [
     'You are a careful profiler reading one new message from Cem (the owner of cem-yilmaz.de) to his own personal assistant.',
     '',
     'Your job: extract concrete observations ONLY when the message reveals something new about Cem.',
@@ -60,91 +80,43 @@ const SYSTEM_PROMPT = [
     '- Quote his own words when categorizing as psychological so synthesis can preserve voice.',
 ].join('\n');
 
+// The interview variant: same task, but the source is a directed-question
+// transcript where the interviewer's question is the meaningful context for
+// the reply. Tell the model that explicitly so it doesn't treat the question
+// itself as Cem's signal, and so it weights the answer against the question
+// being asked.
+const SYSTEM_PROMPT_INTERVIEW = [
+    'You are a careful profiler reading one new reply from Cem (the owner of cem-yilmaz.de) during a directed psychological interview about his current state.',
+    '',
+    'Your job: extract concrete observations ONLY when the reply reveals something about Cem — his state of mind, stressors, energy, what he is focused on, what is shifting in his life.',
+    '',
+    "The recent transcript below shows the interviewer's questions and Cem's prior replies. Use the questions as context — they tell you what Cem is responding TO — but only extract observations from Cem's own words, never from the questions themselves.",
+    '',
+    'Categories:',
+    '- factual: concrete facts (skills, preferences, life events, plans, tools).',
+    '- behavioral: communication style, decision patterns, working habits.',
+    '- psychological: state of mind, stress markers, emotional themes, recurring concerns. Quote phrasing.',
+    '',
+    'Rules:',
+    '- Lean toward psychological / behavioral here — the interview was set up to probe exactly that. Factual is fine when he volunteers concrete biography.',
+    "- A short, surface-level answer ('fine', 'nothing much') is a legitimate signal too — log it sparingly as psychological when it reads as deflection, otherwise return [].",
+    '- Do NOT invent. If unsure whether a thing is new or revealing, omit it.',
+    '- Each observation is one self-contained sentence. No lists, no markdown.',
+    '- Quote his own words when categorizing as psychological so synthesis can preserve voice.',
+].join('\n');
+
 export const compassAnalyze: QueuedJobDefinition<CompassAnalyzeData> = {
     kind: 'queued',
     name: 'compass-analyze',
     handler: async ({ data, serverRuntime }) => {
         try {
-            const { chatMessageId } = data;
+            const sourceKind: 'chat' | 'interview' = 'interviewMessageId' in data && data.interviewMessageId ? 'interview' : 'chat';
 
-            // Idempotency — a redelivery (pg-boss at-least-once) re-runs the
-            // handler. Short-circuit if we already analyzed this message.
-            const [existing] = await serverRuntime.db
-                .select({ chatMessageId: compassMessageAnalysis.chatMessageId })
-                .from(compassMessageAnalysis)
-                .where(eq(compassMessageAnalysis.chatMessageId, chatMessageId))
-                .limit(1);
-            if (existing) return;
-
-            // Load the target message + its body.
-            const [target] = await serverRuntime.db
-                .select({
-                    chatId: chatMessages.chatId,
-                    createdAt: chatMessages.createdAt,
-                    body: chatMessagesUser.body,
-                })
-                .from(chatMessages)
-                .innerJoin(chatMessagesUser, eq(chatMessagesUser.chatMessageId, chatMessages.chatMessageId))
-                .where(eq(chatMessages.chatMessageId, chatMessageId))
-                .limit(1);
-            if (!target) {
-                serverRuntime.log.warn(`compassAnalyze: message ${chatMessageId} not found (deleted?)`);
-                return;
+            if (sourceKind === 'chat') {
+                await analyzeChatMessage((data as CompassAnalyzeChatData).chatMessageId, serverRuntime);
+            } else {
+                await analyzeInterviewMessage((data as CompassAnalyzeInterviewData).interviewMessageId, serverRuntime);
             }
-
-            // Small rolling context — the last few user messages in this chat
-            // (excluding the target). Pure user-side so we don't smear in the
-            // assistant's own reasoning, which would bias the analyzer.
-            const contextRows = await serverRuntime.db
-                .select({ createdAt: chatMessages.createdAt, body: chatMessagesUser.body })
-                .from(chatMessages)
-                .innerJoin(chatMessagesUser, eq(chatMessagesUser.chatMessageId, chatMessages.chatMessageId))
-                .where(and(eq(chatMessages.chatId, target.chatId), lt(chatMessages.createdAt, target.createdAt)))
-                .orderBy(asc(chatMessages.createdAt))
-                .limit(6);
-            const contextBlock = contextRows.length > 0 ? contextRows.map((r) => `- ${r.body}`).join('\n') : '(no prior context)';
-
-            const model = serverRuntime.ai.compassAnalyzerModel();
-            const userPrompt = [
-                'Recent context (oldest first):',
-                contextBlock,
-                '',
-                'New message to analyze:',
-                target.body,
-                '',
-                'Return only the observations array.',
-            ].join('\n');
-
-            const result = await generateText({
-                model,
-                output: Output.object({ schema: OBSERVATION_SCHEMA }),
-                system: SYSTEM_PROMPT,
-                prompt: userPrompt,
-            });
-
-            const observations = result.output.observations;
-            const analyzerModelId = result.response.modelId;
-
-            for (const obs of observations) {
-                await compassObservationCreate(
-                    {
-                        sourceChatMessageId: chatMessageId,
-                        category: obs.category,
-                        content: obs.content,
-                        confidence: obs.confidencePercent ?? null,
-                        analyzerModelId,
-                    },
-                    serverRuntime,
-                );
-            }
-
-            const analysisRow: CompassMessageAnalysisCreate = {
-                chatMessageId,
-                observationsCreated: observations.length,
-                analyzerModelId,
-                analyzedAt: new Date(),
-            };
-            await serverRuntime.db.insert(compassMessageAnalysis).values(analysisRow).onConflictDoNothing();
 
             // Threshold auto-trigger. Read the current counter; if we crossed,
             // enqueue the synthesizer. The synthesizer resets the counter so a
@@ -154,7 +126,8 @@ export const compassAnalyze: QueuedJobDefinition<CompassAnalyzeData> = {
                 await serverRuntime.jobs.enqueue(compassSynthesize, { reason: 'threshold' });
             }
         } catch (error) {
-            // Analyzer failures must not poison the chat path. Log and move on.
+            // Analyzer failures must not poison the chat or interview path.
+            // Log and move on.
             serverRuntime.log.error(error, null);
         }
     },
@@ -164,3 +137,188 @@ export const compassAnalyze: QueuedJobDefinition<CompassAnalyzeData> = {
         expireInSeconds: 120,
     },
 };
+
+async function analyzeChatMessage(chatMessageId: string, serverRuntime: ServerRuntime): Promise<void> {
+    // Idempotency — a redelivery (pg-boss at-least-once) re-runs the
+    // handler. Short-circuit if we already analyzed this message.
+    const [existing] = await serverRuntime.db
+        .select({ chatMessageId: compassMessageAnalysis.chatMessageId })
+        .from(compassMessageAnalysis)
+        .where(eq(compassMessageAnalysis.chatMessageId, chatMessageId))
+        .limit(1);
+    if (existing) return;
+
+    // Load the target message + its body.
+    const [target] = await serverRuntime.db
+        .select({
+            chatId: chatMessages.chatId,
+            createdAt: chatMessages.createdAt,
+            body: chatMessagesUser.body,
+        })
+        .from(chatMessages)
+        .innerJoin(chatMessagesUser, eq(chatMessagesUser.chatMessageId, chatMessages.chatMessageId))
+        .where(eq(chatMessages.chatMessageId, chatMessageId))
+        .limit(1);
+    if (!target) {
+        serverRuntime.log.warn(`compassAnalyze: chat message ${chatMessageId} not found (deleted?)`);
+        return;
+    }
+
+    // Small rolling context — the last few user messages in this chat
+    // (excluding the target). Pure user-side so we don't smear in the
+    // assistant's own reasoning, which would bias the analyzer.
+    const contextRows = await serverRuntime.db
+        .select({ createdAt: chatMessages.createdAt, body: chatMessagesUser.body })
+        .from(chatMessages)
+        .innerJoin(chatMessagesUser, eq(chatMessagesUser.chatMessageId, chatMessages.chatMessageId))
+        .where(and(eq(chatMessages.chatId, target.chatId), lt(chatMessages.createdAt, target.createdAt)))
+        .orderBy(asc(chatMessages.createdAt))
+        .limit(6);
+    const contextBlock = contextRows.length > 0 ? contextRows.map((r) => `- ${r.body}`).join('\n') : '(no prior context)';
+
+    const model = serverRuntime.ai.compassAnalyzerModel();
+    const userPrompt = [
+        'Recent context (oldest first):',
+        contextBlock,
+        '',
+        'New message to analyze:',
+        target.body,
+        '',
+        'Return only the observations array.',
+    ].join('\n');
+
+    const result = await generateText({
+        model,
+        output: Output.object({ schema: OBSERVATION_SCHEMA }),
+        system: SYSTEM_PROMPT_CHAT,
+        prompt: userPrompt,
+    });
+
+    const observations = result.output.observations;
+    const analyzerModelId = result.response.modelId;
+
+    for (const obs of observations) {
+        await compassObservationCreate(
+            {
+                sourceChatMessageId: chatMessageId,
+                sourceInterviewMessageId: null,
+                category: obs.category,
+                content: obs.content,
+                confidence: obs.confidencePercent ?? null,
+                analyzerModelId,
+            },
+            serverRuntime,
+        );
+    }
+
+    const analysisRow: CompassMessageAnalysisCreate = {
+        chatMessageId,
+        observationsCreated: observations.length,
+        analyzerModelId,
+        analyzedAt: new Date(),
+    };
+    await serverRuntime.db.insert(compassMessageAnalysis).values(analysisRow).onConflictDoNothing();
+}
+
+async function analyzeInterviewMessage(interviewMessageId: string, serverRuntime: ServerRuntime): Promise<void> {
+    // Idempotency — sibling table to `CompassMessageAnalysis` keyed on
+    // `interviewMessageId`. Splitting the table (rather than a nullable
+    // two-FK shape) keeps the PK / cascade trivial.
+    const [existing] = await serverRuntime.db
+        .select({ interviewMessageId: compassInterviewMessageAnalysis.interviewMessageId })
+        .from(compassInterviewMessageAnalysis)
+        .where(eq(compassInterviewMessageAnalysis.interviewMessageId, interviewMessageId))
+        .limit(1);
+    if (existing) return;
+
+    // Load the target message + the parent interview id so we can pull
+    // rolling context from the same interview.
+    const [target] = await serverRuntime.db
+        .select({
+            interviewId: compassInterviewMessages.interviewId,
+            role: compassInterviewMessages.role,
+            content: compassInterviewMessages.content,
+            createdAt: compassInterviewMessages.createdAt,
+        })
+        .from(compassInterviewMessages)
+        .where(eq(compassInterviewMessages.interviewMessageId, interviewMessageId))
+        .limit(1);
+    if (!target) {
+        serverRuntime.log.warn(`compassAnalyze: interview message ${interviewMessageId} not found (deleted?)`);
+        return;
+    }
+    if (target.role !== 'user') {
+        // Assistant messages don't get analyzed — the interviewer's own
+        // questions are not signal. Defensive: the command only enqueues
+        // for user turns.
+        return;
+    }
+
+    // Rolling context for interview analysis includes BOTH user and
+    // assistant turns — the interviewer's question is exactly the context
+    // that gives the reply its meaning. Pull the last six turns prior to
+    // the target, oldest first.
+    const contextRows = await serverRuntime.db
+        .select({
+            role: compassInterviewMessages.role,
+            content: compassInterviewMessages.content,
+            createdAt: compassInterviewMessages.createdAt,
+        })
+        .from(compassInterviewMessages)
+        .where(and(eq(compassInterviewMessages.interviewId, target.interviewId), lt(compassInterviewMessages.createdAt, target.createdAt)))
+        .orderBy(desc(compassInterviewMessages.createdAt))
+        .limit(6);
+    // Pulled `desc` for the LIMIT to grab the most recent six; reverse for
+    // oldest-first in the prompt.
+    const contextBlock =
+        contextRows.length > 0
+            ? contextRows
+                  .slice()
+                  .reverse()
+                  .map((r) => `- [${r.role}] ${r.content}`)
+                  .join('\n')
+            : '(no prior context — this is the first reply)';
+
+    const model = serverRuntime.ai.compassAnalyzerModel();
+    const userPrompt = [
+        'Recent interview transcript (oldest first):',
+        contextBlock,
+        '',
+        "New reply from Cem to analyze (the assistant's question right above was what he was answering):",
+        target.content,
+        '',
+        'Return only the observations array.',
+    ].join('\n');
+
+    const result = await generateText({
+        model,
+        output: Output.object({ schema: OBSERVATION_SCHEMA }),
+        system: SYSTEM_PROMPT_INTERVIEW,
+        prompt: userPrompt,
+    });
+
+    const observations = result.output.observations;
+    const analyzerModelId = result.response.modelId;
+
+    for (const obs of observations) {
+        await compassObservationCreate(
+            {
+                sourceChatMessageId: null,
+                sourceInterviewMessageId: interviewMessageId,
+                category: obs.category,
+                content: obs.content,
+                confidence: obs.confidencePercent ?? null,
+                analyzerModelId,
+            },
+            serverRuntime,
+        );
+    }
+
+    const analysisRow: CompassInterviewMessageAnalysisCreate = {
+        interviewMessageId,
+        observationsCreated: observations.length,
+        analyzerModelId,
+        analyzedAt: new Date(),
+    };
+    await serverRuntime.db.insert(compassInterviewMessageAnalysis).values(analysisRow).onConflictDoNothing();
+}

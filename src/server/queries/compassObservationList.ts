@@ -1,5 +1,5 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
-import { chatMessages, compassObservations } from '../db/schema';
+import { chatMessages, compassInterviewMessages, compassObservations } from '../db/schema';
 import type { CompassObservationCategory } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSCompassObservation, GqlSSession } from '../graphql/generated';
@@ -11,8 +11,10 @@ interface CompassObservationListOptions {
 }
 
 // Reads observations newest-first, optionally filtered by category, and joins
-// the spine `ChatMessages` to surface `sourceChatId` so the client can build a
-// deep-link to the chat the observation came from.
+// either spine table to surface the source parent id (chat or interview) so
+// the client can build a deep-link to the originating thread without a
+// second round-trip. Each row has exactly one source set; the corresponding
+// join populates one of the two parent ids.
 export async function compassObservationList(
     options: CompassObservationListOptions,
     requestingSession: GqlSSession,
@@ -31,13 +33,18 @@ export async function compassObservationList(
             .select({
                 observation: compassObservations,
                 sourceChatId: chatMessages.chatId,
+                sourceInterviewId: compassInterviewMessages.interviewId,
             })
             .from(compassObservations)
             .leftJoin(chatMessages, eq(chatMessages.chatMessageId, compassObservations.sourceChatMessageId))
+            .leftJoin(
+                compassInterviewMessages,
+                eq(compassInterviewMessages.interviewMessageId, compassObservations.sourceInterviewMessageId),
+            )
             .where(whereClauses.length > 0 ? and(...whereClauses) : undefined)
             .orderBy(desc(compassObservations.createdAt));
 
-        return rows.map((row) => toGqlCompassObservation(row.observation, row.sourceChatId ?? null));
+        return rows.map((row) => toGqlCompassObservation(row.observation, row.sourceChatId ?? null, row.sourceInterviewId ?? null));
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

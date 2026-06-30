@@ -54,6 +54,12 @@ export interface ServerRuntime {
         // less often than the analyzer (threshold-triggered) and reads every
         // active observation, so the higher per-call cost is amortized.
         compassSynthesizerModel: () => LanguageModel;
+        // Drives the recurring psychological-interview agent. Runs only
+        // a handful of turns per interview and the question quality matters
+        // (the agent has to probe for gaps in the existing compass without
+        // being repetitive), so the higher-tier model is justified. See
+        // `docs/features/compass.md` ("Psychological-interview agent").
+        compassInterviewerModel: () => LanguageModel;
         // Provider-executed web search. Gemini runs the search server-side
         // and rides the call back through the normal `step.toolCalls` /
         // `step.toolResults` channel — there is no `execute` we own. Citations

@@ -704,10 +704,103 @@ export type AdminChatConfigCreate = typeof adminChatConfig.$inferInsert;
 export const compassObservationCategories = ['factual', 'behavioral', 'psychological'] as const;
 export type CompassObservationCategory = (typeof compassObservationCategories)[number];
 
-// One row per observation extracted by the analyzer. `sourceChatMessageId`
-// FKs the user-side message the observation was derived from; the UI uses it
-// to render the inline "N observations" pill in the chat thread and to
-// deep-link from the compass page back to the source.
+// --- Compass psychological interviews ---------------------------------------
+//
+// A recurring job creates a `pending` interview row on a cadence. When Cem
+// lands on `/workspace/compass` and starts it, the row transitions to
+// `in_progress`; the interview agent and Cem's replies are appended to
+// `CompassInterviewMessages`. When the agent calls `concludeInterview`, or
+// Cem ends the session early, the row moves to `completed`. A `skipped` row
+// is one Cem chose not to do.
+//
+// At most one row is `pending` at any time — the cron handler is idempotent,
+// so a missed week resumes next week rather than piling up.
+//
+// Decoupled from `Chats` / `ChatMessages` deliberately: `chats.scope` is the
+// strict `'public' | 'admin'` discriminator the multi-agent-chat dispatch
+// rests on (`docs/architecture/multi-agent-chat.md`), and interview turns
+// don't need approval, tool calls, generations, or input collection — a flat
+// user/assistant log is enough. See `docs/features/compass.md`.
+export const compassInterviewStatuses = ['pending', 'in_progress', 'completed', 'skipped'] as const;
+export type CompassInterviewStatus = (typeof compassInterviewStatuses)[number];
+
+export const compassInterviewEndReasons = ['agent_satisfied', 'user_ended', 'skipped'] as const;
+export type CompassInterviewEndReason = (typeof compassInterviewEndReasons)[number];
+
+export const compassInterviewTriggerReasons = ['weekly_cron', 'manual'] as const;
+export type CompassInterviewTriggerReason = (typeof compassInterviewTriggerReasons)[number];
+
+export const compassInterviews = pgTable(
+    'CompassInterviews',
+    {
+        interviewId: uuid().primaryKey(),
+        status: varchar().$type<CompassInterviewStatus>().notNull().default('pending'),
+        // Set when the cron handler (or the manual trigger) first inserted the
+        // row. Drives the "waiting since…" copy on the page surface.
+        dueAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        // Stamped on the first `compassInterviewStart`.
+        startedAt: timestamp({ withTimezone: true }),
+        // Stamped on `completed` or `skipped`.
+        completedAt: timestamp({ withTimezone: true }),
+        endReason: varchar().$type<CompassInterviewEndReason>(),
+        triggerReason: varchar().$type<CompassInterviewTriggerReason>().notNull().default('weekly_cron'),
+        // Denormalized count of observations whose source-interview-message
+        // belongs to this interview. Kept on the row so the past-interviews
+        // list can render "N observations" without a per-row aggregate.
+        // The analyzer increments this when it logs an observation for an
+        // interview message.
+        observationCount: integer().notNull().default(0),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        index('CompassInterviews_status_dueAt_idx').on(table.status, table.dueAt),
+        index('CompassInterviews_createdAt_idx').on(table.createdAt),
+    ],
+);
+
+export type CompassInterview = typeof compassInterviews.$inferSelect;
+export type CompassInterviewCreate = typeof compassInterviews.$inferInsert;
+
+export const compassInterviewMessageRoles = ['user', 'assistant'] as const;
+export type CompassInterviewMessageRole = (typeof compassInterviewMessageRoles)[number];
+
+// Flat user/assistant log for an interview. No tool calls, no generations, no
+// approval lifecycle — just the words exchanged. The analyzer treats user
+// turns the same way it treats admin chat user messages.
+export const compassInterviewMessages = pgTable(
+    'CompassInterviewMessages',
+    {
+        interviewMessageId: uuid().primaryKey(),
+        interviewId: uuid().notNull(),
+        role: varchar().$type<CompassInterviewMessageRole>().notNull(),
+        content: text().notNull(),
+        // Set on assistant turns only — the resolved Gemini model id used for
+        // the turn, mirroring `Compass.synthesisModelId`. Helpful for triage
+        // when the interviewer's question quality drifts after a model bump.
+        modelId: varchar(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.interviewId],
+            foreignColumns: [compassInterviews.interviewId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('CompassInterviewMessages_interviewId_createdAt_idx').on(table.interviewId, table.createdAt),
+    ],
+);
+
+export type CompassInterviewMessage = typeof compassInterviewMessages.$inferSelect;
+export type CompassInterviewMessageCreate = typeof compassInterviewMessages.$inferInsert;
+
+// One row per observation extracted by the analyzer. The source FK is one of
+// `sourceChatMessageId` (admin chat with the personal assistant) or
+// `sourceInterviewMessageId` (a turn in a psychological-interview session) —
+// exactly one is set per row, enforced by the creating command. The UI uses
+// whichever is set to render the inline "N observations" pill and to deep-link
+// from the compass page back to the source.
 //
 // `dismissedAt` is a soft delete: dismissed rows skip the synthesizer pass
 // but are kept around as an audit trail so Cem can revisit what the model
@@ -720,6 +813,10 @@ export const compassObservations = pgTable(
         // synthesis already absorbed it. The UI's "open source message"
         // affordance just degrades gracefully when this is null.
         sourceChatMessageId: uuid(),
+        // Parallel FK for observations drawn from psychological-interview
+        // turns. Same `set null` rationale. Exactly one of
+        // `sourceChatMessageId` / `sourceInterviewMessageId` is set per row.
+        sourceInterviewMessageId: uuid(),
         category: varchar().$type<CompassObservationCategory>().notNull(),
         content: text().notNull(),
         // Optional 0..1 confidence the analyzer reported. Displayed as a
@@ -736,8 +833,15 @@ export const compassObservations = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
+        foreignKey({
+            columns: [table.sourceInterviewMessageId],
+            foreignColumns: [compassInterviewMessages.interviewMessageId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
         index('CompassObservations_category_createdAt_idx').on(table.category, table.createdAt),
         index('CompassObservations_sourceChatMessageId_idx').on(table.sourceChatMessageId),
+        index('CompassObservations_sourceInterviewMessageId_idx').on(table.sourceInterviewMessageId),
         index('CompassObservations_createdAt_idx').on(table.createdAt),
     ],
 );
@@ -770,6 +874,31 @@ export const compassMessageAnalysis = pgTable(
 
 export type CompassMessageAnalysis = typeof compassMessageAnalysis.$inferSelect;
 export type CompassMessageAnalysisCreate = typeof compassMessageAnalysis.$inferInsert;
+
+// Same shape as `CompassMessageAnalysis` but keyed by interview message id —
+// the analyzer branches on which one it was enqueued for and picks the right
+// idempotency table. Splitting the table (rather than a nullable two-FK
+// shape) keeps the PK / cascade trivial and the indexes tight.
+export const compassInterviewMessageAnalysis = pgTable(
+    'CompassInterviewMessageAnalysis',
+    {
+        interviewMessageId: uuid().primaryKey(),
+        observationsCreated: integer().notNull().default(0),
+        analyzerModelId: varchar(),
+        analyzedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.interviewMessageId],
+            foreignColumns: [compassInterviewMessages.interviewMessageId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+    ],
+);
+
+export type CompassInterviewMessageAnalysis = typeof compassInterviewMessageAnalysis.$inferSelect;
+export type CompassInterviewMessageAnalysisCreate = typeof compassInterviewMessageAnalysis.$inferInsert;
 
 // --- Project requests --------------------------------------------------------
 //
