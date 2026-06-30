@@ -123,7 +123,7 @@ export function Header({
 
     return (
         <>
-            <ProgressiveBlurTop contained={contained} />
+            <ProgressiveBlurTop contained={contained} width={width} />
             <header className={cn('sticky top-4 z-50 mx-auto w-full px-4 sm:px-8', width === 'wide' ? 'max-w-8xl' : 'max-w-6xl')}>
                 <GlassCard
                     className={cn(
@@ -286,19 +286,24 @@ function useHasScrolled(threshold = 8) {
     return scrolled;
 }
 
-/* Five stacked layers above the page. Each layer blurs more than the
-   one above it but is masked to fade out where the next takes over, producing
-   a smooth blur falloff from the top edge to the bottom of the floating
-   header. Sits below the header (z-40) so the header still floats above.
+/* Progressive-blur strip above the header. Five stacked layers, each
+   blurring more than the one above but masked to fade where the next takes
+   over — a smooth blur falloff from the top edge down to the bottom of the
+   floating header. Sits below the header (z-40) so the header still floats
+   above.
 
-   Positioning is `fixed` by default (the public site, where the strip should
-   cover the full viewport width) or `sticky top-0` with a zero-height anchor
-   when `contained` (the workspace layout, where the strip must stay glued to
-   the top of the viewport while horizontally confined to the `<SidebarInset>`
-   column so the sidebar isn't covered). The sticky anchor is `h-0` so it
-   doesn't push the header / page content down, and the blur layers render as
-   `absolute` children of it — visually 32 units tall, layout-free. */
-function ProgressiveBlurTop({ contained = false }: { contained?: boolean }) {
+   Positioning has two modes:
+
+   - Default (`fixed inset-x-0`) — the strip spans the full viewport width.
+     Used on the public site.
+   - `contained` — the strip matches the header's own width (same `max-w-*`
+     cap, same `mx-auto`, same `px-4 sm:px-8`) so it never extends past the
+     header on either side. Used on workspace pages, where the sidebar would
+     otherwise be covered by a viewport-wide blur. The wrapper is
+     `sticky top-0` with `h-0` so it follows the viewport top during scroll
+     without pushing the header / page content down; the blur layers
+     themselves render as `absolute` children of it. */
+function ProgressiveBlurTop({ contained = false, width = 'standard' }: { contained?: boolean; width?: 'standard' | 'wide' }) {
     const layers = [
         { blur: '4px', from: 0, to: 100 },
         { blur: '8px', from: 0, to: 80 },
@@ -319,8 +324,17 @@ function ProgressiveBlurTop({ contained = false }: { contained?: boolean }) {
         />
     ));
     if (contained) {
+        // Match the header's own width box exactly. Same `max-w-*`, same
+        // `mx-auto`, same `px-4 sm:px-8` — the blur covers the header glass
+        // card and nothing past it.
         return (
-            <div aria-hidden className="pointer-events-none sticky top-0 z-40 h-0">
+            <div
+                aria-hidden
+                className={cn(
+                    'pointer-events-none sticky top-0 z-40 mx-auto h-0 w-full px-4 sm:px-8',
+                    width === 'wide' ? 'max-w-8xl' : 'max-w-6xl',
+                )}
+            >
                 {layerNodes}
             </div>
         );

@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { ExternalLinkIcon, PanelRightCloseIcon, SparklesIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { TranscriptMessage } from './chatTranscript';
 import { mergeTranscriptMessages } from './chatTranscript';
 import {
@@ -18,15 +18,15 @@ import type { Locale } from '../utils/locale';
 //
 //   - `collapsible="offcanvas"` — collapsing slides the sidebar fully off
 //     the right edge (no leftover icon rail). The header assistant button
-//     is the way back; on `<md` shadcn renders the sidebar as a Sheet via
-//     the same primitive, so the same toggle handles both viewports.
-//   - The default width matches the Sheet that used to host this chat
-//     (42rem ≈ shadcn `sm:max-w-2xl`), and the user can drag the sidebar's
-//     left edge outward to widen it further. The width is persisted to
-//     `localStorage` so the preference survives reloads. Dragging inward
-//     past the default is clamped — making it narrower trades on screen
-//     real estate without giving back enough room to matter, and the
-//     "close it instead" affordance is the assistant button.
+//     and the sidebar's own "Hide" glyph both toggle it; on `<md` shadcn
+//     renders the sidebar as a Sheet via the same primitive.
+//   - **Width is owned by the workspace layout.** The layout sets the
+//     `--sidebar-width` CSS variable on `<SidebarProvider>` (so the
+//     `sidebar-gap` spacer that reflows `<SidebarInset>` picks it up). The
+//     drag handle here writes the variable directly to the DOM during a
+//     drag so the resize is one CSS-variable update per pointermove —
+//     no React re-render of this subtree per frame — and commits to
+//     `localStorage` on pointer release so reloads keep the preference.
 //
 // State (chatId, live updates, recent chats, sticky model) all lives on
 // `WorkspaceAssistantChatProvider`. This file is purely the frame.
@@ -42,49 +42,20 @@ const assistantSubtitle = {
 };
 const resizeLabel = { de: 'Breite anpassen', en: 'Resize' };
 
-// Width bounds. The default matches the prior Sheet (`sm:max-w-2xl` ≈ 42rem
-// = 672px); the user can drag outward, never inward past the default. The
-// max keeps the inset column usable on a 1440px display.
-const DEFAULT_WIDTH_PX = 672;
-const MAX_WIDTH_PX = 960;
-const WIDTH_STORAGE_KEY = 'workspaceAssistantSidebar.widthPx';
-
-function readStoredWidth(): number {
-    if (typeof window === 'undefined') return DEFAULT_WIDTH_PX;
-    const raw = window.localStorage.getItem(WIDTH_STORAGE_KEY);
-    if (!raw) return DEFAULT_WIDTH_PX;
-    const parsed = Number(raw);
-    if (!Number.isFinite(parsed)) return DEFAULT_WIDTH_PX;
-    return Math.min(MAX_WIDTH_PX, Math.max(DEFAULT_WIDTH_PX, parsed));
-}
-
 interface WorkspaceAssistantChatSidebarProps {
     locale: Locale;
+    minWidthPx: number;
+    maxWidthPx: number;
+    /** Called once per drag, on pointer-up, with the final pixel width.
+     *  The layout persists it to `localStorage` and updates its React
+     *  state so SSR + the cookie-backed `defaultOpen` stay in sync. */
+    onWidthCommit: (px: number) => void;
 }
 
-export function WorkspaceAssistantChatSidebar({ locale }: WorkspaceAssistantChatSidebarProps) {
+export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, onWidthCommit }: WorkspaceAssistantChatSidebarProps) {
     const { chatId, loadedMessages, live } = useWorkspaceAssistantChat();
     const { toggleSidebar, isMobile } = useSidebar();
     const navigate = useNavigate();
-
-    // Persisted width on desktop. shadcn's Sidebar reads the
-    // `--sidebar-width` CSS variable off the `<SidebarProvider>` wrapper,
-    // so we set it as an inline style on the wrapper via the
-    // `style` slot — but the wrapper is mounted by the layout, not here.
-    // Instead we forward the value through `style` on the Sidebar
-    // primitive itself, which propagates it to the sticky gap + container
-    // children (both read `var(--sidebar-width)` from their ancestor). On
-    // mobile shadcn uses `--sidebar-width-mobile` (its own constant 18rem)
-    // for the Sheet width, so we don't touch that.
-    const [widthPx, setWidthPx] = useState<number>(DEFAULT_WIDTH_PX);
-    useEffect(() => setWidthPx(readStoredWidth()), []);
-    const onWidthCommit = useCallback((next: number) => {
-        const clamped = Math.min(MAX_WIDTH_PX, Math.max(DEFAULT_WIDTH_PX, next));
-        setWidthPx(clamped);
-        if (typeof window !== 'undefined') {
-            window.localStorage.setItem(WIDTH_STORAGE_KEY, String(clamped));
-        }
-    }, []);
 
     const onOpenFullscreen = useCallback(() => {
         // Hands the conversation off to the dedicated route. Provider keeps
@@ -97,17 +68,10 @@ export function WorkspaceAssistantChatSidebar({ locale }: WorkspaceAssistantChat
     const isEmpty = allMessages.length === 0 && !live.isGenerating;
 
     return (
-        <Sidebar
-            side="right"
-            collapsible="offcanvas"
-            variant="sidebar"
-            style={{ '--sidebar-width': `${widthPx}px` } as React.CSSProperties}
-        >
+        <Sidebar side="right" collapsible="offcanvas" variant="sidebar">
             {/* Left-edge resize handle. Hidden on mobile (the Sheet is full
-             *  width on phones anyway) and behind the sidebar's
-             *  expanded/collapsed transition so it doesn't grab during
-             *  off-canvas slide. */}
-            {!isMobile ? <ResizeHandle widthPx={widthPx} setWidthPx={setWidthPx} onCommit={onWidthCommit} locale={locale} /> : null}
+             *  width on phones anyway). */}
+            {!isMobile ? <ResizeHandle minWidthPx={minWidthPx} maxWidthPx={maxWidthPx} onCommit={onWidthCommit} locale={locale} /> : null}
 
             <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
                 <div className="flex items-start justify-between gap-2 px-4 py-3.5">
@@ -166,61 +130,87 @@ export function WorkspaceAssistantChatSidebar({ locale }: WorkspaceAssistantChat
     );
 }
 
-// Drag handle anchored to the sidebar's left edge. Dragging left widens the
-// sidebar (the right edge is pinned to the viewport edge by shadcn), dragging
-// right narrows it back toward the default width. The handle sits above the
-// sidebar's z-stack so the user can grab it without hitting the transcript.
+// Drag handle anchored to the sidebar's left edge. Pulling outward widens the
+// sidebar (the right edge is pinned to the viewport edge by shadcn). The
+// width is communicated via the `--sidebar-width` CSS variable that the
+// workspace layout sets on `<SidebarProvider>`; during drag we write the
+// variable directly to that node so the gap + container both reflow per
+// pointermove without re-rendering React. `onCommit` runs once on pointer
+// release with the final width.
 function ResizeHandle({
-    widthPx,
-    setWidthPx,
+    minWidthPx,
+    maxWidthPx,
     onCommit,
     locale,
 }: {
-    widthPx: number;
-    setWidthPx: (px: number) => void;
+    minWidthPx: number;
+    maxWidthPx: number;
     onCommit: (px: number) => void;
     locale: Locale;
 }) {
-    const startWidthRef = useRef(widthPx);
+    const startWidthRef = useRef(0);
     const startXRef = useRef(0);
+    const providerNodeRef = useRef<HTMLElement | null>(null);
+    const lastWidthRef = useRef(minWidthPx);
     const [isDragging, setIsDragging] = useState(false);
 
-    const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         // Left mouse / primary touch only. Right-click on the handle should
         // open the context menu, not start a drag.
         if (event.button !== 0) return;
         event.preventDefault();
-        startWidthRef.current = widthPx;
+        // The `--sidebar-width` variable lives on the shadcn `sidebar-wrapper`
+        // (the `<SidebarProvider>` root) — that's the ancestor that scopes it
+        // to every consumer (the gap, the container, the inset reflow).
+        // Walk up to find it once at drag start.
+        const wrapper = (event.currentTarget as HTMLElement).closest<HTMLElement>('[data-slot="sidebar-wrapper"]');
+        if (!wrapper) return;
+        providerNodeRef.current = wrapper;
+        // Read the live width from the rendered sidebar container so the
+        // drag picks up wherever the previous resize left off, including
+        // the SSR default.
+        const sidebarEl = wrapper.querySelector<HTMLElement>('[data-slot="sidebar-container"]');
+        startWidthRef.current = sidebarEl?.getBoundingClientRect().width ?? minWidthPx;
         startXRef.current = event.clientX;
+        lastWidthRef.current = startWidthRef.current;
         setIsDragging(true);
+        document.body.style.cursor = 'ew-resize';
+        // Disable text selection for the duration — without this the drag
+        // selects whatever's under the pointer.
+        document.body.style.userSelect = 'none';
         const onMove = (e: PointerEvent) => {
             // Sidebar is right-docked; moving the pointer left from its left
             // edge should make the sidebar wider, so we subtract the delta.
             const next = startWidthRef.current - (e.clientX - startXRef.current);
-            const clamped = Math.min(MAX_WIDTH_PX, Math.max(DEFAULT_WIDTH_PX, next));
-            setWidthPx(clamped);
+            const clamped = Math.min(maxWidthPx, Math.max(minWidthPx, next));
+            lastWidthRef.current = clamped;
+            // Write through the DOM — no React state during the drag.
+            providerNodeRef.current?.style.setProperty('--sidebar-width', `${clamped}px`);
         };
-        const onUp = (e: PointerEvent) => {
+        const onUp = () => {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
-            const next = startWidthRef.current - (e.clientX - startXRef.current);
-            onCommit(next);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
             setIsDragging(false);
+            onCommit(lastWidthRef.current);
         };
         window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
     };
 
+    // `role="separator"` + `aria-orientation` is the right ARIA role for a
+    // pane resize affordance. `tabIndex={-1}` because keyboard resize isn't
+    // implemented; the user reaches the sidebar's actions via the visible
+    // buttons.
     return (
-        <button
-            type="button"
+        <div
+            role="separator"
+            aria-orientation="vertical"
             aria-label={resizeLabel[locale]}
             tabIndex={-1}
             onPointerDown={onPointerDown}
             className={
-                // Pinned to the inner container's left edge. Wider hit area
-                // than visible width so the user doesn't have to aim. Visible
-                // affordance is a 2px line that fills in on hover/drag.
                 'absolute inset-y-0 left-0 z-20 hidden w-2 cursor-ew-resize select-none after:absolute after:inset-y-0 after:left-1/2 after:w-px after:bg-transparent hover:after:bg-sidebar-border md:block ' +
                 (isDragging ? 'after:bg-sidebar-border' : '')
             }
