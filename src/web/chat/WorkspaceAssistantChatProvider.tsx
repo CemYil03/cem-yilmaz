@@ -90,7 +90,7 @@ interface WorkspaceAssistantChatContextValue {
     onModelChange: (modelId: string) => void;
 }
 
-const WorkspaceAssistantChatContext = createContext<WorkspaceAssistantChatContextValue | null>(null);
+export const WorkspaceAssistantChatContext = createContext<WorkspaceAssistantChatContextValue | null>(null);
 
 export function useWorkspaceAssistantChat(): WorkspaceAssistantChatContextValue {
     const value = useContext(WorkspaceAssistantChatContext);

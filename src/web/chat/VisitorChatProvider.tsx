@@ -71,7 +71,7 @@ interface VisitorChatContextValue {
     highlightSignal: number;
 }
 
-const VisitorChatContext = createContext<VisitorChatContextValue | null>(null);
+export const VisitorChatContext = createContext<VisitorChatContextValue | null>(null);
 
 export function useVisitorChat(): VisitorChatContextValue {
     const value = useContext(VisitorChatContext);
