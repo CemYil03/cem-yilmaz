@@ -25,22 +25,22 @@ from the active model — `.docx` is pick-able iff the model says so. The picked
 
 ## Surfaces
 
-| Entry point                                                          | Behavior                                                                                                                                                                                              |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace `/workspace/assistant` composer                            | Renders the model dropdown in the bottom-addon row alongside the Auto/Manual approval-mode selector. Picking a new model updates the local state AND fires `chatConfigDefaultModelSet` to persist it. |
+| Entry point                                                        | Behavior                                                                                                                                                                                              |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace `/workspace/assistant` composer                          | Renders the model dropdown in the bottom-addon row alongside the Auto/Manual approval-mode selector. Picking a new model updates the local state AND fires `chatConfigDefaultModelSet` to persist it. |
 | Workspace assistant sheet (`WorkspaceAssistantChatSheet`) — future | Not wired yet; the sheet currently inherits whatever the route last persisted via the saved default.                                                                                                  |
-| Public visitor sheet (`/`, "Ask me anything")                        | **No dropdown.** The visitor surface stays on the catalog fallback (`gemini-2.5-flash`); admin-only feature.                                                                                          |
+| Public visitor sheet (`/`, "Ask me anything")                      | **No dropdown.** The visitor surface stays on the catalog fallback (`gemini-2.5-flash`); admin-only feature.                                                                                          |
 
 ## Model catalog
 
 The catalog lives in code at `src/server/agents/adminChatModels.ts`. Each entry is `{ modelId, label, supportedMediaTypes }`:
 
-| `modelId`           | Label             | Supported attachment types                                                                                                                            |
-| ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `gemini-2.5-flash`  | Gemini 2.5 Flash  | Images (png/jpeg/webp/heic/heif), PDF, plain text, markdown, csv                                                                                       |
-| `gemini-2.5-pro`    | Gemini 2.5 Pro    | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML                                                                             |
-| `gemini-3.5-flash`  | Gemini 3.5 Flash  | Same as Flash 2.5                                                                                                                                      |
-| `gemini-3.5-pro`    | Gemini 3.5 Pro    | Same as Pro 2.5                                                                                                                                        |
+| `modelId`          | Label            | Supported attachment types                                                 |
+| ------------------ | ---------------- | -------------------------------------------------------------------------- |
+| `gemini-2.5-flash` | Gemini 2.5 Flash | Images (png/jpeg/webp/heic/heif), PDF, plain text, markdown, csv           |
+| `gemini-2.5-pro`   | Gemini 2.5 Pro   | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML |
+| `gemini-3.5-flash` | Gemini 3.5 Flash | Same as Flash 2.5                                                          |
+| `gemini-3.5-pro`   | Gemini 3.5 Pro   | Same as Pro 2.5                                                            |
 
 Why code, not DB: adding or removing a model is a code change anyway — the provider needs to know the id is valid, the supported-media-type
 list is a deployment-time fact, and shipping the catalog as a typed const keeps the resolver and the validator pointing at the same source.
@@ -60,8 +60,8 @@ CREATE TABLE "AdminChatConfig" (
 
 Fixed id (`00000000-0000-0000-0000-000000000002`) in `src/server/agents/adminChatConfig.ts`. The row is bootstrapped lazily on first
 `Admin.chatConfig` read (`src/server/queries/adminChatConfigGet.ts`) — until then, the runtime falls back to the catalog's first entry
-(`gemini-2.5-flash`). Phase 2 (per-user accounts) keeps this id for "the owner's config" and adds a per-user split as a column addition,
-not a schema move.
+(`gemini-2.5-flash`). Phase 2 (per-user accounts) keeps this id for "the owner's config" and adds a per-user split as a column addition, not
+a schema move.
 
 ## Data flow
 
@@ -93,9 +93,9 @@ not a schema move.
    google(resolved)  →  Gemini
 ```
 
-The runtime catalog check is the firewall: even if a client sends `modelId: "gpt-5"` or anything outside the catalog, the agent build
-throws before talking to the provider. Errors surface as a transport failure on the mutation and the composer restores the draft. (The
-catalog ids are also validated at the mutation `chatConfigDefaultModelSet` write site, so a stale default can't be persisted either.)
+The runtime catalog check is the firewall: even if a client sends `modelId: "gpt-5"` or anything outside the catalog, the agent build throws
+before talking to the provider. Errors surface as a transport failure on the mutation and the composer restores the draft. (The catalog ids
+are also validated at the mutation `chatConfigDefaultModelSet` write site, so a stale default can't be persisted either.)
 
 ## Visitor firewall
 
@@ -116,18 +116,18 @@ zero effect; the field is admin-only by code, not just by schema.
 
 ## Files
 
-| Concern                                  | File                                                                                       |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Catalog (server-static)                  | `src/server/agents/adminChatModels.ts`                                                     |
-| Singleton key                            | `src/server/agents/adminChatConfig.ts`                                                     |
-| DB table                                 | `src/server/db/schema.ts` (`adminChatConfig`)                                              |
-| Singleton read + bootstrap               | `src/server/queries/adminChatConfigGet.ts`                                                 |
-| Default-model writer                     | `src/server/commands/adminChatConfigDefaultModelSet.ts`                                    |
-| Runtime model factory                    | `src/server/domain/serverRuntimeCreate.ts` (`ai.userConversationModel`)                    |
-| Agent wire-in                            | `src/server/agents/agentPersonalAssistant.ts`                                              |
-| GraphQL schema                           | `src/server/graphql/schema.graphqls` (`AdminChatModel`, `AdminChatConfig`, mutation, input field) |
-| Resolvers                                | `src/server/graphql/resolversCreate.ts`                                                    |
-| Client ops                               | `src/routes/{-$locale}/workspace/WorkspaceAssistantPage.graphql`                           |
-| Composer                                 | `src/web/chat/ChatComposer.tsx`                                                            |
-| Composer primitive (accept passthrough)  | `src/web/components/MessageComposer.tsx`                                                   |
-| Route wiring + sticky-default hook       | `src/routes/{-$locale}/workspace/assistant.tsx`                                            |
+| Concern                                 | File                                                                                              |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Catalog (server-static)                 | `src/server/agents/adminChatModels.ts`                                                            |
+| Singleton key                           | `src/server/agents/adminChatConfig.ts`                                                            |
+| DB table                                | `src/server/db/schema.ts` (`adminChatConfig`)                                                     |
+| Singleton read + bootstrap              | `src/server/queries/adminChatConfigGet.ts`                                                        |
+| Default-model writer                    | `src/server/commands/adminChatConfigDefaultModelSet.ts`                                           |
+| Runtime model factory                   | `src/server/domain/serverRuntimeCreate.ts` (`ai.userConversationModel`)                           |
+| Agent wire-in                           | `src/server/agents/agentPersonalAssistant.ts`                                                     |
+| GraphQL schema                          | `src/server/graphql/schema.graphqls` (`AdminChatModel`, `AdminChatConfig`, mutation, input field) |
+| Resolvers                               | `src/server/graphql/resolversCreate.ts`                                                           |
+| Client ops                              | `src/routes/{-$locale}/workspace/WorkspaceAssistantPage.graphql`                                  |
+| Composer                                | `src/web/chat/ChatComposer.tsx`                                                                   |
+| Composer primitive (accept passthrough) | `src/web/components/MessageComposer.tsx`                                                          |
+| Route wiring + sticky-default hook      | `src/routes/{-$locale}/workspace/assistant.tsx`                                                   |
