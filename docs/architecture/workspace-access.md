@@ -5,7 +5,7 @@
 The site has two surfaces:
 
 - **Public** — portfolio landing, projects, CV, blog, web-tools, and the visitor AI chat. Open to everyone.
-- **Workspace** (`/workspace/*`) — Cem's personal hub: personal-assistant chat, content editors, profile, future calendar/notes/tasks. Must
+- **Workspace** (`/workspace/*`) — Cem's personal hub: personal-assistant chat, content editors, compass, future calendar/notes/tasks. Must
   be reachable only by Cem.
 
 Both surfaces share the same GraphQL schema. The workspace **read** namespace hangs off `Session.user.admin`; the **write** namespace lives

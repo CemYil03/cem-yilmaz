@@ -29,13 +29,13 @@ import { Route as Char123LocaleChar125WorkspaceVisitorChatsRouteImport } from '.
 import { Route as Char123LocaleChar125WorkspaceTaxRouteImport } from './routes/{-$locale}/workspace/tax'
 import { Route as Char123LocaleChar125WorkspaceSoftwareRouteImport } from './routes/{-$locale}/workspace/software'
 import { Route as Char123LocaleChar125WorkspaceProjectsRouteImport } from './routes/{-$locale}/workspace/projects'
-import { Route as Char123LocaleChar125WorkspaceProfileRouteImport } from './routes/{-$locale}/workspace/profile'
 import { Route as Char123LocaleChar125WorkspaceMedicalRouteImport } from './routes/{-$locale}/workspace/medical'
 import { Route as Char123LocaleChar125WorkspaceMediaRouteImport } from './routes/{-$locale}/workspace/media'
 import { Route as Char123LocaleChar125WorkspaceLogsRouteImport } from './routes/{-$locale}/workspace/logs'
 import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './routes/{-$locale}/workspace/fitness'
 import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
 import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
+import { Route as Char123LocaleChar125WorkspaceCompassRouteImport } from './routes/{-$locale}/workspace/compass'
 import { Route as Char123LocaleChar125WorkspaceAssistantRouteImport } from './routes/{-$locale}/workspace/assistant'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
 import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
@@ -151,12 +151,6 @@ const Char123LocaleChar125WorkspaceProjectsRoute =
     path: '/projects',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
-const Char123LocaleChar125WorkspaceProfileRoute =
-  Char123LocaleChar125WorkspaceProfileRouteImport.update({
-    id: '/profile',
-    path: '/profile',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
 const Char123LocaleChar125WorkspaceMedicalRoute =
   Char123LocaleChar125WorkspaceMedicalRouteImport.update({
     id: '/medical',
@@ -191,6 +185,12 @@ const Char123LocaleChar125WorkspaceCvRoute =
   Char123LocaleChar125WorkspaceCvRouteImport.update({
     id: '/cv',
     path: '/cv',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceCompassRoute =
+  Char123LocaleChar125WorkspaceCompassRouteImport.update({
+    id: '/compass',
+    path: '/compass',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
 const Char123LocaleChar125WorkspaceAssistantRoute =
@@ -230,13 +230,13 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
   '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
+  '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
-  '/{-$locale}/workspace/profile': typeof Char123LocaleChar125WorkspaceProfileRoute
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -260,13 +260,13 @@ export interface FileRoutesByTo {
   '/{-$locale}': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
   '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
+  '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
-  '/{-$locale}/workspace/profile': typeof Char123LocaleChar125WorkspaceProfileRoute
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -293,13 +293,13 @@ export interface FileRoutesById {
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads_/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
   '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
+  '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
-  '/{-$locale}/workspace/profile': typeof Char123LocaleChar125WorkspaceProfileRoute
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -327,13 +327,13 @@ export interface FileRouteTypes {
     | '/{-$locale}/'
     | '/api/file-uploads/$fileUploadId'
     | '/{-$locale}/workspace/assistant'
+    | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
-    | '/{-$locale}/workspace/profile'
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
@@ -357,13 +357,13 @@ export interface FileRouteTypes {
     | '/{-$locale}'
     | '/api/file-uploads/$fileUploadId'
     | '/{-$locale}/workspace/assistant'
+    | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
-    | '/{-$locale}/workspace/profile'
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
@@ -389,13 +389,13 @@ export interface FileRouteTypes {
     | '/{-$locale}/'
     | '/api/file-uploads_/$fileUploadId'
     | '/{-$locale}/workspace/assistant'
+    | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
-    | '/{-$locale}/workspace/profile'
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
@@ -558,13 +558,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
-    '/{-$locale}/workspace/profile': {
-      id: '/{-$locale}/workspace/profile'
-      path: '/profile'
-      fullPath: '/{-$locale}/workspace/profile'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceProfileRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
     '/{-$locale}/workspace/medical': {
       id: '/{-$locale}/workspace/medical'
       path: '/medical'
@@ -607,6 +600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceCvRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/{-$locale}/workspace/compass': {
+      id: '/{-$locale}/workspace/compass'
+      path: '/compass'
+      fullPath: '/{-$locale}/workspace/compass'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceCompassRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
     '/{-$locale}/workspace/assistant': {
       id: '/{-$locale}/workspace/assistant'
       path: '/assistant'
@@ -633,13 +633,13 @@ declare module '@tanstack/react-router' {
 
 interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceAssistantRoute: typeof Char123LocaleChar125WorkspaceAssistantRoute
+  Char123LocaleChar125WorkspaceCompassRoute: typeof Char123LocaleChar125WorkspaceCompassRoute
   Char123LocaleChar125WorkspaceCvRoute: typeof Char123LocaleChar125WorkspaceCvRoute
   Char123LocaleChar125WorkspaceFinancesRoute: typeof Char123LocaleChar125WorkspaceFinancesRoute
   Char123LocaleChar125WorkspaceFitnessRoute: typeof Char123LocaleChar125WorkspaceFitnessRoute
   Char123LocaleChar125WorkspaceLogsRoute: typeof Char123LocaleChar125WorkspaceLogsRoute
   Char123LocaleChar125WorkspaceMediaRoute: typeof Char123LocaleChar125WorkspaceMediaRoute
   Char123LocaleChar125WorkspaceMedicalRoute: typeof Char123LocaleChar125WorkspaceMedicalRoute
-  Char123LocaleChar125WorkspaceProfileRoute: typeof Char123LocaleChar125WorkspaceProfileRoute
   Char123LocaleChar125WorkspaceProjectsRoute: typeof Char123LocaleChar125WorkspaceProjectsRoute
   Char123LocaleChar125WorkspaceSoftwareRoute: typeof Char123LocaleChar125WorkspaceSoftwareRoute
   Char123LocaleChar125WorkspaceTaxRoute: typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -652,6 +652,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
   {
     Char123LocaleChar125WorkspaceAssistantRoute:
       Char123LocaleChar125WorkspaceAssistantRoute,
+    Char123LocaleChar125WorkspaceCompassRoute:
+      Char123LocaleChar125WorkspaceCompassRoute,
     Char123LocaleChar125WorkspaceCvRoute: Char123LocaleChar125WorkspaceCvRoute,
     Char123LocaleChar125WorkspaceFinancesRoute:
       Char123LocaleChar125WorkspaceFinancesRoute,
@@ -663,8 +665,6 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceMediaRoute,
     Char123LocaleChar125WorkspaceMedicalRoute:
       Char123LocaleChar125WorkspaceMedicalRoute,
-    Char123LocaleChar125WorkspaceProfileRoute:
-      Char123LocaleChar125WorkspaceProfileRoute,
     Char123LocaleChar125WorkspaceProjectsRoute:
       Char123LocaleChar125WorkspaceProjectsRoute,
     Char123LocaleChar125WorkspaceSoftwareRoute:

@@ -29,7 +29,7 @@ export interface ServerRuntime {
             options?: { startAfter?: Date | string | number; transaction?: DatabaseTransaction },
         ) => Promise<string | null>;
         // Count active (created | retry | active) jobs for a queue. Used to
-        // derive live UI flags like `AdminProfile.synthesisInProgress` —
+        // derive live UI flags like `AdminCompass.synthesisInProgress` —
         // pg-boss owns the state, the DB doesn't carry a stale column.
         activeCount: <TData>(definition: QueuedJobDefinition<TData>) => Promise<number>;
     };
@@ -46,14 +46,14 @@ export interface ServerRuntime {
         // ids fail fast at construction so an invalid choice can't reach the
         // provider.
         userConversationModel: (modelId?: string) => LanguageModel;
-        // Cheap model used by the profile analyzer (one call per admin user
+        // Cheap model used by the compass analyzer (one call per admin user
         // message). Should be inexpensive and structured-output friendly.
-        // See `docs/features/profile.md`.
-        profileAnalyzerModel: () => LanguageModel;
-        // More capable model for the periodic profile synthesizer. Runs far
+        // See `docs/features/compass.md`.
+        compassAnalyzerModel: () => LanguageModel;
+        // More capable model for the periodic compass synthesizer. Runs far
         // less often than the analyzer (threshold-triggered) and reads every
         // active observation, so the higher per-call cost is amortized.
-        profileSynthesizerModel: () => LanguageModel;
+        compassSynthesizerModel: () => LanguageModel;
         // Provider-executed web search. Gemini runs the search server-side
         // and rides the call back through the normal `step.toolCalls` /
         // `step.toolResults` channel — there is no `execute` we own. Citations

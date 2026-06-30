@@ -20,7 +20,7 @@ existing `<AssistantMarkdown>` renderer turns them into clickable anchors. Cem c
 
 The agent is prompted to **skip** search for things it can already answer:
 
-- Facts about Cem already in the profile-summary block of its prompt.
+- Facts about Cem already in the compass-summary block of its prompt.
 - Workspace data (projects, tasks) — that goes through `delegateToProjects`, which has the live snapshot.
 - Pure reasoning / arithmetic / code questions.
 

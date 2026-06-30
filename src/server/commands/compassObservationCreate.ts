@@ -1,25 +1,25 @@
 import { eq, sql } from 'drizzle-orm';
-import { profile, profileObservations } from '../db/schema';
-import type { ProfileObservationCategory, ProfileObservationCreate } from '../db/schema';
+import { compass, compassObservations } from '../db/schema';
+import type { CompassObservationCategory, CompassObservationCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { profileGet } from '../queries/profileGet';
+import { compassGet } from '../queries/compassGet';
 
-interface ProfileObservationCreateInput {
+interface CompassObservationCreateInput {
     sourceChatMessageId: string;
-    category: ProfileObservationCategory;
+    category: CompassObservationCategory;
     content: string;
     confidence: number | null;
     analyzerModelId: string | null;
 }
 
-// Persists one observation row and bumps the parent profile's
+// Persists one observation row and bumps the parent compass's
 // `observationsSinceSynthesis` counter. Used by the analyzer job; not exposed
-// as a GraphQL mutation — the AI writes profile data, not the user.
+// as a GraphQL mutation — the AI writes compass data, not the user.
 //
 // Returns the row id so the analyzer can log what it produced for a given
 // admin message in one place.
-export async function profileObservationCreate(input: ProfileObservationCreateInput, serverRuntime: ServerRuntime): Promise<string> {
-    const insert: ProfileObservationCreate = {
+export async function compassObservationCreate(input: CompassObservationCreateInput, serverRuntime: ServerRuntime): Promise<string> {
+    const insert: CompassObservationCreate = {
         observationId: crypto.randomUUID(),
         sourceChatMessageId: input.sourceChatMessageId,
         category: input.category,
@@ -30,14 +30,14 @@ export async function profileObservationCreate(input: ProfileObservationCreateIn
     };
 
     await serverRuntime.db.transaction(async (transaction) => {
-        // Make sure the profile row exists before we increment it — first
+        // Make sure the compass row exists before we increment it — first
         // run on a fresh DB needs the seed insert.
-        const profileRow = await profileGet(transaction);
-        await transaction.insert(profileObservations).values(insert);
+        const compassRow = await compassGet(transaction);
+        await transaction.insert(compassObservations).values(insert);
         await transaction
-            .update(profile)
-            .set({ observationsSinceSynthesis: sql`${profile.observationsSinceSynthesis} + 1`, updatedAt: new Date() })
-            .where(eq(profile.profileId, profileRow.profileId));
+            .update(compass)
+            .set({ observationsSinceSynthesis: sql`${compass.observationsSinceSynthesis} + 1`, updatedAt: new Date() })
+            .where(eq(compass.compassId, compassRow.compassId));
     });
 
     return insert.observationId;

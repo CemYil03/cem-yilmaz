@@ -2,6 +2,7 @@ import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
 import {
     ArrowUpRightIcon,
     CodeXmlIcon,
+    CompassIcon,
     DumbbellIcon,
     FileTextIcon,
     FilmIcon,
@@ -9,7 +10,6 @@ import {
     MessageSquareTextIcon,
     ReceiptTextIcon,
     ScrollTextIcon,
-    SparklesIcon,
     StethoscopeIcon,
     WalletIcon,
 } from 'lucide-react';
@@ -57,7 +57,7 @@ type FocusAreaRoute =
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/media'
-    | '/{-$locale}/workspace/profile'
+    | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/visitor-chats';
 
@@ -73,9 +73,9 @@ type FocusArea = {
 
 const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
     {
-        to: '/{-$locale}/workspace/profile',
-        icon: SparklesIcon,
-        title: { de: 'Profil', en: 'Profile' },
+        to: '/{-$locale}/workspace/compass',
+        icon: CompassIcon,
+        title: { de: 'Kompass', en: 'Compass' },
         description: { de: 'Was dein Assistent über dich weiß.', en: 'What your assistant knows about you.' },
     },
     {

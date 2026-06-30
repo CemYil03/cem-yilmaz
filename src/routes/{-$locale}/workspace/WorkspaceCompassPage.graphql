@@ -1,14 +1,14 @@
-# Operations for the workspace profile page (`/workspace/profile`).
+# Operations for the workspace compass page (`/workspace/compass`).
 #
-# `WorkspaceProfilePage` is the main read query — three text artifacts, plus
+# `WorkspaceCompassPage` is the main read query — three text artifacts, plus
 # the observations list filtered by category. The list refetches when the
 # category filter changes because URQL's policy plays it safe with arg-change
 # misses; the synthesized text artifacts never change with category so they
 # are loaded once and cached.
 #
-# See `docs/features/profile.md`.
+# See `docs/features/compass.md`.
 
-fragment WorkspaceProfileObservation on ProfileObservation {
+fragment WorkspaceCompassObservation on CompassObservation {
     observationId
     category
     content
@@ -20,20 +20,20 @@ fragment WorkspaceProfileObservation on ProfileObservation {
     createdAt
 }
 
-query WorkspaceProfilePage($category: ProfileObservationCategory, $includeDismissed: Boolean) {
+query WorkspaceCompassPage($category: CompassObservationCategory, $includeDismissed: Boolean) {
     currentSession {
         user {
             admin {
-                profile {
+                compass {
                     summary
                     prose
-                    psychProfile
+                    psychology
                     synthesizedAt
                     synthesisModelId
                     observationsSinceSynthesis
                     synthesisInProgress
                     observations(category: $category, includeDismissed: $includeDismissed) {
-                        ...WorkspaceProfileObservation
+                        ...WorkspaceCompassObservation
                     }
                 }
             }
@@ -41,17 +41,17 @@ query WorkspaceProfilePage($category: ProfileObservationCategory, $includeDismis
     }
 }
 
-mutation WorkspaceProfileObservationDismiss($observationId: ID!) {
+mutation WorkspaceCompassObservationDismiss($observationId: ID!) {
     admin {
-        profileObservationDismiss(observationId: $observationId) {
+        compassObservationDismiss(observationId: $observationId) {
             success
         }
     }
 }
 
-mutation WorkspaceProfileSynthesizeRequest {
+mutation WorkspaceCompassSynthesizeRequest {
     admin {
-        profileSynthesizeRequest {
+        compassSynthesizeRequest {
             success
             referenceId
         }

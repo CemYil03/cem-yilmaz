@@ -6,7 +6,7 @@ import { ADMIN_CHAT_CONFIG_SINGLETON_ID } from '../agents/adminChatConfig';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from '../agents/adminChatModels';
 
 // Loads the singleton `AdminChatConfig` row, creating it lazily if it does not
-// exist yet. Mirrors `profileGet` (`profileGet.ts`) — callers can rely on this
+// exist yet. Mirrors `compassGet` (`compassGet.ts`) — callers can rely on this
 // returning a row and never need to handle the "no config yet" case.
 //
 // If the row's `defaultModelId` is no longer in the catalog (a model id was

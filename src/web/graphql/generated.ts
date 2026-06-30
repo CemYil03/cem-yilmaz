@@ -25,8 +25,8 @@ export interface GqlCAdmin {
     chat: GqlCChat;
     chatConfig: GqlCAdminChatConfig;
     chats: Array<GqlCChat>;
+    compass: GqlCAdminCompass;
     logs: Array<GqlCLog>;
-    profile: GqlCAdminProfile;
     project: GqlCProject;
     projectRequests: Array<GqlCProjectRequest>;
     projectRequestsInboxCount: Scalars['Int']['output'];
@@ -75,12 +75,31 @@ export interface GqlCAdminChatModel {
     supportedMediaTypes: Array<Scalars['String']['output']>;
 }
 
+export interface GqlCAdminCompass {
+    __typename?: 'AdminCompass';
+    observations: Array<GqlCCompassObservation>;
+    observationsSinceSynthesis: Scalars['Int']['output'];
+    prose: Scalars['String']['output'];
+    psychology: Scalars['String']['output'];
+    summary: Scalars['String']['output'];
+    synthesisInProgress: Scalars['Boolean']['output'];
+    synthesisModelId?: Maybe<Scalars['String']['output']>;
+    synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlCAdminCompassObservationsArgs = {
+    category?: InputMaybe<GqlCCompassObservationCategory>;
+    includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
     chatConfigDefaultModelSet: GqlCMutationResult;
     chatInputCollectionRespond?: Maybe<GqlCChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlCChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlCChatMessageCreateResult>;
+    compassObservationDismiss: GqlCMutationResult;
+    compassSynthesizeRequest: GqlCMutationResult;
     cvEducationDelete: GqlCMutationResult;
     cvEducationReorder: GqlCMutationResult;
     cvEducationUpsert: GqlCCvEducation;
@@ -93,8 +112,6 @@ export interface GqlCAdminMutation {
     cvSkillDelete: GqlCMutationResult;
     cvSkillReorder: GqlCMutationResult;
     cvSkillUpsert: GqlCCvSkill;
-    profileObservationDismiss: GqlCMutationResult;
-    profileSynthesizeRequest: GqlCMutationResult;
     projectActivityDelete: GqlCMutationResult;
     projectActivityUpsert: GqlCProjectActivity;
     projectDelete: GqlCMutationResult;
@@ -138,6 +155,10 @@ export type GqlCAdminMutationChatToolApprovalRespondArgs = {
     approved: Scalars['Boolean']['input'];
     assistantOptions: GqlCChatAssistantOptions;
     reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminMutationCompassObservationDismissArgs = {
+    observationId: Scalars['ID']['input'];
 };
 
 export type GqlCAdminMutationCvEducationDeleteArgs = {
@@ -186,10 +207,6 @@ export type GqlCAdminMutationCvSkillReorderArgs = {
 
 export type GqlCAdminMutationCvSkillUpsertArgs = {
     input: GqlCCvSkillInput;
-};
-
-export type GqlCAdminMutationProfileObservationDismissArgs = {
-    observationId: Scalars['ID']['input'];
 };
 
 export type GqlCAdminMutationProjectActivityDeleteArgs = {
@@ -264,23 +281,6 @@ export type GqlCAdminMutationTaskReorderArgs = {
 
 export type GqlCAdminMutationTaskUpsertArgs = {
     input: GqlCTaskCreate;
-};
-
-export interface GqlCAdminProfile {
-    __typename?: 'AdminProfile';
-    observations: Array<GqlCProfileObservation>;
-    observationsSinceSynthesis: Scalars['Int']['output'];
-    prose: Scalars['String']['output'];
-    psychProfile: Scalars['String']['output'];
-    summary: Scalars['String']['output'];
-    synthesisInProgress: Scalars['Boolean']['output'];
-    synthesisModelId?: Maybe<Scalars['String']['output']>;
-    synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
-}
-
-export type GqlCAdminProfileObservationsArgs = {
-    category?: InputMaybe<GqlCProfileObservationCategory>;
-    includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export interface GqlCChat {
@@ -489,8 +489,8 @@ export interface GqlCChatMessageUser {
     author?: Maybe<GqlCUser>;
     body: Scalars['String']['output'];
     chatMessageId: Scalars['ID']['output'];
+    compassObservations: Array<GqlCCompassObservation>;
     createdAt: Scalars['DateTime']['output'];
-    profileObservations: Array<GqlCProfileObservation>;
 }
 
 export interface GqlCChatMessageUserInput {
@@ -538,6 +538,21 @@ export interface GqlCChatUpdateTurnEnded {
     __typename?: 'ChatUpdateTurnEnded';
     generationId: Scalars['ID']['output'];
 }
+
+export interface GqlCCompassObservation {
+    __typename?: 'CompassObservation';
+    analyzerModelId?: Maybe<Scalars['String']['output']>;
+    category: GqlCCompassObservationCategory;
+    confidence?: Maybe<Scalars['Int']['output']>;
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    dismissedAt?: Maybe<Scalars['DateTime']['output']>;
+    observationId: Scalars['ID']['output'];
+    sourceChatId?: Maybe<Scalars['ID']['output']>;
+    sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
+}
+
+export type GqlCCompassObservationCategory = 'behavioral' | 'factual' | 'psychological';
 
 export interface GqlCCvEducation {
     __typename?: 'CvEducation';
@@ -700,21 +715,6 @@ export interface GqlCMutationResult {
     referenceId?: Maybe<Scalars['ID']['output']>;
     success: Scalars['Boolean']['output'];
 }
-
-export interface GqlCProfileObservation {
-    __typename?: 'ProfileObservation';
-    analyzerModelId?: Maybe<Scalars['String']['output']>;
-    category: GqlCProfileObservationCategory;
-    confidence?: Maybe<Scalars['Int']['output']>;
-    content: Scalars['String']['output'];
-    createdAt: Scalars['DateTime']['output'];
-    dismissedAt?: Maybe<Scalars['DateTime']['output']>;
-    observationId: Scalars['ID']['output'];
-    sourceChatId?: Maybe<Scalars['ID']['output']>;
-    sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
-}
-
-export type GqlCProfileObservationCategory = 'behavioral' | 'factual' | 'psychological';
 
 export interface GqlCProject {
     __typename?: 'Project';
@@ -1145,9 +1145,9 @@ export type GqlCWorkspaceVisitorChatQuery = {
                               createdAt: string;
                               author: { userId: string; name: string } | null;
                               attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-                              profileObservations: Array<{
+                              compassObservations: Array<{
                                   observationId: string;
-                                  category: Schema.GqlCProfileObservationCategory;
+                                  category: Schema.GqlCCompassObservationCategory;
                                   content: string;
                                   confidence: number | null;
                                   createdAt: string;
@@ -1271,9 +1271,9 @@ type GqlCWorkspaceChatMessageFields_ChatMessageUser_Fragment = {
     createdAt: string;
     author: { userId: string; name: string } | null;
     attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-    profileObservations: Array<{
+    compassObservations: Array<{
         observationId: string;
-        category: Schema.GqlCProfileObservationCategory;
+        category: Schema.GqlCCompassObservationCategory;
         content: string;
         confidence: number | null;
         createdAt: string;
@@ -1416,9 +1416,9 @@ export type GqlCWorkspaceChatPageQuery = {
                               createdAt: string;
                               author: { userId: string; name: string } | null;
                               attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-                              profileObservations: Array<{
+                              compassObservations: Array<{
                                   observationId: string;
-                                  category: Schema.GqlCProfileObservationCategory;
+                                  category: Schema.GqlCCompassObservationCategory;
                                   content: string;
                                   confidence: number | null;
                                   createdAt: string;
@@ -1509,9 +1509,9 @@ export type GqlCWorkspaceChatConfigDefaultModelSetMutation = {
     admin: { chatConfigDefaultModelSet: { success: boolean; referenceId: string | null } };
 };
 
-export type GqlCWorkspaceProfileObservationFragment = {
+export type GqlCWorkspaceCompassObservationFragment = {
     observationId: string;
-    category: Schema.GqlCProfileObservationCategory;
+    category: Schema.GqlCCompassObservationCategory;
     content: string;
     confidence: number | null;
     sourceChatId: string | null;
@@ -1521,26 +1521,26 @@ export type GqlCWorkspaceProfileObservationFragment = {
     createdAt: string;
 };
 
-export type GqlCWorkspaceProfilePageQueryVariables = Exact<{
-    category?: Schema.GqlCProfileObservationCategory | null | undefined;
+export type GqlCWorkspaceCompassPageQueryVariables = Exact<{
+    category?: Schema.GqlCCompassObservationCategory | null | undefined;
     includeDismissed?: boolean | null | undefined;
 }>;
 
-export type GqlCWorkspaceProfilePageQuery = {
+export type GqlCWorkspaceCompassPageQuery = {
     currentSession: {
         user: {
             admin: {
-                profile: {
+                compass: {
                     summary: string;
                     prose: string;
-                    psychProfile: string;
+                    psychology: string;
                     synthesizedAt: string | null;
                     synthesisModelId: string | null;
                     observationsSinceSynthesis: number;
                     synthesisInProgress: boolean;
                     observations: Array<{
                         observationId: string;
-                        category: Schema.GqlCProfileObservationCategory;
+                        category: Schema.GqlCCompassObservationCategory;
                         content: string;
                         confidence: number | null;
                         sourceChatId: string | null;
@@ -1555,16 +1555,16 @@ export type GqlCWorkspaceProfilePageQuery = {
     };
 };
 
-export type GqlCWorkspaceProfileObservationDismissMutationVariables = Exact<{
+export type GqlCWorkspaceCompassObservationDismissMutationVariables = Exact<{
     observationId: string;
 }>;
 
-export type GqlCWorkspaceProfileObservationDismissMutation = { admin: { profileObservationDismiss: { success: boolean } } };
+export type GqlCWorkspaceCompassObservationDismissMutation = { admin: { compassObservationDismiss: { success: boolean } } };
 
-export type GqlCWorkspaceProfileSynthesizeRequestMutationVariables = Exact<{ [key: string]: never }>;
+export type GqlCWorkspaceCompassSynthesizeRequestMutationVariables = Exact<{ [key: string]: never }>;
 
-export type GqlCWorkspaceProfileSynthesizeRequestMutation = {
-    admin: { profileSynthesizeRequest: { success: boolean; referenceId: string | null } };
+export type GqlCWorkspaceCompassSynthesizeRequestMutation = {
+    admin: { compassSynthesizeRequest: { success: boolean; referenceId: string | null } };
 };
 
 export type GqlCWorkspaceCvPageQueryVariables = Exact<{ [key: string]: never }>;
@@ -2211,9 +2211,9 @@ type GqlCChatMessageFields_ChatMessageUser_Fragment = {
     createdAt: string;
     author: { userId: string; name: string } | null;
     attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-    profileObservations: Array<{
+    compassObservations: Array<{
         observationId: string;
-        category: Schema.GqlCProfileObservationCategory;
+        category: Schema.GqlCCompassObservationCategory;
         content: string;
         confidence: number | null;
         createdAt: string;
@@ -2340,9 +2340,9 @@ export type GqlCChatPageQuery = {
                       createdAt: string;
                       author: { userId: string; name: string } | null;
                       attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-                      profileObservations: Array<{
+                      compassObservations: Array<{
                           observationId: string;
-                          category: Schema.GqlCProfileObservationCategory;
+                          category: Schema.GqlCCompassObservationCategory;
                           content: string;
                           confidence: number | null;
                           createdAt: string;
@@ -2490,9 +2490,9 @@ export type GqlCChatUpdatesSubscription = {
                         createdAt: string;
                         author: { userId: string; name: string } | null;
                         attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-                        profileObservations: Array<{
+                        compassObservations: Array<{
                             observationId: string;
-                            category: Schema.GqlCProfileObservationCategory;
+                            category: Schema.GqlCCompassObservationCategory;
                             content: string;
                             confidence: number | null;
                             createdAt: string;
@@ -2608,7 +2608,7 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    name: { kind: 'Name', value: 'compassObservations' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -3020,13 +3020,13 @@ export const WorkspaceChatListItemFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceChatListItemFragment, unknown>;
-export const WorkspaceProfileObservationFragmentDoc = {
+export const WorkspaceCompassObservationFragmentDoc = {
     kind: 'Document',
     definitions: [
         {
             kind: 'FragmentDefinition',
-            name: { kind: 'Name', value: 'WorkspaceProfileObservation' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'ProfileObservation' } },
+            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservation' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -3043,7 +3043,7 @@ export const WorkspaceProfileObservationFragmentDoc = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProfileObservationFragment, unknown>;
+} as unknown as DocumentNode<GqlCWorkspaceCompassObservationFragment, unknown>;
 export const ChatMessageGenerationFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -3112,7 +3112,7 @@ export const ChatMessageFieldsFragmentDoc = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    name: { kind: 'Name', value: 'compassObservations' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -3983,7 +3983,7 @@ export const WorkspaceVisitorChatDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    name: { kind: 'Name', value: 'compassObservations' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -4574,7 +4574,7 @@ export const WorkspaceChatPageDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    name: { kind: 'Name', value: 'compassObservations' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -5413,18 +5413,18 @@ export const WorkspaceChatConfigDefaultModelSetDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceChatConfigDefaultModelSetMutation, GqlCWorkspaceChatConfigDefaultModelSetMutationVariables>;
-export const WorkspaceProfilePageDocument = {
+export const WorkspaceCompassPageDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'query',
-            name: { kind: 'Name', value: 'WorkspaceProfilePage' },
+            name: { kind: 'Name', value: 'WorkspaceCompassPage' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProfileObservationCategory' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservationCategory' } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -5455,13 +5455,13 @@ export const WorkspaceProfilePageDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'profile' },
+                                                            name: { kind: 'Name', value: 'compass' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'psychProfile' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'psychology' } },
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
                                                                     {
@@ -5497,7 +5497,7 @@ export const WorkspaceProfilePageDocument = {
                                                                                     kind: 'FragmentSpread',
                                                                                     name: {
                                                                                         kind: 'Name',
-                                                                                        value: 'WorkspaceProfileObservation',
+                                                                                        value: 'WorkspaceCompassObservation',
                                                                                     },
                                                                                 },
                                                                             ],
@@ -5520,8 +5520,8 @@ export const WorkspaceProfilePageDocument = {
         },
         {
             kind: 'FragmentDefinition',
-            name: { kind: 'Name', value: 'WorkspaceProfileObservation' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'ProfileObservation' } },
+            name: { kind: 'Name', value: 'WorkspaceCompassObservation' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassObservation' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -5538,14 +5538,14 @@ export const WorkspaceProfilePageDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProfilePageQuery, GqlCWorkspaceProfilePageQueryVariables>;
-export const WorkspaceProfileObservationDismissDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceCompassPageQuery, GqlCWorkspaceCompassPageQueryVariables>;
+export const WorkspaceCompassObservationDismissDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProfileObservationDismiss' },
+            name: { kind: 'Name', value: 'WorkspaceCompassObservationDismiss' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -5564,7 +5564,7 @@ export const WorkspaceProfileObservationDismissDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileObservationDismiss' },
+                                    name: { kind: 'Name', value: 'compassObservationDismiss' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -5584,14 +5584,14 @@ export const WorkspaceProfileObservationDismissDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProfileObservationDismissMutation, GqlCWorkspaceProfileObservationDismissMutationVariables>;
-export const WorkspaceProfileSynthesizeRequestDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceCompassObservationDismissMutation, GqlCWorkspaceCompassObservationDismissMutationVariables>;
+export const WorkspaceCompassSynthesizeRequestDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProfileSynthesizeRequest' },
+            name: { kind: 'Name', value: 'WorkspaceCompassSynthesizeRequest' },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -5603,7 +5603,7 @@ export const WorkspaceProfileSynthesizeRequestDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileSynthesizeRequest' },
+                                    name: { kind: 'Name', value: 'compassSynthesizeRequest' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -5619,7 +5619,7 @@ export const WorkspaceProfileSynthesizeRequestDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProfileSynthesizeRequestMutation, GqlCWorkspaceProfileSynthesizeRequestMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceCompassSynthesizeRequestMutation, GqlCWorkspaceCompassSynthesizeRequestMutationVariables>;
 export const WorkspaceCvPageDocument = {
     kind: 'Document',
     definitions: [
@@ -9252,7 +9252,7 @@ export const ChatPageDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    name: { kind: 'Name', value: 'compassObservations' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -10038,7 +10038,7 @@ export const ChatUpdatesDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profileObservations' },
+                                    name: { kind: 'Name', value: 'compassObservations' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [

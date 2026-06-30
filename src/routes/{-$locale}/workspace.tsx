@@ -90,7 +90,13 @@ function WorkspaceLayout() {
                 className="min-h-screen"
                 style={{ '--sidebar-width': `${widthPx}px` } as React.CSSProperties}
             >
-                <SidebarInset className="flex min-h-screen flex-col">
+                {/* The base `SidebarInset` primitive hard-codes `bg-background`,
+                 *  which would sit on top of the root `<AmbientBackdrop />`
+                 *  (mounted in `__root.tsx` at `-z-10`) and hide the brand-
+                 *  colour orb on every workspace route. Override to transparent
+                 *  so the backdrop shows through the workspace shell the same
+                 *  way it does on public pages. */}
+                <SidebarInset className="flex min-h-screen flex-col bg-transparent">
                     <WorkspaceHeader />
                     <Outlet />
                 </SidebarInset>

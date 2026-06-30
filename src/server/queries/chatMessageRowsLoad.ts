@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { Database, DatabaseTransaction } from '../db';
-import { fileUploads, chatMessageUserAttachments, chatMessages, profileObservations } from '../db/schema';
-import type { FileUpload, ProfileObservation } from '../db/schema';
+import { fileUploads, chatMessageUserAttachments, chatMessages, compassObservations } from '../db/schema';
+import type { FileUpload, CompassObservation } from '../db/schema';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageRowsBaseQuery, toChatMessageRowJoined } from './chatMessageRowsBaseQuery';
 
@@ -16,8 +16,8 @@ import { chatMessageRowsBaseQuery, toChatMessageRowJoined } from './chatMessageR
 // and force a `GROUP BY` / array_agg shuffle for an N-row table that is
 // already small per chat.
 //
-// Profile observations (admin chats only) follow the same bulk-load pattern:
-// a single `IN (...)` query against `ProfileObservations` keyed by user
+// Compass observations (admin chats only) follow the same bulk-load pattern:
+// a single `IN (...)` query against `CompassObservations` keyed by user
 // message id, then bucketed back onto the joined row. The analyzer never
 // records observations against visitor messages, so for `scope = 'public'`
 // chats the secondary query returns zero rows and the field renders empty.
@@ -28,7 +28,7 @@ export async function chatMessageRowsLoad(dbOrTx: Database | DatabaseTransaction
     const joined = await chatMessageRowsBaseQuery(dbOrTx).where(eq(chatMessages.chatId, chatId)).orderBy(asc(chatMessages.createdAt));
     const rows = joined.map(toChatMessageRowJoined);
     await attachUserAttachments(dbOrTx, rows);
-    await attachProfileObservations(dbOrTx, rows);
+    await attachCompassObservations(dbOrTx, rows);
     return rows;
 }
 
@@ -60,21 +60,21 @@ export async function attachUserAttachments(dbOrTx: Database | DatabaseTransacti
     }
 }
 
-// Bulk-load active profile observations for every user message in `rows`.
+// Bulk-load active compass observations for every user message in `rows`.
 // Newest first per message. Visitor chats never have observations — the
 // analyzer is admin-scope only — so the `IN` query is cheap regardless and
 // the field renders as an empty array on visitor reads.
-async function attachProfileObservations(dbOrTx: Database | DatabaseTransaction, rows: ChatMessageRowJoined[]): Promise<void> {
+async function attachCompassObservations(dbOrTx: Database | DatabaseTransaction, rows: ChatMessageRowJoined[]): Promise<void> {
     const userMessageIds = rows.filter((r) => r.spine.kind === 'user').map((r) => r.spine.chatMessageId);
     if (userMessageIds.length === 0) return;
 
     const observations = await dbOrTx
         .select()
-        .from(profileObservations)
-        .where(and(inArray(profileObservations.sourceChatMessageId, userMessageIds), isNull(profileObservations.dismissedAt)))
-        .orderBy(desc(profileObservations.createdAt));
+        .from(compassObservations)
+        .where(and(inArray(compassObservations.sourceChatMessageId, userMessageIds), isNull(compassObservations.dismissedAt)))
+        .orderBy(desc(compassObservations.createdAt));
 
-    const byMessageId = new Map<string, ProfileObservation[]>();
+    const byMessageId = new Map<string, CompassObservation[]>();
     for (const obs of observations) {
         if (!obs.sourceChatMessageId) continue;
         const list = byMessageId.get(obs.sourceChatMessageId) ?? [];
@@ -84,6 +84,6 @@ async function attachProfileObservations(dbOrTx: Database | DatabaseTransaction,
 
     for (const row of rows) {
         if (row.spine.kind !== 'user') continue;
-        row.profileObservations = byMessageId.get(row.spine.chatMessageId) ?? [];
+        row.compassObservations = byMessageId.get(row.spine.chatMessageId) ?? [];
     }
 }

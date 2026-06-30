@@ -29,7 +29,7 @@ fragment ChatMessageFields on ChatMessage {
             size
             url
         }
-        profileObservations {
+        compassObservations {
             observationId
             category
             content

@@ -1,24 +1,24 @@
 import { eq } from 'drizzle-orm';
-import { profileObservations } from '../db/schema';
+import { compassObservations } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSAdminMutationProfileObservationDismissArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminMutationCompassObservationDismissArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Soft-dismiss an observation: stamp `dismissedAt` rather than deleting the
 // row. Dismissed observations are excluded from the synthesizer's input but
-// remain visible at `/workspace/profile` (toggle filter) so Cem can review
+// remain visible at `/workspace/compass` (toggle filter) so Cem can review
 // what the analyzer once recorded. Idempotent — re-dismissing is a no-op.
-export async function profileObservationDismiss(
+export async function compassObservationDismiss(
     userId: string,
-    args: GqlSAdminMutationProfileObservationDismissArgs,
+    args: GqlSAdminMutationCompassObservationDismissArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSMutationResult> {
     try {
         const result = await serverRuntime.db
-            .update(profileObservations)
+            .update(compassObservations)
             .set({ dismissedAt: new Date() })
-            .where(eq(profileObservations.observationId, args.observationId))
-            .returning({ observationId: profileObservations.observationId });
+            .where(eq(compassObservations.observationId, args.observationId))
+            .returning({ observationId: compassObservations.observationId });
         if (result.length === 0) {
             return { success: false, referenceId: null };
         }

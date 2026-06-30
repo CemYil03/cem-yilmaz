@@ -9,7 +9,7 @@ import type {
     ChatMessageToolCall,
     ChatMessageUser,
     ChatMessageUserInput,
-    ProfileObservation,
+    CompassObservation,
     User,
 } from '../db/schema';
 import type {
@@ -19,7 +19,7 @@ import type {
     GqlSChatMessage,
     GqlSChatMessageUserInputAnswer,
 } from '../graphql/generated';
-import { toGqlProfileObservation } from './toGqlProfileObservation';
+import { toGqlCompassObservation } from './toGqlCompassObservation';
 import { toGqlUser } from './toGqlUser';
 import { toGqlFileUpload } from './toGqlFileUpload';
 
@@ -45,10 +45,10 @@ export interface ChatMessageRowJoined {
     // carried so `toModelMessages` can inline `FilePart` / `ImagePart` data
     // without a second DB hop.
     userAttachments?: FileUpload[];
-    // Active (non-dismissed) profile observations the analyzer extracted from
-    // this user message. Populated by `attachProfileObservations` on the read
+    // Active (non-dismissed) compass observations the analyzer extracted from
+    // this user message. Populated by `attachCompassObservations` on the read
     // path for admin chats; left as `undefined` for visitor messages.
-    profileObservations?: ProfileObservation[];
+    compassObservations?: CompassObservation[];
     assistantText?: ChatMessageAssistantText;
     toolCall?: ChatMessageToolCall;
     toolApprovalRequest?: ChatMessageToolApprovalRequest;
@@ -85,11 +85,11 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
                 // standalone (e.g. tests that build a row by hand).
                 attachments: (row.userAttachments ?? []).map(toGqlFileUpload),
                 // Bulk-loaded on the read path for admin chats — see
-                // `attachProfileObservations` in `chatMessageRowsLoad`. Empty
+                // `attachCompassObservations` in `chatMessageRowsLoad`. Empty
                 // on visitor messages (the analyzer never runs there) and
                 // on admin messages that haven't been analyzed yet or had no
                 // observations recorded.
-                profileObservations: (row.profileObservations ?? []).map((o) => toGqlProfileObservation(o, spine.chatId)),
+                compassObservations: (row.compassObservations ?? []).map((o) => toGqlCompassObservation(o, spine.chatId)),
                 createdAt: spine.createdAt,
             };
         }

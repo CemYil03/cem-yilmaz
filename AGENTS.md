@@ -84,7 +84,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                              | `src/server/agents/agentVisitorAboutCem.ts`    |
 | AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                        | `docs/architecture/multi-agent-chat.md`        |
 | AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`     | `src/server/agents/adminChatModels.ts`         |
-| Profile (Phase 2+)    | AI-built summary / prose / psych profile from admin chats; firewalled      | `docs/features/profile.md`                     |
+| Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled      | `docs/features/compass.md`                     |
 
 ## How to Add Things
 
@@ -154,7 +154,7 @@ src/
 │   │   └── workspace/          Personal workspace hub + focus areas (noindex; Phase 2 OAuth-gated)
 │   │       ├── index.tsx       Hub: greeting + assistant composer + links to each focus area
 │   │       ├── assistant.tsx   Personal-assistant chat (admin-scope)
-│   │       ├── profile.tsx     AI-built profile (summary / prose / psych) — see docs/features/profile.md
+│   │       ├── compass.tsx     AI-built compass (summary / portrait / psychology) — see docs/features/compass.md
 │   │       ├── cv.tsx          CV editor (writes the `Cv*` tables)
 │   │       ├── software.tsx    Software development & architecture
 │   │       ├── projects.tsx    Personal projects board (Inbox + kanban + Todos)

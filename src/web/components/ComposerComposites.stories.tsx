@@ -28,7 +28,7 @@ const visitorThread: ReadonlyArray<GqlCChatMessage> = [
         author,
         body: 'Hi! Can Cem help with a Next.js → TanStack migration in Q3?',
         attachments: [],
-        profileObservations: [],
+        compassObservations: [],
         createdAt: '2026-06-03T18:30:00.000Z',
     },
     {
@@ -43,7 +43,7 @@ const visitorThread: ReadonlyArray<GqlCChatMessage> = [
         author,
         body: 'Please do!',
         attachments: [],
-        profileObservations: [],
+        compassObservations: [],
         createdAt: '2026-06-03T18:31:00.000Z',
     },
 ];
@@ -142,7 +142,7 @@ const approvalThread: ReadonlyArray<GqlCChatMessage> = [
         author,
         body: 'Book me a table for two at the Italian place on Friday at 7pm.',
         attachments: [],
-        profileObservations: [],
+        compassObservations: [],
         createdAt: '2026-06-03T18:30:00.000Z',
     },
     {

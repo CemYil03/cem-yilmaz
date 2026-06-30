@@ -9,7 +9,7 @@ import { Bubble, MessageRow, Timestamp } from './shared';
 export function ChatMessageUserView({ message }: { message: GqlCChatMessageUser }) {
     const locale = useLocale();
     const hasAttachments = message.attachments.length > 0;
-    const observations = message.profileObservations;
+    const observations = message.compassObservations;
     // Open + index live here so the bubble owns the open lifecycle and the
     // grid stays purely presentational. Index is preserved across close/reopen
     // — closing and re-clicking the same tile is a no-op against the cache

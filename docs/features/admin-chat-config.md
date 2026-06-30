@@ -48,7 +48,7 @@ The DB only stores **which one is currently picked**, not the list itself.
 
 ## Storage
 
-Singleton row, same shape as `Profile`:
+Singleton row, same shape as `Compass`:
 
 ```sql
 CREATE TABLE "AdminChatConfig" (

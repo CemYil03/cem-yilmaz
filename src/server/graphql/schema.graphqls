@@ -18,13 +18,13 @@ type ChatMessageUser {
     # `FileUpload.url` points at `/api/file-uploads/:id` which streams them
     # back behind the same session cookie that authorized the upload.
     attachments: [FileUpload!]!
-    # Observations the profile analyzer extracted from this user message.
+    # Observations the compass analyzer extracted from this user message.
     # Empty when the analyzer hasn't run yet, or ran and found nothing to
     # record. Populated only on admin (`scope = 'admin'`) chats — the
     # analyzer never runs on visitor messages. The UI uses this to render an
     # inline "N observations" pill below the message body. See
-    # `docs/features/profile.md`.
-    profileObservations: [ProfileObservation!]!
+    # `docs/features/compass.md`.
+    compassObservations: [CompassObservation!]!
     createdAt: DateTime!
 }
 
@@ -423,30 +423,30 @@ type Admin {
     chats: [Chat!]!
     # A single admin chat by id. Rejects `scope = 'public'` chats.
     chat(chatId: ID!): Chat!
-    # The AI-built profile of Cem. Reads three synthesized text artifacts
-    # (`summary`, `prose`, `psychProfile`) plus the underlying observations
+    # The AI-built compass of Cem. Reads three synthesized text artifacts
+    # (`summary`, `prose`, `psychology`) plus the underlying observations
     # the analyzer extracted from admin chats. The `summary` field is the
     # only piece fed back into the personal-assistant system prompt; the
-    # rest is read-only insight surfaced at `/workspace/profile`. See
-    # `docs/features/profile.md`.
-    profile: AdminProfile!
+    # rest is read-only insight surfaced at `/workspace/compass`. See
+    # `docs/features/compass.md`.
+    compass: AdminCompass!
 }
 
-# Profile artifacts surfaced at `/workspace/profile`. Three text fields
+# Compass artifacts surfaced at `/workspace/compass`. Three text fields
 # produced by the synthesizer plus a list-and-count view onto the underlying
 # observations.
 #
 # Firewall: the resolver behind `summary` is the SAME row the analyzer reads
-# into the assistant prompt — by design. `prose` and `psychProfile` are
+# into the assistant prompt — by design. `prose` and `psychology` are
 # surfaced ONLY through this namespace and are never injected anywhere.
-type AdminProfile {
+type AdminCompass {
     # Short factual summary (≤ ~500 tokens), used as system-prompt context for
     # admin chats. Empty until the first synthesis.
     summary: String!
-    # Long-form, human-readable profile. Read by Cem on /workspace/profile.
+    # Long-form, human-readable portrait. Read by Cem on /workspace/compass.
     prose: String!
     # Psychological synthesis. NEVER fed back to any agent.
-    psychProfile: String!
+    psychology: String!
     # Null until the synthesizer has run at least once.
     synthesizedAt: DateTime
     # Model id that produced the latest synthesis. Surfaced as a faint
@@ -456,8 +456,8 @@ type AdminProfile {
     # Non-dismissed observations recorded since the last synthesis. Drives
     # the "Synthesize now" CTA's badge ("12 new observations").
     observationsSinceSynthesis: Int!
-    # True while a `profile-synthesize` job is queued (created/active/retry).
-    # Derived live from pg-boss — never persisted on the `Profile` row, so
+    # True while a `compass-synthesize` job is queued (created/active/retry).
+    # Derived live from pg-boss — never persisted on the `Compass` row, so
     # a crashed worker can never leave this stuck on (pg-boss expires
     # `active` rows after the job's `expireInSeconds`).
     synthesisInProgress: Boolean!
@@ -465,10 +465,10 @@ type AdminProfile {
     # toggles between active rows (default, null = active only),
     # `dismissed: true` shows dismissed rows, `dismissed` omitted with
     # `includeDismissed: true` shows both.
-    observations(category: ProfileObservationCategory, includeDismissed: Boolean): [ProfileObservation!]!
+    observations(category: CompassObservationCategory, includeDismissed: Boolean): [CompassObservation!]!
 }
 
-enum ProfileObservationCategory {
+enum CompassObservationCategory {
     factual
     behavioral
     psychological
@@ -477,9 +477,9 @@ enum ProfileObservationCategory {
 # One row produced by the analyzer per admin user-message that revealed
 # something new. `sourceChatMessage` is the user message it came from — null
 # only if that message has since been deleted.
-type ProfileObservation {
+type CompassObservation {
     observationId: ID!
-    category: ProfileObservationCategory!
+    category: CompassObservationCategory!
     content: String!
     # 0..100 (percent) confidence the analyzer reported. Null when the
     # analyzer omitted the field. The UI renders this as a faint dot row.
@@ -1114,10 +1114,10 @@ extend type AdminMutation {
     # from the synthesizer's input. A future "undismiss" mutation could clear
     # `dismissedAt`; today the page treats dismiss as final but reversible by
     # a re-run of the synthesizer over the older data.
-    profileObservationDismiss(observationId: ID!): MutationResult!
-    # Force a synthesis pass now. Enqueues the `profileSynthesize` job. The
-    # job updates the `Profile` row and resets `observationsSinceSynthesis`.
-    profileSynthesizeRequest: MutationResult!
+    compassObservationDismiss(observationId: ID!): MutationResult!
+    # Force a synthesis pass now. Enqueues the `compassSynthesize` job. The
+    # job updates the `Compass` row and resets `observationsSinceSynthesis`.
+    compassSynthesizeRequest: MutationResult!
 
     # --- Workspace projects -------------------------------------------------
     # Archive an incoming request without converting it to a project. Flips

@@ -66,12 +66,12 @@ export function serverRuntimeCreate(): ServerRuntime {
                 return google(resolved);
             },
             // The analyzer runs once per admin user message — pick a cheap
-            // fast model. See `docs/features/profile.md`.
-            profileAnalyzerModel: () => google('gemini-2.5-flash'),
+            // fast model. See `docs/features/compass.md`.
+            compassAnalyzerModel: () => google('gemini-2.5-flash'),
             // The synthesizer reads every active observation and rewrites
-            // four text fields; runs only when the threshold trips or on
+            // three text fields; runs only when the threshold trips or on
             // explicit request, so a more capable model is worth it.
-            profileSynthesizerModel: () => google('gemini-2.5-pro'),
+            compassSynthesizerModel: () => google('gemini-2.5-pro'),
             // Google Search grounding. Gemini executes the search itself
             // and rides the result back on the same tool-call channel as
             // function tools; we just hand the agent the tool object. The

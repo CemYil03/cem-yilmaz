@@ -1,12 +1,12 @@
 import { generateText, Output } from 'ai';
 import { asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { profile, profileObservations } from '../../db/schema';
+import { compass, compassObservations } from '../../db/schema';
 import type { QueuedJobDefinition } from '../types';
-import { profileGet } from '../../queries/profileGet';
-import { PROFILE_SINGLETON_ID } from '../../agents/profileConfig';
+import { compassGet } from '../../queries/compassGet';
+import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
 
-// Reads every non-dismissed observation plus the prior profile and rewrites
+// Reads every non-dismissed observation plus the prior compass and rewrites
 // the three text artifacts in one transaction. Resets
 // `observationsSinceSynthesis` to 0 so the threshold trigger restarts.
 //
@@ -14,9 +14,9 @@ import { PROFILE_SINGLETON_ID } from '../../agents/profileConfig';
 // `Logs` shows whether a run came from the analyzer's threshold or from a
 // human "Re-synthesize now" click.
 //
-// See `docs/features/profile.md` ("Synthesizer").
+// See `docs/features/compass.md` ("Synthesizer").
 
-interface ProfileSynthesizeData {
+interface CompassSynthesizeData {
     reason: 'threshold' | 'manual' | 'cron';
 }
 
@@ -29,9 +29,9 @@ const SYNTHESIS_SCHEMA = z.object({
     prose: z
         .string()
         .describe(
-            'Long-form profile (markdown, multiple paragraphs). Reads like a careful friend describing Cem to someone new. Includes his work, interests, working style, and what motivates him.',
+            'Long-form portrait (markdown, multiple paragraphs). Reads like a careful friend describing Cem to someone new. Includes his work, interests, working style, and what motivates him.',
         ),
-    psychProfile: z
+    psychology: z
         .string()
         .describe(
             'Psychological synthesis (markdown). Recurring themes, emotional patterns, stress markers, what energizes vs. drains him. Honest, useful, NEVER shown to the assistant — only to Cem himself.',
@@ -44,52 +44,52 @@ const SYNTHESIS_SYSTEM_PROMPT = [
     'Produce three artifacts:',
     '1. summary — short, factual, will be injected into Cem\'s own AI assistant\'s system prompt so it can answer "who am I working with" without being asked. Third-person bullets. ≤ 500 tokens.',
     '2. prose — long-form description. Markdown. Multiple paragraphs. Cohesive narrative of who Cem is, how he works, what he cares about.',
-    '3. psychProfile — psychological synthesis. Markdown. Recurring themes, emotional patterns, stress markers, what energizes him, what drains him. Written in English. This is NEVER shown back to the assistant — only to Cem.',
+    '3. psychology — psychological synthesis. Markdown. Recurring themes, emotional patterns, stress markers, what energizes him, what drains him. Written in English. This is NEVER shown back to the assistant — only to Cem.',
     '',
     'Rules:',
     '- All output in English.',
-    "- Ground every claim in the observations. Do NOT invent biography. If observations are thin, the resulting profile should be thin too — don't pad.",
+    "- Ground every claim in the observations. Do NOT invent biography. If observations are thin, the resulting compass should be thin too — don't pad.",
     '- Prefer specifics over abstractions ("ships solo on side-projects late at night" beats "is hardworking").',
-    '- When prior profile text exists, treat it as a draft you are refining, not a contract.',
-    '- Stay honest in psychProfile. The point of the firewall is to enable real candor.',
+    '- When a prior compass exists, treat it as a draft you are refining, not a contract.',
+    '- Stay honest in psychology. The point of the firewall is to enable real candor.',
 ].join('\n');
 
-export const profileSynthesize: QueuedJobDefinition<ProfileSynthesizeData> = {
+export const compassSynthesize: QueuedJobDefinition<CompassSynthesizeData> = {
     kind: 'queued',
-    name: 'profile-synthesize',
+    name: 'compass-synthesize',
     handler: async ({ data, serverRuntime }) => {
         try {
-            serverRuntime.log.info(`profileSynthesize: starting (reason=${data.reason})`);
-            const previous = await profileGet(serverRuntime.db);
+            serverRuntime.log.info(`compassSynthesize: starting (reason=${data.reason})`);
+            const previous = await compassGet(serverRuntime.db);
 
             const observations = await serverRuntime.db
                 .select({
-                    category: profileObservations.category,
-                    content: profileObservations.content,
-                    createdAt: profileObservations.createdAt,
+                    category: compassObservations.category,
+                    content: compassObservations.content,
+                    createdAt: compassObservations.createdAt,
                 })
-                .from(profileObservations)
-                .where(isNull(profileObservations.dismissedAt))
-                .orderBy(asc(profileObservations.createdAt));
+                .from(compassObservations)
+                .where(isNull(compassObservations.dismissedAt))
+                .orderBy(asc(compassObservations.createdAt));
 
             if (observations.length === 0) {
-                serverRuntime.log.info('profileSynthesize: no observations yet, skipping');
+                serverRuntime.log.info('compassSynthesize: no observations yet, skipping');
                 return;
             }
 
             const observationsBlock = observations.map((o) => `- [${o.category}] ${o.content}`).join('\n');
             const priorBlock =
-                previous.summary || previous.prose || previous.psychProfile
+                previous.summary || previous.prose || previous.psychology
                     ? [
-                          'Prior profile (refine, do not start from scratch unless contradicted):',
+                          'Prior compass (refine, do not start from scratch unless contradicted):',
                           '--- summary ---',
                           previous.summary || '(empty)',
                           '--- prose ---',
                           previous.prose || '(empty)',
-                          '--- psychProfile ---',
-                          previous.psychProfile || '(empty)',
+                          '--- psychology ---',
+                          previous.psychology || '(empty)',
                       ].join('\n')
-                    : '(no prior profile yet — this is the first synthesis)';
+                    : '(no prior compass yet — this is the first synthesis)';
 
             const userPrompt = [
                 priorBlock,
@@ -100,7 +100,7 @@ export const profileSynthesize: QueuedJobDefinition<ProfileSynthesizeData> = {
                 'Produce the three artifacts.',
             ].join('\n');
 
-            const model = serverRuntime.ai.profileSynthesizerModel();
+            const model = serverRuntime.ai.compassSynthesizerModel();
             const result = await generateText({
                 model,
                 output: Output.object({ schema: SYNTHESIS_SCHEMA }),
@@ -110,19 +110,19 @@ export const profileSynthesize: QueuedJobDefinition<ProfileSynthesizeData> = {
 
             const now = new Date();
             await serverRuntime.db
-                .update(profile)
+                .update(compass)
                 .set({
                     summary: result.output.summary,
                     prose: result.output.prose,
-                    psychProfile: result.output.psychProfile,
+                    psychology: result.output.psychology,
                     synthesizedAt: now,
                     synthesisModelId: result.response.modelId,
                     observationsSinceSynthesis: 0,
                     updatedAt: now,
                 })
-                .where(eq(profile.profileId, PROFILE_SINGLETON_ID));
+                .where(eq(compass.compassId, COMPASS_SINGLETON_ID));
 
-            serverRuntime.log.info(`profileSynthesize: synthesized from ${observations.length} observations`);
+            serverRuntime.log.info(`compassSynthesize: synthesized from ${observations.length} observations`);
         } catch (error) {
             serverRuntime.log.error(error, null);
             throw error;

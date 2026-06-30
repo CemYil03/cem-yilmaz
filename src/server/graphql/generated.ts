@@ -22,8 +22,8 @@ export interface GqlSAdmin {
     chat: GqlSChat;
     chatConfig: GqlSAdminChatConfig;
     chats: Array<GqlSChat>;
+    compass: GqlSAdminCompass;
     logs: Array<GqlSLog>;
-    profile: GqlSAdminProfile;
     project: GqlSProject;
     projectRequests: Array<GqlSProjectRequest>;
     projectRequestsInboxCount: Scalars['Int']['output'];
@@ -72,12 +72,31 @@ export interface GqlSAdminChatModel {
     supportedMediaTypes: Array<Scalars['String']['output']>;
 }
 
+export interface GqlSAdminCompass {
+    __typename?: 'AdminCompass';
+    observations: Array<GqlSCompassObservation>;
+    observationsSinceSynthesis: Scalars['Int']['output'];
+    prose: Scalars['String']['output'];
+    psychology: Scalars['String']['output'];
+    summary: Scalars['String']['output'];
+    synthesisInProgress: Scalars['Boolean']['output'];
+    synthesisModelId?: Maybe<Scalars['String']['output']>;
+    synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlSAdminCompassObservationsArgs = {
+    category?: InputMaybe<GqlSCompassObservationCategory>;
+    includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export interface GqlSAdminMutation {
     __typename?: 'AdminMutation';
     chatConfigDefaultModelSet: GqlSMutationResult;
     chatInputCollectionRespond?: Maybe<GqlSChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlSChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlSChatMessageCreateResult>;
+    compassObservationDismiss: GqlSMutationResult;
+    compassSynthesizeRequest: GqlSMutationResult;
     cvEducationDelete: GqlSMutationResult;
     cvEducationReorder: GqlSMutationResult;
     cvEducationUpsert: GqlSCvEducation;
@@ -90,8 +109,6 @@ export interface GqlSAdminMutation {
     cvSkillDelete: GqlSMutationResult;
     cvSkillReorder: GqlSMutationResult;
     cvSkillUpsert: GqlSCvSkill;
-    profileObservationDismiss: GqlSMutationResult;
-    profileSynthesizeRequest: GqlSMutationResult;
     projectActivityDelete: GqlSMutationResult;
     projectActivityUpsert: GqlSProjectActivity;
     projectDelete: GqlSMutationResult;
@@ -135,6 +152,10 @@ export type GqlSAdminMutationChatToolApprovalRespondArgs = {
     approved: Scalars['Boolean']['input'];
     assistantOptions: GqlSChatAssistantOptions;
     reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSAdminMutationCompassObservationDismissArgs = {
+    observationId: Scalars['ID']['input'];
 };
 
 export type GqlSAdminMutationCvEducationDeleteArgs = {
@@ -183,10 +204,6 @@ export type GqlSAdminMutationCvSkillReorderArgs = {
 
 export type GqlSAdminMutationCvSkillUpsertArgs = {
     input: GqlSCvSkillInput;
-};
-
-export type GqlSAdminMutationProfileObservationDismissArgs = {
-    observationId: Scalars['ID']['input'];
 };
 
 export type GqlSAdminMutationProjectActivityDeleteArgs = {
@@ -261,23 +278,6 @@ export type GqlSAdminMutationTaskReorderArgs = {
 
 export type GqlSAdminMutationTaskUpsertArgs = {
     input: GqlSTaskCreate;
-};
-
-export interface GqlSAdminProfile {
-    __typename?: 'AdminProfile';
-    observations: Array<GqlSProfileObservation>;
-    observationsSinceSynthesis: Scalars['Int']['output'];
-    prose: Scalars['String']['output'];
-    psychProfile: Scalars['String']['output'];
-    summary: Scalars['String']['output'];
-    synthesisInProgress: Scalars['Boolean']['output'];
-    synthesisModelId?: Maybe<Scalars['String']['output']>;
-    synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
-}
-
-export type GqlSAdminProfileObservationsArgs = {
-    category?: InputMaybe<GqlSProfileObservationCategory>;
-    includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export interface GqlSChat {
@@ -486,8 +486,8 @@ export interface GqlSChatMessageUser {
     author?: Maybe<GqlSUser>;
     body: Scalars['String']['output'];
     chatMessageId: Scalars['ID']['output'];
+    compassObservations: Array<GqlSCompassObservation>;
     createdAt: Scalars['DateTime']['output'];
-    profileObservations: Array<GqlSProfileObservation>;
 }
 
 export interface GqlSChatMessageUserInput {
@@ -535,6 +535,21 @@ export interface GqlSChatUpdateTurnEnded {
     __typename?: 'ChatUpdateTurnEnded';
     generationId: Scalars['ID']['output'];
 }
+
+export interface GqlSCompassObservation {
+    __typename?: 'CompassObservation';
+    analyzerModelId?: Maybe<Scalars['String']['output']>;
+    category: GqlSCompassObservationCategory;
+    confidence?: Maybe<Scalars['Int']['output']>;
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    dismissedAt?: Maybe<Scalars['DateTime']['output']>;
+    observationId: Scalars['ID']['output'];
+    sourceChatId?: Maybe<Scalars['ID']['output']>;
+    sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
+}
+
+export type GqlSCompassObservationCategory = 'behavioral' | 'factual' | 'psychological';
 
 export interface GqlSCvEducation {
     __typename?: 'CvEducation';
@@ -697,21 +712,6 @@ export interface GqlSMutationResult {
     referenceId?: Maybe<Scalars['ID']['output']>;
     success: Scalars['Boolean']['output'];
 }
-
-export interface GqlSProfileObservation {
-    __typename?: 'ProfileObservation';
-    analyzerModelId?: Maybe<Scalars['String']['output']>;
-    category: GqlSProfileObservationCategory;
-    confidence?: Maybe<Scalars['Int']['output']>;
-    content: Scalars['String']['output'];
-    createdAt: Scalars['DateTime']['output'];
-    dismissedAt?: Maybe<Scalars['DateTime']['output']>;
-    observationId: Scalars['ID']['output'];
-    sourceChatId?: Maybe<Scalars['ID']['output']>;
-    sourceChatMessageId?: Maybe<Scalars['ID']['output']>;
-}
-
-export type GqlSProfileObservationCategory = 'behavioral' | 'factual' | 'psychological';
 
 export interface GqlSProject {
     __typename?: 'Project';
@@ -1099,8 +1099,8 @@ export type GqlSResolversTypes = ResolversObject<{
     >;
     AdminChatConfig: ResolverTypeWrapper<GqlSAdminChatConfig>;
     AdminChatModel: ResolverTypeWrapper<GqlSAdminChatModel>;
+    AdminCompass: ResolverTypeWrapper<GqlSAdminCompass>;
     AdminMutation: ResolverTypeWrapper<GqlSAdminMutation>;
-    AdminProfile: ResolverTypeWrapper<GqlSAdminProfile>;
     Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
     Chat: ResolverTypeWrapper<Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversTypes['ChatMessage']> }>;
     ChatAssistantInput: ResolverTypeWrapper<GqlSResolversUnionTypes<GqlSResolversTypes>['ChatAssistantInput']>;
@@ -1150,6 +1150,8 @@ export type GqlSResolversTypes = ResolversObject<{
         Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversTypes['ChatMessage'] }
     >;
     ChatUpdateTurnEnded: ResolverTypeWrapper<GqlSChatUpdateTurnEnded>;
+    CompassObservation: ResolverTypeWrapper<GqlSCompassObservation>;
+    CompassObservationCategory: GqlSCompassObservationCategory;
     CvEducation: ResolverTypeWrapper<GqlSCvEducation>;
     CvEducationInput: GqlSCvEducationInput;
     CvExperience: ResolverTypeWrapper<GqlSCvExperience>;
@@ -1170,8 +1172,6 @@ export type GqlSResolversTypes = ResolversObject<{
     LogLevel: GqlSLogLevel;
     Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
     MutationResult: ResolverTypeWrapper<GqlSMutationResult>;
-    ProfileObservation: ResolverTypeWrapper<GqlSProfileObservation>;
-    ProfileObservationCategory: GqlSProfileObservationCategory;
     Project: ResolverTypeWrapper<GqlSProject>;
     ProjectActivity: ResolverTypeWrapper<GqlSProjectActivity>;
     ProjectActivityChannel: GqlSProjectActivityChannel;
@@ -1220,8 +1220,8 @@ export type GqlSResolversParentTypes = ResolversObject<{
     };
     AdminChatConfig: GqlSAdminChatConfig;
     AdminChatModel: GqlSAdminChatModel;
+    AdminCompass: GqlSAdminCompass;
     AdminMutation: GqlSAdminMutation;
-    AdminProfile: GqlSAdminProfile;
     Boolean: Scalars['Boolean']['output'];
     Chat: Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversParentTypes['ChatMessage']> };
     ChatAssistantInput: GqlSResolversUnionTypes<GqlSResolversParentTypes>['ChatAssistantInput'];
@@ -1266,6 +1266,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ChatUpdateAssistantTextChunk: GqlSChatUpdateAssistantTextChunk;
     ChatUpdateMessageAppended: Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversParentTypes['ChatMessage'] };
     ChatUpdateTurnEnded: GqlSChatUpdateTurnEnded;
+    CompassObservation: GqlSCompassObservation;
     CvEducation: GqlSCvEducation;
     CvEducationInput: GqlSCvEducationInput;
     CvExperience: GqlSCvExperience;
@@ -1284,7 +1285,6 @@ export type GqlSResolversParentTypes = ResolversObject<{
     Log: GqlSLog;
     Mutation: Record<PropertyKey, never>;
     MutationResult: GqlSMutationResult;
-    ProfileObservation: GqlSProfileObservation;
     Project: GqlSProject;
     ProjectActivity: GqlSProjectActivity;
     ProjectActivityCreate: GqlSProjectActivityCreate;
@@ -1319,8 +1319,8 @@ export type GqlSAdminResolvers<
     chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminChatArgs, 'chatId'>>;
     chatConfig?: Resolver<GqlSResolversTypes['AdminChatConfig'], ParentType, ContextType>;
     chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    compass?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
     logs?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminLogsArgs>>;
-    profile?: Resolver<GqlSResolversTypes['AdminProfile'], ParentType, ContextType>;
     project?: Resolver<GqlSResolversTypes['Project'], ParentType, ContextType, RequireFields<GqlSAdminProjectArgs, 'projectId'>>;
     projectRequests?: Resolver<Array<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType, Partial<GqlSAdminProjectRequestsArgs>>;
     projectRequestsInboxCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
@@ -1345,6 +1345,25 @@ export type GqlSAdminChatModelResolvers<
     label?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     modelId?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     supportedMediaTypes?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type GqlSAdminCompassResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminCompass'] = GqlSResolversParentTypes['AdminCompass'],
+> = ResolversObject<{
+    observations?: Resolver<
+        Array<GqlSResolversTypes['CompassObservation']>,
+        ParentType,
+        ContextType,
+        Partial<GqlSAdminCompassObservationsArgs>
+    >;
+    observationsSinceSynthesis?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    prose?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    psychology?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    summary?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    synthesisInProgress?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    synthesisModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    synthesizedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
 }>;
 
 export type GqlSAdminMutationResolvers<
@@ -1375,6 +1394,13 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationChatToolApprovalRespondArgs, 'approvalId' | 'approved' | 'assistantOptions'>
     >;
+    compassObservationDismiss?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCompassObservationDismissArgs, 'observationId'>
+    >;
+    compassSynthesizeRequest?: Resolver<GqlSResolversTypes['MutationResult'], ParentType, ContextType>;
     cvEducationDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -1447,13 +1473,6 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationCvSkillUpsertArgs, 'input'>
     >;
-    profileObservationDismiss?: Resolver<
-        GqlSResolversTypes['MutationResult'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProfileObservationDismissArgs, 'observationId'>
-    >;
-    profileSynthesizeRequest?: Resolver<GqlSResolversTypes['MutationResult'], ParentType, ContextType>;
     projectActivityDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -1557,25 +1576,6 @@ export type GqlSAdminMutationResolvers<
         RequireFields<GqlSAdminMutationTaskReorderArgs, 'orderedIds'>
     >;
     taskUpsert?: Resolver<GqlSResolversTypes['Task'], ParentType, ContextType, RequireFields<GqlSAdminMutationTaskUpsertArgs, 'input'>>;
-}>;
-
-export type GqlSAdminProfileResolvers<
-    ContextType = any,
-    ParentType extends GqlSResolversParentTypes['AdminProfile'] = GqlSResolversParentTypes['AdminProfile'],
-> = ResolversObject<{
-    observations?: Resolver<
-        Array<GqlSResolversTypes['ProfileObservation']>,
-        ParentType,
-        ContextType,
-        Partial<GqlSAdminProfileObservationsArgs>
-    >;
-    observationsSinceSynthesis?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
-    prose?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
-    psychProfile?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
-    summary?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
-    synthesisInProgress?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
-    synthesisModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
-    synthesizedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
 }>;
 
 export type GqlSChatResolvers<
@@ -1881,8 +1881,8 @@ export type GqlSChatMessageUserResolvers<
     author?: Resolver<Maybe<GqlSResolversTypes['User']>, ParentType, ContextType>;
     body?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    compassObservations?: Resolver<Array<GqlSResolversTypes['CompassObservation']>, ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
-    profileObservations?: Resolver<Array<GqlSResolversTypes['ProfileObservation']>, ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1940,6 +1940,21 @@ export type GqlSChatUpdateTurnEndedResolvers<
 > = ResolversObject<{
     generationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSCompassObservationResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CompassObservation'] = GqlSResolversParentTypes['CompassObservation'],
+> = ResolversObject<{
+    analyzerModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    category?: Resolver<GqlSResolversTypes['CompassObservationCategory'], ParentType, ContextType>;
+    confidence?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    content?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    dismissedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    observationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    sourceChatId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    sourceChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
 }>;
 
 export type GqlSCvEducationResolvers<
@@ -2075,21 +2090,6 @@ export type GqlSMutationResultResolvers<
 > = ResolversObject<{
     referenceId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
     success?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
-}>;
-
-export type GqlSProfileObservationResolvers<
-    ContextType = any,
-    ParentType extends GqlSResolversParentTypes['ProfileObservation'] = GqlSResolversParentTypes['ProfileObservation'],
-> = ResolversObject<{
-    analyzerModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
-    category?: Resolver<GqlSResolversTypes['ProfileObservationCategory'], ParentType, ContextType>;
-    confidence?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
-    content?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
-    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
-    dismissedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
-    observationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
-    sourceChatId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
-    sourceChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
 }>;
 
 export type GqlSProjectResolvers<
@@ -2277,8 +2277,8 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Admin?: GqlSAdminResolvers<ContextType>;
     AdminChatConfig?: GqlSAdminChatConfigResolvers<ContextType>;
     AdminChatModel?: GqlSAdminChatModelResolvers<ContextType>;
+    AdminCompass?: GqlSAdminCompassResolvers<ContextType>;
     AdminMutation?: GqlSAdminMutationResolvers<ContextType>;
-    AdminProfile?: GqlSAdminProfileResolvers<ContextType>;
     Chat?: GqlSChatResolvers<ContextType>;
     ChatAssistantInput?: GqlSChatAssistantInputResolvers<ContextType>;
     ChatAssistantInputBoolean?: GqlSChatAssistantInputBooleanResolvers<ContextType>;
@@ -2313,6 +2313,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ChatUpdateAssistantTextChunk?: GqlSChatUpdateAssistantTextChunkResolvers<ContextType>;
     ChatUpdateMessageAppended?: GqlSChatUpdateMessageAppendedResolvers<ContextType>;
     ChatUpdateTurnEnded?: GqlSChatUpdateTurnEndedResolvers<ContextType>;
+    CompassObservation?: GqlSCompassObservationResolvers<ContextType>;
     CvEducation?: GqlSCvEducationResolvers<ContextType>;
     CvExperience?: GqlSCvExperienceResolvers<ContextType>;
     CvHobby?: GqlSCvHobbyResolvers<ContextType>;
@@ -2325,7 +2326,6 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Log?: GqlSLogResolvers<ContextType>;
     Mutation?: GqlSMutationResolvers<ContextType>;
     MutationResult?: GqlSMutationResultResolvers<ContextType>;
-    ProfileObservation?: GqlSProfileObservationResolvers<ContextType>;
     Project?: GqlSProjectResolvers<ContextType>;
     ProjectActivity?: GqlSProjectActivityResolvers<ContextType>;
     ProjectFile?: GqlSProjectFileResolvers<ContextType>;
@@ -2355,6 +2355,11 @@ export const GqlSChatAssistantInputValueKindSchema: z.ZodType<
     'Boolean' | 'Date' | 'DateRange' | 'DateTime' | 'String' | 'StringList' | 'Time'
 > = z.enum(['Boolean', 'Date', 'DateRange', 'DateTime', 'String', 'StringList', 'Time']);
 
+export const GqlSCompassObservationCategorySchema: z.ZodType<
+    'behavioral' | 'factual' | 'psychological',
+    'behavioral' | 'factual' | 'psychological'
+> = z.enum(['behavioral', 'factual', 'psychological']);
+
 export const GqlSCvSkillCategorySchema: z.ZodType<
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools',
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools'
@@ -2366,11 +2371,6 @@ export const GqlSLogLevelSchema: z.ZodType<'debug' | 'error' | 'info' | 'warn', 
     'info',
     'warn',
 ]);
-
-export const GqlSProfileObservationCategorySchema: z.ZodType<
-    'behavioral' | 'factual' | 'psychological',
-    'behavioral' | 'factual' | 'psychological'
-> = z.enum(['behavioral', 'factual', 'psychological']);
 
 export const GqlSProjectActivityChannelSchema: z.ZodType<
     'aiAssistant' | 'email' | 'inPerson' | 'malt' | 'other' | 'phone' | 'videoCall',

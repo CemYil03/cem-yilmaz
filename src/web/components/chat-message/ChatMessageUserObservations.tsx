@@ -4,14 +4,14 @@ import { Link } from '@tanstack/react-router';
 import type { GqlCChatMessageUser } from '../../graphql/generated';
 import { cn } from '../../utils/cn';
 
-// Inline pill rendered below admin user messages when the profile analyzer
+// Inline pill rendered below admin user messages when the compass analyzer
 // extracted observations from them. Click to expand and see the actual lines
-// the analyzer recorded; "View on profile" deep-links to the dedicated page.
+// the analyzer recorded; "View on compass" deep-links to the dedicated page.
 //
 // Renders nothing when there are no observations (the common case for visitor
-// chats, where the analyzer never runs). See `docs/features/profile.md`.
+// chats, where the analyzer never runs). See `docs/features/compass.md`.
 
-type Observation = GqlCChatMessageUser['profileObservations'][number];
+type Observation = GqlCChatMessageUser['compassObservations'][number];
 
 const CATEGORY_LABELS: Record<Observation['category'], { de: string; en: string }> = {
     factual: { de: 'Faktisch', en: 'Factual' },
@@ -66,10 +66,10 @@ export function ChatMessageUserObservations({ observations, locale }: { observat
                     </ul>
                     <div className="mt-3 flex justify-end">
                         <Link
-                            to="/{-$locale}/workspace/profile"
+                            to="/{-$locale}/workspace/compass"
                             className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                         >
-                            {{ de: 'Profil öffnen →', en: 'Open profile →' }[locale]}
+                            {{ de: 'Kompass öffnen →', en: 'Open compass →' }[locale]}
                         </Link>
                     </div>
                 </div>

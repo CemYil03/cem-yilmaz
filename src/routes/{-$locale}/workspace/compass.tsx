@@ -20,11 +20,11 @@ import { Button } from '../../../web/components/base/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
-import type { GqlCProfileObservationCategory, GqlCWorkspaceProfilePageQuery } from '../../../web/graphql/generated';
+import type { GqlCCompassObservationCategory, GqlCWorkspaceCompassPageQuery } from '../../../web/graphql/generated';
 import {
-    WorkspaceProfileObservationDismissDocument,
-    WorkspaceProfilePageDocument,
-    WorkspaceProfileSynthesizeRequestDocument,
+    WorkspaceCompassObservationDismissDocument,
+    WorkspaceCompassPageDocument,
+    WorkspaceCompassSynthesizeRequestDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -34,10 +34,10 @@ import { cn } from '../../../web/utils/cn';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
-// Workspace profile page (`/workspace/profile`). Three synthesized artifacts +
+// Workspace compass page (`/workspace/compass`). Three synthesized artifacts +
 // the underlying observations stream. Cem reads this; the assistant does NOT.
 // Only the `summary` artifact crosses back into the personal-assistant prompt
-// — see `docs/features/profile.md`.
+// — see `docs/features/compass.md`.
 //
 // Data flow follows the standard workspace pattern: filter state lives in the
 // URL via `validateSearch`, the loader sees those filters through
@@ -47,7 +47,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // refetching. Reloading the page keeps the user's filter view; chip clicks
 // produce shareable URLs.
 
-const pageTitle = { de: 'Profil', en: 'Profile' };
+const pageTitle = { de: 'Kompass', en: 'Compass' };
 const pageDescription = {
     de: 'Was dein Assistent über dich weiß — und was ihm nicht gezeigt wird.',
     en: 'What your assistant knows about you — and what is kept from it.',
@@ -55,31 +55,31 @@ const pageDescription = {
 
 const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
-type ProfileQueryData = NonNullable<NonNullable<GqlCWorkspaceProfilePageQuery['currentSession']['user']>['admin']>;
-type ProfileData = ProfileQueryData['profile'];
-type ObservationRow = ProfileData['observations'][number];
-type ProfileTab = 'summary' | 'prose' | 'psychProfile';
+type CompassQueryData = NonNullable<NonNullable<GqlCWorkspaceCompassPageQuery['currentSession']['user']>['admin']>;
+type CompassData = CompassQueryData['compass'];
+type ObservationRow = CompassData['observations'][number];
+type CompassTab = 'summary' | 'prose' | 'psychology';
 
-const OBSERVATION_CATEGORIES = ['factual', 'behavioral', 'psychological'] as const satisfies ReadonlyArray<GqlCProfileObservationCategory>;
+const OBSERVATION_CATEGORIES = ['factual', 'behavioral', 'psychological'] as const satisfies ReadonlyArray<GqlCCompassObservationCategory>;
 
 // `category` is absent when "all" is selected — one canonical URL per state.
 // `includeDismissed` is absent when false for the same reason.
-const profileSearchSchema = z.object({
+const compassSearchSchema = z.object({
     category: z.enum(OBSERVATION_CATEGORIES).optional(),
     includeDismissed: z.boolean().optional(),
 });
 
-type ProfileSearch = z.infer<typeof profileSearchSchema>;
-type ObservationFilter = 'all' | GqlCProfileObservationCategory;
+type CompassSearch = z.infer<typeof compassSearchSchema>;
+type ObservationFilter = 'all' | GqlCCompassObservationCategory;
 
-export const Route = createFileRoute('/{-$locale}/workspace/profile')({
-    validateSearch: profileSearchSchema,
+export const Route = createFileRoute('/{-$locale}/workspace/compass')({
+    validateSearch: compassSearchSchema,
     loaderDeps: ({ search }) => ({
         category: search.category ?? null,
         includeDismissed: search.includeDismissed ?? false,
     }),
     loader: ({ deps }) =>
-        routeLoaderGraphqlClient(WorkspaceProfilePageDocument, {
+        routeLoaderGraphqlClient(WorkspaceCompassPageDocument, {
             category: deps.category,
             includeDismissed: deps.includeDismissed,
         })(),
@@ -88,16 +88,16 @@ export const Route = createFileRoute('/{-$locale}/workspace/profile')({
         return seoMeta({
             title: pageTitle[locale],
             description: pageDescription[locale],
-            path: '/workspace/profile',
+            path: '/workspace/compass',
             locale,
             webPageUrl: webPageUrlGet(),
             noindex: true,
         });
     },
-    component: WorkspaceProfilePage,
+    component: WorkspaceCompassPage,
 });
 
-function WorkspaceProfilePage() {
+function WorkspaceCompassPage() {
     const locale = useLocale();
     const data = Route.useLoaderData();
     const search = Route.useSearch();
@@ -106,8 +106,8 @@ function WorkspaceProfilePage() {
     const includeDismissed = search.includeDismissed ?? false;
     const invalidate = () => router.invalidate();
 
-    const profile = data.currentSession.user?.admin?.profile;
-    if (!profile) return <WorkspaceUnauthorized locale={locale} />;
+    const compass = data.currentSession.user?.admin?.compass;
+    if (!compass) return <WorkspaceUnauthorized locale={locale} />;
 
     return (
         <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full pb-20">
@@ -115,9 +115,9 @@ function WorkspaceProfilePage() {
                 <p className="max-w-2xl text-base text-muted-foreground">{pageDescription[locale]}</p>
             </header>
 
-            <SynthesisHero profile={profile} locale={locale} onSynthesized={invalidate} />
+            <SynthesisHero compass={compass} locale={locale} onSynthesized={invalidate} />
             <ObservationsSection
-                observations={profile.observations}
+                observations={compass.observations}
                 filter={filter}
                 includeDismissed={includeDismissed}
                 locale={locale}
@@ -133,18 +133,18 @@ function WorkspaceProfilePage() {
 // back to the agent — Cem should see it before reading further. The
 // firewall is signposted on the psych tab so the meta-meaning ("this is
 // private to me") is part of the layout, not a buried explanation.
-function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileData; locale: Locale; onSynthesized: () => void }) {
-    const [tab, setTab] = useState<ProfileTab>('summary');
-    const [{ fetching: enqueuing }, synthesize] = useMutation(WorkspaceProfileSynthesizeRequestDocument);
+function SynthesisHero({ compass, locale, onSynthesized }: { compass: CompassData; locale: Locale; onSynthesized: () => void }) {
+    const [tab, setTab] = useState<CompassTab>('summary');
+    const [{ fetching: enqueuing }, synthesize] = useMutation(WorkspaceCompassSynthesizeRequestDocument);
 
-    const isEmpty = !profile.summary && !profile.prose && !profile.psychProfile;
+    const isEmpty = !compass.summary && !compass.prose && !compass.psychology;
     // The enqueue itself takes ~50ms; the job runs for a few seconds. The
     // backend exposes the real liveness via `synthesisInProgress` (derived
     // from pg-boss), so the button reflects "actually running" rather than
     // a hand-tuned timeout. We OR `enqueuing` so the spinner appears the
     // instant the user clicks — before the next loader refresh confirms
     // the queued state.
-    const running = profile.synthesisInProgress || enqueuing;
+    const running = compass.synthesisInProgress || enqueuing;
 
     // While a synthesis is queued/active, poll the route loader so the page
     // picks up the new artifacts the moment the job finishes. The effect
@@ -157,8 +157,8 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
         return () => clearInterval(id);
     }, [running, onSynthesized]);
 
-    const synthesizedLabel = profile.synthesizedAt
-        ? formatDistanceToNow(parseISO(profile.synthesizedAt as unknown as string), {
+    const synthesizedLabel = compass.synthesizedAt
+        ? formatDistanceToNow(parseISO(compass.synthesizedAt as unknown as string), {
               addSuffix: true,
               locale: DATE_FNS_LOCALE[locale],
           })
@@ -176,10 +176,10 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
                     ) : (
                         <span>{{ de: 'Noch nicht synthetisiert', en: 'Not synthesized yet' }[locale]}</span>
                     )}
-                    {profile.observationsSinceSynthesis > 0 ? (
+                    {compass.observationsSinceSynthesis > 0 ? (
                         <span className="text-amber-600 dark:text-amber-400">
-                            {profile.observationsSinceSynthesis}{' '}
-                            {profile.observationsSinceSynthesis === 1
+                            {compass.observationsSinceSynthesis}{' '}
+                            {compass.observationsSinceSynthesis === 1
                                 ? { de: 'neue Beobachtung', en: 'new observation' }[locale]
                                 : { de: 'neue Beobachtungen', en: 'new observations' }[locale]}
                         </span>
@@ -188,7 +188,7 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
             </div>
 
             <GlassCard className="mt-4 px-6 py-6 md:px-8 md:py-7">
-                {isEmpty ? <EmptyState locale={locale} /> : <ArtifactBody tab={tab} profile={profile} locale={locale} />}
+                {isEmpty ? <EmptyState locale={locale} /> : <ArtifactBody tab={tab} compass={compass} locale={locale} />}
 
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-4">
                     <TabExplainer tab={tab} locale={locale} />
@@ -201,7 +201,7 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
                             // Refresh once on enqueue so `synthesisInProgress`
                             // flips to `true` from the loader; the poll
                             // effect above keeps the page fresh from there.
-                            if (result.data?.admin.profileSynthesizeRequest.success) {
+                            if (result.data?.admin.compassSynthesizeRequest.success) {
                                 onSynthesized();
                             }
                         }}
@@ -217,16 +217,16 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
     );
 }
 
-function TabStrip({ locale, active, onChange }: { locale: Locale; active: ProfileTab; onChange: (tab: ProfileTab) => void }) {
-    const tabs: { id: ProfileTab; label: { de: string; en: string }; icon: LucideIcon }[] = [
+function TabStrip({ locale, active, onChange }: { locale: Locale; active: CompassTab; onChange: (tab: CompassTab) => void }) {
+    const tabs: { id: CompassTab; label: { de: string; en: string }; icon: LucideIcon }[] = [
         { id: 'summary', label: { de: 'Kurz', en: 'Summary' }, icon: ShieldCheckIcon },
         { id: 'prose', label: { de: 'Porträt', en: 'Portrait' }, icon: UserRoundIcon },
-        { id: 'psychProfile', label: { de: 'Psychologisch', en: 'Psychological' }, icon: WavesIcon },
+        { id: 'psychology', label: { de: 'Psychologisch', en: 'Psychological' }, icon: WavesIcon },
     ];
     return (
         <div
             role="tablist"
-            aria-label={{ de: 'Profil-Sicht', en: 'Profile view' }[locale]}
+            aria-label={{ de: 'Kompass-Sicht', en: 'Compass view' }[locale]}
             className="flex gap-1 rounded-lg bg-muted/40 p-1"
         >
             {tabs.map((t) => {
@@ -255,8 +255,8 @@ function TabStrip({ locale, active, onChange }: { locale: Locale; active: Profil
     );
 }
 
-function ArtifactBody({ tab, profile, locale }: { tab: ProfileTab; profile: ProfileData; locale: Locale }) {
-    const content = profile[tab];
+function ArtifactBody({ tab, compass, locale }: { tab: CompassTab; compass: CompassData; locale: Locale }) {
+    const content = compass[tab];
     if (!content || !content.trim()) {
         return (
             <p className="text-sm text-muted-foreground italic">
@@ -272,8 +272,8 @@ function ArtifactBody({ tab, profile, locale }: { tab: ProfileTab; profile: Prof
     return <AssistantMarkdown text={content} className="text-base leading-relaxed" />;
 }
 
-function TabExplainer({ tab, locale }: { tab: ProfileTab; locale: Locale }) {
-    const explainers: Record<ProfileTab, { de: string; en: string; tone: 'fed' | 'private' }> = {
+function TabExplainer({ tab, locale }: { tab: CompassTab; locale: Locale }) {
+    const explainers: Record<CompassTab, { de: string; en: string; tone: 'fed' | 'private' }> = {
         summary: {
             de: 'Dieser Text wird in den Systemprompt deines persönlichen Assistenten injiziert.',
             en: "This text is injected into your personal assistant's system prompt.",
@@ -284,7 +284,7 @@ function TabExplainer({ tab, locale }: { tab: ProfileTab; locale: Locale }) {
             en: 'Yours only. Never shown to the assistant.',
             tone: 'private',
         },
-        psychProfile: {
+        psychology: {
             de: 'Hinter einer Wand: niemals zurück in einen Prompt eingespeist.',
             en: 'Firewalled: never fed back into any prompt.',
             tone: 'private',
@@ -308,7 +308,7 @@ function EmptyState({ locale }: { locale: Locale }) {
             </div>
             <div className="max-w-md">
                 <h3 className="font-semibold text-foreground">
-                    {{ de: 'Dein Profil baut sich gerade auf', en: 'Your profile is still building' }[locale]}
+                    {{ de: 'Dein Kompass baut sich gerade auf', en: 'Your compass is still building' }[locale]}
                 </h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                     {
@@ -385,9 +385,9 @@ function ObservationsSection({
 function DismissedToggle({ includeDismissed, locale }: { includeDismissed: boolean; locale: Locale }) {
     return (
         <Link
-            to="/{-$locale}/workspace/profile"
-            from="/{-$locale}/workspace/profile"
-            search={(prev: ProfileSearch) => ({ ...prev, includeDismissed: includeDismissed ? undefined : true })}
+            to="/{-$locale}/workspace/compass"
+            from="/{-$locale}/workspace/compass"
+            search={(prev: CompassSearch) => ({ ...prev, includeDismissed: includeDismissed ? undefined : true })}
             replace
             className={cn(
                 'text-xs px-2.5 py-1.5 rounded-md border transition-colors',
@@ -403,13 +403,13 @@ function DismissedToggle({ includeDismissed, locale }: { includeDismissed: boole
     );
 }
 
-const CATEGORY_LABELS: Record<GqlCProfileObservationCategory, { de: string; en: string }> = {
+const CATEGORY_LABELS: Record<GqlCCompassObservationCategory, { de: string; en: string }> = {
     factual: { de: 'Faktisch', en: 'Factual' },
     behavioral: { de: 'Verhalten', en: 'Behavioral' },
     psychological: { de: 'Psychologisch', en: 'Psychological' },
 };
 
-const CATEGORY_ACCENT: Record<GqlCProfileObservationCategory, string> = {
+const CATEGORY_ACCENT: Record<GqlCCompassObservationCategory, string> = {
     factual: 'bg-sky-500/10 text-sky-600 dark:text-sky-300 border-sky-500/30',
     behavioral: 'bg-violet-500/10 text-violet-600 dark:text-violet-300 border-violet-500/30',
     psychological: 'bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-500/30',
@@ -429,11 +429,11 @@ function FilterChips({ active, locale }: { active: ObservationFilter; locale: Lo
                 return (
                     <Link
                         key={f.id}
-                        to="/{-$locale}/workspace/profile"
-                        from="/{-$locale}/workspace/profile"
+                        to="/{-$locale}/workspace/compass"
+                        from="/{-$locale}/workspace/compass"
                         // "all" → drop the `category` key entirely so the canonical
                         // URL for the unfiltered view has no `?category=`.
-                        search={(prev: ProfileSearch) => ({
+                        search={(prev: CompassSearch) => ({
                             ...prev,
                             category: f.id === 'all' ? undefined : f.id,
                         })}
@@ -456,7 +456,7 @@ function FilterChips({ active, locale }: { active: ObservationFilter; locale: Lo
 }
 
 function ObservationCard({ observation, locale, onChanged }: { observation: ObservationRow; locale: Locale; onChanged: () => void }) {
-    const [, dismiss] = useMutation(WorkspaceProfileObservationDismissDocument);
+    const [, dismiss] = useMutation(WorkspaceCompassObservationDismissDocument);
     const [busy, setBusy] = useState(false);
     const isDismissed = !!observation.dismissedAt;
 

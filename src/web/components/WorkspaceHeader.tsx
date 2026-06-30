@@ -1,6 +1,7 @@
 import { useLocation, useMatches } from '@tanstack/react-router';
 import {
     CodeXmlIcon,
+    CompassIcon,
     DumbbellIcon,
     FileTextIcon,
     FilmIcon,
@@ -8,7 +9,6 @@ import {
     MessageCircleIcon,
     MessageSquareTextIcon,
     ReceiptTextIcon,
-    SparklesIcon,
     StethoscopeIcon,
     WalletIcon,
 } from 'lucide-react';
@@ -41,7 +41,7 @@ const workspaceLabel: Record<Locale, string> = { de: 'Workspace', en: 'Workspace
 // hub (`/workspace`) has no segment and renders as a single `Workspace` crumb.
 const WORKSPACE_TITLES: Record<string, { de: string; en: string }> = {
     assistant: { de: 'Assistent', en: 'Assistant' },
-    profile: { de: 'Profil', en: 'Profile' },
+    compass: { de: 'Kompass', en: 'Compass' },
     cv: { de: 'Lebenslauf', en: 'CV' },
     software: { de: 'Software', en: 'Software' },
     projects: { de: 'Projekte', en: 'Projects' },
@@ -57,7 +57,7 @@ const WORKSPACE_TITLES: Record<string, { de: string; en: string }> = {
 // breadcrumb visually anchors the user in the same focus area.
 const WORKSPACE_ICONS: Record<string, LucideIcon> = {
     assistant: MessageCircleIcon,
-    profile: SparklesIcon,
+    compass: CompassIcon,
     cv: FileTextIcon,
     software: CodeXmlIcon,
     projects: FolderKanbanIcon,

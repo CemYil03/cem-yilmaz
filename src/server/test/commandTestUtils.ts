@@ -31,8 +31,8 @@ export const testLogger = loggerCreate(testDb);
 function aiForTest(): ServerRuntime['ai'] {
     return {
         userConversationModel: () => new MockLanguageModelV3(),
-        profileAnalyzerModel: () => new MockLanguageModelV3(),
-        profileSynthesizerModel: () => new MockLanguageModelV3(),
+        compassAnalyzerModel: () => new MockLanguageModelV3(),
+        compassSynthesizerModel: () => new MockLanguageModelV3(),
         // Web-search is provider-executed in production (Gemini runs the
         // search server-side). Tests never reach a real model — this stub
         // returns a no-op tool so the runtime shape type-checks and any test
@@ -74,7 +74,7 @@ function serverRuntimeStubCreate(): ServerRuntime {
                 throw new Error('jobs.enqueue not used');
             }) as unknown as ServerRuntime['jobs']['enqueue'],
             // Default to "no active jobs" so reads that derive UI state from
-            // pg-boss (e.g. `AdminProfile.synthesisInProgress`) resolve to a
+            // pg-boss (e.g. `AdminCompass.synthesisInProgress`) resolve to a
             // calm `false` without a test ever standing up the queue.
             activeCount: vi.fn(async () => 0) as unknown as ServerRuntime['jobs']['activeCount'],
         },

@@ -1,7 +1,7 @@
 import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
 import { adminChatConfigGet } from '../queries/adminChatConfigGet';
-import { profileSummaryGet } from '../queries/profileSummaryGet';
+import { compassSummaryGet } from '../queries/compassSummaryGet';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
@@ -15,12 +15,12 @@ import { toolPromptUserForInput } from './toolPromptUserForInput';
 // future domains (calendar, notes, fitness, …) follow the same shape. See
 // `docs/architecture/agent-delegation.md` and `multi-agent-chat.md`.
 //
-// The base prompt is rendered with a `{profile}` block at the end. On each
-// turn the agent reads `profile.summary` via `profileSummaryGet` and the
+// The base prompt is rendered with a `{compass}` block at the end. On each
+// turn the agent reads `compass.summary` via `compassSummaryGet` and the
 // resulting text is prepended right above the style rules so the assistant
-// answers with that context already in mind. The summary is the ONLY profile
-// artifact that crosses back into a prompt — `prose` and `psychProfile` are
-// firewalled at the query layer. See `docs/features/profile.md`.
+// answers with that context already in mind. The summary is the ONLY compass
+// artifact that crosses back into a prompt — `prose` and `psychology` are
+// firewalled at the query layer. See `docs/features/compass.md`.
 const BASE_SYSTEM_PROMPT = [
     "You are Cem Yilmaz's personal AI assistant inside his private workspace at cem-yilmaz.de.",
     'You speak directly to Cem (the site owner), not to a visitor.',
@@ -60,7 +60,7 @@ const BASE_SYSTEM_PROMPT = [
     '  plainly what failed (the message is in `summary`); do NOT retry automatically and do NOT confabulate softer',
     '  reasons like "search is unavailable".',
     '- Do NOT search for things that live in this prompt or in the workspace data: facts about Cem already in',
-    '  the profile context, the contents of the projects board (use `delegateToProjects`), or arithmetic /',
+    '  the compass context, the contents of the projects board (use `delegateToProjects`), or arithmetic /',
     '  reasoning / code questions you can answer directly. Search costs a round-trip and adds latency — skip',
     '  it when the answer is already at hand.',
     '- One delegation per turn is usually enough; the sub-agent itself does up to one refinement internally',
@@ -84,7 +84,7 @@ const BASE_SYSTEM_PROMPT = [
     '- Bad:  "Created Acme rebuild." (no link — the user has to hunt for the card)',
 ].join('\n');
 
-function buildSystemPrompt(profileSummary: string, currentPagePath: string | null): string {
+function buildSystemPrompt(compassSummary: string, currentPagePath: string | null): string {
     // `currentDateForAgent()` is called here (not woven into the base
     // constant) so it re-evaluates on every user turn instead of freezing to
     // module-load time.
@@ -106,11 +106,11 @@ function buildSystemPrompt(profileSummary: string, currentPagePath: string | nul
             "  `/workspace/projects/<projectId>`). When the path is unrelated to what he's asking, ignore it.",
         );
     }
-    if (profileSummary.trim()) {
+    if (compassSummary.trim()) {
         sections.push(
             '',
             'Context about Cem (synthesized from prior conversations — refine your answers with these facts when relevant):',
-            profileSummary.trim(),
+            compassSummary.trim(),
         );
     }
     return sections.join('\n');
@@ -125,7 +125,7 @@ export async function agentPersonalAssistant({
     preWrittenToolCallIds,
     onStepEnd,
 }: AgentChatOptions) {
-    const profileSummary = await profileSummaryGet(serverRuntime);
+    const compassSummary = await compassSummaryGet(serverRuntime);
     // Per-turn model: the admin composer surfaces a dropdown bound to the
     // catalog (`adminChatModels.ts`); each chat send carries the picked
     // `modelId` on `assistantOptions`. When omitted (a non-composer code path,
@@ -166,7 +166,7 @@ export async function agentPersonalAssistant({
         // input → delegate again" plus a final-text step, and 5 ran out in
         // practice.
         stopWhen: [isStepCount(8), hasToolCall('promptUserForInput')],
-        instructions: buildSystemPrompt(profileSummary, currentPagePath),
+        instructions: buildSystemPrompt(compassSummary, currentPagePath),
         tools: {
             promptUserForInput: toolPromptUserForInput(),
             // Delegate tool persists sub-agent tool calls under its own

@@ -227,18 +227,18 @@ sub-agent in-process. The first sub-agent built on the pattern is `agentPersonal
 See [agent-delegation.md](./agent-delegation.md) for the full pattern — the sub-agent contract, the mutation-log return shape, the
 `needsMoreInfo` / `noOp` sentinels, and the alternatives considered.
 
-## Profile injection (Phase 2 onwards)
+## Compass injection (Phase 2 onwards)
 
 The personal assistant additionally reads a short synthesized summary on each turn and prepends it to its instructions. The summary is one
 of three artifacts produced by an out-of-loop profiler that watches admin chat messages — see
-[`docs/features/profile.md`](../features/profile.md).
+[`docs/features/compass.md`](../features/compass.md).
 
-- **Read path**: `agentPersonalAssistant` calls `profileSummaryGet(serverRuntime)` once per turn and prepends the returned text to its
-  system prompt. That is the only profile data that crosses back into a prompt.
-- **Write path**: `chatMessageCreate` on the admin namespace enqueues a `profileAnalyze` background job after the assistant turn fires. The
+- **Read path**: `agentPersonalAssistant` calls `compassSummaryGet(serverRuntime)` once per turn and prepends the returned text to its
+  system prompt. That is the only compass data that crosses back into a prompt.
+- **Write path**: `chatMessageCreate` on the admin namespace enqueues a `compassAnalyze` background job after the assistant turn fires. The
   job records observations and may auto-trigger a synthesis. The visitor agent never enqueues this job.
-- **Firewall**: `profileSummaryGet` reads exactly one column (`Profile.summary`). The richer `prose` and `psychProfile` fields are surfaced
-  only at `/workspace/profile` and never reach any agent. Storage separation, not prompt hygiene, is what enforces the boundary.
+- **Firewall**: `compassSummaryGet` reads exactly one column (`Compass.summary`). The richer `prose` and `psychology` fields are surfaced
+  only at `/workspace/compass` and never reach any agent. Storage separation, not prompt hygiene, is what enforces the boundary.
 
 ## Per-turn model selection (admin only)
 

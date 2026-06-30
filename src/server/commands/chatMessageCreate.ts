@@ -14,7 +14,7 @@ import type {
 import { fileUploads, chatMessageUserAttachments, chatMessagesUser, chatMessagesUserInput, chats } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatMessageCreateResult, GqlSMutationChatMessageCreateArgs, GqlSSession } from '../graphql/generated';
-import { profileAnalyze } from '../jobs/handlers/profileAnalyze';
+import { compassAnalyze } from '../jobs/handlers/compassAnalyze';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
@@ -253,12 +253,12 @@ export async function chatMessageCreate(
             currentPagePath: currentPagePath ?? null,
         });
 
-        // Phase 6 — Profile analyzer. Admin-scope only. Fire-and-forget
+        // Phase 6 — Compass analyzer. Admin-scope only. Fire-and-forget
         // enqueue: the analyzer reads the user message we just persisted and
         // records any observations. Failures here MUST NOT propagate to the
-        // chat path. See `docs/features/profile.md`.
+        // chat path. See `docs/features/compass.md`.
         if (dispatch.scope === 'admin') {
-            serverRuntime.jobs.enqueue(profileAnalyze, { chatMessageId: userMessageId }).catch((enqueueError) => {
+            serverRuntime.jobs.enqueue(compassAnalyze, { chatMessageId: userMessageId }).catch((enqueueError) => {
                 serverRuntime.log.error(enqueueError, requestingSession);
             });
         }

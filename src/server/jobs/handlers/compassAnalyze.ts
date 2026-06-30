@@ -1,13 +1,13 @@
 import { generateText, Output } from 'ai';
 import { and, asc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
-import { profileObservationCreate } from '../../commands/profileObservationCreate';
-import { chatMessages, chatMessagesUser, profileMessageAnalysis, profileObservationCategories } from '../../db/schema';
-import type { ProfileMessageAnalysisCreate } from '../../db/schema';
-import { PROFILE_SYNTHESIS_THRESHOLD } from '../../agents/profileConfig';
-import { profileGet } from '../../queries/profileGet';
+import { compassObservationCreate } from '../../commands/compassObservationCreate';
+import { chatMessages, chatMessagesUser, compassMessageAnalysis, compassObservationCategories } from '../../db/schema';
+import type { CompassMessageAnalysisCreate } from '../../db/schema';
+import { COMPASS_SYNTHESIS_THRESHOLD } from '../../agents/compassConfig';
+import { compassGet } from '../../queries/compassGet';
 import type { QueuedJobDefinition } from '../types';
-import { profileSynthesize } from './profileSynthesize';
+import { compassSynthesize } from './compassSynthesize';
 
 // One enqueue per admin user message. The handler:
 //   1. Bails if the message has already been analyzed (idempotent re-runs).
@@ -16,15 +16,15 @@ import { profileSynthesize } from './profileSynthesize';
 //      "return nothing if nothing is new" instruction in the prompt to fight
 //      the model's bias toward producing output.
 //   4. Persists each observation; records the per-message analysis row.
-//   5. Auto-enqueues `profileSynthesize` if the counter crossed the threshold.
+//   5. Auto-enqueues `compassSynthesize` if the counter crossed the threshold.
 //
 // Errors are logged and swallowed: a failed analyzer pass must NEVER block the
 // chat path. The chat surface already returned to the user by the time this
 // runs.
 //
-// See `docs/features/profile.md`.
+// See `docs/features/compass.md`.
 
-interface ProfileAnalyzeData {
+interface CompassAnalyzeData {
     chatMessageId: string;
 }
 
@@ -34,7 +34,7 @@ const OBSERVATION_SCHEMA = z.object({
             z.object({
                 // Tight free-text categorization keeps the LLM honest. The
                 // enum is identical to the DB / GraphQL one.
-                category: z.enum(profileObservationCategories),
+                category: z.enum(compassObservationCategories),
                 content: z.string().describe('One concrete observation. Specific phrasing — quote when psychological.'),
                 confidencePercent: z.number().int().min(0).max(100).optional().describe('How confident you are, 0–100.'),
             }),
@@ -60,9 +60,9 @@ const SYSTEM_PROMPT = [
     '- Quote his own words when categorizing as psychological so synthesis can preserve voice.',
 ].join('\n');
 
-export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
+export const compassAnalyze: QueuedJobDefinition<CompassAnalyzeData> = {
     kind: 'queued',
-    name: 'profile-analyze',
+    name: 'compass-analyze',
     handler: async ({ data, serverRuntime }) => {
         try {
             const { chatMessageId } = data;
@@ -70,9 +70,9 @@ export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
             // Idempotency — a redelivery (pg-boss at-least-once) re-runs the
             // handler. Short-circuit if we already analyzed this message.
             const [existing] = await serverRuntime.db
-                .select({ chatMessageId: profileMessageAnalysis.chatMessageId })
-                .from(profileMessageAnalysis)
-                .where(eq(profileMessageAnalysis.chatMessageId, chatMessageId))
+                .select({ chatMessageId: compassMessageAnalysis.chatMessageId })
+                .from(compassMessageAnalysis)
+                .where(eq(compassMessageAnalysis.chatMessageId, chatMessageId))
                 .limit(1);
             if (existing) return;
 
@@ -88,7 +88,7 @@ export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
                 .where(eq(chatMessages.chatMessageId, chatMessageId))
                 .limit(1);
             if (!target) {
-                serverRuntime.log.warn(`profileAnalyze: message ${chatMessageId} not found (deleted?)`);
+                serverRuntime.log.warn(`compassAnalyze: message ${chatMessageId} not found (deleted?)`);
                 return;
             }
 
@@ -104,7 +104,7 @@ export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
                 .limit(6);
             const contextBlock = contextRows.length > 0 ? contextRows.map((r) => `- ${r.body}`).join('\n') : '(no prior context)';
 
-            const model = serverRuntime.ai.profileAnalyzerModel();
+            const model = serverRuntime.ai.compassAnalyzerModel();
             const userPrompt = [
                 'Recent context (oldest first):',
                 contextBlock,
@@ -126,7 +126,7 @@ export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
             const analyzerModelId = result.response.modelId;
 
             for (const obs of observations) {
-                await profileObservationCreate(
+                await compassObservationCreate(
                     {
                         sourceChatMessageId: chatMessageId,
                         category: obs.category,
@@ -138,20 +138,20 @@ export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
                 );
             }
 
-            const analysisRow: ProfileMessageAnalysisCreate = {
+            const analysisRow: CompassMessageAnalysisCreate = {
                 chatMessageId,
                 observationsCreated: observations.length,
                 analyzerModelId,
                 analyzedAt: new Date(),
             };
-            await serverRuntime.db.insert(profileMessageAnalysis).values(analysisRow).onConflictDoNothing();
+            await serverRuntime.db.insert(compassMessageAnalysis).values(analysisRow).onConflictDoNothing();
 
             // Threshold auto-trigger. Read the current counter; if we crossed,
             // enqueue the synthesizer. The synthesizer resets the counter so a
             // burst of admin messages doesn't enqueue it ten times.
-            const profileRow = await profileGet(serverRuntime.db);
-            if (profileRow.observationsSinceSynthesis >= PROFILE_SYNTHESIS_THRESHOLD) {
-                await serverRuntime.jobs.enqueue(profileSynthesize, { reason: 'threshold' });
+            const compassRow = await compassGet(serverRuntime.db);
+            if (compassRow.observationsSinceSynthesis >= COMPASS_SYNTHESIS_THRESHOLD) {
+                await serverRuntime.jobs.enqueue(compassSynthesize, { reason: 'threshold' });
             }
         } catch (error) {
             // Analyzer failures must not poison the chat path. Log and move on.

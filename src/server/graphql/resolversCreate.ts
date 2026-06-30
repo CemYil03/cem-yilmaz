@@ -19,8 +19,8 @@ import { cvHobbyUpsert } from '../commands/cvHobbyUpsert';
 import { cvSkillDelete } from '../commands/cvSkillDelete';
 import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillUpsert } from '../commands/cvSkillUpsert';
-import { profileObservationDismiss } from '../commands/profileObservationDismiss';
-import { profileSynthesizeRequest } from '../commands/profileSynthesizeRequest';
+import { compassObservationDismiss } from '../commands/compassObservationDismiss';
+import { compassSynthesizeRequest } from '../commands/compassSynthesizeRequest';
 import { projectActivityDelete } from '../commands/projectActivityDelete';
 import { projectActivityUpsert } from '../commands/projectActivityUpsert';
 import { projectDelete } from '../commands/projectDelete';
@@ -47,7 +47,7 @@ import { eq } from 'drizzle-orm';
 import { guardAdminMutation } from '../guards/guardAdminMutation';
 import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
-import { toGqlProfile } from '../mappers/toGqlProfile';
+import { toGqlCompass } from '../mappers/toGqlCompass';
 import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
@@ -58,10 +58,10 @@ import { cvEducationList } from '../queries/cvEducationList';
 import { cvExperienceList } from '../queries/cvExperienceList';
 import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
-import { profileGet } from '../queries/profileGet';
+import { compassGet } from '../queries/compassGet';
 import { logsList } from '../queries/logsList';
-import { profileObservationList } from '../queries/profileObservationList';
-import { profileSynthesisInProgressGet } from '../queries/profileSynthesisInProgressGet';
+import { compassObservationList } from '../queries/compassObservationList';
+import { compassSynthesisInProgressGet } from '../queries/compassSynthesisInProgressGet';
 import { projectRequestsList } from '../queries/projectRequestsList';
 import { projectRequestsInboxCount } from '../queries/projectRequestsInboxCount';
 import { projectsList } from '../queries/projectsList';
@@ -92,7 +92,7 @@ import type {
     GqlSAdminMutationCvSkillDeleteArgs,
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillUpsertArgs,
-    GqlSAdminMutationProfileObservationDismissArgs,
+    GqlSAdminMutationCompassObservationDismissArgs,
     GqlSAdminMutationProjectActivityDeleteArgs,
     GqlSAdminMutationProjectActivityUpsertArgs,
     GqlSAdminMutationProjectDeleteArgs,
@@ -111,8 +111,8 @@ import type {
     GqlSAdminMutationTaskDeleteArgs,
     GqlSAdminMutationTaskReorderArgs,
     GqlSAdminMutationTaskUpsertArgs,
-    GqlSAdminProfile,
-    GqlSAdminProfileObservationsArgs,
+    GqlSAdminCompass,
+    GqlSAdminCompassObservationsArgs,
     GqlSAdminProjectArgs,
     GqlSAdminProjectRequestsArgs,
     GqlSAdminProjectsArgs,
@@ -224,13 +224,13 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             chat(_parent: GqlSAdmin, args: GqlSAdminChatArgs, requestingSession: GqlSSession) {
                 return chatFindByScope(args.chatId, 'admin', requestingSession, serverRuntime);
             },
-            // Profile shell — the scalar fields come straight off the row;
+            // Compass shell — the scalar fields come straight off the row;
             // `observations` is resolved separately so it can take arguments
             // and run its own join, and `synthesisInProgress` is resolved
-            // separately because it reads pg-boss, not the `Profile` row.
-            async profile(): Promise<GqlSAdminProfile> {
-                const row = await profileGet(serverRuntime.db);
-                return { ...toGqlProfile(row), observations: [], synthesisInProgress: false };
+            // separately because it reads pg-boss, not the `Compass` row.
+            async compass(): Promise<GqlSAdminCompass> {
+                const row = await compassGet(serverRuntime.db);
+                return { ...toGqlCompass(row), observations: [], synthesisInProgress: false };
             },
             projectRequests(_parent: GqlSAdmin, args: GqlSAdminProjectRequestsArgs, requestingSession: GqlSSession) {
                 return projectRequestsList(args.status ?? null, requestingSession, serverRuntime);
@@ -269,9 +269,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 return logsList(args, requestingSession, serverRuntime);
             },
         },
-        AdminProfile: {
-            observations(_parent: GqlSAdminProfile, args: GqlSAdminProfileObservationsArgs, requestingSession: GqlSSession) {
-                return profileObservationList(
+        AdminCompass: {
+            observations(_parent: GqlSAdminCompass, args: GqlSAdminCompassObservationsArgs, requestingSession: GqlSSession) {
+                return compassObservationList(
                     {
                         category: args.category ?? null,
                         includeDismissed: args.includeDismissed ?? false,
@@ -280,9 +280,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                     serverRuntime,
                 );
             },
-            // Derived from pg-boss — see `profileSynthesisInProgressGet`.
+            // Derived from pg-boss — see `compassSynthesisInProgressGet`.
             synthesisInProgress() {
-                return profileSynthesisInProgressGet(serverRuntime);
+                return compassSynthesisInProgressGet(serverRuntime);
             },
         },
         CvQuery: {
@@ -369,15 +369,15 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             cvHobbyReorder({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyReorderArgs, requestingSession: GqlSSession) {
                 return cvHobbyReorder(userId, args, requestingSession, serverRuntime);
             },
-            profileObservationDismiss(
+            compassObservationDismiss(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProfileObservationDismissArgs,
+                args: GqlSAdminMutationCompassObservationDismissArgs,
                 requestingSession: GqlSSession,
             ) {
-                return profileObservationDismiss(userId, args, requestingSession, serverRuntime);
+                return compassObservationDismiss(userId, args, requestingSession, serverRuntime);
             },
-            profileSynthesizeRequest({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
-                return profileSynthesizeRequest(userId, requestingSession, serverRuntime);
+            compassSynthesizeRequest({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
+                return compassSynthesizeRequest(userId, requestingSession, serverRuntime);
             },
             projectRequestArchive(
                 { userId }: GqlSAdminMutation,

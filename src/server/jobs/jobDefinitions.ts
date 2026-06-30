@@ -1,6 +1,6 @@
 import { emailToCemSend } from './handlers/emailToCemSend';
-import { profileAnalyze } from './handlers/profileAnalyze';
-import { profileSynthesize } from './handlers/profileSynthesize';
+import { compassAnalyze } from './handlers/compassAnalyze';
+import { compassSynthesize } from './handlers/compassSynthesize';
 import { projectRequestNotifySend } from './handlers/projectRequestNotifySend';
 import { projectRequestOtpSend } from './handlers/projectRequestOtpSend';
 import { staleSessionsCleanup } from './handlers/staleSessionsCleanup';
@@ -10,8 +10,8 @@ import type { JobDefinition } from './types';
 export const jobDefinitions: JobDefinition[] = [
     staleSessionsCleanup,
     signupReminderSend,
-    profileAnalyze,
-    profileSynthesize,
+    compassAnalyze,
+    compassSynthesize,
     emailToCemSend,
     projectRequestOtpSend,
     projectRequestNotifySend,
