@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { ArrowDownIcon, MessageSquareTextIcon } from 'lucide-react';
@@ -147,6 +147,7 @@ function WorkspaceAssistantEmpty({
     locale: Locale;
 }) {
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const chats = allChats.slice(0, RECENT_CHATS_LIMIT);
     return (
         <main className="mx-auto grid h-[calc(100dvh-5rem)] w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
@@ -179,6 +180,7 @@ function WorkspaceAssistantEmpty({
                 beginTurn={live.beginTurn}
                 locale={locale}
                 endTurn={live.endTurn}
+                currentPagePath={pathname}
                 autoFocus
             />
         </main>
@@ -234,6 +236,7 @@ function WorkspaceAssistantPage({
 }) {
     const [, respondToCollection] = useMutation(WorkspaceChatInputCollectionRespondDocument);
     const [, respondToApproval] = useMutation(WorkspaceChatToolApprovalRespondDocument);
+    const { pathname } = useLocation();
     // Sticky model selection is owned by the workspace provider so every
     // surface reflects the same choice. Read it once here for the collection /
     // approval response mutations (the composer reads it itself).
@@ -310,6 +313,7 @@ function WorkspaceAssistantPage({
                     beginTurn={live.beginTurn}
                     endTurn={live.endTurn}
                     locale={locale}
+                    currentPagePath={pathname}
                     autoFocus
                 />
             </div>

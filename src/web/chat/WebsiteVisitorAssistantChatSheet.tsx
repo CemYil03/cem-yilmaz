@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { ArrowDownIcon, Maximize2Icon, MessageSquareTextIcon, Minimize2Icon, PlusIcon, SparklesIcon } from 'lucide-react';
+import { useLocation } from '@tanstack/react-router';
 import { useMutation, useQuery } from 'urql';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/base/sheet';
 import { Spinner } from '../components/base/spinner';
@@ -74,6 +75,13 @@ interface WebsiteVisitorAssistantChatSheetProps {
 
 export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssistantChatSheetProps) {
     const { isOpen, close } = useVisitorChat();
+    // The sheet lives at the root layout, so `useLocation()` here tracks
+    // whatever public page the visitor is currently on. We forward the
+    // pathname to the composers so each `chatMessageCreate` carries the
+    // route the visitor was looking at when they hit Send — the agent's
+    // system prompt anchors short references ("tell me more", "what is
+    // this") against it. See `docs/features/chat-visitor.md`.
+    const { pathname } = useLocation();
 
     // Desktop-only expand toggle. Mobile is always full-bleed; the toggle
     // is hidden under `sm`. Reset to the default narrow width whenever the
@@ -146,7 +154,7 @@ export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssis
                         </SheetDescription>
                     </div>
                 </SheetHeader>
-                {isOpen ? <ChatSurface locale={locale} isExpanded={isExpanded} /> : null}
+                {isOpen ? <ChatSurface locale={locale} isExpanded={isExpanded} currentPagePath={pathname} /> : null}
             </SheetContent>
         </Sheet>
     );
@@ -159,16 +167,16 @@ export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssis
 // opened) we drop straight into `<ChatLoaded />`; otherwise the empty
 // state renders the previous-chats list and a fresh composer.
 
-function ChatSurface({ locale, isExpanded }: { locale: Locale; isExpanded: boolean }) {
+function ChatSurface({ locale, isExpanded, currentPagePath }: { locale: Locale; isExpanded: boolean; currentPagePath: string }) {
     const { chatId } = useVisitorChat();
     // Cap the inner column when expanded so the prose stays readable on a
     // wide viewport. The sheet itself still spans the viewport — only the
     // content column reads at ~3xl.
     const innerClass = cn('grid min-h-0 flex-1 grid-rows-[1fr_auto] gap-4 px-6 pt-4 pb-6', isExpanded && 'mx-auto w-full max-w-3xl');
     return chatId ? (
-        <ChatLoaded chatId={chatId} locale={locale} innerClass={innerClass} />
+        <ChatLoaded chatId={chatId} locale={locale} innerClass={innerClass} currentPagePath={currentPagePath} />
     ) : (
-        <ChatEmptyState locale={locale} innerClass={innerClass} />
+        <ChatEmptyState locale={locale} innerClass={innerClass} currentPagePath={currentPagePath} />
     );
 }
 
@@ -180,7 +188,7 @@ function ChatSurface({ locale, isExpanded }: { locale: Locale; isExpanded: boole
 // composer. The always-visible rate-limit chip lives inside
 // `<VisitorChatComposer />`.
 
-function ChatEmptyState({ locale, innerClass }: { locale: Locale; innerClass: string }) {
+function ChatEmptyState({ locale, innerClass, currentPagePath }: { locale: Locale; innerClass: string; currentPagePath: string }) {
     const { live, loadChat, setChatIdFromHero } = useVisitorChat();
     // `cache-and-network` so the previous-chats list refreshes on every
     // reopen — without it a stale list from yesterday would render while
@@ -226,6 +234,7 @@ function ChatEmptyState({ locale, innerClass }: { locale: Locale; innerClass: st
                 endTurn={live.endTurn}
                 placeholder={{ de: 'Stell eine Frage…', en: 'Ask a question…' }[locale]}
                 onMessageSent={setChatIdFromHero}
+                currentPagePath={currentPagePath}
                 // Sheet opens → composer mounts fresh → focus the textarea
                 // so the visitor can start typing immediately.
                 autoFocus
@@ -263,7 +272,17 @@ function PreviousChatButton({
     );
 }
 
-function ChatLoaded({ chatId, locale, innerClass }: { chatId: string; locale: Locale; innerClass: string }) {
+function ChatLoaded({
+    chatId,
+    locale,
+    innerClass,
+    currentPagePath,
+}: {
+    chatId: string;
+    locale: Locale;
+    innerClass: string;
+    currentPagePath: string;
+}) {
     const { live, resetChat } = useVisitorChat();
     const [{ data, fetching, error }] = useQuery({
         query: ChatPageDocument,
@@ -341,6 +360,7 @@ function ChatLoaded({ chatId, locale, innerClass }: { chatId: string; locale: Lo
                 beginTurn={live.beginTurn}
                 endTurn={live.endTurn}
                 placeholder={{ de: 'Stelle eine weitere Frage…', en: 'Ask another question…' }[locale]}
+                currentPagePath={currentPagePath}
                 // Sheet opens fresh on resume → focus the textarea so the
                 // visitor can keep typing without reaching for the input.
                 autoFocus

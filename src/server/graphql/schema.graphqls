@@ -492,7 +492,18 @@ type Mutation {
     # factory is selected by the access path — the resolver wires it in;
     # callers do NOT pass it. Mismatched scope (e.g. an admin chatId reaching
     # this namespace) is rejected by the command.
-    chatMessageCreate(chatId: ID, message: String!, fileUploadIds: [ID!], assistantOptions: ChatAssistantOptions!): ChatMessageCreateResult
+    # `currentPagePath` is the route the visitor's client was on when the
+    # message was sent (e.g. `/projects`, `/en/cv`). Forwarded into the
+    # agent's system prompt for this turn only — not persisted. Optional;
+    # server-side callers (tests) may omit it. See
+    # `docs/features/chat-visitor.md`.
+    chatMessageCreate(
+        chatId: ID
+        message: String!
+        fileUploadIds: [ID!]
+        assistantOptions: ChatAssistantOptions!
+        currentPagePath: String
+    ): ChatMessageCreateResult
     chatInputCollectionRespond(
         collectionMessageId: ID!
         answers: [ChatMessageUserInputAnswerCreate!]!
@@ -511,7 +522,13 @@ type Mutation {
 # Workspace write namespace — same chat shape as the visitor mutations above,
 # routed to `agentPersonalAssistant` and operating on `scope = 'admin'` chats.
 type AdminMutation {
-    chatMessageCreate(chatId: ID, message: String!, fileUploadIds: [ID!], assistantOptions: ChatAssistantOptions!): ChatMessageCreateResult
+    chatMessageCreate(
+        chatId: ID
+        message: String!
+        fileUploadIds: [ID!]
+        assistantOptions: ChatAssistantOptions!
+        currentPagePath: String
+    ): ChatMessageCreateResult
     chatInputCollectionRespond(
         collectionMessageId: ID!
         answers: [ChatMessageUserInputAnswerCreate!]!

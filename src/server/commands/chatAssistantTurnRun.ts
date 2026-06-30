@@ -272,6 +272,12 @@ interface ChatAssistantTurnRunOptions {
     // `agentVisitorAboutCem`, admin mutations pass `agentPersonalAssistant`.
     // See `docs/architecture/multi-agent-chat.md`.
     agentFactory: ChatAgentFactory;
+    // Pathname the client was on when the user sent the message
+    // (`/projects`, `/en/cv`, `/workspace/projects/abc`, …). Threaded into
+    // the agent's system prompt for this turn only — not persisted. Null
+    // when the caller can't supply it (server-side tests, response
+    // commands that fire from a form submission rather than the composer).
+    currentPagePath: string | null;
 }
 
 async function chatAssistantTurnRun({
@@ -281,6 +287,7 @@ async function chatAssistantTurnRun({
     assistantOptions,
     serverRuntime,
     agentFactory,
+    currentPagePath,
 }: ChatAssistantTurnRunOptions): Promise<void> {
     const { generationId } = assistantOptions;
 
@@ -298,6 +305,7 @@ async function chatAssistantTurnRun({
             serverRuntime,
             agentFactory,
             assistantTextMessageId,
+            currentPagePath,
         });
     } finally {
         // `TurnEnded` runs on every path out — success, agent throw, downstream
@@ -327,6 +335,8 @@ interface ChatAssistantTurnRunDetachedOptions {
     serverRuntime: ServerRuntime;
     // See `ChatAssistantTurnRunOptions.agentFactory`.
     agentFactory: ChatAgentFactory;
+    // See `ChatAssistantTurnRunOptions.currentPagePath`.
+    currentPagePath: string | null;
 }
 
 /**
@@ -349,6 +359,7 @@ export function chatAssistantTurnRunDetached({
     assistantOptions,
     serverRuntime,
     agentFactory,
+    currentPagePath,
 }: ChatAssistantTurnRunDetachedOptions): void {
     void (async () => {
         try {
@@ -360,6 +371,7 @@ export function chatAssistantTurnRunDetached({
                 assistantOptions,
                 serverRuntime,
                 agentFactory,
+                currentPagePath,
             });
             await serverRuntime.db.update(chats).set({ lastModifiedAt: new Date() }).where(eq(chats.chatId, chatId));
         } catch (turnError) {
@@ -378,6 +390,7 @@ async function runAgentTurn({
     serverRuntime,
     agentFactory,
     assistantTextMessageId,
+    currentPagePath,
 }: ChatAssistantTurnRunOptions & { assistantTextMessageId: string }): Promise<void> {
     const { generationId } = assistantOptions;
     const { db } = serverRuntime;
@@ -411,6 +424,7 @@ async function runAgentTurn({
         serverRuntime,
         assistantOptions,
         chatId,
+        currentPagePath,
         preWrittenToolCallIds,
         // The orchestrator-level `onStepEnd`. All tool-call/approval/input-
         // collection persistence is the shared `chatPersistStep` helper, which

@@ -207,6 +207,7 @@ mutation WorkspaceChatMessageCreate(
     $generationId: ID
     $requireToolCallApprovals: Boolean!
     $modelId: String
+    $currentPagePath: String
 ) {
     # `assistantOptions` is built inline so the operation doesn't reference the
     # named `ChatAssistantOptions` input type — referencing it makes
@@ -219,6 +220,7 @@ mutation WorkspaceChatMessageCreate(
             message: $message
             fileUploadIds: $fileUploadIds
             assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals, modelId: $modelId }
+            currentPagePath: $currentPagePath
         ) {
             chatId
             chatMessageId

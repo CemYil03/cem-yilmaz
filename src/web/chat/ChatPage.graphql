@@ -176,7 +176,14 @@ query ChatPage($chatId: ID!) {
     }
 }
 
-mutation ChatMessageCreate($chatId: ID, $message: String!, $fileUploadIds: [ID!], $generationId: ID, $requireToolCallApprovals: Boolean!) {
+mutation ChatMessageCreate(
+    $chatId: ID
+    $message: String!
+    $fileUploadIds: [ID!]
+    $generationId: ID
+    $requireToolCallApprovals: Boolean!
+    $currentPagePath: String
+) {
     # `assistantOptions` is built inline so the operation doesn't reference the
     # named `ChatAssistantOptions` input type — referencing it makes
     # `typescript-operations` re-emit `GqlCChatAssistantOptions` and clash with
@@ -186,6 +193,7 @@ mutation ChatMessageCreate($chatId: ID, $message: String!, $fileUploadIds: [ID!]
         message: $message
         fileUploadIds: $fileUploadIds
         assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+        currentPagePath: $currentPagePath
     ) {
         chatId
         chatMessageId

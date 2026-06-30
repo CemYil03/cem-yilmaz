@@ -46,7 +46,7 @@ export interface ChatMutationDispatch {
 // replay whatever's persisted.
 
 export async function chatMessageCreate(
-    { chatId: attemptedChatId, message, fileUploadIds, assistantOptions }: GqlSMutationChatMessageCreateArgs,
+    { chatId: attemptedChatId, message, fileUploadIds, assistantOptions, currentPagePath }: GqlSMutationChatMessageCreateArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
     dispatch: ChatMutationDispatch,
@@ -235,6 +235,12 @@ export async function chatMessageCreate(
             assistantOptions,
             serverRuntime,
             agentFactory: dispatch.agentFactory,
+            // Forwarded into the agent's system prompt for this turn so it
+            // can anchor "tell me more" / "what am I looking at" questions
+            // to the route the user was on when they sent the message. Not
+            // persisted. See `docs/features/chat-visitor.md` and
+            // `docs/features/chat-workspace.md`.
+            currentPagePath: currentPagePath ?? null,
         });
 
         // Phase 6 — Profile analyzer. Admin-scope only. Fire-and-forget

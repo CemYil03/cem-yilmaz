@@ -121,6 +121,7 @@ export type GqlCAdminMutationChatInputCollectionRespondArgs = {
 export type GqlCAdminMutationChatMessageCreateArgs = {
     assistantOptions: GqlCChatAssistantOptions;
     chatId?: InputMaybe<Scalars['ID']['input']>;
+    currentPagePath?: InputMaybe<Scalars['String']['input']>;
     fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
     message: Scalars['String']['input'];
 };
@@ -662,6 +663,7 @@ export type GqlCMutationChatInputCollectionRespondArgs = {
 export type GqlCMutationChatMessageCreateArgs = {
     assistantOptions: GqlCChatAssistantOptions;
     chatId?: InputMaybe<Scalars['ID']['input']>;
+    currentPagePath?: InputMaybe<Scalars['String']['input']>;
     fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
     message: Scalars['String']['input'];
 };
@@ -1387,6 +1389,7 @@ export type GqlCWorkspaceChatMessageCreateMutationVariables = Exact<{
     generationId?: string | null | undefined;
     requireToolCallApprovals: boolean;
     modelId?: string | null | undefined;
+    currentPagePath?: string | null | undefined;
 }>;
 
 export type GqlCWorkspaceChatMessageCreateMutation = { admin: { chatMessageCreate: { chatId: string; chatMessageId: string } | null } };
@@ -2289,6 +2292,7 @@ export type GqlCChatMessageCreateMutationVariables = Exact<{
     fileUploadIds?: Array<string> | string | null | undefined;
     generationId?: string | null | undefined;
     requireToolCallApprovals: boolean;
+    currentPagePath?: string | null | undefined;
 }>;
 
 export type GqlCChatMessageCreateMutation = { chatMessageCreate: { chatId: string; chatMessageId: string } | null };
@@ -4748,6 +4752,11 @@ export const WorkspaceChatMessageCreateDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
                     type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'currentPagePath' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -4803,6 +4812,11 @@ export const WorkspaceChatMessageCreateDocument = {
                                                     },
                                                 ],
                                             },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'currentPagePath' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'currentPagePath' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -9120,6 +9134,11 @@ export const ChatMessageCreateDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'requireToolCallApprovals' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'currentPagePath' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -9161,6 +9180,11 @@ export const ChatMessageCreateDocument = {
                                         },
                                     ],
                                 },
+                            },
+                            {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'currentPagePath' },
+                                value: { kind: 'Variable', name: { kind: 'Name', value: 'currentPagePath' } },
                             },
                         ],
                         selectionSet: {

@@ -53,6 +53,13 @@ interface WorkspaceChatComposerProps {
     /** Surface-specific addon prepended to the model + approval-mode
      *  selectors — e.g. the sheet's "new chat" button. */
     addonStart?: ReactNode;
+    /** Pathname of the workspace route the user was on when sending
+     *  (e.g. `/workspace/projects`, `/workspace/projects/abc…`,
+     *  `/workspace/cv`). Threaded through to the agent's system prompt
+     *  so short references ("this project", "what am I looking at")
+     *  resolve against the right surface. The mounting site reads it
+     *  from `useLocation().pathname`. */
+    currentPagePath?: string;
 }
 
 const placeholderCopy = { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' };
@@ -72,6 +79,7 @@ export function WorkspaceChatComposer({
     onMessageSent,
     autoFocus = false,
     addonStart,
+    currentPagePath,
 }: WorkspaceChatComposerProps) {
     const { chatConfig, selectedModelId, onModelChange } = useWorkspaceAssistantChat();
     const [mode, setMode] = useState<ToolCallApprovalMode>('auto');
@@ -90,6 +98,7 @@ export function WorkspaceChatComposer({
             requireToolCallApprovals={mode === 'manual'}
             onMessageSent={onMessageSent}
             autoFocus={autoFocus}
+            currentPagePath={currentPagePath}
             addonStart={
                 <>
                     {addonStart}

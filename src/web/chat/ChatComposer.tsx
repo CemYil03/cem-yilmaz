@@ -78,6 +78,14 @@ interface ChatComposerProps {
      *  this for surface-specific controls (model dropdown, approval-mode
      *  selector, "new chat" button, quota status, …). */
     addonStart?: ReactNode;
+    /** Pathname of the route the user was on when they hit Send (e.g.
+     *  `/projects`, `/en/cv`, `/workspace/projects/abc`). Forwarded to
+     *  the server with each `chatMessageCreate` so the agent's system
+     *  prompt can anchor the turn to what the user was probably just
+     *  looking at. Wrappers read this from `useLocation().pathname` at
+     *  the surface that mounts them. Optional — when undefined the
+     *  server omits the page-context line entirely. */
+    currentPagePath?: string;
 }
 
 // Both the visitor and admin variants of `chatMessageCreate` accept the same
@@ -91,6 +99,7 @@ interface ChatMessageCreateVariables {
     generationId?: string | null;
     requireToolCallApprovals: boolean;
     modelId?: string | null;
+    currentPagePath?: string | null;
 }
 
 export function ChatComposer({
@@ -108,6 +117,7 @@ export function ChatComposer({
     availableModels,
     addonStart,
     locale,
+    currentPagePath,
 }: ChatComposerProps) {
     const [draft, setDraft] = useState('');
     // Each composer attachment carries its upload lifecycle. Files are
@@ -206,6 +216,7 @@ export function ChatComposer({
             generationId,
             requireToolCallApprovals,
             modelId: modelId ?? null,
+            currentPagePath: currentPagePath ?? null,
         });
 
         const created = result.data ? extractResult(result.data) : null;
@@ -224,7 +235,19 @@ export function ChatComposer({
         // Don't clear `generationId` on success — the turn is still running
         // detached on the server. The `TurnEnded` event clears it.
         onMessageSent?.(created.chatId);
-    }, [attachments, chatId, draft, onMessageSent, sendMessage, beginTurn, endTurn, extractResult, requireToolCallApprovals, modelId]);
+    }, [
+        attachments,
+        chatId,
+        draft,
+        onMessageSent,
+        sendMessage,
+        beginTurn,
+        endTurn,
+        extractResult,
+        requireToolCallApprovals,
+        modelId,
+        currentPagePath,
+    ]);
 
     return (
         <MessageComposer

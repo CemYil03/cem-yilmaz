@@ -18,6 +18,12 @@ export interface AgentChatOptions {
     // that persist side-effect rows (`submitProjectRequest`) can record the
     // originating conversation; tools that don't need it ignore the value.
     chatId: string;
+    // Pathname the client was on when the user sent the message
+    // (`/projects`, `/en/cv`, `/workspace/projects/abc`, …). Inlined into
+    // the agent's system prompt for this turn only — not persisted. Null
+    // when the caller can't supply it (server-side tests). See
+    // `docs/features/chat-visitor.md` and `docs/features/chat-workspace.md`.
+    currentPagePath: string | null;
     // Shared mutable set the orchestrator uses to skip persisting a tool
     // call whose row some tool's `execute` already wrote up front (today:
     // `toolDelegateToProjects`, which pre-writes its delegate row so the
@@ -54,8 +60,15 @@ export type ChatAgentFactory = (options: AgentChatOptions) => Promise<{
 // cem-yilmaz.de. The "About Cem" block is rebuilt from the DB on every turn
 // (`cvSummaryForAgent`) so admin edits at `/workspace/cv` land in the
 // agent's answers without a redeploy. See `docs/features/cv.md`.
-function buildSystemPrompt(cvSummary: string): string {
-    return [
+//
+// `currentPagePath` is the route the visitor's client was on when this
+// message went out. We inline it (when present) so the agent can anchor
+// answers to what the visitor was probably looking at — e.g. on `/projects`,
+// "tell me more" is about the projects on screen rather than something
+// generic. The agent is explicitly told not to invent page contents it
+// hasn't been given; it only knows the path, not the rendered HTML.
+function buildSystemPrompt(cvSummary: string, currentPagePath: string | null): string {
+    const lines = [
         "You are the AI assistant on Cem Yilmaz's personal website (cem-yilmaz.de).",
         "Your job is to answer visitors' questions about Cem, his projects, and this site.",
         '',
@@ -63,6 +76,19 @@ function buildSystemPrompt(cvSummary: string): string {
         '',
         cvSummary,
         '',
+    ];
+    if (currentPagePath) {
+        lines.push(
+            'Current page context:',
+            `- The visitor is currently viewing \`${currentPagePath}\` on cem-yilmaz.de.`,
+            '- Use this to anchor "tell me more" / "what is this" / "show me other examples" questions to whatever',
+            '  they were probably just looking at on that route. The path itself is the only signal — do not invent',
+            '  specific content you have not been given elsewhere in this prompt.',
+            '- If the path is unrelated to what they asked, ignore it.',
+            '',
+        );
+    }
+    lines.push(
         'Style:',
         '- Reply in the language the visitor wrote in (German or English). If unclear, default to English.',
         '- Be concise, warm, and direct. Avoid corporate filler.',
@@ -105,7 +131,8 @@ function buildSystemPrompt(cvSummary: string): string {
         "    description). Don't enumerate the fields in prose first.",
         '  • Visitor: "my email is foo@bar.com" mid-conversation → still call `promptUserForInput` to confirm the',
         '    address in a `Text` slot before passing it to a tool; never trust an inline-typed address verbatim.',
-    ].join('\n');
+    );
+    return lines.join('\n');
 }
 
 export async function agentVisitorAboutCem({
@@ -113,6 +140,7 @@ export async function agentVisitorAboutCem({
     session: _session,
     serverRuntime,
     chatId,
+    currentPagePath,
     preWrittenToolCallIds: _preWrittenToolCallIds,
     onStepEnd,
 }: AgentChatOptions) {
@@ -139,7 +167,7 @@ export async function agentVisitorAboutCem({
             // matching tool-result.
             hasToolCall('promptUserForInput'),
         ],
-        instructions: buildSystemPrompt(cvSummary),
+        instructions: buildSystemPrompt(cvSummary, currentPagePath),
         // Three transactional tools beyond the input-collection helper. Each
         // ships with an `execute` function whose return value is captured
         // into `chatMessagesToolCall.toolResult` by the existing branch in

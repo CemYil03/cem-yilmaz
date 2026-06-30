@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import {
@@ -281,6 +281,13 @@ function PreviousChatButton({
 
 function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Locale; hasChat: boolean; onReset: () => void }) {
     const { chatId, live, setChatIdFromHub } = useWorkspaceAssistantChat();
+    // The sheet lives at the workspace layout, so `useLocation()` here
+    // tracks whichever workspace route the user has open behind the
+    // sheet. Forwarded to the agent's system prompt so short references
+    // ("this project", "what am I looking at") resolve against the
+    // surface the user was on when they hit Send. See
+    // `docs/features/chat-workspace.md`.
+    const { pathname } = useLocation();
     return (
         <WorkspaceChatComposer
             locale={locale}
@@ -289,6 +296,7 @@ function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Loca
             beginTurn={live.beginTurn}
             endTurn={live.endTurn}
             onMessageSent={setChatIdFromHub}
+            currentPagePath={pathname}
             // Sheet opens → composer mounts fresh (Radix unmounts on close)
             // → focus the textarea so the user can start typing immediately
             // without first reaching for the input.

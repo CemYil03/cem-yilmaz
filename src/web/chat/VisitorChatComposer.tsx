@@ -47,6 +47,12 @@ interface VisitorChatComposerProps {
      *  quota line. The sheet's loaded view uses this for the "New chat"
      *  button. */
     addonStart?: ReactNode;
+    /** Pathname of the page the visitor was on when they sent the message
+     *  (`/projects`, `/en/cv`, `/`). Forwarded to the agent's system
+     *  prompt so it can anchor answers to whatever the visitor was just
+     *  looking at. The sheet that mounts this composer reads it from
+     *  `useLocation().pathname` and threads it through. */
+    currentPagePath?: string;
 }
 
 const extractMessageCreateResult = (data: unknown): { chatId: string } | null => {
@@ -66,6 +72,7 @@ export function VisitorChatComposer({
     placeholder,
     autoFocus = false,
     addonStart,
+    currentPagePath,
 }: VisitorChatComposerProps) {
     // `cache-and-network` so the quota line is fresh on every reopen — a
     // visitor who sent their last allowed message yesterday should see the
@@ -88,6 +95,7 @@ export function VisitorChatComposer({
             placeholder={placeholder}
             onMessageSent={onMessageSent}
             autoFocus={autoFocus}
+            currentPagePath={currentPagePath}
             addonStart={
                 <>
                     {addonStart}

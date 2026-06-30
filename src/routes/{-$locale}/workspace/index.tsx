@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
 import {
     ArrowUpRightIcon,
     CodeXmlIcon,
@@ -167,6 +167,7 @@ function WorkspaceHub() {
     // conversation alive across focus-area navigation, so jumping into a
     // focus area and coming back keeps the transcript intact.
     const { open, setChatIdFromHub, live } = useWorkspaceAssistantChat();
+    const { pathname } = useLocation();
     const data = Route.useLoaderData();
     const badges: Record<NonNullable<FocusArea['badgeKey']>, number> = {
         projectsInbox: data.admin.projectRequestsInboxCount,
@@ -190,6 +191,7 @@ function WorkspaceHub() {
                                 setChatIdFromHub(chatId);
                                 open();
                             }}
+                            currentPagePath={pathname}
                             autoFocus
                         />
                     }

@@ -59,18 +59,36 @@ const BASE_SYSTEM_PROMPT = [
     '- Bad:  "Created Acme rebuild." (no link — the user has to hunt for the card)',
 ].join('\n');
 
-function buildSystemPrompt(profileSummary: string): string {
+function buildSystemPrompt(profileSummary: string, currentPagePath: string | null): string {
     // `currentDateForAgent()` is called here (not woven into the base
     // constant) so it re-evaluates on every user turn instead of freezing to
     // module-load time.
     const dated = [currentDateForAgent(), '', BASE_SYSTEM_PROMPT].join('\n');
-    if (!profileSummary.trim()) return dated;
-    return [
-        dated,
-        '',
-        'Context about Cem (synthesized from prior conversations — refine your answers with these facts when relevant):',
-        profileSummary.trim(),
-    ].join('\n');
+    // `currentPagePath` is the route Cem's browser was on when he sent
+    // this message (`/workspace/projects`, `/workspace/projects/abc…`,
+    // `/workspace/cv`, …). Inline it so "what am I looking at" / "open
+    // this" / "summarize what's here" lands without him spelling out the
+    // surface every time. The path itself is the only signal — the agent
+    // does not see the rendered DOM.
+    const sections = [dated];
+    if (currentPagePath) {
+        sections.push(
+            '',
+            'Current workspace surface:',
+            `- You are answering while Cem is on \`${currentPagePath}\`.`,
+            '- Treat this as Cem\'s implicit context for short references ("this project", "what am I looking at",',
+            '  "open it"). Use it to disambiguate when the workspace path encodes a row id (e.g.',
+            "  `/workspace/projects/<projectId>`). When the path is unrelated to what he's asking, ignore it.",
+        );
+    }
+    if (profileSummary.trim()) {
+        sections.push(
+            '',
+            'Context about Cem (synthesized from prior conversations — refine your answers with these facts when relevant):',
+            profileSummary.trim(),
+        );
+    }
+    return sections.join('\n');
 }
 
 export async function agentPersonalAssistant({
@@ -78,6 +96,7 @@ export async function agentPersonalAssistant({
     session,
     serverRuntime,
     chatId,
+    currentPagePath,
     preWrittenToolCallIds,
     onStepEnd,
 }: AgentChatOptions) {
@@ -102,7 +121,7 @@ export async function agentPersonalAssistant({
         // input → delegate again" plus a final-text step, and 5 ran out in
         // practice.
         stopWhen: [isStepCount(8), hasToolCall('promptUserForInput')],
-        instructions: buildSystemPrompt(profileSummary),
+        instructions: buildSystemPrompt(profileSummary, currentPagePath),
         tools: {
             promptUserForInput: toolPromptUserForInput(),
             // Delegate tool persists sub-agent tool calls under its own

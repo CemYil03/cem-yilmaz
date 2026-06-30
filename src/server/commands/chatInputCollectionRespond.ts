@@ -141,6 +141,12 @@ export async function chatInputCollectionRespond(
             assistantOptions,
             serverRuntime,
             agentFactory: dispatch.agentFactory,
+            // The input-collection respond path doesn't carry a page path —
+            // the form was already mounted inside the chat surface, and the
+            // agent has the prior turn's context to anchor against. If we
+            // ever want it here, add it to `chatInputCollectionRespond`'s
+            // mutation arguments and thread it through.
+            currentPagePath: null,
         });
 
         return {

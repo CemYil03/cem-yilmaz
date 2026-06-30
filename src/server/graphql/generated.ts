@@ -118,6 +118,7 @@ export type GqlSAdminMutationChatInputCollectionRespondArgs = {
 export type GqlSAdminMutationChatMessageCreateArgs = {
     assistantOptions: GqlSChatAssistantOptions;
     chatId?: InputMaybe<Scalars['ID']['input']>;
+    currentPagePath?: InputMaybe<Scalars['String']['input']>;
     fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
     message: Scalars['String']['input'];
 };
@@ -659,6 +660,7 @@ export type GqlSMutationChatInputCollectionRespondArgs = {
 export type GqlSMutationChatMessageCreateArgs = {
     assistantOptions: GqlSChatAssistantOptions;
     chatId?: InputMaybe<Scalars['ID']['input']>;
+    currentPagePath?: InputMaybe<Scalars['String']['input']>;
     fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
     message: Scalars['String']['input'];
 };

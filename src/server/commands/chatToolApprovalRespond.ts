@@ -117,6 +117,11 @@ export async function chatToolApprovalRespond(
             assistantOptions,
             serverRuntime,
             agentFactory: dispatch.agentFactory,
+            // The approval-respond path doesn't carry a page path — the
+            // Approve/Decline card was already mounted inside the chat
+            // surface, and the agent has the prior turn's context to anchor
+            // against.
+            currentPagePath: null,
         });
 
         return {

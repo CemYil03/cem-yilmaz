@@ -1,15 +1,15 @@
 import { MockLanguageModelV3 } from 'ai/test';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { vi } from 'vitest';
 
+import { config } from 'dotenv';
 import type { Log, User, UserCreate } from '../db/schema';
 import * as schema from '../db/schema';
 import { logs, sessions, users } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { loggerCreate } from '../utils/loggerCreate';
-import { config } from 'dotenv';
 
 config({ path: ['.env.test'] });
 
@@ -145,23 +145,4 @@ export const commandSetup: {
 export async function findLogsForSession(sessionId: string): Promise<Log[]> {
     await testLogger.drain();
     return testDb.select().from(logs).where(eq(logs.sessionId, sessionId));
-}
-
-// Truncate every workspace-projects table in dependency order. Vitest runs
-// the project-area test files concurrently against the same Postgres test
-// database, and each file's seeds (`projectSeed`, `activitySeed`, ...) leave
-// rows behind. Tests that count "all running timers" or "all planning
-// projects" then fail nondeterministically depending on what ran first.
-//
-// Call this from a `beforeEach` in any test file that asserts on a
-// project-area COUNT / aggregate. Order matters: child tables first because
-// the parent FK cascades would also kill rows the next test creates if
-// another file is mid-run.
-export async function resetProjectsState(): Promise<void> {
-    // `TRUNCATE ... CASCADE` clears the join rows that point to these tables
-    // (e.g. `ProjectFiles.fileUploadId` → `FileUploads`); `RESTART IDENTITY`
-    // is a no-op for uuid-pk tables but cheap and future-proof.
-    await testDb.execute(
-        sql`TRUNCATE TABLE "ProjectLinks", "ProjectFiles", "ProjectActivities", "Tasks", "Projects", "ProjectRequests" RESTART IDENTITY CASCADE`,
-    );
 }
