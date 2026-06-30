@@ -2,9 +2,10 @@ import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
 import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 import { profileSummaryGet } from '../queries/profileSummaryGet';
-import { currentDateForAgent, googleAgentProviderOptions } from './agentScaffolding';
+import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
+import { toolWebSearch } from './toolWebSearch';
 
 // Personal-assistant agent for `/workspace/assistant`. This is the
 // orchestrator in the agent-delegation pattern: it owns the user-facing
@@ -26,6 +27,7 @@ const BASE_SYSTEM_PROMPT = [
     'Capabilities:',
     '- Plain conversational answers and reasoning.',
     '- Project and task management via `delegateToProjects` — see "When to delegate" below.',
+    '- Web search via `googleSearch` — see "When to search" below.',
     '- Future: notes, calendar entries, content edits — each in its own sub-agent under the same delegation pattern.',
     '',
     'When to delegate:',
@@ -40,6 +42,18 @@ const BASE_SYSTEM_PROMPT = [
     '  mutations (created/updated/deleted) when they help him confirm what happened.',
     '- Do NOT try to do project/task work by chatting — always delegate. Conversely, do not delegate non-project',
     '  questions (small talk, code help, general reasoning).',
+    '',
+    'When to search:',
+    '- Use `googleSearch` for facts that change over time or that you cannot answer from this prompt: current',
+    '  prices, recent releases, news, library/API docs Cem might be evaluating, library version status, sports',
+    '  results, anything time-sensitive. Quote the most useful sources back as `[title](url)` markdown links',
+    '  inline with the relevant sentence so Cem can click through; the chat renderer turns these into anchors.',
+    '- Do NOT search for things that live in this prompt or in the workspace data: facts about Cem already in',
+    '  the profile context, the contents of the projects board (use `delegateToProjects`), or arithmetic /',
+    '  reasoning / code questions you can answer directly. Search costs a round-trip and adds latency — skip',
+    '  it when the answer is already at hand.',
+    '- One search per turn is usually enough; if the first result set is thin, refine the query and try once',
+    '  more before giving up. Do not chain searches indefinitely.',
     '',
     'Style:',
     '- Reply in the language Cem wrote in (German or English).',
@@ -116,7 +130,7 @@ export async function agentPersonalAssistant({
         // selection through `ChatAssistantOptions.modelId`.
         model: serverRuntime.ai.userConversationModel(resolvedModelId),
         onStepEnd,
-        providerOptions: googleAgentProviderOptions,
+        providerOptions: googleAgentProviderOptionsFor(resolvedModelId),
         // Bumped to 8 — a single user turn can now chain "delegate → user
         // input → delegate again" plus a final-text step, and 5 ran out in
         // practice.
@@ -135,6 +149,11 @@ export async function agentPersonalAssistant({
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
             }),
+            // Provider-executed Google Search grounding. Gemini runs the
+            // search server-side; the agent sees the synthesized result on
+            // the next step alongside `groundingMetadata` citations. See
+            // `docs/features/chat-web-search.md`.
+            googleSearch: toolWebSearch({ serverRuntime }),
         },
     });
 }

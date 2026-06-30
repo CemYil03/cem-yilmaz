@@ -1,4 +1,6 @@
 import { MockLanguageModelV3 } from 'ai/test';
+import { tool } from 'ai';
+import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { vi } from 'vitest';
@@ -31,6 +33,12 @@ function aiForTest(): ServerRuntime['ai'] {
         userConversationModel: () => new MockLanguageModelV3(),
         profileAnalyzerModel: () => new MockLanguageModelV3(),
         profileSynthesizerModel: () => new MockLanguageModelV3(),
+        // Web-search is provider-executed in production (Gemini runs the
+        // search server-side). Tests never reach a real model — this stub
+        // returns a no-op tool so the runtime shape type-checks and any test
+        // that did wire up a real `doGenerate` could observe the tool name
+        // without hitting the network.
+        webSearchTool: () => tool({ description: 'web search (test stub)', inputSchema: z.object({}) }),
     };
 }
 

@@ -8,6 +8,8 @@ See also:
 
 - [features/chat.md](./chat.md) — the chat surface itself (transcript, composer, live updates).
 - [features/chat-workspace.md](./chat-workspace.md) — the parallel personal-assistant chat for the workspace.
+- [features/chat-web-search.md](./chat-web-search.md) — Google Search grounding, intentionally only on the admin assistant (not on this
+  visitor agent).
 - [features/chat-email-tools.md](./chat-email-tools.md) — the visitor agent's three email-shaped tools (contact, project request, OTP
   verify).
 - [features/project-requests.md](./project-requests.md) — the OTP-gated project-request flow.
@@ -74,10 +76,10 @@ Every `chatMessageCreate` carries a `currentPagePath` argument — the route the
 `chatAssistantTurnRunDetached({ …, currentPagePath })` and the agent factory inlines it into `agentVisitorAboutCem`'s system prompt for that
 turn only. Nothing is persisted — the path is a per-turn signal.
 
-The motivating behaviour is "the visitor just scrolled through my projects page and asks 'tell me more'." Without the path, the agent has
-to guess; with it, the agent can anchor the answer to the route the visitor was probably reading on. The prompt explicitly tells the agent
-that the path itself is the only signal — it has no rendered DOM, no list of what's on the page — so it must not invent contents it
-hasn't been given elsewhere in the prompt.
+The motivating behaviour is "the visitor just scrolled through my projects page and asks 'tell me more'." Without the path, the agent has to
+guess; with it, the agent can anchor the answer to the route the visitor was probably reading on. The prompt explicitly tells the agent that
+the path itself is the only signal — it has no rendered DOM, no list of what's on the page — so it must not invent contents it hasn't been
+given elsewhere in the prompt.
 
 Cadence notes:
 

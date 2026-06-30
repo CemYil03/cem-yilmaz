@@ -1,4 +1,4 @@
-import type { LanguageModel } from 'ai';
+import type { LanguageModel, Tool } from 'ai';
 import type { Database, DatabaseTransaction } from '../db';
 import type { ChatUpdateWirePayload } from '../graphql/chatUpdateWirePayload';
 import type { QueuedJobDefinition } from '../jobs/types';
@@ -50,6 +50,14 @@ export interface ServerRuntime {
         // less often than the analyzer (threshold-triggered) and reads every
         // active observation, so the higher per-call cost is amortized.
         profileSynthesizerModel: () => LanguageModel;
+        // Provider-executed web search. Gemini runs the search server-side
+        // and rides the call back through the normal `step.toolCalls` /
+        // `step.toolResults` channel — there is no `execute` we own. Citations
+        // come back on `providerMetadata.google.groundingMetadata`. Exposed
+        // as a factory so the provider binding lives in one place; agents
+        // wrap it via `src/server/agents/toolWebSearch.ts`. See
+        // `docs/features/chat-web-search.md`.
+        webSearchTool: () => Tool;
     };
     // Server-side rendering capability — drives a singleton headless
     // Chromium against an internal `/server/*` route to produce an image

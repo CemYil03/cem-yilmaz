@@ -3,7 +3,8 @@ import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { currentDateForAgent, googleAgentProviderOptions } from './agentScaffolding';
+import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
+import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { cvSummaryForAgent } from './cvSummaryForAgent';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 import { toolSendEmailToCem } from './toolSendEmailToCem';
@@ -145,14 +146,18 @@ export async function agentVisitorAboutCem({
     onStepEnd,
 }: AgentChatOptions) {
     const cvSummary = await cvSummaryForAgent(serverRuntime);
+    // Visitor chat is not user-selectable — always runs on the catalog
+    // fallback (Flash). Resolved here so the same id binds both the model and
+    // the provider options (Flash-specific `thinkingBudget: 0`).
+    const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         // Provider, model id, and API key are bound on the runtime
         // (`serverRuntimeCreate`) so this agent can be exercised against a
         // mock `LanguageModel` in tests without ever calling the real Gemini
         // endpoint.
-        model: serverRuntime.ai.userConversationModel(),
+        model: serverRuntime.ai.userConversationModel(modelId),
         onStepEnd,
-        providerOptions: googleAgentProviderOptions,
+        providerOptions: googleAgentProviderOptionsFor(modelId),
         stopWhen: [
             // Hard ceiling so a runaway loop can't burn through quota. Raised
             // from 5 to 8 because the email/project-request flows can chain

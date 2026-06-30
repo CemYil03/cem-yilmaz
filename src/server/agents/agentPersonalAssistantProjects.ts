@@ -2,7 +2,8 @@ import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { googleAgentProviderOptions, currentDateForAgent } from './agentScaffolding';
+import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
+import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
 import { toolProjectActivityUpsert } from './toolProjectActivityUpsert';
 import { toolProjectDelete } from './toolProjectDelete';
@@ -114,10 +115,14 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, m
     const snapshot = await projectsSnapshotForAgent(serverRuntime);
     const readContext = { serverRuntime, session };
     const mutationContext = { serverRuntime, session, mutations };
+    // Sub-agent always runs on the catalog fallback (Flash) — it does not see
+    // the orchestrator's per-turn model pick. Resolved here so the same id
+    // binds both the model and the Flash-specific provider options.
+    const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
-        model: serverRuntime.ai.userConversationModel(),
+        model: serverRuntime.ai.userConversationModel(modelId),
         onStepEnd,
-        providerOptions: googleAgentProviderOptions,
+        providerOptions: googleAgentProviderOptionsFor(modelId),
         // Tight ceiling — the sub-agent should rarely need more than a list +
         // a few mutations + a final text. If it runs out of steps, the
         // delegate tool surfaces the partial mutation log to the orchestrator.

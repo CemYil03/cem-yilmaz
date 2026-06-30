@@ -101,11 +101,26 @@ Replace `agentUserConversation.ts` with two siblings:
   `chatMessagesToolCall.toolResult` via the existing runner branch — no approval gating because the side effects are bounded by the existing
   visitor rate-limit + OTP firewall. See [features/chat-email-tools.md](../features/chat-email-tools.md).
 - `src/server/agents/agentPersonalAssistant.ts` — personal-assistant system prompt, real tools (e.g. `toolNoteCreate`,
-  `toolCalendarEventCreate`), all gated by `needsApproval` per the existing approval lifecycle.
+  `toolCalendarEventCreate`), all gated by `needsApproval` per the existing approval lifecycle. Also registers Gemini's provider-executed
+  `googleSearch` grounding tool — see [features/chat-web-search.md](../features/chat-web-search.md). The visitor agent does not get search;
+  capability asymmetry is the whole point of splitting the agents.
 
 Shared scaffolding (provider bindings, a `currentDateForAgent()` line every system prompt embeds so Gemini doesn't anchor on its training
 cutoff, `stopWhen` rules, the `onStepEnd` plumbing) lives in a tiny helper, not a base class — each agent file is self-contained enough to
-skim.
+skim. Provider options are a function (`googleAgentProviderOptionsFor(modelId)`) rather than a constant: Flash models get
+`thinkingConfig.thinkingBudget: 0` to avoid Gemini's `MALFORMED_FUNCTION_CALL` quirk, but Pro models reject `0` with
+`"Budget 0 is invalid. This model only works in thinking mode."` — so Pro keeps the default thinking budget while Flash forces it off. Each
+agent resolves the model id once and passes it to both `serverRuntime.ai.userConversationModel(modelId)` and
+`googleAgentProviderOptionsFor(modelId)` so the two stay in lockstep.
+
+Both factories destructure the same `AgentChatOptions` shape, which now includes a `currentPagePath: string | null` field carrying the route
+the user's browser was on when they hit Send. The visitor's `chatMessageCreate` and the admin's `admin.chatMessageCreate` both accept an
+optional `currentPagePath: String` argument; the command forwards it through `chatAssistantTurnRunDetached` into the factory, and each
+factory's `buildSystemPrompt` inlines a short page-context block when the value is present. The path is **not persisted** — it's a per-turn
+signal that lets the agent anchor "tell me more" / "what am I looking at" against the visible surface (visitor) or disambiguate short
+references against the encoded route (admin: `/workspace/projects/<projectId>`). See [features/chat-visitor.md](../features/chat-visitor.md)
+and [features/chat-workspace.md](../features/chat-workspace.md) for the per-surface plumbing. `chatInputCollectionRespond` and
+`chatToolApprovalRespond` pass `null` — they resume an already-mounted turn, so there's no fresh page to anchor.
 
 ### Dispatch
 

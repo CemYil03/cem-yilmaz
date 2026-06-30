@@ -200,6 +200,23 @@
         background-color: var(--selection);
         color: var(--selection-foreground);
     }
+
+    /* iOS Safari zooms the layout whenever a focused form control's
+       computed `font-size` is `< 16px` — and it stays zoomed after
+       blur, so the user is left with a horizontally-scrolled page
+       every time they tap the chat composer. The fix is to keep
+       every focusable form control at 16px on touch devices; the
+       desktop 14px density (`md:text-sm`) is preserved because
+       `pointer: coarse` only matches phones / tablets. The rule
+       sits in the base layer so it applies regardless of whether a
+       component remembers to add `text-base` itself. */
+    @media (pointer: coarse) {
+        input,
+        textarea,
+        select {
+            font-size: 16px;
+        }
+    }
 }
 
 @keyframes nav-progress-grow {

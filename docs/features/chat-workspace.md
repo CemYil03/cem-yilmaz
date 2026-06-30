@@ -8,6 +8,7 @@ opens it (with the typed message fired as the first turn).
 See also:
 
 - [features/chat-visitor.md](./chat-visitor.md) — the parallel public visitor chat. Same primitive (right-side sheet), different agent.
+- [features/chat-web-search.md](./chat-web-search.md) — the admin assistant's Google Search grounding tool. Not on the visitor agent.
 - [features/workspace-hub.md](./workspace-hub.md) — the hub composer that opens this sheet, plus the workspace navigation shell.
 - [features/chat.md](./chat.md) — the chat foundation (transcript, composer, live updates) shared by both sheets.
 - [architecture/multi-agent-chat.md](../architecture/multi-agent-chat.md) — how visitor and admin chats split at the GraphQL namespace level
@@ -87,8 +88,8 @@ factory, which inlines it into the system prompt for that turn only. Nothing is 
 
 The win is that short references resolve against the right surface: "this project" on `/workspace/projects/abc…` is the project whose id
 encodes in the path, and "what am I looking at" on `/workspace/projects` is the projects board. The agent is told the path is the only
-signal — no rendered DOM, no row payload — so it must not invent specifics it wasn't otherwise given. It already has
-`delegateToProjects` to fetch the live board snapshot when it actually needs structured project data.
+signal — no rendered DOM, no row payload — so it must not invent specifics it wasn't otherwise given. It already has `delegateToProjects` to
+fetch the live board snapshot when it actually needs structured project data.
 
 ## Recent chats
 

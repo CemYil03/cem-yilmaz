@@ -71,6 +71,12 @@ export function serverRuntimeCreate(): ServerRuntime {
             // four text fields; runs only when the threshold trips or on
             // explicit request, so a more capable model is worth it.
             profileSynthesizerModel: () => google('gemini-2.5-pro'),
+            // Google Search grounding. Gemini executes the search itself
+            // and rides the result back on the same tool-call channel as
+            // function tools; we just hand the agent the tool object. The
+            // provider binding stays here so `@ai-sdk/google` is not imported
+            // from agent files. See `docs/features/chat-web-search.md`.
+            webSearchTool: () => google.tools.googleSearch({}),
         },
         browser: {
             // The renderer is a long-lived singleton inside `browserCapture`;
