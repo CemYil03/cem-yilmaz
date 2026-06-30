@@ -37,6 +37,7 @@ describe('chatMessageCreate', () => {
 
         // Act
         const result = await chatMessageCreate(
+            null,
             { chatId: null, message: 'hello world', assistantOptions: streamingAssistantOptions },
             requestingSession,
             serverRuntime,
@@ -91,6 +92,7 @@ describe('chatMessageCreate', () => {
 
         // Act
         const result = await chatMessageCreate(
+            null,
             { chatId: null, message: 'silent send', assistantOptions: noStreamOptions },
             requestingSession,
             serverRuntime,
@@ -122,6 +124,7 @@ describe('chatMessageCreate', () => {
 
         // Act
         const result = await chatMessageCreate(
+            null,
             {
                 chatId: null,
                 message: 'see attached',
@@ -168,6 +171,7 @@ describe('chatMessageCreate', () => {
         // Act — A passes B's file-upload id; the command's try/catch should
         // log and return null instead of persisting a half-row.
         const result = await chatMessageCreate(
+            null,
             {
                 chatId: null,
                 message: 'borrowed!',

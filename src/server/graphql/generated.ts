@@ -270,6 +270,7 @@ export interface GqlSAdminProfile {
     prose: Scalars['String']['output'];
     psychProfile: Scalars['String']['output'];
     summary: Scalars['String']['output'];
+    synthesisInProgress: Scalars['Boolean']['output'];
     synthesisModelId?: Maybe<Scalars['String']['output']>;
     synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
 }
@@ -541,8 +542,7 @@ export interface GqlSCvEducation {
     degreeDe: Scalars['String']['output'];
     degreeEn: Scalars['String']['output'];
     endDate: Scalars['Date']['output'];
-    institutionDe: Scalars['String']['output'];
-    institutionEn: Scalars['String']['output'];
+    institution: Scalars['String']['output'];
     notesDe: Scalars['String']['output'];
     notesEn: Scalars['String']['output'];
     position: Scalars['Int']['output'];
@@ -556,8 +556,7 @@ export type GqlSCvEducationInput = {
     degreeDe: Scalars['String']['input'];
     degreeEn: Scalars['String']['input'];
     endDate: Scalars['Date']['input'];
-    institutionDe: Scalars['String']['input'];
-    institutionEn: Scalars['String']['input'];
+    institution: Scalars['String']['input'];
     notesDe: Scalars['String']['input'];
     notesEn: Scalars['String']['input'];
     position: Scalars['Int']['input'];
@@ -568,8 +567,7 @@ export type GqlSCvEducationInput = {
 
 export interface GqlSCvExperience {
     __typename?: 'CvExperience';
-    companyDe: Scalars['String']['output'];
-    companyEn: Scalars['String']['output'];
+    company: Scalars['String']['output'];
     cvExperienceId: Scalars['ID']['output'];
     descriptionDe: Scalars['String']['output'];
     descriptionEn: Scalars['String']['output'];
@@ -583,8 +581,7 @@ export interface GqlSCvExperience {
 }
 
 export type GqlSCvExperienceInput = {
-    companyDe: Scalars['String']['input'];
-    companyEn: Scalars['String']['input'];
+    company: Scalars['String']['input'];
     cvExperienceId?: InputMaybe<Scalars['ID']['input']>;
     descriptionDe: Scalars['String']['input'];
     descriptionEn: Scalars['String']['input'];
@@ -1576,6 +1573,7 @@ export type GqlSAdminProfileResolvers<
     prose?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     psychProfile?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     summary?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    synthesisInProgress?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
     synthesisModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     synthesizedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
 }>;
@@ -1952,8 +1950,7 @@ export type GqlSCvEducationResolvers<
     degreeDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     degreeEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     endDate?: Resolver<GqlSResolversTypes['Date'], ParentType, ContextType>;
-    institutionDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
-    institutionEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    institution?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     notesDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     notesEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
@@ -1966,8 +1963,7 @@ export type GqlSCvExperienceResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['CvExperience'] = GqlSResolversParentTypes['CvExperience'],
 > = ResolversObject<{
-    companyDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
-    companyEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    company?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     cvExperienceId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     descriptionDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     descriptionEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
@@ -2450,8 +2446,7 @@ export function GqlSCvEducationInputSchema(): z.ZodObject<Properties<GqlSCvEduca
         degreeDe: z.string(),
         degreeEn: z.string(),
         endDate: z.string(),
-        institutionDe: z.string(),
-        institutionEn: z.string(),
+        institution: z.string(),
         notesDe: z.string(),
         notesEn: z.string(),
         position: z.number(),
@@ -2463,8 +2458,7 @@ export function GqlSCvEducationInputSchema(): z.ZodObject<Properties<GqlSCvEduca
 
 export function GqlSCvExperienceInputSchema(): z.ZodObject<Properties<GqlSCvExperienceInput>> {
     return z.object({
-        companyDe: z.string(),
-        companyEn: z.string(),
+        company: z.string(),
         cvExperienceId: z.string().nullish(),
         descriptionDe: z.string(),
         descriptionEn: z.string(),

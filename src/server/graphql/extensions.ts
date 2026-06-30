@@ -16,7 +16,7 @@ declare module './generated' {
         userId?: string;
     }
     export interface GqlSAdminMutation {
-        userId?: string;
+        userId: string;
     }
 
     // --- ChatMessage union --------------------------------------------------

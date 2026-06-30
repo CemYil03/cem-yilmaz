@@ -6,6 +6,7 @@ import type { GqlSAdminMutationCvSkillUpsertArgs, GqlSCvSkill, GqlSSession } fro
 import { toGqlCvSkill } from '../mappers/toGqlCvSkill';
 
 export async function cvSkillUpsert(
+    userId: string,
     args: GqlSAdminMutationCvSkillUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -21,14 +22,18 @@ export async function cvSkillUpsert(
     };
 
     try {
+        let row;
         if (input.cvSkillId) {
             const [updated] = await serverRuntime.db.update(cvSkill).set(payload).where(eq(cvSkill.cvSkillId, input.cvSkillId)).returning();
             if (!updated) throw new Error(`cvSkillUpsert: row ${input.cvSkillId} not found`);
-            return toGqlCvSkill(updated);
+            row = updated;
+        } else {
+            const [inserted] = await serverRuntime.db.insert(cvSkill).values(payload).returning();
+            if (!inserted) throw new Error('cvSkillUpsert: insert returned no rows');
+            row = inserted;
         }
-        const [inserted] = await serverRuntime.db.insert(cvSkill).values(payload).returning();
-        if (!inserted) throw new Error('cvSkillUpsert: insert returned no rows');
-        return toGqlCvSkill(inserted);
+        await serverRuntime.publish.userUpdates({ userId });
+        return toGqlCvSkill(row);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

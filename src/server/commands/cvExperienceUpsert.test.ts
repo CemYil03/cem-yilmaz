@@ -11,8 +11,7 @@ const baseInput = (overrides: Partial<GqlSAdminMutationCvExperienceUpsertArgs['i
         cvExperienceId: null,
         roleDe: 'Test-Rolle',
         roleEn: 'Test role',
-        companyDe: 'Test GmbH',
-        companyEn: 'Test Inc.',
+        company: 'Test GmbH',
         startDate: '2024-01-01',
         endDate: '2024-06-30',
         descriptionDe: 'Test-Beschreibung',
@@ -30,7 +29,7 @@ describe('cvExperienceUpsert', () => {
         const { serverRuntime, requestingSession } = await commandSetup();
 
         // Act
-        const result = await cvExperienceUpsert(baseInput({ position: 100 }), requestingSession, serverRuntime);
+        const result = await cvExperienceUpsert(requestingSession.userId!, baseInput({ position: 100 }), requestingSession, serverRuntime);
 
         // Assert — return shape mirrors the persisted row
         expect(result.roleDe).toBe('Test-Rolle');
@@ -46,10 +45,11 @@ describe('cvExperienceUpsert', () => {
     it('updates the existing row when cvExperienceId is supplied', async () => {
         // Arrange — seed a row, then upsert with the same id and new values
         const { serverRuntime, requestingSession } = await commandSetup();
-        const created = await cvExperienceUpsert(baseInput({ position: 200 }), requestingSession, serverRuntime);
+        const created = await cvExperienceUpsert(requestingSession.userId!, baseInput({ position: 200 }), requestingSession, serverRuntime);
 
         // Act
         const updated = await cvExperienceUpsert(
+            requestingSession.userId!,
             baseInput({
                 cvExperienceId: created.cvExperienceId,
                 roleDe: 'Aktualisierte Rolle',
@@ -74,7 +74,12 @@ describe('cvExperienceUpsert', () => {
 
         // Act + Assert
         await expect(
-            cvExperienceUpsert(baseInput({ cvExperienceId: missingId, position: 0 }), requestingSession, serverRuntime),
+            cvExperienceUpsert(
+                requestingSession.userId!,
+                baseInput({ cvExperienceId: missingId, position: 0 }),
+                requestingSession,
+                serverRuntime,
+            ),
         ).rejects.toThrow(/not found/);
     });
 
@@ -83,7 +88,12 @@ describe('cvExperienceUpsert', () => {
         const { serverRuntime, requestingSession } = await commandSetup();
 
         // Act — `null` endDate is the canonical "heute" representation
-        const result = await cvExperienceUpsert(baseInput({ position: 300, endDate: null }), requestingSession, serverRuntime);
+        const result = await cvExperienceUpsert(
+            requestingSession.userId!,
+            baseInput({ position: 300, endDate: null }),
+            requestingSession,
+            serverRuntime,
+        );
 
         // Assert
         expect(result.endDate).toBeNull();

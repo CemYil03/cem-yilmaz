@@ -49,6 +49,7 @@ export async function projectFileCreateFromMarkdown(input: ProjectFileCreateFrom
     });
 
     return projectFileUpsert(
+        session.userId,
         {
             input: {
                 projectFileId: null,

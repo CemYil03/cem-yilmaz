@@ -20,7 +20,11 @@ Add `isAdmin: boolean` to the `Users` table.
   non-admin caller gets `currentSession.user.admin = null` instead of an exception — the public landing page can ask "is the current visitor
   an admin?" with a single field check, and workspace pages can render an inline "no access" surface when they encounter null.
 - **Writes.** `Mutation.admin: AdminMutation!` is non-nullable and gated by `guardAdminMutation`, which still throws on non-admins. Writes
-  are not composable from the public surface, so the throw-on-mismatch contract is correct there.
+  are not composable from the public surface, so the throw-on-mismatch contract is correct there. The guard also stamps the admin's `userId`
+  onto the returned `AdminMutation` shell, so every admin-mutation resolver has it on the parent — each command ends with
+  `serverRuntime.publish.userUpdates({ userId })`, fanning out a single notification per admin write so any `User`-bound subscription
+  re-resolves regardless of which mutation moved. Visitor (public-scope) sends of the chat mutations remain quiet — they own no `User` row
+  to refresh.
 
 ```ts
 // src/server/db/schema.ts

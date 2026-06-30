@@ -13,13 +13,13 @@ const seed = async (
     position: number,
 ) =>
     cvExperienceUpsert(
+        requestingSession.userId!,
         {
             input: {
                 cvExperienceId: null,
                 roleDe: role,
                 roleEn: role,
-                companyDe: 'c',
-                companyEn: 'c',
+                company: 'c',
                 startDate: '2024-01-01',
                 endDate: '2024-12-31',
                 descriptionDe: 'd',
@@ -42,7 +42,12 @@ describe('cvExperienceReorder', () => {
         const c = await seed(serverRuntime, requestingSession, 'C', 2);
 
         // Act — reorder to C, A, B
-        await cvExperienceReorder({ orderedIds: [c.cvExperienceId, a.cvExperienceId, b.cvExperienceId] }, requestingSession, serverRuntime);
+        await cvExperienceReorder(
+            requestingSession.userId!,
+            { orderedIds: [c.cvExperienceId, a.cvExperienceId, b.cvExperienceId] },
+            requestingSession,
+            serverRuntime,
+        );
 
         // Assert — positions follow the new order, ascending
         const rows = await testDb.select().from(cvExperience).orderBy(asc(cvExperience.position));

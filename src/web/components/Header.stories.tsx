@@ -61,7 +61,7 @@ export const Breadcrumbs: Story = {
             { label: 'Workspace', to: '/workspace' },
             { label: 'Software', icon: CodeXmlIcon },
         ],
-        hideSelectors: true,
+        hideLanguageSelector: true,
         chatVariant: 'workspace',
     },
 };
@@ -74,7 +74,7 @@ export const BreadcrumbsDeep: Story = {
             { label: 'Projects', icon: FolderKanbanIcon, iconOnly: true, to: '/workspace/projects' },
             { label: 'Site relaunch' },
         ],
-        hideSelectors: true,
+        hideLanguageSelector: true,
         chatVariant: 'workspace',
     },
 };

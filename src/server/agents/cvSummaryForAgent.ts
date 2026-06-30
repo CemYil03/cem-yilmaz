@@ -61,7 +61,7 @@ function experienceLine(row: CvExperience): string {
     const start = formatGermanDate(row.startDate);
     const end = row.endDate ? formatGermanDate(row.endDate) : 'heute';
     const tech = row.technologies.length > 0 ? ` — Technologien: ${row.technologies.join(', ')}` : '';
-    return `- **${start} – ${end}**, ${row.roleDe} bei ${row.companyDe}: ${row.descriptionDe}${tech}`;
+    return `- **${start} – ${end}**, ${row.roleDe} bei ${row.company}: ${row.descriptionDe}${tech}`;
 }
 
 function educationLine(row: CvEducation): string {
@@ -70,7 +70,7 @@ function educationLine(row: CvEducation): string {
     const range = start ? `${start} – ${end}` : end;
     const subject = row.subjectDe ? ` (${row.subjectDe})` : '';
     const notes = row.notesDe ? ` — ${row.notesDe.replace(/\n+/g, ', ')}` : '';
-    return `- **${range}**, ${row.degreeDe}${subject} an ${row.institutionDe}${notes}`;
+    return `- **${range}**, ${row.degreeDe}${subject} an ${row.institution}${notes}`;
 }
 
 function skillBlock(skills: CvSkill[]): string[] {

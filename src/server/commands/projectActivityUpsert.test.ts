@@ -41,6 +41,7 @@ describe('projectActivityUpsert — atomic attach', () => {
         const projectId = await projectSeed();
 
         const activity = await projectActivityUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     activityId: null,
@@ -85,6 +86,7 @@ describe('projectActivityUpsert — atomic attach', () => {
         const fileUploadId = await uploadSeed(user.userId);
 
         const activity = await projectActivityUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     activityId: null,
@@ -127,6 +129,7 @@ describe('projectActivityUpsert — atomic attach', () => {
 
         await expect(
             projectActivityUpsert(
+                requestingSession.userId!,
                 {
                     input: {
                         activityId: null,
@@ -170,6 +173,7 @@ describe('projectActivityUpsert — atomic attach', () => {
 
         await expect(
             projectActivityUpsert(
+                requestingSession.userId!,
                 {
                     input: {
                         activityId: null,
@@ -207,6 +211,7 @@ describe('projectActivityUpsert — direction normalization', () => {
         const projectId = await projectSeed();
 
         const note = await projectActivityUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     activityId: null,
@@ -243,6 +248,7 @@ describe('projectActivityUpsert — direction normalization', () => {
         const projectId = await projectSeed();
 
         const contact = await projectActivityUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     activityId: null,
@@ -273,6 +279,7 @@ describe('projectActivityUpsert — direction normalization', () => {
         expect(contact.direction).toBe('incoming');
 
         const offer = await projectActivityUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     activityId: null,

@@ -72,9 +72,11 @@ function WorkspaceLayout() {
     }
     return (
         <WorkspaceAssistantChatProvider chatConfig={chatConfig}>
-            {/* `defaultOpen` is the SSR-time fallback; the cookie set by the
-             *  shadcn primitive overrides it after the first toggle, so the
-             *  user's last choice is what hydrates on subsequent loads.
+            {/* `defaultOpen={false}` keeps the assistant sidebar closed on
+             *  first visit — the workspace pages are the focus and the
+             *  assistant is summoned via the header button. The cookie set by
+             *  the shadcn primitive overrides it after the first toggle, so
+             *  the user's last choice is what hydrates on subsequent loads.
              *
              *  `--sidebar-width` is set HERE (not on `<Sidebar>` deeper in
              *  the tree) because shadcn's `sidebar-gap` div — the spacer
@@ -83,7 +85,11 @@ function WorkspaceLayout() {
              *  affects the visible sidebar column, not the inset, which
              *  would let the blur and the inset's right edge run under
              *  the sidebar. */}
-            <SidebarProvider className="min-h-screen" style={{ '--sidebar-width': `${widthPx}px` } as React.CSSProperties}>
+            <SidebarProvider
+                defaultOpen={false}
+                className="min-h-screen"
+                style={{ '--sidebar-width': `${widthPx}px` } as React.CSSProperties}
+            >
                 <SidebarInset className="flex min-h-screen flex-col">
                     <WorkspaceHeader />
                     <Outlet />

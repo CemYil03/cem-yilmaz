@@ -12,7 +12,7 @@ import {
     WavesIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useMutation } from 'urql';
 import { z } from 'zod';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
@@ -135,10 +135,27 @@ function WorkspaceProfilePage() {
 // private to me") is part of the layout, not a buried explanation.
 function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileData; locale: Locale; onSynthesized: () => void }) {
     const [tab, setTab] = useState<ProfileTab>('summary');
-    const [{ fetching: synthesizing }, synthesize] = useMutation(WorkspaceProfileSynthesizeRequestDocument);
-    const [justQueued, setJustQueued] = useState(false);
+    const [{ fetching: enqueuing }, synthesize] = useMutation(WorkspaceProfileSynthesizeRequestDocument);
 
     const isEmpty = !profile.summary && !profile.prose && !profile.psychProfile;
+    // The enqueue itself takes ~50ms; the job runs for a few seconds. The
+    // backend exposes the real liveness via `synthesisInProgress` (derived
+    // from pg-boss), so the button reflects "actually running" rather than
+    // a hand-tuned timeout. We OR `enqueuing` so the spinner appears the
+    // instant the user clicks — before the next loader refresh confirms
+    // the queued state.
+    const running = profile.synthesisInProgress || enqueuing;
+
+    // While a synthesis is queued/active, poll the route loader so the page
+    // picks up the new artifacts the moment the job finishes. The effect
+    // self-cancels as soon as `running` flips back to `false`.
+    useEffect(() => {
+        if (!running) return;
+        const id = setInterval(() => {
+            onSynthesized();
+        }, 1500);
+        return () => clearInterval(id);
+    }, [running, onSynthesized]);
 
     const synthesizedLabel = profile.synthesizedAt
         ? formatDistanceToNow(parseISO(profile.synthesizedAt as unknown as string), {
@@ -178,22 +195,19 @@ function SynthesisHero({ profile, locale, onSynthesized }: { profile: ProfileDat
                     <Button
                         variant="outline"
                         size="sm"
-                        disabled={synthesizing}
+                        disabled={running}
                         onClick={async () => {
                             const result = await synthesize({});
+                            // Refresh once on enqueue so `synthesisInProgress`
+                            // flips to `true` from the loader; the poll
+                            // effect above keeps the page fresh from there.
                             if (result.data?.admin.profileSynthesizeRequest.success) {
-                                setJustQueued(true);
-                                // Poll for ~6s after enqueue — synthesis is a few seconds
-                                // and the user shouldn't have to refresh.
-                                setTimeout(() => {
-                                    onSynthesized();
-                                    setJustQueued(false);
-                                }, 6000);
+                                onSynthesized();
                             }
                         }}
                     >
-                        <RefreshCwIcon className={cn(synthesizing && 'animate-spin')} />
-                        {justQueued
+                        <RefreshCwIcon className={cn(running && 'animate-spin')} />
+                        {running
                             ? { de: 'Wird verarbeitet…', en: 'Processing…' }[locale]
                             : { de: 'Jetzt neu synthetisieren', en: 'Re-synthesize now' }[locale]}
                     </Button>

@@ -39,6 +39,14 @@ A new editable-list domain follows the same shape every time:
 5. **Admin page** — `/workspace/<thing>` route, `noindex`, gated server-side by `guardAdminMutation`. One inline form open at a time, single
    `useQuery` driving the list, mutations re-fetch with `requestPolicy: 'network-only'`.
 
+### When a field is not actually bilingual
+
+The `*De` / `*En` pair is for **translatable prose** — roles, descriptions, degree names, notes. **Proper nouns** read the same in both
+locales: company names (`SAP SE`, `peopleeat`), institution names (`Duale Hochschule Baden-Württemberg Karlsruhe`), skill labels
+(`TypeScript`). Those live on a single untranslated column — `cvExperience.company`, `cvEducation.institution`, `cvSkill.label`. Pairing
+them would force the editor to type the same string twice and let the two halves drift. The rule: **if the German and English values would
+be identical for every row you can imagine, drop the pair**.
+
 ## Conventions for static identity content
 
 1. **Location** — `src/web/content/<name>.ts`. Under `web/` so the client can import it without going through the TanStack Start server-only

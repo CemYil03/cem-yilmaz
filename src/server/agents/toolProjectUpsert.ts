@@ -2,9 +2,10 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { projectUpsert } from '../commands/projectUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSProjectCreateSchema, GqlSProjectStatusSchema } from '../graphql/generated';
+import { GqlSProjectStatusSchema } from '../graphql/generated';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
+import { requireAdminUserId } from './requireAdminUserId';
 
 // Create-or-update a workspace project. Thin wrapper around
 // `commands/projectUpsert` — every constraint (position defaulting, source
@@ -12,12 +13,19 @@ import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects'
 // pushes one entry onto the shared mutation log so `toolDelegateToProjects`
 // can surface it back to the orchestrator.
 //
-// Field set single-sources from `GqlSProjectCreateSchema()`; each field is
-// re-described and tightened (`.uuid()`, length bounds, ISO-string for the
-// date scalars) so the LLM gets a usable JSON-Schema rendering of the same
-// SDL input shape.
+// The input schema is hand-built here rather than derived from
+// `GqlSProjectCreateSchema()`. The generated schema carries `z.date()` for
+// the two timestamp scalars; under `structuredOutputs: true` the AI SDK
+// converts the tool schema to JSON Schema for Gemini's constrained
+// decoding, and `z.date()` has no clean JSON-Schema representation — the
+// `MALFORMED_FUNCTION_CALL` failures the user hit on a plain "create
+// project X" turn trace back to this. The wire shape is always JSON, so
+// every timestamp field declares `z.string()` here and the `execute`
+// converts with `new Date(...)`. Only the GraphQL enum schema
+// (`GqlSProjectStatusSchema`) is reused so a future status addition
+// surfaces as a TS error here rather than a runtime mismatch.
 
-const projectUpsertInputSchema = GqlSProjectCreateSchema().extend({
+const projectUpsertInputSchema = z.object({
     projectId: z
         .uuid()
         .nullish()
@@ -68,6 +76,7 @@ export function toolProjectUpsert({ serverRuntime, session, mutations }: Project
         inputSchema: projectUpsertInputSchema,
         execute: async (input) => {
             const result = await projectUpsert(
+                requireAdminUserId(session),
                 {
                     input: {
                         projectId: input.projectId ?? null,

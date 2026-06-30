@@ -8,6 +8,7 @@ import { toGqlProjectFile } from '../mappers/toGqlProjectFile';
 // the URQL cache update is a straight write — same shape as the upsert
 // mutation's return.
 export async function projectFileTogglePin(
+    userId: string,
     args: GqlSAdminMutationProjectFileTogglePinArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -25,6 +26,7 @@ export async function projectFileTogglePin(
             .where(eq(fileUploads.fileUploadId, updated.fileUploadId))
             .limit(1);
         if (!upload) throw new Error(`projectFileTogglePin: upload ${updated.fileUploadId} not found`);
+        await serverRuntime.publish.userUpdates({ userId });
         return toGqlProjectFile(updated, upload);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

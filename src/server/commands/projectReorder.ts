@@ -9,6 +9,7 @@ import type { GqlSAdminMutationProjectReorderArgs, GqlSMutationResult, GqlSSessi
 // CV skill reorder. Transactioned so a partial write can't leave duplicate
 // positions inside a column.
 export async function projectReorder(
+    userId: string,
     args: GqlSAdminMutationProjectReorderArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -20,6 +21,7 @@ export async function projectReorder(
                 await transaction.update(projects).set({ position, updatedAt: new Date() }).where(eq(projects.projectId, projectId));
             }
         });
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

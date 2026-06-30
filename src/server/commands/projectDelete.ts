@@ -7,6 +7,7 @@ import type { GqlSAdminMutationProjectDeleteArgs, GqlSMutationResult, GqlSSessio
 // every project-bound task is wiped along with it. Standalone todos
 // (projectId IS NULL) are untouched.
 export async function projectDelete(
+    userId: string,
     args: GqlSAdminMutationProjectDeleteArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -19,6 +20,7 @@ export async function projectDelete(
         if (deleted.length === 0) {
             throw new Error(`projectDelete: row ${args.projectId} not found`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

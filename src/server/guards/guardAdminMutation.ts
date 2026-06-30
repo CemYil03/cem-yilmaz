@@ -24,5 +24,5 @@ export async function guardAdminMutation(requestingSession: GqlSSession, serverR
     if (!row?.isAdmin) {
         throw new Error('Unauthorized');
     }
-    return {} as GqlSAdminMutation;
+    return { userId: requestingSession.userId } as GqlSAdminMutation;
 }

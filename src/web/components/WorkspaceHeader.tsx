@@ -21,15 +21,15 @@ import { Header } from './Header';
 // Workspace-wide header. Mounted once at `src/routes/{-$locale}/workspace.tsx`,
 // so every workspace page inherits the same chrome:
 //
-//   logo (links to `/{-$locale}`)  workspace / <icon> <where we are>           Assistant
+//   logo (links to `/{-$locale}`)  workspace / <icon> <where we are>           Assistant  Theme
 //
 // The trail is derived from the current pathname against the title map below;
 // the first crumb always links back to `/workspace`, the trailing crumb is
 // rendered as the current page (with its focus-area icon — the workspace pages
 // don't render an on-page title row, so the icon lives here instead).
-// Language and theme selectors are hidden — the workspace is a private surface
-// with its own chrome and those controls belong to the public site; only the
-// assistant chat button stays in the right cluster.
+// The language selector is hidden — the workspace is English-only — but the
+// theme selector stays so the dark/light/auto toggle is available on private
+// surfaces too.
 //
 // Adding a new workspace route: add an entry to `WORKSPACE_TITLES` so the
 // breadcrumb has a label, and (optionally) one to `WORKSPACE_ICONS` so the
@@ -182,5 +182,5 @@ export function WorkspaceHeader() {
     // sitting narrower than the surface beneath it. See docs/conventions.md
     // (Page width).
     const isHub = crumbs.length === 1;
-    return <Header breadcrumbs={crumbs} hideSelectors chatVariant="workspace" width={isHub ? 'standard' : 'wide'} contained />;
+    return <Header breadcrumbs={crumbs} hideLanguageSelector chatVariant="workspace" width={isHub ? 'standard' : 'wide'} contained />;
 }

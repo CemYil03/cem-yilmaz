@@ -23,6 +23,7 @@ import { toGqlProject } from '../mappers/toGqlProject';
 // the end of the `planning` column (max(position) + 1). On an update,
 // `position` is required and passed through.
 export async function projectUpsert(
+    userId: string,
     args: GqlSAdminMutationProjectUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -118,6 +119,7 @@ export async function projectUpsert(
             };
         });
 
+        await serverRuntime.publish.userUpdates({ userId });
         return toGqlProject(result.project, [], result.sourceRequest);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

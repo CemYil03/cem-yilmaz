@@ -12,6 +12,7 @@ import { toGqlTask } from '../mappers/toGqlTask';
 // timestamp it picked when the user ticked the checkbox so the audit log
 // reflects user intent rather than insert latency.
 export async function taskUpsert(
+    userId: string,
     args: GqlSAdminMutationTaskUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -35,18 +36,22 @@ export async function taskUpsert(
 
     // Phase 2 — single-statement DB call (no transaction needed).
     try {
+        let row;
         if (input.taskId) {
             const [updated] = await serverRuntime.db.update(tasks).set(payload).where(eq(tasks.taskId, input.taskId)).returning();
             if (!updated) {
                 throw new Error(`taskUpsert: row ${input.taskId} not found`);
             }
-            return toGqlTask(updated);
+            row = updated;
+        } else {
+            const [inserted] = await serverRuntime.db.insert(tasks).values(payload).returning();
+            if (!inserted) {
+                throw new Error('taskUpsert: insert returned no rows');
+            }
+            row = inserted;
         }
-        const [inserted] = await serverRuntime.db.insert(tasks).values(payload).returning();
-        if (!inserted) {
-            throw new Error('taskUpsert: insert returned no rows');
-        }
-        return toGqlTask(inserted);
+        await serverRuntime.publish.userUpdates({ userId });
+        return toGqlTask(row);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

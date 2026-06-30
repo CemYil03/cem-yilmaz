@@ -55,7 +55,7 @@ Mounting the chat provider and `<SidebarProvider>` at `workspace.tsx` — one le
 
 ```tsx
 <WorkspaceAssistantChatProvider chatConfig={chatConfig}>
-  <SidebarProvider defaultOpen>
+  <SidebarProvider defaultOpen={false}>
     <SidebarInset className="flex min-h-screen flex-col">
       <WorkspaceHeader />
       <Outlet />
@@ -93,6 +93,11 @@ The sidebar renders, top to bottom:
 
 A 2px drag handle sits on the sidebar's left edge (`md+` only). Pulling it leftward widens the sidebar; pulling it rightward narrows it back
 down to the 42rem default. The new width is committed to `localStorage` on pointer release, so reloads keep the user's chosen width.
+
+During a drag the handle sets `data-resizing="true"` on the `<SidebarProvider>` wrapper. The sidebar primitive
+(`src/web/components/base/sidebar.tsx`) gates its `transition-[width]` / `transition-[left,right,width]` rules on that attribute and
+switches them off while the flag is set, so the sidebar edge tracks the pointer 1:1 instead of chasing through a 200ms ease per
+`pointermove`. The flag is removed on pointer release, restoring the open/close animation.
 
 The transcript / empty state / composer are in `src/web/chat/WorkspaceAssistantChatBody.tsx` so the sidebar is purely the frame.
 

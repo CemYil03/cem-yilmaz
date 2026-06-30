@@ -15,6 +15,9 @@ function DateRangePicker({
     align = 'start',
     numberOfMonths = 2,
     disabled,
+    captionLayout,
+    startMonth,
+    endMonth,
 }: {
     value?: DateRange;
     onValueChange?: (range: DateRange | undefined) => void;
@@ -23,6 +26,17 @@ function DateRangePicker({
     align?: React.ComponentProps<typeof PopoverContent>['align'];
     numberOfMonths?: number;
     disabled?: React.ComponentProps<typeof Calendar>['disabled'];
+    /**
+     * Calendar caption layout. `'label'` (default) renders a plain title with
+     * single-month arrows. `'dropdown'` swaps month and year for selectors so
+     * jumping across many years takes one click each — pick this for ranges
+     * that can span many years.
+     */
+    captionLayout?: React.ComponentProps<typeof Calendar>['captionLayout'];
+    /** Earliest month the navigation allows. Defaults to 100 years before today when a dropdown layout is active. */
+    startMonth?: Date;
+    /** Latest month the navigation allows. Defaults to the end of the current year when a dropdown layout is active. */
+    endMonth?: Date;
 }) {
     return (
         <Popover>
@@ -55,6 +69,9 @@ function DateRangePicker({
                     onSelect={onValueChange}
                     numberOfMonths={numberOfMonths}
                     disabled={disabled}
+                    captionLayout={captionLayout}
+                    startMonth={startMonth}
+                    endMonth={endMonth}
                 />
             </PopoverContent>
         </Popover>

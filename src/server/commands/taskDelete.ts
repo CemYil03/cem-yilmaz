@@ -4,6 +4,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationTaskDeleteArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 export async function taskDelete(
+    userId: string,
     args: GqlSAdminMutationTaskDeleteArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -13,6 +14,7 @@ export async function taskDelete(
         if (deleted.length === 0) {
             throw new Error(`taskDelete: row ${args.taskId} not found`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

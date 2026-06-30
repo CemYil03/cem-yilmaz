@@ -10,6 +10,7 @@ import { toGqlProjectFile } from '../mappers/toGqlProjectFile';
 // first, then calls this with the returned id. `activityId` is honoured
 // only on create.
 export async function projectFileUpsert(
+    userId: string,
     args: GqlSAdminMutationProjectFileUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -48,6 +49,7 @@ export async function projectFileUpsert(
                 .where(eq(fileUploads.fileUploadId, updated.fileUploadId))
                 .limit(1);
             if (!upload) throw new Error(`projectFileUpsert: upload ${updated.fileUploadId} not found`);
+            await serverRuntime.publish.userUpdates({ userId });
             return toGqlProjectFile(updated, upload);
         }
         // Validate the upload exists before inserting so the FK violation
@@ -56,6 +58,7 @@ export async function projectFileUpsert(
         if (!upload) throw new Error(`projectFileUpsert: fileUpload ${input.fileUploadId} not found`);
         const [inserted] = await serverRuntime.db.insert(projectFiles).values(payload).returning();
         if (!inserted) throw new Error('projectFileUpsert: insert returned no rows');
+        await serverRuntime.publish.userUpdates({ userId });
         return toGqlProjectFile(inserted, upload);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

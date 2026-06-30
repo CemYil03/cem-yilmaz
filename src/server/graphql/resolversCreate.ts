@@ -61,6 +61,7 @@ import { cvSkillList } from '../queries/cvSkillList';
 import { profileGet } from '../queries/profileGet';
 import { logsList } from '../queries/logsList';
 import { profileObservationList } from '../queries/profileObservationList';
+import { profileSynthesisInProgressGet } from '../queries/profileSynthesisInProgressGet';
 import { projectRequestsList } from '../queries/projectRequestsList';
 import { projectRequestsInboxCount } from '../queries/projectRequestsInboxCount';
 import { projectsList } from '../queries/projectsList';
@@ -223,12 +224,13 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             chat(_parent: GqlSAdmin, args: GqlSAdminChatArgs, requestingSession: GqlSSession) {
                 return chatFindByScope(args.chatId, 'admin', requestingSession, serverRuntime);
             },
-            // Profile shell — the four scalar fields come straight off the row;
-            // the `observations` field is resolved separately so it can take
-            // arguments and run its own join.
+            // Profile shell — the scalar fields come straight off the row;
+            // `observations` is resolved separately so it can take arguments
+            // and run its own join, and `synthesisInProgress` is resolved
+            // separately because it reads pg-boss, not the `Profile` row.
             async profile(): Promise<GqlSAdminProfile> {
                 const row = await profileGet(serverRuntime.db);
-                return { ...toGqlProfile(row), observations: [] };
+                return { ...toGqlProfile(row), observations: [], synthesisInProgress: false };
             },
             projectRequests(_parent: GqlSAdmin, args: GqlSAdminProjectRequestsArgs, requestingSession: GqlSSession) {
                 return projectRequestsList(args.status ?? null, requestingSession, serverRuntime);
@@ -278,6 +280,10 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                     serverRuntime,
                 );
             },
+            // Derived from pg-boss — see `profileSynthesisInProgressGet`.
+            synthesisInProgress() {
+                return profileSynthesisInProgressGet(serverRuntime);
+            },
         },
         CvQuery: {
             experience(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
@@ -294,157 +300,169 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
         },
         AdminMutation: {
-            chatMessageCreate(_parent: GqlSAdminMutation, args: GqlSAdminMutationChatMessageCreateArgs, requestingSession: GqlSSession) {
-                return chatMessageCreate(args, requestingSession, serverRuntime, ADMIN_DISPATCH);
+            chatMessageCreate({ userId }: GqlSAdminMutation, args: GqlSAdminMutationChatMessageCreateArgs, requestingSession: GqlSSession) {
+                return chatMessageCreate(userId, args, requestingSession, serverRuntime, ADMIN_DISPATCH);
             },
             chatInputCollectionRespond(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationChatInputCollectionRespondArgs,
                 requestingSession: GqlSSession,
             ) {
-                return chatInputCollectionRespond(args, requestingSession, serverRuntime, ADMIN_DISPATCH);
+                return chatInputCollectionRespond(userId, args, requestingSession, serverRuntime, ADMIN_DISPATCH);
             },
             chatToolApprovalRespond(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationChatToolApprovalRespondArgs,
                 requestingSession: GqlSSession,
             ) {
-                return chatToolApprovalRespond(args, requestingSession, serverRuntime, ADMIN_DISPATCH);
+                return chatToolApprovalRespond(userId, args, requestingSession, serverRuntime, ADMIN_DISPATCH);
             },
-            cvExperienceUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvExperienceUpsertArgs, requestingSession: GqlSSession) {
-                return cvExperienceUpsert(args, requestingSession, serverRuntime);
+            cvExperienceUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCvExperienceUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return cvExperienceUpsert(userId, args, requestingSession, serverRuntime);
             },
-            cvExperienceDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvExperienceDeleteArgs, requestingSession: GqlSSession) {
-                return cvExperienceDelete(args, requestingSession, serverRuntime);
+            cvExperienceDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCvExperienceDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return cvExperienceDelete(userId, args, requestingSession, serverRuntime);
             },
             cvExperienceReorder(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationCvExperienceReorderArgs,
                 requestingSession: GqlSSession,
             ) {
-                return cvExperienceReorder(args, requestingSession, serverRuntime);
+                return cvExperienceReorder(userId, args, requestingSession, serverRuntime);
             },
-            cvEducationUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvEducationUpsertArgs, requestingSession: GqlSSession) {
-                return cvEducationUpsert(args, requestingSession, serverRuntime);
+            cvEducationUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvEducationUpsertArgs, requestingSession: GqlSSession) {
+                return cvEducationUpsert(userId, args, requestingSession, serverRuntime);
             },
-            cvEducationDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvEducationDeleteArgs, requestingSession: GqlSSession) {
-                return cvEducationDelete(args, requestingSession, serverRuntime);
+            cvEducationDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvEducationDeleteArgs, requestingSession: GqlSSession) {
+                return cvEducationDelete(userId, args, requestingSession, serverRuntime);
             },
-            cvEducationReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvEducationReorderArgs, requestingSession: GqlSSession) {
-                return cvEducationReorder(args, requestingSession, serverRuntime);
+            cvEducationReorder(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCvEducationReorderArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return cvEducationReorder(userId, args, requestingSession, serverRuntime);
             },
-            cvSkillUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvSkillUpsertArgs, requestingSession: GqlSSession) {
-                return cvSkillUpsert(args, requestingSession, serverRuntime);
+            cvSkillUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvSkillUpsertArgs, requestingSession: GqlSSession) {
+                return cvSkillUpsert(userId, args, requestingSession, serverRuntime);
             },
-            cvSkillDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvSkillDeleteArgs, requestingSession: GqlSSession) {
-                return cvSkillDelete(args, requestingSession, serverRuntime);
+            cvSkillDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvSkillDeleteArgs, requestingSession: GqlSSession) {
+                return cvSkillDelete(userId, args, requestingSession, serverRuntime);
             },
-            cvSkillReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvSkillReorderArgs, requestingSession: GqlSSession) {
-                return cvSkillReorder(args, requestingSession, serverRuntime);
+            cvSkillReorder({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvSkillReorderArgs, requestingSession: GqlSSession) {
+                return cvSkillReorder(userId, args, requestingSession, serverRuntime);
             },
-            cvHobbyUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyUpsertArgs, requestingSession: GqlSSession) {
-                return cvHobbyUpsert(args, requestingSession, serverRuntime);
+            cvHobbyUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyUpsertArgs, requestingSession: GqlSSession) {
+                return cvHobbyUpsert(userId, args, requestingSession, serverRuntime);
             },
-            cvHobbyDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyDeleteArgs, requestingSession: GqlSSession) {
-                return cvHobbyDelete(args, requestingSession, serverRuntime);
+            cvHobbyDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyDeleteArgs, requestingSession: GqlSSession) {
+                return cvHobbyDelete(userId, args, requestingSession, serverRuntime);
             },
-            cvHobbyReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyReorderArgs, requestingSession: GqlSSession) {
-                return cvHobbyReorder(args, requestingSession, serverRuntime);
+            cvHobbyReorder({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvHobbyReorderArgs, requestingSession: GqlSSession) {
+                return cvHobbyReorder(userId, args, requestingSession, serverRuntime);
             },
             profileObservationDismiss(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationProfileObservationDismissArgs,
                 requestingSession: GqlSSession,
             ) {
-                return profileObservationDismiss(args, requestingSession, serverRuntime);
+                return profileObservationDismiss(userId, args, requestingSession, serverRuntime);
             },
-            profileSynthesizeRequest(_parent: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
-                return profileSynthesizeRequest(requestingSession, serverRuntime);
+            profileSynthesizeRequest({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
+                return profileSynthesizeRequest(userId, requestingSession, serverRuntime);
             },
             projectRequestArchive(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationProjectRequestArchiveArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectRequestArchive(args, requestingSession, serverRuntime);
+                return projectRequestArchive(userId, args, requestingSession, serverRuntime);
             },
             projectRequestDelete(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationProjectRequestDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectRequestDelete(args, requestingSession, serverRuntime);
+                return projectRequestDelete(userId, args, requestingSession, serverRuntime);
             },
-            projectUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectUpsertArgs, requestingSession: GqlSSession) {
-                return projectUpsert(args, requestingSession, serverRuntime);
+            projectUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectUpsertArgs, requestingSession: GqlSSession) {
+                return projectUpsert(userId, args, requestingSession, serverRuntime);
             },
-            projectDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectDeleteArgs, requestingSession: GqlSSession) {
-                return projectDelete(args, requestingSession, serverRuntime);
+            projectDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectDeleteArgs, requestingSession: GqlSSession) {
+                return projectDelete(userId, args, requestingSession, serverRuntime);
             },
-            projectReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectReorderArgs, requestingSession: GqlSSession) {
-                return projectReorder(args, requestingSession, serverRuntime);
+            projectReorder({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectReorderArgs, requestingSession: GqlSSession) {
+                return projectReorder(userId, args, requestingSession, serverRuntime);
             },
-            taskUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationTaskUpsertArgs, requestingSession: GqlSSession) {
-                return taskUpsert(args, requestingSession, serverRuntime);
+            taskUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTaskUpsertArgs, requestingSession: GqlSSession) {
+                return taskUpsert(userId, args, requestingSession, serverRuntime);
             },
-            taskDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationTaskDeleteArgs, requestingSession: GqlSSession) {
-                return taskDelete(args, requestingSession, serverRuntime);
+            taskDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTaskDeleteArgs, requestingSession: GqlSSession) {
+                return taskDelete(userId, args, requestingSession, serverRuntime);
             },
-            taskReorder(_parent: GqlSAdminMutation, args: GqlSAdminMutationTaskReorderArgs, requestingSession: GqlSSession) {
-                return taskReorder(args, requestingSession, serverRuntime);
+            taskReorder({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTaskReorderArgs, requestingSession: GqlSSession) {
+                return taskReorder(userId, args, requestingSession, serverRuntime);
             },
             projectActivityUpsert(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationProjectActivityUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectActivityUpsert(args, requestingSession, serverRuntime);
+                return projectActivityUpsert(userId, args, requestingSession, serverRuntime);
             },
             projectActivityDelete(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationProjectActivityDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectActivityDelete(args, requestingSession, serverRuntime);
+                return projectActivityDelete(userId, args, requestingSession, serverRuntime);
             },
-            projectTimerStart(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectTimerStartArgs, requestingSession: GqlSSession) {
-                return projectTimerStart(args, requestingSession, serverRuntime);
+            projectTimerStart({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectTimerStartArgs, requestingSession: GqlSSession) {
+                return projectTimerStart(userId, args, requestingSession, serverRuntime);
             },
-            projectTimerStop(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectTimerStopArgs, requestingSession: GqlSSession) {
-                return projectTimerStop(args, requestingSession, serverRuntime);
+            projectTimerStop({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectTimerStopArgs, requestingSession: GqlSSession) {
+                return projectTimerStop(userId, args, requestingSession, serverRuntime);
             },
-            projectLinkUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectLinkUpsertArgs, requestingSession: GqlSSession) {
-                return projectLinkUpsert(args, requestingSession, serverRuntime);
+            projectLinkUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectLinkUpsertArgs, requestingSession: GqlSSession) {
+                return projectLinkUpsert(userId, args, requestingSession, serverRuntime);
             },
-            projectLinkDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectLinkDeleteArgs, requestingSession: GqlSSession) {
-                return projectLinkDelete(args, requestingSession, serverRuntime);
+            projectLinkDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectLinkDeleteArgs, requestingSession: GqlSSession) {
+                return projectLinkDelete(userId, args, requestingSession, serverRuntime);
             },
             projectLinkTogglePin(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationProjectLinkTogglePinArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectLinkTogglePin(args, requestingSession, serverRuntime);
+                return projectLinkTogglePin(userId, args, requestingSession, serverRuntime);
             },
-            projectFileUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectFileUpsertArgs, requestingSession: GqlSSession) {
-                return projectFileUpsert(args, requestingSession, serverRuntime);
+            projectFileUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectFileUpsertArgs, requestingSession: GqlSSession) {
+                return projectFileUpsert(userId, args, requestingSession, serverRuntime);
             },
-            projectFileDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectFileDeleteArgs, requestingSession: GqlSSession) {
-                return projectFileDelete(args, requestingSession, serverRuntime);
+            projectFileDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectFileDeleteArgs, requestingSession: GqlSSession) {
+                return projectFileDelete(userId, args, requestingSession, serverRuntime);
             },
             projectFileTogglePin(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationProjectFileTogglePinArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectFileTogglePin(args, requestingSession, serverRuntime);
+                return projectFileTogglePin(userId, args, requestingSession, serverRuntime);
             },
             chatConfigDefaultModelSet(
-                _parent: GqlSAdminMutation,
+                { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationChatConfigDefaultModelSetArgs,
                 requestingSession: GqlSSession,
             ) {
-                return adminChatConfigDefaultModelSet(args, requestingSession, serverRuntime);
+                return adminChatConfigDefaultModelSet(userId, args, requestingSession, serverRuntime);
             },
         },
         Query: {
@@ -466,13 +484,13 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 return guardUserMutation(requestingSession);
             },
             chatMessageCreate(_parent: unknown, args: GqlSMutationChatMessageCreateArgs, requestingSession: GqlSSession) {
-                return chatMessageCreate(args, requestingSession, serverRuntime, PUBLIC_DISPATCH);
+                return chatMessageCreate(null, args, requestingSession, serverRuntime, PUBLIC_DISPATCH);
             },
             chatInputCollectionRespond(_parent: unknown, args: GqlSMutationChatInputCollectionRespondArgs, requestingSession: GqlSSession) {
-                return chatInputCollectionRespond(args, requestingSession, serverRuntime, PUBLIC_DISPATCH);
+                return chatInputCollectionRespond(null, args, requestingSession, serverRuntime, PUBLIC_DISPATCH);
             },
             chatToolApprovalRespond(_parent: unknown, args: GqlSMutationChatToolApprovalRespondArgs, requestingSession: GqlSSession) {
-                return chatToolApprovalRespond(args, requestingSession, serverRuntime, PUBLIC_DISPATCH);
+                return chatToolApprovalRespond(null, args, requestingSession, serverRuntime, PUBLIC_DISPATCH);
             },
             admin(_parent: unknown, __: any, requestingSession: GqlSSession) {
                 return guardAdminMutation(requestingSession, serverRuntime);

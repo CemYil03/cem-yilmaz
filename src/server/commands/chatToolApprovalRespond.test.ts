@@ -64,6 +64,7 @@ describe('chatToolApprovalRespond', () => {
 
         // Act
         const result = await chatToolApprovalRespond(
+            null,
             { approvalId: seed.approvalId, approved: true, assistantOptions: streamingAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
@@ -111,6 +112,7 @@ describe('chatToolApprovalRespond', () => {
 
         // Act
         const result = await chatToolApprovalRespond(
+            null,
             { approvalId: seed.approvalId, approved: false, assistantOptions: streamingAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
@@ -148,6 +150,7 @@ describe('chatToolApprovalRespond', () => {
 
         // Act
         const result = await chatToolApprovalRespond(
+            null,
             { approvalId: seed.approvalId, approved: false, reason, assistantOptions: streamingAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
@@ -180,6 +183,7 @@ describe('chatToolApprovalRespond', () => {
         // Arrange — first attempt carries a reason.
         const seed = await seedApprovalRequest('writeToConsole', { message: 'one-shot' });
         await chatToolApprovalRespond(
+            null,
             { approvalId: seed.approvalId, approved: true, reason: 'looks fine', assistantOptions: stubAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
@@ -188,6 +192,7 @@ describe('chatToolApprovalRespond', () => {
 
         // Act — second attempt with different fields
         const second = await chatToolApprovalRespond(
+            null,
             { approvalId: seed.approvalId, approved: false, reason: 'changed my mind', assistantOptions: stubAssistantOptions },
             seed.requestingSession,
             seed.serverRuntime,
@@ -212,6 +217,7 @@ describe('chatToolApprovalRespond', () => {
 
         // Act
         const result = await chatToolApprovalRespond(
+            null,
             { approvalId: 'does-not-exist', approved: true, assistantOptions: stubAssistantOptions },
             requestingSession,
             serverRuntime,

@@ -3,7 +3,7 @@ import { db } from '../db';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from '../agents/adminChatModels';
 import { environmentVariables } from '../env/environmentVariablesCreate';
 import { PubSubPostgres } from '../graphql/PubSubPostgres';
-import { jobEnqueue } from '../jobs/boss';
+import { jobEnqueue, jobsActiveCount } from '../jobs/boss';
 import { emailServiceCreate } from '../services/emailServiceCreate';
 import { browserCapture } from '../utils/browserCapture';
 import { loggerCreate } from '../utils/loggerCreate';
@@ -49,6 +49,7 @@ export function serverRuntimeCreate(): ServerRuntime {
         },
         jobs: {
             enqueue: jobEnqueue,
+            activeCount: jobsActiveCount,
         },
         ai: {
             // Bound here so provider, credentials, and the catalog validation

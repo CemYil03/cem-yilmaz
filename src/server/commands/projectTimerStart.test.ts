@@ -37,6 +37,7 @@ describe('projectTimerStart', () => {
 
         // Act
         const timer = await projectTimerStart(
+            requestingSession.userId!,
             { projectId: project.projectId, taskId: null, title: null },
             requestingSession,
             serverRuntime,
@@ -72,11 +73,13 @@ describe('projectTimerStart', () => {
 
         // Act — start on A, then on B without an explicit stop.
         const timerA = await projectTimerStart(
+            requestingSession.userId!,
             { projectId: projectA.projectId, taskId: null, title: 'first' },
             requestingSession,
             serverRuntime,
         );
         const timerB = await projectTimerStart(
+            requestingSession.userId!,
             { projectId: projectB.projectId, taskId: null, title: 'second' },
             requestingSession,
             serverRuntime,
@@ -122,6 +125,7 @@ describe('projectTimerStart', () => {
 
         // Act
         const timer = await projectTimerStart(
+            requestingSession.userId!,
             { projectId: project.projectId, taskId: null, title: 'Drafting offer' },
             requestingSession,
             serverRuntime,
@@ -137,13 +141,19 @@ describe('projectTimerStart', () => {
         const { serverRuntime, requestingSession } = await commandSetup();
         const project = await projectSeed();
         const timer = await projectTimerStart(
+            requestingSession.userId!,
             { projectId: project.projectId, taskId: null, title: null },
             requestingSession,
             serverRuntime,
         );
 
         // Act
-        const stopped = await projectTimerStop({ activityId: timer.activityId }, requestingSession, serverRuntime);
+        const stopped = await projectTimerStop(
+            requestingSession.userId!,
+            { activityId: timer.activityId },
+            requestingSession,
+            serverRuntime,
+        );
 
         // Assert
         expect(stopped.endedAt).not.toBeNull();
@@ -156,14 +166,20 @@ describe('projectTimerStart', () => {
         const { serverRuntime, requestingSession } = await commandSetup();
         const project = await projectSeed();
         const timer = await projectTimerStart(
+            requestingSession.userId!,
             { projectId: project.projectId, taskId: null, title: null },
             requestingSession,
             serverRuntime,
         );
-        const first = await projectTimerStop({ activityId: timer.activityId }, requestingSession, serverRuntime);
+        const first = await projectTimerStop(requestingSession.userId!, { activityId: timer.activityId }, requestingSession, serverRuntime);
 
         // Act — stop again.
-        const second = await projectTimerStop({ activityId: timer.activityId }, requestingSession, serverRuntime);
+        const second = await projectTimerStop(
+            requestingSession.userId!,
+            { activityId: timer.activityId },
+            requestingSession,
+            serverRuntime,
+        );
 
         // Assert — endedAt and durationSec did not change between calls.
         expect(second.endedAt).toStrictEqual(first.endedAt);

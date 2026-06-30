@@ -32,7 +32,7 @@ describe('taskReorder', () => {
         const c = await taskSeed({ title: 'C', position: 2 });
 
         // Act — reorder to C, A, B
-        await taskReorder({ orderedIds: [c.taskId, a.taskId, b.taskId] }, requestingSession, serverRuntime);
+        await taskReorder(requestingSession.userId!, { orderedIds: [c.taskId, a.taskId, b.taskId] }, requestingSession, serverRuntime);
 
         // Assert — positions follow the new order, ascending and monotonic
         const rows = await testDb.select().from(tasks).orderBy(asc(tasks.position));
@@ -47,7 +47,7 @@ describe('taskReorder', () => {
         const a = await taskSeed({ title: 'only', position: 7 });
 
         // Act
-        await taskReorder({ orderedIds: [a.taskId] }, requestingSession, serverRuntime);
+        await taskReorder(requestingSession.userId!, { orderedIds: [a.taskId] }, requestingSession, serverRuntime);
 
         // Assert
         const [persisted] = await testDb.select().from(tasks).where(eq(tasks.taskId, a.taskId));

@@ -4,7 +4,6 @@ import { projectActivityUpsert } from '../commands/projectActivityUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import {
     GqlSProjectActivityChannelSchema,
-    GqlSProjectActivityCreateSchema,
     GqlSProjectActivityDirectionSchema,
     GqlSProjectActivityKindSchema,
     GqlSProjectFileKindSchema,
@@ -13,17 +12,23 @@ import {
 } from '../graphql/generated';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
+import { requireAdminUserId } from './requireAdminUserId';
 
 // Log an event-style entry on a project's timeline. Thin wrapper around the
 // `projectActivityUpsert` command — every behavior rule (kind=work rejected,
 // channel/offerStatus mismatches rejected, direction derived from kind) lives
-// in the command, not here. The tool input is the full GraphQL input shape
-// (`GqlSProjectActivityCreateSchema`), re-extended with `.describe()` and
-// tighter scalars (`.uuid()`, `.url()`, length bounds, ISO-string for the
-// date scalar) so the LLM gets a usable JSON-Schema rendering. Field names
-// and enum membership single-source from the SDL via `generated.ts`.
+// in the command, not here.
+//
+// Hand-built schema (not derived from `GqlSProjectActivityCreateSchema()`)
+// for the same reason as `toolProjectUpsert`: the generated schema declares
+// `occurredAt` as `z.date()`, which the AI SDK cannot render cleanly into
+// JSON Schema for Gemini's `structuredOutputs` constrained decoding. The
+// wire shape is always JSON, so `occurredAt` declares `z.string()` here
+// and `execute` converts with `new Date(...)`. The enum schemas are reused
+// so a future enum addition surfaces as a TS error rather than a runtime
+// mismatch.
 
-const projectActivityUpsertInputSchema = GqlSProjectActivityCreateSchema().extend({
+const projectActivityUpsertInputSchema = z.object({
     activityId: z.uuid().nullish().describe('Omit (or null) to create a new activity row. Pass an existing id to edit.'),
     projectId: z.uuid().describe('Owning project. Ids come from the snapshot or a prior `projectsList` result.'),
     taskId: z.uuid().nullish().describe('Optional task this activity is attached to. Leave empty unless the user named a specific task.'),
@@ -103,6 +108,7 @@ export function toolProjectActivityUpsert({ serverRuntime, session, mutations }:
         inputSchema: projectActivityUpsertInputSchema,
         execute: async (input) => {
             const result = await projectActivityUpsert(
+                requireAdminUserId(session),
                 {
                     input: {
                         activityId: input.activityId ?? null,

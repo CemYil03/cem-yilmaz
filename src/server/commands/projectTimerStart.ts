@@ -17,6 +17,7 @@ import { toGqlProjectActivity } from '../mappers/toGqlProjectActivity';
 // caller that tried to start a second timer would fail on insert and the
 // whole transaction would roll back — never leaving two open rows.
 export async function projectTimerStart(
+    userId: string,
     args: GqlSAdminMutationProjectTimerStartArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -64,6 +65,7 @@ export async function projectTimerStart(
             return row;
         });
 
+        await serverRuntime.publish.userUpdates({ userId });
         return toGqlProjectActivity(inserted);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

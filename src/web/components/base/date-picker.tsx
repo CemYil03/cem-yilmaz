@@ -15,6 +15,9 @@ function DatePicker({
     align = 'start',
     disabled,
     locale,
+    captionLayout,
+    startMonth,
+    endMonth,
 }: {
     value?: Date;
     onValueChange?: (date: Date | undefined) => void;
@@ -24,6 +27,17 @@ function DatePicker({
     disabled?: React.ComponentProps<typeof Calendar>['disabled'];
     /** date-fns locale; localizes the trigger label and the calendar grid. */
     locale?: Locale;
+    /**
+     * Calendar caption layout. `'label'` (default) renders a plain title with
+     * single-month arrows. `'dropdown'` swaps month and year for selectors so
+     * jumping across many years takes one click each — pick this for fields
+     * that span large date ranges (CV start/end dates, date-of-birth, ...).
+     */
+    captionLayout?: React.ComponentProps<typeof Calendar>['captionLayout'];
+    /** Earliest month the navigation allows. Defaults to 100 years before today when a dropdown layout is active. */
+    startMonth?: Date;
+    /** Latest month the navigation allows. Defaults to the end of the current year when a dropdown layout is active. */
+    endMonth?: Date;
 }) {
     return (
         <Popover>
@@ -49,6 +63,9 @@ function DatePicker({
                     defaultMonth={value}
                     disabled={disabled}
                     locale={locale}
+                    captionLayout={captionLayout}
+                    startMonth={startMonth}
+                    endMonth={endMonth}
                 />
             </PopoverContent>
         </Popover>

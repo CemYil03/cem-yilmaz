@@ -78,6 +78,20 @@
             "when": 1782822692094,
             "tag": "0010_grey_blindfold",
             "breakpoints": true
+        },
+        {
+            "idx": 11,
+            "version": "7",
+            "when": 1782908000000,
+            "tag": "0011_company_institution_single_column",
+            "breakpoints": true
+        },
+        {
+            "idx": 12,
+            "version": "7",
+            "when": 1782914000000,
+            "tag": "0012_compass_rename",
+            "breakpoints": true
         }
     ]
 }

@@ -2,10 +2,11 @@ import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
 import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 import { profileSummaryGet } from '../queries/profileSummaryGet';
+import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
+import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
-import { toolWebSearch } from './toolWebSearch';
 
 // Personal-assistant agent for `/workspace/assistant`. This is the
 // orchestrator in the agent-delegation pattern: it owns the user-facing
@@ -27,7 +28,7 @@ const BASE_SYSTEM_PROMPT = [
     'Capabilities:',
     '- Plain conversational answers and reasoning.',
     '- Project and task management via `delegateToProjects` — see "When to delegate" below.',
-    '- Web search via `googleSearch` — see "When to search" below.',
+    '- Web search via `delegateToWebSearch` — see "When to search" below.',
     '- Future: notes, calendar entries, content edits — each in its own sub-agent under the same delegation pattern.',
     '',
     'When to delegate:',
@@ -40,20 +41,30 @@ const BASE_SYSTEM_PROMPT = [
     "  again with the brief enriched by the answers. On `status: 'noOp'`, handle the ask yourself (it was not",
     "  really about projects). On `status: 'completed'`, narrate `summary` back to Cem; mention specific",
     '  mutations (created/updated/deleted) when they help him confirm what happened.',
+    "- On `status: 'failed'`, the sub-agent or one of its tools threw. `summary` is the one-line error message and",
+    '  `mutations` lists any writes that DID land before the throw. Tell Cem plainly what failed (quote the',
+    '  message) and what — if anything — persisted. Do NOT retry the same brief automatically, do NOT confabulate',
+    '  reasons like "the tool is unreachable", and do NOT soften the failure into a hopeful follow-up. If a',
+    '  retry is appropriate at all, ask Cem before doing it.',
     '- Do NOT try to do project/task work by chatting — always delegate. Conversely, do not delegate non-project',
     '  questions (small talk, code help, general reasoning).',
     '',
     'When to search:',
-    '- Use `googleSearch` for facts that change over time or that you cannot answer from this prompt: current',
+    '- Use `delegateToWebSearch` for facts that change over time or that you cannot answer from this prompt: current',
     '  prices, recent releases, news, library/API docs Cem might be evaluating, library version status, sports',
-    '  results, anything time-sensitive. Quote the most useful sources back as `[title](url)` markdown links',
-    '  inline with the relevant sentence so Cem can click through; the chat renderer turns these into anchors.',
+    '  results, anything time-sensitive. Pass a natural-language brief describing what to look up — the sub-agent',
+    '  owns the actual query and runs Google Search grounding for you.',
+    "- The result is `{ status, summary }`. On `status: 'completed'`, `summary` is the sub-agent's written answer",
+    '  with sources already inlined as `[title](url)` markdown links — quote or narrate it back to Cem; do NOT',
+    '  append a separate "Sources:" block, the inline links are the citations. On `status: \'failed\'`, tell Cem',
+    '  plainly what failed (the message is in `summary`); do NOT retry automatically and do NOT confabulate softer',
+    '  reasons like "search is unavailable".',
     '- Do NOT search for things that live in this prompt or in the workspace data: facts about Cem already in',
     '  the profile context, the contents of the projects board (use `delegateToProjects`), or arithmetic /',
     '  reasoning / code questions you can answer directly. Search costs a round-trip and adds latency — skip',
     '  it when the answer is already at hand.',
-    '- One search per turn is usually enough; if the first result set is thin, refine the query and try once',
-    '  more before giving up. Do not chain searches indefinitely.',
+    '- One delegation per turn is usually enough; the sub-agent itself does up to one refinement internally',
+    '  before giving up. Do not chain delegations indefinitely.',
     '',
     'Style:',
     '- Reply in the language Cem wrote in (German or English).',
@@ -123,7 +134,27 @@ export async function agentPersonalAssistant({
     // against the catalog and throws on unknown ids. See
     // `docs/features/admin-chat-config.md`.
     const requestedModelId = assistantOptions.modelId ?? null;
-    const resolvedModelId = requestedModelId ?? (await adminChatConfigGet(serverRuntime.db)).defaultModelId;
+    // Validate the per-turn pick against the catalog the same way
+    // `adminChatConfigGet` validates the persisted default — if a deploy
+    // removed the model the composer last surfaced, fall back rather than
+    // letting `serverRuntime.ai.userConversationModel` throw inside the
+    // agent factory (which used to bubble up as a silent
+    // `delegateToProjects` failure with no log entry — see the try/catch
+    // in `toolDelegateToProjects.ts`). Logged so a stale composer cache
+    // doesn't go invisible.
+    let resolvedModelId: string;
+    if (requestedModelId && isAdminChatModelId(requestedModelId)) {
+        resolvedModelId = requestedModelId;
+    } else {
+        if (requestedModelId) {
+            serverRuntime.log.error(
+                new Error(`agentPersonalAssistant: requested modelId '${requestedModelId}' is not in the catalog; falling back`),
+                session,
+            );
+        }
+        const persisted = (await adminChatConfigGet(serverRuntime.db)).defaultModelId;
+        resolvedModelId = isAdminChatModelId(persisted) ? persisted : ADMIN_CHAT_MODEL_FALLBACK_ID;
+    }
     return new ToolLoopAgent({
         // Model binding lives on `serverRuntime.ai`. The admin chooses per
         // turn via the composer dropdown; `requestedModelId` carries that
@@ -149,11 +180,23 @@ export async function agentPersonalAssistant({
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
             }),
-            // Provider-executed Google Search grounding. Gemini runs the
-            // search server-side; the agent sees the synthesized result on
-            // the next step alongside `groundingMetadata` citations. See
-            // `docs/features/chat-web-search.md`.
-            googleSearch: toolWebSearch({ serverRuntime }),
+            // Web search lives behind its own delegate sub-agent for one
+            // reason: Gemini 2.5 rejects requests that mix provider-defined
+            // tools (`googleSearch` grounding) with function tools in the
+            // same call — the AI SDK surfaces this as the warning
+            // "combination of function and provider-defined tools is not
+            // supported". Gemini 3 lifts the restriction, but the admin can
+            // pick 2.5 from the composer, so the wrap is the
+            // lower-common-denominator fix. The orchestrator only sees
+            // function tools; the search sub-agent only sees the provider
+            // tool. See `docs/features/chat-web-search.md`.
+            delegateToWebSearch: toolDelegateToWebSearch({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
         },
     });
 }

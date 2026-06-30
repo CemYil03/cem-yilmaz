@@ -166,6 +166,12 @@ function ResizeHandle({
         const wrapper = (event.currentTarget as HTMLElement).closest<HTMLElement>('[data-slot="sidebar-wrapper"]');
         if (!wrapper) return;
         providerNodeRef.current = wrapper;
+        // Mark the wrapper as actively resizing so the sidebar primitive
+        // suppresses its `transition-[width]` / `transition-[left,right,width]`
+        // animations for the duration of the drag — otherwise every
+        // pointermove kicks off a fresh 200ms ease and the edge trails the
+        // pointer instead of tracking it.
+        wrapper.dataset.resizing = 'true';
         // Read the live width from the rendered sidebar container so the
         // drag picks up wherever the previous resize left off, including
         // the SSR default.
@@ -192,6 +198,9 @@ function ResizeHandle({
             window.removeEventListener('pointerup', onUp);
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
+            // Re-enable the sidebar primitive's open/close transitions now
+            // that the drag has ended.
+            if (providerNodeRef.current) delete providerNodeRef.current.dataset.resizing;
             setIsDragging(false);
             onCommit(lastWidthRef.current);
         };

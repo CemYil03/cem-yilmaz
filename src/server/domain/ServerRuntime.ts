@@ -28,6 +28,10 @@ export interface ServerRuntime {
             data: TData,
             options?: { startAfter?: Date | string | number; transaction?: DatabaseTransaction },
         ) => Promise<string | null>;
+        // Count active (created | retry | active) jobs for a queue. Used to
+        // derive live UI flags like `AdminProfile.synthesisInProgress` —
+        // pg-boss owns the state, the DB doesn't carry a stale column.
+        activeCount: <TData>(definition: QueuedJobDefinition<TData>) => Promise<number>;
     };
     // LLM clients are exposed as factory functions on the runtime so the
     // provider, model id, and API key are bound in exactly one place

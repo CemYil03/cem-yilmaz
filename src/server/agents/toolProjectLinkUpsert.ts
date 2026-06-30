@@ -2,21 +2,25 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { projectLinkUpsert } from '../commands/projectLinkUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSProjectLinkKindSchema, GqlSProjectLinkUpsertSchema } from '../graphql/generated';
+import { GqlSProjectLinkKindSchema } from '../graphql/generated';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
+import { requireAdminUserId } from './requireAdminUserId';
 
 // Attach an external URL to a project ("the repo for Acme is github.com/me/
-// acme") or edit an existing link. Field set single-sources from
-// `GqlSProjectLinkUpsertSchema()`; each field is re-described and tightened
-// (`.uuid()`, `.url()`, length bounds) so the LLM gets a usable JSON-Schema
-// rendering of the same SDL input shape.
+// acme") or edit an existing link. Hand-built schema for the same reason
+// the other mutation tools in this directory are hand-built (see
+// `toolProjectUpsert.ts`): even though this command's generated input has
+// no `z.date()` fields today, keeping every tool on the same shape — an
+// explicit `z.object` that reuses only the GraphQL enum schemas — avoids
+// the divergence where one tool surprises the LLM with a different
+// JSON-Schema rendering, and matches the convention documented in
+// `docs/architecture/agent-delegation.md`.
 
-const projectLinkUpsertInputSchema = GqlSProjectLinkUpsertSchema().extend({
+const projectLinkUpsertInputSchema = z.object({
     projectLinkId: z.uuid().nullish().describe('Omit (or null) to create. Pass an existing id to edit.'),
     projectId: z.uuid().describe('Owning project.'),
     activityId: z
-        .string()
         .uuid()
         .nullish()
         .describe(
@@ -45,6 +49,7 @@ export function toolProjectLinkUpsert({ serverRuntime, session, mutations }: Pro
         inputSchema: projectLinkUpsertInputSchema,
         execute: async (input) => {
             const result = await projectLinkUpsert(
+                requireAdminUserId(session),
                 {
                     input: {
                         projectLinkId: input.projectLinkId ?? null,

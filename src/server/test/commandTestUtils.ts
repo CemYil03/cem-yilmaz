@@ -73,6 +73,10 @@ function serverRuntimeStubCreate(): ServerRuntime {
             enqueue: vi.fn(async () => {
                 throw new Error('jobs.enqueue not used');
             }) as unknown as ServerRuntime['jobs']['enqueue'],
+            // Default to "no active jobs" so reads that derive UI state from
+            // pg-boss (e.g. `AdminProfile.synthesisInProgress`) resolve to a
+            // calm `false` without a test ever standing up the queue.
+            activeCount: vi.fn(async () => 0) as unknown as ServerRuntime['jobs']['activeCount'],
         },
         ai: aiForTest(),
         browser: {

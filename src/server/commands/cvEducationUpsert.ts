@@ -6,6 +6,7 @@ import type { GqlSAdminMutationCvEducationUpsertArgs, GqlSCvEducation, GqlSSessi
 import { toGqlCvEducation } from '../mappers/toGqlCvEducation';
 
 export async function cvEducationUpsert(
+    userId: string,
     args: GqlSAdminMutationCvEducationUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -16,8 +17,7 @@ export async function cvEducationUpsert(
         cvEducationId,
         degreeDe: input.degreeDe,
         degreeEn: input.degreeEn,
-        institutionDe: input.institutionDe,
-        institutionEn: input.institutionEn,
+        institution: input.institution,
         subjectDe: input.subjectDe,
         subjectEn: input.subjectEn,
         startDate: input.startDate ?? null,
@@ -29,6 +29,7 @@ export async function cvEducationUpsert(
     };
 
     try {
+        let row;
         if (input.cvEducationId) {
             const [updated] = await serverRuntime.db
                 .update(cvEducation)
@@ -36,11 +37,14 @@ export async function cvEducationUpsert(
                 .where(eq(cvEducation.cvEducationId, input.cvEducationId))
                 .returning();
             if (!updated) throw new Error(`cvEducationUpsert: row ${input.cvEducationId} not found`);
-            return toGqlCvEducation(updated);
+            row = updated;
+        } else {
+            const [inserted] = await serverRuntime.db.insert(cvEducation).values(payload).returning();
+            if (!inserted) throw new Error('cvEducationUpsert: insert returned no rows');
+            row = inserted;
         }
-        const [inserted] = await serverRuntime.db.insert(cvEducation).values(payload).returning();
-        if (!inserted) throw new Error('cvEducationUpsert: insert returned no rows');
-        return toGqlCvEducation(inserted);
+        await serverRuntime.publish.userUpdates({ userId });
+        return toGqlCvEducation(row);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

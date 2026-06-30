@@ -9,6 +9,7 @@ import type { GqlSAdminMutationTaskReorderArgs, GqlSMutationResult, GqlSSession 
 // server does not enforce bucket membership but mixing them across one
 // call is meaningless.
 export async function taskReorder(
+    userId: string,
     args: GqlSAdminMutationTaskReorderArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -20,6 +21,7 @@ export async function taskReorder(
                 await transaction.update(tasks).set({ position, updatedAt: new Date() }).where(eq(tasks.taskId, taskId));
             }
         });
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

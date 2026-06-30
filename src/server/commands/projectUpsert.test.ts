@@ -39,6 +39,7 @@ describe('projectUpsert', () => {
 
         // Act
         const project = await projectUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectId: null,
@@ -90,6 +91,7 @@ describe('projectUpsert', () => {
 
         // Act
         const project = await projectUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectId: null,
@@ -118,6 +120,7 @@ describe('projectUpsert', () => {
 
         // Act
         const project = await projectUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectId: null,
@@ -158,6 +161,7 @@ describe('projectUpsert', () => {
         // Act + Assert
         await expect(
             projectUpsert(
+                requestingSession.userId!,
                 {
                     input: {
                         projectId: null,
@@ -191,6 +195,7 @@ describe('projectUpsert', () => {
         // Act + Assert
         await expect(
             projectUpsert(
+                requestingSession.userId!,
                 {
                     input: {
                         projectId: null,
@@ -229,6 +234,7 @@ describe('projectUpsert', () => {
 
         // Act
         const project = await projectUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectId,

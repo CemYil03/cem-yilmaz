@@ -9,6 +9,7 @@ import { toGqlProjectActivity } from '../mappers/toGqlProjectActivity';
 // in SQL against `startedAt` so client clock drift can't affect the
 // recorded total.
 export async function projectTimerStop(
+    userId: string,
     args: GqlSAdminMutationProjectTimerStopArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -39,6 +40,7 @@ export async function projectTimerStop(
         if (!updated) {
             throw new Error(`projectTimerStop: row ${args.activityId} vanished mid-update`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return toGqlProjectActivity(updated);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

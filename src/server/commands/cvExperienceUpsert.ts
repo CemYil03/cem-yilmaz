@@ -11,6 +11,7 @@ import { toGqlCvExperience } from '../mappers/toGqlCvExperience';
 // `position` is written verbatim — the editor sets it explicitly, and a separate
 // `cvExperienceReorder` mutation moves rows around without re-saving every field.
 export async function cvExperienceUpsert(
+    userId: string,
     args: GqlSAdminMutationCvExperienceUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -24,8 +25,7 @@ export async function cvExperienceUpsert(
         cvExperienceId,
         roleDe: input.roleDe,
         roleEn: input.roleEn,
-        companyDe: input.companyDe,
-        companyEn: input.companyEn,
+        company: input.company,
         startDate: input.startDate,
         endDate: input.endDate ?? null,
         descriptionDe: input.descriptionDe,
@@ -38,6 +38,7 @@ export async function cvExperienceUpsert(
 
     // Phase 2 — Transactional execution (single statement → no transaction needed)
     try {
+        let row;
         if (input.cvExperienceId) {
             const [updated] = await serverRuntime.db
                 .update(cvExperience)
@@ -47,14 +48,16 @@ export async function cvExperienceUpsert(
             if (!updated) {
                 throw new Error(`cvExperienceUpsert: row ${input.cvExperienceId} not found`);
             }
-            return toGqlCvExperience(updated);
+            row = updated;
+        } else {
+            const [inserted] = await serverRuntime.db.insert(cvExperience).values(payload).returning();
+            if (!inserted) {
+                throw new Error('cvExperienceUpsert: insert returned no rows');
+            }
+            row = inserted;
         }
-
-        const [inserted] = await serverRuntime.db.insert(cvExperience).values(payload).returning();
-        if (!inserted) {
-            throw new Error('cvExperienceUpsert: insert returned no rows');
-        }
-        return toGqlCvExperience(inserted);
+        await serverRuntime.publish.userUpdates({ userId });
+        return toGqlCvExperience(row);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

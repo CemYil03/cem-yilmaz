@@ -11,13 +11,13 @@ describe('cvExperienceDelete', () => {
         // Arrange — seed a row
         const { serverRuntime, requestingSession } = await commandSetup();
         const created = await cvExperienceUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     cvExperienceId: null,
                     roleDe: 'r',
                     roleEn: 'r',
-                    companyDe: 'c',
-                    companyEn: 'c',
+                    company: 'c',
                     startDate: '2024-01-01',
                     endDate: '2024-12-31',
                     descriptionDe: 'd',
@@ -32,7 +32,12 @@ describe('cvExperienceDelete', () => {
         );
 
         // Act
-        const result = await cvExperienceDelete({ cvExperienceId: created.cvExperienceId }, requestingSession, serverRuntime);
+        const result = await cvExperienceDelete(
+            requestingSession.userId!,
+            { cvExperienceId: created.cvExperienceId },
+            requestingSession,
+            serverRuntime,
+        );
 
         // Assert
         expect(result).toEqual({ success: true });
@@ -46,6 +51,8 @@ describe('cvExperienceDelete', () => {
         const missingId = crypto.randomUUID();
 
         // Act + Assert
-        await expect(cvExperienceDelete({ cvExperienceId: missingId }, requestingSession, serverRuntime)).rejects.toThrow(/not found/);
+        await expect(
+            cvExperienceDelete(requestingSession.userId!, { cvExperienceId: missingId }, requestingSession, serverRuntime),
+        ).rejects.toThrow(/not found/);
     });
 });

@@ -8,6 +8,7 @@ import type { GqlSAdminMutationCvExperienceReorderArgs, GqlSMutationResult, GqlS
 // id array after every reorder. Wrapped in a transaction so a partial write
 // can't leave the list with duplicate positions.
 export async function cvExperienceReorder(
+    userId: string,
     args: GqlSAdminMutationCvExperienceReorderArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -22,6 +23,7 @@ export async function cvExperienceReorder(
                     .where(eq(cvExperience.cvExperienceId, cvExperienceId));
             }
         });
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

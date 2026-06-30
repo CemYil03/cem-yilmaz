@@ -19,6 +19,7 @@ import type { GqlSChatMessageCreateResult, GqlSMutationChatToolApprovalRespondAr
 // job is to durably record the human's decision and kick the next turn off.
 
 export async function chatToolApprovalRespond(
+    adminUserId: string | null,
     { approvalId, approved, reason, assistantOptions }: GqlSMutationChatToolApprovalRespondArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -105,6 +106,12 @@ export async function chatToolApprovalRespond(
         await chatMessageAppend(serverRuntime.db, serverRuntime, assistantOptions.generationId, responseSpine, async (transaction) => {
             await transaction.insert(chatMessagesToolApprovalResponse).values(responseVariant);
         });
+
+        // Admin sends fan out `userUpdates` after the response commits.
+        // Visitor (public) scope stays quiet.
+        if (adminUserId && dispatch.scope === 'admin') {
+            await serverRuntime.publish.userUpdates({ userId: adminUserId });
+        }
 
         // Phase 3 — Run the resumed assistant turn detached. The helper
         // re-loads the rows itself; the SDK then sees the approval-response

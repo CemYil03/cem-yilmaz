@@ -59,6 +59,7 @@ describe('chatInputCollectionRespond', () => {
 
         // Act
         const result = await chatInputCollectionRespond(
+            null,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'String', string: 'Friday' }],
@@ -102,6 +103,7 @@ describe('chatInputCollectionRespond', () => {
 
         // Act
         const result = await chatInputCollectionRespond(
+            null,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [],
@@ -129,6 +131,7 @@ describe('chatInputCollectionRespond', () => {
         // Arrange — seed and submit a first answer so the collection is closed.
         const seed = await seedOpenCollection();
         const first = await chatInputCollectionRespond(
+            null,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'String', string: 'Friday' }],
@@ -143,6 +146,7 @@ describe('chatInputCollectionRespond', () => {
 
         // Act — a second submit against the now-answered collection.
         const second = await chatInputCollectionRespond(
+            null,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'String', string: 'Saturday' }],
@@ -170,6 +174,7 @@ describe('chatInputCollectionRespond', () => {
 
         // Act
         const result = await chatInputCollectionRespond(
+            null,
             {
                 collectionMessageId: seed.collectionMessageId,
                 answers: [{ inputId: seed.inputId, kind: 'Boolean', boolean: true }],

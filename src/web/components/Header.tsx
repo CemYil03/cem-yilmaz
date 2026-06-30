@@ -60,11 +60,10 @@ type Props = {
      *  page's location in the hierarchy is the brand. Mutually exclusive
      *  with `brandLabel`. */
     breadcrumbs?: ReadonlyArray<Crumb>;
-    /** Hide the language and theme selectors. Used on the workspace, where
-     *  the header is the workspace's own chrome and locale/theme controls
-     *  belong to the public surface. The chat button is kept — it is the
-     *  only header affordance the workspace needs. */
-    hideSelectors?: boolean;
+    /** Hide the language selector. Used on the workspace, where every page is
+     *  English-only and the public locale toggle would be a no-op. The theme
+     *  selector stays — dark mode is a workspace concern too. */
+    hideLanguageSelector?: boolean;
     /** Which chat sheet the header chat button opens. Defaults to `'visitor'`
      *  for the public site; workspace surfaces pass `'workspace'` so the
      *  button leads to the admin assistant sheet instead of the irrelevant
@@ -110,7 +109,7 @@ export function Header({
     navItems,
     brandLabel,
     breadcrumbs,
-    hideSelectors,
+    hideLanguageSelector,
     chatVariant = 'visitor',
     width = 'standard',
     contained = false,
@@ -258,8 +257,8 @@ export function Header({
                                 </Tooltip>
                             )}
                             <HeaderChatButton variant={chatVariant} />
-                            {!hideSelectors && <LanguageSelector />}
-                            {!hideSelectors && <ThemeSelector />}
+                            {!hideLanguageSelector && <LanguageSelector />}
+                            <ThemeSelector />
                         </div>
                     </div>
                 </GlassCard>

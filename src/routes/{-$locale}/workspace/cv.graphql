@@ -9,8 +9,7 @@ query WorkspaceCvPage {
             cvExperienceId
             roleDe
             roleEn
-            companyDe
-            companyEn
+            company
             startDate
             endDate
             descriptionDe
@@ -23,8 +22,7 @@ query WorkspaceCvPage {
             cvEducationId
             degreeDe
             degreeEn
-            institutionDe
-            institutionEn
+            institution
             subjectDe
             subjectEn
             startDate
@@ -53,8 +51,7 @@ mutation WorkspaceCvExperienceUpsert(
     $cvExperienceId: ID
     $roleDe: String!
     $roleEn: String!
-    $companyDe: String!
-    $companyEn: String!
+    $company: String!
     $startDate: Date!
     $endDate: Date
     $descriptionDe: String!
@@ -69,8 +66,7 @@ mutation WorkspaceCvExperienceUpsert(
                 cvExperienceId: $cvExperienceId
                 roleDe: $roleDe
                 roleEn: $roleEn
-                companyDe: $companyDe
-                companyEn: $companyEn
+                company: $company
                 startDate: $startDate
                 endDate: $endDate
                 descriptionDe: $descriptionDe
@@ -97,8 +93,7 @@ mutation WorkspaceCvEducationUpsert(
     $cvEducationId: ID
     $degreeDe: String!
     $degreeEn: String!
-    $institutionDe: String!
-    $institutionEn: String!
+    $institution: String!
     $subjectDe: String!
     $subjectEn: String!
     $startDate: Date
@@ -113,8 +108,7 @@ mutation WorkspaceCvEducationUpsert(
                 cvEducationId: $cvEducationId
                 degreeDe: $degreeDe
                 degreeEn: $degreeEn
-                institutionDe: $institutionDe
-                institutionEn: $institutionEn
+                institution: $institution
                 subjectDe: $subjectDe
                 subjectEn: $subjectEn
                 startDate: $startDate

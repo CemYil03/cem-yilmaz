@@ -8,6 +8,7 @@ import type { GqlSAdminMutationProfileObservationDismissArgs, GqlSMutationResult
 // remain visible at `/workspace/profile` (toggle filter) so Cem can review
 // what the analyzer once recorded. Idempotent — re-dismissing is a no-op.
 export async function profileObservationDismiss(
+    userId: string,
     args: GqlSAdminMutationProfileObservationDismissArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -21,6 +22,7 @@ export async function profileObservationDismiss(
         if (result.length === 0) {
             return { success: false, referenceId: null };
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: args.observationId };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

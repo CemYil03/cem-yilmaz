@@ -194,11 +194,18 @@ function Sidebar({
             data-side={side}
             data-slot="sidebar"
         >
-            {/* This is what handles the sidebar gap on desktop */}
+            {/* This is what handles the sidebar gap on desktop.
+             *
+             * The `transition-[width]` interpolates the gap when the sidebar
+             * opens/closes. During a drag-resize we suppress it via the
+             * `data-resizing` attribute on `<SidebarProvider>` (set by the
+             * resize handle) so width updates track the pointer 1:1 instead
+             * of chasing through a 200ms ease per pointermove. */}
             <div
                 data-slot="sidebar-gap"
                 className={cn(
                     'relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
+                    '[[data-slot=sidebar-wrapper][data-resizing=true]_&]:transition-none',
                     'group-data-[collapsible=offcanvas]:w-0',
                     'group-data-[side=right]:rotate-180',
                     variant === 'floating' || variant === 'inset'
@@ -210,6 +217,7 @@ function Sidebar({
                 data-slot="sidebar-container"
                 className={cn(
                     'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex',
+                    '[[data-slot=sidebar-wrapper][data-resizing=true]_&]:transition-none',
                     side === 'left'
                         ? 'left-0 group-data-[collapsible=offcanvas]:-left-(--sidebar-width)'
                         : 'right-0 group-data-[collapsible=offcanvas]:-right-(--sidebar-width)',

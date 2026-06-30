@@ -54,7 +54,7 @@ final-text summary:
 This gives the orchestrator concrete facts to narrate ("Created project X and added three tasks") without re-querying. The log is also the
 only artifact in the chat transcript that reflects what the sub-agent actually changed — debug it from there.
 
-### The `needsMoreInfo` and `noOp` sentinels
+### The `needsMoreInfo`, `noOp`, and `failed` sentinels
 
 When the brief is underspecified or out of domain, the sub-agent emits **only** a JSON object as its final text:
 
@@ -69,6 +69,16 @@ The delegate tool's `execute` parses these and returns them to the orchestrator.
 - on `noOp`, fall back to a plain conversational reply or another tool.
 
 The parser accepts a bare object or a fenced ` ```json ` block defensively — Gemini occasionally wraps things even when told not to.
+
+There is a third terminal status, **`failed`**, that the sub-agent never emits itself — the delegate tool's `execute` synthesizes it. The
+sub-agent run (the `agent.generate` call inside `toolDelegateToProjects.execute`) is wrapped in a `try/catch`; any throw — provider error,
+schema-decode error, command exception — is caught there, logged via `serverRuntime.log.error`, and turned into
+`{ status: 'failed', summary: '<one-line error message>', mutations: [...any writes that landed before the throw] }`. The orchestrator's
+system prompt instructs it to narrate the failure verbatim and **not** to confabulate softer phrasings ("the tool is unreachable") or
+silently retry. Without this catch the AI SDK wraps the exception as an inert `tool-error` content part on the next step — the orchestrator
+sees only the error envelope, no log entry exists at the delegate layer, and the model invents an apology. The catch closes that gap; the
+same gap is also covered defensively by `chatPersistStep`'s Phase A pass over `tool-error` parts (see
+[Server-side error surfacing](#server-side-error-surfacing) below).
 
 ### Step budget
 
@@ -138,33 +148,56 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 - **Tools are thin wrappers around existing `commands/`+`queries/`.** CQRS already gave us single-purpose units. A tool file is mostly the
   Zod input schema, the closure-bound dependencies (`serverRuntime`, `session`, optional `mutations`), and 5–10 lines of `execute` that maps
   to the command's args shape and pushes onto the mutation log on success.
-- **The input schema starts from `GqlS<X>Schema()` and is extended in place.** Mutation tools whose underlying command has a GraphQL input
-  type — `toolProjectUpsert`, `toolTaskUpsert`, `toolProjectActivityUpsert`, `toolProjectLinkUpsert` — derive their `inputSchema` from the
-  matching `GqlS<X>Schema()` function in `src/server/graphql/generated.ts` and re-`.extend()` every field with the LLM-facing concerns the
-  generated schema cannot carry: `.describe()` text (load-bearing for tool-call accuracy), tighter scalars (`.uuid()`, `.url()`, `.min`/
-  `.max`), and `z.string()` for date scalars (the LLM emits JSON, not a JS `Date` — the `execute` converts with `new Date(...)`). The
-  generated schema owns the field set and enum membership; the tool owns the descriptions, constraints, and ISO-string-for-Date concerns.
-  This is the same SDL input the resolver receives, so a schema drift surfaces here as a TS error rather than as a runtime mismatch the LLM
-  is shielded from. Use full enum schemas (`GqlS<X>EnumSchema`) for kind/status/channel fields; do not redeclare enum tuples by hand.
+- **The input schema is hand-built per tool, not derived from `GqlS<X>Schema()`.** Mutation tools whose underlying command has a GraphQL
+  input type — `toolProjectUpsert`, `toolTaskUpsert`, `toolProjectActivityUpsert`, `toolProjectLinkUpsert` — declare an explicit `z.object`
+  in their tool file. The earlier approach (start from `GqlS<X>Schema()`, `.extend()` every field) is **out**: the generated schema declares
+  timestamp scalars as `z.date()`, and under `structuredOutputs: true` the AI SDK converts the tool schema to JSON Schema for Gemini's
+  constrained decoding — `z.date()` has no clean JSON-Schema representation, so an extended schema occasionally produces a
+  `MALFORMED_FUNCTION_CALL` from Gemini on plain inputs ("create project peopleeat"). The hand-built shape uses `z.string()` for every
+  ISO-8601 timestamp and `execute` converts with `new Date(...)`. Enum schemas (`GqlS<X>EnumSchema`) are still reused so a future enum
+  addition surfaces as a TS error rather than a runtime mismatch; do not redeclare enum tuples by hand. Field-name drift between the SDL
+  input and the tool input is caught by the resolver call: every mutation tool's `execute` constructs the resolver `input` object
+  explicitly, so a missing or renamed field is a TS error at the tool file.
+- **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
+  `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via
+  `serverRuntime.log.error` and returned as `{ status: 'failed', summary, mutations }`. The orchestrator's system prompt tells it to narrate
+  the failure verbatim instead of inventing a softer phrasing. Without this catch the AI SDK quietly wraps the exception as an inert
+  `tool-error` content part and no log entry exists at the delegate layer — every project-create failure used to look like "the tool is
+  unreachable" with no server-side trace.
+
+### Server-side error surfacing
+
+`tool-error` content parts (the AI SDK's way of representing a tool whose `execute` threw) are surfaced in two places, both belt-and-braces:
+
+- **Inside the delegate tool** — the try/catch around `agent.generate` logs the original throwable directly with full context. This is the
+  primary path; the catch knows the throw came from this delegation and can attach the structured `failed` result to the pre-written
+  delegate row before returning it.
+- **Inside `chatPersistStep` (Phase A)** — any `tool-error` content part the orchestrator's `onStepEnd` sees still gets logged via
+  `serverRuntime.log.error`. This catches the cases the delegate-layer catch cannot: a non-delegating tool that throws, a future tool with
+  its own `execute`, or a `tool-error` synthesized by the SDK for reasons other than an `execute` throw. We do not write a dedicated chat
+  row for the error — the matching tool-call row from Phase B already carries the error payload as its `toolResult` for the LLM. The Phase A
+  pass exists solely to refuse to let a silent failure go without a log entry.
 - **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptions` plus a
   `currentDateForAgent()` helper (today's date as a one-liner each system prompt embeds near the top so Gemini doesn't fall back to its
   training-cutoff date when reasoning about deadlines). Nothing else lives there per `multi-agent-chat.md`'s "tiny helper, not a base class"
   stance. System-prompt builders, stop conditions, and tool sets stay per-agent.
-- **Sub-agent failure isolates to its turn.** An exception in any sub-agent tool propagates through `agent.generate`, surfaces as a
-  rejection from the delegate tool's `execute`, and lands in the same `chatMessagesToolCall.toolResult` error path the runner already
-  handles. The orchestrator can retry or apologize; the chat is never broken.
+- **Sub-agent failure isolates to its turn.** See the **`status: 'failed'`** bullet above and
+  [Server-side error surfacing](#server-side-error-surfacing). The orchestrator narrates the failure to the user; the chat is never broken.
 - **Cross-domain chaining is the orchestrator's job.** When calendar / notes / fitness sub-agents ship, the orchestrator calls them in
   series within a single turn. Each delegate tool's result feeds the next one's brief through plain prompt context — no shared state
   channel.
 
 ## Where things live
 
-| Concern                                          | File                                                                                                                                                                   |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shared provider options                          | `src/server/agents/agentScaffolding.ts`                                                                                                                                |
-| Sub-agent factory                                | `src/server/agents/agentPersonalAssistantProjects.ts`                                                                                                                  |
-| Inline board snapshot for the sub-agent's prompt | `src/server/agents/projectsSnapshotForAgent.ts`                                                                                                                        |
-| Read tools                                       | `src/server/agents/toolProjectsList.ts`, `toolStandaloneTasksList.ts`                                                                                                  |
-| Mutation tools                                   | `src/server/agents/toolProjectUpsert.ts`, `toolProjectDelete.ts`, `toolTaskUpsert.ts`, `toolTaskDelete.ts`, `toolProjectActivityUpsert.ts`, `toolProjectLinkUpsert.ts` |
-| Delegate tool (orchestrator-side)                | `src/server/agents/toolDelegateToProjects.ts`                                                                                                                          |
-| Orchestrator                                     | `src/server/agents/agentPersonalAssistant.ts` (adds `delegateToProjects` to its tool map)                                                                              |
+| Concern                                           | File                                                                                                                                                                   |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared provider options                           | `src/server/agents/agentScaffolding.ts`                                                                                                                                |
+| Projects sub-agent factory                        | `src/server/agents/agentPersonalAssistantProjects.ts`                                                                                                                  |
+| Inline board snapshot for the projects sub-agent  | `src/server/agents/projectsSnapshotForAgent.ts`                                                                                                                        |
+| Projects read tools                               | `src/server/agents/toolProjectsList.ts`, `toolStandaloneTasksList.ts`                                                                                                  |
+| Projects mutation tools                           | `src/server/agents/toolProjectUpsert.ts`, `toolProjectDelete.ts`, `toolTaskUpsert.ts`, `toolTaskDelete.ts`, `toolProjectActivityUpsert.ts`, `toolProjectLinkUpsert.ts` |
+| Projects delegate tool (orchestrator-side)        | `src/server/agents/toolDelegateToProjects.ts`                                                                                                                          |
+| Web-search sub-agent factory                      | `src/server/agents/agentPersonalAssistantWebSearch.ts`                                                                                                                 |
+| Web-search provider tool wrapper (sub-agent-only) | `src/server/agents/toolWebSearch.ts`                                                                                                                                   |
+| Web-search delegate tool (orchestrator-side)      | `src/server/agents/toolDelegateToWebSearch.ts`                                                                                                                         |
+| Orchestrator                                      | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToProjects` and `delegateToWebSearch`)                                                               |

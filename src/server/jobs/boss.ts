@@ -33,3 +33,14 @@ export async function jobEnqueue<TData>(
         db: options?.transaction ? fromDrizzle(options.transaction, sql) : undefined,
     });
 }
+
+// Count active (created | retry | active) jobs for a queue. Used to derive
+// live "is this background work running" flags without persisting status on
+// domain rows — pg-boss is already the source of truth and auto-expires
+// stuck `active` rows via each job's `expireInSeconds`, so a crashed worker
+// can never leave the count stuck above zero.
+export async function jobsActiveCount<TData>(definition: QueuedJobDefinition<TData>): Promise<number> {
+    const boss = await ensureBossStarted();
+    const rows = await boss.findJobs(definition.name, { queued: true });
+    return rows.length;
+}

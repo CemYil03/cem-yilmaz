@@ -7,6 +7,7 @@ import type { GqlSAdminMutationProjectActivityDeleteArgs, GqlSMutationResult, Gq
 // today — Cem prefers a clean stream, and the row is cheap to retype if
 // removed in error.
 export async function projectActivityDelete(
+    userId: string,
     args: GqlSAdminMutationProjectActivityDeleteArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -19,6 +20,7 @@ export async function projectActivityDelete(
         if (deleted.length === 0) {
             throw new Error(`projectActivityDelete: row ${args.activityId} not found`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -14,9 +14,9 @@ See also:
 ## User behaviour
 
 When Cem asks the workspace assistant something time-sensitive or external — current prices, recent releases, library docs, sports results,
-"what's the latest on X" — the agent reaches for `googleSearch` instead of answering from its training cutoff. The synthesized answer comes
-back inline; the sources are inlined as `[title](url)` markdown links beside the relevant sentences so the existing `<AssistantMarkdown>`
-renderer turns them into clickable anchors. Cem can click through to verify any claim.
+"what's the latest on X" — the agent reaches for `delegateToWebSearch` (a sub-agent delegate) instead of answering from its training cutoff.
+The synthesized answer comes back inline; the sources are inlined as `[title](url)` markdown links beside the relevant sentences so the
+existing `<AssistantMarkdown>` renderer turns them into clickable anchors. Cem can click through to verify any claim.
 
 The agent is prompted to **skip** search for things it can already answer:
 
@@ -24,8 +24,8 @@ The agent is prompted to **skip** search for things it can already answer:
 - Workspace data (projects, tasks) — that goes through `delegateToProjects`, which has the live snapshot.
 - Pure reasoning / arithmetic / code questions.
 
-The system prompt caps it at one search per turn (with one refinement allowed if the first result set is thin) so the agent does not chain
-searches indefinitely.
+The orchestrator delegates once per turn at most; the search sub-agent itself runs up to one refinement internally before giving up, so the
+agent does not chain searches indefinitely.
 
 ## Scope
 
@@ -55,21 +55,53 @@ Alternatives considered:
 
 ## Implementation
 
-| File                                          | What it does                                                                                                          |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `src/server/domain/ServerRuntime.ts`          | Adds `webSearchTool: () => Tool` to the `ai` factory surface so the provider binding has a single home.               |
-| `src/server/domain/serverRuntimeCreate.ts`    | Binds `webSearchTool` to `google.tools.googleSearch({})`. Keeps `@ai-sdk/google` out of the agent files.              |
-| `src/server/agents/toolWebSearch.ts`          | Thin wrapper returning `serverRuntime.ai.webSearchTool()`. Matches the one-tool-per-file convention.                  |
-| `src/server/agents/agentPersonalAssistant.ts` | Registers `googleSearch: toolWebSearch(...)` in `tools:` and teaches the system prompt when to use / when to skip it. |
-| `src/server/test/commandTestUtils.ts`         | Stubs `webSearchTool` on the mock `ServerRuntime` so command tests keep building without hitting Gemini.              |
+The admin agent doesn't register `googleSearch` directly. It's wrapped in a delegate sub-agent — same shape as `delegateToProjects` — so the
+orchestrator's tool map contains only function tools. The sub-agent's tool map contains only the provider tool. See
+[Why wrapped in a sub-agent](#why-wrapped-in-a-sub-agent) for the reason.
+
+| File                                                   | What it does                                                                                                                                                                                                                                               |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/server/domain/ServerRuntime.ts`                   | Adds `webSearchTool: () => Tool` to the `ai` factory surface so the provider binding has a single home.                                                                                                                                                    |
+| `src/server/domain/serverRuntimeCreate.ts`             | Binds `webSearchTool` to `google.tools.googleSearch({})`. Keeps `@ai-sdk/google` out of the agent files.                                                                                                                                                   |
+| `src/server/agents/toolWebSearch.ts`                   | Thin wrapper returning `serverRuntime.ai.webSearchTool()`. Used only by the web-search sub-agent.                                                                                                                                                          |
+| `src/server/agents/agentPersonalAssistantWebSearch.ts` | Sub-agent factory. `ToolLoopAgent` with `googleSearch` as its **only** tool, `isStepCount(4)` ceiling, Flash-fallback model. System prompt teaches it to run at most one refinement, inline `[title](url)` citations, and stay in the search lane.         |
+| `src/server/agents/toolDelegateToWebSearch.ts`         | Orchestrator-side delegate tool. Pre-writes its own `chatMessagesToolCall` row so sub-agent child rows can FK to it; wraps `agent.generate` in try/catch and surfaces failure as `{ status: 'failed', summary }` — same shape as `toolDelegateToProjects`. |
+| `src/server/agents/agentPersonalAssistant.ts`          | Registers `delegateToWebSearch: toolDelegateToWebSearch(...)` in `tools:` and teaches the system prompt when to use / when to skip it.                                                                                                                     |
+| `src/server/test/commandTestUtils.ts`                  | Stubs `webSearchTool` on the mock `ServerRuntime` so command tests keep building without hitting Gemini.                                                                                                                                                   |
 
 The visitor agent (`agentVisitorAboutCem`) is not touched.
 
+## Why wrapped in a sub-agent
+
+Gemini 2.5 (and earlier) rejects requests that mix **provider-defined tools** — Google Search grounding is one — with **function tools**
+(`promptUserForInput`, `delegateToProjects`) in the same call. The AI SDK surfaces the upstream limitation as the warning:
+
+> AI SDK Warning (google.generative-ai / gemini-2.5-flash): The feature "combination of function and provider-defined tools" is not
+> supported.
+
+The first cut of this feature registered `googleSearch` directly on the orchestrator's tool map alongside the function tools, and the
+limitation went unnoticed because Gemini either silently dropped one side or had not yet started warning. The model upgrade chain made it
+explicit, and any turn that registered both kinds at once was effectively broken.
+
+Gemini 3 lifts the restriction ([source](https://ai.google.dev/gemini-api/docs/google-search)), but the admin can pick 2.5 from the
+composer, so the wrap is the lower-common-denominator fix: the orchestrator only ever sees function tools; the search sub-agent only ever
+sees the provider tool; both kinds of model work without branching.
+
+Alternatives considered for the cross-version split, none picked:
+
+- **Detect the model and conditionally register `googleSearch` only on Gemini 3.** Halves the surface area on Pro turns but adds a per-model
+  branch in the orchestrator tool map. The sub-agent wrap is the same cost in code and works uniformly.
+- **Force the catalog to Gemini 3 only.** Possible once 3-Flash matures, but 2.5-Flash is still the fallback (cheapest, fastest) and the
+  composer surfaces both Pro and Flash on both versions. Locking the catalog would either remove options Cem wants or remove the cheap
+  fallback we rely on inside the sub-agents themselves.
+- **Drop function tools while a search is in flight.** Splits one user turn into multiple orchestrator turns with no clean way to thread
+  state back through the SDK. The delegate pattern already covers in-flight sub-agent work without that contortion.
+
 ## Model compatibility
 
-Every model in the current admin catalog (`adminChatModels.ts`) is Gemini 2.5 or 3.5; all of them accept function tools and Google Search
-grounding in the same request. Older Gemini guidance forbade the combo — if we ever add a 1.x model to the catalog, gate it by adding a
-`supportsWebSearch` flag to `AdminChatModelDefinition` and filtering it out of the tool registration. Not added speculatively.
+Every Gemini model in the current admin catalog (`adminChatModels.ts`) works under this design: the orchestrator only registers function
+tools (which every Gemini accepts), and the web-search sub-agent only registers the provider tool (also accepted on every Gemini that
+supports grounding). The "function + provider-defined" combination — the one Gemini 2.5 rejects — is the case we structurally avoid.
 
 ## Citation rendering
 
@@ -81,7 +113,11 @@ step and is currently not surfaced — if we later want a structured "Sources" b
 ## Anti-patterns avoided
 
 - **No `execute` for `googleSearch`.** Gemini runs the search itself; writing an `execute` would either silently shadow the provider call or
-  fail at validation. The wrapper returns the provider tool as-is.
+  fail at validation. The wrapper returns the provider tool as-is — the wrap that matters here is the **sub-agent** around it, not an
+  `execute` around the provider tool.
+- **Not registered alongside function tools on the orchestrator.** That's the whole point of the sub-agent wrap — see
+  [Why wrapped in a sub-agent](#why-wrapped-in-a-sub-agent). The orchestrator's tool map contains only function tools.
 - **Not on the visitor agent.** See [Scope](#scope).
-- **Not in `agentPersonalAssistantProjects`.** Search is an orchestrator-level capability; the projects sub-agent only owns project/task
-  mutations. If the projects sub-agent ever needs an external lookup, that's a signal the work belongs back in the orchestrator.
+- **Not in `agentPersonalAssistantProjects`.** Search is its own sub-agent — `agentPersonalAssistantWebSearch` — under the orchestrator,
+  parallel to the projects sub-agent rather than tucked inside it. If a projects mutation ever needs an external lookup, the orchestrator
+  chains the two delegates within a single turn rather than threading search into the projects sub-agent.

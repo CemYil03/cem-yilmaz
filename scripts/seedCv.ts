@@ -30,8 +30,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Senior Full-Stack und AI Engineer',
             roleEn: 'Senior Full-Stack and AI Engineer',
-            companyDe: 'Strategic Projects (SAP SE)',
-            companyEn: 'Strategic Projects (SAP SE)',
+            company: 'Strategic Projects (SAP SE)',
             startDate: '2025-07-01',
             endDate: null,
             descriptionDe: 'Full-Stack und AI Entwicklung in Projekten mit hoher strategischer Relevanz für die Geschäftsfelder von SAP.',
@@ -42,8 +41,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Full-Stack-Entwickler',
             roleEn: 'Full-Stack Engineer',
-            companyDe: 'SAP Concur Travel (SAP SE)',
-            companyEn: 'SAP Concur Travel (SAP SE)',
+            company: 'SAP Concur Travel (SAP SE)',
             startDate: '2022-10-01',
             endDate: '2025-08-01',
             descriptionDe: 'Full-Stack-Entwicklung an T2, der Neuimplementierung des Travel Produkts. Mitglied in 2 Teams. Scrum.',
@@ -73,8 +71,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Unterstützung bei Promotionsprojekt',
             roleEn: 'Support on doctoral research project',
-            companyDe: 'Promotionsprojekt',
-            companyEn: 'Doctoral research project',
+            company: 'Promotionsprojekt',
             startDate: '2025-03-27',
             endDate: '2025-05-01',
             descriptionDe:
@@ -87,8 +84,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Product Development',
             roleEn: 'Product Development',
-            companyDe: 'peopleeat.',
-            companyEn: 'peopleeat.',
+            company: 'peopleeat.',
             startDate: '2022-04-01',
             endDate: null,
             descriptionDe:
@@ -117,8 +113,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Full-Stack-Entwickler',
             roleEn: 'Full-Stack Engineer',
-            companyDe: 'Experience Technology SE (SAP SE)',
-            companyEn: 'Experience Technology SE (SAP SE)',
+            company: 'Experience Technology SE (SAP SE)',
             startDate: '2021-05-16',
             endDate: '2022-09-30',
             descriptionDe:
@@ -145,8 +140,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Full-Stack-Entwickler (Refactoring)',
             roleEn: 'Full-Stack Engineer (refactoring)',
-            companyDe: 'Experience Technology SE (SAP SE)',
-            companyEn: 'Experience Technology SE (SAP SE)',
+            company: 'Experience Technology SE (SAP SE)',
             startDate: '2022-01-03',
             endDate: '2022-02-11',
             descriptionDe: 'Refactoring und Full-Stack-Entwicklung an dem Projekt SAP Minutes.',
@@ -170,8 +164,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Full-Stack-Entwickler',
             roleEn: 'Full-Stack Engineer',
-            companyDe: 'Experience Center Walldorf (SAP SE)',
-            companyEn: 'Experience Center Walldorf (SAP SE)',
+            company: 'Experience Center Walldorf (SAP SE)',
             startDate: '2021-06-28',
             endDate: '2021-10-01',
             descriptionDe:
@@ -197,8 +190,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Prototype Development',
             roleEn: 'Prototype Development',
-            companyDe: 'peopleeat',
-            companyEn: 'peopleeat',
+            company: 'peopleeat',
             startDate: '2021-02-01',
             endDate: '2022-03-31',
             descriptionDe: 'iOS- und Backend-Entwicklung, UX Design und Business Prozess Entwicklung.',
@@ -209,8 +201,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Full-Stack-Entwickler',
             roleEn: 'Full-Stack Engineer',
-            companyDe: 'Sales Delivery SE (SAP SE)',
-            companyEn: 'Sales Delivery SE (SAP SE)',
+            company: 'Sales Delivery SE (SAP SE)',
             startDate: '2021-01-04',
             endDate: '2021-03-26',
             descriptionDe: 'Full-Stack-Entwicklung an dem Projekt SAP Product One mit Neuimplementierung des gesamten Frontends.',
@@ -221,8 +212,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'Full-Stack-Entwickler',
             roleEn: 'Full-Stack Engineer',
-            companyDe: 'Practice Unit Insurance (SAP SE)',
-            companyEn: 'Practice Unit Insurance (SAP SE)',
+            company: 'Practice Unit Insurance (SAP SE)',
             startDate: '2020-08-03',
             endDate: '2020-09-25',
             descriptionDe:
@@ -246,8 +236,7 @@ const experienceRows: CvExperienceCreate[] = (
         {
             roleDe: 'iOS- und Frontend-Entwickler (Prototyp)',
             roleEn: 'iOS and Frontend Engineer (prototype)',
-            companyDe: 'Practice Unit Insurance (SAP SE)',
-            companyEn: 'Practice Unit Insurance (SAP SE)',
+            company: 'Practice Unit Insurance (SAP SE)',
             startDate: '2019-10-21',
             endDate: '2019-12-16',
             descriptionDe:
@@ -281,8 +270,7 @@ const educationRows: CvEducationCreate[] = (
         {
             degreeDe: 'Duales Studium (Bachelor of Science, SAP SE)',
             degreeEn: 'Cooperative degree (Bachelor of Science, SAP SE)',
-            institutionDe: 'Duale Hochschule Baden-Württemberg Karlsruhe',
-            institutionEn: 'Duale Hochschule Baden-Württemberg Karlsruhe',
+            institution: 'Duale Hochschule Baden-Württemberg Karlsruhe',
             subjectDe: 'Informatik',
             subjectEn: 'Computer Science',
             startDate: '2019-09-01',
@@ -293,8 +281,7 @@ const educationRows: CvEducationCreate[] = (
         {
             degreeDe: 'Abitur',
             degreeEn: 'Abitur (German university entrance qualification)',
-            institutionDe: 'Hans-Purrmann-Gymnasium Speyer',
-            institutionEn: 'Hans-Purrmann-Gymnasium Speyer',
+            institution: 'Hans-Purrmann-Gymnasium Speyer',
             subjectDe: '',
             subjectEn: '',
             startDate: null,

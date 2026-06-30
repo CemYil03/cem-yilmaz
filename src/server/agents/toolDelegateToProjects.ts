@@ -62,6 +62,19 @@ interface NeedsMoreInfoSentinel {
     summary: string;
 }
 
+// Best-effort one-line summary for the orchestrator + transcript when the
+// sub-agent throws. Strips stack noise so the rendered tool-result card
+// stays readable; the full error already lands in `serverRuntime.log` via
+// the catch below.
+function summarizeError(error: unknown): string {
+    if (error instanceof Error) {
+        const message = error.message.trim();
+        if (message) return message.split('\n')[0]?.slice(0, 500) ?? 'unknown error';
+    }
+    if (typeof error === 'string' && error.trim()) return error.trim().slice(0, 500);
+    return 'unknown error';
+}
+
 export function toolDelegateToProjects({ serverRuntime, session, chatId, generationId, preWrittenToolCallIds }: DelegateToProjectsContext) {
     return tool({
         description: [
@@ -69,12 +82,16 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
             'workspace projects board or its tasks — listing, creating, updating, archiving, deleting, summarizing',
             'progress, moving tasks between projects. Pass the brief in natural language; the sub-agent has its own',
             'tools and a live snapshot of the board.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
             'reply or another tool.',
             'On `completed`, narrate `summary` and (optionally) the `mutations` list back to the user.',
+            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message',
+            '(`mutations` lists any writes that did land before the throw). Tell Cem plainly what failed and what',
+            'did or did not persist; do NOT retry the same brief automatically and do NOT invent a softer phrasing',
+            'like "the tool is unreachable" — the failure is real and the message in `summary` is the truth of it.',
         ].join(' '),
         inputSchema: delegateToProjectsInputSchema,
         execute: async (input, { toolCallId }) => {
@@ -131,22 +148,45 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
                     await chatPersistStep(step, childOnStepContext);
                 },
             });
-            const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
-            const text = typeof result.text === 'string' ? result.text : '';
 
-            const sentinel = tryParseSentinel(text);
-            const toolResult = sentinel
-                ? ({
-                      status: sentinel.status,
-                      summary: sentinel.summary,
-                      missingFields: sentinel.missingFields,
-                      mutations,
-                  } as const)
-                : ({
-                      status: 'completed' as const,
-                      summary: text,
-                      mutations: mutations satisfies ProjectsAgentMutation[],
-                  } as const);
+            // Wrap the full sub-agent run in a try/catch so a throw from any
+            // step (provider call, schema validation, mutation command) is
+            // logged at the delegate layer and surfaced to the orchestrator as
+            // a structured `failed` result instead of vanishing into the AI
+            // SDK's tool-error envelope. Without this catch the orchestrator
+            // sees an opaque error from the SDK, narrates "the tool is
+            // unreachable", and nothing reaches `serverRuntime.log.error` from
+            // this layer — see `docs/architecture/agent-delegation.md`
+            // ("Sub-agent failure isolates to its turn").
+            let toolResult:
+                | { status: 'completed'; summary: string; mutations: ProjectsAgentMutation[] }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: ProjectsAgentMutation[] }
+                | { status: 'failed'; summary: string; mutations: ProjectsAgentMutation[] };
+            try {
+                const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
+                const text = typeof result.text === 'string' ? result.text : '';
+
+                const sentinel = tryParseSentinel(text);
+                toolResult = sentinel
+                    ? {
+                          status: sentinel.status,
+                          summary: sentinel.summary,
+                          missingFields: sentinel.missingFields,
+                          mutations,
+                      }
+                    : {
+                          status: 'completed',
+                          summary: text,
+                          mutations,
+                      };
+            } catch (error) {
+                serverRuntime.log.error(error, session);
+                toolResult = {
+                    status: 'failed',
+                    summary: summarizeError(error),
+                    mutations,
+                };
+            }
 
             // Stamp the result onto the pre-written row and republish a fresh
             // `messageAppended` so the UI re-renders the now-complete delegate

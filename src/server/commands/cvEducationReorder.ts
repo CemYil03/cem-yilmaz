@@ -4,6 +4,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationCvEducationReorderArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 export async function cvEducationReorder(
+    userId: string,
     args: GqlSAdminMutationCvEducationReorderArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -18,6 +19,7 @@ export async function cvEducationReorder(
                     .where(eq(cvEducation.cvEducationId, cvEducationId));
             }
         });
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

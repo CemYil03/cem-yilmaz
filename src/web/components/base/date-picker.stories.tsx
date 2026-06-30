@@ -38,3 +38,17 @@ export const DisableWeekends: Story = {
         return <DatePicker value={date} onValueChange={setDate} disabled={[{ dayOfWeek: [0, 6] }]} />;
     },
 };
+
+export const DropdownCaption: Story = {
+    render: function Render() {
+        const [date, setDate] = useState<Date | undefined>();
+        return <DatePicker value={date} onValueChange={setDate} captionLayout="dropdown" />;
+    },
+};
+
+export const DropdownYearsOnly: Story = {
+    render: function Render() {
+        const [date, setDate] = useState<Date | undefined>();
+        return <DatePicker value={date} onValueChange={setDate} captionLayout="dropdown-years" />;
+    },
+};

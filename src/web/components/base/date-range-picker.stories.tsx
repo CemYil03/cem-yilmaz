@@ -43,3 +43,10 @@ export const DisableWeekends: Story = {
         return <DateRangePicker value={range} onValueChange={setRange} disabled={[{ dayOfWeek: [0, 6] }]} />;
     },
 };
+
+export const DropdownCaption: Story = {
+    render: function Render() {
+        const [range, setRange] = useState<DateRange | undefined>();
+        return <DateRangePicker value={range} onValueChange={setRange} captionLayout="dropdown" />;
+    },
+};

@@ -77,12 +77,11 @@ type EducationRow = GqlCCvPageQuery['cv']['education'][number];
 function mapExperience(row: ExperienceRow, locale: Locale): CvTimelineEntry {
     const description = locale === 'de' ? row.descriptionDe : row.descriptionEn;
     const role = locale === 'de' ? row.roleDe : row.roleEn;
-    const company = locale === 'de' ? row.companyDe : row.companyEn;
     const managerNote = row.managerName ? `${{ de: 'Manager', en: 'Manager' }[locale]}: ${row.managerName}` : null;
     return {
         id: row.cvExperienceId,
         title: role,
-        subtitle: company,
+        subtitle: row.company,
         startDate: row.startDate,
         endDate: row.endDate,
         description,
@@ -93,13 +92,12 @@ function mapExperience(row: ExperienceRow, locale: Locale): CvTimelineEntry {
 
 function mapEducation(row: EducationRow, locale: Locale): CvTimelineEntry {
     const degree = locale === 'de' ? row.degreeDe : row.degreeEn;
-    const institution = locale === 'de' ? row.institutionDe : row.institutionEn;
     const subject = locale === 'de' ? row.subjectDe : row.subjectEn;
     const notes = locale === 'de' ? row.notesDe : row.notesEn;
     return {
         id: row.cvEducationId,
         title: subject ? `${degree} — ${subject}` : degree,
-        subtitle: institution,
+        subtitle: row.institution,
         startDate: row.startDate ?? null,
         endDate: row.endDate,
         footnote: notes || null,

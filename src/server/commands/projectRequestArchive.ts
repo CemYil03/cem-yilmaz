@@ -7,6 +7,7 @@ import type { GqlSAdminMutationProjectRequestArchiveArgs, GqlSMutationResult, Gq
 // project. The Inbox tab hides archived rows by default; admins can
 // surface them again via a filter switch when needed.
 export async function projectRequestArchive(
+    userId: string,
     args: GqlSAdminMutationProjectRequestArchiveArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -20,6 +21,7 @@ export async function projectRequestArchive(
         if (updated.length === 0) {
             throw new Error(`projectRequestArchive: row ${args.projectRequestId} not found`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

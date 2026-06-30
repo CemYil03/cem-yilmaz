@@ -2,9 +2,10 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { taskUpsert } from '../commands/taskUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSTaskCreateSchema, GqlSTaskStatusSchema } from '../graphql/generated';
+import { GqlSTaskStatusSchema } from '../graphql/generated';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
+import { requireAdminUserId } from './requireAdminUserId';
 
 // Create-or-update a task. `projectId: null` produces a standalone todo
 // surfaced on the Todos tab. `position` is required by the underlying
@@ -12,12 +13,16 @@ import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects'
 // tasks in the bucket) when creating; on update, echo the row's current
 // position back unless the user is reordering.
 //
-// Field set single-sources from `GqlSTaskCreateSchema()`; each field is
-// re-described and tightened (`.uuid()`, length bounds, ISO-string for the
-// date scalars) so the LLM gets a usable JSON-Schema rendering of the same
-// SDL input shape.
+// Hand-built schema (not derived from `GqlSTaskCreateSchema()`) for the
+// same reason as `toolProjectUpsert`: the generated schema declares
+// `dueAt` / `completedAt` as `z.date()`, which the AI SDK cannot render
+// cleanly into JSON Schema for Gemini's `structuredOutputs` constrained
+// decoding. The wire shape is always JSON, so timestamp fields declare
+// `z.string()` here and `execute` converts with `new Date(...)`. Only the
+// enum schema is reused so a future status addition surfaces as a TS
+// error rather than a runtime mismatch.
 
-const taskUpsertInputSchema = GqlSTaskCreateSchema().extend({
+const taskUpsertInputSchema = z.object({
     taskId: z.uuid().nullish().describe('Omit (or null) to create. Pass an existing id to update.'),
     projectId: z
         .uuid()
@@ -55,6 +60,7 @@ export function toolTaskUpsert({ serverRuntime, session, mutations }: ProjectsAg
         inputSchema: taskUpsertInputSchema,
         execute: async (input) => {
             const result = await taskUpsert(
+                requireAdminUserId(session),
                 {
                     input: {
                         taskId: input.taskId ?? null,

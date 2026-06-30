@@ -456,6 +456,11 @@ type AdminProfile {
     # Non-dismissed observations recorded since the last synthesis. Drives
     # the "Synthesize now" CTA's badge ("12 new observations").
     observationsSinceSynthesis: Int!
+    # True while a `profile-synthesize` job is queued (created/active/retry).
+    # Derived live from pg-boss — never persisted on the `Profile` row, so
+    # a crashed worker can never leave this stuck on (pg-boss expires
+    # `active` rows after the job's `expireInSeconds`).
+    synthesisInProgress: Boolean!
     # Observations, newest first. `category` filters server-side; `dismissed`
     # toggles between active rows (default, null = active only),
     # `dismissed: true` shows dismissed rows, `dismissed` omitted with
@@ -594,15 +599,15 @@ type Subscription {
 #
 # Editable CV content surfaced on `/cv` and `/about`. Bilingual text rides
 # as paired `*De` / `*En` fields — the client renders the locale-matching
-# pair. `position` is server-authoritative ordering written by `*Reorder`.
-# See `docs/features/cv.md`.
+# pair. Proper nouns (company names, institution names) stay on a single
+# untranslated field. `position` is server-authoritative ordering written
+# by `*Reorder`. See `docs/features/cv.md`.
 
 type CvExperience {
     cvExperienceId: ID!
     roleDe: String!
     roleEn: String!
-    companyDe: String!
-    companyEn: String!
+    company: String!
     # ISO 8601 calendar date (yyyy-mm-dd).
     startDate: Date!
     # Null marks an ongoing role. The renderer formats it as "heute" / "today".
@@ -618,8 +623,7 @@ type CvEducation {
     cvEducationId: ID!
     degreeDe: String!
     degreeEn: String!
-    institutionDe: String!
-    institutionEn: String!
+    institution: String!
     # Optional course of study within the degree (e.g. "Informatik").
     subjectDe: String!
     subjectEn: String!
@@ -676,8 +680,7 @@ input CvExperienceInput {
     cvExperienceId: ID
     roleDe: String!
     roleEn: String!
-    companyDe: String!
-    companyEn: String!
+    company: String!
     startDate: Date!
     endDate: Date
     descriptionDe: String!
@@ -691,8 +694,7 @@ input CvEducationInput {
     cvEducationId: ID
     degreeDe: String!
     degreeEn: String!
-    institutionDe: String!
-    institutionEn: String!
+    institution: String!
     subjectDe: String!
     subjectEn: String!
     startDate: Date

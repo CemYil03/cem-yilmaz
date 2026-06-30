@@ -273,6 +273,7 @@ export interface GqlCAdminProfile {
     prose: Scalars['String']['output'];
     psychProfile: Scalars['String']['output'];
     summary: Scalars['String']['output'];
+    synthesisInProgress: Scalars['Boolean']['output'];
     synthesisModelId?: Maybe<Scalars['String']['output']>;
     synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
 }
@@ -544,8 +545,7 @@ export interface GqlCCvEducation {
     degreeDe: Scalars['String']['output'];
     degreeEn: Scalars['String']['output'];
     endDate: Scalars['Date']['output'];
-    institutionDe: Scalars['String']['output'];
-    institutionEn: Scalars['String']['output'];
+    institution: Scalars['String']['output'];
     notesDe: Scalars['String']['output'];
     notesEn: Scalars['String']['output'];
     position: Scalars['Int']['output'];
@@ -559,8 +559,7 @@ export type GqlCCvEducationInput = {
     degreeDe: Scalars['String']['input'];
     degreeEn: Scalars['String']['input'];
     endDate: Scalars['Date']['input'];
-    institutionDe: Scalars['String']['input'];
-    institutionEn: Scalars['String']['input'];
+    institution: Scalars['String']['input'];
     notesDe: Scalars['String']['input'];
     notesEn: Scalars['String']['input'];
     position: Scalars['Int']['input'];
@@ -571,8 +570,7 @@ export type GqlCCvEducationInput = {
 
 export interface GqlCCvExperience {
     __typename?: 'CvExperience';
-    companyDe: Scalars['String']['output'];
-    companyEn: Scalars['String']['output'];
+    company: Scalars['String']['output'];
     cvExperienceId: Scalars['ID']['output'];
     descriptionDe: Scalars['String']['output'];
     descriptionEn: Scalars['String']['output'];
@@ -586,8 +584,7 @@ export interface GqlCCvExperience {
 }
 
 export type GqlCCvExperienceInput = {
-    companyDe: Scalars['String']['input'];
-    companyEn: Scalars['String']['input'];
+    company: Scalars['String']['input'];
     cvExperienceId?: InputMaybe<Scalars['ID']['input']>;
     descriptionDe: Scalars['String']['input'];
     descriptionEn: Scalars['String']['input'];
@@ -978,8 +975,7 @@ export type GqlCCvPageQuery = {
             cvExperienceId: string;
             roleDe: string;
             roleEn: string;
-            companyDe: string;
-            companyEn: string;
+            company: string;
             startDate: string;
             endDate: string | null;
             descriptionDe: string;
@@ -992,8 +988,7 @@ export type GqlCCvPageQuery = {
             cvEducationId: string;
             degreeDe: string;
             degreeEn: string;
-            institutionDe: string;
-            institutionEn: string;
+            institution: string;
             subjectDe: string;
             subjectEn: string;
             startDate: string | null;
@@ -1542,6 +1537,7 @@ export type GqlCWorkspaceProfilePageQuery = {
                     synthesizedAt: string | null;
                     synthesisModelId: string | null;
                     observationsSinceSynthesis: number;
+                    synthesisInProgress: boolean;
                     observations: Array<{
                         observationId: string;
                         category: Schema.GqlCProfileObservationCategory;
@@ -1579,8 +1575,7 @@ export type GqlCWorkspaceCvPageQuery = {
             cvExperienceId: string;
             roleDe: string;
             roleEn: string;
-            companyDe: string;
-            companyEn: string;
+            company: string;
             startDate: string;
             endDate: string | null;
             descriptionDe: string;
@@ -1593,8 +1588,7 @@ export type GqlCWorkspaceCvPageQuery = {
             cvEducationId: string;
             degreeDe: string;
             degreeEn: string;
-            institutionDe: string;
-            institutionEn: string;
+            institution: string;
             subjectDe: string;
             subjectEn: string;
             startDate: string | null;
@@ -1612,8 +1606,7 @@ export type GqlCWorkspaceCvExperienceUpsertMutationVariables = Exact<{
     cvExperienceId?: string | null | undefined;
     roleDe: string;
     roleEn: string;
-    companyDe: string;
-    companyEn: string;
+    company: string;
     startDate: string;
     endDate?: string | null | undefined;
     descriptionDe: string;
@@ -1635,8 +1628,7 @@ export type GqlCWorkspaceCvEducationUpsertMutationVariables = Exact<{
     cvEducationId?: string | null | undefined;
     degreeDe: string;
     degreeEn: string;
-    institutionDe: string;
-    institutionEn: string;
+    institution: string;
     subjectDe: string;
     subjectEn: string;
     startDate?: string | null | undefined;
@@ -3569,8 +3561,7 @@ export const CvPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'companyDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'companyEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'company' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
@@ -3590,8 +3581,7 @@ export const CvPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'institution' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
@@ -5478,6 +5468,7 @@ export const WorkspaceProfilePageDocument = {
                                                                         kind: 'Field',
                                                                         name: { kind: 'Name', value: 'observationsSinceSynthesis' },
                                                                     },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
                                                                     {
                                                                         kind: 'Field',
                                                                         name: { kind: 'Name', value: 'observations' },
@@ -5654,8 +5645,7 @@ export const WorkspaceCvPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'cvExperienceId' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'roleDe' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'roleEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'companyDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'companyEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'company' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'endDate' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'descriptionDe' } },
@@ -5675,8 +5665,7 @@ export const WorkspaceCvPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'cvEducationId' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'degreeDe' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'degreeEn' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionDe' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'institutionEn' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'institution' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'subjectDe' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'subjectEn' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'startDate' } },
@@ -5747,12 +5736,7 @@ export const WorkspaceCvExperienceUpsertDocument = {
                 },
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'companyDe' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
-                },
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'companyEn' } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'company' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
                 },
                 {
@@ -5833,13 +5817,8 @@ export const WorkspaceCvExperienceUpsertDocument = {
                                                     },
                                                     {
                                                         kind: 'ObjectField',
-                                                        name: { kind: 'Name', value: 'companyDe' },
-                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'companyDe' } },
-                                                    },
-                                                    {
-                                                        kind: 'ObjectField',
-                                                        name: { kind: 'Name', value: 'companyEn' },
-                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'companyEn' } },
+                                                        name: { kind: 'Name', value: 'company' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'company' } },
                                                     },
                                                     {
                                                         kind: 'ObjectField',
@@ -5964,12 +5943,7 @@ export const WorkspaceCvEducationUpsertDocument = {
                 },
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'institutionDe' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
-                },
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'institutionEn' } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'institution' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
                 },
                 {
@@ -6044,13 +6018,8 @@ export const WorkspaceCvEducationUpsertDocument = {
                                                     },
                                                     {
                                                         kind: 'ObjectField',
-                                                        name: { kind: 'Name', value: 'institutionDe' },
-                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'institutionDe' } },
-                                                    },
-                                                    {
-                                                        kind: 'ObjectField',
-                                                        name: { kind: 'Name', value: 'institutionEn' },
-                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'institutionEn' } },
+                                                        name: { kind: 'Name', value: 'institution' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'institution' } },
                                                     },
                                                     {
                                                         kind: 'ObjectField',

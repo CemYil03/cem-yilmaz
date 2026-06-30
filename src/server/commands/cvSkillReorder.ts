@@ -4,6 +4,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationCvSkillReorderArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 export async function cvSkillReorder(
+    userId: string,
     args: GqlSAdminMutationCvSkillReorderArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -15,6 +16,7 @@ export async function cvSkillReorder(
                 await transaction.update(cvSkill).set({ position, updatedAt: new Date() }).where(eq(cvSkill.cvSkillId, cvSkillId));
             }
         });
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -6,11 +6,11 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
 ## User Behavior
 
 - `/workspace` (DE) and `/en/workspace` (EN) render the hub: a slimmed-down workspace header (logo links home, a breadcrumb trail to the
-  right shows where you are inside the workspace, and the assistant chat button sits on the right — language and theme selectors are
-  intentionally absent on workspace surfaces), a small muted motivational quote (see "Hero quote" below), the personal-assistant composer
-  directly under the quote, and a **bento-style focus-area grid** below that. The composer scrolls with the page — it is **not** pinned to
-  the viewport bottom; on a typical desktop the composer is already on-screen at load, and pinning it overlapped the last row of focus cards
-  behind a progressive blur, which read as "the input is parked on top of my last tile."
+  right shows where you are inside the workspace, and the assistant chat button plus theme selector sit on the right — the language selector
+  is intentionally absent because the workspace is English-only), a small muted motivational quote (see "Hero quote" below), the
+  personal-assistant composer directly under the quote, and a **bento-style focus-area grid** below that. The composer scrolls with the page
+  — it is **not** pinned to the viewport bottom; on a typical desktop the composer is already on-screen at load, and pinning it overlapped
+  the last row of focus cards behind a progressive blur, which read as "the input is parked on top of my last tile."
 - Sending a message from the hub composer creates a new admin-scope chat and pops the workspace assistant sheet so the streaming response
   surfaces in context. The hub itself stays a hub — every visit lands on the empty composer again.
 - The focus-area cards are split into two subgroups:
@@ -139,8 +139,8 @@ layout) and renders above the `<Outlet />`. Pages render only their body content
 `WorkspaceHeader` is a thin wrapper around `<Header />` that:
 
 - passes `chatVariant="workspace"` so the chat button opens the personal-assistant sheet,
-- passes `hideSelectors` so the language and theme selectors don't render (workspace is private chrome; locale/theme belong to the public
-  site),
+- passes `hideLanguageSelector` so the language selector doesn't render (the workspace is English-only); the theme selector stays — dark
+  mode is a workspace concern too,
 - builds a breadcrumb trail from the current pathname against a centralized `WORKSPACE_TITLES` map (path-segment → `{ de, en }` label) in
   the same file. On nested routes (e.g. `/workspace/projects/<id>`) intermediate segments that have a `WORKSPACE_ICONS` entry collapse to a
   linked icon-only crumb — the label stays in `sr-only` so screen readers still announce it. This is what lets the project detail page drop
@@ -155,9 +155,9 @@ the layout — the page file itself just exports its component. For a new **deta
 also add an entry to `TRAILING_LABEL_SELECTORS` keyed by the route id.
 
 The `<Header />` primitive grew two props to support this: `breadcrumbs?: ReadonlyArray<Crumb>` (replaces the brand cluster with
-`logo + trail`; only the logo is a link, home) and `hideSelectors?: boolean`. The `Crumb` type carries an optional `iconOnly` flag that
-`WorkspaceHeader` sets on linked intermediate crumbs. The previous `brandLabel` variant is no longer used by any workspace page but is kept
-on the primitive for any future surface that needs `logo + plain label` chrome.
+`logo + trail`; only the logo is a link, home) and `hideLanguageSelector?: boolean`. The `Crumb` type carries an optional `iconOnly` flag
+that `WorkspaceHeader` sets on linked intermediate crumbs. The previous `brandLabel` variant is no longer used by any workspace page but is
+kept on the primitive for any future surface that needs `logo + plain label` chrome.
 
 ### Hub layout
 

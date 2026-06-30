@@ -8,6 +8,7 @@ import type { GqlSAdminMutationProjectRequestDeleteArgs, GqlSMutationResult, Gql
 // — just loses the backlink. Reserve this for spam that survived OTP
 // verification; use `projectRequestArchive` for the routine "no thanks" case.
 export async function projectRequestDelete(
+    userId: string,
     args: GqlSAdminMutationProjectRequestDeleteArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -20,6 +21,7 @@ export async function projectRequestDelete(
         if (deleted.length === 0) {
             throw new Error(`projectRequestDelete: row ${args.projectRequestId} not found`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

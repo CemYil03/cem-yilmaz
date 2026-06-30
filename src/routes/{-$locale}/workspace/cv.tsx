@@ -146,7 +146,7 @@ function ExperienceSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Ex
                     ) : (
                         <DraggableItem key={row.cvExperienceId} id={row.cvExperienceId} index={index} state={ordered} locale={locale}>
                             <RowCard
-                                title={`${row.roleDe} — ${row.companyDe}`}
+                                title={`${row.roleDe} — ${row.company}`}
                                 subtitle={`${row.startDate} → ${row.endDate ?? 'heute'}`}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
@@ -181,8 +181,7 @@ function ExperienceForm({
     const [form, setForm] = useState({
         roleDe: row?.roleDe ?? '',
         roleEn: row?.roleEn ?? '',
-        companyDe: row?.companyDe ?? '',
-        companyEn: row?.companyEn ?? '',
+        company: row?.company ?? '',
         startDate: row?.startDate ?? '',
         endDate: row?.endDate ?? '',
         descriptionDe: row?.descriptionDe ?? '',
@@ -201,8 +200,7 @@ function ExperienceForm({
                     cvExperienceId: row?.cvExperienceId ?? null,
                     roleDe: form.roleDe,
                     roleEn: form.roleEn,
-                    companyDe: form.companyDe,
-                    companyEn: form.companyEn,
+                    company: form.company,
                     startDate: form.startDate,
                     endDate: form.endDate || null,
                     descriptionDe: form.descriptionDe,
@@ -229,11 +227,8 @@ function ExperienceForm({
                 <Field label={{ de: 'Rolle (EN)', en: 'Role (EN)' }[locale]}>
                     <Input value={form.roleEn} onChange={(e) => setForm({ ...form, roleEn: e.target.value })} required />
                 </Field>
-                <Field label={{ de: 'Unternehmen (DE)', en: 'Company (DE)' }[locale]}>
-                    <Input value={form.companyDe} onChange={(e) => setForm({ ...form, companyDe: e.target.value })} required />
-                </Field>
-                <Field label={{ de: 'Unternehmen (EN)', en: 'Company (EN)' }[locale]}>
-                    <Input value={form.companyEn} onChange={(e) => setForm({ ...form, companyEn: e.target.value })} required />
+                <Field label={{ de: 'Unternehmen', en: 'Company' }[locale]}>
+                    <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} required />
                 </Field>
                 <Field label={{ de: 'Beginn', en: 'Start' }[locale]}>
                     <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} required />
@@ -301,7 +296,7 @@ function EducationSection({ rows, locale, onChanged }: { rows: ReadonlyArray<Edu
                     ) : (
                         <DraggableItem key={row.cvEducationId} id={row.cvEducationId} index={index} state={ordered} locale={locale}>
                             <RowCard
-                                title={`${row.degreeDe} · ${row.institutionDe}`}
+                                title={`${row.degreeDe} · ${row.institution}`}
                                 subtitle={`${row.startDate ?? '?'} → ${row.endDate}`}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
@@ -336,8 +331,7 @@ function EducationForm({
     const [form, setForm] = useState({
         degreeDe: row?.degreeDe ?? '',
         degreeEn: row?.degreeEn ?? '',
-        institutionDe: row?.institutionDe ?? '',
-        institutionEn: row?.institutionEn ?? '',
+        institution: row?.institution ?? '',
         subjectDe: row?.subjectDe ?? '',
         subjectEn: row?.subjectEn ?? '',
         startDate: row?.startDate ?? '',
@@ -355,8 +349,7 @@ function EducationForm({
                     cvEducationId: row?.cvEducationId ?? null,
                     degreeDe: form.degreeDe,
                     degreeEn: form.degreeEn,
-                    institutionDe: form.institutionDe,
-                    institutionEn: form.institutionEn,
+                    institution: form.institution,
                     subjectDe: form.subjectDe,
                     subjectEn: form.subjectEn,
                     startDate: form.startDate || null,
@@ -380,11 +373,8 @@ function EducationForm({
                 <Field label={{ de: 'Abschluss (EN)', en: 'Degree (EN)' }[locale]}>
                     <Input value={form.degreeEn} onChange={(e) => setForm({ ...form, degreeEn: e.target.value })} required />
                 </Field>
-                <Field label={{ de: 'Institution (DE)', en: 'Institution (DE)' }[locale]}>
-                    <Input value={form.institutionDe} onChange={(e) => setForm({ ...form, institutionDe: e.target.value })} required />
-                </Field>
-                <Field label={{ de: 'Institution (EN)', en: 'Institution (EN)' }[locale]}>
-                    <Input value={form.institutionEn} onChange={(e) => setForm({ ...form, institutionEn: e.target.value })} required />
+                <Field label={{ de: 'Institution', en: 'Institution' }[locale]}>
+                    <Input value={form.institution} onChange={(e) => setForm({ ...form, institution: e.target.value })} required />
                 </Field>
                 <Field label={{ de: 'Fach (DE)', en: 'Subject (DE)' }[locale]}>
                     <Input value={form.subjectDe} onChange={(e) => setForm({ ...form, subjectDe: e.target.value })} />
@@ -956,6 +946,7 @@ function DateField({ value, onChange, required }: { value: string; onChange: (ne
                 value={value ? parseISO(value) : undefined}
                 onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : '')}
                 className="w-full"
+                captionLayout="dropdown"
             />
             {required ? (
                 <input

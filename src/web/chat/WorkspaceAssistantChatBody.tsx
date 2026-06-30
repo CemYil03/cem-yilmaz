@@ -25,6 +25,7 @@ import {
     WorkspaceChatToolApprovalRespondDocument,
 } from '../graphql/generated';
 import type { Locale } from '../utils/locale';
+import { Button } from '../components/base/button';
 
 // Shared inner body for both the workspace-assistant Sheet (narrow viewports)
 // and Sidebar (`lg+`). Owns the transcript, the empty state with the
@@ -169,15 +170,15 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
                 hasChat ? (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button
+                            <Button
+                                variant="ghost"
                                 type="button"
                                 onClick={resetChat}
                                 disabled={live.isGenerating}
                                 aria-label={newChatLabel[locale]}
-                                className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <MessageSquarePlusIcon className="size-4" />
-                            </button>
+                            </Button>
                         </TooltipTrigger>
                         <TooltipContent side="top">{newChatLabel[locale]}</TooltipContent>
                     </Tooltip>

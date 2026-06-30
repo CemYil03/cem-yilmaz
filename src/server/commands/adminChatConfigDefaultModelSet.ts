@@ -15,6 +15,7 @@ import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 // bootstrap), then updates `defaultModelId` and `updatedAt`. Idempotent on
 // "set to the same value" — same row, fresh `updatedAt`.
 export async function adminChatConfigDefaultModelSet(
+    userId: string,
     args: { modelId: string },
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -31,6 +32,7 @@ export async function adminChatConfigDefaultModelSet(
             .set({ defaultModelId: args.modelId, updatedAt: new Date() })
             .where(eq(adminChatConfig.adminChatConfigId, ADMIN_CHAT_CONFIG_SINGLETON_ID))
             .returning({ adminChatConfigId: adminChatConfig.adminChatConfigId });
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: updated?.adminChatConfigId ?? null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -91,10 +91,11 @@ doesn't leave a hollow header.
 time). On save the page issues the matching `cv*Upsert` mutation through URQL and re-fetches the read query with
 `requestPolicy: 'network-only'`.
 
-Date fields use the shared `DatePicker` (`src/web/components/base/date-picker.tsx`). The form keeps the GraphQL wire shape (ISO `YYYY-MM-DD`
-strings) as its storage type and adapts at the picker boundary via `date-fns` `parseISO` / `format`; a thin `DateField` wrapper in the
-editor handles the conversion and mirrors the value into a hidden input so native HTML5 `required` validation still fires (the picker itself
-is a popover trigger button, not a form control).
+Date fields use the shared `DatePicker` (`src/web/components/base/date-picker.tsx`) with `captionLayout="dropdown"` so the year and month
+become selectors rather than one-step arrows — CV entries routinely sit decades back, and one click per month is not navigation. The form
+keeps the GraphQL wire shape (ISO `YYYY-MM-DD` strings) as its storage type and adapts at the picker boundary via `date-fns` `parseISO` /
+`format`; a thin `DateField` wrapper in the editor handles the conversion and mirrors the value into a hidden input so native HTML5
+`required` validation still fires (the picker itself is a popover trigger button, not a form control).
 
 Reordering uses a vertical drag-and-drop gesture: every row carries a `GripVertical` handle on its leading edge, the user drags the row into
 its new slot, and on drop the editor commits the new order via the matching `cv*Reorder` mutation (which rewrites every row's `position`

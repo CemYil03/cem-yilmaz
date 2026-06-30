@@ -21,6 +21,7 @@ import type {
 // tool-result, so the LLM sees the same turn shape it originally produced.
 
 export async function chatInputCollectionRespond(
+    adminUserId: string | null,
     { collectionMessageId, answers, assistantOptions }: GqlSMutationChatInputCollectionRespondArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -130,6 +131,13 @@ export async function chatInputCollectionRespond(
         await chatMessageAppend(serverRuntime.db, serverRuntime, assistantOptions.generationId, userInputSpine, async (transaction) => {
             await transaction.insert(chatMessagesUserInput).values(userInputVariant);
         });
+
+        // Admin sends fan out `userUpdates` after the userInput commits so a
+        // subscribed `User` query re-resolves. Visitor (public) scope stays
+        // quiet — no `User` row to refresh.
+        if (adminUserId && dispatch.scope === 'admin') {
+            await serverRuntime.publish.userUpdates({ userId: adminUserId });
+        }
 
         // Phase 4 — Run the next assistant turn detached. The helper
         // re-loads the rows itself; `toModelMessages` then pairs the new

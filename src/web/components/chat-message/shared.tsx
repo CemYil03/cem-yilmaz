@@ -2,6 +2,7 @@ import * as React from 'react';
 import { format, parseISO } from 'date-fns';
 import { BracesIcon, CheckIcon, CopyIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLocale } from '../../hooks/useLocale';
 import { cn } from '../../utils/cn';
 import { Button } from '../base/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../base/dialog';
@@ -29,7 +30,7 @@ export function Bubble({ tone, children }: { tone: 'user' | 'assistant'; childre
             data-tone={tone}
             className={cn(
                 'max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed shadow-sm',
-                tone === 'user' ? 'rounded-br-sm bg-primary text-primary-foreground' : 'rounded-bl-sm bg-muted text-foreground',
+                tone === 'user' ? 'rounded-br-sm bg-brand text-brand-foreground' : 'rounded-bl-sm bg-muted text-foreground',
             )}
         >
             {children}
@@ -49,6 +50,7 @@ export function Timestamp({ iso, className }: { iso: string; className?: string 
 // transient feedback; the sonner toast (rendered by `<Toaster />` in the root
 // layout) is the durable confirmation, including on clipboard failure.
 export function CopyButton({ text }: { text: string }) {
+    const locale = useLocale();
     const [copied, setCopied] = React.useState(false);
     const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     React.useEffect(() => {
@@ -59,23 +61,23 @@ export function CopyButton({ text }: { text: string }) {
     const onCopy = React.useCallback(async () => {
         try {
             await navigator.clipboard.writeText(text);
-            toast.success('Copied to clipboard');
+            toast.success({ de: 'In die Zwischenablage kopiert', en: 'Copied to clipboard' }[locale]);
         } catch {
             // Surface the failure as an error toast — the icon swap below
             // still fires so the click never feels swallowed, but the user
             // gets a clear signal that nothing actually landed on the clipboard.
-            toast.error('Could not copy to clipboard');
+            toast.error({ de: 'Kopieren in die Zwischenablage fehlgeschlagen', en: 'Could not copy to clipboard' }[locale]);
         }
         setCopied(true);
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => setCopied(false), 1500);
-    }, [text]);
+    }, [text, locale]);
     return (
         <Button
             type="button"
             variant="ghost"
             size="icon-xs"
-            aria-label={copied ? 'Copied' : 'Copy message'}
+            aria-label={copied ? { de: 'Kopiert', en: 'Copied' }[locale] : { de: 'Nachricht kopieren', en: 'Copy message' }[locale]}
             onClick={onCopy}
             className="opacity-70 hover:opacity-100"
         >

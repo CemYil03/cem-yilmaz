@@ -4,6 +4,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationCvExperienceDeleteArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 export async function cvExperienceDelete(
+    userId: string,
     args: GqlSAdminMutationCvExperienceDeleteArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -16,6 +17,7 @@ export async function cvExperienceDelete(
         if (deleted.length === 0) {
             throw new Error(`cvExperienceDelete: row ${args.cvExperienceId} not found`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -7,6 +7,7 @@ import { toGqlProjectLink } from '../mappers/toGqlProjectLink';
 // Flip `pinned` on a single link row. Returns the row in its new state so
 // the URQL cache update is a straight write, no follow-up read needed.
 export async function projectLinkTogglePin(
+    userId: string,
     args: GqlSAdminMutationProjectLinkTogglePinArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -18,6 +19,7 @@ export async function projectLinkTogglePin(
             .where(eq(projectLinks.projectLinkId, args.projectLinkId))
             .returning();
         if (!updated) throw new Error(`projectLinkTogglePin: row ${args.projectLinkId} not found`);
+        await serverRuntime.publish.userUpdates({ userId });
         return toGqlProjectLink(updated);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

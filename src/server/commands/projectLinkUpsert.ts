@@ -10,6 +10,7 @@ import { toGqlProjectLink } from '../mappers/toGqlProjectLink';
 // the relationship to the activity is immutable once set, the FK
 // cascade-set-null handles activity deletion.
 export async function projectLinkUpsert(
+    userId: string,
     args: GqlSAdminMutationProjectLinkUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -30,6 +31,7 @@ export async function projectLinkUpsert(
     };
 
     try {
+        let row;
         if (input.projectLinkId) {
             const [updated] = await serverRuntime.db
                 .update(projectLinks)
@@ -43,11 +45,14 @@ export async function projectLinkUpsert(
                 .where(eq(projectLinks.projectLinkId, input.projectLinkId))
                 .returning();
             if (!updated) throw new Error(`projectLinkUpsert: row ${input.projectLinkId} not found`);
-            return toGqlProjectLink(updated);
+            row = updated;
+        } else {
+            const [inserted] = await serverRuntime.db.insert(projectLinks).values(payload).returning();
+            if (!inserted) throw new Error('projectLinkUpsert: insert returned no rows');
+            row = inserted;
         }
-        const [inserted] = await serverRuntime.db.insert(projectLinks).values(payload).returning();
-        if (!inserted) throw new Error('projectLinkUpsert: insert returned no rows');
-        return toGqlProjectLink(inserted);
+        await serverRuntime.publish.userUpdates({ userId });
+        return toGqlProjectLink(row);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

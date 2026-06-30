@@ -11,13 +11,13 @@ const seed = async (
     position: number,
 ) =>
     cvExperienceUpsert(
+        requestingSession.userId!,
         {
             input: {
                 cvExperienceId: null,
                 roleDe: role,
                 roleEn: role,
-                companyDe: 'c',
-                companyEn: 'c',
+                company: 'c',
                 startDate: '2024-01-01',
                 endDate: '2024-12-31',
                 descriptionDe: 'd',

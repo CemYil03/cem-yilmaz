@@ -157,8 +157,38 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
     // `toolCallId` so `chatToolApprovalRespond` can later write a
     // `chatMessagesToolCall` row whose id matches what the agent originally
     // produced.
+    //
+    // Same pass also surfaces `tool-error` parts to the logger. The AI SDK
+    // emits these when a tool's `execute` throws — and **silently** wraps
+    // the error as an inert content part. Without this hop the orchestrator
+    // sees the error result, narrates a confabulated "tool unreachable"
+    // sentence, and nothing reaches `serverRuntime.log`. We do not write a
+    // dedicated row for the error (the matching tool-call row from Phase B
+    // already exists for the call; its `toolResult` carries the error
+    // payload the LLM saw). We just refuse to let it disappear.
     const approvalRequestedToolCallIds = new Set<string>();
     for (const part of step.content) {
+        if (part.type === 'tool-error') {
+            const errorPart = part as unknown as { toolName?: string; toolCallId?: string; error: unknown };
+            const wrapped =
+                errorPart.error instanceof Error
+                    ? errorPart.error
+                    : new Error(
+                          `tool-error from ${errorPart.toolName ?? 'unknown'} (toolCallId=${errorPart.toolCallId ?? '?'}): ${
+                              typeof errorPart.error === 'string'
+                                  ? errorPart.error
+                                  : (() => {
+                                        try {
+                                            return JSON.stringify(errorPart.error);
+                                        } catch {
+                                            return String(errorPart.error);
+                                        }
+                                    })()
+                          }`,
+                      );
+            serverRuntime.log.error(wrapped, requestingSession);
+            continue;
+        }
         if (part.type !== 'tool-approval-request') continue;
         const approvalPart = part as unknown as {
             approvalId: string;

@@ -51,6 +51,7 @@ describe('projectLinkUpsert', () => {
         const projectId = await projectSeed();
 
         const link = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: null,
@@ -78,6 +79,7 @@ describe('projectLinkUpsert', () => {
         const activityId = await activitySeed(projectId);
 
         const link = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: null,
@@ -101,6 +103,7 @@ describe('projectLinkUpsert', () => {
         const projectId = await projectSeed();
         const activityId = await activitySeed(projectId);
         const created = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: null,
@@ -117,6 +120,7 @@ describe('projectLinkUpsert', () => {
         );
 
         const updated = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: created.projectLinkId,
@@ -146,6 +150,7 @@ describe('projectLinkTogglePin', () => {
         const { serverRuntime, requestingSession } = await commandSetup();
         const projectId = await projectSeed();
         const created = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: null,
@@ -161,9 +166,19 @@ describe('projectLinkTogglePin', () => {
             serverRuntime,
         );
 
-        const pinned = await projectLinkTogglePin({ projectLinkId: created.projectLinkId }, requestingSession, serverRuntime);
+        const pinned = await projectLinkTogglePin(
+            requestingSession.userId!,
+            { projectLinkId: created.projectLinkId },
+            requestingSession,
+            serverRuntime,
+        );
         expect(pinned.pinned).toBe(true);
-        const unpinned = await projectLinkTogglePin({ projectLinkId: created.projectLinkId }, requestingSession, serverRuntime);
+        const unpinned = await projectLinkTogglePin(
+            requestingSession.userId!,
+            { projectLinkId: created.projectLinkId },
+            requestingSession,
+            serverRuntime,
+        );
         expect(unpinned.pinned).toBe(false);
     });
 });
@@ -173,6 +188,7 @@ describe('projectLinkDelete', () => {
         const { serverRuntime, requestingSession } = await commandSetup();
         const projectId = await projectSeed();
         const created = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: null,
@@ -188,7 +204,12 @@ describe('projectLinkDelete', () => {
             serverRuntime,
         );
 
-        const result = await projectLinkDelete({ projectLinkId: created.projectLinkId }, requestingSession, serverRuntime);
+        const result = await projectLinkDelete(
+            requestingSession.userId!,
+            { projectLinkId: created.projectLinkId },
+            requestingSession,
+            serverRuntime,
+        );
         expect(result.success).toBe(true);
 
         const remaining = await testDb.select().from(projectLinks).where(eq(projectLinks.projectLinkId, created.projectLinkId));
@@ -199,6 +220,7 @@ describe('projectLinkDelete', () => {
         const { serverRuntime, requestingSession } = await commandSetup();
         const projectId = await projectSeed();
         const created = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: null,
@@ -225,6 +247,7 @@ describe('projectLinkDelete', () => {
         const projectId = await projectSeed();
         const activityId = await activitySeed(projectId);
         const created = await projectLinkUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectLinkId: null,

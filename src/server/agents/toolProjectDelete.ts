@@ -4,6 +4,7 @@ import { projectDelete } from '../commands/projectDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
+import { requireAdminUserId } from './requireAdminUserId';
 
 // Delete a workspace project. The `Tasks.projectId` FK is ON DELETE CASCADE
 // so every project-bound task disappears with it — surface that in the
@@ -32,7 +33,7 @@ export function toolProjectDelete({ serverRuntime, session, mutations }: Project
         ].join(' '),
         inputSchema: projectDeleteInputSchema,
         execute: async (input) => {
-            const result = await projectDelete({ projectId: input.projectId }, session, serverRuntime);
+            const result = await projectDelete(requireAdminUserId(session), { projectId: input.projectId }, session, serverRuntime);
             mutations.push({ kind: 'projectDelete', id: input.projectId, title: input.title });
             return result;
         },

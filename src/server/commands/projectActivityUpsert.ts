@@ -43,6 +43,7 @@ function resolveDirection(kind: ProjectActivityKind, explicit: ProjectActivityDi
 // other kinds reject any non-null value so the editor's "hide for non-
 // offer kinds" stays a sound invariant.
 export async function projectActivityUpsert(
+    userId: string,
     args: GqlSAdminMutationProjectActivityUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -92,6 +93,7 @@ export async function projectActivityUpsert(
             if (!updated) {
                 throw new Error(`projectActivityUpsert: row ${input.activityId} not found`);
             }
+            await serverRuntime.publish.userUpdates({ userId });
             return toGqlProjectActivity(updated);
         }
 
@@ -104,6 +106,7 @@ export async function projectActivityUpsert(
         if (!hasAttachLink && !hasAttachFile) {
             const [inserted] = await serverRuntime.db.insert(projectActivities).values(payload).returning();
             if (!inserted) throw new Error('projectActivityUpsert: insert returned no rows');
+            await serverRuntime.publish.userUpdates({ userId });
             return toGqlProjectActivity(inserted);
         }
 
@@ -163,6 +166,7 @@ export async function projectActivityUpsert(
 
         const uploadsById = new Map<string, FileUpload>();
         if (result.fileUpload) uploadsById.set(result.fileUpload.fileUploadId, result.fileUpload);
+        await serverRuntime.publish.userUpdates({ userId });
         return toGqlProjectActivity(
             result.inserted,
             result.linkRow ? [result.linkRow] : [],

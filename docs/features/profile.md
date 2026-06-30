@@ -163,6 +163,15 @@ Failures are logged and swallowed — the chat path has already returned.
    instructions.
 4. Write all four fields plus `synthesizedAt`, `synthesisModelId`, reset `observationsSinceSynthesis` to 0.
 
+### Synthesis liveness
+
+The "Re-synthesize now" button on `/workspace/profile` reflects whether the job is actually running, not a hand-tuned timeout.
+`AdminProfile.synthesisInProgress` is a derived boolean resolved by `profileSynthesisInProgressGet`, which asks pg-boss (via
+`serverRuntime.jobs.activeCount(profileSynthesize)`) whether a job for the `profile-synthesize` queue is currently in `created` | `retry` |
+`active`. Nothing on the `Profile` row tracks this — pg-boss is the single source of truth and auto-expires stuck `active` rows after each
+job's `expireInSeconds`, so a worker crash cannot leave the spinner stuck on. While the flag is `true`, the page polls the route loader
+every ~1.5s and stops the moment pg-boss reports the queue is clear.
+
 ### Firewall
 
 The boundary is one query: `profileSummaryGet` in `src/server/queries/profileSummaryGet.ts`. It selects only `Profile.summary`. The agent

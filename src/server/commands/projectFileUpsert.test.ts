@@ -44,6 +44,7 @@ describe('projectFileUpsert', () => {
         const fileUploadId = await uploadSeed(user.userId);
 
         const file = await projectFileUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectFileId: null,
@@ -72,6 +73,7 @@ describe('projectFileUpsert', () => {
 
         await expect(
             projectFileUpsert(
+                requestingSession.userId!,
                 {
                     input: {
                         projectFileId: null,
@@ -95,6 +97,7 @@ describe('projectFileUpsert', () => {
         const fileUploadId = await uploadSeed(user.userId);
 
         const created = await projectFileUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectFileId: null,
@@ -111,6 +114,7 @@ describe('projectFileUpsert', () => {
         );
 
         const updated = await projectFileUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectFileId: created.projectFileId,
@@ -138,6 +142,7 @@ describe('projectFileTogglePin', () => {
         const projectId = await projectSeed();
         const fileUploadId = await uploadSeed(user.userId);
         const created = await projectFileUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectFileId: null,
@@ -153,7 +158,12 @@ describe('projectFileTogglePin', () => {
             serverRuntime,
         );
 
-        const pinned = await projectFileTogglePin({ projectFileId: created.projectFileId }, requestingSession, serverRuntime);
+        const pinned = await projectFileTogglePin(
+            requestingSession.userId!,
+            { projectFileId: created.projectFileId },
+            requestingSession,
+            serverRuntime,
+        );
         expect(pinned.pinned).toBe(true);
         expect(pinned.fileUpload.fileUploadId).toBe(fileUploadId);
     });
@@ -165,6 +175,7 @@ describe('projectFileDelete', () => {
         const projectId = await projectSeed();
         const fileUploadId = await uploadSeed(user.userId);
         const created = await projectFileUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectFileId: null,
@@ -180,7 +191,7 @@ describe('projectFileDelete', () => {
             serverRuntime,
         );
 
-        await projectFileDelete({ projectFileId: created.projectFileId }, requestingSession, serverRuntime);
+        await projectFileDelete(requestingSession.userId!, { projectFileId: created.projectFileId }, requestingSession, serverRuntime);
 
         const remainingFiles = await testDb.select().from(projectFiles).where(eq(projectFiles.projectFileId, created.projectFileId));
         expect(remainingFiles).toHaveLength(0);
@@ -194,6 +205,7 @@ describe('projectFileDelete', () => {
         const projectId = await projectSeed();
         const fileUploadId = await uploadSeed(user.userId);
         const created = await projectFileUpsert(
+            requestingSession.userId!,
             {
                 input: {
                     projectFileId: null,

@@ -4,6 +4,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationCvHobbyReorderArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 export async function cvHobbyReorder(
+    userId: string,
     args: GqlSAdminMutationCvHobbyReorderArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -15,6 +16,7 @@ export async function cvHobbyReorder(
                 await transaction.update(cvHobby).set({ position, updatedAt: new Date() }).where(eq(cvHobby.cvHobbyId, cvHobbyId));
             }
         });
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -535,6 +535,10 @@ export type ChatMessageUserAttachmentCreate = typeof chatMessageUserAttachments.
 // returns both, the client picks at render), so a column-per-locale stays
 // simpler than a JSONB blob and lets the admin form bind to two plain inputs.
 //
+// Proper nouns that read the same in both locales (company names, institution
+// names, skill labels) stay on a single column — same rationale as
+// `cvSkill.label`. See `docs/architecture/content-model.md`.
+//
 // `endDate IS NULL` is the canonical "ongoing" marker for the timeline rows
 // (rendered as "heute" / "today"). `technologies` is a Postgres `text[]` —
 // the labels are display chips, never queried by relation, so a join table
@@ -546,8 +550,7 @@ export const cvExperience = pgTable(
         cvExperienceId: uuid().primaryKey(),
         roleDe: varchar().notNull(),
         roleEn: varchar().notNull(),
-        companyDe: varchar().notNull(),
-        companyEn: varchar().notNull(),
+        company: varchar().notNull(),
         startDate: date().notNull(),
         endDate: date(),
         descriptionDe: text().notNull(),
@@ -570,8 +573,7 @@ export const cvEducation = pgTable(
         cvEducationId: uuid().primaryKey(),
         degreeDe: varchar().notNull(),
         degreeEn: varchar().notNull(),
-        institutionDe: varchar().notNull(),
-        institutionEn: varchar().notNull(),
+        institution: varchar().notNull(),
         subjectDe: varchar().notNull().default(''),
         subjectEn: varchar().notNull().default(''),
         startDate: date(),
@@ -638,45 +640,45 @@ export type CvHobbyCreate = typeof cvHobby.$inferInsert;
 //
 // - `summary` — short, factual, INJECTED into the personal assistant's system
 //   prompt on every turn (`agentPersonalAssistant`). Read by exactly one
-//   command: `profileSummaryGet`.
+//   command: `compassSummaryGet`.
 // - `prose` — long-form, human-readable insight for Cem. Never injected.
-// - `psychProfile` — psychological synthesis. Firewall: never injected and
+// - `psychology` — psychological synthesis. Firewall: never injected and
 //   never fed back to any agent.
 //
 // The firewall is enforced by storage separation: the agent factory only ever
-// reads `summary`; `prose` / `psychProfile` are surfaced exclusively at
-// `/workspace/profile`. See `docs/features/profile.md`.
+// reads `summary`; `prose` / `psychology` are surfaced exclusively at
+// `/workspace/compass`. See `docs/features/compass.md`.
 //
 // One row in the table. We model it as a regular table (not a key/value blob)
-// so the four big text fields stay typed, and so a future Phase 2 split into
-// per-user profiles is a column addition rather than a schema move.
+// so the big text fields stay typed, and so a future Phase 2 split into
+// per-user compasses is a column addition rather than a schema move.
 
-export const profile = pgTable('Profile', {
-    profileId: uuid().primaryKey(),
+export const compass = pgTable('Compass', {
+    compassId: uuid().primaryKey(),
     summary: text().notNull().default(''),
     prose: text().notNull().default(''),
-    psychProfile: text().notNull().default(''),
+    psychology: text().notNull().default(''),
     // Timestamp of the last successful synthesis; null until the synthesizer
     // has run at least once. Renders the "Last synthesized · 2 days ago"
-    // label on the profile page.
+    // label on the compass page.
     synthesizedAt: timestamp({ withTimezone: true }),
     synthesisModelId: varchar(),
     // Count of non-dismissed observations recorded since the last synthesis.
     // The analyzer increments this; the synthesizer resets it to 0. The
     // synthesizer auto-triggers when this crosses
-    // `PROFILE_SYNTHESIS_THRESHOLD` (`src/server/agents/profileConfig.ts`).
+    // `COMPASS_SYNTHESIS_THRESHOLD` (`src/server/agents/compassConfig.ts`).
     observationsSinceSynthesis: integer().notNull().default(0),
     createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
 });
 
-export type Profile = typeof profile.$inferSelect;
-export type ProfileCreate = typeof profile.$inferInsert;
+export type Compass = typeof compass.$inferSelect;
+export type CompassCreate = typeof compass.$inferInsert;
 
 // --- Admin chat config -------------------------------------------------------
 //
 // Singleton row holding the workspace assistant's saved default model id.
-// Same shape and id strategy as `Profile` above: one fixed-id row today, a
+// Same shape and id strategy as `Compass` above: one fixed-id row today, a
 // future per-user split is a column addition rather than a schema move. The
 // list of selectable models lives in code (`src/server/agents/adminChatModels.ts`)
 // — this table stores ONLY which one is currently picked. The row is
@@ -694,31 +696,31 @@ export type AdminChatConfig = typeof adminChatConfig.$inferSelect;
 export type AdminChatConfigCreate = typeof adminChatConfig.$inferInsert;
 
 // Categories the analyzer LLM is told to choose from. Stored as a flat enum
-// in a `varchar` (mirrors the GraphQL `ProfileObservationCategory` enum).
+// in a `varchar` (mirrors the GraphQL `CompassObservationCategory` enum).
 //
 // - `factual`     — concrete facts (skills, preferences, life events, plans)
 // - `behavioral`  — communication style, decision patterns, working habits
 // - `psychological` — state of mind, stress markers, recurring emotional themes
-export const profileObservationCategories = ['factual', 'behavioral', 'psychological'] as const;
-export type ProfileObservationCategory = (typeof profileObservationCategories)[number];
+export const compassObservationCategories = ['factual', 'behavioral', 'psychological'] as const;
+export type CompassObservationCategory = (typeof compassObservationCategories)[number];
 
 // One row per observation extracted by the analyzer. `sourceChatMessageId`
 // FKs the user-side message the observation was derived from; the UI uses it
 // to render the inline "N observations" pill in the chat thread and to
-// deep-link from the profile page back to the source.
+// deep-link from the compass page back to the source.
 //
 // `dismissedAt` is a soft delete: dismissed rows skip the synthesizer pass
 // but are kept around as an audit trail so Cem can revisit what the model
 // once thought.
-export const profileObservations = pgTable(
-    'ProfileObservations',
+export const compassObservations = pgTable(
+    'CompassObservations',
     {
         observationId: uuid().primaryKey(),
         // `set null` so an observation outlives a chat message delete — the
         // synthesis already absorbed it. The UI's "open source message"
         // affordance just degrades gracefully when this is null.
         sourceChatMessageId: uuid(),
-        category: varchar().$type<ProfileObservationCategory>().notNull(),
+        category: varchar().$type<CompassObservationCategory>().notNull(),
         content: text().notNull(),
         // Optional 0..1 confidence the analyzer reported. Displayed as a
         // faint indicator on the observation card; never used to filter.
@@ -734,22 +736,22 @@ export const profileObservations = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('ProfileObservations_category_createdAt_idx').on(table.category, table.createdAt),
-        index('ProfileObservations_sourceChatMessageId_idx').on(table.sourceChatMessageId),
-        index('ProfileObservations_createdAt_idx').on(table.createdAt),
+        index('CompassObservations_category_createdAt_idx').on(table.category, table.createdAt),
+        index('CompassObservations_sourceChatMessageId_idx').on(table.sourceChatMessageId),
+        index('CompassObservations_createdAt_idx').on(table.createdAt),
     ],
 );
 
-export type ProfileObservation = typeof profileObservations.$inferSelect;
-export type ProfileObservationCreate = typeof profileObservations.$inferInsert;
+export type CompassObservation = typeof compassObservations.$inferSelect;
+export type CompassObservationCreate = typeof compassObservations.$inferInsert;
 
 // Tracks which chat messages have already been seen by the analyzer. Keyed
 // by `chatMessageId` so re-runs are idempotent — the job handler short-circuits
 // when a row already exists. `observationsCreated` records how many rows the
 // analyzer produced for this message: zero is a legitimate "looked, nothing
 // to log" outcome and distinguishes the message from "not yet processed."
-export const profileMessageAnalysis = pgTable(
-    'ProfileMessageAnalysis',
+export const compassMessageAnalysis = pgTable(
+    'CompassMessageAnalysis',
     {
         chatMessageId: uuid().primaryKey(),
         observationsCreated: integer().notNull().default(0),
@@ -766,8 +768,8 @@ export const profileMessageAnalysis = pgTable(
     ],
 );
 
-export type ProfileMessageAnalysis = typeof profileMessageAnalysis.$inferSelect;
-export type ProfileMessageAnalysisCreate = typeof profileMessageAnalysis.$inferInsert;
+export type CompassMessageAnalysis = typeof compassMessageAnalysis.$inferSelect;
+export type CompassMessageAnalysisCreate = typeof compassMessageAnalysis.$inferInsert;
 
 // --- Project requests --------------------------------------------------------
 //

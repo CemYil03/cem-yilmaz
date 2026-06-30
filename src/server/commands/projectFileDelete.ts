@@ -9,6 +9,7 @@ import type { GqlSAdminMutationProjectFileDeleteArgs, GqlSMutationResult, GqlSSe
 // later want eager cleanup, do it here only after confirming no other
 // reference exists.
 export async function projectFileDelete(
+    userId: string,
     args: GqlSAdminMutationProjectFileDeleteArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -21,6 +22,7 @@ export async function projectFileDelete(
         if (deleted.length === 0) {
             throw new Error(`projectFileDelete: row ${args.projectFileId} not found`);
         }
+        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -6,8 +6,7 @@ query CvPage {
             cvExperienceId
             roleDe
             roleEn
-            companyDe
-            companyEn
+            company
             startDate
             endDate
             descriptionDe
@@ -20,8 +19,7 @@ query CvPage {
             cvEducationId
             degreeDe
             degreeEn
-            institutionDe
-            institutionEn
+            institution
             subjectDe
             subjectEn
             startDate

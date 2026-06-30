@@ -46,6 +46,7 @@ export interface ChatMutationDispatch {
 // replay whatever's persisted.
 
 export async function chatMessageCreate(
+    adminUserId: string | null,
     { chatId: attemptedChatId, message, fileUploadIds, assistantOptions, currentPagePath }: GqlSMutationChatMessageCreateArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -221,6 +222,15 @@ export async function chatMessageCreate(
                 await transaction.insert(chatMessageUserAttachments).values(attachmentJoinInserts);
             }
         });
+
+        // After the user-message commit but before the detached assistant
+        // turn kicks off — admin mutations fan out `userUpdates` so any
+        // `User`-bound subscriber re-resolves. Visitor (public) sends stay
+        // quiet: they own no `User` row to refresh. See
+        // `docs/architecture/workspace-access.md`.
+        if (adminUserId && dispatch.scope === 'admin') {
+            await serverRuntime.publish.userUpdates({ userId: adminUserId });
+        }
 
         // Phase 5 — Run the assistant turn DETACHED. The mutation returns
         // as soon as the user-side row is committed so the client gets its

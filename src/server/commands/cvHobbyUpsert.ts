@@ -6,6 +6,7 @@ import type { GqlSAdminMutationCvHobbyUpsertArgs, GqlSCvHobby, GqlSSession } fro
 import { toGqlCvHobby } from '../mappers/toGqlCvHobby';
 
 export async function cvHobbyUpsert(
+    userId: string,
     args: GqlSAdminMutationCvHobbyUpsertArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
@@ -22,14 +23,18 @@ export async function cvHobbyUpsert(
     };
 
     try {
+        let row;
         if (input.cvHobbyId) {
             const [updated] = await serverRuntime.db.update(cvHobby).set(payload).where(eq(cvHobby.cvHobbyId, input.cvHobbyId)).returning();
             if (!updated) throw new Error(`cvHobbyUpsert: row ${input.cvHobbyId} not found`);
-            return toGqlCvHobby(updated);
+            row = updated;
+        } else {
+            const [inserted] = await serverRuntime.db.insert(cvHobby).values(payload).returning();
+            if (!inserted) throw new Error('cvHobbyUpsert: insert returned no rows');
+            row = inserted;
         }
-        const [inserted] = await serverRuntime.db.insert(cvHobby).values(payload).returning();
-        if (!inserted) throw new Error('cvHobbyUpsert: insert returned no rows');
-        return toGqlCvHobby(inserted);
+        await serverRuntime.publish.userUpdates({ userId });
+        return toGqlCvHobby(row);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;
