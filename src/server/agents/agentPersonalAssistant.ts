@@ -1,5 +1,6 @@
 import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
+import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 import { profileSummaryGet } from '../queries/profileSummaryGet';
 import { currentDateForAgent, googleAgentProviderOptions } from './agentScaffolding';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
@@ -81,11 +82,20 @@ export async function agentPersonalAssistant({
     onStepFinish,
 }: AgentChatOptions) {
     const profileSummary = await profileSummaryGet(serverRuntime);
+    // Per-turn model: the admin composer surfaces a dropdown bound to the
+    // catalog (`adminChatModels.ts`); each chat send carries the picked
+    // `modelId` on `assistantOptions`. When omitted (a non-composer code path,
+    // or a pre-existing client without the field) we fall back to the admin's
+    // persisted default. The runtime factory validates the resolved id
+    // against the catalog and throws on unknown ids. See
+    // `docs/features/admin-chat-config.md`.
+    const requestedModelId = assistantOptions.modelId ?? null;
+    const resolvedModelId = requestedModelId ?? (await adminChatConfigGet(serverRuntime.db)).defaultModelId;
     return new ToolLoopAgent({
-        // Model binding lives on `serverRuntime.ai`. Phase 2 may swap to a
-        // dedicated personal-assistant model id; today both agents share the
-        // same Gemini binding.
-        model: serverRuntime.ai.userConversationModel(),
+        // Model binding lives on `serverRuntime.ai`. The admin chooses per
+        // turn via the composer dropdown; `requestedModelId` carries that
+        // selection through `ChatAssistantOptions.modelId`.
+        model: serverRuntime.ai.userConversationModel(resolvedModelId),
         onStepFinish,
         providerOptions: googleAgentProviderOptions,
         // Bumped to 8 — a single user turn can now chain "delegate → user

@@ -51,6 +51,19 @@ interface ChatComposerProps {
      *  bottom-left of the composer. Defaults to true. The visitor dialog
      *  passes `false` — page visitors never need to gate tool calls. */
     showApprovalMode?: boolean;
+    /** Catalog of chat models the user can pick from. When passed together
+     *  with `selectedModelId` and `onModelChange`, the composer renders a
+     *  model-selection dropdown in the addon row and uses the selected
+     *  model's `supportedMediaTypes` as the file picker's `accept` filter.
+     *  Visitor surfaces don't pass these — they stay on the single hardcoded
+     *  fallback model. See `docs/features/admin-chat-config.md`. */
+    availableModels?: ReadonlyArray<{
+        modelId: string;
+        label: string;
+        supportedMediaTypes: ReadonlyArray<string>;
+    }>;
+    selectedModelId?: string;
+    onModelChange?: (modelId: string) => void;
     /** Extra content rendered in the bottom-left addon slot, beside (or in
      *  place of) the approval-mode selector. Use this to inject
      *  surface-specific controls — the visitor dialog uses it for a
@@ -68,6 +81,7 @@ interface ChatMessageCreateVariables {
     fileUploadIds?: string[] | null;
     generationId?: string | null;
     requireToolCallApprovals: boolean;
+    modelId?: string | null;
 }
 
 const defaultExtractResult = (data: unknown): { chatId: string } | null => {
@@ -86,6 +100,9 @@ export function ChatComposer({
     placeholder = 'Type a message…',
     autoFocus = false,
     showApprovalMode = true,
+    availableModels,
+    selectedModelId,
+    onModelChange,
     addonStart,
     locale,
 }: ChatComposerProps) {
@@ -97,6 +114,20 @@ export function ChatComposer({
     const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
     const [mode, setMode] = useState<ToolCallApprovalMode>('auto');
     const [, sendMessage] = useMutation(sendMutation);
+
+    // The active model gates which file types the picker accepts. Only the
+    // workspace surface passes `availableModels`; visitor surfaces leave this
+    // undefined so the picker stays permissive (no `accept` filter).
+    const activeModel = availableModels?.find((model) => model.modelId === selectedModelId) ?? null;
+    const acceptedMediaTypes = activeModel ? activeModel.supportedMediaTypes.join(',') : undefined;
+    // Human tooltip on the paperclip — "Attach files (PDF, Word, …)" — so the
+    // user knows what the active model accepts before opening the picker.
+    const attachmentsTitle = activeModel
+        ? {
+              de: `Anhängen (${formatMediaTypeHint(activeModel.supportedMediaTypes)})`,
+              en: `Attach (${formatMediaTypeHint(activeModel.supportedMediaTypes)})`,
+          }[locale]
+        : undefined;
 
     const updateAttachment = useCallback((localId: string, patch: Partial<ComposerAttachment>) => {
         setAttachments((current) =>
@@ -172,6 +203,7 @@ export function ChatComposer({
             fileUploadIds,
             generationId,
             requireToolCallApprovals: mode === 'manual',
+            modelId: selectedModelId ?? null,
         });
 
         const created = result.data ? extractResult(result.data) : null;
@@ -190,7 +222,7 @@ export function ChatComposer({
         // Don't clear `generationId` on success — the turn is still running
         // detached on the server. The `TurnEnded` event clears it.
         onMessageSent?.(created.chatId);
-    }, [attachments, chatId, draft, mode, onMessageSent, sendMessage, beginTurn, endTurn, extractResult]);
+    }, [attachments, chatId, draft, mode, onMessageSent, sendMessage, beginTurn, endTurn, extractResult, selectedModelId]);
 
     return (
         <MessageComposer
@@ -205,9 +237,25 @@ export function ChatComposer({
             attachments={attachments}
             onAttachmentsAdd={onAttachmentsAdd}
             onAttachmentRemove={onAttachmentRemove}
+            accept={acceptedMediaTypes}
+            attachmentsTitle={attachmentsTitle}
             addonStart={
                 <>
                     {addonStart}
+                    {availableModels && selectedModelId && onModelChange ? (
+                        <Select value={selectedModelId} onValueChange={onModelChange} disabled={isLocked}>
+                            <SelectTrigger size="sm" aria-label={{ de: 'Modell', en: 'Model' }[locale]} className="h-7 gap-1 px-2 text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableModels.map((model) => (
+                                    <SelectItem key={model.modelId} value={model.modelId}>
+                                        {model.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    ) : null}
                     {showApprovalMode ? (
                         <Select value={mode} onValueChange={(value) => setMode(value as ToolCallApprovalMode)} disabled={isLocked}>
                             <SelectTrigger size="sm" aria-label="Tool call approval mode" className="h-7 gap-1 px-2 text-xs">
@@ -223,4 +271,27 @@ export function ChatComposer({
             }
         />
     );
+}
+
+// Shortens a list of IANA media types into a tooltip-friendly hint —
+// `application/pdf` → "PDF",
+// `application/vnd.openxmlformats-officedocument.wordprocessingml.document` → "Word",
+// any `image/*` collapses to "images". Used only for the paperclip tooltip;
+// the actual `accept` filter still carries the full list.
+function formatMediaTypeHint(mediaTypes: ReadonlyArray<string>): string {
+    const labels = new Set<string>();
+    for (const mediaType of mediaTypes) {
+        if (mediaType.startsWith('image/')) {
+            labels.add('images');
+        } else if (mediaType === 'application/pdf') {
+            labels.add('PDF');
+        } else if (mediaType.includes('wordprocessingml') || mediaType === 'application/msword') {
+            labels.add('Word');
+        } else if (mediaType.includes('spreadsheetml') || mediaType === 'application/vnd.ms-excel') {
+            labels.add('Excel');
+        } else if (mediaType.startsWith('text/')) {
+            labels.add('text');
+        }
+    }
+    return Array.from(labels).join(', ');
 }

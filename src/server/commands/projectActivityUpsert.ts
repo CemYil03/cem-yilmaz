@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import { projectActivities } from '../db/schema';
-import type { ProjectActivityCreate } from '../db/schema';
+import { fileUploads, projectActivities, projectFiles, projectLinks } from '../db/schema';
+import type { FileUpload, ProjectActivityCreate, ProjectFile, ProjectLink } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationProjectActivityUpsertArgs, GqlSProjectActivity, GqlSSession } from '../graphql/generated';
 import { toGqlProjectActivity } from '../mappers/toGqlProjectActivity';
@@ -12,6 +12,17 @@ import { toGqlProjectActivity } from '../mappers/toGqlProjectActivity';
 // payload bypass the one-active-timer invariant. Pass an explicit
 // `durationSec` for non-timer rows when the duration is known
 // ("the call was 45 min"); leave it null otherwise.
+//
+// `attachLink*` / `attachFile*` are optional one-shot side-effects on
+// create: when present the server inserts a matching `ProjectLink` /
+// `ProjectFile` in the same transaction with `activityId` pointing at the
+// new activity. Lets the editor say "log offer + attach PDF" without two
+// round-trips. Ignored on update — edit the resource rows directly through
+// their own mutations.
+//
+// `amountCents` / `offerStatus` are meaningful only when `kind = offer`;
+// other kinds reject any non-null value so the editor's "hide for non-
+// offer kinds" stays a sound invariant.
 export async function projectActivityUpsert(
     args: GqlSAdminMutationProjectActivityUpsertArgs,
     requestingSession: GqlSSession,
@@ -28,6 +39,9 @@ export async function projectActivityUpsert(
     if (input.channel && input.kind !== 'clientContact' && input.kind !== 'meeting') {
         throw new Error(`projectActivityUpsert: channel is only valid for clientContact / meeting (got kind='${input.kind}')`);
     }
+    if ((input.amountCents != null || input.offerStatus != null) && input.kind !== 'offer') {
+        throw new Error(`projectActivityUpsert: amountCents / offerStatus are only valid for offer (got kind='${input.kind}')`);
+    }
 
     const now = new Date();
     const activityId = input.activityId ?? crypto.randomUUID();
@@ -43,6 +57,8 @@ export async function projectActivityUpsert(
         startedAt: null,
         endedAt: null,
         durationSec: input.durationSec ?? null,
+        amountCents: input.amountCents ?? null,
+        offerStatus: input.offerStatus ?? null,
         updatedAt: now,
     };
 
@@ -58,11 +74,81 @@ export async function projectActivityUpsert(
             }
             return toGqlProjectActivity(updated);
         }
-        const [inserted] = await serverRuntime.db.insert(projectActivities).values(payload).returning();
-        if (!inserted) {
-            throw new Error('projectActivityUpsert: insert returned no rows');
+
+        // Create path. If either attach field set is supplied, run the
+        // insert + side-effect inserts as one transaction so a failed
+        // resource insert rolls the activity back too.
+        const hasAttachLink = !!input.attachLinkUrl && !!input.attachLinkKind;
+        const hasAttachFile = !!input.attachFileUploadId && !!input.attachFileKind;
+
+        if (!hasAttachLink && !hasAttachFile) {
+            const [inserted] = await serverRuntime.db.insert(projectActivities).values(payload).returning();
+            if (!inserted) throw new Error('projectActivityUpsert: insert returned no rows');
+            return toGqlProjectActivity(inserted);
         }
-        return toGqlProjectActivity(inserted);
+
+        const result = await serverRuntime.db.transaction(async (tx) => {
+            const [inserted] = await tx.insert(projectActivities).values(payload).returning();
+            if (!inserted) throw new Error('projectActivityUpsert: insert returned no rows');
+
+            let linkRow: ProjectLink | undefined;
+            let fileRow: ProjectFile | undefined;
+            let fileUpload: FileUpload | undefined;
+
+            if (hasAttachLink) {
+                const [link] = await tx
+                    .insert(projectLinks)
+                    .values({
+                        projectLinkId: crypto.randomUUID(),
+                        projectId: inserted.projectId,
+                        activityId: inserted.activityId,
+                        url: input.attachLinkUrl!,
+                        label: input.attachLinkLabel ?? null,
+                        kind: input.attachLinkKind!,
+                        pinned: input.attachLinkPinned ?? false,
+                        updatedAt: now,
+                    })
+                    .returning();
+                if (!link) throw new Error('projectActivityUpsert: attached link insert returned no rows');
+                linkRow = link;
+            }
+
+            if (hasAttachFile) {
+                const [upload] = await tx
+                    .select()
+                    .from(fileUploads)
+                    .where(eq(fileUploads.fileUploadId, input.attachFileUploadId!))
+                    .limit(1);
+                if (!upload) throw new Error(`projectActivityUpsert: fileUpload ${input.attachFileUploadId} not found`);
+                fileUpload = upload;
+                const [file] = await tx
+                    .insert(projectFiles)
+                    .values({
+                        projectFileId: crypto.randomUUID(),
+                        projectId: inserted.projectId,
+                        activityId: inserted.activityId,
+                        fileUploadId: input.attachFileUploadId!,
+                        label: input.attachFileLabel ?? null,
+                        kind: input.attachFileKind!,
+                        pinned: input.attachFilePinned ?? false,
+                        updatedAt: now,
+                    })
+                    .returning();
+                if (!file) throw new Error('projectActivityUpsert: attached file insert returned no rows');
+                fileRow = file;
+            }
+
+            return { inserted, linkRow, fileRow, fileUpload };
+        });
+
+        const uploadsById = new Map<string, FileUpload>();
+        if (result.fileUpload) uploadsById.set(result.fileUpload.fileUploadId, result.fileUpload);
+        return toGqlProjectActivity(
+            result.inserted,
+            result.linkRow ? [result.linkRow] : [],
+            result.fileRow ? [result.fileRow] : [],
+            uploadsById,
+        );
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

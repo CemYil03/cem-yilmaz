@@ -208,3 +208,19 @@ of three artifacts produced by an out-of-loop profiler that watches admin chat m
   job records observations and may auto-trigger a synthesis. The visitor agent never enqueues this job.
 - **Firewall**: `profileSummaryGet` reads exactly one column (`Profile.summary`). The richer `prose` and `psychProfile` fields are surfaced
   only at `/workspace/profile` and never reach any agent. Storage separation, not prompt hygiene, is what enforces the boundary.
+
+## Per-turn model selection (admin only)
+
+The admin composer surfaces a dropdown of available chat models; the picked id rides on each mutation through
+`ChatAssistantOptions.modelId`. The admin agent factory reads it, falls back to the persisted default
+(`AdminChatConfig.defaultModelId`), and asks the runtime for a `LanguageModel`. The runtime catalog-validates the id and throws on
+anything outside the catalog.
+
+- **Catalog**: `src/server/agents/adminChatModels.ts` lists the four available Gemini models with their per-model `supportedMediaTypes`.
+  Adding a model is a single edit there.
+- **Wire**: `ChatAssistantOptions.modelId` is optional and admin-only by code — the visitor agent ignores it and the runtime uses the
+  catalog fallback for visitor turns.
+- **Persistence**: the dropdown is sticky — picking a new model also fires `chatConfigDefaultModelSet` so the next chat opens with the
+  new default.
+
+See [`docs/features/admin-chat-config.md`](../features/admin-chat-config.md) for the full surface, dropdown behavior, and firewall details.

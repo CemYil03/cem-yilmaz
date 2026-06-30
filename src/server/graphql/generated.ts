@@ -20,8 +20,10 @@ export interface GqlSAdmin {
     __typename?: 'Admin';
     activeTimer?: Maybe<GqlSProjectActivity>;
     chat: GqlSChat;
+    chatConfig: GqlSAdminChatConfig;
     chats: Array<GqlSChat>;
     profile: GqlSAdminProfile;
+    project: GqlSProject;
     projectRequests: Array<GqlSProjectRequest>;
     projectRequestsInboxCount: Scalars['Int']['output'];
     projects: Array<GqlSProject>;
@@ -32,6 +34,10 @@ export interface GqlSAdmin {
 
 export type GqlSAdminChatArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminProjectArgs = {
+    projectId: Scalars['ID']['input'];
 };
 
 export type GqlSAdminProjectRequestsArgs = {
@@ -46,8 +52,22 @@ export type GqlSAdminPublicChatArgs = {
     chatId: Scalars['ID']['input'];
 };
 
+export interface GqlSAdminChatConfig {
+    __typename?: 'AdminChatConfig';
+    availableModels: Array<GqlSAdminChatModel>;
+    defaultModelId: Scalars['String']['output'];
+}
+
+export interface GqlSAdminChatModel {
+    __typename?: 'AdminChatModel';
+    label: Scalars['String']['output'];
+    modelId: Scalars['String']['output'];
+    supportedMediaTypes: Array<Scalars['String']['output']>;
+}
+
 export interface GqlSAdminMutation {
     __typename?: 'AdminMutation';
+    chatConfigDefaultModelSet: GqlSMutationResult;
     chatInputCollectionRespond?: Maybe<GqlSChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlSChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlSChatMessageCreateResult>;
@@ -68,6 +88,12 @@ export interface GqlSAdminMutation {
     projectActivityDelete: GqlSMutationResult;
     projectActivityUpsert: GqlSProjectActivity;
     projectDelete: GqlSMutationResult;
+    projectFileDelete: GqlSMutationResult;
+    projectFileTogglePin: GqlSProjectFile;
+    projectFileUpsert: GqlSProjectFile;
+    projectLinkDelete: GqlSMutationResult;
+    projectLinkTogglePin: GqlSProjectLink;
+    projectLinkUpsert: GqlSProjectLink;
     projectReorder: GqlSMutationResult;
     projectRequestArchive: GqlSMutationResult;
     projectRequestDelete: GqlSMutationResult;
@@ -78,6 +104,10 @@ export interface GqlSAdminMutation {
     taskReorder: GqlSMutationResult;
     taskUpsert: GqlSTask;
 }
+
+export type GqlSAdminMutationChatConfigDefaultModelSetArgs = {
+    modelId: Scalars['String']['input'];
+};
 
 export type GqlSAdminMutationChatInputCollectionRespondArgs = {
     answers: Array<GqlSChatMessageUserInputAnswerCreate>;
@@ -161,6 +191,30 @@ export type GqlSAdminMutationProjectActivityUpsertArgs = {
 
 export type GqlSAdminMutationProjectDeleteArgs = {
     projectId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectFileDeleteArgs = {
+    projectFileId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectFileTogglePinArgs = {
+    projectFileId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectFileUpsertArgs = {
+    input: GqlSProjectFileUpsert;
+};
+
+export type GqlSAdminMutationProjectLinkDeleteArgs = {
+    projectLinkId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectLinkTogglePinArgs = {
+    projectLinkId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationProjectLinkUpsertArgs = {
+    input: GqlSProjectLinkUpsert;
 };
 
 export type GqlSAdminMutationProjectReorderArgs = {
@@ -341,6 +395,7 @@ export interface GqlSChatAssistantInputValueTime {
 
 export type GqlSChatAssistantOptions = {
     generationId?: InputMaybe<Scalars['ID']['input']>;
+    modelId?: InputMaybe<Scalars['String']['input']>;
     requireToolCallApprovals: Scalars['Boolean']['input'];
 };
 
@@ -646,6 +701,8 @@ export interface GqlSProject {
     completedAt?: Maybe<Scalars['DateTime']['output']>;
     createdAt: Scalars['DateTime']['output'];
     description?: Maybe<Scalars['String']['output']>;
+    files: Array<GqlSProjectFile>;
+    links: Array<GqlSProjectLink>;
     notes?: Maybe<Scalars['String']['output']>;
     position: Scalars['Int']['output'];
     projectId: Scalars['ID']['output'];
@@ -661,13 +718,17 @@ export interface GqlSProject {
 export interface GqlSProjectActivity {
     __typename?: 'ProjectActivity';
     activityId: Scalars['ID']['output'];
+    amountCents?: Maybe<Scalars['Int']['output']>;
     channel?: Maybe<GqlSProjectActivityChannel>;
     createdAt: Scalars['DateTime']['output'];
     durationSec?: Maybe<Scalars['Int']['output']>;
     endedAt?: Maybe<Scalars['DateTime']['output']>;
+    files: Array<GqlSProjectFile>;
     kind: GqlSProjectActivityKind;
+    links: Array<GqlSProjectLink>;
     notes?: Maybe<Scalars['String']['output']>;
     occurredAt: Scalars['DateTime']['output'];
+    offerStatus?: Maybe<GqlSProjectOfferStatus>;
     projectId: Scalars['ID']['output'];
     startedAt?: Maybe<Scalars['DateTime']['output']>;
     taskId?: Maybe<Scalars['ID']['output']>;
@@ -679,11 +740,21 @@ export type GqlSProjectActivityChannel = 'aiAssistant' | 'email' | 'inPerson' | 
 
 export type GqlSProjectActivityCreate = {
     activityId?: InputMaybe<Scalars['ID']['input']>;
+    amountCents?: InputMaybe<Scalars['Int']['input']>;
+    attachFileKind?: InputMaybe<GqlSProjectFileKind>;
+    attachFileLabel?: InputMaybe<Scalars['String']['input']>;
+    attachFilePinned?: InputMaybe<Scalars['Boolean']['input']>;
+    attachFileUploadId?: InputMaybe<Scalars['ID']['input']>;
+    attachLinkKind?: InputMaybe<GqlSProjectLinkKind>;
+    attachLinkLabel?: InputMaybe<Scalars['String']['input']>;
+    attachLinkPinned?: InputMaybe<Scalars['Boolean']['input']>;
+    attachLinkUrl?: InputMaybe<Scalars['String']['input']>;
     channel?: InputMaybe<GqlSProjectActivityChannel>;
     durationSec?: InputMaybe<Scalars['Int']['input']>;
     kind: GqlSProjectActivityKind;
     notes?: InputMaybe<Scalars['String']['input']>;
     occurredAt: Scalars['DateTime']['input'];
+    offerStatus?: InputMaybe<GqlSProjectOfferStatus>;
     projectId: Scalars['ID']['input'];
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title: Scalars['String']['input'];
@@ -702,6 +773,58 @@ export type GqlSProjectCreate = {
     status: GqlSProjectStatus;
     title: Scalars['String']['input'];
 };
+
+export interface GqlSProjectFile {
+    __typename?: 'ProjectFile';
+    activityId?: Maybe<Scalars['ID']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlSFileUpload;
+    kind: GqlSProjectFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    projectFileId: Scalars['ID']['output'];
+    projectId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSProjectFileKind = 'contract' | 'invoice' | 'offer' | 'other' | 'screenshot';
+
+export type GqlSProjectFileUpsert = {
+    activityId?: InputMaybe<Scalars['ID']['input']>;
+    fileUploadId: Scalars['ID']['input'];
+    kind: GqlSProjectFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    projectFileId?: InputMaybe<Scalars['ID']['input']>;
+    projectId: Scalars['ID']['input'];
+};
+
+export interface GqlSProjectLink {
+    __typename?: 'ProjectLink';
+    activityId?: Maybe<Scalars['ID']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    kind: GqlSProjectLinkKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    projectId: Scalars['ID']['output'];
+    projectLinkId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    url: Scalars['String']['output'];
+}
+
+export type GqlSProjectLinkKind = 'figma' | 'gdrive' | 'github' | 'invoice' | 'malt' | 'notion' | 'offer' | 'other';
+
+export type GqlSProjectLinkUpsert = {
+    activityId?: InputMaybe<Scalars['ID']['input']>;
+    kind: GqlSProjectLinkKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    projectId: Scalars['ID']['input'];
+    projectLinkId?: InputMaybe<Scalars['ID']['input']>;
+    url: Scalars['String']['input'];
+};
+
+export type GqlSProjectOfferStatus = 'accepted' | 'rejected' | 'sent' | 'withdrawn';
 
 export interface GqlSProjectRequest {
     __typename?: 'ProjectRequest';
@@ -950,6 +1073,8 @@ export type GqlSResolversTypes = ResolversObject<{
             publicChats: Array<GqlSResolversTypes['Chat']>;
         }
     >;
+    AdminChatConfig: ResolverTypeWrapper<GqlSAdminChatConfig>;
+    AdminChatModel: ResolverTypeWrapper<GqlSAdminChatModel>;
     AdminMutation: ResolverTypeWrapper<GqlSAdminMutation>;
     AdminProfile: ResolverTypeWrapper<GqlSAdminProfile>;
     Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
@@ -1024,6 +1149,13 @@ export type GqlSResolversTypes = ResolversObject<{
     ProjectActivityCreate: GqlSProjectActivityCreate;
     ProjectActivityKind: GqlSProjectActivityKind;
     ProjectCreate: GqlSProjectCreate;
+    ProjectFile: ResolverTypeWrapper<GqlSProjectFile>;
+    ProjectFileKind: GqlSProjectFileKind;
+    ProjectFileUpsert: GqlSProjectFileUpsert;
+    ProjectLink: ResolverTypeWrapper<GqlSProjectLink>;
+    ProjectLinkKind: GqlSProjectLinkKind;
+    ProjectLinkUpsert: GqlSProjectLinkUpsert;
+    ProjectOfferStatus: GqlSProjectOfferStatus;
     ProjectRequest: ResolverTypeWrapper<GqlSProjectRequest>;
     ProjectRequestStatus: GqlSProjectRequestStatus;
     ProjectRequestType: GqlSProjectRequestType;
@@ -1050,6 +1182,8 @@ export type GqlSResolversParentTypes = ResolversObject<{
         publicChat: GqlSResolversParentTypes['Chat'];
         publicChats: Array<GqlSResolversParentTypes['Chat']>;
     };
+    AdminChatConfig: GqlSAdminChatConfig;
+    AdminChatModel: GqlSAdminChatModel;
     AdminMutation: GqlSAdminMutation;
     AdminProfile: GqlSAdminProfile;
     Boolean: Scalars['Boolean']['output'];
@@ -1117,6 +1251,10 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ProjectActivity: GqlSProjectActivity;
     ProjectActivityCreate: GqlSProjectActivityCreate;
     ProjectCreate: GqlSProjectCreate;
+    ProjectFile: GqlSProjectFile;
+    ProjectFileUpsert: GqlSProjectFileUpsert;
+    ProjectLink: GqlSProjectLink;
+    ProjectLinkUpsert: GqlSProjectLinkUpsert;
     ProjectRequest: GqlSProjectRequest;
     Query: Record<PropertyKey, never>;
     Session: Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversParentTypes['Chat']> };
@@ -1137,8 +1275,10 @@ export type GqlSAdminResolvers<
 > = ResolversObject<{
     activeTimer?: Resolver<Maybe<GqlSResolversTypes['ProjectActivity']>, ParentType, ContextType>;
     chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminChatArgs, 'chatId'>>;
+    chatConfig?: Resolver<GqlSResolversTypes['AdminChatConfig'], ParentType, ContextType>;
     chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
     profile?: Resolver<GqlSResolversTypes['AdminProfile'], ParentType, ContextType>;
+    project?: Resolver<GqlSResolversTypes['Project'], ParentType, ContextType, RequireFields<GqlSAdminProjectArgs, 'projectId'>>;
     projectRequests?: Resolver<Array<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType, Partial<GqlSAdminProjectRequestsArgs>>;
     projectRequestsInboxCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     projects?: Resolver<Array<GqlSResolversTypes['Project']>, ParentType, ContextType, Partial<GqlSAdminProjectsArgs>>;
@@ -1147,10 +1287,33 @@ export type GqlSAdminResolvers<
     standaloneTasks?: Resolver<Array<GqlSResolversTypes['Task']>, ParentType, ContextType>;
 }>;
 
+export type GqlSAdminChatConfigResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminChatConfig'] = GqlSResolversParentTypes['AdminChatConfig'],
+> = ResolversObject<{
+    availableModels?: Resolver<Array<GqlSResolversTypes['AdminChatModel']>, ParentType, ContextType>;
+    defaultModelId?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminChatModelResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminChatModel'] = GqlSResolversParentTypes['AdminChatModel'],
+> = ResolversObject<{
+    label?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    modelId?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    supportedMediaTypes?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
 export type GqlSAdminMutationResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminMutation'] = GqlSResolversParentTypes['AdminMutation'],
 > = ResolversObject<{
+    chatConfigDefaultModelSet?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationChatConfigDefaultModelSetArgs, 'modelId'>
+    >;
     chatInputCollectionRespond?: Resolver<
         Maybe<GqlSResolversTypes['ChatMessageCreateResult']>,
         ParentType,
@@ -1265,6 +1428,42 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationProjectDeleteArgs, 'projectId'>
+    >;
+    projectFileDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectFileDeleteArgs, 'projectFileId'>
+    >;
+    projectFileTogglePin?: Resolver<
+        GqlSResolversTypes['ProjectFile'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectFileTogglePinArgs, 'projectFileId'>
+    >;
+    projectFileUpsert?: Resolver<
+        GqlSResolversTypes['ProjectFile'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectFileUpsertArgs, 'input'>
+    >;
+    projectLinkDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectLinkDeleteArgs, 'projectLinkId'>
+    >;
+    projectLinkTogglePin?: Resolver<
+        GqlSResolversTypes['ProjectLink'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectLinkTogglePinArgs, 'projectLinkId'>
+    >;
+    projectLinkUpsert?: Resolver<
+        GqlSResolversTypes['ProjectLink'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectLinkUpsertArgs, 'input'>
     >;
     projectReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -1847,6 +2046,8 @@ export type GqlSProjectResolvers<
     completedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     description?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    files?: Resolver<Array<GqlSResolversTypes['ProjectFile']>, ParentType, ContextType>;
+    links?: Resolver<Array<GqlSResolversTypes['ProjectLink']>, ParentType, ContextType>;
     notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     projectId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
@@ -1864,18 +2065,52 @@ export type GqlSProjectActivityResolvers<
     ParentType extends GqlSResolversParentTypes['ProjectActivity'] = GqlSResolversParentTypes['ProjectActivity'],
 > = ResolversObject<{
     activityId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    amountCents?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
     channel?: Resolver<Maybe<GqlSResolversTypes['ProjectActivityChannel']>, ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     durationSec?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
     endedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    files?: Resolver<Array<GqlSResolversTypes['ProjectFile']>, ParentType, ContextType>;
     kind?: Resolver<GqlSResolversTypes['ProjectActivityKind'], ParentType, ContextType>;
+    links?: Resolver<Array<GqlSResolversTypes['ProjectLink']>, ParentType, ContextType>;
     notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     occurredAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    offerStatus?: Resolver<Maybe<GqlSResolversTypes['ProjectOfferStatus']>, ParentType, ContextType>;
     projectId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     startedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
     taskId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
     title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSProjectFileResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ProjectFile'] = GqlSResolversParentTypes['ProjectFile'],
+> = ResolversObject<{
+    activityId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    fileUpload?: Resolver<GqlSResolversTypes['FileUpload'], ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['ProjectFileKind'], ParentType, ContextType>;
+    label?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    pinned?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    projectFileId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    projectId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSProjectLinkResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ProjectLink'] = GqlSResolversParentTypes['ProjectLink'],
+> = ResolversObject<{
+    activityId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['ProjectLinkKind'], ParentType, ContextType>;
+    label?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    pinned?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    projectId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    projectLinkId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    url?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
 }>;
 
 export type GqlSProjectRequestResolvers<
@@ -1985,6 +2220,8 @@ export type GqlSVisitorChatQuotaResolvers<
 
 export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Admin?: GqlSAdminResolvers<ContextType>;
+    AdminChatConfig?: GqlSAdminChatConfigResolvers<ContextType>;
+    AdminChatModel?: GqlSAdminChatModelResolvers<ContextType>;
     AdminMutation?: GqlSAdminMutationResolvers<ContextType>;
     AdminProfile?: GqlSAdminProfileResolvers<ContextType>;
     Chat?: GqlSChatResolvers<ContextType>;
@@ -2035,6 +2272,8 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ProfileObservation?: GqlSProfileObservationResolvers<ContextType>;
     Project?: GqlSProjectResolvers<ContextType>;
     ProjectActivity?: GqlSProjectActivityResolvers<ContextType>;
+    ProjectFile?: GqlSProjectFileResolvers<ContextType>;
+    ProjectLink?: GqlSProjectLinkResolvers<ContextType>;
     ProjectRequest?: GqlSProjectRequestResolvers<ContextType>;
     Query?: GqlSQueryResolvers<ContextType>;
     Session?: GqlSSessionResolvers<ContextType>;
@@ -2080,6 +2319,21 @@ export const GqlSProjectActivityKindSchema: z.ZodType<
     'clientContact' | 'meeting' | 'milestone' | 'note' | 'offer' | 'work'
 > = z.enum(['clientContact', 'meeting', 'milestone', 'note', 'offer', 'work']);
 
+export const GqlSProjectFileKindSchema: z.ZodType<
+    'contract' | 'invoice' | 'offer' | 'other' | 'screenshot',
+    'contract' | 'invoice' | 'offer' | 'other' | 'screenshot'
+> = z.enum(['contract', 'invoice', 'offer', 'other', 'screenshot']);
+
+export const GqlSProjectLinkKindSchema: z.ZodType<
+    'figma' | 'gdrive' | 'github' | 'invoice' | 'malt' | 'notion' | 'offer' | 'other',
+    'figma' | 'gdrive' | 'github' | 'invoice' | 'malt' | 'notion' | 'offer' | 'other'
+> = z.enum(['figma', 'gdrive', 'github', 'invoice', 'malt', 'notion', 'offer', 'other']);
+
+export const GqlSProjectOfferStatusSchema: z.ZodType<
+    'accepted' | 'rejected' | 'sent' | 'withdrawn',
+    'accepted' | 'rejected' | 'sent' | 'withdrawn'
+> = z.enum(['accepted', 'rejected', 'sent', 'withdrawn']);
+
 export const GqlSProjectRequestStatusSchema: z.ZodType<
     'archived' | 'emailVerified' | 'pendingOtp',
     'archived' | 'emailVerified' | 'pendingOtp'
@@ -2100,6 +2354,7 @@ export const GqlSTaskStatusSchema: z.ZodType<'doing' | 'done' | 'todo', 'doing' 
 export function GqlSChatAssistantOptionsSchema(): z.ZodObject<Properties<GqlSChatAssistantOptions>> {
     return z.object({
         generationId: z.string().nullish(),
+        modelId: z.string().nullish(),
         requireToolCallApprovals: z.boolean(),
     });
 }
@@ -2175,11 +2430,21 @@ export function GqlSCvSkillInputSchema(): z.ZodObject<Properties<GqlSCvSkillInpu
 export function GqlSProjectActivityCreateSchema(): z.ZodObject<Properties<GqlSProjectActivityCreate>> {
     return z.object({
         activityId: z.string().nullish(),
+        amountCents: z.number().nullish(),
+        attachFileKind: GqlSProjectFileKindSchema.nullish(),
+        attachFileLabel: z.string().nullish(),
+        attachFilePinned: z.boolean().nullish(),
+        attachFileUploadId: z.string().nullish(),
+        attachLinkKind: GqlSProjectLinkKindSchema.nullish(),
+        attachLinkLabel: z.string().nullish(),
+        attachLinkPinned: z.boolean().nullish(),
+        attachLinkUrl: z.string().nullish(),
         channel: GqlSProjectActivityChannelSchema.nullish(),
         durationSec: z.number().nullish(),
         kind: GqlSProjectActivityKindSchema,
         notes: z.string().nullish(),
         occurredAt: z.date(),
+        offerStatus: GqlSProjectOfferStatusSchema.nullish(),
         projectId: z.string(),
         taskId: z.string().nullish(),
         title: z.string(),
@@ -2197,6 +2462,30 @@ export function GqlSProjectCreateSchema(): z.ZodObject<Properties<GqlSProjectCre
         startedAt: z.date().nullish(),
         status: GqlSProjectStatusSchema,
         title: z.string(),
+    });
+}
+
+export function GqlSProjectFileUpsertSchema(): z.ZodObject<Properties<GqlSProjectFileUpsert>> {
+    return z.object({
+        activityId: z.string().nullish(),
+        fileUploadId: z.string(),
+        kind: GqlSProjectFileKindSchema,
+        label: z.string().nullish(),
+        pinned: z.boolean().nullish(),
+        projectFileId: z.string().nullish(),
+        projectId: z.string(),
+    });
+}
+
+export function GqlSProjectLinkUpsertSchema(): z.ZodObject<Properties<GqlSProjectLinkUpsert>> {
+    return z.object({
+        activityId: z.string().nullish(),
+        kind: GqlSProjectLinkKindSchema,
+        label: z.string().nullish(),
+        pinned: z.boolean().nullish(),
+        projectId: z.string(),
+        projectLinkId: z.string().nullish(),
+        url: z.string(),
     });
 }
 

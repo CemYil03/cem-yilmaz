@@ -16,20 +16,20 @@ import type {
     GqlSChatAssistantInput,
     GqlSChatAssistantInputValue,
     GqlSChatMessageGeneration,
-    GqlSFileUpload,
     GqlSChatMessage,
     GqlSChatMessageUserInputAnswer,
 } from '../graphql/generated';
 import { toGqlProfileObservation } from './toGqlProfileObservation';
 import { toGqlUser } from './toGqlUser';
+import { toGqlFileUpload } from './toGqlFileUpload';
 
 // Server-rooted URL the bytes are streamed back from. Centralized so the
 // mapper, the upload route, and the download route agree on the path. Path
 // only — same-origin — so the cookie auth the rest of the app uses applies
 // without any cross-origin handling.
-function fileUploadUrl(fileUploadId: string): string {
-    return `/api/file-uploads/${fileUploadId}`;
-}
+//
+// `toGqlFileUpload` lives in `./toGqlFileUpload` and is shared with the
+// project resources mapper.
 
 // Joined view of one persisted chat message: the spine row plus whichever
 // variant-table row matches its `kind`, plus the author user when the variant
@@ -268,16 +268,6 @@ function toGqlChatAssistantInputValue(value: ChatAssistantInputValue): GqlSChatA
 function persistedDateToIsoDate(value: string): string {
     if (value.length > 10 && value.includes('T')) return value.slice(0, 10);
     return value;
-}
-
-function toGqlFileUpload(fileUpload: FileUpload): GqlSFileUpload {
-    return {
-        fileUploadId: fileUpload.fileUploadId,
-        filename: fileUpload.filename,
-        mediaType: fileUpload.mediaType,
-        size: fileUpload.size,
-        url: fileUploadUrl(fileUpload.fileUploadId),
-    };
 }
 
 // Variant-row generation snapshot → GraphQL. Returns `null` when the row

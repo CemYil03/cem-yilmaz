@@ -37,6 +37,7 @@ import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './rou
 import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
 import { Route as Char123LocaleChar125WorkspaceAssistantRouteImport } from './routes/{-$locale}/workspace/assistant'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
+import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
 
 const Char123LocaleChar125Route = Char123LocaleChar125RouteImport.update({
   id: '/{-$locale}',
@@ -197,6 +198,12 @@ const ApiFileUploadsFileUploadIdRoute =
     path: '/api/file-uploads/$fileUploadId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const Char123LocaleChar125WorkspaceProjectsProjectIdRoute =
+  Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport.update({
+    id: '/projects_/$projectId',
+    path: '/projects/$projectId',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/llms.txt': typeof LlmsDottxtRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/llms.txt': typeof LlmsDottxtRoute
@@ -255,6 +263,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -286,6 +295,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/projects_/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/{-$locale}/workspace/projects/$projectId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/llms.txt'
@@ -346,6 +357,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace'
+    | '/{-$locale}/workspace/projects/$projectId'
   id:
     | '__root__'
     | '/llms.txt'
@@ -376,6 +388,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/{-$locale}/workspace/projects_/$projectId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFileUploadsFileUploadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/{-$locale}/workspace/projects_/$projectId': {
+      id: '/{-$locale}/workspace/projects_/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/{-$locale}/workspace/projects/$projectId'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
   }
 }
 
@@ -604,6 +624,7 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceTaxRoute: typeof Char123LocaleChar125WorkspaceTaxRoute
   Char123LocaleChar125WorkspaceVisitorChatsRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   Char123LocaleChar125WorkspaceIndexRoute: typeof Char123LocaleChar125WorkspaceIndexRoute
+  Char123LocaleChar125WorkspaceProjectsProjectIdRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 
 const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceRouteChildren =
@@ -631,6 +652,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceVisitorChatsRoute,
     Char123LocaleChar125WorkspaceIndexRoute:
       Char123LocaleChar125WorkspaceIndexRoute,
+    Char123LocaleChar125WorkspaceProjectsProjectIdRoute:
+      Char123LocaleChar125WorkspaceProjectsProjectIdRoute,
   }
 
 const Char123LocaleChar125WorkspaceRouteWithChildren =

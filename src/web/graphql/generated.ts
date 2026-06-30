@@ -23,8 +23,10 @@ export interface GqlCAdmin {
     __typename?: 'Admin';
     activeTimer?: Maybe<GqlCProjectActivity>;
     chat: GqlCChat;
+    chatConfig: GqlCAdminChatConfig;
     chats: Array<GqlCChat>;
     profile: GqlCAdminProfile;
+    project: GqlCProject;
     projectRequests: Array<GqlCProjectRequest>;
     projectRequestsInboxCount: Scalars['Int']['output'];
     projects: Array<GqlCProject>;
@@ -35,6 +37,10 @@ export interface GqlCAdmin {
 
 export type GqlCAdminChatArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminProjectArgs = {
+    projectId: Scalars['ID']['input'];
 };
 
 export type GqlCAdminProjectRequestsArgs = {
@@ -49,8 +55,22 @@ export type GqlCAdminPublicChatArgs = {
     chatId: Scalars['ID']['input'];
 };
 
+export interface GqlCAdminChatConfig {
+    __typename?: 'AdminChatConfig';
+    availableModels: Array<GqlCAdminChatModel>;
+    defaultModelId: Scalars['String']['output'];
+}
+
+export interface GqlCAdminChatModel {
+    __typename?: 'AdminChatModel';
+    label: Scalars['String']['output'];
+    modelId: Scalars['String']['output'];
+    supportedMediaTypes: Array<Scalars['String']['output']>;
+}
+
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
+    chatConfigDefaultModelSet: GqlCMutationResult;
     chatInputCollectionRespond?: Maybe<GqlCChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlCChatMessageCreateResult>;
     chatToolApprovalRespond?: Maybe<GqlCChatMessageCreateResult>;
@@ -71,6 +91,12 @@ export interface GqlCAdminMutation {
     projectActivityDelete: GqlCMutationResult;
     projectActivityUpsert: GqlCProjectActivity;
     projectDelete: GqlCMutationResult;
+    projectFileDelete: GqlCMutationResult;
+    projectFileTogglePin: GqlCProjectFile;
+    projectFileUpsert: GqlCProjectFile;
+    projectLinkDelete: GqlCMutationResult;
+    projectLinkTogglePin: GqlCProjectLink;
+    projectLinkUpsert: GqlCProjectLink;
     projectReorder: GqlCMutationResult;
     projectRequestArchive: GqlCMutationResult;
     projectRequestDelete: GqlCMutationResult;
@@ -81,6 +107,10 @@ export interface GqlCAdminMutation {
     taskReorder: GqlCMutationResult;
     taskUpsert: GqlCTask;
 }
+
+export type GqlCAdminMutationChatConfigDefaultModelSetArgs = {
+    modelId: Scalars['String']['input'];
+};
 
 export type GqlCAdminMutationChatInputCollectionRespondArgs = {
     answers: Array<GqlCChatMessageUserInputAnswerCreate>;
@@ -164,6 +194,30 @@ export type GqlCAdminMutationProjectActivityUpsertArgs = {
 
 export type GqlCAdminMutationProjectDeleteArgs = {
     projectId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationProjectFileDeleteArgs = {
+    projectFileId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationProjectFileTogglePinArgs = {
+    projectFileId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationProjectFileUpsertArgs = {
+    input: GqlCProjectFileUpsert;
+};
+
+export type GqlCAdminMutationProjectLinkDeleteArgs = {
+    projectLinkId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationProjectLinkTogglePinArgs = {
+    projectLinkId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationProjectLinkUpsertArgs = {
+    input: GqlCProjectLinkUpsert;
 };
 
 export type GqlCAdminMutationProjectReorderArgs = {
@@ -344,6 +398,7 @@ export interface GqlCChatAssistantInputValueTime {
 
 export type GqlCChatAssistantOptions = {
     generationId?: InputMaybe<Scalars['ID']['input']>;
+    modelId?: InputMaybe<Scalars['String']['input']>;
     requireToolCallApprovals: Scalars['Boolean']['input'];
 };
 
@@ -649,6 +704,8 @@ export interface GqlCProject {
     completedAt?: Maybe<Scalars['DateTime']['output']>;
     createdAt: Scalars['DateTime']['output'];
     description?: Maybe<Scalars['String']['output']>;
+    files: Array<GqlCProjectFile>;
+    links: Array<GqlCProjectLink>;
     notes?: Maybe<Scalars['String']['output']>;
     position: Scalars['Int']['output'];
     projectId: Scalars['ID']['output'];
@@ -664,13 +721,17 @@ export interface GqlCProject {
 export interface GqlCProjectActivity {
     __typename?: 'ProjectActivity';
     activityId: Scalars['ID']['output'];
+    amountCents?: Maybe<Scalars['Int']['output']>;
     channel?: Maybe<GqlCProjectActivityChannel>;
     createdAt: Scalars['DateTime']['output'];
     durationSec?: Maybe<Scalars['Int']['output']>;
     endedAt?: Maybe<Scalars['DateTime']['output']>;
+    files: Array<GqlCProjectFile>;
     kind: GqlCProjectActivityKind;
+    links: Array<GqlCProjectLink>;
     notes?: Maybe<Scalars['String']['output']>;
     occurredAt: Scalars['DateTime']['output'];
+    offerStatus?: Maybe<GqlCProjectOfferStatus>;
     projectId: Scalars['ID']['output'];
     startedAt?: Maybe<Scalars['DateTime']['output']>;
     taskId?: Maybe<Scalars['ID']['output']>;
@@ -682,11 +743,21 @@ export type GqlCProjectActivityChannel = 'aiAssistant' | 'email' | 'inPerson' | 
 
 export type GqlCProjectActivityCreate = {
     activityId?: InputMaybe<Scalars['ID']['input']>;
+    amountCents?: InputMaybe<Scalars['Int']['input']>;
+    attachFileKind?: InputMaybe<GqlCProjectFileKind>;
+    attachFileLabel?: InputMaybe<Scalars['String']['input']>;
+    attachFilePinned?: InputMaybe<Scalars['Boolean']['input']>;
+    attachFileUploadId?: InputMaybe<Scalars['ID']['input']>;
+    attachLinkKind?: InputMaybe<GqlCProjectLinkKind>;
+    attachLinkLabel?: InputMaybe<Scalars['String']['input']>;
+    attachLinkPinned?: InputMaybe<Scalars['Boolean']['input']>;
+    attachLinkUrl?: InputMaybe<Scalars['String']['input']>;
     channel?: InputMaybe<GqlCProjectActivityChannel>;
     durationSec?: InputMaybe<Scalars['Int']['input']>;
     kind: GqlCProjectActivityKind;
     notes?: InputMaybe<Scalars['String']['input']>;
     occurredAt: Scalars['DateTime']['input'];
+    offerStatus?: InputMaybe<GqlCProjectOfferStatus>;
     projectId: Scalars['ID']['input'];
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title: Scalars['String']['input'];
@@ -705,6 +776,58 @@ export type GqlCProjectCreate = {
     status: GqlCProjectStatus;
     title: Scalars['String']['input'];
 };
+
+export interface GqlCProjectFile {
+    __typename?: 'ProjectFile';
+    activityId?: Maybe<Scalars['ID']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlCFileUpload;
+    kind: GqlCProjectFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    projectFileId: Scalars['ID']['output'];
+    projectId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCProjectFileKind = 'contract' | 'invoice' | 'offer' | 'other' | 'screenshot';
+
+export type GqlCProjectFileUpsert = {
+    activityId?: InputMaybe<Scalars['ID']['input']>;
+    fileUploadId: Scalars['ID']['input'];
+    kind: GqlCProjectFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    projectFileId?: InputMaybe<Scalars['ID']['input']>;
+    projectId: Scalars['ID']['input'];
+};
+
+export interface GqlCProjectLink {
+    __typename?: 'ProjectLink';
+    activityId?: Maybe<Scalars['ID']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    kind: GqlCProjectLinkKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    projectId: Scalars['ID']['output'];
+    projectLinkId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    url: Scalars['String']['output'];
+}
+
+export type GqlCProjectLinkKind = 'figma' | 'gdrive' | 'github' | 'invoice' | 'malt' | 'notion' | 'offer' | 'other';
+
+export type GqlCProjectLinkUpsert = {
+    activityId?: InputMaybe<Scalars['ID']['input']>;
+    kind: GqlCProjectLinkKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    projectId: Scalars['ID']['input'];
+    projectLinkId?: InputMaybe<Scalars['ID']['input']>;
+    url: Scalars['String']['input'];
+};
+
+export type GqlCProjectOfferStatus = 'accepted' | 'rejected' | 'sent' | 'withdrawn';
 
 export interface GqlCProjectRequest {
     __typename?: 'ProjectRequest';
@@ -1263,6 +1386,7 @@ export type GqlCWorkspaceChatMessageCreateMutationVariables = Exact<{
     fileUploadIds?: Array<string> | string | null | undefined;
     generationId?: string | null | undefined;
     requireToolCallApprovals: boolean;
+    modelId?: string | null | undefined;
 }>;
 
 export type GqlCWorkspaceChatMessageCreateMutation = { admin: { chatMessageCreate: { chatId: string; chatMessageId: string } | null } };
@@ -1272,6 +1396,7 @@ export type GqlCWorkspaceChatInputCollectionRespondMutationVariables = Exact<{
     answers: Array<Schema.GqlCChatMessageUserInputAnswerCreate> | Schema.GqlCChatMessageUserInputAnswerCreate;
     generationId?: string | null | undefined;
     requireToolCallApprovals: boolean;
+    modelId?: string | null | undefined;
 }>;
 
 export type GqlCWorkspaceChatInputCollectionRespondMutation = {
@@ -1284,10 +1409,30 @@ export type GqlCWorkspaceChatToolApprovalRespondMutationVariables = Exact<{
     reason?: string | null | undefined;
     generationId?: string | null | undefined;
     requireToolCallApprovals: boolean;
+    modelId?: string | null | undefined;
 }>;
 
 export type GqlCWorkspaceChatToolApprovalRespondMutation = {
     admin: { chatToolApprovalRespond: { chatId: string; chatMessageId: string } | null };
+};
+
+export type GqlCWorkspaceChatConfigQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceChatConfigQuery = {
+    admin: {
+        chatConfig: {
+            defaultModelId: string;
+            availableModels: Array<{ modelId: string; label: string; supportedMediaTypes: Array<string> }>;
+        };
+    };
+};
+
+export type GqlCWorkspaceChatConfigDefaultModelSetMutationVariables = Exact<{
+    modelId: string;
+}>;
+
+export type GqlCWorkspaceChatConfigDefaultModelSetMutation = {
+    admin: { chatConfigDefaultModelSet: { success: boolean; referenceId: string | null } };
 };
 
 export type GqlCWorkspaceProfileObservationFragment = {
@@ -1672,6 +1817,245 @@ export type GqlCWorkspaceProjectTimerStopMutationVariables = Exact<{
 export type GqlCWorkspaceProjectTimerStopMutation = {
     admin: { projectTimerStop: { activityId: string; endedAt: string | null; durationSec: number | null } };
 };
+
+export type GqlCWorkspaceProjectDetailQueryVariables = Exact<{
+    projectId: string;
+}>;
+
+export type GqlCWorkspaceProjectDetailQuery = {
+    admin: {
+        activeTimer: {
+            activityId: string;
+            projectId: string;
+            taskId: string | null;
+            kind: Schema.GqlCProjectActivityKind;
+            title: string;
+            occurredAt: string;
+            startedAt: string | null;
+            endedAt: string | null;
+            durationSec: number | null;
+        } | null;
+        project: {
+            projectId: string;
+            title: string;
+            description: string | null;
+            notes: string | null;
+            status: Schema.GqlCProjectStatus;
+            position: number;
+            startedAt: string | null;
+            completedAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+            totalWorkSec: number;
+            sourceRequest: {
+                projectRequestId: string;
+                name: string;
+                email: string;
+                company: string | null;
+                projectType: Schema.GqlCProjectRequestType;
+                description: string;
+                budget: string | null;
+                timeline: string | null;
+            } | null;
+            tasks: Array<{
+                taskId: string;
+                projectId: string | null;
+                title: string;
+                notes: string | null;
+                status: Schema.GqlCTaskStatus;
+                position: number;
+                dueAt: string | null;
+                completedAt: string | null;
+            }>;
+            activities: Array<{
+                activityId: string;
+                projectId: string;
+                taskId: string | null;
+                kind: Schema.GqlCProjectActivityKind;
+                channel: Schema.GqlCProjectActivityChannel | null;
+                title: string;
+                notes: string | null;
+                occurredAt: string;
+                startedAt: string | null;
+                endedAt: string | null;
+                durationSec: number | null;
+                amountCents: number | null;
+                offerStatus: Schema.GqlCProjectOfferStatus | null;
+                createdAt: string;
+                links: Array<{
+                    projectLinkId: string;
+                    url: string;
+                    label: string | null;
+                    kind: Schema.GqlCProjectLinkKind;
+                    pinned: boolean;
+                }>;
+                files: Array<{
+                    projectFileId: string;
+                    label: string | null;
+                    kind: Schema.GqlCProjectFileKind;
+                    pinned: boolean;
+                    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                }>;
+            }>;
+            links: Array<{
+                projectLinkId: string;
+                projectId: string;
+                activityId: string | null;
+                url: string;
+                label: string | null;
+                kind: Schema.GqlCProjectLinkKind;
+                pinned: boolean;
+                createdAt: string;
+                updatedAt: string;
+            }>;
+            files: Array<{
+                projectFileId: string;
+                projectId: string;
+                activityId: string | null;
+                label: string | null;
+                kind: Schema.GqlCProjectFileKind;
+                pinned: boolean;
+                createdAt: string;
+                updatedAt: string;
+                fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+            }>;
+        };
+    };
+};
+
+export type GqlCWorkspaceProjectDetailUpsertProjectMutationVariables = Exact<{
+    projectId?: string | null | undefined;
+    title: string;
+    description?: string | null | undefined;
+    notes?: string | null | undefined;
+    status: Schema.GqlCProjectStatus;
+    position?: number | null | undefined;
+    startedAt?: string | null | undefined;
+    completedAt?: string | null | undefined;
+}>;
+
+export type GqlCWorkspaceProjectDetailUpsertProjectMutation = { admin: { projectUpsert: { projectId: string } } };
+
+export type GqlCWorkspaceProjectDetailDeleteProjectMutationVariables = Exact<{
+    projectId: string;
+}>;
+
+export type GqlCWorkspaceProjectDetailDeleteProjectMutation = { admin: { projectDelete: { success: boolean } } };
+
+export type GqlCWorkspaceProjectDetailUpsertTaskMutationVariables = Exact<{
+    taskId?: string | null | undefined;
+    projectId?: string | null | undefined;
+    title: string;
+    notes?: string | null | undefined;
+    status: Schema.GqlCTaskStatus;
+    position: number;
+    dueAt?: string | null | undefined;
+    completedAt?: string | null | undefined;
+}>;
+
+export type GqlCWorkspaceProjectDetailUpsertTaskMutation = { admin: { taskUpsert: { taskId: string } } };
+
+export type GqlCWorkspaceProjectDetailDeleteTaskMutationVariables = Exact<{
+    taskId: string;
+}>;
+
+export type GqlCWorkspaceProjectDetailDeleteTaskMutation = { admin: { taskDelete: { success: boolean } } };
+
+export type GqlCWorkspaceProjectDetailUpsertActivityMutationVariables = Exact<{
+    activityId?: string | null | undefined;
+    projectId: string;
+    taskId?: string | null | undefined;
+    kind: Schema.GqlCProjectActivityKind;
+    channel?: Schema.GqlCProjectActivityChannel | null | undefined;
+    title: string;
+    notes?: string | null | undefined;
+    occurredAt: string;
+    durationSec?: number | null | undefined;
+    amountCents?: number | null | undefined;
+    offerStatus?: Schema.GqlCProjectOfferStatus | null | undefined;
+    attachLinkUrl?: string | null | undefined;
+    attachLinkKind?: Schema.GqlCProjectLinkKind | null | undefined;
+    attachLinkLabel?: string | null | undefined;
+    attachLinkPinned?: boolean | null | undefined;
+    attachFileUploadId?: string | null | undefined;
+    attachFileKind?: Schema.GqlCProjectFileKind | null | undefined;
+    attachFileLabel?: string | null | undefined;
+    attachFilePinned?: boolean | null | undefined;
+}>;
+
+export type GqlCWorkspaceProjectDetailUpsertActivityMutation = { admin: { projectActivityUpsert: { activityId: string } } };
+
+export type GqlCWorkspaceProjectDetailDeleteActivityMutationVariables = Exact<{
+    activityId: string;
+}>;
+
+export type GqlCWorkspaceProjectDetailDeleteActivityMutation = { admin: { projectActivityDelete: { success: boolean } } };
+
+export type GqlCWorkspaceProjectDetailTimerStartMutationVariables = Exact<{
+    projectId: string;
+    taskId?: string | null | undefined;
+    title?: string | null | undefined;
+}>;
+
+export type GqlCWorkspaceProjectDetailTimerStartMutation = {
+    admin: { projectTimerStart: { activityId: string; projectId: string; startedAt: string | null } };
+};
+
+export type GqlCWorkspaceProjectDetailTimerStopMutationVariables = Exact<{
+    activityId: string;
+}>;
+
+export type GqlCWorkspaceProjectDetailTimerStopMutation = {
+    admin: { projectTimerStop: { activityId: string; endedAt: string | null; durationSec: number | null } };
+};
+
+export type GqlCWorkspaceProjectLinkUpsertMutationVariables = Exact<{
+    projectLinkId?: string | null | undefined;
+    projectId: string;
+    activityId?: string | null | undefined;
+    url: string;
+    label?: string | null | undefined;
+    kind: Schema.GqlCProjectLinkKind;
+    pinned?: boolean | null | undefined;
+}>;
+
+export type GqlCWorkspaceProjectLinkUpsertMutation = { admin: { projectLinkUpsert: { projectLinkId: string } } };
+
+export type GqlCWorkspaceProjectLinkDeleteMutationVariables = Exact<{
+    projectLinkId: string;
+}>;
+
+export type GqlCWorkspaceProjectLinkDeleteMutation = { admin: { projectLinkDelete: { success: boolean } } };
+
+export type GqlCWorkspaceProjectLinkTogglePinMutationVariables = Exact<{
+    projectLinkId: string;
+}>;
+
+export type GqlCWorkspaceProjectLinkTogglePinMutation = { admin: { projectLinkTogglePin: { projectLinkId: string; pinned: boolean } } };
+
+export type GqlCWorkspaceProjectFileUpsertMutationVariables = Exact<{
+    projectFileId?: string | null | undefined;
+    projectId: string;
+    activityId?: string | null | undefined;
+    fileUploadId: string;
+    label?: string | null | undefined;
+    kind: Schema.GqlCProjectFileKind;
+    pinned?: boolean | null | undefined;
+}>;
+
+export type GqlCWorkspaceProjectFileUpsertMutation = { admin: { projectFileUpsert: { projectFileId: string } } };
+
+export type GqlCWorkspaceProjectFileDeleteMutationVariables = Exact<{
+    projectFileId: string;
+}>;
+
+export type GqlCWorkspaceProjectFileDeleteMutation = { admin: { projectFileDelete: { success: boolean } } };
+
+export type GqlCWorkspaceProjectFileTogglePinMutationVariables = Exact<{
+    projectFileId: string;
+}>;
+
+export type GqlCWorkspaceProjectFileTogglePinMutation = { admin: { projectFileTogglePin: { projectFileId: string; pinned: boolean } } };
 
 export type GqlCChatMessageGenerationFragment = {
     modelId: string;
@@ -4377,6 +4761,11 @@ export const WorkspaceChatMessageCreateDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'requireToolCallApprovals' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -4424,6 +4813,11 @@ export const WorkspaceChatMessageCreateDocument = {
                                                             kind: 'Variable',
                                                             name: { kind: 'Name', value: 'requireToolCallApprovals' },
                                                         },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'modelId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
                                                     },
                                                 ],
                                             },
@@ -4482,6 +4876,11 @@ export const WorkspaceChatInputCollectionRespondDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'requireToolCallApprovals' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -4524,6 +4923,11 @@ export const WorkspaceChatInputCollectionRespondDocument = {
                                                             kind: 'Variable',
                                                             name: { kind: 'Name', value: 'requireToolCallApprovals' },
                                                         },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'modelId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
                                                     },
                                                 ],
                                             },
@@ -4578,6 +4982,11 @@ export const WorkspaceChatToolApprovalRespondDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'requireToolCallApprovals' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -4626,6 +5035,11 @@ export const WorkspaceChatToolApprovalRespondDocument = {
                                                             name: { kind: 'Name', value: 'requireToolCallApprovals' },
                                                         },
                                                     },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'modelId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
+                                                    },
                                                 ],
                                             },
                                         },
@@ -4646,6 +5060,101 @@ export const WorkspaceChatToolApprovalRespondDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceChatToolApprovalRespondMutation, GqlCWorkspaceChatToolApprovalRespondMutationVariables>;
+export const WorkspaceChatConfigDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceChatConfig' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'chatConfig' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'availableModels' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'modelId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'supportedMediaTypes' } },
+                                                    ],
+                                                },
+                                            },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'defaultModelId' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceChatConfigQuery, GqlCWorkspaceChatConfigQueryVariables>;
+export const WorkspaceChatConfigDefaultModelSetDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceChatConfigDefaultModelSet' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'chatConfigDefaultModelSet' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'modelId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'modelId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceId' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceChatConfigDefaultModelSetMutation, GqlCWorkspaceChatConfigDefaultModelSetMutationVariables>;
 export const WorkspaceProfilePageDocument = {
     kind: 'Document',
     definitions: [
@@ -6859,6 +7368,1406 @@ export const WorkspaceProjectTimerStopDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectTimerStopMutation, GqlCWorkspaceProjectTimerStopMutationVariables>;
+export const WorkspaceProjectDetailDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetail' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'project' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'sourceRequest' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'tasks' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'activities' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'offerStatus' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'links' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'files' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'links' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'files' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'fileUpload' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailQuery, GqlCWorkspaceProjectDetailQueryVariables>;
+export const WorkspaceProjectDetailUpsertProjectDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpsertProject' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'description' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'notes' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectStatus' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'startedAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'projectId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'title' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'description' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'description' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'notes' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'notes' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'status' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'position' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'sourceRequestId' },
+                                                        value: { kind: 'NullValue' },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'startedAt' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'startedAt' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'completedAt' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'projectId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUpsertProjectMutation, GqlCWorkspaceProjectDetailUpsertProjectMutationVariables>;
+export const WorkspaceProjectDetailDeleteProjectDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailDeleteProject' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailDeleteProjectMutation, GqlCWorkspaceProjectDetailDeleteProjectMutationVariables>;
+export const WorkspaceProjectDetailUpsertTaskDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpsertTask' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'notes' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskStatus' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'dueAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'taskUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'taskId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'projectId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'title' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'notes' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'notes' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'status' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'position' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'dueAt' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'dueAt' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'completedAt' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'taskId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUpsertTaskMutation, GqlCWorkspaceProjectDetailUpsertTaskMutationVariables>;
+export const WorkspaceProjectDetailDeleteTaskDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailDeleteTask' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'taskDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taskId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailDeleteTaskMutation, GqlCWorkspaceProjectDetailDeleteTaskMutationVariables>;
+export const WorkspaceProjectDetailUpsertActivityDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpsertActivity' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityKind' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'channel' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityChannel' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'notes' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'occurredAt' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'durationSec' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'amountCents' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'offerStatus' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectOfferStatus' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkUrl' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkKind' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectLinkKind' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkLabel' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkPinned' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachFileUploadId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachFileKind' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectFileKind' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachFileLabel' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachFilePinned' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectActivityUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'activityId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'projectId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'taskId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'kind' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'channel' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'channel' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'title' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'notes' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'notes' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'occurredAt' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'occurredAt' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'durationSec' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'durationSec' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'amountCents' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'amountCents' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'offerStatus' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'offerStatus' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachLinkUrl' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkUrl' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachLinkKind' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkKind' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachLinkLabel' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkLabel' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachLinkPinned' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkPinned' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachFileUploadId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachFileUploadId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachFileKind' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachFileKind' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachFileLabel' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachFileLabel' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'attachFilePinned' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'attachFilePinned' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'activityId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUpsertActivityMutation, GqlCWorkspaceProjectDetailUpsertActivityMutationVariables>;
+export const WorkspaceProjectDetailDeleteActivityDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailDeleteActivity' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectActivityDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'activityId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailDeleteActivityMutation, GqlCWorkspaceProjectDetailDeleteActivityMutationVariables>;
+export const WorkspaceProjectDetailTimerStartDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailTimerStart' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectTimerStart' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taskId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'title' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailTimerStartMutation, GqlCWorkspaceProjectDetailTimerStartMutationVariables>;
+export const WorkspaceProjectDetailTimerStopDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailTimerStop' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectTimerStop' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'activityId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailTimerStopMutation, GqlCWorkspaceProjectDetailTimerStopMutationVariables>;
+export const WorkspaceProjectLinkUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectLinkUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectLinkId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'url' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectLinkKind' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'pinned' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectLinkUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'projectLinkId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'projectLinkId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'projectId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'activityId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'url' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'url' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'label' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'kind' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'pinned' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'pinned' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectLinkUpsertMutation, GqlCWorkspaceProjectLinkUpsertMutationVariables>;
+export const WorkspaceProjectLinkDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectLinkDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectLinkId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectLinkDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectLinkId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectLinkId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectLinkDeleteMutation, GqlCWorkspaceProjectLinkDeleteMutationVariables>;
+export const WorkspaceProjectLinkTogglePinDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectLinkTogglePin' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectLinkId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectLinkTogglePin' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectLinkId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectLinkId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectLinkTogglePinMutation, GqlCWorkspaceProjectLinkTogglePinMutationVariables>;
+export const WorkspaceProjectFileUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectFileUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectFileId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'fileUploadId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectFileKind' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'pinned' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectFileUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: {
+                                                kind: 'ObjectValue',
+                                                fields: [
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'projectFileId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'projectFileId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'projectId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'activityId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'fileUploadId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'fileUploadId' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'label' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'kind' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'pinned' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'pinned' } },
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectFileUpsertMutation, GqlCWorkspaceProjectFileUpsertMutationVariables>;
+export const WorkspaceProjectFileDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectFileDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectFileId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectFileDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectFileId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectFileId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectFileDeleteMutation, GqlCWorkspaceProjectFileDeleteMutationVariables>;
+export const WorkspaceProjectFileTogglePinDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceProjectFileTogglePin' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectFileId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'projectFileTogglePin' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'projectFileId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectFileId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceProjectFileTogglePinMutation, GqlCWorkspaceProjectFileTogglePinMutationVariables>;
 export const ChatPageDocument = {
     kind: 'Document',
     definitions: [

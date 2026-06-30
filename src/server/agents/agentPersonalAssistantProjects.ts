@@ -4,7 +4,9 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { googleAgentProviderOptions, currentDateForAgent } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
+import { toolProjectActivityUpsert } from './toolProjectActivityUpsert';
 import { toolProjectDelete } from './toolProjectDelete';
+import { toolProjectLinkUpsert } from './toolProjectLinkUpsert';
 import { toolProjectsList } from './toolProjectsList';
 import { toolProjectUpsert } from './toolProjectUpsert';
 import { toolStandaloneTasksList } from './toolStandaloneTasksList';
@@ -30,7 +32,17 @@ import { toolTaskUpsert } from './toolTaskUpsert';
 // sentinel and the orchestrator owns the back-and-forth via its own
 // `promptUserForInput` tool.
 
-type ProjectsAgentMutationKind = 'projectCreate' | 'projectUpdate' | 'projectDelete' | 'taskCreate' | 'taskUpdate' | 'taskDelete';
+type ProjectsAgentMutationKind =
+    | 'projectCreate'
+    | 'projectUpdate'
+    | 'projectDelete'
+    | 'taskCreate'
+    | 'taskUpdate'
+    | 'taskDelete'
+    | 'activityCreate'
+    | 'activityUpdate'
+    | 'linkCreate'
+    | 'linkUpdate';
 
 export interface ProjectsAgentMutation {
     kind: ProjectsAgentMutationKind;
@@ -67,11 +79,15 @@ function buildSystemPrompt(snapshot: string): string {
         '',
         currentDateForAgent(),
         '',
-        'You have six tools:',
+        'You have eight tools:',
         '- `projectsList`, `standaloneTasksList` — read the current board when you need ids or full task details',
         '  the snapshot below does not include.',
         '- `projectUpsert`, `projectDelete` — create / edit / archive / delete projects.',
         '- `taskUpsert`, `taskDelete` — create / edit / delete tasks (project-bound or standalone).',
+        '- `projectActivityUpsert` — log an event-style entry (call, meeting, offer, milestone, note) on a',
+        '  project timeline. Work timer rows are NOT created through this tool.',
+        '- `projectLinkUpsert` — attach an external URL (repo, mission, Figma file, drive folder, invoice) to',
+        '  a project; pinned links surface in the detail header.',
         '',
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
@@ -103,9 +119,9 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, m
         onStepFinish,
         providerOptions: googleAgentProviderOptions,
         // Tight ceiling — the sub-agent should rarely need more than a list +
-        // 2-3 mutations + a final text. If it runs out of steps, the delegate
-        // tool surfaces the partial mutation log to the orchestrator.
-        stopWhen: [stepCountIs(8)],
+        // a few mutations + a final text. If it runs out of steps, the
+        // delegate tool surfaces the partial mutation log to the orchestrator.
+        stopWhen: [stepCountIs(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
             projectsList: toolProjectsList(readContext),
@@ -114,6 +130,8 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, m
             projectDelete: toolProjectDelete(mutationContext),
             taskUpsert: toolTaskUpsert(mutationContext),
             taskDelete: toolTaskDelete(mutationContext),
+            projectActivityUpsert: toolProjectActivityUpsert(mutationContext),
+            projectLinkUpsert: toolProjectLinkUpsert(mutationContext),
         },
     });
 }

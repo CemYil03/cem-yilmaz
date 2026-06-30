@@ -50,6 +50,20 @@
             "when": 1782763579286,
             "tag": "0006_funny_slyde",
             "breakpoints": true
+        },
+        {
+            "idx": 7,
+            "version": "7",
+            "when": 1782797779572,
+            "tag": "0007_fat_stature",
+            "breakpoints": true
+        },
+        {
+            "idx": 8,
+            "version": "7",
+            "when": 1782798460455,
+            "tag": "0008_rainy_rachel_grey",
+            "breakpoints": true
         }
     ]
 }

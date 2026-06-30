@@ -82,6 +82,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Static identity       | Typed config under `src/web/content/`                                      | `src/web/content/personalInfo.ts`              |
 | AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                              | `src/server/agents/agentVisitorAboutCem.ts`    |
 | AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                        | `docs/architecture/multi-agent-chat.md`        |
+| AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`     | `src/server/agents/adminChatModels.ts`         |
 | Profile (Phase 2+)    | AI-built summary / prose / psych profile from admin chats; firewalled      | `docs/features/profile.md`                     |
 
 ## How to Add Things
@@ -155,7 +156,8 @@ src/
 │   │       ├── profile.tsx     AI-built profile (summary / prose / psych) — see docs/features/profile.md
 │   │       ├── cv.tsx          CV editor (writes the `Cv*` tables)
 │   │       ├── software.tsx    Software development & architecture
-│   │       ├── projects.tsx    Personal projects
+│   │       ├── projects.tsx    Personal projects board (Inbox + kanban + Todos)
+│   │       ├── projects_.$projectId.tsx  Per-project detail (tasks, activity, notes, links, files)
 │   │       ├── finances.tsx    Finances (goals, overview, trading & stocks)
 │   │       ├── tax.tsx         Tax matters
 │   │       ├── fitness.tsx     Fitness & well-being

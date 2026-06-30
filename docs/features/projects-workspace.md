@@ -123,10 +123,89 @@ Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 
 - **Drag reorder.** Cards use status select; task position adjusts via the underlying mutation when a task is created but no visual drag
   handle. The `*Reorder` mutations exist and are tested — wiring the same drag affordance the CV page uses is a follow-up.
-- **Attachments.** `FileUploads` is the right home; revisit when the first project needs one.
 - **AI summarization** of an Inbox request before conversion. Phase-2 candidate for the personal-assistant agent.
 - **Cross-status drag** on the projects board.
 - **Public `/projects/$id`** detail pages — separate Phase 3 deliverable.
+
+## Detail route
+
+The kanban board lives at `/workspace/projects`; clicking a card opens `/workspace/projects/$projectId` (filename
+`projects_.$projectId.tsx`). The board no longer expands tasks / activity inline — the card surfaces title, source-request backlink, timer
+pill, task counter, and a "Details öffnen / Open details" link. Everything else lives on the detail page.
+
+The detail route has its own search-param schema (`?tab=tasks|activity|notes|links|files&focus=<id>`) and a single GraphQL query
+(`WorkspaceProjectDetail`) co-located in `projects_.$projectId.graphql`. The query mirrors the board's nested shape but adds `links` /
+`files` per project and per activity, the new offer columns (`amountCents`, `offerStatus`), and is fetched by
+`admin.project(projectId: ID!)` — a new single-entity counterpart to `admin.projects`. The board page's own GraphQL file no longer needs to
+ship the per-project activity-edit mutations (the detail page owns those); only `projectTimerStart` / `projectTimerStop` and the
+project-level CRUD stayed.
+
+The header carries the title, status pill (a `Select` that mutates `projectUpsert` on change), timer control (re-uses the same Start / Stop
+/ Switch states the board card has), edit / delete buttons, and totals. Five tabs sit beneath it: **Tasks**, **Activity**, **Notes**,
+**Links**, **Files**. Above the tabs is a **pinned rail** — links and files where `pinned = true` show as compact chips so the resources Cem
+actually opens during work (repo URL, Malt mission, signed contract PDF) are one click from the top of the page. The same row appears in its
+full list on the corresponding tab; pin state is the only difference between the two surfaces.
+
+Deep linking from the assistant carries over: `?focus=<id>` matches against `data-row-id` on tasks, activities, links, and files. A focused
+row scrolls into view and flashes for ~1500 ms, then the param drops via replace-navigate.
+
+## Links
+
+Project links are external URLs the project accumulates: GitHub repo, Malt mission, Figma file, client portal, shared drive, invoice page.
+Each row carries a `kind` enum (`github | malt | figma | gdrive | notion | invoice | offer | other`) that drives the icon, an optional
+`label` (falls back to the URL host), and a `pinned` flag (drives the header rail surfacing).
+
+A link is optionally **born from an activity**: when the user logs a "sent offer" activity entry and attaches a link in the same form,
+`projectLinks.activityId` is stamped with the new activity's id. Deleting the activity later cascade-set-nulls the link — the resource
+survives, it just detaches from the timeline. Adding a link directly on the Links tab leaves `activityId` null.
+
+Database: `ProjectLinks` table — `projectLinkId`, `projectId` (FK, cascade), `activityId` (FK, set-null), `url`, `label`, `kind`, `pinned`,
+`createdAt`, `updatedAt`. Indexes `(projectId, pinned)` and `(activityId)`.
+
+GraphQL: `type ProjectLink`, `enum ProjectLinkKind`, mutations `projectLinkUpsert`, `projectLinkDelete`, `projectLinkTogglePin`.
+`Project.links` and `ProjectActivity.links` are eagerly loaded by `projectsList` / `projectGet` in the same in-memory normalization pass.
+
+## Files
+
+Project files reuse the shared `FileUploads` store (see [architecture/file-storage.md](../architecture/file-storage.md)). The client uploads
+the bytes via `POST /api/file-uploads` first (same flow the chat composer uses), then calls `projectFileUpsert` with the returned
+`fileUploadId`. The detail page's Files tab and the inline "+ file" affordance on the activity composer share the same upload helper
+(`src/web/chat/fileUpload.ts`).
+
+A `ProjectFiles` row carries `projectId`, `activityId` (nullable, set-null on activity delete — same semantics as links), `fileUploadId` (FK
+to `fileUploads`, cascade), `label`, `kind` (`offer | invoice | contract | screenshot | other`), and `pinned`. On project delete the join
+rows cascade away; the underlying `FileUploads` row is preserved (it may still be reachable from a chat message), and the user-row cascade
+reclaims storage when the owner goes. If we later want eager cleanup of orphan uploads, do it in `projectFileDelete` after confirming no
+other reference exists.
+
+GraphQL: `type ProjectFile { fileUpload: FileUpload! ... }`, `enum ProjectFileKind`, mutations `projectFileUpsert`, `projectFileDelete`,
+`projectFileTogglePin`.
+
+## Atomic attach on activity create
+
+`projectActivityUpsert` accepts optional `attachLinkUrl` / `attachFileUploadId` (with companion `attachLinkKind` / `attachFileKind` / labels
+/ pin flags). When set on a create, the server runs the activity insert plus the matching `projectLinks` / `projectFiles` insert in one
+transaction. Lets the UI offer a single "+ link" / "+ file" toggle on the activity composer without forcing the client to chain two
+round-trips. The fields are ignored on update — edit the resource rows through their own mutations.
+
+## Offer tracking
+
+`kind = 'offer'` activity rows pick up two new columns: `amountCents` (integer cents in EUR; single-currency assumption in v1) and
+`offerStatus` (`sent | accepted | rejected | withdrawn`). The editor surfaces an amount field and a status select only when `kind = offer`;
+the server rejects non-null values on any other kind. Renders as a coloured pill on the timeline. A withdrawn offer keeps the row for
+history.
+
+## Out of scope (still v1.x)
+
+- **Drag reorder** on the kanban board.
+- **AI summarization** of an Inbox request before conversion.
+- **Cross-status drag** on the projects board.
+- **Public `/projects/$id`** detail pages — separate Phase 3 deliverable. The workspace detail route (admin-only, noindex) is unrelated.
+- **Cross-project totals / reports.** No "this month" view yet.
+- **Per-task time totals.** `taskId` link is captured but not yet surfaced as "time spent on task X".
+- **Editing work-row metadata.** The timer mutations write the row; today there is no way to retitle a finished work session.
+- **Orphan upload cleanup** when a project file is deleted. Today the underlying `FileUploads` row stays around until the user cascade
+  reclaims it; a v1.1 cleanup could delete the blob if no other reference exists.
 
 ## Assistant control
 
@@ -219,11 +298,16 @@ Each project card on the **Projects** tab carries:
 
 Files:
 
-- Table + types: `src/server/db/schema.ts` (`projectActivities`, `projectActivityKinds`, `projectActivityChannels`)
-- Migration: `drizzle/0005_chunky_switch.sql`
-- Mapper: `src/server/mappers/toGqlProjectActivity.ts` (and the extended `toGqlProject.ts`)
-- Queries: `src/server/queries/activeTimerGet.ts`; activities + totals are loaded by `projectsList.ts`
-- Commands: `src/server/commands/projectActivityUpsert.ts`, `projectActivityDelete.ts`, `projectTimerStart.ts`, `projectTimerStop.ts`
-- Tests: `src/server/commands/projectTimerStart.test.ts`
+- Table + types: `src/server/db/schema.ts` (`projectActivities`, `projectActivityKinds`, `projectActivityChannels`, `projectOfferStatuses`)
+- Migration: `drizzle/0005_chunky_switch.sql` (original); `drizzle/0007_fat_stature.sql` (links, files, offer columns)
+- Mapper: `src/server/mappers/toGqlProjectActivity.ts`, `toGqlProjectLink.ts`, `toGqlProjectFile.ts`, `toGqlFileUpload.ts`, and the extended
+  `toGqlProject.ts`
+- Queries: `src/server/queries/activeTimerGet.ts`, `projectGet.ts`; lists + totals + links + files are loaded by `projectsList.ts`
+- Commands: `src/server/commands/projectActivityUpsert.ts` (with atomic attach), `projectActivityDelete.ts`, `projectTimerStart.ts`,
+  `projectTimerStop.ts`, `projectLink{Upsert,Delete,TogglePin}.ts`, `projectFile{Upsert,Delete,TogglePin}.ts`
+- Tests: `src/server/commands/projectTimerStart.test.ts`, `projectLinkUpsert.test.ts`, `projectFileUpsert.test.ts`,
+  `projectActivityUpsert.test.ts`
 - Resolver wiring: `src/server/graphql/resolversCreate.ts`
-- UI: timeline + timer pill in `src/routes/{-$locale}/workspace/projects.tsx`; operations in `projects.graphql`
+- UI: board card in `src/routes/{-$locale}/workspace/projects.tsx`; detail route + tabs + pinned rail in
+  `src/routes/{-$locale}/workspace/projects_.$projectId.tsx`; operations in `projects.graphql` (board) and `projects_.$projectId.graphql`
+  (detail)

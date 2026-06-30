@@ -377,6 +377,12 @@ input ChatMessageUserInputAnswerCreate {
 input ChatAssistantOptions {
     generationId: ID
     requireToolCallApprovals: Boolean!
+    # Admin namespace only — visitor mutations ignore this. Picks one of the
+    # ids in `Admin.chatConfig.availableModels`; the agent falls back to the
+    # admin's saved default when omitted. The runtime rejects unknown ids
+    # (fail fast) so an invalid pick never reaches the provider. See
+    # `docs/features/admin-chat-config.md`.
+    modelId: String
 }
 
 type Query {
@@ -760,6 +766,14 @@ type Project {
     # Sum of `durationSec` across `kind = work` activities, in seconds.
     # Zero when no timer has ever run against the project.
     totalWorkSec: Int!
+    # All link resources hanging off the project, newest first. The detail
+    # page's "Links" tab renders this full list; the project header surfaces
+    # the subset where `pinned = true`.
+    links: [ProjectLink!]!
+    # All file resources hanging off the project, newest first. Same
+    # rendering split as `links` — Files tab shows everything; the header
+    # surfaces pinned only.
+    files: [ProjectFile!]!
 }
 
 enum TaskStatus {
@@ -827,6 +841,84 @@ type ProjectActivity {
     # Cached `endedAt - startedAt` in seconds. Settable directly on event
     # rows ("the call was 45 min") without running a timer.
     durationSec: Int
+    # Offer-row fields. Meaningful only when `kind = offer`. `amountCents`
+    # is integer cents in EUR; the editor formats and parses.
+    amountCents: Int
+    offerStatus: ProjectOfferStatus
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    # Links and files born from this activity (i.e. attached at the moment
+    # the activity was logged). Pinned status lives on the resource row,
+    # not the activity — the same link / file shows up under the project's
+    # `links` / `files` lists too.
+    links: [ProjectLink!]!
+    files: [ProjectFile!]!
+}
+
+# Lifecycle of an offer row. Only meaningful when the parent activity has
+# `kind = offer`. A withdrawn offer keeps the row for history.
+enum ProjectOfferStatus {
+    sent
+    accepted
+    rejected
+    withdrawn
+}
+
+# Categorizes an external URL attached to a project. Drives the icon /
+# label fallback on the link card.
+enum ProjectLinkKind {
+    github
+    malt
+    figma
+    gdrive
+    notion
+    invoice
+    offer
+    other
+}
+
+# An external URL associated with a project. Optionally born from an
+# activity entry (`activityId` non-null) and optionally pinned to the
+# project header's rail (`pinned = true`). The Links tab on the detail
+# route renders the full list regardless of `pinned`.
+type ProjectLink {
+    projectLinkId: ID!
+    projectId: ID!
+    # Activity this link was logged against, when applicable. Null for
+    # links added directly at project level.
+    activityId: ID
+    url: String!
+    # Free-form label. Falls back to the URL host when empty.
+    label: String
+    kind: ProjectLinkKind!
+    # True surfaces this link in the project header's pinned rail.
+    pinned: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# Categorizes a file attached to a project. Drives the badge on the
+# file card and the default folder grouping on the Files tab.
+enum ProjectFileKind {
+    offer
+    invoice
+    contract
+    screenshot
+    other
+}
+
+# An uploaded file attached to a project. Wraps a row from the shared
+# `FileUpload` store with project-level metadata (kind, pin state, source
+# activity). The `fileUpload.url` field is the download path the UI links
+# to; the underlying bytes are served by `/api/file-uploads/:id`.
+type ProjectFile {
+    projectFileId: ID!
+    projectId: ID!
+    activityId: ID
+    fileUpload: FileUpload!
+    label: String
+    kind: ProjectFileKind!
+    pinned: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -847,6 +939,10 @@ extend type Admin {
     # All projects, ordered by status then `position`. The board groups
     # client-side by status. `status` argument narrows server-side when set.
     projects(status: ProjectStatus): [Project!]!
+    # Single project by id, loaded fully (tasks, activities, links, files,
+    # source request). Powers the `/workspace/projects/$projectId` detail
+    # route. Raises `notFound` when the id does not exist.
+    project(projectId: ID!): Project!
     # Standalone todos: rows with `projectId IS NULL`. Project-bound tasks
     # are reached through `Project.tasks` so the Todos tab and the project
     # board don't fight over the same list.
@@ -892,6 +988,13 @@ input TaskCreate {
 # Server validates that `channel` is set only when `kind` is
 # `clientContact` or `meeting`. For event rows leave `startedAt` /
 # `endedAt` null; the timer mutations write those columns directly.
+#
+# `attachLink*` and `attachFile*` are optional one-shot extensions: when
+# present on a create, the server inserts a matching `ProjectLink` /
+# `ProjectFile` in the same transaction with `activityId` pointing at the
+# new activity. Lets the editor say "log offer + attach PDF" without two
+# round-trips. Ignored on update — edit the resource rows directly through
+# their own mutations.
 input ProjectActivityCreate {
     activityId: ID
     projectId: ID!
@@ -902,6 +1005,44 @@ input ProjectActivityCreate {
     notes: String
     occurredAt: DateTime!
     durationSec: Int
+    amountCents: Int
+    offerStatus: ProjectOfferStatus
+    attachLinkUrl: String
+    attachLinkKind: ProjectLinkKind
+    attachLinkLabel: String
+    attachLinkPinned: Boolean
+    attachFileUploadId: ID
+    attachFileKind: ProjectFileKind
+    attachFileLabel: String
+    attachFilePinned: Boolean
+}
+
+# Project-link create / update payload. `projectLinkId` toggles upsert
+# mode. `activityId` may only be set on a create — once a link is born
+# from an activity, the link survives the activity's deletion (the FK
+# cascade-set-nulls).
+input ProjectLinkUpsert {
+    projectLinkId: ID
+    projectId: ID!
+    activityId: ID
+    url: String!
+    label: String
+    kind: ProjectLinkKind!
+    pinned: Boolean
+}
+
+# Project-file create / update payload. Same shape as `ProjectLinkUpsert`
+# but referencing an already-uploaded `FileUpload` by id. The client first
+# uploads the file via `POST /api/file-uploads`, then calls this mutation
+# with the returned `fileUploadId`.
+input ProjectFileUpsert {
+    projectFileId: ID
+    projectId: ID!
+    activityId: ID
+    fileUploadId: ID!
+    label: String
+    kind: ProjectFileKind!
+    pinned: Boolean
 }
 
 # CV admin namespace — mounted under `AdminMutation.cv` so the existing
@@ -961,4 +1102,58 @@ extend type AdminMutation {
     # Stamp `endedAt = now` and write `durationSec` on the running timer.
     # Idempotent on an already-stopped row — returns the row untouched.
     projectTimerStop(activityId: ID!): ProjectActivity!
+    # --- Project links & files ---------------------------------------------
+    # Create or update an external link associated with the project.
+    # `activityId` may only be set on create; once linked, the resource
+    # survives activity deletion (FK cascade-set-null).
+    projectLinkUpsert(input: ProjectLinkUpsert!): ProjectLink!
+    projectLinkDelete(projectLinkId: ID!): MutationResult!
+    # Flip `pinned`. Returns the row in its new state so the cache update
+    # is a straight write.
+    projectLinkTogglePin(projectLinkId: ID!): ProjectLink!
+    # Create or update a file resource. The caller uploads the file first
+    # via `POST /api/file-uploads` and passes the returned `fileUploadId`.
+    # On delete the project-file row goes; the underlying upload blob stays
+    # (cleaned up by the user-row cascade later).
+    projectFileUpsert(input: ProjectFileUpsert!): ProjectFile!
+    projectFileDelete(projectFileId: ID!): MutationResult!
+    projectFileTogglePin(projectFileId: ID!): ProjectFile!
+}
+
+# --- Admin chat config -------------------------------------------------------
+#
+# Workspace assistant configuration: which Gemini model the admin composer
+# defaults to, and the catalog of models available to pick from. The catalog
+# is server-static (`src/server/agents/adminChatModels.ts`); the saved default
+# lives in the singleton `AdminChatConfig` table. The composer renders a
+# dropdown driven by `availableModels` and forwards the picked id through
+# `ChatAssistantOptions.modelId`. See `docs/features/admin-chat-config.md`.
+
+# One entry in the admin chat-model catalog. `supportedMediaTypes` drives the
+# composer's file picker `accept` filter — files of types not in this list
+# can't be attached when the model is selected. The list is IANA media-type
+# strings (e.g. `application/pdf`,
+# `application/vnd.openxmlformats-officedocument.wordprocessingml.document`).
+type AdminChatModel {
+    modelId: String!
+    label: String!
+    supportedMediaTypes: [String!]!
+}
+
+# Chat configuration surfaced to the workspace. `defaultModelId` is the saved
+# default; the composer mutates it through `chatConfigDefaultModelSet` when
+# the admin picks a different model.
+type AdminChatConfig {
+    availableModels: [AdminChatModel!]!
+    defaultModelId: String!
+}
+
+extend type Admin {
+    chatConfig: AdminChatConfig!
+}
+
+extend type AdminMutation {
+    # Persist the admin's chosen default chat model. Rejects ids outside the
+    # catalog (`Admin.chatConfig.availableModels`).
+    chatConfigDefaultModelSet(modelId: String!): MutationResult!
 }

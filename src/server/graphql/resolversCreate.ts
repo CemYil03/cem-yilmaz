@@ -1,6 +1,8 @@
 import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
+import { ADMIN_CHAT_MODELS } from '../agents/adminChatModels';
 import { agentPersonalAssistant } from '../agents/agentPersonalAssistant';
 import { agentVisitorAboutCem } from '../agents/agentVisitorAboutCem';
+import { adminChatConfigDefaultModelSet } from '../commands/adminChatConfigDefaultModelSet';
 import { chatInputCollectionRespond } from '../commands/chatInputCollectionRespond';
 import type { ChatMutationDispatch } from '../commands/chatMessageCreate';
 import { chatMessageCreate } from '../commands/chatMessageCreate';
@@ -22,6 +24,12 @@ import { profileSynthesizeRequest } from '../commands/profileSynthesizeRequest';
 import { projectActivityDelete } from '../commands/projectActivityDelete';
 import { projectActivityUpsert } from '../commands/projectActivityUpsert';
 import { projectDelete } from '../commands/projectDelete';
+import { projectFileDelete } from '../commands/projectFileDelete';
+import { projectFileTogglePin } from '../commands/projectFileTogglePin';
+import { projectFileUpsert } from '../commands/projectFileUpsert';
+import { projectLinkDelete } from '../commands/projectLinkDelete';
+import { projectLinkTogglePin } from '../commands/projectLinkTogglePin';
+import { projectLinkUpsert } from '../commands/projectLinkUpsert';
 import { projectRequestArchive } from '../commands/projectRequestArchive';
 import { projectRequestDelete } from '../commands/projectRequestDelete';
 import { projectReorder } from '../commands/projectReorder';
@@ -53,7 +61,9 @@ import { profileObservationList } from '../queries/profileObservationList';
 import { projectRequestsList } from '../queries/projectRequestsList';
 import { projectRequestsInboxCount } from '../queries/projectRequestsInboxCount';
 import { projectsList } from '../queries/projectsList';
+import { projectGet } from '../queries/projectGet';
 import { activeTimerGet } from '../queries/activeTimerGet';
+import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
 import { standaloneTasksList } from '../queries/standaloneTasksList';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
@@ -61,6 +71,7 @@ import type {
     GqlSAdmin,
     GqlSAdminChatArgs,
     GqlSAdminMutation,
+    GqlSAdminMutationChatConfigDefaultModelSetArgs,
     GqlSAdminMutationChatInputCollectionRespondArgs,
     GqlSAdminMutationChatMessageCreateArgs,
     GqlSAdminMutationChatToolApprovalRespondArgs,
@@ -80,6 +91,12 @@ import type {
     GqlSAdminMutationProjectActivityDeleteArgs,
     GqlSAdminMutationProjectActivityUpsertArgs,
     GqlSAdminMutationProjectDeleteArgs,
+    GqlSAdminMutationProjectFileDeleteArgs,
+    GqlSAdminMutationProjectFileTogglePinArgs,
+    GqlSAdminMutationProjectFileUpsertArgs,
+    GqlSAdminMutationProjectLinkDeleteArgs,
+    GqlSAdminMutationProjectLinkTogglePinArgs,
+    GqlSAdminMutationProjectLinkUpsertArgs,
     GqlSAdminMutationProjectReorderArgs,
     GqlSAdminMutationProjectRequestArchiveArgs,
     GqlSAdminMutationProjectRequestDeleteArgs,
@@ -91,6 +108,7 @@ import type {
     GqlSAdminMutationTaskUpsertArgs,
     GqlSAdminProfile,
     GqlSAdminProfileObservationsArgs,
+    GqlSAdminProjectArgs,
     GqlSAdminProjectRequestsArgs,
     GqlSAdminProjectsArgs,
     GqlSAdminPublicChatArgs,
@@ -193,11 +211,29 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             projects(_parent: GqlSAdmin, args: GqlSAdminProjectsArgs, requestingSession: GqlSSession) {
                 return projectsList(args.status ?? null, requestingSession, serverRuntime);
             },
+            project(_parent: GqlSAdmin, args: GqlSAdminProjectArgs, requestingSession: GqlSSession) {
+                return projectGet(args.projectId, requestingSession, serverRuntime);
+            },
             standaloneTasks(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
                 return standaloneTasksList(requestingSession, serverRuntime);
             },
             activeTimer(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
                 return activeTimerGet(requestingSession, serverRuntime);
+            },
+            async chatConfig(_parent: GqlSAdmin) {
+                // Catalog is server-static — same array on every read. The
+                // saved default is the only DB-bound part; we resolve it here
+                // (and bootstrap the singleton row if it doesn't exist yet)
+                // so the composer always gets a concrete `defaultModelId`.
+                const row = await adminChatConfigGet(serverRuntime.db);
+                return {
+                    availableModels: ADMIN_CHAT_MODELS.map((model) => ({
+                        modelId: model.modelId,
+                        label: model.label,
+                        supportedMediaTypes: [...model.supportedMediaTypes],
+                    })),
+                    defaultModelId: row.defaultModelId,
+                };
             },
         },
         AdminProfile: {
@@ -345,6 +381,39 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             projectTimerStop(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectTimerStopArgs, requestingSession: GqlSSession) {
                 return projectTimerStop(args, requestingSession, serverRuntime);
+            },
+            projectLinkUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectLinkUpsertArgs, requestingSession: GqlSSession) {
+                return projectLinkUpsert(args, requestingSession, serverRuntime);
+            },
+            projectLinkDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectLinkDeleteArgs, requestingSession: GqlSSession) {
+                return projectLinkDelete(args, requestingSession, serverRuntime);
+            },
+            projectLinkTogglePin(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationProjectLinkTogglePinArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return projectLinkTogglePin(args, requestingSession, serverRuntime);
+            },
+            projectFileUpsert(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectFileUpsertArgs, requestingSession: GqlSSession) {
+                return projectFileUpsert(args, requestingSession, serverRuntime);
+            },
+            projectFileDelete(_parent: GqlSAdminMutation, args: GqlSAdminMutationProjectFileDeleteArgs, requestingSession: GqlSSession) {
+                return projectFileDelete(args, requestingSession, serverRuntime);
+            },
+            projectFileTogglePin(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationProjectFileTogglePinArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return projectFileTogglePin(args, requestingSession, serverRuntime);
+            },
+            chatConfigDefaultModelSet(
+                _parent: GqlSAdminMutation,
+                args: GqlSAdminMutationChatConfigDefaultModelSetArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminChatConfigDefaultModelSet(args, requestingSession, serverRuntime);
             },
         },
         Query: {

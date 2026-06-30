@@ -33,9 +33,14 @@ FileUploads
 ```
 
 Chat is the first consumer: the `ChatMessageUserAttachments` join row links a `ChatMessagesUser` message to one or more `FileUploads` rows
-in send-order. New consumers (avatars, document uploads, generated artifacts, etc.) follow the same pattern — reference
-`FileUploads.fileUploadId` from a domain-specific join row, layer per-consumer cascade and authorization rules on top. A new domain-specific
-blob table is the exception, not the default.
+in send-order. The workspace projects feature is the second: `ProjectFiles` rows reference `FileUploads.fileUploadId` and carry their own
+metadata (`kind`, `label`, `pinned`, optional `activityId` backlink). On project delete the join rows cascade away; the underlying upload
+row stays around (it may still be reachable from a chat message, and the user-row cascade reclaims storage when the owner goes). The shared
+mapper `src/server/mappers/toGqlFileUpload.ts` produces the `FileUpload` GraphQL shape for both consumers — `url` always points at
+`/api/file-uploads/:id`.
+
+New consumers (avatars, generated artifacts, etc.) follow the same pattern — reference `FileUploads.fileUploadId` from a domain-specific
+join row, layer per-consumer cascade and authorization rules on top. A new domain-specific blob table is the exception, not the default.
 
 The upload and download routes are likewise consumer-agnostic:
 

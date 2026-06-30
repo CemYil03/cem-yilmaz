@@ -84,6 +84,11 @@ export interface MessageComposerProps {
     /** Restricts both the file picker and accepted drops. Same syntax as
      *  `<input accept="...">`. */
     accept?: string;
+    /** Optional title/tooltip on the paperclip button — useful for callers that
+     *  want to surface "PDF, Word, images" alongside the icon so the user knows
+     *  what types the active model accepts before they open the picker. Also
+     *  used as the button's `aria-label` when set. */
+    attachmentsTitle?: string;
     /** Whether the picker accepts multiple files at once. Defaults to true.
      *  Drops are similarly clamped to one file when this is false. */
     multipleAttachments?: boolean;
@@ -112,6 +117,7 @@ export function MessageComposer({
     onAttachmentsAdd,
     onAttachmentRemove,
     accept,
+    attachmentsTitle,
     multipleAttachments = true,
     name = 'message',
     autoFocus = false,
@@ -289,13 +295,19 @@ export function MessageComposer({
                             />
                             <InputGroupButton
                                 type="button"
-                                variant="ghost"
-                                size="icon-sm"
+                                variant="outline"
+                                size="icon-xs"
                                 // ml-auto on the first of the right-group so addonStart
                                 // children stay left-aligned regardless of how many.
+                                // `variant="outline"` gives the button a visible border
+                                // so the paperclip never reads as empty space next to
+                                // the Send pill — critical when `addonStart` also hosts
+                                // selectors (model + approval mode on the workspace
+                                // surface), so the three-control row stays readable.
                                 className="ml-auto"
                                 disabled={inputsLocked}
-                                aria-label="Attach files"
+                                title={attachmentsTitle}
+                                aria-label={attachmentsTitle ?? 'Attach files'}
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 <PaperclipIcon />

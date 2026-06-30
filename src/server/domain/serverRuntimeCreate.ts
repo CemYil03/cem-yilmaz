@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { db } from '../db';
+import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from '../agents/adminChatModels';
 import { environmentVariables } from '../env/environmentVariablesCreate';
 import { PubSubPostgres } from '../graphql/PubSubPostgres';
 import { jobEnqueue } from '../jobs/boss';
@@ -50,10 +51,19 @@ export function serverRuntimeCreate(): ServerRuntime {
             enqueue: jobEnqueue,
         },
         ai: {
-            // Bound here so model id, provider, and credentials live in one
-            // place. Swapping models (or adding a second LLM for a specific
-            // flow) is a single edit on this object.
-            userConversationModel: () => google('gemini-2.5-flash'),
+            // Bound here so provider, credentials, and the catalog validation
+            // live in one place. The admin composer passes a `modelId`
+            // per-turn (see `agentPersonalAssistant`); visitor calls omit it
+            // and get the fallback. An id outside the catalog fails fast
+            // here — same fail-fast posture as the missing-API-key check
+            // above.
+            userConversationModel: (modelId?: string) => {
+                const resolved = modelId ?? ADMIN_CHAT_MODEL_FALLBACK_ID;
+                if (!isAdminChatModelId(resolved)) {
+                    throw new Error(`Unknown chat model id: ${resolved}`);
+                }
+                return google(resolved);
+            },
             // The analyzer runs once per admin user message — pick a cheap
             // fast model. See `docs/features/profile.md`.
             profileAnalyzerModel: () => google('gemini-2.5-flash'),

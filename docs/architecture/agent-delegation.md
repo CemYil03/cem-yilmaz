@@ -86,8 +86,9 @@ the parent's `<ChatMessageToolCall>` view, which renders them in an indented blo
 
 What this means concretely:
 
-- The user sees `Called delegateToProjects` followed by `Called projectsList`, `Called projectUpsert`, `Called taskUpsert` … indented under
-  the parent — an honest record of which DB writes happened, not a single opaque pill.
+- The user sees `Called delegateToProjects` followed by `Called projectsList`, `Called projectUpsert`, `Called taskUpsert`,
+  `Called projectActivityUpsert`, `Called projectLinkUpsert` … indented under the parent — an honest record of which DB writes happened, not
+  a single opaque pill.
 - The `delegateToProjects` row's `toolResult` still carries the structured `{ status, summary, mutations }` payload the orchestrator uses
   for its narration. That payload is what the LLM sees on replay; the indented child rows are user-facing additional context.
 - `toModelMessages` does NOT look at `parentChatMessageId`. Each child is replayed as an ordinary `tool-call`/`tool-result` pair, so the
@@ -150,12 +151,12 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 
 ## Where things live
 
-| Concern                                          | File                                                                                                       |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Shared provider options                          | `src/server/agents/agentScaffolding.ts`                                                                    |
-| Sub-agent factory                                | `src/server/agents/agentPersonalAssistantProjects.ts`                                                      |
-| Inline board snapshot for the sub-agent's prompt | `src/server/agents/projectsSnapshotForAgent.ts`                                                            |
-| Read tools                                       | `src/server/agents/toolProjectsList.ts`, `toolStandaloneTasksList.ts`                                      |
-| Mutation tools                                   | `src/server/agents/toolProjectUpsert.ts`, `toolProjectDelete.ts`, `toolTaskUpsert.ts`, `toolTaskDelete.ts` |
-| Delegate tool (orchestrator-side)                | `src/server/agents/toolDelegateToProjects.ts`                                                              |
-| Orchestrator                                     | `src/server/agents/agentPersonalAssistant.ts` (adds `delegateToProjects` to its tool map)                  |
+| Concern                                          | File                                                                                                                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared provider options                          | `src/server/agents/agentScaffolding.ts`                                                                                                                                |
+| Sub-agent factory                                | `src/server/agents/agentPersonalAssistantProjects.ts`                                                                                                                  |
+| Inline board snapshot for the sub-agent's prompt | `src/server/agents/projectsSnapshotForAgent.ts`                                                                                                                        |
+| Read tools                                       | `src/server/agents/toolProjectsList.ts`, `toolStandaloneTasksList.ts`                                                                                                  |
+| Mutation tools                                   | `src/server/agents/toolProjectUpsert.ts`, `toolProjectDelete.ts`, `toolTaskUpsert.ts`, `toolTaskDelete.ts`, `toolProjectActivityUpsert.ts`, `toolProjectLinkUpsert.ts` |
+| Delegate tool (orchestrator-side)                | `src/server/agents/toolDelegateToProjects.ts`                                                                                                                          |
+| Orchestrator                                     | `src/server/agents/agentPersonalAssistant.ts` (adds `delegateToProjects` to its tool map)                                                                              |

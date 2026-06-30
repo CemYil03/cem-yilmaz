@@ -206,6 +206,7 @@ mutation WorkspaceChatMessageCreate(
     $fileUploadIds: [ID!]
     $generationId: ID
     $requireToolCallApprovals: Boolean!
+    $modelId: String
 ) {
     # `assistantOptions` is built inline so the operation doesn't reference the
     # named `ChatAssistantOptions` input type — referencing it makes
@@ -217,7 +218,7 @@ mutation WorkspaceChatMessageCreate(
             chatId: $chatId
             message: $message
             fileUploadIds: $fileUploadIds
-            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals, modelId: $modelId }
         ) {
             chatId
             chatMessageId
@@ -230,12 +231,13 @@ mutation WorkspaceChatInputCollectionRespond(
     $answers: [ChatMessageUserInputAnswerCreate!]!
     $generationId: ID
     $requireToolCallApprovals: Boolean!
+    $modelId: String
 ) {
     admin {
         chatInputCollectionRespond(
             collectionMessageId: $collectionMessageId
             answers: $answers
-            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals, modelId: $modelId }
         ) {
             chatId
             chatMessageId
@@ -249,16 +251,46 @@ mutation WorkspaceChatToolApprovalRespond(
     $reason: String
     $generationId: ID
     $requireToolCallApprovals: Boolean!
+    $modelId: String
 ) {
     admin {
         chatToolApprovalRespond(
             approvalId: $approvalId
             approved: $approved
             reason: $reason
-            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals }
+            assistantOptions: { generationId: $generationId, requireToolCallApprovals: $requireToolCallApprovals, modelId: $modelId }
         ) {
             chatId
             chatMessageId
+        }
+    }
+}
+
+# Workspace chat config — `availableModels` is the catalog the composer renders
+# in its model dropdown; `defaultModelId` is the admin's saved default and
+# what the dropdown initializes to. Fetched alongside the chat list on every
+# `/workspace/assistant` route load. See `docs/features/admin-chat-config.md`.
+query WorkspaceChatConfig {
+    admin {
+        chatConfig {
+            availableModels {
+                modelId
+                label
+                supportedMediaTypes
+            }
+            defaultModelId
+        }
+    }
+}
+
+# Persists the admin's chosen default chat model. Fired by the composer
+# whenever the user picks a different entry from the dropdown — see
+# `docs/features/admin-chat-config.md` ("Sticky default").
+mutation WorkspaceChatConfigDefaultModelSet($modelId: String!) {
+    admin {
+        chatConfigDefaultModelSet(modelId: $modelId) {
+            success
+            referenceId
         }
     }
 }

@@ -19,8 +19,8 @@ Split by editing cadence:
 - **Static**: typed config file under `src/web/content/`. Read directly from both server and client (it's pure data, no runtime). Edited via
   PR. Used today by `personalInfo.ts` (CV identity facts).
 - **DB-backed**: Drizzle table + CQRS layer (queries, commands, mappers, resolver) + admin form on `/workspace/<thing>`. Used today by the
-  CV timeline tables (`cvExperience`, `cvEducation`, `cvSkill`, `cvHobby`) and the workspace projects tables (`projects`, `tasks`); will be
-  used by Phase 3's blog/tools.
+  CV timeline tables (`cvExperience`, `cvEducation`, `cvSkill`, `cvHobby`) and the workspace projects tables (`projects`, `tasks`,
+  `projectActivities`, `projectLinks`, `projectFiles`); will be used by Phase 3's blog/tools.
 
 ## Conventions for DB-backed editable lists
 

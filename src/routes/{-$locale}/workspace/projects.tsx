@@ -5,22 +5,17 @@ import {
     ArrowRightIcon,
     CheckSquare2Icon,
     CircleDotIcon,
-    FlagIcon,
     FolderKanbanIcon,
-    HandshakeIcon,
     InboxIcon,
     ListTodoIcon,
     MailIcon,
     PencilIcon,
-    PhoneCallIcon,
     PlayIcon,
     PlusIcon,
     SquareIcon,
-    StickyNoteIcon,
     StopCircleIcon,
     TimerIcon,
     Trash2Icon,
-    VideoIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useMutation } from 'urql';
@@ -31,16 +26,8 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
-import type {
-    GqlCProjectActivityChannel,
-    GqlCProjectActivityKind,
-    GqlCProjectStatus,
-    GqlCTaskStatus,
-    GqlCWorkspaceProjectsPageQuery,
-} from '../../../web/graphql/generated';
+import type { GqlCProjectStatus, GqlCTaskStatus, GqlCWorkspaceProjectsPageQuery } from '../../../web/graphql/generated';
 import {
-    WorkspaceProjectActivityDeleteDocument,
-    WorkspaceProjectActivityUpsertDocument,
     WorkspaceProjectDeleteDocument,
     WorkspaceProjectRequestArchiveDocument,
     WorkspaceProjectRequestDeleteDocument,
@@ -113,44 +100,8 @@ const PROJECT_TYPE_LABELS: Record<string, { de: string; en: string }> = {
     other: { de: 'Sonstiges', en: 'Other' },
 };
 
-const ACTIVITY_KIND_ORDER: ReadonlyArray<GqlCProjectActivityKind> = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'];
-const ACTIVITY_KIND_LABELS: Record<GqlCProjectActivityKind, { de: string; en: string }> = {
-    clientContact: { de: 'Kundenkontakt', en: 'Client contact' },
-    meeting: { de: 'Meeting', en: 'Meeting' },
-    work: { de: 'Arbeit', en: 'Work' },
-    offer: { de: 'Angebot', en: 'Offer' },
-    milestone: { de: 'Meilenstein', en: 'Milestone' },
-    note: { de: 'Notiz', en: 'Note' },
-};
-const ACTIVITY_KIND_ICONS: Record<GqlCProjectActivityKind, typeof PhoneCallIcon> = {
-    clientContact: PhoneCallIcon,
-    meeting: VideoIcon,
-    work: TimerIcon,
-    offer: HandshakeIcon,
-    milestone: FlagIcon,
-    note: StickyNoteIcon,
-};
-const ACTIVITY_CHANNEL_ORDER: ReadonlyArray<GqlCProjectActivityChannel> = [
-    'malt',
-    'email',
-    'phone',
-    'videoCall',
-    'inPerson',
-    'aiAssistant',
-    'other',
-];
-const ACTIVITY_CHANNEL_LABELS: Record<GqlCProjectActivityChannel, { de: string; en: string }> = {
-    malt: { de: 'Malt', en: 'Malt' },
-    email: { de: 'E-Mail', en: 'Email' },
-    phone: { de: 'Telefon', en: 'Phone' },
-    videoCall: { de: 'Videoanruf', en: 'Video call' },
-    inPerson: { de: 'Vor Ort', en: 'In person' },
-    aiAssistant: { de: 'KI-Assistent', en: 'AI assistant' },
-    other: { de: 'Sonstiges', en: 'Other' },
-};
-
 // Renders a seconds total as `Hh Mm` or `Mm Ss` for short stretches. The
-// activity timeline and the project's `Total: …` pill both use this.
+// project card's `Total: …` pill uses this.
 function formatDuration(totalSec: number): string {
     if (totalSec < 60) return `${totalSec}s`;
     const hours = Math.floor(totalSec / 3600);
@@ -531,7 +482,6 @@ function Fact({ label, value }: { label: string; value: string }) {
 // --- Projects board ---------------------------------------------------------
 
 type ProjectRow = GqlCWorkspaceProjectsPageQuery['admin']['projects'][number];
-type ActivityRow = ProjectRow['activities'][number];
 type ActiveTimer = NonNullable<GqlCWorkspaceProjectsPageQuery['admin']['activeTimer']>;
 
 function ProjectsBoard({
@@ -633,8 +583,6 @@ function ProjectCard({
     onChanged: () => void;
 }) {
     const [, del] = useMutation(WorkspaceProjectDeleteDocument);
-    const [tasksOpen, setTasksOpen] = useState(false);
-    const [activityOpen, setActivityOpen] = useState(false);
 
     const doneCount = row.tasks.filter((t) => t.status === 'done').length;
     const totalCount = row.tasks.length;
@@ -643,11 +591,21 @@ function ProjectCard({
     // timer is running. Other-project timers don't bleed into this number.
     const isOwnTimerRunning = activeTimer?.projectId === row.projectId;
 
+    // The card itself is a link to the project detail route; the kanban board
+    // no longer expands tasks / activity inline (Phase: detail-route refactor).
+    // The action buttons in the header still need to stop propagation so a
+    // click on the timer / edit / delete doesn't navigate.
     return (
         <GlassCard className="px-5 py-4">
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{row.title}</div>
+                    <Link
+                        to="/{-$locale}/workspace/projects/$projectId"
+                        params={{ projectId: row.projectId }}
+                        className="block truncate text-sm font-medium hover:underline"
+                    >
+                        {row.title}
+                    </Link>
                     {row.description ? <div className="mt-0.5 truncate text-xs text-muted-foreground">{row.description}</div> : null}
                     {row.sourceRequest ? (
                         <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -687,27 +645,18 @@ function ProjectCard({
                 </div>
             </div>
             <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                <button
-                    type="button"
-                    onClick={() => setTasksOpen(!tasksOpen)}
+                <Link
+                    to="/{-$locale}/workspace/projects/$projectId"
+                    params={{ projectId: row.projectId }}
                     className="underline-offset-2 hover:text-foreground hover:underline"
                 >
-                    {tasksOpen
-                        ? { de: 'Aufgaben ausblenden', en: 'Hide tasks' }[locale]
-                        : { de: 'Aufgaben anzeigen', en: 'Show tasks' }[locale]}
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setActivityOpen(!activityOpen)}
-                    className="underline-offset-2 hover:text-foreground hover:underline"
-                >
-                    {activityOpen
-                        ? { de: 'Verlauf ausblenden', en: 'Hide timeline' }[locale]
-                        : {
-                              de: `Verlauf anzeigen (${row.activities.length})`,
-                              en: `Show timeline (${row.activities.length})`,
-                          }[locale]}
-                </button>
+                    {{ de: 'Details öffnen', en: 'Open details' }[locale]} →
+                </Link>
+                {row.activities.length > 0 ? (
+                    <span className="text-[11px] text-muted-foreground">
+                        {row.activities.length} {{ de: 'Einträge', en: 'entries' }[locale]}
+                    </span>
+                ) : null}
                 {row.totalWorkSec > 0 || isOwnTimerRunning ? (
                     <span className="ml-auto text-[11px] text-muted-foreground">
                         {{ de: 'Gesamt', en: 'Total' }[locale]}:{' '}
@@ -715,16 +664,6 @@ function ProjectCard({
                     </span>
                 ) : null}
             </div>
-            {tasksOpen ? <TaskList tasks={row.tasks} projectId={row.projectId} locale={locale} onChanged={onChanged} /> : null}
-            {activityOpen ? (
-                <ActivityTimeline
-                    activities={row.activities}
-                    projectId={row.projectId}
-                    tasks={row.tasks}
-                    locale={locale}
-                    onChanged={onChanged}
-                />
-            ) : null}
         </GlassCard>
     );
 }
@@ -849,300 +788,6 @@ function TotalWorkLabel({ totalWorkSec, activeTimer }: { totalWorkSec: number; a
     return <span className="font-medium text-foreground">{formatDuration(totalWorkSec + live)}</span>;
 }
 
-function ActivityTimeline({
-    activities,
-    projectId,
-    tasks,
-    locale,
-    onChanged,
-}: {
-    activities: ReadonlyArray<ActivityRow>;
-    projectId: string;
-    tasks: ReadonlyArray<TaskRow>;
-    locale: Locale;
-    onChanged: () => void;
-}) {
-    const [adding, setAdding] = useState(false);
-    const [editing, setEditing] = useState<ActivityRow | null>(null);
-    const [, del] = useMutation(WorkspaceProjectActivityDeleteDocument);
-
-    return (
-        <div className="mt-3 border-t border-border/40 pt-3">
-            <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {{ de: 'Verlauf', en: 'Timeline' }[locale]}
-                </h3>
-                <Button size="sm" variant="ghost" onClick={() => setAdding(true)} disabled={adding || editing !== null}>
-                    <PlusIcon />
-                    {{ de: 'Eintrag hinzufügen', en: 'Add entry' }[locale]}
-                </Button>
-            </div>
-
-            {adding ? (
-                <ActivityForm
-                    activity={null}
-                    projectId={projectId}
-                    tasks={tasks}
-                    locale={locale}
-                    onClose={() => setAdding(false)}
-                    onSaved={() => {
-                        setAdding(false);
-                        onChanged();
-                    }}
-                />
-            ) : null}
-
-            {activities.length === 0 && !adding ? (
-                <p className="mt-3 text-xs text-muted-foreground">{{ de: 'Noch keine Einträge.', en: 'No entries yet.' }[locale]}</p>
-            ) : (
-                <ul className="mt-3 flex flex-col gap-2">
-                    {activities.map((activity) => (
-                        <li key={activity.activityId}>
-                            {editing?.activityId === activity.activityId ? (
-                                <ActivityForm
-                                    activity={activity}
-                                    projectId={projectId}
-                                    tasks={tasks}
-                                    locale={locale}
-                                    onClose={() => setEditing(null)}
-                                    onSaved={() => {
-                                        setEditing(null);
-                                        onChanged();
-                                    }}
-                                />
-                            ) : (
-                                <ActivityRowView
-                                    activity={activity}
-                                    locale={locale}
-                                    onEdit={() => setEditing(activity)}
-                                    onDelete={async () => {
-                                        await del({ activityId: activity.activityId });
-                                        onChanged();
-                                    }}
-                                />
-                            )}
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
-    );
-}
-
-function ActivityRowView({
-    activity,
-    locale,
-    onEdit,
-    onDelete,
-}: {
-    activity: ActivityRow;
-    locale: Locale;
-    onEdit: () => void;
-    onDelete: () => void;
-}) {
-    const Icon = ACTIVITY_KIND_ICONS[activity.kind];
-    const occurredAt = format(parseISO(activity.occurredAt as unknown as string), 'yyyy-MM-dd HH:mm');
-    const isRunning = activity.kind === 'work' && activity.endedAt === null;
-    // Work rows can't be hand-edited via the activity form — the timer
-    // mutations own them. The delete button still applies (removes the
-    // session from the total).
-    return (
-        <div className="flex items-start gap-2 text-xs">
-            <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="font-medium">{activity.title}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {ACTIVITY_KIND_LABELS[activity.kind][locale]}
-                    </span>
-                    {activity.channel ? (
-                        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">
-                            {ACTIVITY_CHANNEL_LABELS[activity.channel][locale]}
-                        </span>
-                    ) : null}
-                    {activity.durationSec ? (
-                        <span className="text-[10px] text-muted-foreground">· {formatDuration(activity.durationSec)}</span>
-                    ) : null}
-                    {isRunning ? (
-                        <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                            {{ de: 'läuft', en: 'running' }[locale]}
-                        </span>
-                    ) : null}
-                </div>
-                {activity.notes ? <div className="mt-0.5 whitespace-pre-line text-muted-foreground">{activity.notes}</div> : null}
-                <div className="mt-0.5 text-[10px] text-muted-foreground">{occurredAt}</div>
-            </div>
-            <div className="flex shrink-0 items-center gap-0.5">
-                {activity.kind === 'work' ? null : (
-                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} onClick={onEdit}>
-                        <PencilIcon />
-                    </Button>
-                )}
-                <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Löschen', en: 'Delete' }[locale]} onClick={onDelete}>
-                    <Trash2Icon />
-                </Button>
-            </div>
-        </div>
-    );
-}
-
-function ActivityForm({
-    activity,
-    projectId,
-    tasks,
-    locale,
-    onClose,
-    onSaved,
-}: {
-    activity: ActivityRow | null;
-    projectId: string;
-    tasks: ReadonlyArray<TaskRow>;
-    locale: Locale;
-    onClose: () => void;
-    onSaved: () => void;
-}) {
-    const [, upsert] = useMutation(WorkspaceProjectActivityUpsertDocument);
-    // The default `occurredAt` for a new entry is "now, rounded to the
-    // minute" — what Cem would type if asked.
-    const defaultOccurredAt = () => {
-        const d = new Date();
-        d.setSeconds(0, 0);
-        return d.toISOString().slice(0, 16);
-    };
-    const [form, setForm] = useState({
-        kind: (activity?.kind ?? 'clientContact') as Exclude<GqlCProjectActivityKind, 'work'>,
-        channel: activity?.channel ?? null,
-        title: activity?.title ?? '',
-        notes: activity?.notes ?? '',
-        occurredAt: activity?.occurredAt
-            ? format(parseISO(activity.occurredAt as unknown as string), "yyyy-MM-dd'T'HH:mm")
-            : defaultOccurredAt(),
-        taskId: activity?.taskId ?? null,
-        durationMin: activity?.durationSec ? Math.round(activity.durationSec / 60).toString() : '',
-    });
-    const [busy, setBusy] = useState(false);
-
-    // Channel is only meaningful for contact / meeting kinds; clear it on
-    // any other selection so the server-side guard never fires on user
-    // input.
-    const channelRelevant = form.kind === 'clientContact' || form.kind === 'meeting';
-
-    return (
-        <form
-            onSubmit={async (event) => {
-                event.preventDefault();
-                setBusy(true);
-                const durationSec = form.durationMin ? Math.max(0, Math.round(Number(form.durationMin) * 60)) : null;
-                await upsert({
-                    activityId: activity?.activityId ?? null,
-                    projectId,
-                    taskId: form.taskId,
-                    kind: form.kind,
-                    channel: channelRelevant ? form.channel : null,
-                    title: form.title,
-                    notes: form.notes || null,
-                    occurredAt: new Date(form.occurredAt).toISOString(),
-                    durationSec,
-                });
-                setBusy(false);
-                onSaved();
-            }}
-            className="mt-3"
-        >
-            <GlassCard className="px-4 py-4">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <Field label={{ de: 'Art', en: 'Kind' }[locale]}>
-                        <Select value={form.kind} onValueChange={(value) => setForm({ ...form, kind: value as typeof form.kind })}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {ACTIVITY_KIND_ORDER.filter((k) => k !== 'work').map((k) => (
-                                    <SelectItem key={k} value={k}>
-                                        {ACTIVITY_KIND_LABELS[k][locale]}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </Field>
-                    {channelRelevant ? (
-                        <Field label={{ de: 'Kanal', en: 'Channel' }[locale]}>
-                            <Select
-                                value={form.channel ?? ''}
-                                onValueChange={(value) =>
-                                    setForm({ ...form, channel: (value || null) as GqlCProjectActivityChannel | null })
-                                }
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder={{ de: 'Bitte wählen', en: 'Pick one' }[locale]} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {ACTIVITY_CHANNEL_ORDER.map((c) => (
-                                        <SelectItem key={c} value={c}>
-                                            {ACTIVITY_CHANNEL_LABELS[c][locale]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                    ) : (
-                        <div />
-                    )}
-                    <Field label={{ de: 'Titel', en: 'Title' }[locale]} fullWidth>
-                        <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-                    </Field>
-                    <Field label={{ de: 'Wann', en: 'When' }[locale]}>
-                        <Input
-                            type="datetime-local"
-                            value={form.occurredAt}
-                            onChange={(e) => setForm({ ...form, occurredAt: e.target.value })}
-                            required
-                        />
-                    </Field>
-                    <Field label={{ de: 'Dauer (Minuten)', en: 'Duration (min)' }[locale]}>
-                        <Input
-                            type="number"
-                            min="0"
-                            value={form.durationMin}
-                            onChange={(e) => setForm({ ...form, durationMin: e.target.value })}
-                            placeholder={{ de: 'optional', en: 'optional' }[locale]}
-                        />
-                    </Field>
-                    {tasks.length > 0 ? (
-                        <Field label={{ de: 'Aufgabe', en: 'Task' }[locale]} fullWidth>
-                            <Select value={form.taskId ?? ''} onValueChange={(value) => setForm({ ...form, taskId: value || null })}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue
-                                        placeholder={{ de: 'Optional: an Aufgabe binden', en: 'Optional: attach to task' }[locale]}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {tasks.map((t) => (
-                                        <SelectItem key={t.taskId} value={t.taskId}>
-                                            {t.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                    ) : null}
-                    <Field label={{ de: 'Notizen', en: 'Notes' }[locale]} fullWidth>
-                        <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} />
-                    </Field>
-                </div>
-                <div className="mt-3 flex justify-end gap-2">
-                    <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={busy}>
-                        {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
-                    </Button>
-                    <Button type="submit" size="sm" disabled={busy || !form.title.trim()}>
-                        {{ de: 'Speichern', en: 'Save' }[locale]}
-                    </Button>
-                </div>
-            </GlassCard>
-        </form>
-    );
-}
-
 function ProjectForm({
     row,
     locale,
@@ -1235,63 +880,6 @@ function ProjectForm({
 // --- Tasks (inside a project, or standalone) --------------------------------
 
 type TaskRow = GqlCWorkspaceProjectsPageQuery['admin']['standaloneTasks'][number];
-
-function TaskList({
-    tasks,
-    projectId,
-    locale,
-    onChanged,
-}: {
-    tasks: ReadonlyArray<TaskRow>;
-    projectId: string | null;
-    locale: Locale;
-    onChanged: () => void;
-}) {
-    const [adding, setAdding] = useState(false);
-    const grouped = TASK_STATUS_ORDER.map((status) => ({
-        status,
-        rows: tasks.filter((t) => t.status === status),
-    }));
-
-    return (
-        <div className="mt-3 border-t border-border/40 pt-3">
-            <div className="flex flex-col gap-3">
-                {grouped.map((group) =>
-                    group.rows.length === 0 ? null : (
-                        <div key={group.status}>
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                {TASK_STATUS_LABELS[group.status][locale]}
-                            </p>
-                            <ul className="mt-1 flex flex-col gap-1">
-                                {group.rows.map((task) => (
-                                    <TaskItem key={task.taskId} task={task} locale={locale} onChanged={onChanged} />
-                                ))}
-                            </ul>
-                        </div>
-                    ),
-                )}
-            </div>
-            {adding ? (
-                <TaskForm
-                    task={null}
-                    projectId={projectId}
-                    locale={locale}
-                    nextPosition={tasks.filter((t) => t.status === 'todo').length}
-                    onClose={() => setAdding(false)}
-                    onSaved={() => {
-                        setAdding(false);
-                        onChanged();
-                    }}
-                />
-            ) : (
-                <Button variant="ghost" size="sm" onClick={() => setAdding(true)} className="mt-2 -ml-2 text-xs">
-                    <PlusIcon />
-                    {{ de: 'Aufgabe hinzufügen', en: 'Add task' }[locale]}
-                </Button>
-            )}
-        </div>
-    );
-}
 
 function TaskItem({ task, locale, onChanged }: { task: TaskRow; locale: Locale; onChanged: () => void }) {
     const [, upsert] = useMutation(WorkspaceTaskUpsertDocument);

@@ -35,7 +35,13 @@ export interface ServerRuntime {
     // and never reach a real LLM endpoint — see `commandTestUtils.ts` /
     // `serverRuntimeStubCreate` in command tests.
     ai: {
-        userConversationModel: () => LanguageModel;
+        // `modelId` (optional) selects from the admin chat-model catalog
+        // (`src/server/agents/adminChatModels.ts`). When omitted, the runtime
+        // returns the catalog's fallback id (`gemini-2.5-flash` today) — that
+        // is what the visitor agent uses, which never picks per-turn. Unknown
+        // ids fail fast at construction so an invalid choice can't reach the
+        // provider.
+        userConversationModel: (modelId?: string) => LanguageModel;
         // Cheap model used by the profile analyzer (one call per admin user
         // message). Should be inexpensive and structured-output friendly.
         // See `docs/features/profile.md`.

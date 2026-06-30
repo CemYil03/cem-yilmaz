@@ -664,6 +664,26 @@ export const profile = pgTable('Profile', {
 export type Profile = typeof profile.$inferSelect;
 export type ProfileCreate = typeof profile.$inferInsert;
 
+// --- Admin chat config -------------------------------------------------------
+//
+// Singleton row holding the workspace assistant's saved default model id.
+// Same shape and id strategy as `Profile` above: one fixed-id row today, a
+// future per-user split is a column addition rather than a schema move. The
+// list of selectable models lives in code (`src/server/agents/adminChatModels.ts`)
+// — this table stores ONLY which one is currently picked. The row is
+// bootstrapped lazily on first `Admin.chatConfig` read; until then, the
+// runtime falls back to the catalog's first entry. See
+// `docs/features/admin-chat-config.md`.
+
+export const adminChatConfig = pgTable('AdminChatConfig', {
+    adminChatConfigId: uuid().primaryKey(),
+    defaultModelId: varchar().notNull(),
+    updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AdminChatConfig = typeof adminChatConfig.$inferSelect;
+export type AdminChatConfigCreate = typeof adminChatConfig.$inferInsert;
+
 // Categories the analyzer LLM is told to choose from. Stored as a flat enum
 // in a `varchar` (mirrors the GraphQL `ProfileObservationCategory` enum).
 //
@@ -943,6 +963,11 @@ export type ProjectActivityKind = (typeof projectActivityKinds)[number];
 export const projectActivityChannels = ['malt', 'email', 'phone', 'videoCall', 'inPerson', 'aiAssistant', 'other'] as const;
 export type ProjectActivityChannel = (typeof projectActivityChannels)[number];
 
+// Offer-row state. Meaningful only when `kind = 'offer'`; the UI hides the
+// pill for other kinds. A withdrawn offer keeps the row for history.
+export const projectOfferStatuses = ['sent', 'accepted', 'rejected', 'withdrawn'] as const;
+export type ProjectOfferStatus = (typeof projectOfferStatuses)[number];
+
 export const projectActivities = pgTable(
     'ProjectActivities',
     {
@@ -969,6 +994,13 @@ export const projectActivities = pgTable(
         // settable directly on event rows when Cem logs a known duration
         // ("the call was 45 min") without running a timer.
         durationSec: integer(),
+        // Offer-specific fields. Only meaningful when `kind = 'offer'`; the
+        // editor hides them for other kinds. `amountCents` is integer cents
+        // in EUR (single-currency assumption in v1); no rounding ambiguity.
+        // `offerStatus` tracks the lifecycle the offer went through after
+        // being logged.
+        amountCents: integer(),
+        offerStatus: varchar().$type<ProjectOfferStatus>(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
@@ -998,3 +1030,117 @@ export const projectActivities = pgTable(
 
 export type ProjectActivity = typeof projectActivities.$inferSelect;
 export type ProjectActivityCreate = typeof projectActivities.$inferInsert;
+
+// --- Project links & files ---------------------------------------------------
+//
+// First-class resources hanging off a project: external URLs (repo, Malt
+// mission, Figma file, client portal, shared drive) and uploaded files
+// (offer PDFs, signed contracts, invoices, screenshots). Each row optionally
+// references the `ProjectActivity` it was "born from" — when a link or file
+// is added at the moment of logging "sent offer", `activityId` points at
+// that activity and the timeline row renders the chip inline. Adding the
+// resource directly at project level leaves `activityId` null.
+//
+// `pinned` is the hoisting mechanism: pinned rows surface in the project
+// detail header's pinned rail; the full list always lives on the Links /
+// Files tab. One row, two surfaces — no duplication.
+//
+// Files reuse the shared `fileUploads` table (see line ~454). Cascade on
+// `fileUploadId` delete removes the project-file join row; cascade on
+// project delete cleans up join rows but leaves the underlying upload
+// blob in place (cleaned up later by the user-row cascade). See
+// `docs/architecture/file-storage.md`.
+//
+// See `docs/features/projects-workspace.md`.
+
+export const projectLinkKinds = ['github', 'malt', 'figma', 'gdrive', 'notion', 'invoice', 'offer', 'other'] as const;
+export type ProjectLinkKind = (typeof projectLinkKinds)[number];
+
+export const projectLinks = pgTable(
+    'ProjectLinks',
+    {
+        projectLinkId: uuid().primaryKey(),
+        projectId: uuid().notNull(),
+        // Activity this link was born from, if any. Cascade-set-null on
+        // activity delete so removing the timeline entry doesn't shred the
+        // link — it just detaches and stays available on the Links tab.
+        activityId: uuid(),
+        url: varchar().notNull(),
+        // Human label for the link card. Null falls back to the URL host.
+        label: varchar(),
+        kind: varchar().$type<ProjectLinkKind>().notNull().default('other'),
+        // True surfaces this link in the project detail header's pinned rail.
+        // The full list always renders on the Links tab regardless of `pinned`.
+        pinned: boolean().notNull().default(false),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.projectId],
+            foreignColumns: [projects.projectId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.activityId],
+            foreignColumns: [projectActivities.activityId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('ProjectLinks_projectId_pinned_idx').on(table.projectId, table.pinned),
+        index('ProjectLinks_activityId_idx').on(table.activityId),
+    ],
+);
+
+export type ProjectLink = typeof projectLinks.$inferSelect;
+export type ProjectLinkCreate = typeof projectLinks.$inferInsert;
+
+export const projectFileKinds = ['offer', 'invoice', 'contract', 'screenshot', 'other'] as const;
+export type ProjectFileKind = (typeof projectFileKinds)[number];
+
+export const projectFiles = pgTable(
+    'ProjectFiles',
+    {
+        projectFileId: uuid().primaryKey(),
+        projectId: uuid().notNull(),
+        // Activity this file was born from, if any. Same semantics as
+        // `projectLinks.activityId` — cascade-set-null on activity delete.
+        activityId: uuid(),
+        // The underlying upload row. Cascade on delete: removing the upload
+        // removes the join. The upload itself is owned by the user that
+        // posted it and lives on `fileUploads`.
+        fileUploadId: uuid().notNull(),
+        label: varchar(),
+        kind: varchar().$type<ProjectFileKind>().notNull().default('other'),
+        pinned: boolean().notNull().default(false),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.projectId],
+            foreignColumns: [projects.projectId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.activityId],
+            foreignColumns: [projectActivities.activityId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        foreignKey({
+            columns: [table.fileUploadId],
+            foreignColumns: [fileUploads.fileUploadId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('ProjectFiles_projectId_pinned_idx').on(table.projectId, table.pinned),
+        index('ProjectFiles_activityId_idx').on(table.activityId),
+        index('ProjectFiles_fileUploadId_idx').on(table.fileUploadId),
+    ],
+);
+
+export type ProjectFile = typeof projectFiles.$inferSelect;
+export type ProjectFileCreate = typeof projectFiles.$inferInsert;

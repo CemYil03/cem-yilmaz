@@ -1,16 +1,22 @@
-import type { Project, ProjectActivity, ProjectRequest, Task } from '../db/schema';
+import type { FileUpload, Project, ProjectActivity, ProjectFile, ProjectLink, ProjectRequest, Task } from '../db/schema';
 import type { GqlSProject } from '../graphql/generated';
 import { toGqlProjectActivity } from './toGqlProjectActivity';
+import { toGqlProjectFile } from './toGqlProjectFile';
+import { toGqlProjectLink } from './toGqlProjectLink';
 import { toGqlTask } from './toGqlTask';
 
-// `tasks` is supplied eagerly by the list query — the projects board renders
-// every task alongside its project, so a sub-resolver round-trip per row
-// would just be N+1 churn. `sourceRequest` is similarly joined in once at
-// list time; pass `null` for hand-created projects with no source request.
-// `activities` is joined the same way and ordered newest-first by the
-// caller (`projectsList`). `totalWorkSec` is precomputed against the same
-// row set so the project card can render the total without a follow-up
-// roundtrip.
+// `tasks` / `activities` / `links` / `files` are supplied eagerly by the
+// list / detail query — the projects board and the detail page each render
+// every nested row alongside its project, so a sub-resolver round-trip per
+// row would just be N+1 churn. `sourceRequest` is similarly joined once
+// at list time; pass `null` for hand-created projects with no source
+// request. `totalWorkSec` is precomputed against the same row set so the
+// project card can render the total without a follow-up roundtrip.
+//
+// Per-activity `links` / `files` (the activity rows born those resources
+// from) are sliced out of the project-wide lists at the activity step. The
+// `fileUploadsById` map drives both the project-level `files` field and
+// every activity's nested `files`.
 //
 // Note: re-exporting `toGqlProjectRequest` here would create a cycle with
 // `toGqlProjectRequest.ts` (which imports this file for its
@@ -22,6 +28,9 @@ export function toGqlProject(
     sourceRequest: ProjectRequest | null,
     activities: ReadonlyArray<ProjectActivity> = [],
     totalWorkSec: number = 0,
+    links: ReadonlyArray<ProjectLink> = [],
+    files: ReadonlyArray<ProjectFile> = [],
+    fileUploadsById: ReadonlyMap<string, FileUpload> = new Map(),
 ): GqlSProject {
     return {
         projectId: row.projectId,
@@ -53,7 +62,21 @@ export function toGqlProject(
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         tasks: tasks.map(toGqlTask),
-        activities: activities.map(toGqlProjectActivity),
+        activities: activities.map((a) =>
+            toGqlProjectActivity(
+                a,
+                links.filter((l) => l.activityId === a.activityId),
+                files.filter((f) => f.activityId === a.activityId),
+                fileUploadsById,
+            ),
+        ),
         totalWorkSec,
+        links: links.map(toGqlProjectLink),
+        files: files
+            .map((f) => {
+                const upload = fileUploadsById.get(f.fileUploadId);
+                return upload ? toGqlProjectFile(f, upload) : null;
+            })
+            .filter((f): f is NonNullable<typeof f> => f !== null),
     };
 }
