@@ -6,9 +6,12 @@ Two visitor-facing pages plus one admin surface, all bilingual:
 
 - **`/about` (`/en/about`)** — Profile page. Shows the bio paragraph, identity facts (DOB, residence, nationality, spoken languages), the
   full skill block grouped by category, hobbies, and contact channels (email, GitHub, LinkedIn). Footer CTA links to `/cv`.
-- **`/cv` (`/en/cv`)** — Full CV. Hero, then two timelines (experience and education). Each entry shows a date range (`heute`/`today` for
-  ongoing roles), role + company, description, technology chips, and an optional manager line. A "Download PDF" link in the hero points at
-  `/Lebenslauf.pdf` (the original document, served from `public/`).
+- **`/cv` (`/en/cv`)** — Full CV. A hero strip (title, intro, computed stat row: `N+ years · N stations · location`, "Download PDF" CTA
+  pulled to the right on desktop), then two rail-style timelines (experience and education). Each entry's date range sits to the **left of
+  the rail** on `md+` (`heute`/`today` for ongoing roles); a brand-tinted dot marks ongoing entries and a muted dot marks past ones. The
+  GlassCard on the right carries role + company, description, technology chips, and an optional manager line. Each card fades + lifts in on
+  its own as it scrolls into view (`Reveal` per entry, 70ms stagger capped at 3 steps). The PDF CTA points at `/Lebenslauf.pdf` (the
+  original document, served from `public/`).
 - **`/workspace/cv`** — Admin editor. Add/edit/delete forms for every CV entity. `noindex`, unlinked from the public site, mutations gated
   by `guardAdminMutation` — the workspace surface is gated on the `isAdmin` flag on the requesting session's `Users` row.
 
@@ -85,6 +88,16 @@ All wired in `src/server/graphql/resolversCreate.ts` alongside the existing chat
 `/cv` uses a shared presentational component, `src/web/components/CvTimeline.tsx`. The component is locale-aware (date formatting via
 `Intl.DateTimeFormat`) but knows nothing about GraphQL — the route maps DB rows into the component's `CvTimelineEntry` shape, which keeps
 the same component reusable for both experience and education. `endDate === null` is rendered as the `ongoingLabel` (`heute` / `today`).
+
+The timeline layout is a two-column CSS grid on `md+`: a fixed 7rem "date" column on the left, then a 1px vertical rail with a dot per
+entry, then the GlassCard. Ongoing entries (`endDate === null`) get a fully-saturated `bg-primary` dot ringed by `ring-background` so it
+reads as inset on the rail; past entries get a muted `bg-muted-foreground/40` dot. Each entry is wrapped in `<Reveal as="li" index={i}>` so
+cards fade in individually as the viewport reaches them — wrapping the whole section in a single `Reveal` would not fire until the user had
+already scrolled past the heading (the section is taller than the viewport, so the 15% intersection threshold misses the top). On mobile the
+rail collapses and the date renders as a small inline label above the card title.
+
+Header stats (`N+ years`, `N stations`) are computed at render time from the same loader data the timelines consume, so the strip never
+drifts from the entries themselves.
 
 `/about` uses `CvSkillGroup` (also in `src/web/components/`), which groups skills by category and skips empty buckets so a future deletion
 doesn't leave a hollow header.
