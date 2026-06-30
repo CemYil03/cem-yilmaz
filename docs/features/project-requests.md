@@ -107,8 +107,8 @@ round-trip, not the full request list.
 
 ## Open questions / future work
 
-- **Reaping stale `pendingOtp` rows.** A row whose OTP expired and which the visitor never returned to retry stays around. A periodic job
-  similar to `staleSessionsCleanup` could move them to `archived` after a few days.
+- **Reaping stale `pendingOtp` rows.** A row whose OTP expired and which the visitor never returned to retry stays around. A periodic
+  cleanup job could move them to `archived` after a few days.
 - **Rate limiting.** The visitor chat already caps user messages at 10 per 24h per IP-hash, which transitively caps project submissions —
   every submission needs at least 2-3 user messages, so a single IP-hash can produce at most ~3-4 briefs in a day before the chat itself
   stops accepting their input. No separate cap was added.

@@ -52,8 +52,7 @@ special casing in `seoMeta`) outweighs the benefit. The page **content** switche
 ### Retention claims
 
 The page **does not promise any fixed automated-deletion period** for application data (sessions, chats, project requests, application
-logs). This is deliberate: today there is no retention cleanup job. `src/server/jobs/handlers/staleSessionsCleanup.ts` is a stub
-(`// TODO: implement cleanup logic`) that logs every minute and deletes nothing, and `Logs` / `Chats` / `ProjectRequests` have no date-bound
+logs). This is deliberate: today there is no retention cleanup job. `Sessions` / `Logs` / `Chats` / `ProjectRequests` have no date-bound
 delete anywhere in `commands/` or `jobs/`. The page therefore says "deletion on request and otherwise once the processing purpose has
 finally ceased" — defensible and truthful.
 

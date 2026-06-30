@@ -31,7 +31,6 @@ export async function ensureJobsStarted(serverRuntime: ServerRuntime): Promise<v
 }
 
 export { signupReminderSend } from './handlers/signupReminderSend';
-export { staleSessionsCleanup } from './handlers/staleSessionsCleanup';
 export { compassAnalyze } from './handlers/compassAnalyze';
 export { compassInterviewWeeklyDue } from './handlers/compassInterviewWeeklyDue';
 export { compassSynthesize } from './handlers/compassSynthesize';

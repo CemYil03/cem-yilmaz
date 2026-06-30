@@ -388,8 +388,8 @@ The template ships a server-side image-rendering pipeline. To use it:
 
 ## Jobs (Background Processing)
 
-- Job handler files live in `src/server/jobs/handlers/` and follow entity-action naming: `{entityAction}.ts` (e.g.,
-  `staleSessionsCleanup.ts`, `signupReminderSend.ts`)
+- Job handler files live in `src/server/jobs/handlers/` and follow entity-action naming: `{entityAction}.ts` (e.g., `signupReminderSend.ts`,
+  `compassAnalyze.ts`)
 - Each handler file exports a single `JobDefinition` (either `RecurringJobDefinition` or `QueuedJobDefinition`)
 - All jobs are registered in `src/server/jobs/jobDefinitions.ts` — this is the single wiring point (analogous to `resolversCreate.ts` for
   GraphQL)
