@@ -61,16 +61,12 @@ export const ADMIN_CHAT_MODELS: readonly AdminChatModelDefinition[] = [
     { modelId: 'gemini-3.5-pro', label: 'Gemini 3.5 Pro', supportedMediaTypes: PRO_MEDIA_TYPES },
 ];
 
-export const ADMIN_CHAT_MODEL_IDS: readonly AdminChatModelId[] = ADMIN_CHAT_MODELS.map((model) => model.modelId);
+const ADMIN_CHAT_MODEL_IDS: readonly AdminChatModelId[] = ADMIN_CHAT_MODELS.map((model) => model.modelId);
 
 // First entry is the canonical fallback when a saved default goes missing
 // (renamed/removed in a deploy) and when an admin's first chat fires before
 // the singleton row has been bootstrapped.
 export const ADMIN_CHAT_MODEL_FALLBACK_ID: AdminChatModelId = 'gemini-2.5-flash';
-
-export function adminChatModelFind(modelId: string): AdminChatModelDefinition | undefined {
-    return ADMIN_CHAT_MODELS.find((model) => model.modelId === modelId);
-}
 
 export function isAdminChatModelId(modelId: string): modelId is AdminChatModelId {
     return ADMIN_CHAT_MODEL_IDS.includes(modelId as AdminChatModelId);
