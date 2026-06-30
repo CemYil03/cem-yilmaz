@@ -49,7 +49,7 @@ const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enL
 // Mirrored on `/workspace/assistant` — once the list grows past a screen of
 // rows, all surfaces should switch to a scrollable column together rather
 // than nudging this number up.
-export const RECENT_CHATS_LIMIT = 10;
+const RECENT_CHATS_LIMIT = 10;
 
 export function WorkspaceAssistantChatEmptyState({
     locale,
