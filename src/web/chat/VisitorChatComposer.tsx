@@ -1,5 +1,4 @@
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import type { ReactNode } from 'react';
 import { useQuery } from 'urql';
 import { ChatComposer } from './ChatComposer';
@@ -7,6 +6,7 @@ import { Button } from '../components/base/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/base/hover-card';
 import { ChatMessageCreateDocument, VisitorChatQuotaDocument } from '../graphql/generated';
 import type { GqlCVisitorChatQuotaFieldsFragment } from '../graphql/generated';
+import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
 
 // Visitor-facing chat composer. Wraps `<ChatComposer />` and pre-wires the
@@ -59,8 +59,6 @@ const extractMessageCreateResult = (data: unknown): { chatId: string } | null =>
     const wrapper = data as { chatMessageCreate?: { chatId: string } | null } | null | undefined;
     return wrapper?.chatMessageCreate ?? null;
 };
-
-const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 export function VisitorChatComposer({
     locale,

@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import {
     BrainIcon,
     EyeOffIcon,
@@ -46,6 +45,7 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -69,8 +69,6 @@ const pageDescription = {
     de: 'Was dein Assistent über dich weiß — und was ihm nicht gezeigt wird.',
     en: 'What your assistant knows about you — and what is kept from it.',
 };
-
-const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 type CompassQueryData = NonNullable<GqlCWorkspaceCompassPageUserFragment['admin']>;
 type CompassData = CompassQueryData['compass'];

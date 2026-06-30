@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { SearchIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -15,6 +14,7 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import { localeFromParam } from '../../../web/utils/locale';
 import type { Locale } from '../../../web/utils/locale';
 
@@ -38,8 +38,6 @@ const description = {
     de: 'Server-Logs durchsuchen. Neueste zuerst, gefiltert nach Level oder Text.',
     en: 'Inspect server logs. Newest first, filterable by level or message text.',
 };
-
-const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 const LOG_LEVELS = ['error', 'warn', 'info', 'debug'] as const;
 type LogLevelValue = (typeof LOG_LEVELS)[number];

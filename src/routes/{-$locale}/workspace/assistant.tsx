@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { ArrowDownIcon, MessageSquareTextIcon } from 'lucide-react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useMutation } from 'urql';
@@ -37,6 +36,7 @@ import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphq
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import { localeFromParam } from '../../../web/utils/locale';
 import type { Locale } from '../../../web/utils/locale';
 
@@ -61,8 +61,6 @@ const untitledLabel = { de: 'Ohne Titel', en: 'Untitled' };
 // scrolling chore. Once the list gets large enough to need filtering both
 // surfaces graduate together.
 const RECENT_CHATS_LIMIT = 10;
-
-const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 const assistantSearchSchema = z.object({
     chatId: z.string().optional(),

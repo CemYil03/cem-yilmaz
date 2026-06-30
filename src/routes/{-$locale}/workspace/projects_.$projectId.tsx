@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { format, formatDistanceToNowStrict, parseISO } from 'date-fns';
-import { de as deLocale, enUS } from 'date-fns/locale';
 import {
     CheckSquare2Icon,
     ChevronDownIcon,
@@ -91,6 +90,7 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -257,10 +257,6 @@ function formatEur(cents: number | null | undefined): string {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 }
 
-function dateFnsLocale(locale: Locale) {
-    return locale === 'de' ? deLocale : enUS;
-}
-
 // "today" / "vor 3 Tagen" / "Mar 14" — relative when fresh enough to feel
 // recent, absolute once the user would rather just see the date. Used in the
 // rail's metadata list so timestamps don't shout `2026-06-12T09:14:00Z` at
@@ -269,13 +265,13 @@ function formatRelative(iso: string, locale: Locale): string {
     const parsed = parseISO(iso);
     const daysAgo = (Date.now() - parsed.getTime()) / 86_400_000;
     if (daysAgo < 7) {
-        return formatDistanceToNowStrict(parsed, { addSuffix: true, locale: dateFnsLocale(locale) });
+        return formatDistanceToNowStrict(parsed, { addSuffix: true, locale: DATE_FNS_LOCALE[locale] });
     }
-    return format(parsed, locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: dateFnsLocale(locale) });
+    return format(parsed, locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: DATE_FNS_LOCALE[locale] });
 }
 
 function formatAbsolute(iso: string, locale: Locale): string {
-    return format(parseISO(iso), locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: dateFnsLocale(locale) });
+    return format(parseISO(iso), locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: DATE_FNS_LOCALE[locale] });
 }
 
 // URL state — `tab` selects the section, `focus` lights up a child row.
@@ -1338,7 +1334,7 @@ function TaskForm({
                     value={dueAt ?? undefined}
                     onValueChange={(d) => setDueAt(d ?? null)}
                     placeholder={{ de: 'Fällig am', en: 'Due date' }[locale]}
-                    locale={dateFnsLocale(locale)}
+                    locale={DATE_FNS_LOCALE[locale]}
                 />
             </div>
             <Textarea
@@ -1477,7 +1473,7 @@ function isSameDay(aIso: string, bIso: string): boolean {
 // with the bubbles. Repeats per day, not per row.
 function ChatDaySeparator({ iso, locale }: { iso: string; locale: Locale }) {
     const formatted = format(parseISO(iso), locale === 'de' ? 'EEEE, d. MMMM yyyy' : 'EEEE, d MMMM yyyy', {
-        locale: dateFnsLocale(locale),
+        locale: DATE_FNS_LOCALE[locale],
     });
     return (
         <li aria-hidden className="flex items-center justify-center py-1">
@@ -1857,7 +1853,7 @@ function ActivityForm({
                 rows={2}
             />
             <div className="flex flex-wrap gap-2">
-                <DatePicker value={occurredAt} onValueChange={(d) => setOccurredAt(d ?? new Date())} locale={dateFnsLocale(locale)} />
+                <DatePicker value={occurredAt} onValueChange={(d) => setOccurredAt(d ?? new Date())} locale={DATE_FNS_LOCALE[locale]} />
                 <Input
                     type="number"
                     min="0"

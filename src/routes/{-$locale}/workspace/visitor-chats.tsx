@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { ArrowLeftIcon, MessageSquareTextIcon } from 'lucide-react';
 import { z } from 'zod';
 import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
@@ -14,6 +13,7 @@ import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphq
 import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import { localeFromParam } from '../../../web/utils/locale';
 import type { Locale } from '../../../web/utils/locale';
 
@@ -38,8 +38,6 @@ const description = {
     en: 'Every conversation visitors have had with the AI assistant.',
 };
 const untitled = { de: 'Ohne Titel', en: 'Untitled' };
-
-const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 const visitorChatsSearchSchema = z.object({
     chatId: z.string().optional(),
