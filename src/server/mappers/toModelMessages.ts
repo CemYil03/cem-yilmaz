@@ -1,4 +1,4 @@
-import type { FilePart, ImagePart, JSONValue, ModelMessage, TextPart } from 'ai';
+import type { FilePart, JSONValue, ModelMessage, TextPart } from 'ai';
 import type { FileUpload } from '../db/schema';
 import type { ChatMessageRowJoined } from './toGqlChatMessage';
 
@@ -50,12 +50,12 @@ export function toModelMessages(rows: ReadonlyArray<ChatMessageRowJoined>): Mode
                 }
                 // With attachments, the user's content becomes a parts array:
                 // body text first (skipped if the user only sent files), then
-                // one Image- or FilePart per attachment, inlining the bytes
-                // out of the JOINed payload so we don't take a second hop.
-                // Image MIME types prefer `ImagePart` (the SDK accepts this
-                // as a first-class image regardless of provider); everything
-                // else rides through `FilePart` with the persisted media type.
-                const parts: Array<TextPart | ImagePart | FilePart> = [];
+                // one `FilePart` per attachment, inlining the bytes out of the
+                // JOINed payload so we don't take a second hop. Images ride
+                // through the same `FilePart` shape with `mediaType: 'image/*'`
+                // — `ImagePart` is deprecated in AI SDK v7 in favor of this
+                // unified file-part path.
+                const parts: Array<TextPart | FilePart> = [];
                 if (row.user.body.length > 0) {
                     parts.push({ type: 'text', text: row.user.body });
                 }
@@ -210,16 +210,15 @@ export function toModelMessages(rows: ReadonlyArray<ChatMessageRowJoined>): Mode
     return messages;
 }
 
-// Decide whether a file upload is sent as `ImagePart` or `FilePart`. Gemini
-// (and most other providers) treat image MIME types specially when they're
-// declared as `image`, but accept the same payload through `FilePart` as a
-// fallback — we still keep the split because some providers refuse non-image
-// content via `ImagePart`.
-function toModelMessagePartForFileUpload(fileUpload: FileUpload): ImagePart | FilePart {
+// Build the `FilePart` for one attachment. Images and non-images both ride
+// through `FilePart` in v7 — `ImagePart` is deprecated in favor of this
+// unified shape with the persisted media type. Non-image attachments
+// additionally carry the original filename so the provider can surface it.
+function toModelMessagePartForFileUpload(fileUpload: FileUpload): FilePart {
     if (fileUpload.mediaType.startsWith('image/')) {
         return {
-            type: 'image',
-            image: fileUpload.bytes,
+            type: 'file',
+            data: fileUpload.bytes,
             mediaType: fileUpload.mediaType,
         };
     }

@@ -104,7 +104,7 @@ export const profileSynthesize: QueuedJobDefinition<ProfileSynthesizeData> = {
             const result = await generateObject({
                 model,
                 schema: SYNTHESIS_SCHEMA,
-                system: SYNTHESIS_SYSTEM_PROMPT,
+                instructions: SYNTHESIS_SYSTEM_PROMPT,
                 prompt: userPrompt,
             });
 

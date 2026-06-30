@@ -54,7 +54,7 @@ const PROMPT_USER_FOR_INPUT_TOOL_NAME = 'promptUserForInput';
 // `chatMessagesAssistantText`, `chatMessagesToolCall`,
 // `chatMessagesAssistantInputCollection`, and `chatMessagesToolApprovalRequest`
 // each carry the same six nullable columns; this helper produces the snapshot
-// once per `onStepFinish` so a step that fans out into multiple rows records
+// once per `onStepEnd` so a step that fans out into multiple rows records
 // identical numbers on each. See "Generation metadata" in
 // `docs/architecture/chat-persistence.md`.
 type StepGenerationMeta = Pick<
@@ -85,13 +85,13 @@ function stepGenerationMeta(step: { usage: LanguageModelUsage; model: { modelId:
     };
 }
 
-// Step shape `onStepFinish` receives. We only consume three structurally-
+// Step shape `onStepEnd` receives. We only consume three structurally-
 // uniform bits (`content`, `toolCalls`, `toolResults`) plus `usage` and
 // `model`; the SDK's true type carries a heterogeneous tool-set generic that
 // would force every caller to thread it through. Wide structural typing here
-// matches the `any` already carried by `AgentChatOptions.onStepFinish` and
+// matches the `any` already carried by `AgentChatOptions.onStepEnd` and
 // keeps the call sites simple.
-export type OnStepFinishStep = {
+export type OnStepEndStep = {
     content: ReadonlyArray<any>;
     toolCalls: ReadonlyArray<{ toolCallId: string; toolName: string; input: unknown }>;
     toolResults: ReadonlyArray<{ toolCallId: string; output: unknown }>;
@@ -99,7 +99,7 @@ export type OnStepFinishStep = {
     model: { modelId: string };
 };
 
-export interface OnStepFinishContext {
+export interface OnStepEndContext {
     chatId: string;
     generationId: string | null | undefined;
     requestingSession: GqlSSession;
@@ -110,7 +110,7 @@ export interface OnStepFinishContext {
     parentChatMessageId: string | null;
     // Tool-call ids the caller has pre-written rows for (today: the delegate
     // tool's own `chatMessagesToolCall` row). The orchestrator's
-    // `onStepFinish` must skip them so we don't insert a second row for the
+    // `onStepEnd` must skip them so we don't insert a second row for the
     // same call. The set may be empty.
     preWrittenToolCallIds: ReadonlySet<string>;
     // Mutated by the helper: flips to `true` if the step ended on a
@@ -121,12 +121,12 @@ export interface OnStepFinishContext {
     endedOnPromptForInput?: { value: boolean };
     // Mutated by the helper: caches the most recent step's generation
     // snapshot so the runner can stamp it onto the post-stream
-    // `chatMessagesAssistantText` row outside of `onStepFinish`.
+    // `chatMessagesAssistantText` row outside of `onStepEnd`.
     lastStepGeneration?: { value: StepGenerationMeta | null };
 }
 
 /**
- * Persist every persistable artifact of one `onStepFinish` step:
+ * Persist every persistable artifact of one `onStepEnd` step:
  *
  * 1. `tool-approval-request` content parts → `chatMessagesToolApprovalRequest`
  *    rows (suspended calls; matching tool-call rows are written later by
@@ -137,14 +137,14 @@ export interface OnStepFinishContext {
  * 3. Other tool calls → `chatMessagesToolCall` rows, stamped with
  *    `parentChatMessageId` from the context.
  *
- * Used by the orchestrator's outer `onStepFinish` (context: top-level,
+ * Used by the orchestrator's outer `onStepEnd` (context: top-level,
  * `parentChatMessageId: null`) AND by sub-agents running inside a delegating
  * tool's `execute` (context: parent-pointer set to the delegate row id, and
  * `preWrittenToolCallIds` containing the delegate tool's own call id so the
  * orchestrator's later step doesn't double-insert). See
  * `docs/architecture/agent-delegation.md` ("Nested tool calls").
  */
-export async function chatPersistStep(step: OnStepFinishStep, context: OnStepFinishContext): Promise<void> {
+export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndContext): Promise<void> {
     const { chatId, generationId, requestingSession, serverRuntime, parentChatMessageId, preWrittenToolCallIds } = context;
     const generation = stepGenerationMeta(step);
     if (context.lastStepGeneration) context.lastStepGeneration.value = generation;
@@ -381,9 +381,9 @@ async function runAgentTurn({
 }: ChatAssistantTurnRunOptions & { assistantTextMessageId: string }): Promise<void> {
     const { generationId } = assistantOptions;
     const { db } = serverRuntime;
-    // Every `onStepFinish` step caches its generation snapshot in this slot
+    // Every `onStepEnd` step caches its generation snapshot in this slot
     // so the post-stream `assistantText` insert (which runs outside
-    // `onStepFinish` for the streaming path) can record the last step's
+    // `onStepEnd` for the streaming path) can record the last step's
     // usage. Wrapping the mutable slot in an object dodges the lint check's
     // closure-blind narrowing of a plain `let`-bound `null`. Empty when the
     // turn produced no steps at all (e.g. an immediate agent throw).
@@ -397,7 +397,7 @@ async function runAgentTurn({
     // interactive). The streaming preview still surfaces the preamble during
     // the turn; `TurnEnded` clears it client-side.
     const endedOnPromptForInput = { value: false };
-    // Mutable set of `toolCallId`s the orchestrator's `onStepFinish` must skip
+    // Mutable set of `toolCallId`s the orchestrator's `onStepEnd` must skip
     // because some tool's `execute` already persisted its own
     // `chatMessagesToolCall` row up front. Today only `toolDelegateToProjects`
     // does this — it pre-writes the row so the sub-agent's child rows have an
@@ -412,14 +412,14 @@ async function runAgentTurn({
         assistantOptions,
         chatId,
         preWrittenToolCallIds,
-        // The orchestrator-level `onStepFinish`. All tool-call/approval/input-
+        // The orchestrator-level `onStepEnd`. All tool-call/approval/input-
         // collection persistence is the shared `chatPersistStep` helper, which
         // also serves sub-agents running inside a delegating tool's `execute`.
         // At this level there is no parent row (top-level tool calls aren't
         // nested) and no pre-written ids unless a delegating tool's `execute`
         // pushed onto `preWrittenToolCallIds` before returning — see
         // `toolDelegateToProjects` for the one tool that does this today.
-        onStepFinish: async (step: OnStepFinishStep) => {
+        onStepEnd: async (step: OnStepEndStep) => {
             await chatPersistStep(step, {
                 chatId,
                 generationId,
@@ -436,7 +436,7 @@ async function runAgentTurn({
     let assistantText = '';
     if (generationId) {
         const result = await agent.stream({ messages: coreMessages });
-        for await (const part of result.fullStream) {
+        for await (const part of result.stream) {
             if (part.type === 'text-delta') {
                 assistantText += part.text;
                 await serverRuntime.publish.chatUpdates({
@@ -472,7 +472,7 @@ async function runAgentTurn({
             parentChatMessageId: null,
             createdAt: new Date(),
         };
-        // `onStepFinish` for the final step has already run by the time we
+        // `onStepEnd` for the final step has already run by the time we
         // reach end-of-stream, so `lastStepGeneration.value` reflects the step
         // that produced this text. Falls back to `null` if no step ran (the
         // outer `assistantText.length > 0` guard usually rules that out).

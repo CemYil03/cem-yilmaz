@@ -1,4 +1,4 @@
-import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
+import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
 import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 import { profileSummaryGet } from '../queries/profileSummaryGet';
@@ -79,7 +79,7 @@ export async function agentPersonalAssistant({
     serverRuntime,
     chatId,
     preWrittenToolCallIds,
-    onStepFinish,
+    onStepEnd,
 }: AgentChatOptions) {
     const profileSummary = await profileSummaryGet(serverRuntime);
     // Per-turn model: the admin composer surfaces a dropdown bound to the
@@ -96,12 +96,12 @@ export async function agentPersonalAssistant({
         // turn via the composer dropdown; `requestedModelId` carries that
         // selection through `ChatAssistantOptions.modelId`.
         model: serverRuntime.ai.userConversationModel(resolvedModelId),
-        onStepFinish,
+        onStepEnd,
         providerOptions: googleAgentProviderOptions,
         // Bumped to 8 — a single user turn can now chain "delegate → user
         // input → delegate again" plus a final-text step, and 5 ran out in
         // practice.
-        stopWhen: [stepCountIs(8), hasToolCall('promptUserForInput')],
+        stopWhen: [isStepCount(8), hasToolCall('promptUserForInput')],
         instructions: buildSystemPrompt(profileSummary),
         tools: {
             promptUserForInput: toolPromptUserForInput(),

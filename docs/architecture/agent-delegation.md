@@ -20,9 +20,9 @@ loop. There is no queue, no separate session, no extra HTTP hop.
 ### Why in-process and not a sibling factory
 
 The two existing chat agents (`agentVisitorAboutCem`, `agentPersonalAssistant`) sit at the same level: dispatched by access path, each with
-its own `onStepFinish` plumbing, each persisting chat-message rows. Adding more siblings means every domain agent has to manage that
-plumbing too, and every cross-domain turn requires multiple top-level dispatches stitched together by the client. In-process delegation
-keeps the user-visible chat at a single turn even when several domains are touched, and the sub-agents stay small because they own no chat
+its own `onStepEnd` plumbing, each persisting chat-message rows. Adding more siblings means every domain agent has to manage that plumbing
+too, and every cross-domain turn requires multiple top-level dispatches stitched together by the client. In-process delegation keeps the
+user-visible chat at a single turn even when several domains are touched, and the sub-agents stay small because they own no chat
 persistence.
 
 ### What the sub-agent can and cannot do
@@ -32,7 +32,7 @@ persistence.
   flow through the resolver namespace at the call boundary (`AdminMutation` is `guardAdminMutation`-gated); inside that boundary every
   command runs with the same admin session.
 - ✅ Run multiple tool calls in sequence — the `ToolLoopAgent` loop works the same way as on the orchestrator.
-- ✅ Persist tool-call rows. The sub-agent now receives an `onStepFinish` from the delegate tool; every tool call lands in
+- ✅ Persist tool-call rows. The sub-agent now receives an `onStepEnd` from the delegate tool; every tool call lands in
   `chatMessagesToolCall` with `parentChatMessageId` pointing at the delegate row's id, and the transcript renders them indented under the
   parent card. See [Nested tool calls](#nested-tool-calls) below.
 - ❌ Persist `assistantText` rows. The sub-agent's final text is the orchestrator's `toolResult` payload, not a chat-visible row —
@@ -72,7 +72,7 @@ The parser accepts a bare object or a fenced ` ```json ` block defensively — G
 
 ### Step budget
 
-The sub-agent caps at `stepCountIs(8)`. The orchestrator caps at `stepCountIs(8)` as well, with `hasToolCall('promptUserForInput')` as the
+The sub-agent caps at `isStepCount(10)`. The orchestrator caps at `isStepCount(8)`, with `hasToolCall('promptUserForInput')` as the
 hand-back-to-user signal. A single user message can therefore consume up to ~16 LLM steps if the orchestrator delegates once, gets
 `needsMoreInfo`, asks the user, gets a reply, and re-delegates. Within one delegation the sub-agent has room for a list call + 2–3
 mutations + final text without running into the ceiling.
@@ -94,16 +94,16 @@ What this means concretely:
 - `toModelMessages` does NOT look at `parentChatMessageId`. Each child is replayed as an ordinary `tool-call`/`tool-result` pair, so the
   AI-SDK contract stays intact and the LLM gets one extra source of context (it can read what the sub-agent actually did).
 
-The persistence flow is asymmetric because of FK ordering. The orchestrator's `onStepFinish` only fires after a tool's `execute` returns, so
+The persistence flow is asymmetric because of FK ordering. The orchestrator's `onStepEnd` only fires after a tool's `execute` returns, so
 the parent row would be written **after** the children — making the children's FK invalid at insert time. To work around this, the delegate
 tool pre-writes its own `chatMessagesToolCall` row up front (`toolResult: null`) inside `execute`, adds its `toolCallId` to a shared
-`preWrittenToolCallIds` set so the orchestrator's outer `onStepFinish` skips it, runs the sub-agent (whose own `onStepFinish` is bound to
+`preWrittenToolCallIds` set so the orchestrator's outer `onStepEnd` skips it, runs the sub-agent (whose own `onStepEnd` is bound to
 `chatPersistStep` with `parentChatMessageId` set), then updates the delegate row with the final `toolResult` + `resultedAt` and republishes
 a fresh `ChatUpdateMessageAppended` so the UI swaps in the complete card.
 
-The shared persistence helper is `chatPersistStep` in `src/server/commands/chatAssistantTurnRun.ts`. Both the orchestrator's `onStepFinish`
-and the sub-agent's `onStepFinish` call it with different `parentChatMessageId` (null vs. the delegate row's id). Adding a second delegating
-tool means another `tool<Domain>Delegate.ts` file that mirrors `toolDelegateToProjects` — same pre-write pattern, same shared
+The shared persistence helper is `chatPersistStep` in `src/server/commands/chatAssistantTurnRun.ts`. Both the orchestrator's `onStepEnd` and
+the sub-agent's `onStepEnd` call it with different `parentChatMessageId` (null vs. the delegate row's id). Adding a second delegating tool
+means another `tool<Domain>Delegate.ts` file that mirrors `toolDelegateToProjects` — same pre-write pattern, same shared
 `preWrittenToolCallIds` set on `AgentChatOptions`. No new persistence code.
 
 ### Deep links
@@ -127,7 +127,7 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 | **One agent, all the tools.** Keep growing `agentPersonalAssistant`'s tool map.                                                                                                                         | The reason for this whole doc: tool-selection accuracy drops past ~10–15 tools, system prompt bloats, every turn pays for the full catalog in tokens.                                                                                                                                                                                                                                                       |
 | **Per-route sub-agent (no orchestrator).** Each `/workspace/<area>` page dispatches directly to its own agent via a separate mutation namespace, the way `multi-agent-chat.md` splits visitor vs admin. | Solves the page-local case cleanly but cannot handle a single user turn that crosses domains ("convert this request to a project and schedule a kickoff"). The orchestrator owns the chaining. We may still ship the per-route shortcut as a follow-up — `/workspace/projects`'s composer could call the projects sub-agent directly, skipping the orchestrator hop. Same factory, different dispatch path. |
 | **Top-level sibling agent factories.** Each domain agent runs as another peer of `agentPersonalAssistant`, dispatched by the client picking a `kind`.                                                   | Requires the client to know which agent to address; reintroduces the spoofable dispatch the existing two-namespace split deliberately avoids. The access path stays authoritative — the client never picks an agent, the server does.                                                                                                                                                                       |
-| **Persist sub-agent steps as chat rows.** Plumb `onStepFinish` into the sub-agent and write its tool calls into `chatMessages*`.                                                                        | **Now the chosen path** — see [Nested tool calls](#nested-tool-calls). Hiding what the sub-agent actually did behind one opaque pill made the transcript misleading; the indented child rows are now a faithful record. The trade-off (more rows per delegation, slightly more replay context for the LLM) is acceptable; sub-agent free-text still doesn't persist.                                        |
+| **Persist sub-agent steps as chat rows.** Plumb `onStepEnd` into the sub-agent and write its tool calls into `chatMessages*`.                                                                           | **Now the chosen path** — see [Nested tool calls](#nested-tool-calls). Hiding what the sub-agent actually did behind one opaque pill made the transcript misleading; the indented child rows are now a faithful record. The trade-off (more rows per delegation, slightly more replay context for the LLM) is acceptable; sub-agent free-text still doesn't persist.                                        |
 | **Agent registry / generic dispatcher.** A table of `domainName → factory` so the orchestrator can pick by string.                                                                                      | Overkill for one sub-agent. Promote to a registry when the third domain lands and the manual wiring becomes repetitive.                                                                                                                                                                                                                                                                                     |
 | **`needsApproval` on every mutation tool.** Gate every write with the SDK's approval lifecycle (the way Phase 2 was originally sketched).                                                               | Cem is the only caller on an admin-gated surface. Asking him to approve each write inside his own assistant is friction without a threat model behind it. Reintroduce when the surface broadens, or behind a per-tool config flag.                                                                                                                                                                          |
 

@@ -38,8 +38,8 @@ exhaustive `switch` checks at the call site without requiring a GraphQL `interfa
 
 `ChatMessageUser` carries `attachments: [FileUpload!]!`, returned in send-order; the field is non-nullable but always populated (empty list
 when the message had none). The bytes themselves live in the template-wide [`FileUploads`](./file-storage.md) store; the chat-specific
-concern is the join row that pins them to a message. The LLM-side replay folds the bytes into `ImagePart` / `FilePart`. See
-[Chat Persistence — Attachments](./chat-persistence.md#attachments).
+concern is the join row that pins them to a message. The LLM-side replay folds the bytes into the v7 `FilePart` shape (with
+`mediaType: 'image/*'` for image attachments). See [Chat Persistence — Attachments](./chat-persistence.md#attachments).
 
 ### Assistant input collections collect N typed values per turn
 
@@ -84,10 +84,10 @@ the same `chatInputCollectionRespond` batch. `mode` exists purely for rendering 
 structured input is given the `promptUserForInput` tool (`src/server/agents/toolPromptUserForInput.ts`). Its Zod input schema mirrors the
 union above; the tool has no `execute`. Two pieces of plumbing turn the tool call into the on-screen form:
 
-1. **`chatAssistantTurnRun` translates at persistence time.** When `onStepFinish` sees a tool call named `promptUserForInput`, it writes a
+1. **`chatAssistantTurnRun` translates at persistence time.** When `onStepEnd` sees a tool call named `promptUserForInput`, it writes a
    `chatMessagesAssistantInputCollection` row (assigning each slot a fresh `inputId`) instead of the generic `chatMessagesToolCall` row.
    Without this branch the form would render as the bland "Called `promptUserForInput`" pill every other tool gets.
-2. **The agent loop stops on this tool call.** `agentUserConversation` lists `hasToolCall('promptUserForInput')` alongside `stepCountIs(5)`
+2. **The agent loop stops on this tool call.** `agentUserConversation` lists `hasToolCall('promptUserForInput')` alongside `isStepCount(8)`
    in `stopWhen`. Because the tool has no `execute`, there is no result to feed back into the loop — the next turn-taker is the human.
    Without this stop condition, Gemini would keep stepping and tend to apologize that "the tool failed", producing a phantom assistant text
    right next to the form.
@@ -182,7 +182,7 @@ top-level day-grouped list and rendered as an indented block inside the parent's
 (`toModelMessages`) ignores the column — each row is still a valid AI-SDK `tool-call` / `tool-result` pair on its own.
 
 The pattern, the FK ordering trick (`preWrittenToolCallIds`), and the shared `chatPersistStep` helper that powers both the orchestrator's
-and the sub-agent's `onStepFinish` are documented in [`agent-delegation.md`](./agent-delegation.md#nested-tool-calls).
+and the sub-agent's `onStepEnd` are documented in [`agent-delegation.md`](./agent-delegation.md#nested-tool-calls).
 
 ### Human-in-the-loop approval is a request/response pair, executed by the SDK
 
@@ -192,9 +192,8 @@ outgoing mail, paid APIs, mutating user data. For the latter the assistant must 
 The flow:
 
 1. The assistant calls a tool whose definition has `needsApproval: true` on `ai`'s `tool()`.
-2. The AI SDK suspends the agent loop and emits a `tool-approval-request` content part. `chatAssistantTurnRun.onStepFinish` persists this as
-   a `ChatMessageToolApprovalRequest { approvalId, toolName, toolCallId, args }` row and skips writing a tool-call row for the suspended
-   call.
+2. The AI SDK suspends the agent loop and emits a `tool-approval-request` content part. `chatAssistantTurnRun.onStepEnd` persists this as a
+   `ChatMessageToolApprovalRequest { approvalId, toolName, toolCallId, args }` row and skips writing a tool-call row for the suspended call.
 3. The UI renders the request as an Approve / Decline affordance — same render path as any other assistant message, no special channel.
    Decline is a two-step affordance: it reveals an optional free-text textarea ("why decline?") and a Confirm button. Approve commits in one
    click.
@@ -206,7 +205,7 @@ The flow:
    and a `tool-approval-request` part; the response becomes a `tool` message with a `tool-approval-response` part carrying
    `{ approvalId, approved, reason? }`. The SDK's `collectToolApprovals` picks the response up, runs the approved tool's `execute` (or
    pushes a synthetic `execution-denied` tool-result for declines, with the human's `reason` attached so the LLM sees _why_ it was
-   declined), and feeds the outcome back into the LLM. The natural tool-call/tool-result round-trip is then persisted by `onStepFinish` as a
+   declined), and feeds the outcome back into the LLM. The natural tool-call/tool-result round-trip is then persisted by `onStepEnd` as a
    normal `ChatMessageToolCall` row whose `toolCallId` matches the original suspended call.
 
 `approvalId` pairs request and response so multiple in-flight approvals (parallel tool calls, retries) don't get confused. Whether a given
@@ -271,9 +270,9 @@ Three rules fall out of this:
   authorization will layer on once chats grow user ownership.
 
 The single primitive that implements "commit + publish" is `chatMessageAppend` in `src/server/commands/chatMessageAppend.ts`. Every chat
-command (`chatMessageCreate`, `chatInputCollectionRespond`, `chatToolApprovalRespond`) and the agent loop's `onStepFinish` use it; the
-publish carries only the new row's `chatMessageId`, and the subscription resolver re-loads the joined row via `chatMessageRowLoad` before
-delivery — so subscribers receive a `ChatMessage` identical to what `chatFindOne` would have returned.
+command (`chatMessageCreate`, `chatInputCollectionRespond`, `chatToolApprovalRespond`) and the agent loop's `onStepEnd` use it; the publish
+carries only the new row's `chatMessageId`, and the subscription resolver re-loads the joined row via `chatMessageRowLoad` before delivery —
+so subscribers receive a `ChatMessage` identical to what `chatFindOne` would have returned.
 
 ### Why the wire payload is the id, not the full message
 

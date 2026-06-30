@@ -118,7 +118,7 @@ export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
             const result = await generateObject({
                 model,
                 schema: OBSERVATION_SCHEMA,
-                system: SYSTEM_PROMPT,
+                instructions: SYSTEM_PROMPT,
                 prompt: userPrompt,
             });
 

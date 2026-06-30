@@ -121,10 +121,10 @@ All six are nullable. Pre-feature rows have no usage, providers omit fields they
 `reasoningTokens`; OpenAI is the inverse), and `totalTokens` falls back to `inputTokens + outputTokens` only when both are present —
 otherwise it stays `null` rather than reporting a misleading zero.
 
-`chatAssistantTurnRun` populates these columns. `onStepFinish` builds the snapshot once via `stepGenerationMeta(step)` and spreads it into
-each variant insert payload that step produces (the toolCall, the approvalRequest, the assistantInputCollection branches). The streaming
-`assistantText` row is written _after_ `onStepFinish` returns, so the runner caches the most recent step's snapshot in a
-`lastStepGeneration` closure variable and spreads that into the assistant-text insert at end-of-stream. Rows written by other commands
+`chatAssistantTurnRun` populates these columns. `onStepEnd` builds the snapshot once via `stepGenerationMeta(step)` and spreads it into each
+variant insert payload that step produces (the toolCall, the approvalRequest, the assistantInputCollection branches). The streaming
+`assistantText` row is written _after_ `onStepEnd` returns, so the runner caches the most recent step's snapshot in a `lastStepGeneration`
+closure variable and spreads that into the assistant-text insert at end-of-stream. Rows written by other commands
 (`chatToolApprovalRespond`, the synthetic skipped-userInput row) carry `null` for all six columns — they aren't the LLM's output.
 
 **The trade-off: per-step duplication.** A step that emits text plus three tool calls writes the same `(modelId, *Tokens)` numbers to four
@@ -162,10 +162,10 @@ join to recover what the schema already represents per-call.
 ### `promptUserForInput` is the one tool call that doesn't become a tool-call row
 
 The agent calls `promptUserForInput` to ask for structured values (see
-[Chat Foundation](./chat.md#produced-by-the-promptuserforinput-tool)). At persistence time, `chatMessageCreate.onStepFinish` branches on
-`call.toolName === 'promptUserForInput'` and writes a `chatMessagesAssistantInputCollection` row instead of the generic
-`chatMessagesToolCall` row, generating a fresh `inputId` per slot. The agent loop is also configured to stop on this tool call — there is no
-`execute`, so the next turn-taker is the user, not the LLM.
+[Chat Foundation](./chat.md#produced-by-the-promptuserforinput-tool)). At persistence time, `chatPersistStep` (invoked from
+`chatAssistantTurnRun.onStepEnd`) branches on `call.toolName === 'promptUserForInput'` and writes a `chatMessagesAssistantInputCollection`
+row instead of the generic `chatMessagesToolCall` row, generating a fresh `inputId` per slot. The agent loop is also configured to stop on
+this tool call — there is no `execute`, so the next turn-taker is the user, not the LLM.
 
 The round-trip is restored on read: `toModelMessages` replays the collection as a `promptUserForInput` tool-call and the matching
 `ChatMessageUserInput` as the tool-result, so the LLM sees its own original turn shape on subsequent turns.
@@ -199,9 +199,9 @@ A new mapper `src/server/mappers/toModelMessages.ts` is the only file that impor
 chat into a `ModelMessage[]` ready for `agent.stream({ messages })`. Joining rules:
 
 - `chatMessagesUser.body` → `{ role: 'user', content: body }` when the message has no attachments. With attachments,
-  `→ { role: 'user', content: [TextPart, ...ImagePart|FilePart] }` — image MIME types ride through `ImagePart`, everything else through
-  `FilePart`. Bytes are inlined out of the JOINed `userAttachments` payload so the agent has everything it needs in memory without a second
-  DB hop. See [Attachments](#attachments) below.
+  `→ { role: 'user', content: [TextPart, ...FilePart[]] }` — every attachment rides through the unified `FilePart` shape (image MIME types
+  use `mediaType: 'image/*'`); the legacy `ImagePart` shape is deprecated in AI SDK v7. Bytes are inlined out of the JOINed
+  `userAttachments` payload so the agent has everything it needs in memory without a second DB hop. See [Attachments](#attachments) below.
 - `chatMessagesAssistantText.body` → `{ role: 'assistant', content: body }`.
 - `chatMessagesToolCall (toolCallId, toolName, toolArgs)` → an assistant message with a tool-call part.
 - `chatMessagesToolCall (toolCallId, toolResult)` once `resultedAt` is set → a `tool` message with a tool-result part using the same
@@ -261,7 +261,8 @@ bucketing the results back onto `ChatMessageRowJoined.userAttachments`. Folding 
 attachment count and force a `GROUP BY` / `array_agg` shuffle for an N-row table that's already small per chat.
 
 Reads for the LLM use the same payload — `toModelMessages` reads `row.userAttachments` straight off the joined row and inlines bytes into
-`ImagePart` / `FilePart` (the dispatcher `toModelMessagePartForFileUpload` decides by `mediaType`). No second query, no second mapper.
+`FilePart` parts (`toModelMessagePartForFileUpload` keeps an image/non-image split for the filename field; in v7 both branches return
+`FilePart`). No second query, no second mapper.
 
 ## Alternatives Considered
 

@@ -1,5 +1,5 @@
-import type { ToolLoopAgentOnStepFinishCallback } from 'ai';
-import { ToolLoopAgent, stepCountIs } from 'ai';
+import type { GenerateTextOnStepEndCallback } from 'ai';
+import { ToolLoopAgent, isStepCount } from 'ai';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { googleAgentProviderOptions, currentDateForAgent } from './agentScaffolding';
@@ -16,7 +16,7 @@ import { toolTaskUpsert } from './toolTaskUpsert';
 // First domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside the
 // `toolDelegateToProjects` tool's `execute`. As of the "Nested tool calls"
-// change it now receives an `onStepFinish` from the delegate tool — every
+// change it now receives an `onStepEnd` from the delegate tool — every
 // regular tool call this sub-agent makes is persisted as a
 // `chatMessagesToolCall` row with `parentChatMessageId` set to the delegate
 // row's id, so the transcript renders them indented under the parent card.
@@ -68,7 +68,7 @@ export interface ProjectsAgentOptions {
     // row stamped with the delegate row's id as `parentChatMessageId`. The
     // delegate tool builds this from the shared `chatPersistStep` helper —
     // see `toolDelegateToProjects.ts`.
-    onStepFinish?: ToolLoopAgentOnStepFinishCallback<any>;
+    onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
 function buildSystemPrompt(snapshot: string): string {
@@ -110,18 +110,18 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantProjects({ session, serverRuntime, mutations, onStepFinish }: ProjectsAgentOptions) {
+export async function agentPersonalAssistantProjects({ session, serverRuntime, mutations, onStepEnd }: ProjectsAgentOptions) {
     const snapshot = await projectsSnapshotForAgent(serverRuntime);
     const readContext = { serverRuntime, session };
     const mutationContext = { serverRuntime, session, mutations };
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(),
-        onStepFinish,
+        onStepEnd,
         providerOptions: googleAgentProviderOptions,
         // Tight ceiling — the sub-agent should rarely need more than a list +
         // a few mutations + a final text. If it runs out of steps, the
         // delegate tool surfaces the partial mutation log to the orchestrator.
-        stopWhen: [stepCountIs(10)],
+        stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
             projectsList: toolProjectsList(readContext),

@@ -45,7 +45,7 @@ describe('toModelMessages', () => {
         expect(messages).toEqual([{ role: 'user', content: 'hello world' }]);
     });
 
-    it('emits a parts array with text + image part for an image attachment', () => {
+    it('emits a parts array with text + image file part for an image attachment', () => {
         // Arrange
         const png = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
         const rows = [userRow('check this', [{ filename: 'pic.png', mediaType: 'image/png', bytes: png }])];
@@ -53,17 +53,18 @@ describe('toModelMessages', () => {
         // Act
         const messages = toModelMessages(rows);
 
-        // Assert
+        // Assert — image MIME types ride through the v7 unified `FilePart`
+        // with `mediaType: 'image/*'`; the legacy `ImagePart` shape is gone.
         expect(messages).toHaveLength(1);
         const message = messages[0]!;
         expect(message.role).toBe('user');
         expect(Array.isArray(message.content)).toBe(true);
-        const parts = message.content as Array<{ type: string; text?: string; image?: Buffer; mediaType?: string; data?: Buffer }>;
+        const parts = message.content as Array<{ type: string; text?: string; mediaType?: string; data?: Buffer }>;
         expect(parts).toHaveLength(2);
         expect(parts[0]).toEqual({ type: 'text', text: 'check this' });
-        expect(parts[1]!.type).toBe('image');
+        expect(parts[1]!.type).toBe('file');
         expect(parts[1]!.mediaType).toBe('image/png');
-        expect(parts[1]!.image).toBe(png);
+        expect(parts[1]!.data).toBe(png);
     });
 
     it('emits a parts array with text + file part for a non-image attachment', () => {
@@ -91,9 +92,9 @@ describe('toModelMessages', () => {
         // Act
         const messages = toModelMessages(rows);
 
-        // Assert — only the image part survives; no empty-text part injected.
+        // Assert — only the file part survives; no empty-text part injected.
         const parts = messages[0]!.content as Array<{ type: string }>;
         expect(parts).toHaveLength(1);
-        expect(parts[0]!.type).toBe('image');
+        expect(parts[0]!.type).toBe('file');
     });
 });

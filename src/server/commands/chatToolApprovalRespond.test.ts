@@ -78,7 +78,7 @@ describe('chatToolApprovalRespond', () => {
         // respond command. The SDK owns execution: `toModelMessages` replays
         // the response row as a `tool-approval-response` part on the next
         // turn and the SDK then calls `execute`. Whatever tool-call row that
-        // turn produces is persisted by `onStepFinish` in
+        // turn produces is persisted by `onStepEnd` in
         // `chatAssistantTurnRun`, not here.
         const [responseRows, toolCallRows] = await Promise.all([
             testDb.select().from(chatMessagesToolApprovalResponse).where(eq(chatMessagesToolApprovalResponse.approvalId, seed.approvalId)),

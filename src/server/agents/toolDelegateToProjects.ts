@@ -3,7 +3,7 @@ import { tool } from 'ai';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { chatPersistStep } from '../commands/chatAssistantTurnRun';
-import type { OnStepFinishContext, OnStepFinishStep } from '../commands/chatAssistantTurnRun';
+import type { OnStepEndContext, OnStepEndStep } from '../commands/chatAssistantTurnRun';
 import { chatMessageAppend } from '../commands/chatMessageAppend';
 import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCreate } from '../db/schema';
 import { chatMessagesToolCall } from '../db/schema';
@@ -22,9 +22,9 @@ import { agentPersonalAssistantProjects } from './agentPersonalAssistantProjects
 // As of the "Nested tool calls" change, the sub-agent's intermediate tool
 // calls DO land in the chat transcript: this tool pre-writes its own
 // `chatMessagesToolCall` row up front (with `toolResult: null`), threads its
-// `chatMessageId` into the sub-agent's `onStepFinish` as `parentChatMessageId`,
+// `chatMessageId` into the sub-agent's `onStepEnd` as `parentChatMessageId`,
 // and once the sub-agent finishes updates the row with the result. The
-// orchestrator's outer `onStepFinish` is told to skip this same `toolCallId`
+// orchestrator's outer `onStepEnd` is told to skip this same `toolCallId`
 // via the shared `preWrittenToolCallIds` set so we don't insert a duplicate.
 
 const delegateToProjectsInputSchema = z.object({
@@ -51,7 +51,7 @@ interface DelegateToProjectsContext {
     chatId: string;
     generationId: string | null | undefined;
     // Shared with `chatAssistantTurnRun`. The delegate tool adds its own
-    // `toolCallId` to this set so the orchestrator's `onStepFinish` skips
+    // `toolCallId` to this set so the orchestrator's `onStepEnd` skips
     // writing a second row for the call.
     preWrittenToolCallIds: Set<string>;
 }
@@ -115,7 +115,7 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
             // Sub-agent tool calls are siblings within this delegation —
             // nothing in this nested scope is "pre-written" by anyone else.
             const childPreWrittenToolCallIds: Set<string> = new Set();
-            const childOnStepContext: OnStepFinishContext = {
+            const childOnStepContext: OnStepEndContext = {
                 chatId,
                 generationId,
                 requestingSession: session,
@@ -127,7 +127,7 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
                 session,
                 serverRuntime,
                 mutations,
-                onStepFinish: async (step: OnStepFinishStep) => {
+                onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
             });

@@ -1,5 +1,5 @@
-import type { ToolLoopAgentOnStepFinishCallback } from 'ai';
-import { ToolLoopAgent, hasToolCall, stepCountIs } from 'ai';
+import type { GenerateTextOnStepEndCallback } from 'ai';
+import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
@@ -33,8 +33,8 @@ export interface AgentChatOptions {
     // bits (`step.content`, `step.toolCalls`, `step.toolResults`) — so a wide
     // `any` here keeps the call signature tractable. Tightening would mean
     // exporting a precise tool-set type from the agent and threading it
-    // through every onStepFinish caller.
-    onStepFinish: ToolLoopAgentOnStepFinishCallback<any>;
+    // through every onStepEnd caller.
+    onStepEnd: GenerateTextOnStepEndCallback<any>;
 }
 
 // Shared agent factory signature for the chat surfaces. The mutation-resolver
@@ -43,7 +43,7 @@ export interface AgentChatOptions {
 // mutations pass `agentPersonalAssistant`. Each agent ships its own
 // concretely-typed `ToolLoopAgent` (the toolset is heterogeneous and the
 // generic parameters differ); all the runner needs is the structural surface
-// (`stream`, `generate`, `onStepFinish`), so the runtime type stays wide.
+// (`stream`, `generate`, `onStepEnd`), so the runtime type stays wide.
 // See `docs/architecture/multi-agent-chat.md`.
 export type ChatAgentFactory = (options: AgentChatOptions) => Promise<{
     stream: (...args: any[]) => any;
@@ -114,7 +114,7 @@ export async function agentVisitorAboutCem({
     serverRuntime,
     chatId,
     preWrittenToolCallIds: _preWrittenToolCallIds,
-    onStepFinish,
+    onStepEnd,
 }: AgentChatOptions) {
     const cvSummary = await cvSummaryForAgent(serverRuntime);
     return new ToolLoopAgent({
@@ -123,14 +123,14 @@ export async function agentVisitorAboutCem({
         // mock `LanguageModel` in tests without ever calling the real Gemini
         // endpoint.
         model: serverRuntime.ai.userConversationModel(),
-        onStepFinish,
+        onStepEnd,
         providerOptions: googleAgentProviderOptions,
         stopWhen: [
             // Hard ceiling so a runaway loop can't burn through quota. Raised
             // from 5 to 8 because the email/project-request flows can chain
             // several tool steps (e.g. submitProjectRequest → promptUserForInput
             // for the OTP → verifyProjectRequestOtp → confirmation text).
-            stepCountIs(8),
+            isStepCount(8),
             // `promptUserForInput` hands the turn back to the human — there is
             // no tool result to feed the LLM, so without this the model would
             // keep stepping and (with Gemini) tend to apologize that "the tool

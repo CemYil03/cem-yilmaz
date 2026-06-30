@@ -226,7 +226,7 @@ already exist:
 
 1. **Suspend.** `agentUserConversation` builds each gated tool with `needsApproval: assistantOptions.requireToolCallApprovals`. When the
    model calls one, the AI SDK skips `execute` and emits a `tool-approval-request` content part on the step.
-2. **Persist the request.** `chatAssistantTurnRun.onStepFinish` scans `step.content` for `tool-approval-request` parts and writes a
+2. **Persist the request.** `chatAssistantTurnRun.onStepEnd` scans `step.content` for `tool-approval-request` parts and writes a
    `chatMessagesToolApprovalRequest` row carrying `(approvalId, toolCallId, toolName, toolArgs)`. The matching tool-call entry in
    `step.toolCalls` is filtered out of the normal tool-call persistence loop — it has no result yet, and a result row will land naturally on
    the resumed turn.
@@ -254,13 +254,13 @@ already exist:
    `tool-call` part and a `tool-approval-request` part; the response becomes a `tool` message with a `tool-approval-response` part carrying
    `{ approvalId, approved, reason? }`. The SDK's `collectToolApprovals` helper sees the response as the last tool message and runs the
    approved tool's `execute` itself (or pushes a synthetic `execution-denied` tool-result for declines, with the human's `reason` attached)
-   before stepping the LLM. The natural tool-call/tool-result round-trip the SDK produces is then persisted by `onStepFinish` as a normal
+   before stepping the LLM. The natural tool-call/tool-result round-trip the SDK produces is then persisted by `onStepEnd` as a normal
    `ChatMessageToolCall` row whose `toolCallId` matches the original suspended call — so subsequent replays see a coherent transcript
    without the respond command having had to synthesize anything.
 
 Storage cost of this design is one extra spine + variant row per approval (the response) plus the eventual tool-call row written by the
-resumed turn's `onStepFinish`. The alternative — replaying approvals through AI SDK's UIMessage-level approval protocol — would have
-required threading a parallel transport through the server that does not align with the project's UI-shaped persistence (see
+resumed turn's `onStepEnd`. The alternative — replaying approvals through AI SDK's UIMessage-level approval protocol — would have required
+threading a parallel transport through the server that does not align with the project's UI-shaped persistence (see
 [Chat Persistence](../architecture/chat-persistence.md)).
 
 The earlier manual-execute approach (a shared tool registry, re-validated args, hand-synthesized tool-call rows with a `+1ms` ordering hack)
@@ -317,9 +317,10 @@ Behavior rules baked into `<MessageComposer />`:
    `Sec-Fetch-Dest` for `/api/*` so `<img>` requests aren't diverted into Vite's static-asset pipeline before Nitro can route them — see
    [API Layer — Dev-only Sec-Fetch-Dest strip](../architecture/api-layer.md#dev-only-sec-fetch-dest-strip).
 7. **LLM replay**: `toModelMessages` (`src/server/mappers/toModelMessages.ts`) emits user content as a parts array when a message has
-   attachments — `[{ type: 'text', text: body }, ...filePartsOrImageParts]`. Image MIME types ride through `ImagePart`; everything else
-   through `FilePart`. Bytes are inlined out of the joined-row payload (`userAttachments` on `ChatMessageRowJoined`) so the agent has
-   everything it needs in memory without a second DB hop. Plain-text turns still emit the cheap `content: string` shape.
+   attachments — `[{ type: 'text', text: body }, ...fileParts]`. Every attachment rides through the unified `FilePart` shape with the
+   persisted media type — image MIME types use `mediaType: 'image/*'` (`ImagePart` is deprecated in AI SDK v7). Bytes are inlined out of the
+   joined-row payload (`userAttachments` on `ChatMessageRowJoined`) so the agent has everything it needs in memory without a second DB hop.
+   Plain-text turns still emit the cheap `content: string` shape.
 
 #### Persistence shape
 
