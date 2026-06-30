@@ -24,6 +24,8 @@ Guard files follow the pattern `guard{Entity}{Context}`:
 
 - `guardUserSubscription` — validates that the session can subscribe to user updates
 - `guardSessionMutation` — validates that the session can perform session-level mutations
+- `guardAdmin` / `guardAdminMutation` — validate that the requesting session belongs to an admin user (checks `isAdmin` on the `Users` row;
+  see [workspace-access.md](./workspace-access.md))
 
 ### Key Files
 

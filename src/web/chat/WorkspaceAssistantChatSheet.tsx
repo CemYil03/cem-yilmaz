@@ -14,7 +14,6 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
-import { uploadFile } from './fileUpload';
 import type { TranscriptMessage } from './chatTranscript';
 import {
     findLatestCollectionId,
@@ -25,12 +24,11 @@ import {
     mergeTranscriptMessages,
 } from './chatTranscript';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
+import { WorkspaceChatComposer } from './WorkspaceChatComposer';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/base/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/base/tooltip';
 import { ChatMessage } from '../components/chat-message';
-import { MessageComposer } from '../components/MessageComposer';
-import type { ComposerAttachment } from '../components/MessageComposer';
 import type { GqlCChatAssistantInputValue, GqlCWorkspaceChatListItemFragment } from '../graphql/generated';
 import {
     WorkspaceAssistantChatsDocument,
@@ -274,85 +272,27 @@ function PreviousChatButton({
 
 // --- Composer ----------------------------------------------------------------
 //
-// Talks to the provider's `sendMessage` funnel so a `chatId` allocated by
-// the first send is reused by every subsequent send without state
-// gymnastics at the call site. Mirrors `VisitorChatComposer` in shape but
-// dispatches to the admin namespace via the provider.
+// Same `<WorkspaceChatComposer />` the hub and `/workspace/assistant` use, so
+// the model dropdown, attachments, and approval-mode selector all match
+// across surfaces. The sheet hands its provider-owned `chatId` in and adopts
+// the freshly-allocated id on first send via `setChatIdFromHub` so
+// subsequent sends append to the same row. The "new chat" button is
+// surface-specific and lives in the `addonStart` slot.
 
 function WorkspaceAssistantComposer({ locale, hasChat, onReset }: { locale: Locale; hasChat: boolean; onReset: () => void }) {
-    const { sendMessage, live } = useWorkspaceAssistantChat();
-    const [draft, setDraft] = useState('');
-    // Attachments are owned by the composer, not the provider — uploads
-    // are kicked off on attach (so the user can keep typing while files
-    // settle) and the resolved `fileUploadId`s are forwarded through the
-    // provider's `sendMessage`. Same shape as the route composer in
-    // `ChatComposer.tsx`; the duplication is small enough that a shared
-    // wrapper would obscure more than it would save.
-    const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
-
-    const updateAttachment = useCallback((localId: string, patch: Partial<ComposerAttachment>) => {
-        setAttachments((current) =>
-            current.map((attachment) => (attachment.localId === localId ? { ...attachment, ...patch } : attachment)),
-        );
-    }, []);
-
-    const onAttachmentsAdd = useCallback(
-        (files: File[]) => {
-            const additions: ComposerAttachment[] = files.map((file) => ({
-                localId: crypto.randomUUID(),
-                file,
-                status: 'uploading' as const,
-            }));
-            setAttachments((current) => [...current, ...additions]);
-            for (const attachment of additions) {
-                void (async () => {
-                    try {
-                        const uploaded = await uploadFile(attachment.file);
-                        updateAttachment(attachment.localId, {
-                            status: 'uploaded',
-                            fileUploadId: uploaded.fileUploadId,
-                        });
-                    } catch (error) {
-                        const message = error instanceof Error ? error.message : 'Upload failed';
-                        updateAttachment(attachment.localId, { status: 'error', error: message });
-                    }
-                })();
-            }
-        },
-        [updateAttachment],
-    );
-
-    const onAttachmentRemove = useCallback((localId: string) => {
-        setAttachments((current) => current.filter((attachment) => attachment.localId !== localId));
-    }, []);
-
-    const submit = useCallback(async () => {
-        const message = draft.trim();
-        const fileUploadIds = attachments
-            .filter((attachment) => attachment.status === 'uploaded' && attachment.fileUploadId)
-            .map((attachment) => attachment.fileUploadId!);
-        if (!message && fileUploadIds.length === 0) return;
-        setDraft('');
-        setAttachments([]);
-        await sendMessage(message, fileUploadIds);
-    }, [attachments, draft, sendMessage]);
-
+    const { chatId, live, setChatIdFromHub } = useWorkspaceAssistantChat();
     return (
-        <MessageComposer
-            value={draft}
-            onValueChange={setDraft}
-            onSubmit={() => void submit()}
-            disabled={live.isGenerating}
-            busy={live.isGenerating}
-            placeholder={{ de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' }[locale]}
-            sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
+        <WorkspaceChatComposer
+            locale={locale}
+            chatId={chatId}
+            isLocked={live.isGenerating}
+            beginTurn={live.beginTurn}
+            endTurn={live.endTurn}
+            onMessageSent={setChatIdFromHub}
             // Sheet opens → composer mounts fresh (Radix unmounts on close)
             // → focus the textarea so the user can start typing immediately
             // without first reaching for the input.
             autoFocus
-            attachments={attachments}
-            onAttachmentsAdd={onAttachmentsAdd}
-            onAttachmentRemove={onAttachmentRemove}
             addonStart={
                 hasChat ? (
                     <Tooltip>

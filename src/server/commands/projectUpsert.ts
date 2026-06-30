@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { projectRequests, projects } from '../db/schema';
 import type { ProjectCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
@@ -65,7 +65,8 @@ export async function projectUpsert(
                     .select({ position: projects.position })
                     .from(projects)
                     .where(eq(projects.status, 'planning'))
-                    .orderBy(asc(projects.position));
+                    .orderBy(desc(projects.position))
+                    .limit(1);
                 position = (tail?.position ?? -1) + 1;
             }
 

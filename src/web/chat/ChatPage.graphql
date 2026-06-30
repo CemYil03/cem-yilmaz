@@ -281,3 +281,17 @@ query VisitorPreviousChats {
         }
     }
 }
+
+# Quota-only query for `<VisitorChatComposer />`. The composer renders the
+# daily allowance below the textarea on every visitor surface, so it needs
+# the quota independent of the chats list (the loaded view does not show
+# previous chats). `cache-and-network` on the consumer side keeps the line
+# fresh across remounts without forcing a refetch on every keystroke.
+query VisitorChatQuota {
+    currentSession {
+        sessionId
+        visitorChatQuota {
+            ...VisitorChatQuotaFields
+        }
+    }
+}

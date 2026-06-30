@@ -1743,12 +1743,6 @@ export type GqlCWorkspaceProjectUpsertMutationVariables = Exact<{
 
 export type GqlCWorkspaceProjectUpsertMutation = { admin: { projectUpsert: { projectId: string } } };
 
-export type GqlCWorkspaceProjectDeleteMutationVariables = Exact<{
-    projectId: string;
-}>;
-
-export type GqlCWorkspaceProjectDeleteMutation = { admin: { projectDelete: { success: boolean } } };
-
 export type GqlCWorkspaceProjectReorderMutationVariables = Exact<{
     orderedIds: Array<string> | string;
 }>;
@@ -1799,24 +1793,6 @@ export type GqlCWorkspaceProjectActivityDeleteMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProjectActivityDeleteMutation = { admin: { projectActivityDelete: { success: boolean } } };
-
-export type GqlCWorkspaceProjectTimerStartMutationVariables = Exact<{
-    projectId: string;
-    taskId?: string | null | undefined;
-    title?: string | null | undefined;
-}>;
-
-export type GqlCWorkspaceProjectTimerStartMutation = {
-    admin: { projectTimerStart: { activityId: string; projectId: string; startedAt: string | null } };
-};
-
-export type GqlCWorkspaceProjectTimerStopMutationVariables = Exact<{
-    activityId: string;
-}>;
-
-export type GqlCWorkspaceProjectTimerStopMutation = {
-    admin: { projectTimerStop: { activityId: string; endedAt: string | null; durationSec: number | null } };
-};
 
 export type GqlCWorkspaceProjectDetailQueryVariables = Exact<{
     projectId: string;
@@ -2467,6 +2443,12 @@ export type GqlCVisitorPreviousChatsQuery = {
         visitorChats: Array<{ chatId: string; title: string; lastModifiedAt: string }>;
         visitorChatQuota: { used: number; limit: number; resetsAt: string | null };
     };
+};
+
+export type GqlCVisitorChatQuotaQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCVisitorChatQuotaQuery = {
+    currentSession: { sessionId: string; visitorChatQuota: { used: number; limit: number; resetsAt: string | null } };
 };
 
 export const WorkspaceChatMessageGenerationFragmentDoc = {
@@ -6746,52 +6728,6 @@ export const WorkspaceProjectUpsertDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectUpsertMutation, GqlCWorkspaceProjectUpsertMutationVariables>;
-export const WorkspaceProjectDeleteDocument = {
-    kind: 'Document',
-    definitions: [
-        {
-            kind: 'OperationDefinition',
-            operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectDelete' },
-            variableDefinitions: [
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-                },
-            ],
-            selectionSet: {
-                kind: 'SelectionSet',
-                selections: [
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectDelete' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'projectId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectDeleteMutation, GqlCWorkspaceProjectDeleteMutationVariables>;
 export const WorkspaceProjectReorderDocument = {
     kind: 'Document',
     definitions: [
@@ -7248,126 +7184,6 @@ export const WorkspaceProjectActivityDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectActivityDeleteMutation, GqlCWorkspaceProjectActivityDeleteMutationVariables>;
-export const WorkspaceProjectTimerStartDocument = {
-    kind: 'Document',
-    definitions: [
-        {
-            kind: 'OperationDefinition',
-            operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectTimerStart' },
-            variableDefinitions: [
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-                },
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
-                },
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
-                },
-            ],
-            selectionSet: {
-                kind: 'SelectionSet',
-                selections: [
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectTimerStart' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'projectId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
-                                        },
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'taskId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taskId' } },
-                                        },
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'title' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                        ],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectTimerStartMutation, GqlCWorkspaceProjectTimerStartMutationVariables>;
-export const WorkspaceProjectTimerStopDocument = {
-    kind: 'Document',
-    definitions: [
-        {
-            kind: 'OperationDefinition',
-            operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectTimerStop' },
-            variableDefinitions: [
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-                },
-            ],
-            selectionSet: {
-                kind: 'SelectionSet',
-                selections: [
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectTimerStop' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'activityId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'activityId' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
-                                        ],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectTimerStopMutation, GqlCWorkspaceProjectTimerStopMutationVariables>;
 export const WorkspaceProjectDetailDocument = {
     kind: 'Document',
     definitions: [
@@ -10111,3 +9927,49 @@ export const VisitorPreviousChatsDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCVisitorPreviousChatsQuery, GqlCVisitorPreviousChatsQueryVariables>;
+export const VisitorChatQuotaDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'VisitorChatQuota' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'visitorChatQuota' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'VisitorChatQuotaFields' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'VisitorChatQuotaFields' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'VisitorChatQuota' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'used' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'limit' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'resetsAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCVisitorChatQuotaQuery, GqlCVisitorChatQuotaQueryVariables>;

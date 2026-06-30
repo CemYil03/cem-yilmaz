@@ -7,15 +7,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Spinner } from '../components/base/spinner';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { ChatMessage } from '../components/chat-message';
-import type {
-    GqlCChatAssistantInputValue,
-    GqlCChatPageQuery,
-    GqlCVisitorChatListItemFragment,
-    GqlCVisitorChatQuotaFieldsFragment,
-} from '../graphql/generated';
+import type { GqlCChatAssistantInputValue, GqlCChatPageQuery, GqlCVisitorChatListItemFragment } from '../graphql/generated';
 import {
     ChatInputCollectionRespondDocument,
-    ChatMessageCreateDocument,
     ChatPageDocument,
     ChatToolApprovalRespondDocument,
     VisitorPreviousChatsDocument,
@@ -25,7 +19,7 @@ import { useVisualViewport } from '../hooks/useVisualViewport';
 import { cn } from '../utils/cn';
 import type { Locale } from '../utils/locale';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
-import { ChatComposer } from './ChatComposer';
+import { VisitorChatComposer } from './VisitorChatComposer';
 import type { TranscriptMessage } from './chatTranscript';
 import {
     findLatestCollectionId,
@@ -35,9 +29,7 @@ import {
     partitionByParent,
     mergeTranscriptMessages,
 } from './chatTranscript';
-import { useChatLiveUpdates } from './useChatLiveUpdates';
 import { useVisitorChat } from './VisitorChatProvider';
-import type { VisitorChatIntent } from './VisitorChatProvider';
 import { Button } from '../components/base/button';
 
 // Visitor-facing AI chat surface. Mounted once at the root layout — see
@@ -81,7 +73,7 @@ interface WebsiteVisitorAssistantChatSheetProps {
 }
 
 export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssistantChatSheetProps) {
-    const { isOpen, intent, close } = useVisitorChat();
+    const { isOpen, close } = useVisitorChat();
 
     // Desktop-only expand toggle. Mobile is always full-bleed; the toggle
     // is hidden under `sm`. Reset to the default narrow width whenever the
@@ -154,7 +146,7 @@ export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssis
                         </SheetDescription>
                     </div>
                 </SheetHeader>
-                {isOpen && intent ? <ChatSurface locale={locale} intent={intent} isExpanded={isExpanded} /> : null}
+                {isOpen ? <ChatSurface locale={locale} isExpanded={isExpanded} /> : null}
             </SheetContent>
         </Sheet>
     );
@@ -162,138 +154,43 @@ export function WebsiteVisitorAssistantChatSheet({ locale }: WebsiteVisitorAssis
 
 // --- Surface inside the sheet -----------------------------------------------
 //
-// Branches on `intent` to decide the initial state:
-//   - 'empty'  → render the empty state (previous chats + composer)
-//   - 'seeded' → fire seeded question on mount; flip to loaded on chatId
-//   - 'loaded' → render the loaded transcript directly
+// Reads chatId + live from the visitor provider — if a chat is active
+// (chatId set, possibly from a hero-composer send before the sheet ever
+// opened) we drop straight into `<ChatLoaded />`; otherwise the empty
+// state renders the previous-chats list and a fresh composer.
 
-function ChatSurface({ locale, intent, isExpanded }: { locale: Locale; intent: VisitorChatIntent; isExpanded: boolean }) {
-    const [chatId, setChatId] = useState<string | undefined>(intent.kind === 'loaded' ? intent.chatId : undefined);
-    const [sendError, setSendError] = useState<string | null>(null);
-
-    // Owned by ChatSurface — not the sheet root — so Radix's unmount-on-close
-    // gives every fresh open a fresh hook instance. Hoisting it to the sheet
-    // root would let `appendedMessages` from one chat leak into the next when
-    // the user closes the sheet mid-turn and reopens with a seeded send.
-    const live = useChatLiveUpdates(chatId);
-
-    const [, sendMessage] = useMutation(ChatMessageCreateDocument);
-
-    // Seeded send is one-shot per sheet session. A ref guards React's
-    // StrictMode double-invoke; the sheet component unmounts on close so
-    // the next open gets a fresh ref instance automatically.
-    const seededSentRef = useRef(false);
-    useEffect(() => {
-        if (intent.kind !== 'seeded') return;
-        if (seededSentRef.current) return;
-        seededSentRef.current = true;
-        const seededQuestion = intent.seededQuestion;
-        void (async () => {
-            // Lift the generationId BEFORE firing the mutation so the
-            // listener mounts and subscribes before any server-side publish
-            // can happen — same race-avoidance pattern the old route used.
-            const generationId = live.beginTurn();
-            const result = await sendMessage({
-                chatId: undefined,
-                message: seededQuestion,
-                fileUploadIds: [],
-                generationId,
-                requireToolCallApprovals: false,
-            });
-            const created = result.data?.chatMessageCreate ?? null;
-            if (result.error || !created) {
-                live.endTurn();
-                setSendError(
-                    {
-                        de: 'Frage konnte nicht gesendet werden. Bitte versuche es erneut.',
-                        en: 'Could not send your question. Please try again.',
-                    }[locale],
-                );
-                return;
-            }
-            setChatId(created.chatId);
-        })();
-        // Only run on mount — the seeded send is one-shot.
-    }, []);
-
-    const onResume = useCallback((nextChatId: string) => {
-        setChatId(nextChatId);
-    }, []);
-
-    // Returning to the overview from inside a loaded chat clears `chatId`,
-    // which drops `ChatSurface` back into `ChatEmptyState`. The hook clears
-    // its per-turn buffers on the loaded→empty transition, so the next
-    // empty-state render is a clean slate. Use this only when no turn is in
-    // flight (the button is hidden while `isGenerating`).
-    const onResetToOverview = useCallback(() => {
-        setChatId(undefined);
-    }, []);
-
+function ChatSurface({ locale, isExpanded }: { locale: Locale; isExpanded: boolean }) {
+    const { chatId } = useVisitorChat();
     // Cap the inner column when expanded so the prose stays readable on a
     // wide viewport. The sheet itself still spans the viewport — only the
     // content column reads at ~3xl.
     const innerClass = cn('grid min-h-0 flex-1 grid-rows-[1fr_auto] gap-4 px-6 pt-4 pb-6', isExpanded && 'mx-auto w-full max-w-3xl');
-
-    if (sendError) {
-        return <div className="grid flex-1 place-items-center p-8 text-sm text-destructive">{sendError}</div>;
-    }
-    // The listener is rendered alongside whichever inner view is active. It's
-    // owned by ChatSurface (stable across the seeded-send → loaded handoff and
-    // across empty ↔ loaded transitions) so the SSE subscription doesn't tear
-    // down mid-turn.
-    return (
-        <>
-            {live.listener}
-            {!chatId ? (
-                intent.kind === 'seeded' ? (
-                    // Seeded send is in flight — show a spinner. The user
-                    // message and the first streaming chunks already buffer
-                    // through the live updates listener.
-                    <div className="grid flex-1 place-items-center p-8 text-sm text-muted-foreground">
-                        <Spinner />
-                    </div>
-                ) : (
-                    <ChatEmptyState locale={locale} live={live} onResume={onResume} setChatId={setChatId} innerClass={innerClass} />
-                )
-            ) : (
-                <ChatLoaded chatId={chatId} live={live} locale={locale} onResetToOverview={onResetToOverview} innerClass={innerClass} />
-            )}
-        </>
+    return chatId ? (
+        <ChatLoaded chatId={chatId} locale={locale} innerClass={innerClass} />
+    ) : (
+        <ChatEmptyState locale={locale} innerClass={innerClass} />
     );
 }
 
 // --- Empty state ------------------------------------------------------------
 //
-// What the sheet shows when opened without a seeded question and without
-// an existing chatId — i.e. the header button. Renders the visitor's prior
-// chats (so they can resume one) and a composer for a new conversation.
-// The rate-limit row sits below the composer and disables the input when
-// the visitor is over the daily cap.
+// What the sheet shows when there is no active chatId — i.e. the header
+// button path or after the user clicks "New chat" inside a loaded view.
+// Renders the visitor's prior chats (so they can resume one) and a fresh
+// composer. The always-visible rate-limit chip lives inside
+// `<VisitorChatComposer />`.
 
-function ChatEmptyState({
-    locale,
-    live,
-    onResume,
-    setChatId,
-    innerClass,
-}: {
-    locale: Locale;
-    live: ReturnType<typeof useChatLiveUpdates>;
-    onResume: (chatId: string) => void;
-    setChatId: (chatId: string) => void;
-    innerClass: string;
-}) {
-    // `cache-and-network` so the previous-chats list and quota refresh on
-    // every reopen — without it a stale list from yesterday would render
-    // while the network call is in flight.
+function ChatEmptyState({ locale, innerClass }: { locale: Locale; innerClass: string }) {
+    const { live, loadChat, setChatIdFromHero } = useVisitorChat();
+    // `cache-and-network` so the previous-chats list refreshes on every
+    // reopen — without it a stale list from yesterday would render while
+    // the network call is in flight.
     const [{ data }] = useQuery({
         query: VisitorPreviousChatsDocument,
         requestPolicy: 'cache-and-network',
     });
 
     const previousChats = data?.currentSession.visitorChats ?? [];
-    const quota = data?.currentSession.visitorChatQuota ?? null;
-    const isAtLimit = quota ? quota.used >= quota.limit : false;
 
     return (
         <div className={innerClass}>
@@ -306,7 +203,7 @@ function ChatEmptyState({
                         <ul className="flex flex-col gap-1.5">
                             {previousChats.map((chat) => (
                                 <li key={chat.chatId}>
-                                    <PreviousChatButton chat={chat} locale={locale} onResume={onResume} />
+                                    <PreviousChatButton chat={chat} locale={locale} onResume={loadChat} />
                                 </li>
                             ))}
                         </ul>
@@ -321,22 +218,18 @@ function ChatEmptyState({
                           }[locale]}
                 </p>
             </div>
-            <div className="flex flex-col gap-2">
-                <ChatComposer
-                    locale={locale}
-                    chatId={undefined}
-                    isLocked={live.isGenerating || isAtLimit}
-                    beginTurn={live.beginTurn}
-                    endTurn={live.endTurn}
-                    placeholder={{ de: 'Stell eine Frage…', en: 'Ask a question…' }[locale]}
-                    onMessageSent={setChatId}
-                    showApprovalMode={false}
-                    // Sheet opens → composer mounts fresh → focus the
-                    // textarea so the visitor can start typing immediately.
-                    autoFocus
-                />
-                <VisitorChatQuotaStatus quota={quota} locale={locale} />
-            </div>
+            <VisitorChatComposer
+                locale={locale}
+                chatId={undefined}
+                isLocked={live.isGenerating}
+                beginTurn={live.beginTurn}
+                endTurn={live.endTurn}
+                placeholder={{ de: 'Stell eine Frage…', en: 'Ask a question…' }[locale]}
+                onMessageSent={setChatIdFromHero}
+                // Sheet opens → composer mounts fresh → focus the textarea
+                // so the visitor can start typing immediately.
+                autoFocus
+            />
         </div>
     );
 }
@@ -370,44 +263,8 @@ function PreviousChatButton({
     );
 }
 
-function VisitorChatQuotaStatus({ quota, locale }: { quota: GqlCVisitorChatQuotaFieldsFragment | null; locale: Locale }) {
-    if (!quota || quota.used === 0) return null;
-    const isAtLimit = quota.used >= quota.limit;
-    const resetsIn = quota.resetsAt
-        ? formatDistanceToNow(parseISO(quota.resetsAt as unknown as string), {
-              addSuffix: false,
-              locale: DATE_FNS_LOCALE[locale],
-          })
-        : { de: '24 Std.', en: '24 h' }[locale];
-    const text = isAtLimit
-        ? {
-              de: `Tageslimit erreicht (${quota.used} / ${quota.limit}). Neue Nachricht in ${resetsIn} möglich.`,
-              en: `Daily limit reached (${quota.used} / ${quota.limit}). You can send again in ${resetsIn}.`,
-          }[locale]
-        : {
-              de: `${quota.used} / ${quota.limit} Nachrichten heute · zurückgesetzt in ${resetsIn}`,
-              en: `${quota.used} / ${quota.limit} messages today · resets in ${resetsIn}`,
-          }[locale];
-    return (
-        <p role="status" className="text-xs text-muted-foreground">
-            {text}
-        </p>
-    );
-}
-
-function ChatLoaded({
-    chatId,
-    live,
-    locale,
-    onResetToOverview,
-    innerClass,
-}: {
-    chatId: string;
-    live: ReturnType<typeof useChatLiveUpdates>;
-    locale: Locale;
-    onResetToOverview: () => void;
-    innerClass: string;
-}) {
+function ChatLoaded({ chatId, locale, innerClass }: { chatId: string; locale: Locale; innerClass: string }) {
+    const { live, resetChat } = useVisitorChat();
     const [{ data, fetching, error }] = useQuery({
         query: ChatPageDocument,
         variables: { chatId },
@@ -477,19 +334,18 @@ function ChatLoaded({
                 fetching={fetching}
                 jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
             />
-            <ChatComposer
+            <VisitorChatComposer
                 chatId={chat.chatId}
                 isLocked={live.isGenerating}
                 locale={locale}
                 beginTurn={live.beginTurn}
                 endTurn={live.endTurn}
                 placeholder={{ de: 'Stelle eine weitere Frage…', en: 'Ask another question…' }[locale]}
-                showApprovalMode={false}
                 // Sheet opens fresh on resume → focus the textarea so the
                 // visitor can keep typing without reaching for the input.
                 autoFocus
                 addonStart={
-                    <Button onClick={onResetToOverview} disabled={live.isGenerating} aria-label={newChatLabel[locale]} variant="ghost">
+                    <Button onClick={resetChat} disabled={live.isGenerating} aria-label={newChatLabel[locale]} variant="ghost">
                         <PlusIcon className="size-3.5" />
                         {newChatLabel[locale]}
                     </Button>

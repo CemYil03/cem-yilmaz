@@ -28,13 +28,18 @@ type NavItem = {
  *  path with `{-$locale}` so the locale param is preserved automatically.
  *  `icon` (optional) renders before the label — workspace surfaces use it on
  *  the trailing crumb so the page's icon lives in the header instead of
- *  repeating in an on-page title row. */
+ *  repeating in an on-page title row. `iconOnly` (only meaningful with
+ *  `icon`) hides the label visually and keeps it for screen readers — used
+ *  for nested-route intermediates so deep paths stay compact (e.g. a
+ *  project-detail trail collapses to `Workspace / 📁 / <id>`). */
 export type Crumb = {
     label: string;
     /** Set on every crumb except the last (which is the current page). */
     to?: string;
     /** Optional Lucide icon rendered before the label. */
     icon?: LucideIcon;
+    /** Render only the icon, with the label as `sr-only`. Requires `icon`. */
+    iconOnly?: boolean;
 };
 
 type Props = {
@@ -115,12 +120,19 @@ export function Header({ subtitle, navItems, brandLabel, breadcrumbs, hideSelect
                                             const isLast = index === breadcrumbs.length - 1;
                                             const Icon = crumb.icon;
                                             const labelNode = Icon ? (
-                                                <span className="flex min-w-0 items-center gap-1.5">
-                                                    <Icon className="size-4 shrink-0 text-primary" aria-hidden />
-                                                    <span className="truncate">{crumb.label}</span>
-                                                </span>
+                                                crumb.iconOnly ? (
+                                                    <span className="flex shrink-0 items-center">
+                                                        <Icon className="size-4 text-primary" aria-hidden />
+                                                        <span className="sr-only">{crumb.label}</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex min-w-0 items-center gap-1.5">
+                                                        <Icon className="size-4 shrink-0 text-primary" aria-hidden />
+                                                        <span className="block min-w-0 truncate">{crumb.label}</span>
+                                                    </span>
+                                                )
                                             ) : (
-                                                <span className="truncate">{crumb.label}</span>
+                                                <span className="block min-w-0 truncate">{crumb.label}</span>
                                             );
                                             return (
                                                 <span key={`${crumb.label}-${index}`} className="contents">

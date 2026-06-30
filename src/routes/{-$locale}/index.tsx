@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { z } from 'zod';
 import type { CodeXmlIcon } from 'lucide-react';
@@ -20,12 +20,12 @@ import {
 } from 'lucide-react';
 import { personalInfo } from '../../web/content/personalInfo';
 import { useVisitorChat } from '../../web/chat/VisitorChatProvider';
+import { VisitorChatComposer } from '../../web/chat/VisitorChatComposer';
 import { Button } from '../../web/components/base/button';
 import { CardContent, CardDescription, CardTitle } from '../../web/components/base/card';
 import { Footer } from '../../web/components/Footer';
 import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
-import { MessageComposer } from '../../web/components/MessageComposer';
 import { Reveal } from '../../web/components/Reveal';
 import { WorldReachMap } from '../../web/components/WorldReachMap';
 import { HomePageDocument } from '../../web/graphql/generated';
@@ -118,17 +118,15 @@ function HomePage() {
     const { openWithMessage } = useVisitorChat();
 
     function openChat(text: string) {
-        const trimmed = text.trim();
-        if (trimmed.length === 0) return;
-        openWithMessage(trimmed);
+        void openWithMessage(text);
     }
 
     // `?ask=…` deep-link: fire once on mount when the search param is present.
     // Effect runs only when `ask` actually changes, so client-side navigation
-    // back to `/` (after the chat opened) does not re-trigger. The dialog
-    // dedupes on its end too via the `intent` state machine.
+    // back to `/` (after the chat opened) does not re-trigger. The provider's
+    // `openWithMessage` short-circuits on empty input.
     useEffect(() => {
-        if (ask) openWithMessage(ask);
+        if (ask) void openWithMessage(ask);
     }, [ask, openWithMessage]);
 
     return (
@@ -156,7 +154,13 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
         en: 'Portrait of Cem Yilmaz',
     }[locale];
 
-    const [question, setQuestion] = useState('');
+    // The hero's composer is the same `<VisitorChatComposer />` the sheet
+    // uses. It fires `chatMessageCreate` from this page so the visitor sees
+    // the busy / sent micro-states on the input they actually typed in,
+    // then hands the freshly-allocated chatId to the provider and pops the
+    // sheet so the streaming response surfaces there. Same pattern the
+    // workspace hub uses with `<WorkspaceChatComposer />`.
+    const { live, open, setChatIdFromHero } = useVisitorChat();
 
     const suggestions: ReadonlyArray<{ de: string; en: string }> = [
         {
@@ -224,13 +228,17 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
                     </div>
 
                     <div className="mt-4">
-                        <MessageComposer
-                            value={question}
-                            onValueChange={setQuestion}
-                            onSubmit={() => onOpenChat(question)}
+                        <VisitorChatComposer
+                            locale={locale}
+                            chatId={undefined}
+                            isLocked={live.isGenerating}
+                            beginTurn={live.beginTurn}
+                            endTurn={live.endTurn}
                             placeholder={{ de: 'Stelle deine Frage…', en: 'Ask your question…' }[locale]}
-                            sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
-                            rows={3}
+                            onMessageSent={(chatId) => {
+                                setChatIdFromHero(chatId);
+                                open();
+                            }}
                         />
                     </div>
 
@@ -557,7 +565,7 @@ function TimeZoneReach({ locale }: { locale: Locale }) {
                             <p className="mt-3 text-sm md:text-base text-foreground/75 leading-relaxed">
                                 {
                                     {
-                                        de: 'Aus deutscher Sicht erfordert die Zusammenarbeit mit Teams in Nordamerika oder Indien sehr frühe oder sehr späte Termine. Bin ich offen für — und gewohnt an.',
+                                        de: 'Aus deutscher Sicht erfordert die Zusammenarbeit mit Teams in Nordamerika oder Indien sehr frühe oder sehr späte Termine. Ich bin daran gewöhnt — und offen dafür.',
                                         en: 'Working with teams in North America or India from a German vantage point means very early or very late slots. I am open to those and used to them.',
                                     }[locale]
                                 }
@@ -565,7 +573,7 @@ function TimeZoneReach({ locale }: { locale: Locale }) {
                             <ul className="mt-5 flex flex-col gap-3">
                                 {bands.map((b) => (
                                     <li key={b.zone} className="flex flex-col gap-0.5">
-                                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                                        <div className="flex flex-col gap-0.5 md:flex-row md:flex-wrap md:items-baseline md:justify-between md:gap-x-3">
                                             <span className="text-sm font-medium text-foreground/90">{b.region[locale]}</span>
                                             <span className="text-xs font-mono tabular-nums text-foreground/55">{b.zone}</span>
                                         </div>

@@ -128,6 +128,8 @@ zero effect; the field is admin-only by code, not just by schema.
 | GraphQL schema                          | `src/server/graphql/schema.graphqls` (`AdminChatModel`, `AdminChatConfig`, mutation, input field) |
 | Resolvers                               | `src/server/graphql/resolversCreate.ts`                                                           |
 | Client ops                              | `src/routes/{-$locale}/workspace/WorkspaceAssistantPage.graphql`                                  |
-| Composer                                | `src/web/chat/ChatComposer.tsx`                                                                   |
+| Composer (admin wrapper)                | `src/web/chat/WorkspaceChatComposer.tsx`                                                          |
+| Composer (generic)                      | `src/web/chat/ChatComposer.tsx`                                                                   |
 | Composer primitive (accept passthrough) | `src/web/components/MessageComposer.tsx`                                                          |
-| Route wiring + sticky-default hook      | `src/routes/{-$locale}/workspace/assistant.tsx`                                                   |
+| Layout loader (config fetch)            | `src/routes/{-$locale}/workspace.tsx`                                                             |
+| Provider (model selection state)        | `src/web/chat/WorkspaceAssistantChatProvider.tsx`                                                 |

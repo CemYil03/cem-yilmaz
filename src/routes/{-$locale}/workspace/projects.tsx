@@ -10,10 +10,8 @@ import {
     ListTodoIcon,
     MailIcon,
     PencilIcon,
-    PlayIcon,
     PlusIcon,
     SquareIcon,
-    StopCircleIcon,
     TimerIcon,
     Trash2Icon,
 } from 'lucide-react';
@@ -28,11 +26,8 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import type { GqlCProjectStatus, GqlCTaskStatus, GqlCWorkspaceProjectsPageQuery } from '../../../web/graphql/generated';
 import {
-    WorkspaceProjectDeleteDocument,
     WorkspaceProjectRequestArchiveDocument,
     WorkspaceProjectRequestDeleteDocument,
-    WorkspaceProjectTimerStartDocument,
-    WorkspaceProjectTimerStopDocument,
     WorkspaceProjectUpsertDocument,
     WorkspaceProjectsPageDocument,
     WorkspaceTaskDeleteDocument,
@@ -495,7 +490,7 @@ function ProjectsBoard({
     locale: Locale;
     onChanged: () => void;
 }) {
-    const [editing, setEditing] = useState<ProjectRow | 'new' | null>(null);
+    const [adding, setAdding] = useState(false);
     const grouped = PROJECT_STATUS_ORDER.map((status) => ({
         status,
         rows: rows.filter((r) => r.status === status),
@@ -507,20 +502,20 @@ function ProjectsBoard({
                 <p className="text-sm text-muted-foreground">
                     {{ de: 'Laufende und geplante persönliche Projekte.', en: 'Ongoing and planned personal projects.' }[locale]}
                 </p>
-                <Button size="sm" variant="outline" onClick={() => setEditing('new')} disabled={editing !== null}>
+                <Button size="sm" variant="outline" onClick={() => setAdding(true)} disabled={adding}>
                     <PlusIcon />
                     {{ de: 'Projekt hinzufügen', en: 'Add project' }[locale]}
                 </Button>
             </div>
 
-            {editing === 'new' ? (
+            {adding ? (
                 <ProjectForm
                     row={null}
                     locale={locale}
                     nextPosition={rows.filter((r) => r.status === 'idea').length}
-                    onClose={() => setEditing(null)}
+                    onClose={() => setAdding(false)}
                     onSaved={() => {
-                        setEditing(null);
+                        setAdding(false);
                         onChanged();
                     }}
                 />
@@ -528,35 +523,20 @@ function ProjectsBoard({
 
             <div className="mt-6 flex flex-col gap-8">
                 {grouped.map((group) =>
-                    group.rows.length === 0 && editing !== 'new' ? null : (
+                    group.rows.length === 0 && !adding ? null : (
                         <div key={group.status}>
                             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 {PROJECT_STATUS_LABELS[group.status][locale]} · {group.rows.length}
                             </h2>
                             {group.rows.length === 0 ? null : (
-                                <ul className="mt-3 flex flex-col gap-3">
+                                // Tile grid: 1 col on mobile, 2 on md, 3 on lg+.
+                                // Each tile is a single link to the project detail
+                                // route; editing / deleting / timer toggle live
+                                // there. See `docs/features/projects-workspace.md`.
+                                <ul className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                                     {group.rows.map((row) => (
                                         <li key={row.projectId} data-row-id={row.projectId}>
-                                            {editing && editing !== 'new' && editing.projectId === row.projectId ? (
-                                                <ProjectForm
-                                                    row={row}
-                                                    locale={locale}
-                                                    nextPosition={row.position}
-                                                    onClose={() => setEditing(null)}
-                                                    onSaved={() => {
-                                                        setEditing(null);
-                                                        onChanged();
-                                                    }}
-                                                />
-                                            ) : (
-                                                <ProjectCard
-                                                    row={row}
-                                                    activeTimer={activeTimer}
-                                                    locale={locale}
-                                                    onEdit={() => setEditing(row)}
-                                                    onChanged={onChanged}
-                                                />
-                                            )}
+                                            <ProjectCard row={row} activeTimer={activeTimer} locale={locale} />
                                         </li>
                                     ))}
                                 </ul>
@@ -569,191 +549,78 @@ function ProjectsBoard({
     );
 }
 
-function ProjectCard({
-    row,
-    activeTimer,
-    locale,
-    onEdit,
-    onChanged,
-}: {
-    row: ProjectRow;
-    activeTimer: ActiveTimer | null;
-    locale: Locale;
-    onEdit: () => void;
-    onChanged: () => void;
-}) {
-    const [, del] = useMutation(WorkspaceProjectDeleteDocument);
-
+function ProjectCard({ row, activeTimer, locale }: { row: ProjectRow; activeTimer: ActiveTimer | null; locale: Locale }) {
     const doneCount = row.tasks.filter((t) => t.status === 'done').length;
     const totalCount = row.tasks.length;
-
-    // Live total = stored seconds + (now - startedAt) when *this* project's
-    // timer is running. Other-project timers don't bleed into this number.
     const isOwnTimerRunning = activeTimer?.projectId === row.projectId;
 
-    // The card itself is a link to the project detail route; the kanban board
-    // no longer expands tasks / activity inline (Phase: detail-route refactor).
-    // The action buttons in the header still need to stop propagation so a
-    // click on the timer / edit / delete doesn't navigate.
+    // The whole tile is a single link to the project detail route. No
+    // per-tile action buttons — start/stop/edit/delete all live on the
+    // detail page. A non-interactive "live" pill appears when this project
+    // owns the active timer so the running tile is glanceable in the grid.
     return (
-        <GlassCard className="px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                    <Link
-                        to="/{-$locale}/workspace/projects/$projectId"
-                        params={{ projectId: row.projectId }}
-                        className="block truncate text-sm font-medium hover:underline"
-                    >
-                        {row.title}
-                    </Link>
-                    {row.description ? <div className="mt-0.5 truncate text-xs text-muted-foreground">{row.description}</div> : null}
-                    {row.sourceRequest ? (
-                        <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                            <MailIcon className="size-3" />
+        <Link
+            to="/{-$locale}/workspace/projects/$projectId"
+            params={{ projectId: row.projectId }}
+            className={cn(
+                'block h-full rounded-2xl outline-none',
+                'focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            )}
+        >
+            <GlassCard
+                className={cn(
+                    'flex h-full flex-col gap-3 px-5 py-4 transition-colors',
+                    'hover:bg-white/55 dark:hover:bg-white/[0.06]',
+                    isOwnTimerRunning && 'ring-1 ring-primary/40',
+                )}
+            >
+                <div className="flex items-start justify-between gap-2">
+                    <h3 className="line-clamp-2 min-w-0 flex-1 text-sm font-medium leading-snug">{row.title}</h3>
+                    {isOwnTimerRunning && activeTimer.startedAt ? (
+                        <LiveTimerBadge startedAt={activeTimer.startedAt as unknown as string} locale={locale} />
+                    ) : null}
+                </div>
+                {row.description ? (
+                    <p className="line-clamp-2 text-xs text-muted-foreground">{row.description}</p>
+                ) : (
+                    <span className="sr-only">{{ de: 'Keine Beschreibung', en: 'No description' }[locale]}</span>
+                )}
+                {row.sourceRequest ? (
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <MailIcon className="size-3 shrink-0" />
+                        <span className="truncate">
                             {{ de: 'Anfrage von', en: 'Request from' }[locale]} {row.sourceRequest.name}
                             {row.sourceRequest.company ? ` · ${row.sourceRequest.company}` : ''}
-                        </div>
-                    ) : null}
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                    <TimerPill
-                        projectId={row.projectId}
-                        activeTimer={activeTimer}
-                        totalWorkSec={row.totalWorkSec}
-                        locale={locale}
-                        onChanged={onChanged}
-                    />
+                        </span>
+                    </div>
+                ) : null}
+                <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
                     {totalCount > 0 ? (
-                        <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground">
+                        <span className="inline-flex items-center gap-1">
+                            <CheckSquare2Icon className="size-3" />
                             {doneCount}/{totalCount}
                         </span>
+                    ) : (
+                        <span />
+                    )}
+                    {row.totalWorkSec > 0 || isOwnTimerRunning ? (
+                        <span className="inline-flex items-center gap-1">
+                            <TimerIcon className="size-3" />
+                            <TotalWorkLabel totalWorkSec={row.totalWorkSec} activeTimer={isOwnTimerRunning ? activeTimer : null} />
+                        </span>
                     ) : null}
-                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} onClick={onEdit}>
-                        <PencilIcon />
-                    </Button>
-                    <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
-                        onClick={async () => {
-                            await del({ projectId: row.projectId });
-                            onChanged();
-                        }}
-                    >
-                        <Trash2Icon />
-                    </Button>
                 </div>
-            </div>
-            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                <Link
-                    to="/{-$locale}/workspace/projects/$projectId"
-                    params={{ projectId: row.projectId }}
-                    className="underline-offset-2 hover:text-foreground hover:underline"
-                >
-                    {{ de: 'Details öffnen', en: 'Open details' }[locale]} →
-                </Link>
-                {row.activities.length > 0 ? (
-                    <span className="text-[11px] text-muted-foreground">
-                        {row.activities.length} {{ de: 'Einträge', en: 'entries' }[locale]}
-                    </span>
-                ) : null}
-                {row.totalWorkSec > 0 || isOwnTimerRunning ? (
-                    <span className="ml-auto text-[11px] text-muted-foreground">
-                        {{ de: 'Gesamt', en: 'Total' }[locale]}:{' '}
-                        <TotalWorkLabel totalWorkSec={row.totalWorkSec} activeTimer={isOwnTimerRunning ? activeTimer : null} />
-                    </span>
-                ) : null}
-            </div>
-        </GlassCard>
+            </GlassCard>
+        </Link>
     );
 }
 
-// --- Timer & activity --------------------------------------------------------
+// --- Timer indicator --------------------------------------------------------
 
-// Per-card timer button. Three states:
-// - This project's timer is running   → ticking HH:MM:SS pill with a stop button
-// - Another project has the timer     → muted "Timer on …" hint with a switch action
-// - No timer is running                → "Start timer" button
-function TimerPill({
-    projectId,
-    activeTimer,
-    locale,
-    onChanged,
-}: {
-    projectId: string;
-    activeTimer: ActiveTimer | null;
-    totalWorkSec: number;
-    locale: Locale;
-    onChanged: () => void;
-}) {
-    const [, start] = useMutation(WorkspaceProjectTimerStartDocument);
-    const [, stop] = useMutation(WorkspaceProjectTimerStopDocument);
-    const [busy, setBusy] = useState(false);
-
-    const isOwn = activeTimer?.projectId === projectId;
-    const isOther = activeTimer && !isOwn;
-
-    if (isOwn && activeTimer.startedAt) {
-        return (
-            <LiveTimerPill
-                startedAt={activeTimer.startedAt as unknown as string}
-                onStop={async () => {
-                    if (busy) return;
-                    setBusy(true);
-                    await stop({ activityId: activeTimer.activityId });
-                    onChanged();
-                    setBusy(false);
-                }}
-                locale={locale}
-            />
-        );
-    }
-
-    if (isOther) {
-        return (
-            <Button
-                size="sm"
-                variant="ghost"
-                disabled={busy}
-                className="text-[11px] text-muted-foreground"
-                onClick={async () => {
-                    setBusy(true);
-                    await start({ projectId, taskId: null, title: null });
-                    onChanged();
-                    setBusy(false);
-                }}
-                aria-label={{ de: 'Timer hierher wechseln', en: 'Switch timer here' }[locale]}
-                title={{ de: 'Anderer Timer läuft. Klicken zum Wechseln.', en: 'Another timer is running. Click to switch.' }[locale]}
-            >
-                <TimerIcon className="size-3 opacity-60" />
-                <span className="ml-1">{{ de: 'Wechseln', en: 'Switch' }[locale]}</span>
-            </Button>
-        );
-    }
-
-    return (
-        <Button
-            size="sm"
-            variant="ghost"
-            disabled={busy}
-            onClick={async () => {
-                setBusy(true);
-                await start({ projectId, taskId: null, title: null });
-                onChanged();
-                setBusy(false);
-            }}
-            aria-label={{ de: 'Timer starten', en: 'Start timer' }[locale]}
-        >
-            <PlayIcon className="size-3" />
-            <span className="ml-1 text-[11px]">{{ de: 'Start', en: 'Start' }[locale]}</span>
-        </Button>
-    );
-}
-
-// Live ticker. Runs a 1s interval against `startedAt` so the parent's
-// query state stays cached — the seconds display updates without
-// re-fetching.
-function LiveTimerPill({ startedAt, onStop, locale }: { startedAt: string; onStop: () => void; locale: Locale }) {
+// Non-interactive HH:MM:SS pill shown on the tile that owns the active
+// timer. Starting / stopping happens on the project detail route — the
+// grid is a navigation surface.
+function LiveTimerBadge({ startedAt, locale }: { startedAt: string; locale: Locale }) {
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), 1000);
@@ -761,15 +628,13 @@ function LiveTimerPill({ startedAt, onStop, locale }: { startedAt: string; onSto
     }, []);
     const elapsed = Math.max(0, Math.floor((now - parseISO(startedAt).getTime()) / 1000));
     return (
-        <button
-            type="button"
-            onClick={onStop}
-            className="flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 font-mono text-[11px] text-primary hover:bg-primary/25"
-            aria-label={{ de: 'Timer stoppen', en: 'Stop timer' }[locale]}
+        <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary/15 px-2 py-0.5 font-mono text-[11px] text-primary"
+            aria-label={{ de: 'Timer läuft', en: 'Timer running' }[locale]}
         >
-            <StopCircleIcon className="size-3" />
-            <span>{formatHms(elapsed)}</span>
-        </button>
+            <span className="size-1.5 rounded-full bg-primary animate-pulse" aria-hidden />
+            {formatHms(elapsed)}
+        </span>
     );
 }
 

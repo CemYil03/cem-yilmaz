@@ -11,8 +11,8 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
   directly under the quote, and a **bento-style focus-area grid** below that. The composer scrolls with the page — it is **not** pinned to
   the viewport bottom; on a typical desktop the composer is already on-screen at load, and pinning it overlapped the last row of focus cards
   behind a progressive blur, which read as "the input is parked on top of my last tile."
-- Sending a message from the hub composer creates a new admin-scope chat and navigates to `/workspace/assistant?chatId=<id>`, where the rest
-  of the conversation happens. The hub itself stays a hub — every visit lands on the empty composer again.
+- Sending a message from the hub composer creates a new admin-scope chat and pops the workspace assistant sheet so the streaming response
+  surfaces in context. The hub itself stays a hub — every visit lands on the empty composer again.
 - The focus-area cards are split into two subgroups:
   - **Personal areas** (top): Software, Projects, Finances, Tax, Fitness, Medical, Movies & TV — the daily-use surfaces.
   - **Public site** (bottom, under a small muted "Öffentliche Website / Public site" heading): CV, Visitor chats. These manage what appears
@@ -53,18 +53,28 @@ putting that string into the visual hierarchy. The browser-tab title and `seoMet
 
 ## Personal-assistant composer
 
-The assistant composer sits **directly under** the hero quote, in normal page flow — not pinned to the bottom of the viewport. It's a small
-wrapper around `<MessageComposer />` that submits into the workspace assistant chat provider (see [Workspace Chat](./chat-workspace.md)) via
-`openWithMessage(text)`. On a typical desktop the quote + composer occupy the top half of the viewport, so the assistant is the first thing
-the user sees and the most prominent affordance — the same priority the old sticky placement was trying to encode, just without the
-side-effect of overlapping the focus-area cards. Removing the sticky composer also removed the `ProgressiveBlurBottom` field and the 256px
-bottom padding `<main>` used to reserve; neither was carrying weight once the composer left the bottom of the viewport. The composer is
-rendered with `autoFocus` so the textarea is the active element on landing — the user can start typing immediately without clicking.
+The assistant composer sits **directly under** the hero quote, in normal page flow — not pinned to the bottom of the viewport. It is the
+shared `<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`) — the same composer the workspace assistant sheet and
+`/workspace/assistant` use — so the **full** admin composer kit is identical across every workspace surface: file attachments (with the
+active model gating the accepted media types), the model-selection dropdown (sticky default — picks both the model for the next send and
+updates `AdminChatConfig.defaultModelId`), and the tool-call approval-mode selector (Auto / Manual). The hub used to wrap a stripped-down
+`<MessageComposer />` that delegated to a provider-owned `openWithMessage(text)`, but that path couldn't carry attachments or a chosen model
+— the hub is the workspace's primary affordance, so it gets the same options as the dedicated route. On a typical desktop the quote +
+composer occupy the top half of the viewport, so the assistant is the first thing the user sees and the most prominent affordance. The
+composer is rendered with `autoFocus` so the textarea is the active element on landing — the user can start typing immediately without
+clicking.
 
-Submitting the hub composer opens the **workspace assistant sheet** (the same sheet the header's assistant button on every other workspace
-page opens) and fires the first message into it. The conversation stays in the sheet across navigation between focus areas; clicking **"Open
-full-screen"** in the sheet's header navigates to `/workspace/assistant?chatId=<id>` for a dedicated full-screen surface. See
-[Workspace Chat](./chat-workspace.md) for the sheet, header entry point, and full-screen jump-off behaviour.
+Submitting fires `WorkspaceChatMessageCreate` directly (no `chatId`, so the server allocates a fresh row). On the mutation's success the hub
+hands the freshly-allocated chatId to the workspace assistant chat provider via `setChatIdFromHub(chatId)` and pops the **workspace
+assistant sheet** (the same sheet the header's assistant button on every other workspace page opens) so the streaming response surfaces in
+context. The conversation stays in the sheet across navigation between focus areas; clicking **"Open full-screen"** in the sheet's header
+navigates to `/workspace/assistant?chatId=<id>` for a dedicated full-screen surface. See [Workspace Chat](./chat-workspace.md) for the
+sheet, header entry point, and full-screen jump-off behaviour.
+
+The model catalog + saved default come from `WorkspaceChatConfig`, fetched **once** by the workspace layout loader
+(`src/routes/{-$locale}/workspace.tsx`) and passed into `WorkspaceAssistantChatProvider`. Every admin composer reads its `availableModels` /
+`selectedModelId` / `onModelChange` from the provider, so a model change on one surface is immediately reflected on the others. The provider
+also fire-and-forget persists every change as the new default via `WorkspaceChatConfigDefaultModelSet`.
 
 ## `/workspace/assistant`
 
@@ -88,11 +98,11 @@ the personal-assistant composer; the OAuth gate has not been built yet. To keep 
 - None of the workspace paths are added to `SITEMAP_PATHS` in `src/web/seo/sitemapRoutes.ts`. The convention there is explicit: noindex /
   logged-in / transactional pages stay out of the sitemap.
 - The public landing page (`/`) and the site footer **do not link** to `/workspace`. The hub is reachable only by typing the URL.
-- `guardAdmin` (`src/server/guards/guardAdmin.ts`) and `guardAdminMutation` (`src/server/guards/guardAdminMutation.ts`) are **permissive in
-  Phase 1** — they return the namespace shape rather than throwing. The split mirrors `guardUserMutation` so Phase 2 can layer different
-  posture on writes (e.g. CSRF, narrower allowlist) without dragging the read path along. The permissive policy is intentional: the hub now
-  needs the admin namespace to be reachable so Cem can use his own assistant. The combination of noindex + unlinked + URL-obscured keeps the
-  surface effectively private until the OAuth gate lands. A `TODO(phase-2)` in each file points at the future allowlist check.
+- `guardAdmin` (`src/server/guards/guardAdmin.ts`) and `guardAdminMutation` (`src/server/guards/guardAdminMutation.ts`) gate the workspace
+  read and write namespaces. Both check `isAdmin` on the requesting session's `Users` row — anonymous sessions (which never have a `userId`)
+  fail the first check; logged-in non-admin users fail the second. The flag is set manually with a DB `UPDATE` for Cem's own accounts. The
+  split mirrors `guardUserMutation` so write-side policy can diverge from reads (e.g. CSRF, narrower allowlist) without dragging the read
+  path along. See [docs/architecture/workspace-access.md](../architecture/workspace-access.md).
 
 The README's "Open TODOs Before Public Launch" section calls out that the gate must wrap the whole `/workspace/*` tree before DNS goes live.
 
@@ -129,14 +139,22 @@ layout) and renders above the `<Outlet />`. Pages render only their body content
 - passes `hideSelectors` so the language and theme selectors don't render (workspace is private chrome; locale/theme belong to the public
   site),
 - builds a breadcrumb trail from the current pathname against a centralized `WORKSPACE_TITLES` map (path-segment → `{ de, en }` label) in
-  the same file.
+  the same file. On nested routes (e.g. `/workspace/projects/<id>`) intermediate segments that have a `WORKSPACE_ICONS` entry collapse to a
+  linked icon-only crumb — the label stays in `sr-only` so screen readers still announce it. This is what lets the project detail page drop
+  its in-page `← Back to board` link: the intermediate `projects` crumb is the way back.
+- swaps the trailing-crumb label for a human-readable one when the active route registers a selector in `TRAILING_LABEL_SELECTORS` (route id
+  → pluck-from-loader-data). The project detail route uses this to show the project's title instead of its UUID; while the loader is
+  resolving the label is empty (just the icon shows) so the raw id never flashes. Long titles ellipsis on overflow so the trail stays on one
+  line.
 
 Adding a new `/workspace/<segment>` route: add one entry to `WORKSPACE_TITLES` so the breadcrumb has a label. Everything else is already in
-the layout — the page file itself just exports its component.
+the layout — the page file itself just exports its component. For a new **detail** route that should show a human label instead of an id,
+also add an entry to `TRAILING_LABEL_SELECTORS` keyed by the route id.
 
 The `<Header />` primitive grew two props to support this: `breadcrumbs?: ReadonlyArray<Crumb>` (replaces the brand cluster with
-`logo + trail`; only the logo is a link, home) and `hideSelectors?: boolean`. The previous `brandLabel` variant is no longer used by any
-workspace page but is kept on the primitive for any future surface that needs `logo + plain label` chrome.
+`logo + trail`; only the logo is a link, home) and `hideSelectors?: boolean`. The `Crumb` type carries an optional `iconOnly` flag that
+`WorkspaceHeader` sets on linked intermediate crumbs. The previous `brandLabel` variant is no longer used by any workspace page but is kept
+on the primitive for any future surface that needs `logo + plain label` chrome.
 
 ### Hub layout
 
@@ -144,7 +162,7 @@ The hub reuses the same primitives the landing page does:
 
 - `Card` / `CardContent` / `CardTitle` / `CardDescription` from `src/web/components/base/card.tsx`
 - `useLocale()` from `src/web/hooks/useLocale.ts`
-- `ChatComposer` from `src/web/chat/ChatComposer.tsx` (parameterized with the workspace mutation)
+- `WorkspaceChatComposer` from `src/web/chat/WorkspaceChatComposer.tsx` (the shared admin composer)
 - `useChatLiveUpdates` from `src/web/chat/useChatLiveUpdates.tsx` (namespace-agnostic)
 
 The header is **not** invoked by the hub itself — it comes from `<WorkspaceHeader />` mounted at the layout (see "Workspace header" above).
@@ -182,18 +200,22 @@ breadcrumb (with the focus area's icon on the trailing crumb), so a duplicate `i
 already shows. The breadcrumb-with-icon contract is owned by `Header`'s `Crumb` type and rendered by `WorkspaceHeader` via `WORKSPACE_ICONS`
 — see `src/web/components/WorkspaceHeader.tsx`.
 
-### Wiring `ChatComposer` to the admin namespace
+### Wiring `WorkspaceChatComposer`
 
-`ChatComposer` accepts three optional props that turn it from a visitor-only widget into a namespace-agnostic one:
+`<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`) is a thin admin-namespace wrapper around the generic
+`<ChatComposer />`. It pre-wires:
 
-- `sendMutation` — the `chatMessageCreate` document to call. Defaults to the visitor `ChatMessageCreateDocument`. The hub and the workspace
-  assistant route pass `WorkspaceChatMessageCreateDocument` instead.
-- `extractResult` — pulls `{ chatId }` out of the mutation result. The visitor default reads `data.chatMessageCreate`; the workspace callers
-  pass an extractor that reads `data.admin.chatMessageCreate`.
-- `placeholder` — localized placeholder string. Defaults to `"Type a message…"`.
+- `sendMutation` → `WorkspaceChatMessageCreateDocument` (admin namespace, so the server dispatches to `agentPersonalAssistant`).
+- `extractResult` → reads `data.admin.chatMessageCreate` instead of the visitor `data.chatMessageCreate`.
+- `placeholder` → the localized "Ask your assistant…" string.
+- `availableModels` / `selectedModelId` / `onModelChange` → all pulled from `useWorkspaceAssistantChat()` so every admin composer (hub,
+  sheet, full-screen route) sees the same selection.
 
-The visitor chat sheet on the landing page (`WebsiteVisitorAssistantChatSheet`) is unchanged — it doesn't pass any of these and gets the
-visitor defaults.
+Surface-specific props stay on the wrapper: `chatId` (URL-owned on the route, provider-owned on the sheet, omitted on the hub),
+`onMessageSent` (navigate on the route, `setChatIdFromHub` on the sheet/hub), and `addonStart` (the sheet's "new chat" button).
+
+`ChatComposer` itself still accepts the same prop passes for non-workspace callers — the public visitor chat sheet
+(`WebsiteVisitorAssistantChatSheet`) uses it directly with the default visitor mutation and no model dropdown.
 
 ### SEO
 
@@ -216,9 +238,9 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
 
 ## Open TODOs
 
-- **Phase 2 — OAuth gate.** Wrap `/workspace/*` behind GitHub OAuth (env vars `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`,
-  `WORKSPACE_GITHUB_LOGINS`). The README and `AGENTS.md` already document the env vars; the gate itself does not exist yet. `guardAdmin` and
-  `guardAdminMutation` are the files that flip from permissive to allowlist-checked.
+- **Phase 2 — OAuth login.** Wrap workspace access in GitHub OAuth (env vars `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`,
+  `WORKSPACE_GITHUB_LOGINS`). With OAuth in place, `isAdmin` can be reconciled from the allowlist at login time rather than hand-set in the
+  DB — the guards stay the same shape. See [docs/architecture/workspace-access.md](../architecture/workspace-access.md).
 - **Phase 2+ — populate focus areas.** Each stub becomes a real surface (per-area notes, lists, integrations) once the gate is in.
 - **Follow-up — extract `ChatTranscript`.** The transcript layout in `src/web/chat/WebsiteVisitorAssistantChatSheet.tsx` and
   `src/routes/{-$locale}/workspace/assistant.tsx` is duplicated. Once a third surface needs it, extract to a shared component under

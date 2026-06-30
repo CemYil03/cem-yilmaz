@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { and, asc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { profileObservationCreate } from '../../commands/profileObservationCreate';
@@ -115,14 +115,14 @@ export const profileAnalyze: QueuedJobDefinition<ProfileAnalyzeData> = {
                 'Return only the observations array.',
             ].join('\n');
 
-            const result = await generateObject({
+            const result = await generateText({
                 model,
-                schema: OBSERVATION_SCHEMA,
-                instructions: SYSTEM_PROMPT,
+                output: Output.object({ schema: OBSERVATION_SCHEMA }),
+                system: SYSTEM_PROMPT,
                 prompt: userPrompt,
             });
 
-            const observations = result.object.observations;
+            const observations = result.output.observations;
             const analyzerModelId = result.response.modelId;
 
             for (const obs of observations) {

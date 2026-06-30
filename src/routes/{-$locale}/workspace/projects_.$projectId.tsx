@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
-    ArrowLeftIcon,
     CheckSquare2Icon,
     CircleDotIcon,
     ExternalLinkIcon,
@@ -267,14 +266,6 @@ function WorkspaceProjectDetail() {
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full py-12 leading-relaxed">
-            <Link
-                to="/{-$locale}/workspace/projects"
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            >
-                <ArrowLeftIcon className="size-4" />
-                {{ de: 'Zurück zum Board', en: 'Back to board' }[locale]}
-            </Link>
-
             <ProjectHeader project={project} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
 
             {(pinnedLinks.length > 0 || pinnedFiles.length > 0) && (
@@ -351,7 +342,7 @@ function ProjectHeader({
     const isOwnTimerRunning = activeTimer?.projectId === project.projectId;
 
     return (
-        <header className="mt-6">
+        <header>
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                     <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>

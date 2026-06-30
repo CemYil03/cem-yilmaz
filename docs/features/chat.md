@@ -8,32 +8,37 @@
 
 ## User Behavior
 
-A visitor on the landing page (`/` or `/en`) types a question into the Assistant section's composer (or clicks one of the suggested-question
-chips). Submitting the composer opens a `Sheet` containing the visitor chat surface. On open, the seeded question is sent through
-`chatMessageCreate` automatically (the user never has to retype it), a new chat is created server-side, and the sheet drops into the loaded
-transcript + composer view as the chatId returns.
+A visitor on the landing page (`/` or `/en`) types a question into the Assistant section's composer — the same `<VisitorChatComposer />`
+that lives inside the sheet. The composer fires `chatMessageCreate` from the landing page so the user sees the busy / sent micro-states on
+the input they actually typed in; the freshly-allocated chatId is handed to `VisitorChatProvider`, the sheet pops open, and the streaming
+response surfaces there. Suggestion chips (and the `?ask=…` deep link) take a slightly different path through the provider's
+`openWithMessage(text)` — the chip text isn't typed, so there's no input surface to host the micro-states; the provider fires the mutation
+and opens the sheet directly.
 
 The same sheet can also be opened from the **chat icon in the site header** (any public page) — that entry point opens the sheet in its
 empty state with no seeded send, listing the visitor's previous chats so they can pick one up where they left off. See
-[Visitor Chat](./chat-visitor.md) for the provider state machine and the entry-point table.
+[Visitor Chat](./chat-visitor.md) for the provider state and the entry-point table.
 
 The transcript renders the full message history grouped by date, using the shared `<ChatMessage />` component for every variant of the
-message union. Subsequent sends are appended to the same chat. There is no URL state — the chatId lives in component state inside the sheet;
-closing the sheet ends the session.
+message union. Subsequent sends are appended to the same chat. There is no URL state — the chatId lives in `VisitorChatProvider` and
+survives the sheet closing; reopening shows the same conversation until the user clicks "New chat" or sends from the landing-page hero again
+(which starts a fresh chat).
 
 The composer:
 
 - Auto-grows up to a few lines (`<InputGroupTextarea />` with `field-sizing-content`) inside an `<InputGroup>` whose `block-end` addon hosts
-  the Send button. The presentational shell — textarea, Send button, Enter-to-send, busy/disabled wiring, and a slot for feature-specific
-  addon content — lives in the decoupled `<MessageComposer />` component (`src/web/components/MessageComposer.tsx`); the visitor chat's
-  `ChatComposer` owns the draft state, the create mutation, the streaming preview, and the tool-call mode selector that plugs into the
-  shell's `addonStart` slot.
-- Exposes a tool-call mode selector (`auto` / `manual`) at the bottom-left of the addon, which controls
-  `ChatAssistantOptions.requireToolCallApprovals` on the create mutation. `auto` lets the assistant invoke tools directly; `manual` makes
-  each call surface an approval message in the transcript first. The selector is opt-in via the `showApprovalMode` prop (default `true`);
-  the visitor sheet passes `false` because page visitors never need to gate tool calls. The `addonStart` prop on the same composer lets a
-  caller drop additional controls into the bottom-left slot — the visitor sheet uses it to render a "New chat" button on the loaded
-  transcript that resets back to the empty/overview state (see [Visitor Chat](./chat-visitor.md#composer)).
+  the Send button. The composer stack is three layers, base → audience wrappers:
+  - **`<MessageComposer />`** (`src/web/components/MessageComposer.tsx`) — pure presentational shell. Textarea, Send button (icon-only, with
+    a localized "Send" tooltip), attachments preview row, drag-and-drop zone, the `block-end` addon slot, and the focus / ready / sending /
+    sent micro-states. Audience-agnostic; the parent owns submit semantics.
+  - **`<ChatComposer />`** (`src/web/chat/ChatComposer.tsx`) — shared base for any audience that fires `chatMessageCreate`. Owns draft
+    state, attachment upload lifecycle, submit gating, the `beginTurn` → mutation → `endTurn`-on-failure handshake, and draft restoration on
+    transport failure. Takes `sendMutation` and `extractResult` as required props — it knows nothing about visitor vs admin.
+  - **`<VisitorChatComposer />`** and **`<WorkspaceChatComposer />`** — the two audience wrappers. The visitor wrapper pre-wires the visitor
+    mutation and renders the always-visible rate-limit quota line in the bottom-left addon slot. The admin wrapper pre-wires the admin
+    mutation, pulls model selection from `useWorkspaceAssistantChat()`, and renders the model dropdown + the tool-call approval-mode
+    selector (Auto / Manual) into the bottom-left addon. Both expose their own `addonStart` slot for surface-specific extras (e.g. the
+    sheet's "New chat" button, the admin sheet's `resetChat` button).
 - Sends on `Enter`; `Shift+Enter` inserts a newline.
 - Disables itself while a response is streaming and shows an inline spinner.
 - Restores the draft if the mutation errors.
@@ -76,7 +81,9 @@ with the call's arguments JSON-pretty-printed — see "Tool argument inspection"
 | Landing-page integration     | `src/routes/{-$locale}/index.tsx` (`AssistantSection`)                             |
 | Operations                   | `src/web/chat/ChatPage.graphql`                                                    |
 | Live-update hook             | `src/web/chat/useChatLiveUpdates.tsx`                                              |
-| Composer                     | `src/web/chat/ChatComposer.tsx`                                                    |
+| Composer base                | `src/web/chat/ChatComposer.tsx`                                                    |
+| Composer — visitor wrapper   | `src/web/chat/VisitorChatComposer.tsx`                                             |
+| Composer — admin wrapper     | `src/web/chat/WorkspaceChatComposer.tsx`                                           |
 | Transcript helpers           | `src/web/chat/chatTranscript.ts`                                                   |
 | Slot-kind registry           | `src/web/chat/chatAssistantInputKinds.ts`                                          |
 | Per-message rendering        | `src/web/components/chat-message/` (existing, see [Chat](../architecture/chat.md)) |
@@ -95,8 +102,8 @@ The sheet hosts these operations:
 
 1. **`ChatPage` query** — pulls the current session, the chat, and every message via the shared `ChatMessageFields` fragment.
    `chat.messages` is a flat insertion-ordered list; the client groups by date at render time so subscription-delivered messages land in the
-   right group without a refetch. Loaded once when the chatId returns from the seeded send; the subscription extends the transcript from
-   there. There is no refetch on send.
+   right group without a refetch. Loaded once when the chatId becomes available on the provider; the subscription extends the transcript
+   from there. There is no refetch on send.
 2. **`ChatMessageCreate` mutation** — inlines the `ChatAssistantOptions` literal so that `typescript-operations` does not re-emit
    `GqlCChatAssistantOptions` and clash with the `typescript` plugin's emission.
 3. **`ChatUpdates` subscription** — single live channel for the in-flight turn. Keyed by a per-turn `generationId` (UUIDv4 generated
@@ -120,12 +127,19 @@ from streaming preview → persisted row is a true no-op.
 
 ### Opening flow
 
-`AssistantSection` in the landing page (`src/routes/{-$locale}/index.tsx`) tracks a `submittedQuestion: string | null`. Submitting the
-section's `MessageComposer` (or clicking a suggestion chip) sets it to the typed text; `WebsiteVisitorAssistantChatSheet` reads it through
-the `question` prop: non-null opens the sheet, null closes it and resets internal state. On the open transition the sheet fires
-`chatMessageCreate` with the seeded question (guarded by a ref against StrictMode double-invoke) — so the user sees their question land in
-the transcript and the assistant streams its reply, all without retyping. The `useChatLiveUpdates` listener mounts at the sheet root so the
-subscription is in place BEFORE the seeded mutation fires (same race-avoidance pattern the old route used).
+Three paths into the sheet, all funneled through `VisitorChatProvider`:
+
+- **Hero composer** (`src/routes/{-$locale}/index.tsx`) — the landing page mounts a `<VisitorChatComposer />` inside the assistant section.
+  Submitting fires `chatMessageCreate` from the landing page (the live-updates listener lives on the provider above both surfaces, so it's
+  already subscribed when the mutation lands), then the hero hands the freshly-allocated chatId to `setChatIdFromHero(chatId)` and pops the
+  sheet via `open()`. The visitor watches the busy / sent micro-states on the input they typed in and the streaming reply in the sheet.
+- **Suggestion chip / `?ask=…` deep link** — `useVisitorChat().openWithMessage(text)`. The provider runs the same `beginTurn → mutation`
+  sequence internally (no input surface to drive micro-states on), captures the chatId, opens the sheet.
+- **Header chat button** — `useVisitorChat().openEmpty()` drops `chatId` and opens the sheet at the empty state (previous chats + fresh
+  composer).
+
+The `useChatLiveUpdates` listener is mounted **inside the provider**, above the sheet, so the SSE subscription survives any sheet open/close
+cycle and is in place BEFORE any of these paths fires its mutation (same race-avoidance pattern used by the workspace provider).
 
 ### User input flow
 

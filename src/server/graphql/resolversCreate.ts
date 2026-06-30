@@ -430,7 +430,7 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 return {} as GqlSCvQuery;
             },
             admin(_: any, __: any, requestingSession: GqlSSession) {
-                return guardAdmin(requestingSession);
+                return guardAdmin(requestingSession, serverRuntime);
             },
         },
         Mutation: {
@@ -450,7 +450,7 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 return chatToolApprovalRespond(args, requestingSession, serverRuntime, PUBLIC_DISPATCH);
             },
             admin(_parent: unknown, __: any, requestingSession: GqlSSession) {
-                return guardAdminMutation(requestingSession);
+                return guardAdminMutation(requestingSession, serverRuntime);
             },
         },
         Subscription: {

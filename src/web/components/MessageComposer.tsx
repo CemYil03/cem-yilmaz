@@ -3,6 +3,8 @@ import type { ChangeEvent, DragEvent, ReactNode } from 'react';
 import { CheckIcon, CircleAlertIcon, FileIcon, PaperclipIcon, SendIcon, XIcon } from 'lucide-react';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from './base/input-group';
 import { Spinner } from './base/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
+import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
 
 // Generic chat-style composer surface — a textarea inside an `<InputGroup>`
@@ -68,9 +70,6 @@ export interface MessageComposerProps {
     /** Optional content rendered inside the bottom addon, left of the Send
      *  button. Use this for feature-specific controls like a mode selector. */
     addonStart?: ReactNode;
-    /** Visible Send button label; also used as the submit button's
-     *  `aria-label` when no children would describe it otherwise. */
-    sendLabel: string;
     /** Currently-attached files. Pass together with `onAttachmentsChange` to
      *  enable the paperclip button, drop-zone behavior, and preview row. */
     attachments?: readonly ComposerAttachment[];
@@ -112,7 +111,6 @@ export function MessageComposer({
     placeholder,
     rows = 2,
     addonStart,
-    sendLabel,
     attachments,
     onAttachmentsAdd,
     onAttachmentRemove,
@@ -122,6 +120,8 @@ export function MessageComposer({
     name = 'message',
     autoFocus = false,
 }: MessageComposerProps) {
+    const locale = useLocale();
+    const sendLabel = { de: 'Senden', en: 'Send' }[locale];
     const attachmentsEnabled = onAttachmentsAdd !== undefined && onAttachmentRemove !== undefined;
     const currentAttachments = attachments ?? [];
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -295,7 +295,7 @@ export function MessageComposer({
                             />
                             <InputGroupButton
                                 type="button"
-                                variant="outline"
+                                variant="ghost"
                                 size="icon-xs"
                                 // ml-auto on the first of the right-group so addonStart
                                 // children stay left-aligned regardless of how many.
@@ -314,46 +314,53 @@ export function MessageComposer({
                             </InputGroupButton>
                         </>
                     ) : null}
-                    <InputGroupButton
-                        type="submit"
-                        variant="default"
-                        size="sm"
-                        className={cn(
-                            // Lift + colour-shift the instant the draft is
-                            // non-empty — answers "I noticed you typed
-                            // something." Tailwind's `disabled:` already
-                            // dims the button via opacity-50, so this just
-                            // adds a tiny rise on the ready state.
-                            'transition-all duration-200',
-                            'enabled:-translate-y-px',
-                            'motion-reduce:enabled:translate-y-0',
-                            attachmentsEnabled ? undefined : 'ml-auto',
-                        )}
-                        disabled={!canSubmit}
-                        aria-label={sendLabel}
-                    >
-                        {/* Icon stack — exactly one visible at a time,
-                            crossfaded so the swap reads as a state
-                            change rather than a pop. */}
-                        <span className="relative grid place-items-center">
-                            <SendIcon
-                                aria-hidden
-                                className={cn('transition-opacity duration-150', busy || showSent ? 'opacity-0' : 'opacity-100')}
-                            />
-                            <Spinner
-                                aria-hidden
-                                className={cn('absolute inset-0 transition-opacity duration-150', busy ? 'opacity-100' : 'opacity-0')}
-                            />
-                            <CheckIcon
-                                aria-hidden
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <InputGroupButton
+                                type="submit"
+                                variant="default"
+                                size="icon-xs"
                                 className={cn(
-                                    'absolute inset-0 transition-opacity duration-150',
-                                    !busy && showSent ? 'opacity-100' : 'opacity-0',
+                                    // Lift + colour-shift the instant the draft is
+                                    // non-empty — answers "I noticed you typed
+                                    // something." Tailwind's `disabled:` already
+                                    // dims the button via opacity-50, so this just
+                                    // adds a tiny rise on the ready state.
+                                    'transition-all duration-200',
+                                    'enabled:-translate-y-px',
+                                    'motion-reduce:enabled:translate-y-0',
+                                    attachmentsEnabled ? undefined : 'ml-auto',
                                 )}
-                            />
-                        </span>
-                        {sendLabel}
-                    </InputGroupButton>
+                                disabled={!canSubmit}
+                                aria-label={sendLabel}
+                            >
+                                {/* Icon stack — exactly one visible at a time,
+                                    crossfaded so the swap reads as a state
+                                    change rather than a pop. */}
+                                <span className="relative grid place-items-center">
+                                    <SendIcon
+                                        aria-hidden
+                                        className={cn('transition-opacity duration-150', busy || showSent ? 'opacity-0' : 'opacity-100')}
+                                    />
+                                    <Spinner
+                                        aria-hidden
+                                        className={cn(
+                                            'absolute inset-0 transition-opacity duration-150',
+                                            busy ? 'opacity-100' : 'opacity-0',
+                                        )}
+                                    />
+                                    <CheckIcon
+                                        aria-hidden
+                                        className={cn(
+                                            'absolute inset-0 transition-opacity duration-150',
+                                            !busy && showSent ? 'opacity-100' : 'opacity-0',
+                                        )}
+                                    />
+                                </span>
+                            </InputGroupButton>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">{sendLabel}</TooltipContent>
+                    </Tooltip>
                 </InputGroupAddon>
             </InputGroup>
         </form>

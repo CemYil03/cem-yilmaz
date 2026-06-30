@@ -79,9 +79,17 @@ export const logs = pgTable(
 export type Log = typeof logs.$inferSelect;
 export type LogCreate = typeof logs.$inferInsert;
 
+// `isAdmin` gates the workspace surface (`Query.admin` / `Mutation.admin`).
+// Set manually with `UPDATE "Users" SET "isAdmin" = true WHERE …` for Cem's
+// own accounts; visitors and anonymous sessions never flip it. The column
+// is a stepping stone — once OAuth lands the boolean can be reconciled from
+// the GitHub login allowlist, and a dedicated `Admins` table is a clean
+// upgrade because the column move is mechanical. See `guardAdmin.ts` and
+// `docs/architecture/workspace-access.md`.
 export const users = pgTable('Users', {
     userId: uuid().primaryKey(),
     name: varchar().notNull(),
+    isAdmin: boolean().notNull().default(false),
     createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
 });
 

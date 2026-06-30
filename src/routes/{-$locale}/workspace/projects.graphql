@@ -138,14 +138,6 @@ mutation WorkspaceProjectUpsert(
     }
 }
 
-mutation WorkspaceProjectDelete($projectId: ID!) {
-    admin {
-        projectDelete(projectId: $projectId) {
-            success
-        }
-    }
-}
-
 mutation WorkspaceProjectReorder($orderedIds: [ID!]!) {
     admin {
         projectReorder(orderedIds: $orderedIds) {
@@ -232,26 +224,6 @@ mutation WorkspaceProjectActivityDelete($activityId: ID!) {
     admin {
         projectActivityDelete(activityId: $activityId) {
             success
-        }
-    }
-}
-
-mutation WorkspaceProjectTimerStart($projectId: ID!, $taskId: ID, $title: String) {
-    admin {
-        projectTimerStart(projectId: $projectId, taskId: $taskId, title: $title) {
-            activityId
-            projectId
-            startedAt
-        }
-    }
-}
-
-mutation WorkspaceProjectTimerStop($activityId: ID!) {
-    admin {
-        projectTimerStop(activityId: $activityId) {
-            activityId
-            endedAt
-            durationSec
         }
     }
 }

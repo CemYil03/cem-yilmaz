@@ -33,11 +33,13 @@ import { cn } from '../../../web/utils/cn';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
-// Admin editor for the CV tables. Phase 1: surface lives at `/workspace/cv`
+// Admin editor for the CV tables. The surface lives at `/workspace/cv`
 // without authentication on the page itself; mutations go through
-// `Mutation.admin` whose `guardAdminMutation` is permissive today and gets
-// real OAuth in Phase 2. The page is `noindex` and unlinked from public
-// surfaces — visitors land here only by typing the URL.
+// `Mutation.admin`, gated by `guardAdminMutation` (checks `isAdmin` on the
+// requesting session's `Users` row — see
+// `docs/architecture/workspace-access.md`). The page is `noindex` and
+// unlinked from public surfaces — visitors land here only by typing the
+// URL.
 //
 // One section per CV entity. Each section is a list of cards plus a "new
 // entry" form. Ordering is changed by grabbing the grip handle on a row

@@ -1,4 +1,4 @@
-import { useLocation } from '@tanstack/react-router';
+import { useLocation, useMatches } from '@tanstack/react-router';
 import {
     CodeXmlIcon,
     DumbbellIcon,
@@ -78,11 +78,15 @@ function normalizePath(pathname: string): string {
     return p;
 }
 
-function buildCrumbs(pathname: string, locale: Locale): ReadonlyArray<Crumb> {
+function buildCrumbs(pathname: string, locale: Locale, trailing: TrailingLabel): ReadonlyArray<Crumb> {
     const normalized = normalizePath(pathname);
     // Everything after `/workspace` — `''` on the hub itself, e.g. `cv` on
-    // `/workspace/cv`. Deeper paths aren't expected today; if they appear,
-    // the title for any unknown segment falls back to the raw segment.
+    // `/workspace/cv`. Deeper paths (e.g. `projects/<id>`) split on `/` and
+    // each segment becomes its own crumb; segments without a `WORKSPACE_TITLES`
+    // entry fall back to the raw segment, except on routes that have
+    // registered a `TRAILING_LABEL_SELECTORS` entry — those use the loader-
+    // provided label (and render empty while the loader hasn't produced one
+    // yet, so the raw id never flashes on screen).
     const tail = normalized.replace(/^\/workspace/, '').replace(/^\//, '');
     if (!tail) {
         // On the hub itself we still want the breadcrumb to read `Workspace`
@@ -94,20 +98,83 @@ function buildCrumbs(pathname: string, locale: Locale): ReadonlyArray<Crumb> {
         { label: workspaceLabel[locale], to: '/{-$locale}/workspace' },
         ...segments.map((segment, index) => {
             const entry = WORKSPACE_TITLES[segment];
-            const label = entry ? entry[locale] : segment;
+            const fallbackLabel = entry ? entry[locale] : segment;
             const isLast = index === segments.length - 1;
-            // Only the trailing crumb carries the icon — intermediate
-            // segments (none today, but defensive) stay plain so the
-            // header doesn't grow visually crowded.
-            const icon = isLast ? WORKSPACE_ICONS[segment] : undefined;
-            return { label, icon };
+            const icon = WORKSPACE_ICONS[segment];
+            if (isLast) {
+                // Trailing crumb owns the focus-area icon (replaces the
+                // on-page title row). Detail routes that have registered a
+                // label selector own the label too: the active route's
+                // loader provides a human string, and we render empty until
+                // it does — better than flashing a UUID at the user.
+                if (trailing.hasSelector) {
+                    return { label: trailing.label ?? '', icon };
+                }
+                return { label: fallbackLabel, icon };
+            }
+            // Intermediate crumb on a nested route (e.g. `projects` in
+            // `projects/<id>`) collapses to its icon + a link back to the
+            // section. Falls back to the plain label if the segment has no
+            // icon mapping.
+            return icon
+                ? {
+                      label: fallbackLabel,
+                      icon,
+                      iconOnly: true,
+                      to: `/{-$locale}/workspace/${segment}`,
+                  }
+                : { label: fallbackLabel, to: `/{-$locale}/workspace/${segment}` };
         }),
     ];
+}
+
+// Pluck a human-readable label for the trailing crumb out of the deepest
+// match's loader data. Each entry maps a TanStack-router route id to a
+// selector — when the active route matches, that selector pulls the title
+// out of `loaderData`. Add new entries here whenever a workspace detail
+// route is added so the breadcrumb stops showing a raw id.
+type LoaderDataLike = unknown;
+const TRAILING_LABEL_SELECTORS: ReadonlyArray<{
+    routeId: string;
+    select: (loaderData: LoaderDataLike) => string | undefined;
+}> = [
+    {
+        routeId: '/{-$locale}/workspace/projects_/$projectId',
+        select: (loaderData) => {
+            const project = (loaderData as { admin?: { project?: { title?: string } } } | undefined)?.admin?.project;
+            return typeof project?.title === 'string' ? project.title : undefined;
+        },
+    },
+];
+
+// `hasSelector: true` means the active route owns the trailing crumb's
+// label; `label` may still be `undefined` while the loader is resolving (or
+// re-resolving on invalidation). `hasSelector: false` is the common case —
+// the breadcrumb uses the segment-derived label.
+type TrailingLabel = { hasSelector: true; label: string | undefined } | { hasSelector: false };
+
+function useTrailingLabel(): TrailingLabel {
+    return useMatches({
+        select: (matches): TrailingLabel => {
+            // Walk from the deepest match outward so a detail-route selector
+            // wins over a parent-route one. Routes without a registered
+            // selector fall through to `hasSelector: false`.
+            for (let i = matches.length - 1; i >= 0; i -= 1) {
+                const match = matches[i];
+                if (!match) continue;
+                const selector = TRAILING_LABEL_SELECTORS.find((entry) => entry.routeId === match.routeId);
+                if (!selector) continue;
+                return { hasSelector: true, label: selector.select(match.loaderData) };
+            }
+            return { hasSelector: false };
+        },
+    });
 }
 
 export function WorkspaceHeader() {
     const locale = useLocale();
     const { pathname } = useLocation();
-    const crumbs = buildCrumbs(pathname, locale);
+    const trailing = useTrailingLabel();
+    const crumbs = buildCrumbs(pathname, locale, trailing);
     return <Header breadcrumbs={crumbs} hideSelectors chatVariant="workspace" />;
 }

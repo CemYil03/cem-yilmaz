@@ -10,7 +10,7 @@ Two visitor-facing pages plus one admin surface, all bilingual:
   ongoing roles), role + company, description, technology chips, and an optional manager line. A "Download PDF" link in the hero points at
   `/Lebenslauf.pdf` (the original document, served from `public/`).
 - **`/workspace/cv`** — Admin editor. Add/edit/delete forms for every CV entity. `noindex`, unlinked from the public site, mutations gated
-  by `guardAdminMutation` (permissive in Phase 1, real OAuth in Phase 2).
+  by `guardAdminMutation` — the workspace surface is gated on the `isAdmin` flag on the requesting session's `Users` row.
 
 The visitor AI chat ("Frag mich was") answers CV questions by reading the same DB rows — see "AI agent integration" below.
 
@@ -134,4 +134,5 @@ admin editor is the only edit path.
 - `/cv.pdf` server-rendered download via `serverRuntime.browser.capture()` — the existing `Lebenslauf.pdf` covers it for now.
 - A `toolCvSearch` agent tool — the embedded summary covers visitor questions for the current row count.
 - Profile photo asset and avatar surfacing on `/about`.
-- Phase 2 admin OAuth wiring — the editor is reachable today; mutations will start refusing once `guardAdminMutation` flips on.
+- Phase 2 admin OAuth wiring — the editor is reachable today for any session whose `Users.isAdmin` flag is set; OAuth reconciles the flag
+  automatically from `WORKSPACE_GITHUB_LOGINS` once it lands.

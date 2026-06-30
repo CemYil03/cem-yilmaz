@@ -1,4 +1,4 @@
-import { eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 
 import { projectActivities, projects } from '../db/schema';
@@ -49,8 +49,17 @@ describe('projectTimerStart', () => {
         expect(timer.endedAt).toBeNull();
         expect(timer.title).toBe('Work session');
 
-        // DB-side: exactly one running work row exists.
-        const open = await testDb.select().from(projectActivities).where(isNull(projectActivities.endedAt));
+        // DB-side: exactly one running work row exists for this project.
+        const open = await testDb
+            .select()
+            .from(projectActivities)
+            .where(
+                and(
+                    eq(projectActivities.projectId, project.projectId),
+                    eq(projectActivities.kind, 'work'),
+                    isNull(projectActivities.endedAt),
+                ),
+            );
         expect(open).toHaveLength(1);
         expect(open[0]?.activityId).toBe(timer.activityId);
     });
@@ -73,10 +82,31 @@ describe('projectTimerStart', () => {
             serverRuntime,
         );
 
-        // Assert — exactly one running row, and it's B.
-        const open = await testDb.select().from(projectActivities).where(isNull(projectActivities.endedAt));
-        expect(open).toHaveLength(1);
-        expect(open[0]?.activityId).toBe(timerB.activityId);
+        // Assert — across the two projects this test owns, exactly one work
+        // timer is still running, and it's B.
+        const openA = await testDb
+            .select()
+            .from(projectActivities)
+            .where(
+                and(
+                    eq(projectActivities.projectId, projectA.projectId),
+                    eq(projectActivities.kind, 'work'),
+                    isNull(projectActivities.endedAt),
+                ),
+            );
+        const openB = await testDb
+            .select()
+            .from(projectActivities)
+            .where(
+                and(
+                    eq(projectActivities.projectId, projectB.projectId),
+                    eq(projectActivities.kind, 'work'),
+                    isNull(projectActivities.endedAt),
+                ),
+            );
+        expect(openA).toHaveLength(0);
+        expect(openB).toHaveLength(1);
+        expect(openB[0]?.activityId).toBe(timerB.activityId);
 
         // The A row is closed with a non-negative duration.
         const [closedA] = await testDb.select().from(projectActivities).where(eq(projectActivities.activityId, timerA.activityId));

@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { profile, profileObservations } from '../../db/schema';
@@ -101,10 +101,10 @@ export const profileSynthesize: QueuedJobDefinition<ProfileSynthesizeData> = {
             ].join('\n');
 
             const model = serverRuntime.ai.profileSynthesizerModel();
-            const result = await generateObject({
+            const result = await generateText({
                 model,
-                schema: SYNTHESIS_SCHEMA,
-                instructions: SYNTHESIS_SYSTEM_PROMPT,
+                output: Output.object({ schema: SYNTHESIS_SCHEMA }),
+                system: SYNTHESIS_SYSTEM_PROMPT,
                 prompt: userPrompt,
             });
 
@@ -112,9 +112,9 @@ export const profileSynthesize: QueuedJobDefinition<ProfileSynthesizeData> = {
             await serverRuntime.db
                 .update(profile)
                 .set({
-                    summary: result.object.summary,
-                    prose: result.object.prose,
-                    psychProfile: result.object.psychProfile,
+                    summary: result.output.summary,
+                    prose: result.output.prose,
+                    psychProfile: result.output.psychProfile,
                     synthesizedAt: now,
                     synthesisModelId: result.response.modelId,
                     observationsSinceSynthesis: 0,

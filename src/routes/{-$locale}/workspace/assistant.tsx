@@ -6,7 +6,6 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useMutation } from 'urql';
 import { z } from 'zod';
 import { toFlatAnswerInput } from '../../../web/chat/chatAssistantInputKinds';
-import { ChatComposer } from '../../../web/chat/ChatComposer';
 import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
 import {
     findLatestCollectionId,
@@ -17,22 +16,20 @@ import {
     partitionByParent,
 } from '../../../web/chat/chatTranscript';
 import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
+import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
+import { WorkspaceChatComposer } from '../../../web/chat/WorkspaceChatComposer';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Spinner } from '../../../web/components/base/spinner';
 import { ChatMessage } from '../../../web/components/chat-message';
 import type {
     GqlCChatAssistantInputValue,
     GqlCWorkspaceAssistantChatsQuery,
-    GqlCWorkspaceChatConfigQuery,
     GqlCWorkspaceChatListItemFragment,
     GqlCWorkspaceChatPageQuery,
 } from '../../../web/graphql/generated';
 import {
     WorkspaceAssistantChatsDocument,
-    WorkspaceChatConfigDefaultModelSetDocument,
-    WorkspaceChatConfigDocument,
     WorkspaceChatInputCollectionRespondDocument,
-    WorkspaceChatMessageCreateDocument,
     WorkspaceChatPageDocument,
     WorkspaceChatToolApprovalRespondDocument,
 } from '../../../web/graphql/generated';
@@ -54,7 +51,6 @@ import type { Locale } from '../../../web/utils/locale';
 // `docs/architecture/multi-agent-chat.md` and
 // `docs/features/workspace-hub.md`.
 
-const composerPlaceholder = { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' };
 const previousChatsLabel = { de: 'Frühere Chats', en: 'Previous chats' };
 const noPreviousChatsLabel = { de: 'Noch keine Chats.', en: 'No chats yet.' };
 const untitledLabel = { de: 'Ohne Titel', en: 'Untitled' };
@@ -68,11 +64,6 @@ const RECENT_CHATS_LIMIT = 10;
 
 const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
-const extractMessageCreateResult = (data: unknown): { chatId: string } | null => {
-    const wrapper = data as { admin?: { chatMessageCreate?: { chatId: string } | null } | null } | null | undefined;
-    return wrapper?.admin?.chatMessageCreate ?? null;
-};
-
 const assistantSearchSchema = z.object({
     chatId: z.string().optional(),
 });
@@ -80,30 +71,29 @@ const assistantSearchSchema = z.object({
 // Loader payload. Sidebar/empty-state always need the chat list; the loaded
 // view additionally needs the chat detail. We always fetch both so the
 // component code can hand either surface a ready array without a second
-// trip. The chat config (model catalog + saved default) rides along so the
-// composer can render its model dropdown without a second round-trip.
+// trip. The chat config (model catalog + saved default) is shared across
+// every workspace surface and lives on the layout's loader → provider, so
+// this route doesn't fetch it again.
 type LoaderData = {
     chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
     chat: NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['admin']>['chat']> | null;
-    chatConfig: GqlCWorkspaceChatConfigQuery['admin']['chatConfig'];
 };
 
 export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
     validateSearch: assistantSearchSchema,
     loaderDeps: ({ search }) => ({ chatId: search.chatId }),
     loader: async ({ deps }): Promise<LoaderData> => {
-        // Three queries fan out in parallel — the chat list, the selected
-        // chat detail, and the chat config are all independent.
+        // Two queries fan out in parallel — the chat list and the selected
+        // chat detail. Chat config is provider-owned (loaded once by the
+        // workspace layout).
         const chatsPromise = routeLoaderGraphqlClient(WorkspaceAssistantChatsDocument)();
         const chatPromise = deps.chatId
             ? routeLoaderGraphqlClient(WorkspaceChatPageDocument, { chatId: deps.chatId })()
             : Promise.resolve(null);
-        const chatConfigPromise = routeLoaderGraphqlClient(WorkspaceChatConfigDocument)();
-        const [chatsResult, chatResult, chatConfigResult] = await Promise.all([chatsPromise, chatPromise, chatConfigPromise]);
+        const [chatsResult, chatResult] = await Promise.all([chatsPromise, chatPromise]);
         return {
             chats: chatsResult.admin.chats,
             chat: chatResult?.admin.chat ?? null,
-            chatConfig: chatConfigResult.admin.chatConfig,
         };
     },
     staleTime: 0,
@@ -130,9 +120,9 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
             <>
                 {live.listener}
                 {chatId && data.chat ? (
-                    <WorkspaceAssistantPage chat={data.chat} chats={data.chats} chatConfig={data.chatConfig} live={live} locale={locale} />
+                    <WorkspaceAssistantPage chat={data.chat} chats={data.chats} live={live} locale={locale} />
                 ) : (
-                    <WorkspaceAssistantEmpty chats={data.chats} chatConfig={data.chatConfig} live={live} locale={locale} />
+                    <WorkspaceAssistantEmpty chats={data.chats} live={live} locale={locale} />
                 )}
             </>
         );
@@ -149,18 +139,15 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
 
 function WorkspaceAssistantEmpty({
     chats: allChats,
-    chatConfig,
     live,
     locale,
 }: {
     chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
-    chatConfig: GqlCWorkspaceChatConfigQuery['admin']['chatConfig'];
     live: ReturnType<typeof useChatLiveUpdates>;
     locale: Locale;
 }) {
     const navigate = useNavigate();
     const chats = allChats.slice(0, RECENT_CHATS_LIMIT);
-    const { selectedModelId, onModelChange } = useWorkspaceModelSelection(chatConfig);
     return (
         <main className="mx-auto grid h-[calc(100dvh-5rem)] w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
             <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pr-2">
@@ -186,47 +173,16 @@ function WorkspaceAssistantEmpty({
                     )}
                 </section>
             </div>
-            <ChatComposer
+            <WorkspaceChatComposer
                 onMessageSent={(newChatId) => navigate({ to: '/{-$locale}/workspace/assistant', search: { chatId: newChatId } })}
                 isLocked={live.isGenerating}
                 beginTurn={live.beginTurn}
                 locale={locale}
                 endTurn={live.endTurn}
-                sendMutation={WorkspaceChatMessageCreateDocument}
-                extractResult={extractMessageCreateResult}
-                placeholder={composerPlaceholder[locale]}
-                availableModels={chatConfig.availableModels}
-                selectedModelId={selectedModelId}
-                onModelChange={onModelChange}
                 autoFocus
             />
         </main>
     );
-}
-
-// Local state for the workspace composer's model selection. The dropdown is
-// sticky: changing it both selects for the next send AND persists the new
-// default to `AdminChatConfig.defaultModelId` (the "sticky and updates default"
-// choice in `docs/features/admin-chat-config.md`). On mount we seed local
-// state from the loaded config; on change we mutate the server and update
-// state in lockstep so the dropdown reflects the chosen value immediately
-// without waiting for a refetch.
-function useWorkspaceModelSelection(chatConfig: GqlCWorkspaceChatConfigQuery['admin']['chatConfig']) {
-    const [selectedModelId, setSelectedModelId] = useState(chatConfig.defaultModelId);
-    const [, setDefaultModel] = useMutation(WorkspaceChatConfigDefaultModelSetDocument);
-    const onModelChange = useCallback(
-        (modelId: string) => {
-            setSelectedModelId(modelId);
-            // Fire-and-forget — a transport failure here is harmless: the
-            // local state already reflects the choice for this session, the
-            // next route load just won't pick it up as the new default. The
-            // mutation result is intentionally not awaited so the UI never
-            // blocks on the network round-trip.
-            void setDefaultModel({ modelId });
-        },
-        [setDefaultModel],
-    );
-    return { selectedModelId, onModelChange };
 }
 
 function PreviousChatLink({
@@ -268,19 +224,20 @@ function PreviousChatLink({
 function WorkspaceAssistantPage({
     chat,
     chats,
-    chatConfig,
     live,
     locale,
 }: {
     chat: NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['admin']>['chat']>;
     chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
-    chatConfig: GqlCWorkspaceChatConfigQuery['admin']['chatConfig'];
     live: ReturnType<typeof useChatLiveUpdates>;
     locale: Locale;
 }) {
     const [, respondToCollection] = useMutation(WorkspaceChatInputCollectionRespondDocument);
     const [, respondToApproval] = useMutation(WorkspaceChatToolApprovalRespondDocument);
-    const { selectedModelId, onModelChange } = useWorkspaceModelSelection(chatConfig);
+    // Sticky model selection is owned by the workspace provider so every
+    // surface reflects the same choice. Read it once here for the collection /
+    // approval response mutations (the composer reads it itself).
+    const { selectedModelId } = useWorkspaceAssistantChat();
 
     const onCollectionSubmit = useCallback(
         async (collectionMessageId: string, answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>) => {
@@ -347,18 +304,12 @@ function WorkspaceAssistantPage({
                     jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
                 />
 
-                <ChatComposer
+                <WorkspaceChatComposer
                     chatId={chat.chatId}
                     isLocked={live.isGenerating}
                     beginTurn={live.beginTurn}
                     endTurn={live.endTurn}
                     locale={locale}
-                    sendMutation={WorkspaceChatMessageCreateDocument}
-                    extractResult={extractMessageCreateResult}
-                    placeholder={composerPlaceholder[locale]}
-                    availableModels={chatConfig.availableModels}
-                    selectedModelId={selectedModelId}
-                    onModelChange={onModelChange}
                     autoFocus
                 />
             </div>

@@ -32,12 +32,12 @@ Mounting the provider at the `workspace.tsx` layout — one level above every wo
 
 ## Surfaces
 
-| Entry point                                                                     | How it opens the sheet                              | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace hub composer                                                          | `useWorkspaceAssistantChat().openWithMessage(text)` | Hub composer fires the typed message as the first turn; the conversation continues in the sheet.                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useWorkspaceAssistantChat().open()`                | Same right-side cluster button as the public site's visitor-chat button, but on workspace surfaces the header passes `chatVariant="workspace"` (set inside `WorkspaceHeader`) so the button leads to the admin assistant sheet instead of the irrelevant visitor sheet. The header is mounted once at the workspace layout, so every workspace page inherits it. This is the single floating-free entry point on every workspace page; the hub's hero composer is the in-flow alternative on `/workspace`. |
-| Sheet's **"Open full-screen"** button                                           | Navigates to `/workspace/assistant?chatId=<id>`     | Hands the conversation off to the dedicated full-screen route — the chat row is the same on both sides.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Sheet's recent-chats "View all chats" link                                      | Navigates to `/workspace/assistant`                 | The empty state's bridge to the dedicated route. Same destination as a fresh-start send: the route's empty state is the at-a-glance list, not a chat-in-progress.                                                                                                                                                                                                                                                                                                                                          |
+| Entry point                                                                     | How it opens the sheet                                                           | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` + `open()` | The shared `<WorkspaceChatComposer />` on the hub creates the chat directly so attachments / model / approval mode all ride along, then hands the freshly-allocated id to the provider and pops the sheet so the response surfaces in context.                                                                                                                                                                                                                                                             |
+| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useWorkspaceAssistantChat().open()`                                             | Same right-side cluster button as the public site's visitor-chat button, but on workspace surfaces the header passes `chatVariant="workspace"` (set inside `WorkspaceHeader`) so the button leads to the admin assistant sheet instead of the irrelevant visitor sheet. The header is mounted once at the workspace layout, so every workspace page inherits it. This is the single floating-free entry point on every workspace page; the hub's hero composer is the in-flow alternative on `/workspace`. |
+| Sheet's **"Open full-screen"** button                                           | Navigates to `/workspace/assistant?chatId=<id>`                                  | Hands the conversation off to the dedicated full-screen route — the chat row is the same on both sides.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Sheet's recent-chats "View all chats" link                                      | Navigates to `/workspace/assistant`                                              | The empty state's bridge to the dedicated route. Same destination as a fresh-start send: the route's empty state is the at-a-glance list, not a chat-in-progress.                                                                                                                                                                                                                                                                                                                                          |
 
 The provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`.
 
@@ -56,20 +56,25 @@ on mobile, so the header stays pinned at the top of the visible area and the com
 
 ## Composer
 
-The sheet's composer is `WorkspaceAssistantComposer`, a small wrapper around `<MessageComposer />` that submits into the provider's
-`sendMessage(text, fileUploadIds?)`. The provider owns the `chatId`, the live-updates hook, the mutation, and the chat-id ref that makes
-back-to-back sends append to the same `chats` row (the same pattern `VisitorChatProvider` uses).
+Every admin composer — the hub's hero composer, the sheet's composer, and the empty/loaded composers on `/workspace/assistant` — is the same
+`<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`). It is a thin wrapper around the generic `<ChatComposer />` that
+pre-wires the workspace `chatMessageCreate` mutation, its admin-namespace result extractor, the "Ask your assistant…" placeholder, and (via
+the provider) the shared model catalog, currently-selected model id, and `onModelChange` handler. The wrapper still leaves the
+surface-specific pieces — `chatId`, `onMessageSent`, `addonStart`, `autoFocus` — as props. Sharing one composer means the dropdowns,
+attachments, and approval-mode selector are identical on every workspace surface, and a model change on one is reflected on the others.
 
-The composer has two addon-start controls:
+The sheet's instance owns two extras:
 
-- **"Start new chat"** — an icon button that appears once a chat is active. Clicking it calls `resetChat()`, which drops `chatId` and
-  `loadedMessages` so the next send creates a fresh row. The previous chat is still in the database; the recent-chats list (see below) lets
-  the admin resume it from the same surface.
-- **Attachments** — paperclip button + drag-and-drop. The composer owns the upload lifecycle: each picked/dropped file is uploaded
+- **"Start new chat"** — an icon button rendered into `addonStart` once a chat is active. Clicking it calls the provider's `resetChat()`,
+  which drops `chatId` and `loadedMessages` so the next send creates a fresh row. The previous chat is still in the database; the
+  recent-chats list (see below) lets the admin resume it from the same surface.
+- **Attachments + uploads** — paperclip button + drag-and-drop. The composer owns the upload lifecycle: each picked/dropped file is uploaded
   immediately through `uploadFile()` (`POST /api/file-uploads`), the per-tile UI reflects `uploading` / `uploaded` / `error`, and the
-  resolved `fileUploadId`s are forwarded through `sendMessage(message, fileUploadIds)` on submit. The provider's mutation passes the ids to
-  the `admin.chatMessageCreate` resolver, same shape as the route composer's path. Errored tiles stay on screen so the user can decide
-  whether to remove-and-retry; only `uploaded` ids ride the mutation.
+  resolved `fileUploadId`s ride the next `WorkspaceChatMessageCreate` mutation. Errored tiles stay on screen so the user can decide whether
+  to remove-and-retry; only `uploaded` ids ride the mutation.
+
+The sheet's instance reads the provider's `chatId` and uses `setChatIdFromHub` as its `onMessageSent` handler, so the first send adopts the
+freshly-allocated chatId into the provider — every subsequent send from any admin composer reuses the same row.
 
 ## Recent chats
 
@@ -114,11 +119,12 @@ chat bookmark-able", and the provider is the source of truth for "is there a cha
 
 ```
 src/web/chat/
-├── WorkspaceAssistantChatProvider.tsx    Provider — owns chatId, live updates, sendMessage, resetChat, loadChat.
-└── WorkspaceAssistantChatSheet.tsx       Sheet — transcript + composer + header chrome (open-full-screen, expand, close).
+├── WorkspaceAssistantChatProvider.tsx    Provider — owns chatId, live updates, sticky model selection, setChatIdFromHub, resetChat, loadChat.
+├── WorkspaceAssistantChatSheet.tsx       Sheet — transcript + composer + header chrome (open-full-screen, expand, close).
+└── WorkspaceChatComposer.tsx             Shared admin composer — wraps `<ChatComposer />` with the workspace mutation + provider-owned model selection.
 
 src/routes/{-$locale}/
-└── workspace.tsx                         Workspace layout — wraps `<Outlet />` in the provider and mounts the sheet.
+└── workspace.tsx                         Workspace layout — loads `WorkspaceChatConfig`, wraps `<Outlet />` in the provider, mounts the sheet.
 ```
 
 ## Mutations
@@ -129,8 +135,9 @@ All mutations go through the `admin.*` namespace so the server dispatches to `ag
 - `WorkspaceChatInputCollectionRespond` — answer an interactive collection inside the sheet's transcript.
 - `WorkspaceChatToolApprovalRespond` — approve / decline a tool call when the agent runs with `requireToolCallApprovals: true`.
 
-`requireToolCallApprovals` defaults to `false` on the sheet's composer (auto-mode). The dedicated `/workspace/assistant` route exposes the
-auto/manual selector via the shared `<ChatComposer />`; the sheet keeps the surface minimal.
+`requireToolCallApprovals` is set per send by the composer's approval-mode dropdown — Auto fires the mutation with `false`, Manual with
+`true`. The dropdown lives in the shared `<WorkspaceChatComposer />`, so every admin surface (hub, sheet, full-screen route) exposes the
+same toggle.
 
 ## Transcript affordances tied to the agent-delegation pattern
 

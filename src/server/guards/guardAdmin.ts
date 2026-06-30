@@ -1,20 +1,36 @@
+import { eq } from 'drizzle-orm';
+import type { ServerRuntime } from '../domain/ServerRuntime';
+import { users } from '../db/schema';
 import type { GqlSAdmin, GqlSSession } from '../graphql/generated';
 
 // Gates the workspace read namespace (`Query.admin`).
 //
-// Phase 1: permissive. The workspace surface is `noindex`, unlinked from the
-// public site, and reachable only by typing `/workspace`. The hub now hosts
-// the personal-assistant composer (see `docs/features/workspace-hub.md`), so
-// the admin namespace must be reachable in Phase 1 — gating it on a guard
-// that always throws would block Cem's own access.
+// Admin membership is a single boolean on the `Users` row: `isAdmin`. The
+// flag is set manually in the database for Cem's own accounts (the workspace
+// surface is `noindex`, unlinked, and reachable only by typing `/workspace`,
+// so a small hand-curated list of admin rows is the right fit for now).
+// Anonymous sessions have `requestingSession.userId == null` and fail the
+// first check; logged-in non-admin users fail the second.
 //
 // The empty-object cast is correct because every field on `Admin` has its
 // own resolver in `resolversCreate.ts` that ignores `_parent`; the namespace
 // is purely a routing label.
 //
-// TODO(phase-2): replace this permissive return with a real check against
-// the OAuth-derived GitHub login on `requestingSession`, sourced from
-// `WORKSPACE_GITHUB_LOGINS`. See `docs/architecture/multi-agent-chat.md`.
-export function guardAdmin(_requestingSession: GqlSSession): GqlSAdmin {
+// Long-term, once GitHub OAuth lands, the flag can be reconciled from the
+// allowlist at login time, and a dedicated `Admins` table is a clean upgrade
+// because the column move is mechanical. See
+// `docs/architecture/workspace-access.md`.
+export async function guardAdmin(requestingSession: GqlSSession, serverRuntime: ServerRuntime): Promise<GqlSAdmin> {
+    if (!requestingSession.userId) {
+        throw new Error('Unauthorized');
+    }
+    const [row] = await serverRuntime.db
+        .select({ isAdmin: users.isAdmin })
+        .from(users)
+        .where(eq(users.userId, requestingSession.userId))
+        .limit(1);
+    if (!row?.isAdmin) {
+        throw new Error('Unauthorized');
+    }
     return {} as GqlSAdmin;
 }

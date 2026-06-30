@@ -141,15 +141,15 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
 
 - `Mutation.chatMessageCreate` / `chatInputCollectionRespond` / `chatToolApprovalRespond` → resolved chat must have `scope = 'public'`.
   Mismatch returns null (logged).
-- `Mutation.admin` → `guardAdminMutation(session)`. **Phase 1: permissive.** The guard returns the namespace shape rather than throwing —
-  the workspace hub composer needs the admin namespace reachable so Cem can use his own assistant, and the surface stays private through the
-  noindex + unlinked + URL-obscured posture documented in `docs/features/workspace-hub.md`. Phase 2 fills in the GitHub-login allowlist
-  check sourced from `WORKSPACE_GITHUB_LOGINS`.
+- `Mutation.admin` → `guardAdminMutation(session, serverRuntime)`. Checks `isAdmin` on the requesting session's `Users` row; throws
+  `Unauthorized` if the session has no `userId` or the row is missing/non-admin. The flag is set manually in the DB for Cem's own accounts.
+  Once OAuth lands, the same flag can be reconciled from `WORKSPACE_GITHUB_LOGINS` at login time. See
+  [workspace-access.md](./workspace-access.md).
 - `AdminMutation.*` → resolved chat must have `scope = 'admin'`. The `guardAdminMutation` gate at the `admin` field already keeps
   unauthenticated callers out of the namespace; the per-mutation scope check stops a logged-in admin from accidentally posting into a
   visitor chat by chatId.
-- `Query.admin` → `guardAdmin(session)`, the read-side counterpart with the same Phase 1 policy. Split from `guardAdminMutation` so Phase 2
-  can layer different posture on writes (e.g. CSRF, narrower allowlist) without dragging the read path along.
+- `Query.admin` → `guardAdmin(session, serverRuntime)`, the read-side counterpart with the same `isAdmin` check. Split from
+  `guardAdminMutation` so write-side policy can diverge (e.g. CSRF, narrower allowlist) without dragging the read path along.
 - `Query.chat(chatId)` → resolved chat must have `scope = 'public'`.
 
 ### Routing

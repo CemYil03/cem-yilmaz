@@ -1,8 +1,8 @@
 # Visitor chat
 
 The visitor chat is the "Ask me anything" surface mounted on the public site. It's a right-side **Sheet** hosted at the root layout so any
-public page can open it — the landing-page hero composer (seeded question), suggestion chips (seeded question), and the chat icon in the
-site header (empty state) all funnel into the same component.
+public page can open it — the landing-page hero composer, suggestion chips, and the chat icon in the site header all funnel into the same
+component.
 
 See also:
 
@@ -33,28 +33,38 @@ Three concrete deviations the sheet adds on top of the old dialog:
 
 ## Surfaces
 
-| Entry point                        | How it opens the sheet                   | Initial state                                                                                                    |
-| ---------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Landing-page hero composer / chips | `useVisitorChat().openWithMessage(text)` | Seeded — fires the typed question on mount and lands on the loaded transcript when the server returns the chatId |
-| Site header `MessageCircle` button | `useVisitorChat().openEmpty()`           | Empty — shows previous chats list + composer; no seeded send                                                     |
-| Empty state "Previous chats" entry | `useVisitorChat().loadChat(chatId)`      | Loaded — opens directly at a specific chat without re-sending                                                    |
+| Entry point                        | How it opens the sheet                                          | Initial state                                                                                                                                                                                                                                                                  |
+| ---------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Landing-page hero composer         | Hero fires `chatMessageCreate`, then `setChatIdFromHero + open` | The same `<VisitorChatComposer />` the sheet uses is mounted in the hero. It fires the mutation from the landing page so the visitor sees the busy / sent micro-states on the input they typed in, then hands the freshly-allocated chatId to the provider and pops the sheet. |
+| Landing-page chips / `?ask=…` link | `useVisitorChat().openWithMessage(text)`                        | Provider fires `chatMessageCreate` itself with the chip / search-param text, captures the chatId, opens the sheet.                                                                                                                                                             |
+| Site header `MessageCircle` button | `useVisitorChat().openEmpty()`                                  | Empty — shows previous chats list + composer; no seeded send                                                                                                                                                                                                                   |
+| Empty state "Previous chats" entry | `useVisitorChat().loadChat(chatId)`                             | Loaded — opens directly at a specific chat without re-sending                                                                                                                                                                                                                  |
 
-The provider's state machine is the `VisitorChatIntent` discriminated union in `src/web/chat/VisitorChatProvider.tsx`. The sheet itself is
-mounted once in `src/routes/__root.tsx`, so every public route inherits it without duplicating the tree.
+The provider (`src/web/chat/VisitorChatProvider.tsx`) owns the chatId, the live-updates handle, and the open/close state — same shape as
+`WorkspaceAssistantChatProvider`. The sheet itself is mounted once in `src/routes/__root.tsx`, so every public route inherits it without
+duplicating the tree.
 
 ## Composer
 
-Two visitor-specific deviations from the shared `<ChatComposer />`:
+The visitor side uses `<VisitorChatComposer />` (`src/web/chat/VisitorChatComposer.tsx`), a thin wrapper around the shared
+`<ChatComposer />` base. It is used on **two surfaces** — the landing-page hero (so the visitor's first input directly fires the mutation
+and they see the busy / sent micro-states on the input they actually typed in) and inside the sheet (empty + loaded views). The wrapper:
 
-- **No approval-mode selector.** Page visitors never need to gate tool calls — `showApprovalMode={false}` hides the Auto / Manual select in
-  the composer's bottom-left addon. The shared composer keeps it on by default for the workspace assistant surface.
-- **"New chat" button on the loaded transcript.** Inside the loaded view the composer's bottom-left addon slot hosts a "Neuer Chat" / "New
-  chat" button (plus icon). Clicking it resets the sheet's internal `chatId` back to `undefined`, which drops `ChatSurface` into
-  `ChatEmptyState` — the previous-chats list + composer overview. The button is disabled while a turn is generating; the empty state's own
-  composer creates a fresh chat on first send, just like opening the sheet from the header.
+- Pre-wires the visitor `ChatMessageCreate` mutation and its result extractor (`data.chatMessageCreate`), so the server dispatches to
+  `agentVisitorAboutCem`.
+- **Renders the rate-limit quota chip in the bottom-left addon slot, always visible.** The composer runs its own `VisitorChatQuota` query
+  (`cache-and-network`) so every visitor surface that mounts it sees the current allowance — even on the first send of the day. The visible
+  chip is the bare ratio (`5 / 10`); hovering on desktop or tapping on mobile pops a `HoverCard` with the full sentence ("5 of 10 messages
+  used today. Resets in 18 hours."). The chip flips to a destructive style at the limit so the visitor sees the composer is locked without
+  opening the card. The long sentence used to live as a wrapping `<p>` under the textarea, but on narrow viewports it pushed past the Send
+  button — the HoverCard keeps the addon row short while still surfacing the detail on demand.
+- Carries **none** of the admin-only chrome — no model dropdown, no approval-mode selector, no file attachments. Those live in the parallel
+  `<WorkspaceChatComposer />` wrapper. The shared `<ChatComposer />` base is audience-agnostic; admin-only controls are added by the
+  workspace wrapper, never by the visitor wrapper.
 
-Both deviations are wired by passing `showApprovalMode={false}` and an `addonStart` ReactNode into `<ChatComposer />` — props the shared
-composer exposes so surface-specific controls can plug into the same bottom-left slot.
+Surface-specific extras still plug into the wrapper's `addonStart` slot — the loaded view of the sheet uses it for the "Neuer Chat" / "New
+chat" button (plus icon) that calls `resetChat()` on the provider and drops the sheet back into its empty state. The button is disabled
+while a turn is generating; the empty state's own composer creates a fresh chat on first send, just like opening the sheet from the header.
 
 ## Anonymous authoring
 
@@ -87,8 +97,8 @@ if (dispatch.scope === 'public') {
 }
 ```
 
-The mutation returns `null` to the client when the cap is exceeded — the sheet's quota row already shows the "Daily limit reached" message,
-so the mutation failure becomes a silent no-op rather than a transport error.
+The mutation returns `null` to the client when the cap is exceeded — the composer's always-visible quota line already shows the "Daily limit
+reached" message, so the mutation failure becomes a silent no-op rather than a transport error.
 
 ### Bucket key
 
@@ -144,7 +154,7 @@ type VisitorChatQuota {
 }
 ```
 
-`resetsAt` is the moment the oldest in-window message ages out — null when `used = 0`. The sheet's quota row formats it with
+`resetsAt` is the moment the oldest in-window message ages out — null when `used = 0`. `<VisitorChatComposer />` formats it with
 `formatDistanceToNow` so it reads "resets in 18 hours" / "Tageslimit erreicht — neue Nachricht in 18 Std. möglich".
 
 ## Previous chats list

@@ -21,14 +21,17 @@ the daily-work surface):
   `notes`. The admin reviews, edits anything they want, and on save the editor's normal `projectUpsert` mutation creates the project in the
   chosen status and archives the source request in the same transaction. A toggle reveals archived rows. Rows already converted are filtered
   out of the default view (they're visible on the linked Project as a "Source request" backlink instead).
-- **Projects** — board grouped by project status (`idea | planning | active | paused | done | archived`). Each card carries title, short
-  description, source-request backlink when applicable, and a tasks-done counter (`3/7`). Clicking "Show tasks" reveals an inline task list
-  grouped by `todo | doing | done`. Tasks have a checkbox that cycles status (todo → doing → done → todo), an optional due date, and a small
-  action menu. Cross-status moves happen by editing the row's status field, not by drag.
+- **Projects** — responsive **tile grid** (1 column on mobile, 2 on `md`, 3 on `lg+`) grouped by project status
+  (`idea | planning | active | paused | done | archived`). Each tile carries title, short description (clamped to 2 lines), source-request
+  backlink when applicable, a tasks-done counter (`3/7`), and a total-work label. The **whole tile is a link** to the project detail route —
+  no inline edit / delete / start-timer affordances; those all live on the detail page. When this project owns the running timer the tile
+  picks up a live `HH:MM:SS` badge in the header corner and a primary-tinted ring so the active project is glanceable on the grid. Tasks
+  themselves are listed and edited on the detail route — the board no longer expands them inline.
 - **Todos** — flat task list with the same task primitive, filtered to `projectId IS NULL`. For quick captures that don't (yet) belong to a
   project.
 
-Each project card on the **Projects** tab also opens a **Timeline** strip and a **Timer pill** — both detailed below under
+Each project tile on the **Projects** tab also surfaces a **live-timer badge** when this project owns the running timer; full timer controls
+(start / stop / switch) live on the project detail route — see
 [Project activity timeline & work timer](#project-activity-timeline--work-timer).
 
 The workspace hub's Projects card carries a small primary-coloured badge with the un-triaged inbox count, so the count is visible without
@@ -129,9 +132,10 @@ Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 
 ## Detail route
 
-The kanban board lives at `/workspace/projects`; clicking a card opens `/workspace/projects/$projectId` (filename
-`projects_.$projectId.tsx`). The board no longer expands tasks / activity inline — the card surfaces title, source-request backlink, timer
-pill, task counter, and a "Details öffnen / Open details" link. Everything else lives on the detail page.
+The kanban board lives at `/workspace/projects`; clicking a tile opens `/workspace/projects/$projectId` (filename
+`projects_.$projectId.tsx`). The board renders a tile grid grouped by status — each tile is a single link with title, short description,
+source-request backlink, task counter, total-work label, and a live-timer badge when this project owns the running timer. All other actions
+(edit / delete / start-stop timer / task management / activity log) live on the detail page.
 
 The detail route has its own search-param schema (`?tab=tasks|activity|notes|links|files&focus=<id>`) and a single GraphQL query
 (`WorkspaceProjectDetail`) co-located in `projects_.$projectId.graphql`. The query mirrors the board's nested shape but adds `links` /
@@ -145,6 +149,13 @@ The header carries the title, status pill (a `Select` that mutates `projectUpser
 **Links**, **Files**. Above the tabs is a **pinned rail** — links and files where `pinned = true` show as compact chips so the resources Cem
 actually opens during work (repo URL, Malt mission, signed contract PDF) are one click from the top of the page. The same row appears in its
 full list on the corresponding tab; pin state is the only difference between the two surfaces.
+
+The detail route has no in-page back-link. The way back to the board is the workspace header's breadcrumb trail, where the intermediate
+`projects` crumb collapses to its `FolderKanban` icon (label kept for screen readers) and links to `/workspace/projects`. The trailing crumb
+renders the project's **title**, not its id — `WorkspaceHeader` pulls it off the active route's loader data via a small selector keyed by
+route id (see `TRAILING_LABEL_SELECTORS` in `src/web/components/WorkspaceHeader.tsx`). While the loader is resolving the label is empty
+(just the icon shows) rather than briefly flashing the UUID. Long titles truncate with an ellipsis so the chat button and trail stay on one
+line.
 
 Deep linking from the assistant carries over: `?focus=<id>` matches against `data-row-id` on tasks, activities, links, and files. A focused
 row scrolls into view and flashes for ~1500 ms, then the param drops via replace-navigate.
@@ -277,15 +288,15 @@ Mutations on `AdminMutation`:
 
 ### UI
 
-Each project card on the **Projects** tab carries:
+Each project tile on the **Projects** tab carries:
 
-- A **Timer pill** in the header — when this project owns the running timer it shows a live HH:MM:SS counter (ticking client-side from
-  `startedAt`) and clicking it stops; when another project owns the timer it shows a "Switch" hint that re-starts on this project; otherwise
-  a small "Start" button.
-- A **Timeline** strip below the tasks list, openable from the card footer. Each entry shows a kind icon, the title, the channel chip when
-  set, the duration when known, and the `occurredAt` timestamp. Event rows can be edited inline; work rows are owned by the timer and can
-  only be deleted.
+- A **live-timer badge** in the header corner — when this project owns the running timer it shows a live HH:MM:SS counter (ticking
+  client-side from `startedAt`) plus a primary-tinted ring around the tile. The badge is non-interactive; start / stop / switch happen on
+  the project detail route.
+- A **task progress** chip (`3/7`) in the footer.
 - A **Total** label in the footer — `formatDuration(totalWorkSec + liveSeconds)` so the number ticks while the timer runs.
+
+The activity-timeline strip and the start / stop / switch timer controls live on the project detail route, not on the board tile.
 
 ### Out of scope (v1)
 

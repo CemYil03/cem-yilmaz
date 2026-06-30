@@ -12,11 +12,10 @@ import {
     StethoscopeIcon,
     WalletIcon,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
+import { WorkspaceChatComposer } from '../../../web/chat/WorkspaceChatComposer';
 import { CardContent, CardDescription, CardTitle } from '../../../web/components/base/card';
 import { GlassCard } from '../../../web/components/GlassCard';
-import { MessageComposer } from '../../../web/components/MessageComposer';
 import { workspaceQuotePick } from '../../../web/content/workspaceQuotes';
 import { WorkspaceHubDocument } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
@@ -159,13 +158,15 @@ export const Route = createFileRoute('/{-$locale}/workspace/')({
 function WorkspaceHub() {
     const locale = useLocale();
     // The assistant chat lives in the workspace-layout provider (one level
-    // up). Submitting the hub composer routes through `openWithMessage`,
-    // which opens the sheet and fires the message in one call — no
-    // navigation, no chat-id juggling here. The provider keeps the
+    // up). The hub composer is the shared `<WorkspaceChatComposer />` — same
+    // composer the sheet and `/workspace/assistant` use, so the model
+    // dropdown / attachments / approval-mode selector are identical across
+    // surfaces. On send success the provider adopts the freshly-allocated
+    // chatId (`setChatIdFromHub`) and the sheet pops open (`open()`) so the
+    // streaming response surfaces in context. The provider keeps the
     // conversation alive across focus-area navigation, so jumping into a
-    // focus area to consult something and coming back keeps the
-    // transcript intact.
-    const { openWithMessage, live } = useWorkspaceAssistantChat();
+    // focus area and coming back keeps the transcript intact.
+    const { open, setChatIdFromHub, live } = useWorkspaceAssistantChat();
     const data = Route.useLoaderData();
     const badges: Record<NonNullable<FocusArea['badgeKey']>, number> = {
         projectsInbox: data.admin.projectRequestsInboxCount,
@@ -180,37 +181,22 @@ function WorkspaceHub() {
                 <AssistantHero
                     locale={locale}
                     composer={
-                        <HubComposer locale={locale} disabled={live.isGenerating} onSubmit={(message) => void openWithMessage(message)} />
+                        <WorkspaceChatComposer
+                            locale={locale}
+                            isLocked={live.isGenerating}
+                            beginTurn={live.beginTurn}
+                            endTurn={live.endTurn}
+                            onMessageSent={(chatId) => {
+                                setChatIdFromHub(chatId);
+                                open();
+                            }}
+                            autoFocus
+                        />
                     }
                 />
                 <FocusAreaGrid locale={locale} badges={badges} />
             </main>
         </>
-    );
-}
-
-// Lightweight wrapper around the dumb `<MessageComposer />`. Owns just the
-// draft state for the hub — the provider owns everything else (the mutation,
-// the chatId, the live updates).
-function HubComposer({ locale, disabled, onSubmit }: { locale: Locale; disabled: boolean; onSubmit: (message: string) => void }) {
-    const [draft, setDraft] = useState('');
-    const submit = useCallback(() => {
-        const message = draft.trim();
-        if (!message) return;
-        setDraft('');
-        onSubmit(message);
-    }, [draft, onSubmit]);
-    return (
-        <MessageComposer
-            value={draft}
-            onValueChange={setDraft}
-            onSubmit={submit}
-            disabled={disabled}
-            busy={disabled}
-            placeholder={{ de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' }[locale]}
-            autoFocus
-            sendLabel={{ de: 'Senden', en: 'Send' }[locale]}
-        />
     );
 }
 

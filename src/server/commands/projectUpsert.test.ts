@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 
 import { projectRequests, projects } from '../db/schema';
@@ -65,12 +65,21 @@ describe('projectUpsert', () => {
     it('defaults position to the end of the planning column when omitted on create', async () => {
         // Arrange
         const { serverRuntime, requestingSession } = await commandSetup();
-        // Seed an existing planning project at position 4 so the new row should land at 5.
+        // Seed an existing planning project at a position strictly above the
+        // current tail so the test never depends on whether other test files
+        // left planning rows behind. The new row should land at `seedPos + 1`.
+        const [currentTail] = await testDb
+            .select({ position: projects.position })
+            .from(projects)
+            .where(eq(projects.status, 'planning'))
+            .orderBy(desc(projects.position))
+            .limit(1);
+        const seedPos = (currentTail?.position ?? -1) + 100;
         await testDb.insert(projects).values({
             projectId: crypto.randomUUID(),
             title: 'Existing planning',
             status: 'planning',
-            position: 4,
+            position: seedPos,
             sourceRequestId: null,
             description: null,
             notes: null,
@@ -99,7 +108,7 @@ describe('projectUpsert', () => {
         );
 
         // Assert
-        expect(project.position).toBe(5);
+        expect(project.position).toBe(seedPos + 1);
     });
 
     it('converts a verified request: links the project and archives the request in one transaction', async () => {

@@ -7,10 +7,10 @@ declare module './generated' {
     export interface GqlSUserMutation {
         userId: string;
     }
-    // Phase 1: visitors only — `Admin` and `AdminMutation` are gated by
-    // `guardAdmin` and `guardAdminMutation` respectively, both permissive
-    // today. The shapes still exist on both server and client so Phase 2's
-    // workspace surface can land incrementally without an SDL refactor.
+    // Workspace namespaces — gated by `guardAdmin` / `guardAdminMutation`,
+    // which check the `isAdmin` flag on the requesting session's `Users` row.
+    // Set the flag manually in the DB for Cem's accounts. See
+    // `docs/architecture/workspace-access.md`.
     export interface GqlSAdmin {
         userId?: string;
     }

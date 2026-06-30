@@ -71,6 +71,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Environment variables | Central validated `EnvironmentVariables` — no direct `process.env` reads   | `src/server/env/environmentVariablesCreate.ts` |
 | Authentication        | Cookie-based automatic sessions; Phase 2 adds GitHub OAuth on top          | `src/server/utils/sessionUpsert.ts`            |
 | Authorization         | Guard functions (`guard{Entity}{Ctx}`)                                     | `src/server/guards/`                           |
+| Workspace access      | `isAdmin` column on `Users`; `guardAdmin` / `guardAdminMutation` enforce   | `docs/architecture/workspace-access.md`        |
 | GraphQL               | SDL-first, Apollo Server v5, URQL client                                   | `src/server/graphql/schema.graphqls`           |
 | Real-time             | Subscriptions over SSE, PostgreSQL NOTIFY/LISTEN                           | `src/server/graphql/PubSubPostgres.ts`         |
 | Background jobs       | pg-boss via `serverRuntime.jobs.enqueue()`                                 | `docs/architecture/jobs.md`                    |

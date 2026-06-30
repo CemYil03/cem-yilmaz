@@ -1,10 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useClient, useMutation } from 'urql';
-import { WorkspaceChatMessageCreateDocument, WorkspaceChatPageDocument } from '../graphql/generated';
+import { WorkspaceChatConfigDefaultModelSetDocument, WorkspaceChatPageDocument } from '../graphql/generated';
+import type { GqlCWorkspaceChatConfigQuery } from '../graphql/generated';
 import type { TranscriptMessage } from './chatTranscript';
 import { useChatLiveUpdates } from './useChatLiveUpdates';
 import type { ChatLiveUpdates } from './useChatLiveUpdates';
+
+type WorkspaceChatConfig = GqlCWorkspaceChatConfigQuery['admin']['chatConfig'];
 
 // Workspace-assistant coordination — see `docs/features/chat-workspace.md`.
 //
@@ -19,6 +22,14 @@ import type { ChatLiveUpdates } from './useChatLiveUpdates';
 //     off to `/workspace/assistant?chatId=<id>` via plain navigation; the
 //     full-screen route is the source of truth from then on (URL-routable
 //     and bookmark-friendly).
+//   - Every admin composer (hub, sheet, `/workspace/assistant`) reads its
+//     model catalog + currently-selected model from the same place — the
+//     provider — so the dropdown choice on one surface is immediately
+//     reflected on the others. The catalog comes from the workspace
+//     layout's loader (`WorkspaceChatConfig`); the selected id starts at
+//     `defaultModelId` and is persisted via
+//     `WorkspaceChatConfigDefaultModelSet` on every change ("sticky default"
+//     in `docs/features/admin-chat-config.md`).
 //
 // State that survives the sheet's open/close cycle:
 //
@@ -31,6 +42,8 @@ import type { ChatLiveUpdates } from './useChatLiveUpdates';
 // - `live` — the `useChatLiveUpdates` handle keyed by `chatId`. Mounted
 //   at the provider root so the SSE subscription stays alive even when
 //   the sheet is closed.
+// - `selectedModelId` — sticky model choice; the next send uses it, and
+//   any change is persisted to the server as the new default.
 //
 // Mounted by `/{-$locale}/workspace.tsx` so it only loads on workspace
 // routes — not on the public site.
@@ -46,15 +59,15 @@ interface WorkspaceAssistantChatContextValue {
      *  a fresh chat — the subscription buffer is the source of truth there. */
     loadedMessages: ReadonlyArray<TranscriptMessage>;
     live: ChatLiveUpdates;
-    /** Sends a free-text message, optionally with file-upload ids attached.
-     *  Awaits the mutation; on success captures `chatId` for subsequent
-     *  sends. The caller owns the upload lifecycle (the composer uploads
-     *  on attach and forwards only the resolved `fileUploadId`s). */
-    sendMessage: (message: string, fileUploadIds?: ReadonlyArray<string>) => Promise<void>;
-    /** Open the sheet AND immediately fire `message` as the first user
-     *  turn. Used by the hub composer when the user submits from the
-     *  workspace landing page. */
-    openWithMessage: (message: string) => Promise<void>;
+    /** Adopt a chatId allocated by a sibling composer. Every admin composer
+     *  (`<WorkspaceChatComposer />` on the hub, sheet, and full-screen route)
+     *  fires `chatMessageCreate` directly so it can ride the full attachments
+     *  + model-pick + approval-mode plumbing; after the mutation lands they
+     *  hand the freshly-allocated chatId here. From then on the provider
+     *  treats the chat as its own — the sheet's next send appends to the
+     *  same row, and the live-updates listener is already mounted because
+     *  `beginTurn()` ran before the mutation fired. */
+    setChatIdFromHub: (chatId: string) => void;
     /** Drop the current chat without leaving the sheet. The next send
      *  starts a fresh `chats` row. */
     resetChat: () => void;
@@ -66,6 +79,15 @@ interface WorkspaceAssistantChatContextValue {
      *  knows "your conversation went there, the header button is how
      *  you come back." See `HeaderChatButton.tsx`. */
     highlightSignal: number;
+    /** Model catalog + saved default. Shared by every admin composer. */
+    chatConfig: WorkspaceChatConfig;
+    /** The model the next admin send will use. Starts at
+     *  `chatConfig.defaultModelId` and follows the dropdown on every
+     *  surface. */
+    selectedModelId: string;
+    /** Picks a new model: updates `selectedModelId` immediately and
+     *  fire-and-forget persists it as the new default. */
+    onModelChange: (modelId: string) => void;
 }
 
 const WorkspaceAssistantChatContext = createContext<WorkspaceAssistantChatContextValue | null>(null);
@@ -76,19 +98,26 @@ export function useWorkspaceAssistantChat(): WorkspaceAssistantChatContextValue 
     return value;
 }
 
-const extractMessageCreateResult = (data: unknown): { chatId: string } | null => {
-    const wrapper = data as { admin?: { chatMessageCreate?: { chatId: string } | null } | null } | null | undefined;
-    return wrapper?.admin?.chatMessageCreate ?? null;
-};
-
-export function WorkspaceAssistantChatProvider({ children }: { children: ReactNode }) {
+export function WorkspaceAssistantChatProvider({ children, chatConfig }: { children: ReactNode; chatConfig: WorkspaceChatConfig }) {
     const [isOpen, setOpen] = useState(false);
     const [chatId, setChatId] = useState<string | undefined>(undefined);
     const [loadedMessages, setLoadedMessages] = useState<ReadonlyArray<TranscriptMessage>>([]);
     const [highlightSignal, setHighlightSignal] = useState(0);
+    const [selectedModelId, setSelectedModelId] = useState(chatConfig.defaultModelId);
     const live = useChatLiveUpdates(chatId);
-    const [, sendMutation] = useMutation(WorkspaceChatMessageCreateDocument);
+    const [, setDefaultModel] = useMutation(WorkspaceChatConfigDefaultModelSetDocument);
     const urqlClient = useClient();
+
+    const onModelChange = useCallback(
+        (modelId: string) => {
+            setSelectedModelId(modelId);
+            // Fire-and-forget — a transport failure here is harmless: local
+            // state already reflects the choice for this session, the next
+            // route load just won't pick it up as the new default.
+            void setDefaultModel({ modelId });
+        },
+        [setDefaultModel],
+    );
 
     // Bump the highlight signal on every open → closed transition so the
     // floating launcher can pulse and point the user back at where the
@@ -101,50 +130,22 @@ export function WorkspaceAssistantChatProvider({ children }: { children: ReactNo
         previouslyOpenRef.current = isOpen;
     }, [isOpen]);
 
-    // The mutation's `chatId` argument has to follow the freshly-allocated id
-    // even when state hasn't re-rendered yet — two `sendMessage` calls fired
-    // back-to-back (hub composer opens the sheet, immediately sends) would
-    // otherwise both run with `chatId: undefined` and create two chats.
-    // Mirror the state into a ref so each call reads the latest value.
+    // Each admin composer mints its own `chatId` via the mutation; the
+    // provider just adopts it through `setChatIdFromHub` so siblings see
+    // the same value. Mirror into a ref so the back-to-back hub-open-then-
+    // send path (`setChatIdFromHub` followed immediately by another send
+    // from the sheet) reads the latest value without waiting on a render.
     const chatIdRef = useRef<string | undefined>(undefined);
 
     const open = useCallback(() => setOpen(true), []);
 
-    const sendMessage = useCallback(
-        async (message: string, fileUploadIds?: ReadonlyArray<string>) => {
-            const trimmed = message.trim();
-            const hasAttachments = !!fileUploadIds && fileUploadIds.length > 0;
-            // Same gate the route composer enforces — either text or at
-            // least one resolved upload, never an empty send.
-            if (!trimmed && !hasAttachments) return;
-            const generationId = live.beginTurn();
-            const result = await sendMutation({
-                chatId: chatIdRef.current,
-                message: trimmed,
-                fileUploadIds: fileUploadIds ? [...fileUploadIds] : null,
-                generationId,
-                requireToolCallApprovals: false,
-            });
-            const created = result.data ? extractMessageCreateResult(result.data) : null;
-            if (result.error || !created) {
-                live.endTurn();
-                return;
-            }
-            if (chatIdRef.current !== created.chatId) {
-                chatIdRef.current = created.chatId;
-                setChatId(created.chatId);
-            }
-        },
-        [live, sendMutation],
-    );
-
-    const openWithMessage = useCallback(
-        async (message: string) => {
-            setOpen(true);
-            await sendMessage(message);
-        },
-        [sendMessage],
-    );
+    const setChatIdFromHub = useCallback((id: string) => {
+        // The hub composer already mounted the live-updates listener via
+        // `beginTurn()` before firing its own mutation, so all the provider
+        // needs to do is adopt the freshly-allocated chatId for future sends.
+        chatIdRef.current = id;
+        setChatId(id);
+    }, []);
 
     const resetChat = useCallback(() => {
         // Drop chatId + page-query rows. The chatId-change effect inside
@@ -185,13 +186,28 @@ export function WorkspaceAssistantChatProvider({ children }: { children: ReactNo
             chatId,
             loadedMessages,
             live,
-            sendMessage,
-            openWithMessage,
+            setChatIdFromHub,
             resetChat,
             loadChat,
             highlightSignal,
+            chatConfig,
+            selectedModelId,
+            onModelChange,
         }),
-        [isOpen, open, chatId, loadedMessages, live, sendMessage, openWithMessage, resetChat, loadChat, highlightSignal],
+        [
+            isOpen,
+            open,
+            chatId,
+            loadedMessages,
+            live,
+            setChatIdFromHub,
+            resetChat,
+            loadChat,
+            highlightSignal,
+            chatConfig,
+            selectedModelId,
+            onModelChange,
+        ],
     );
 
     return (

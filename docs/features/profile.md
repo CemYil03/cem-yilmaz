@@ -146,8 +146,8 @@ Per admin user-message:
 1. Idempotency check via `ProfileMessageAnalysis`.
 2. Load the target message body plus the last 6 user messages in the same chat as rolling context (user-side only — sending in assistant
    turns would bias the analyzer).
-3. `generateObject` against `serverRuntime.ai.profileAnalyzerModel()` (Gemini 2.5 Flash by default) with a Zod schema asking for zero or
-   more observations.
+3. `generateText` with `Output.object({ schema })` against `serverRuntime.ai.profileAnalyzerModel()` (Gemini 2.5 Flash by default), Zod
+   schema asking for zero or more observations.
 4. Prompt explicitly: "RETURN AN EMPTY ARRAY when nothing reveals anything new."
 5. Persist each observation; record the analysis row.
 6. If `observationsSinceSynthesis ≥ PROFILE_SYNTHESIS_THRESHOLD`, enqueue `profileSynthesize`.
@@ -157,8 +157,8 @@ Failures are logged and swallowed — the chat path has already returned.
 ### Synthesizer job
 
 1. Load all non-dismissed observations + the prior profile.
-2. `generateObject` against `serverRuntime.ai.profileSynthesizerModel()` (Gemini 2.5 Pro by default) with a Zod schema asking for
-   `{ summary, prose, psychProfile }`.
+2. `generateText` with `Output.object({ schema })` against `serverRuntime.ai.profileSynthesizerModel()` (Gemini 2.5 Pro by default), Zod
+   schema asking for `{ summary, prose, psychProfile }`.
 3. Prompt is treated as a refinement, not a regenerate — prior profile is included and "treat as a draft you are refining" is in the
    instructions.
 4. Write all four fields plus `synthesizedAt`, `synthesisModelId`, reset `observationsSinceSynthesis` to 0.
