@@ -14,7 +14,7 @@ import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects'
 // markdown only, create-only — edits go back through the manual upload path.
 
 const projectFileCreateInputSchema = z.object({
-    projectId: z.string().uuid().describe('Owning project. Ids come from the snapshot or a prior `projectsList` result.'),
+    projectId: z.uuid().describe('Owning project. Ids come from the snapshot or a prior `projectsList` result.'),
     filename: z
         .string()
         .min(1)

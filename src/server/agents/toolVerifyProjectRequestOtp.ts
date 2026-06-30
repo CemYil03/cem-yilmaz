@@ -31,7 +31,6 @@ const MAX_OTP_ATTEMPTS = 5;
 
 const verifyProjectRequestOtpInputSchema = z.object({
     projectRequestId: z
-        .string()
         .uuid()
         .describe(
             'The `projectRequestId` returned by the prior `submitProjectRequest` tool call. Do not invent this — only use what came back.',

@@ -75,6 +75,16 @@ type Props = {
      *  workspace pages so the header doesn't sit narrower than the content
      *  underneath it. Workspace surfaces pick per-page. */
     width?: 'standard' | 'wide';
+    /** Constrain the progressive-blur strip above the header to the
+     *  header's parent box instead of the viewport. Default (`false`)
+     *  uses `position: fixed` for the blur, which is correct on the
+     *  public site. On workspace pages the layout puts the header inside
+     *  shadcn's `<SidebarInset>` — a flex child whose width shrinks as
+     *  the sidebar expands — so the blur must scope to that column instead
+     *  of spanning the viewport behind the sidebar. `true` switches the
+     *  blur to `position: absolute` inside an inset-relative parent the
+     *  workspace layout provides. */
+    contained?: boolean;
     /** When `true`, surface a "Workspace" link in the action cluster. The
      *  parent decides admin-ness (via `currentSession.user.admin`) and only
      *  passes `true` for admins — the Header itself has no session access.
@@ -103,6 +113,7 @@ export function Header({
     hideSelectors,
     chatVariant = 'visitor',
     width = 'standard',
+    contained = false,
     showWorkspaceLink = false,
 }: Props) {
     const locale = useLocale();
@@ -112,7 +123,7 @@ export function Header({
 
     return (
         <>
-            <ProgressiveBlurTop />
+            <ProgressiveBlurTop contained={contained} />
             <header className={cn('sticky top-4 z-50 mx-auto w-full px-4 sm:px-8', width === 'wide' ? 'max-w-8xl' : 'max-w-6xl')}>
                 <GlassCard
                     className={cn(
@@ -275,11 +286,19 @@ function useHasScrolled(threshold = 8) {
     return scrolled;
 }
 
-/* Five stacked fixed layers above the page. Each layer blurs more than the
+/* Five stacked layers above the page. Each layer blurs more than the
    one above it but is masked to fade out where the next takes over, producing
    a smooth blur falloff from the top edge to the bottom of the floating
-   header. Sits below the header (z-40) so the header still floats above. */
-function ProgressiveBlurTop() {
+   header. Sits below the header (z-40) so the header still floats above.
+
+   Positioning is `fixed` by default (the public site, where the strip should
+   cover the full viewport width) or `sticky top-0` with a zero-height anchor
+   when `contained` (the workspace layout, where the strip must stay glued to
+   the top of the viewport while horizontally confined to the `<SidebarInset>`
+   column so the sidebar isn't covered). The sticky anchor is `h-0` so it
+   doesn't push the header / page content down, and the blur layers render as
+   `absolute` children of it — visually 32 units tall, layout-free. */
+function ProgressiveBlurTop({ contained = false }: { contained?: boolean }) {
     const layers = [
         { blur: '4px', from: 0, to: 100 },
         { blur: '8px', from: 0, to: 80 },
@@ -287,20 +306,28 @@ function ProgressiveBlurTop() {
         { blur: '32px', from: 0, to: 40 },
         { blur: '64px', from: 0, to: 20 },
     ];
+    const layerNodes = layers.map((l, i) => (
+        <div
+            key={i}
+            className="pointer-events-none absolute inset-x-0 top-0 h-32"
+            style={{
+                backdropFilter: `blur(${l.blur})`,
+                WebkitBackdropFilter: `blur(${l.blur})`,
+                maskImage: `linear-gradient(to bottom, black ${l.from}%, transparent ${l.to}%)`,
+                WebkitMaskImage: `linear-gradient(to bottom, black ${l.from}%, transparent ${l.to}%)`,
+            }}
+        />
+    ));
+    if (contained) {
+        return (
+            <div aria-hidden className="pointer-events-none sticky top-0 z-40 h-0">
+                {layerNodes}
+            </div>
+        );
+    }
     return (
         <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 h-32">
-            {layers.map((l, i) => (
-                <div
-                    key={i}
-                    className="absolute inset-0"
-                    style={{
-                        backdropFilter: `blur(${l.blur})`,
-                        WebkitBackdropFilter: `blur(${l.blur})`,
-                        maskImage: `linear-gradient(to bottom, black ${l.from}%, transparent ${l.to}%)`,
-                        WebkitMaskImage: `linear-gradient(to bottom, black ${l.from}%, transparent ${l.to}%)`,
-                    }}
-                />
-            ))}
+            {layerNodes}
         </div>
     );
 }

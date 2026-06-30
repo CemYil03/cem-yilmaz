@@ -28,7 +28,14 @@ export const Route = createRootRoute({
         return {
             meta: [
                 { charSet: 'utf-8' },
-                { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+                // `maximum-scale=1` prevents iOS Safari's auto-zoom on input
+                // focus — the page no longer zooms in (and leaves the user
+                // horizontally scrolled afterwards) when the chat composer is
+                // tapped. We deliberately omit `user-scalable=no` so pinch-
+                // zoom stays available for accessibility: iOS Safari overrides
+                // `maximum-scale` for genuine user gestures, and Chrome
+                // (since v88) does the same.
+                { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1' },
                 { name: 'theme-color', content: '#0f172a' },
                 // Fallback social-share metadata. Per-page `seoMeta()` calls
                 // override these for indexable pages; this block exists so

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useClient, useMutation } from 'urql';
 import { WorkspaceChatConfigDefaultModelSetDocument, WorkspaceChatPageDocument } from '../graphql/generated';
@@ -11,18 +11,22 @@ type WorkspaceChatConfig = NonNullable<NonNullable<GqlCWorkspaceChatConfigQuery[
 
 // Workspace-assistant coordination — see `docs/features/chat-workspace.md`.
 //
-// The provider owns the assistant's chat state above the sheet so that:
-//   - Closing and reopening the sheet does not lose the conversation.
+// The provider owns the assistant's chat state above the sidebar so that:
+//
 //   - Navigating between workspace focus areas (`/workspace/cv` →
-//     `/workspace/projects` → …) keeps the same chat alive — the user can
-//     ask the assistant a question, jump to a focus area to consult or
-//     edit something, and come back to the sheet with the transcript
-//     intact.
-//   - The "Open full-screen" button on the sheet hands the conversation
+//     `/workspace/projects` → …) keeps the same chat alive. The user can ask
+//     the assistant a question, jump to a focus area to consult or edit
+//     something, and the transcript stays in the sidebar.
+//   - The sidebar's open / collapsed / mobile-sheet state is handled by
+//     shadcn's `<SidebarProvider>` (cookie-backed, `Cmd/Ctrl+B` keyboard
+//     shortcut, mobile Sheet built in) — this provider does NOT track it.
+//     The header assistant button calls `useSidebar().toggleSidebar()` to
+//     toggle from anywhere inside the workspace subtree.
+//   - The "Open full-screen" button in the sidebar hands the conversation
 //     off to `/workspace/assistant?chatId=<id>` via plain navigation; the
 //     full-screen route is the source of truth from then on (URL-routable
 //     and bookmark-friendly).
-//   - Every admin composer (hub, sheet, `/workspace/assistant`) reads its
+//   - Every admin composer (hub, sidebar, `/workspace/assistant`) reads its
 //     model catalog + currently-selected model from the same place — the
 //     provider — so the dropdown choice on one surface is immediately
 //     reflected on the others. The catalog comes from the workspace
@@ -31,7 +35,7 @@ type WorkspaceChatConfig = NonNullable<NonNullable<GqlCWorkspaceChatConfigQuery[
 //     `WorkspaceChatConfigDefaultModelSet` on every change ("sticky default"
 //     in `docs/features/admin-chat-config.md`).
 //
-// State that survives the sheet's open/close cycle:
+// State this provider owns:
 //
 // - `chatId` — populated after the first send returns, or after the
 //   provider resumes a previous admin chat. Reused on subsequent sends so
@@ -39,9 +43,9 @@ type WorkspaceChatConfig = NonNullable<NonNullable<GqlCWorkspaceChatConfigQuery[
 // - `loadedMessages` — page-query rows for a resumed chat. Empty for a
 //   fresh chat (the subscription buffer in `live.appendedMessages` is the
 //   only source of truth there).
-// - `live` — the `useChatLiveUpdates` handle keyed by `chatId`. Mounted
-//   at the provider root so the SSE subscription stays alive even when
-//   the sheet is closed.
+// - `live` — the `useChatLiveUpdates` handle keyed by `chatId`. Mounted at
+//   the provider root so the SSE subscription stays alive even when the
+//   sidebar is collapsed or the mobile sheet is dismissed.
 // - `selectedModelId` — sticky model choice; the next send uses it, and
 //   any change is persisted to the server as the new default.
 //
@@ -49,48 +53,27 @@ type WorkspaceChatConfig = NonNullable<NonNullable<GqlCWorkspaceChatConfigQuery[
 // routes — not on the public site.
 
 interface WorkspaceAssistantChatContextValue {
-    /** Sheet open/closed — only effective on `<lg` viewports, where the
-     *  workspace layout mounts the Sheet inside a `lg:hidden` wrapper.
-     *  On `lg+` the Sheet is unmounted and the persistent sidebar is the
-     *  assistant surface instead; `isCollapsed` governs that. Calling
-     *  `open()` on `lg+` is harmless — there's no Sheet to receive it. */
-    isOpen: boolean;
-    setOpen: (open: boolean) => void;
-    /** Open the sheet without seeding anything. The workspace floating
-     *  launcher uses this. */
-    open: () => void;
-    /** Sidebar rail/expanded state on `lg+`. `true` = collapsed to icon
-     *  rail, `false` = expanded column. Persisted to `localStorage` so
-     *  the preference survives reloads. The header assistant button on
-     *  `lg+` toggles this; below `lg` the Sheet's open state is the
-     *  toggle instead. */
-    isCollapsed: boolean;
-    setCollapsed: (collapsed: boolean) => void;
     chatId: string | undefined;
     /** Page-query rows for a resumed chat. Empty when the assistant is on
      *  a fresh chat — the subscription buffer is the source of truth there. */
     loadedMessages: ReadonlyArray<TranscriptMessage>;
     live: ChatLiveUpdates;
     /** Adopt a chatId allocated by a sibling composer. Every admin composer
-     *  (`<WorkspaceChatComposer />` on the hub, sheet, and full-screen route)
-     *  fires `chatMessageCreate` directly so it can ride the full attachments
-     *  + model-pick + approval-mode plumbing; after the mutation lands they
-     *  hand the freshly-allocated chatId here. From then on the provider
-     *  treats the chat as its own — the sheet's next send appends to the
-     *  same row, and the live-updates listener is already mounted because
-     *  `beginTurn()` ran before the mutation fired. */
+     *  (`<WorkspaceChatComposer />` on the hub, sidebar, and full-screen
+     *  route) fires `chatMessageCreate` directly so it can ride the full
+     *  attachments + model-pick + approval-mode plumbing; after the
+     *  mutation lands they hand the freshly-allocated chatId here. From
+     *  then on the provider treats the chat as its own — the sidebar's
+     *  next send appends to the same row, and the live-updates listener
+     *  is already mounted because `beginTurn()` ran before the mutation
+     *  fired. */
     setChatIdFromHub: (chatId: string) => void;
-    /** Drop the current chat without leaving the sheet. The next send
+    /** Drop the current chat without leaving the sidebar. The next send
      *  starts a fresh `chats` row. */
     resetChat: () => void;
     /** Resume a previous admin chat by id — fetches its transcript and
      *  seeds `loadedMessages` + `chatId`. */
     loadChat: (chatId: string) => Promise<void>;
-    /** Counter bumped every time the sheet closes. The header's
-     *  assistant button pulses for ~1.4s on each new value so the user
-     *  knows "your conversation went there, the header button is how
-     *  you come back." See `HeaderChatButton.tsx`. */
-    highlightSignal: number;
     /** Model catalog + saved default. Shared by every admin composer. */
     chatConfig: WorkspaceChatConfig;
     /** The model the next admin send will use. Starts at
@@ -110,33 +93,10 @@ export function useWorkspaceAssistantChat(): WorkspaceAssistantChatContextValue 
     return value;
 }
 
-// localStorage key for the sidebar's rail/expanded preference. Read on
-// mount (post-SSR, inside an effect) so the initial server render is
-// deterministic; subsequent toggles write through synchronously.
-const SIDEBAR_COLLAPSED_STORAGE_KEY = 'workspaceAssistantSidebar.collapsed';
-
 export function WorkspaceAssistantChatProvider({ children, chatConfig }: { children: ReactNode; chatConfig: WorkspaceChatConfig }) {
-    const [isOpen, setOpen] = useState(false);
     const [chatId, setChatId] = useState<string | undefined>(undefined);
     const [loadedMessages, setLoadedMessages] = useState<ReadonlyArray<TranscriptMessage>>([]);
-    const [highlightSignal, setHighlightSignal] = useState(0);
     const [selectedModelId, setSelectedModelId] = useState(chatConfig.defaultModelId);
-    // Default to expanded ("always visible") on first load. The persisted
-    // preference is hydrated from `localStorage` in an effect so the SSR
-    // markup and the first client render match — flipping to the persisted
-    // value lands as a layout-effect on the second paint at the latest.
-    const [isCollapsed, setIsCollapsed] = useState(false);
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
-        if (stored === 'true') setIsCollapsed(true);
-    }, []);
-    const setCollapsed = useCallback((next: boolean) => {
-        setIsCollapsed(next);
-        if (typeof window !== 'undefined') {
-            window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? 'true' : 'false');
-        }
-    }, []);
     const live = useChatLiveUpdates(chatId);
     const [, setDefaultModel] = useMutation(WorkspaceChatConfigDefaultModelSetDocument);
     const urqlClient = useClient();
@@ -152,25 +112,12 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
         [setDefaultModel],
     );
 
-    // Bump the highlight signal on every open → closed transition so the
-    // floating launcher can pulse and point the user back at where the
-    // conversation lives. Same shape as `VisitorChatProvider`.
-    const previouslyOpenRef = useRef(false);
-    useEffect(() => {
-        if (previouslyOpenRef.current && !isOpen) {
-            setHighlightSignal((value) => value + 1);
-        }
-        previouslyOpenRef.current = isOpen;
-    }, [isOpen]);
-
     // Each admin composer mints its own `chatId` via the mutation; the
     // provider just adopts it through `setChatIdFromHub` so siblings see
     // the same value. Mirror into a ref so the back-to-back hub-open-then-
     // send path (`setChatIdFromHub` followed immediately by another send
-    // from the sheet) reads the latest value without waiting on a render.
+    // from the sidebar) reads the latest value without waiting on a render.
     const chatIdRef = useRef<string | undefined>(undefined);
-
-    const open = useCallback(() => setOpen(true), []);
 
     const setChatIdFromHub = useCallback((id: string) => {
         // The hub composer already mounted the live-updates listener via
@@ -183,9 +130,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
     const resetChat = useCallback(() => {
         // Drop chatId + page-query rows. The chatId-change effect inside
         // `useChatLiveUpdates` clears `appendedMessages` for us on the
-        // loaded→empty transition. Don't touch `isOpen` — the user stayed
-        // in the sheet on purpose, and the empty state is what they want
-        // to see next.
+        // loaded→empty transition.
         chatIdRef.current = undefined;
         setChatId(undefined);
         setLoadedMessages([]);
@@ -213,47 +158,28 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
 
     const value = useMemo<WorkspaceAssistantChatContextValue>(
         () => ({
-            isOpen,
-            setOpen,
-            open,
-            isCollapsed,
-            setCollapsed,
             chatId,
             loadedMessages,
             live,
             setChatIdFromHub,
             resetChat,
             loadChat,
-            highlightSignal,
             chatConfig,
             selectedModelId,
             onModelChange,
         }),
-        [
-            isOpen,
-            open,
-            isCollapsed,
-            setCollapsed,
-            chatId,
-            loadedMessages,
-            live,
-            setChatIdFromHub,
-            resetChat,
-            loadChat,
-            highlightSignal,
-            chatConfig,
-            selectedModelId,
-            onModelChange,
-        ],
+        [chatId, loadedMessages, live, setChatIdFromHub, resetChat, loadChat, chatConfig, selectedModelId, onModelChange],
     );
 
     return (
         <WorkspaceAssistantChatContext.Provider value={value}>
             {children}
-            {/* The live-updates listener is rendered HERE — above the sheet —
-             *  so the SSE subscription survives `Sheet` mount/unmount cycles.
-             *  Without this, closing the sheet during a streaming turn would
-             *  drop the subscription and we'd lose the rest of the response. */}
+            {/* The live-updates listener is rendered HERE — at the provider
+             *  root — so the SSE subscription survives the sidebar's
+             *  collapse/expand and the mobile sheet's open/close cycles.
+             *  Without this, those transitions during a streaming turn
+             *  would drop the subscription and we'd lose the rest of the
+             *  response. */}
             {live.listener}
         </WorkspaceAssistantChatContext.Provider>
     );

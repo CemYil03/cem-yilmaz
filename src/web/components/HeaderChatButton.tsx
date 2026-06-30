@@ -1,12 +1,12 @@
 import { MessageCircleIcon, SparklesIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useVisitorChat } from '../chat/VisitorChatProvider';
-import { useWorkspaceAssistantChat } from '../chat/WorkspaceAssistantChatProvider';
+import { useSidebar } from './base/sidebar';
 import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
 import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 
-// Header entry point into a chat sheet. Sized to match `LanguageSelector` /
+// Header entry point into a chat surface. Sized to match `LanguageSelector` /
 // `ThemeSelector` so the right-side cluster stays visually balanced.
 //
 // Two variants, picked by the `variant` prop:
@@ -15,24 +15,24 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 //     state (previous-chats list + composer). Used on every public surface.
 //     The landing-page hero composer uses a different entry point
 //     (`openWithMessage`) that fires a seeded question on open.
-//   - `'workspace'` — toggles the workspace personal-assistant surface. On
-//     `lg+` the assistant lives in the persistent sidebar
-//     (`WorkspaceAssistantChatSidebar`), and the button toggles its
-//     rail/expanded state; below `lg` the assistant is a Sheet and the
-//     button opens it. The two cases are split via CSS responsive
-//     visibility so no JS breakpoint hook is needed — two buttons render,
-//     only the right one for the viewport is visible. The provider for
-//     this variant is mounted at `src/routes/{-$locale}/workspace.tsx`, so
-//     the button is only valid inside that subtree.
+//   - `'workspace'` — toggles the persistent workspace assistant sidebar
+//     built on shadcn's `<Sidebar>` primitive. The button dispatches to
+//     `useSidebar().toggleSidebar()`, which collapses/expands the sidebar
+//     on desktop and opens/closes the mobile Sheet that shadcn's
+//     `<Sidebar>` switches to under `md`. The button reflects the current
+//     state through `aria-pressed`. The provider it depends on
+//     (`SidebarProvider`) is mounted at `src/routes/{-$locale}/workspace.tsx`,
+//     so this variant is only valid inside that subtree.
 //
-// On every open → closed transition the relevant provider bumps a
+// On every open → closed transition the visitor provider bumps a
 // `highlightSignal` counter; we play a one-shot pulse animation here for
 // ~1.4s so the user understands "your conversation went there, you can
-// come back to it via this button." See `docs/styles/motion.md`.
+// come back to it via this button." See `docs/styles/motion.md`. The
+// workspace variant has no equivalent — the sidebar's collapsed rail is
+// already the "your conversation lives here" affordance.
 
 const LABEL = {
     visitor: { de: 'Chats', en: 'Chats' },
-    workspace: { de: 'Assistent', en: 'Assistant' },
     workspaceExpand: { de: 'Assistent ausklappen', en: 'Expand assistant' },
     workspaceCollapse: { de: 'Assistent einklappen', en: 'Collapse assistant' },
 };
@@ -43,9 +43,9 @@ const LABEL = {
 const PULSE_DURATION_MS = 1300;
 
 type Props = {
-    /** Which chat sheet this button opens. Defaults to `'visitor'`.
+    /** Which chat surface this button toggles. Defaults to `'visitor'`.
      *  `'workspace'` is only valid inside the workspace layout subtree —
-     *  the provider it depends on is mounted there. */
+     *  the `SidebarProvider` it depends on is mounted there. */
     variant?: 'visitor' | 'workspace';
 };
 
@@ -70,33 +70,20 @@ function VisitorVariant() {
 
 function WorkspaceVariant() {
     const locale = useLocale();
-    const { open, isCollapsed, setCollapsed, highlightSignal } = useWorkspaceAssistantChat();
-    // CSS-responsive split: the `lg+` button toggles the sidebar's
-    // rail/expanded state; the `<lg` button opens the Sheet. Two buttons
-    // render simultaneously but only one is visible per viewport, so no
-    // breakpoint hook (and no SSR mismatch risk) is needed.
-    const desktopLabel = isCollapsed ? LABEL.workspaceExpand[locale] : LABEL.workspaceCollapse[locale];
-    const sheetLabel = LABEL.workspace[locale];
+    const { open, openMobile, isMobile, toggleSidebar } = useSidebar();
+    // On desktop `open` is the cookie-backed sidebar state; on mobile
+    // `openMobile` is the shadcn-internal Sheet state. The pressed affordance
+    // tracks whichever applies to the current viewport.
+    const isVisible = isMobile ? openMobile : open;
+    const label = isVisible ? LABEL.workspaceCollapse[locale] : LABEL.workspaceExpand[locale];
     return (
-        <>
-            <div className="hidden lg:contents">
-                <ChatButton
-                    onClick={() => setCollapsed(!isCollapsed)}
-                    label={desktopLabel}
-                    icon={<SparklesIcon className="size-4" aria-hidden />}
-                    highlightSignal={highlightSignal}
-                    isPressed={!isCollapsed}
-                />
-            </div>
-            <div className="contents lg:hidden">
-                <ChatButton
-                    onClick={open}
-                    label={sheetLabel}
-                    icon={<SparklesIcon className="size-4" aria-hidden />}
-                    highlightSignal={highlightSignal}
-                />
-            </div>
-        </>
+        <ChatButton
+            onClick={toggleSidebar}
+            label={label}
+            icon={<SparklesIcon className="size-4" aria-hidden />}
+            highlightSignal={0}
+            isPressed={isVisible}
+        />
     );
 }
 
@@ -111,8 +98,8 @@ function ChatButton({
     label: string;
     icon: React.ReactNode;
     highlightSignal: number;
-    /** Optional pressed/active state — used by the workspace `lg+` variant
-     *  to surface "the sidebar is expanded" as a visual affordance. */
+    /** Optional pressed/active state — used by the workspace variant to
+     *  surface "the sidebar is open" as a visual affordance. */
     isPressed?: boolean;
 }) {
     const [isPulsing, setIsPulsing] = useState(false);

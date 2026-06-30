@@ -182,5 +182,5 @@ export function WorkspaceHeader() {
     // sitting narrower than the surface beneath it. See docs/conventions.md
     // (Page width).
     const isHub = crumbs.length === 1;
-    return <Header breadcrumbs={crumbs} hideSelectors chatVariant="workspace" width={isHub ? 'standard' : 'wide'} />;
+    return <Header breadcrumbs={crumbs} hideSelectors chatVariant="workspace" width={isHub ? 'standard' : 'wide'} contained />;
 }

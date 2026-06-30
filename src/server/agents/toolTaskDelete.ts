@@ -6,7 +6,7 @@ import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 
 const taskDeleteInputSchema = z.object({
-    taskId: z.string().uuid().describe('Task id from `projectsList` or `standaloneTasksList`.'),
+    taskId: z.uuid().describe('Task id from `projectsList` or `standaloneTasksList`.'),
     title: z.string().optional().describe('Task title as you understood it — recorded in the mutation log for the orchestrator narration.'),
 });
 

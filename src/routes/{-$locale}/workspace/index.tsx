@@ -16,6 +16,7 @@ import {
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from '../../../web/chat/WorkspaceChatComposer';
 import { CardContent, CardDescription, CardTitle } from '../../../web/components/base/card';
+import { useSidebar } from '../../../web/components/base/sidebar';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { workspaceQuotePick } from '../../../web/content/workspaceQuotes';
 import { WorkspaceHubDocument } from '../../../web/graphql/generated';
@@ -167,14 +168,16 @@ function WorkspaceHub() {
     const locale = useLocale();
     // The assistant chat lives in the workspace-layout provider (one level
     // up). The hub composer is the shared `<WorkspaceChatComposer />` — same
-    // composer the sheet and `/workspace/assistant` use, so the model
+    // composer the sidebar and `/workspace/assistant` use, so the model
     // dropdown / attachments / approval-mode selector are identical across
     // surfaces. On send success the provider adopts the freshly-allocated
-    // chatId (`setChatIdFromHub`) and the sheet pops open (`open()`) so the
-    // streaming response surfaces in context. The provider keeps the
-    // conversation alive across focus-area navigation, so jumping into a
-    // focus area and coming back keeps the transcript intact.
-    const { open, setChatIdFromHub, live } = useWorkspaceAssistantChat();
+    // chatId (`setChatIdFromHub`) and the sidebar is forced open (via
+    // shadcn's `useSidebar`) so the streaming response surfaces in context.
+    // The provider keeps the conversation alive across focus-area
+    // navigation, so jumping into a focus area and coming back keeps the
+    // transcript intact.
+    const { setChatIdFromHub, live } = useWorkspaceAssistantChat();
+    const { setOpen, setOpenMobile, isMobile } = useSidebar();
     const { pathname } = useLocation();
     const data = Route.useLoaderData();
     const badges: Record<NonNullable<FocusArea['badgeKey']>, number> = {
@@ -197,7 +200,13 @@ function WorkspaceHub() {
                             endTurn={live.endTurn}
                             onMessageSent={(chatId) => {
                                 setChatIdFromHub(chatId);
-                                open();
+                                // Force the sidebar visible so the streaming
+                                // reply is in view. On `<md` shadcn renders the
+                                // sidebar as a Sheet, so we need the mobile
+                                // setter; on `md+` it's the cookie-backed open
+                                // state.
+                                if (isMobile) setOpenMobile(true);
+                                else setOpen(true);
                             }}
                             currentPagePath={pathname}
                             autoFocus

@@ -138,6 +138,14 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 - **Tools are thin wrappers around existing `commands/`+`queries/`.** CQRS already gave us single-purpose units. A tool file is mostly the
   Zod input schema, the closure-bound dependencies (`serverRuntime`, `session`, optional `mutations`), and 5–10 lines of `execute` that maps
   to the command's args shape and pushes onto the mutation log on success.
+- **The input schema starts from `GqlS<X>Schema()` and is extended in place.** Mutation tools whose underlying command has a GraphQL input
+  type — `toolProjectUpsert`, `toolTaskUpsert`, `toolProjectActivityUpsert`, `toolProjectLinkUpsert` — derive their `inputSchema` from the
+  matching `GqlS<X>Schema()` function in `src/server/graphql/generated.ts` and re-`.extend()` every field with the LLM-facing concerns the
+  generated schema cannot carry: `.describe()` text (load-bearing for tool-call accuracy), tighter scalars (`.uuid()`, `.url()`, `.min`/
+  `.max`), and `z.string()` for date scalars (the LLM emits JSON, not a JS `Date` — the `execute` converts with `new Date(...)`). The
+  generated schema owns the field set and enum membership; the tool owns the descriptions, constraints, and ISO-string-for-Date concerns.
+  This is the same SDL input the resolver receives, so a schema drift surfaces here as a TS error rather than as a runtime mismatch the LLM
+  is shielded from. Use full enum schemas (`GqlS<X>EnumSchema`) for kind/status/channel fields; do not redeclare enum tuples by hand.
 - **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptions` plus a
   `currentDateForAgent()` helper (today's date as a one-liner each system prompt embeds near the top so Gemini doesn't fall back to its
   training-cutoff date when reasoning about deadlines). Nothing else lives there per `multi-agent-chat.md`'s "tiny helper, not a base class"

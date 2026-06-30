@@ -2,6 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { projectUpsert } from '../commands/projectUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSProjectCreateSchema, GqlSProjectStatusSchema } from '../graphql/generated';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 
@@ -10,25 +11,43 @@ import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects'
 // request validation on convert) lives in the command, not here. On success
 // pushes one entry onto the shared mutation log so `toolDelegateToProjects`
 // can surface it back to the orchestrator.
+//
+// Field set single-sources from `GqlSProjectCreateSchema()`; each field is
+// re-described and tightened (`.uuid()`, length bounds, ISO-string for the
+// date scalars) so the LLM gets a usable JSON-Schema rendering of the same
+// SDL input shape.
 
-const projectUpsertInputSchema = z.object({
+const projectUpsertInputSchema = GqlSProjectCreateSchema().extend({
     projectId: z
-        .string()
         .uuid()
-        .optional()
-        .describe('Omit to create a new project. Pass an existing id to update; ids come from the prompt snapshot or projectsList.'),
+        .nullish()
+        .describe(
+            'Omit (or null) to create a new project. Pass an existing id to update; ids come from the prompt snapshot or projectsList.',
+        ),
     title: z.string().min(1).max(200).describe('Single-line project title.'),
-    description: z.string().max(2000).optional().describe('Short summary shown on the card. Optional.'),
-    notes: z.string().max(10000).optional().describe('Long-form notes / markdown context. Optional.'),
-    status: z
-        .enum(['idea', 'planning', 'active', 'paused', 'done', 'archived'])
-        .describe('Board column. New projects typically land in `planning` or `idea`.'),
+    description: z.string().max(2000).nullish().describe('Short summary shown on the card. Optional.'),
+    notes: z.string().max(10000).nullish().describe('Long-form notes / markdown context. Optional.'),
+    status: GqlSProjectStatusSchema.describe('Board column. New projects typically land in `planning` or `idea`.'),
     position: z
         .number()
         .int()
         .min(0)
-        .optional()
+        .nullish()
         .describe('Within-status ordering. Required when updating; on create the server appends to the planning column if omitted.'),
+    startedAt: z
+        .string()
+        .nullish()
+        .describe('ISO-8601 timestamp when work started. Optional; the editor stamps this manually rather than auto-derived.'),
+    completedAt: z
+        .string()
+        .nullish()
+        .describe('ISO-8601 timestamp when work completed. Optional; not auto-stamped by `status: done` — leave that to a follow-up edit.'),
+    sourceRequestId: z
+        .uuid()
+        .nullish()
+        .describe(
+            'Optional: id of a verified `ProjectRequest` to convert into this project. Leave null unless the user is explicitly converting an inbox request.',
+        ),
 });
 
 interface ProjectsAgentMutationContext {
@@ -57,9 +76,9 @@ export function toolProjectUpsert({ serverRuntime, session, mutations }: Project
                         notes: input.notes ?? null,
                         status: input.status,
                         position: input.position ?? null,
-                        sourceRequestId: null,
-                        startedAt: null,
-                        completedAt: null,
+                        sourceRequestId: input.sourceRequestId ?? null,
+                        startedAt: input.startedAt ? new Date(input.startedAt) : null,
+                        completedAt: input.completedAt ? new Date(input.completedAt) : null,
                     },
                 },
                 session,

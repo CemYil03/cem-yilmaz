@@ -10,7 +10,7 @@ import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects'
 // summary back to the user when the sub-agent uses this tool.
 
 const projectDeleteInputSchema = z.object({
-    projectId: z.string().uuid().describe('Project id from the system-prompt snapshot or a prior list call.'),
+    projectId: z.uuid().describe('Project id from the system-prompt snapshot or a prior list call.'),
     title: z
         .string()
         .optional()

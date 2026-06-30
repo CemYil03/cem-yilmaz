@@ -43,22 +43,16 @@ export function MockVisitorChatProvider({ children, highlightSignal = 0 }: { chi
     );
 }
 
-export function MockWorkspaceAssistantChatProvider({ children, highlightSignal = 0 }: { children: ReactNode; highlightSignal?: number }) {
+export function MockWorkspaceAssistantChatProvider({ children }: { children: ReactNode }) {
     return (
         <WorkspaceAssistantChatContext.Provider
             value={{
-                isOpen: false,
-                setOpen: () => {},
-                open: () => {},
-                isCollapsed: false,
-                setCollapsed: () => {},
                 chatId: undefined,
                 loadedMessages: [],
                 live: noOpLive,
                 setChatIdFromHub: () => {},
                 resetChat: () => {},
                 loadChat: async () => {},
-                highlightSignal,
                 chatConfig: {
                     defaultModelId: 'gemini-pro',
                     availableModels: [

@@ -2,27 +2,30 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { projectLinkUpsert } from '../commands/projectLinkUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSProjectLinkKindSchema, GqlSProjectLinkUpsertSchema } from '../graphql/generated';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 
 // Attach an external URL to a project ("the repo for Acme is github.com/me/
-// acme"). Always creates / edits the link directly at project level; the
-// activity-side variant (`activityId` set on create) lives only in the
-// editor UI. Agents that want to log "sent offer, here's the PDF link"
-// should call `projectActivityUpsert` first (to create the row) and then
-// `projectLinkUpsert` with the activity id is *not* currently supported by
-// this tool — we keep the shape narrow to avoid the agent forking the same
-// resource into two surfaces by accident.
+// acme") or edit an existing link. Field set single-sources from
+// `GqlSProjectLinkUpsertSchema()`; each field is re-described and tightened
+// (`.uuid()`, `.url()`, length bounds) so the LLM gets a usable JSON-Schema
+// rendering of the same SDL input shape.
 
-const projectLinkUpsertInputSchema = z.object({
-    projectLinkId: z.string().uuid().optional().describe('Omit to create. Pass an existing id to edit.'),
-    projectId: z.string().uuid().describe('Owning project.'),
-    url: z.string().url().describe('Full URL including the scheme.'),
-    label: z.string().max(200).optional().describe('Human label. Defaults to the URL host when omitted.'),
-    kind: z
-        .enum(['github', 'malt', 'figma', 'gdrive', 'notion', 'invoice', 'offer', 'other'])
-        .describe('Resource category. Drives the card icon and grouping.'),
-    pinned: z.boolean().optional().describe('Surface in the project header rail. Defaults to false.'),
+const projectLinkUpsertInputSchema = GqlSProjectLinkUpsertSchema().extend({
+    projectLinkId: z.uuid().nullish().describe('Omit (or null) to create. Pass an existing id to edit.'),
+    projectId: z.uuid().describe('Owning project.'),
+    activityId: z
+        .string()
+        .uuid()
+        .nullish()
+        .describe(
+            'Optional: bind the link to a specific activity row (e.g. "the PDF I just attached to this offer entry"). Leave null to attach at project level — that is the normal case for the agent.',
+        ),
+    url: z.url().describe('Full URL including the scheme.'),
+    label: z.string().max(200).nullish().describe('Human label. Defaults to the URL host when omitted.'),
+    kind: GqlSProjectLinkKindSchema.describe('Resource category. Drives the card icon and grouping.'),
+    pinned: z.boolean().nullish().describe('Surface in the project header rail. Defaults to false.'),
 });
 
 interface ProjectsAgentMutationContext {
@@ -36,8 +39,8 @@ export function toolProjectLinkUpsert({ serverRuntime, session, mutations }: Pro
         description: [
             'Attach an external URL to a project, or edit an existing link.',
             'Use this when the user names a repo, mission, Figma file, drive folder, invoice link, etc. The link',
-            'lives at project level; the detail page surfaces pinned links on the header rail and the full list',
-            'on the Links tab.',
+            'lives at project level by default; the detail page surfaces pinned links on the header rail and the full list',
+            'on the Links tab. Pass `activityId` only when the link is conceptually tied to a specific activity row.',
         ].join(' '),
         inputSchema: projectLinkUpsertInputSchema,
         execute: async (input) => {
@@ -46,7 +49,7 @@ export function toolProjectLinkUpsert({ serverRuntime, session, mutations }: Pro
                     input: {
                         projectLinkId: input.projectLinkId ?? null,
                         projectId: input.projectId,
-                        activityId: null,
+                        activityId: input.activityId ?? null,
                         url: input.url,
                         label: input.label ?? null,
                         kind: input.kind,
