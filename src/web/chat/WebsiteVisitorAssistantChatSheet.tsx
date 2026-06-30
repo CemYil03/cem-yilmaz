@@ -325,7 +325,7 @@ function ChatLoaded({
         [respondToApproval, live],
     );
 
-    const chat = data?.chat;
+    const chat = data?.currentSession.visitorChat;
 
     if (error) {
         return (
@@ -390,7 +390,7 @@ function ChatTranscript({
     fetching,
     jumpToLatestLabel,
 }: {
-    chat: NonNullable<GqlCChatPageQuery['chat']>;
+    chat: NonNullable<GqlCChatPageQuery['currentSession']['visitorChat']>;
     appendedMessages: ReadonlyArray<TranscriptMessage>;
     streamingTexts: Readonly<Record<string, string>>;
     onCollectionSubmit: (

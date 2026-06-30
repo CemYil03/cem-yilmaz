@@ -21,16 +21,20 @@ fragment WorkspaceProfileObservation on ProfileObservation {
 }
 
 query WorkspaceProfilePage($category: ProfileObservationCategory, $includeDismissed: Boolean) {
-    admin {
-        profile {
-            summary
-            prose
-            psychProfile
-            synthesizedAt
-            synthesisModelId
-            observationsSinceSynthesis
-            observations(category: $category, includeDismissed: $includeDismissed) {
-                ...WorkspaceProfileObservation
+    currentSession {
+        user {
+            admin {
+                profile {
+                    summary
+                    prose
+                    psychProfile
+                    synthesizedAt
+                    synthesisModelId
+                    observationsSinceSynthesis
+                    observations(category: $category, includeDismissed: $includeDismissed) {
+                        ...WorkspaceProfileObservation
+                    }
+                }
             }
         }
     }

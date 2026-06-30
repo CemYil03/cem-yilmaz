@@ -74,9 +74,12 @@ const assistantSearchSchema = z.object({
 // trip. The chat config (model catalog + saved default) is shared across
 // every workspace surface and lives on the layout's loader → provider, so
 // this route doesn't fetch it again.
+type AssistantChatsAdmin = NonNullable<NonNullable<GqlCWorkspaceAssistantChatsQuery['currentSession']['user']>['admin']>;
+type AssistantChatAdmin = NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['currentSession']['user']>['admin']>;
+
 type LoaderData = {
-    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
-    chat: NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['admin']>['chat']> | null;
+    chats: AssistantChatsAdmin['chats'];
+    chat: AssistantChatAdmin['chat'] | null;
 };
 
 export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
@@ -91,9 +94,14 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant')({
             ? routeLoaderGraphqlClient(WorkspaceChatPageDocument, { chatId: deps.chatId })()
             : Promise.resolve(null);
         const [chatsResult, chatResult] = await Promise.all([chatsPromise, chatPromise]);
+        // Both queries are gated by `currentSession.user.admin` — if the user
+        // is not an admin the workspace layout has already returned the
+        // unauthorized surface, so reaching this loader implies admin access.
+        // Falling back to empty arrays/null keeps the types tight without an
+        // extra guard.
         return {
-            chats: chatsResult.admin.chats,
-            chat: chatResult?.admin.chat ?? null,
+            chats: chatsResult.currentSession.user?.admin?.chats ?? [],
+            chat: chatResult?.currentSession.user?.admin?.chat ?? null,
         };
     },
     staleTime: 0,
@@ -142,7 +150,7 @@ function WorkspaceAssistantEmpty({
     live,
     locale,
 }: {
-    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
+    chats: AssistantChatsAdmin['chats'];
     live: ReturnType<typeof useChatLiveUpdates>;
     locale: Locale;
 }) {
@@ -229,8 +237,8 @@ function WorkspaceAssistantPage({
     live,
     locale,
 }: {
-    chat: NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['admin']>['chat']>;
-    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
+    chat: NonNullable<AssistantChatAdmin['chat']>;
+    chats: AssistantChatsAdmin['chats'];
     live: ReturnType<typeof useChatLiveUpdates>;
     locale: Locale;
 }) {
@@ -284,7 +292,7 @@ function WorkspaceAssistantPage({
     // composer parks below. `dvh` tracks the mobile URL-bar collapse so
     // the composer stays glued to the visible edge.
     return (
-        <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-6xl flex-col gap-6 p-6 lg:flex-row">
+        <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-8xl flex-col gap-6 p-6 lg:flex-row">
             {/* Desktop sidebar: at-a-glance list of recent chats so the
              *  admin can jump between conversations without bouncing back
              *  through the empty state. Hidden under `lg` — the row is the
@@ -332,7 +340,7 @@ function ChatsSidebar({
     locale,
     activeChatId,
 }: {
-    chats: GqlCWorkspaceAssistantChatsQuery['admin']['chats'];
+    chats: AssistantChatsAdmin['chats'];
     locale: Locale;
     activeChatId: string;
 }) {
@@ -369,7 +377,7 @@ function ChatTranscript({
     onApprovalRespond,
     jumpToLatestLabel,
 }: {
-    chat: NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['admin']>['chat']>;
+    chat: NonNullable<AssistantChatAdmin['chat']>;
     appendedMessages: ReadonlyArray<TranscriptMessage>;
     streamingTexts: Readonly<Record<string, string>>;
     onCollectionSubmit: (

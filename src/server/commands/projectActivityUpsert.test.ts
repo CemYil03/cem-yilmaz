@@ -48,6 +48,7 @@ describe('projectActivityUpsert — atomic attach', () => {
                     taskId: null,
                     kind: 'milestone',
                     channel: null,
+                    direction: null,
                     title: 'Kickoff',
                     notes: null,
                     occurredAt: new Date(),
@@ -91,6 +92,7 @@ describe('projectActivityUpsert — atomic attach', () => {
                     taskId: null,
                     kind: 'offer',
                     channel: null,
+                    direction: null,
                     title: 'Sent offer',
                     notes: null,
                     occurredAt: new Date(),
@@ -132,6 +134,7 @@ describe('projectActivityUpsert — atomic attach', () => {
                         taskId: null,
                         kind: 'offer',
                         channel: null,
+                        direction: null,
                         title: 'Sent offer',
                         notes: null,
                         occurredAt: new Date(),
@@ -174,6 +177,7 @@ describe('projectActivityUpsert — atomic attach', () => {
                         taskId: null,
                         kind: 'note',
                         channel: null,
+                        direction: null,
                         title: 'a note',
                         notes: null,
                         occurredAt: new Date(),
@@ -194,5 +198,108 @@ describe('projectActivityUpsert — atomic attach', () => {
                 serverRuntime,
             ),
         ).rejects.toThrow(/amountCents \/ offerStatus are only valid for offer/);
+    });
+});
+
+describe('projectActivityUpsert — direction normalization', () => {
+    it('forces `internal` for note / milestone even when an outgoing direction was sent', async () => {
+        const { serverRuntime, requestingSession } = await commandSetup();
+        const projectId = await projectSeed();
+
+        const note = await projectActivityUpsert(
+            {
+                input: {
+                    activityId: null,
+                    projectId,
+                    taskId: null,
+                    kind: 'note',
+                    channel: null,
+                    direction: 'outgoing',
+                    title: 'Quick thought',
+                    notes: null,
+                    occurredAt: new Date(),
+                    durationSec: null,
+                    amountCents: null,
+                    offerStatus: null,
+                    attachLinkUrl: null,
+                    attachLinkKind: null,
+                    attachLinkLabel: null,
+                    attachLinkPinned: null,
+                    attachFileUploadId: null,
+                    attachFileKind: null,
+                    attachFileLabel: null,
+                    attachFilePinned: null,
+                },
+            },
+            requestingSession,
+            serverRuntime,
+        );
+
+        expect(note.direction).toBe('internal');
+    });
+
+    it('defaults clientContact to incoming and offer to outgoing when direction is omitted', async () => {
+        const { serverRuntime, requestingSession } = await commandSetup();
+        const projectId = await projectSeed();
+
+        const contact = await projectActivityUpsert(
+            {
+                input: {
+                    activityId: null,
+                    projectId,
+                    taskId: null,
+                    kind: 'clientContact',
+                    channel: 'malt',
+                    direction: null,
+                    title: 'Client wrote',
+                    notes: null,
+                    occurredAt: new Date(),
+                    durationSec: null,
+                    amountCents: null,
+                    offerStatus: null,
+                    attachLinkUrl: null,
+                    attachLinkKind: null,
+                    attachLinkLabel: null,
+                    attachLinkPinned: null,
+                    attachFileUploadId: null,
+                    attachFileKind: null,
+                    attachFileLabel: null,
+                    attachFilePinned: null,
+                },
+            },
+            requestingSession,
+            serverRuntime,
+        );
+        expect(contact.direction).toBe('incoming');
+
+        const offer = await projectActivityUpsert(
+            {
+                input: {
+                    activityId: null,
+                    projectId,
+                    taskId: null,
+                    kind: 'offer',
+                    channel: null,
+                    direction: null,
+                    title: 'Sent offer',
+                    notes: null,
+                    occurredAt: new Date(),
+                    durationSec: null,
+                    amountCents: 100000,
+                    offerStatus: 'sent',
+                    attachLinkUrl: null,
+                    attachLinkKind: null,
+                    attachLinkLabel: null,
+                    attachLinkPinned: null,
+                    attachFileUploadId: null,
+                    attachFileKind: null,
+                    attachFileLabel: null,
+                    attachFilePinned: null,
+                },
+            },
+            requestingSession,
+            serverRuntime,
+        );
+        expect(offer.direction).toBe('outgoing');
     });
 });

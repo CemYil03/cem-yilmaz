@@ -24,6 +24,7 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
+import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type { GqlCProjectStatus, GqlCTaskStatus, GqlCWorkspaceProjectsPageQuery } from '../../../web/graphql/generated';
 import {
     WorkspaceProjectRequestArchiveDocument,
@@ -134,6 +135,8 @@ const projectsSearchSchema = z.object({
 
 type ProjectsSearch = z.infer<typeof projectsSearchSchema>;
 
+type WorkspaceProjectsAdmin = NonNullable<NonNullable<GqlCWorkspaceProjectsPageQuery['currentSession']['user']>['admin']>;
+
 export const Route = createFileRoute('/{-$locale}/workspace/projects')({
     validateSearch: projectsSearchSchema,
     loader: () => routeLoaderGraphqlClient(WorkspaceProjectsPageDocument)(),
@@ -161,7 +164,12 @@ function WorkspaceProjects() {
     const router = useRouter();
     const onChanged = () => router.invalidate();
 
-    const inboxCount = data.admin.projectRequests.filter((r) => r.status === 'emailVerified').length;
+    const admin = data.currentSession.user?.admin;
+    const projectRequests = admin?.projectRequests ?? [];
+    const projects = admin?.projects ?? [];
+    const standaloneTasks = admin?.standaloneTasks ?? [];
+    const activeTimer = admin?.activeTimer ?? null;
+    const inboxCount = projectRequests.filter((r) => r.status === 'emailVerified').length;
 
     // Deep-link focus: the chat assistant emits links like
     // `/workspace/projects?tab=projects&focus=<id>`. When `focus` is set we
@@ -200,8 +208,10 @@ function WorkspaceProjects() {
         };
     }, [search.focus, tab, navigate]);
 
+    if (!admin) return <WorkspaceUnauthorized locale={locale} />;
+
     return (
-        <main className="px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full py-12 leading-relaxed">
+        <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <p className="text-sm text-muted-foreground">{description[locale]}</p>
 
             <nav className="mt-8 flex gap-1 border-b border-border/60" aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}>
@@ -242,21 +252,16 @@ function WorkspaceProjects() {
             <div className="mt-8">
                 {tab === 'inbox' ? (
                     <InboxSection
-                        rows={data.admin.projectRequests}
+                        rows={projectRequests}
                         showArchived={search.inboxView === 'archive'}
                         locale={locale}
                         onChanged={onChanged}
                     />
                 ) : null}
                 {tab === 'projects' ? (
-                    <ProjectsBoard
-                        rows={data.admin.projects}
-                        activeTimer={data.admin.activeTimer ?? null}
-                        locale={locale}
-                        onChanged={onChanged}
-                    />
+                    <ProjectsBoard rows={projects} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
                 ) : null}
-                {tab === 'todos' ? <TodosSection rows={data.admin.standaloneTasks} locale={locale} onChanged={onChanged} /> : null}
+                {tab === 'todos' ? <TodosSection rows={standaloneTasks} locale={locale} onChanged={onChanged} /> : null}
             </div>
         </main>
     );
@@ -264,7 +269,7 @@ function WorkspaceProjects() {
 
 // --- Inbox ------------------------------------------------------------------
 
-type RequestRow = GqlCWorkspaceProjectsPageQuery['admin']['projectRequests'][number];
+type RequestRow = WorkspaceProjectsAdmin['projectRequests'][number];
 
 function InboxSection({
     rows,
@@ -476,8 +481,8 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 // --- Projects board ---------------------------------------------------------
 
-type ProjectRow = GqlCWorkspaceProjectsPageQuery['admin']['projects'][number];
-type ActiveTimer = NonNullable<GqlCWorkspaceProjectsPageQuery['admin']['activeTimer']>;
+type ProjectRow = WorkspaceProjectsAdmin['projects'][number];
+type ActiveTimer = NonNullable<WorkspaceProjectsAdmin['activeTimer']>;
 
 function ProjectsBoard({
     rows,
@@ -744,7 +749,7 @@ function ProjectForm({
 
 // --- Tasks (inside a project, or standalone) --------------------------------
 
-type TaskRow = GqlCWorkspaceProjectsPageQuery['admin']['standaloneTasks'][number];
+type TaskRow = WorkspaceProjectsAdmin['standaloneTasks'][number];
 
 function TaskItem({ task, locale, onChanged }: { task: TaskRow; locale: Locale; onChanged: () => void }) {
     const [, upsert] = useMutation(WorkspaceTaskUpsertDocument);

@@ -15,11 +15,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 //     state (previous-chats list + composer). Used on every public surface.
 //     The landing-page hero composer uses a different entry point
 //     (`openWithMessage`) that fires a seeded question on open.
-//   - `'workspace'` — opens the workspace personal-assistant sheet. Used on
-//     workspace surfaces, where the visitor chat is irrelevant and the
-//     header should lead to the admin chat instead. The provider for this
-//     variant is mounted at `src/routes/{-$locale}/workspace.tsx`, so the
-//     button is only valid inside that subtree.
+//   - `'workspace'` — toggles the workspace personal-assistant surface. On
+//     `lg+` the assistant lives in the persistent sidebar
+//     (`WorkspaceAssistantChatSidebar`), and the button toggles its
+//     rail/expanded state; below `lg` the assistant is a Sheet and the
+//     button opens it. The two cases are split via CSS responsive
+//     visibility so no JS breakpoint hook is needed — two buttons render,
+//     only the right one for the viewport is visible. The provider for
+//     this variant is mounted at `src/routes/{-$locale}/workspace.tsx`, so
+//     the button is only valid inside that subtree.
 //
 // On every open → closed transition the relevant provider bumps a
 // `highlightSignal` counter; we play a one-shot pulse animation here for
@@ -29,6 +33,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 const LABEL = {
     visitor: { de: 'Chats', en: 'Chats' },
     workspace: { de: 'Assistent', en: 'Assistant' },
+    workspaceExpand: { de: 'Assistent ausklappen', en: 'Expand assistant' },
+    workspaceCollapse: { de: 'Assistent einklappen', en: 'Collapse assistant' },
 };
 
 // Match the CSS animation duration in `styles.css` (.animate-chat-button-pulse
@@ -64,10 +70,33 @@ function VisitorVariant() {
 
 function WorkspaceVariant() {
     const locale = useLocale();
-    const { open, highlightSignal } = useWorkspaceAssistantChat();
-    const label = LABEL.workspace[locale];
+    const { open, isCollapsed, setCollapsed, highlightSignal } = useWorkspaceAssistantChat();
+    // CSS-responsive split: the `lg+` button toggles the sidebar's
+    // rail/expanded state; the `<lg` button opens the Sheet. Two buttons
+    // render simultaneously but only one is visible per viewport, so no
+    // breakpoint hook (and no SSR mismatch risk) is needed.
+    const desktopLabel = isCollapsed ? LABEL.workspaceExpand[locale] : LABEL.workspaceCollapse[locale];
+    const sheetLabel = LABEL.workspace[locale];
     return (
-        <ChatButton onClick={open} label={label} icon={<SparklesIcon className="size-4" aria-hidden />} highlightSignal={highlightSignal} />
+        <>
+            <div className="hidden lg:contents">
+                <ChatButton
+                    onClick={() => setCollapsed(!isCollapsed)}
+                    label={desktopLabel}
+                    icon={<SparklesIcon className="size-4" aria-hidden />}
+                    highlightSignal={highlightSignal}
+                    isPressed={!isCollapsed}
+                />
+            </div>
+            <div className="contents lg:hidden">
+                <ChatButton
+                    onClick={open}
+                    label={sheetLabel}
+                    icon={<SparklesIcon className="size-4" aria-hidden />}
+                    highlightSignal={highlightSignal}
+                />
+            </div>
+        </>
     );
 }
 
@@ -76,11 +105,15 @@ function ChatButton({
     label,
     icon,
     highlightSignal,
+    isPressed,
 }: {
     onClick: () => void;
     label: string;
     icon: React.ReactNode;
     highlightSignal: number;
+    /** Optional pressed/active state — used by the workspace `lg+` variant
+     *  to surface "the sidebar is expanded" as a visual affordance. */
+    isPressed?: boolean;
 }) {
     const [isPulsing, setIsPulsing] = useState(false);
 
@@ -98,8 +131,10 @@ function ChatButton({
                     type="button"
                     onClick={onClick}
                     aria-label={label}
+                    aria-pressed={isPressed}
                     className={cn(
                         'grid size-10 place-items-center rounded-full border border-foreground/10 text-foreground/80 transition hover:bg-foreground/5 active:bg-foreground/10 dark:border-white/10 dark:hover:bg-white/8 dark:active:bg-white/14 cursor-pointer',
+                        isPressed && 'bg-foreground/5 dark:bg-white/8',
                         isPulsing && 'animate-chat-button-pulse',
                     )}
                 >

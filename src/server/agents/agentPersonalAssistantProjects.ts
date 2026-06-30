@@ -7,6 +7,7 @@ import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaff
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
 import { toolProjectActivityUpsert } from './toolProjectActivityUpsert';
 import { toolProjectDelete } from './toolProjectDelete';
+import { toolProjectFileCreate } from './toolProjectFileCreate';
 import { toolProjectLinkUpsert } from './toolProjectLinkUpsert';
 import { toolProjectsList } from './toolProjectsList';
 import { toolProjectUpsert } from './toolProjectUpsert';
@@ -43,7 +44,8 @@ type ProjectsAgentMutationKind =
     | 'activityCreate'
     | 'activityUpdate'
     | 'linkCreate'
-    | 'linkUpdate';
+    | 'linkUpdate'
+    | 'fileCreate';
 
 export interface ProjectsAgentMutation {
     kind: ProjectsAgentMutationKind;
@@ -80,7 +82,7 @@ function buildSystemPrompt(snapshot: string): string {
         '',
         currentDateForAgent(),
         '',
-        'You have eight tools:',
+        'You have nine tools:',
         '- `projectsList`, `standaloneTasksList` — read the current board when you need ids or full task details',
         '  the snapshot below does not include.',
         '- `projectUpsert`, `projectDelete` — create / edit / archive / delete projects.',
@@ -89,6 +91,10 @@ function buildSystemPrompt(snapshot: string): string {
         '  project timeline. Work timer rows are NOT created through this tool.',
         '- `projectLinkUpsert` — attach an external URL (repo, mission, Figma file, drive folder, invoice) to',
         '  a project; pinned links surface in the detail header.',
+        '- `projectFileCreate` — draft a markdown (`.md`) document and save it onto a project as a real file row.',
+        '  Use this when the user asks you to write an offer, contract, note, brief, etc. The full markdown body',
+        '  is the `markdown` field; pick a `kind` (`offer | invoice | contract | screenshot | other`) and a',
+        '  filename ending in `.md`. Markdown only — for other formats the user uploads manually.',
         '',
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
@@ -137,6 +143,7 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, m
             taskDelete: toolTaskDelete(mutationContext),
             projectActivityUpsert: toolProjectActivityUpsert(mutationContext),
             projectLinkUpsert: toolProjectLinkUpsert(mutationContext),
+            projectFileCreate: toolProjectFileCreate(mutationContext),
         },
     });
 }

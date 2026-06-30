@@ -185,7 +185,8 @@ type VisitorChatQuota {
 ## Previous chats list
 
 `Session.visitorChats` returns up to 50 chats owned by the requester's session (newest first), via `chatsFindBySession`. Empty `messages` —
-fetch a single transcript through `Query.chat(chatId)` when the visitor actually picks one.
+fetch a single transcript through `Session.visitorChat(chatId)` when the visitor actually picks one. The single-chat resolver rejects any
+read whose `chats.sessionId` doesn't match the requester's session, so a stolen chatId can't cross into another visitor's history.
 
 The list is rendered in the sheet's empty state. Clicking a row calls the parent provider's `loadChat(chatId)` and the sheet drops into the
 loaded view without re-sending anything.
@@ -197,7 +198,7 @@ loaded view without re-sending anything.
 - `admin.publicChats: [Chat!]!` — list
 - `admin.publicChat(chatId: ID!): Chat!` — detail
 
-Both gated by the parent `Admin.*` guard (`guardAdmin`). The page itself is `noindex` and lives in the workspace hub. Read-only means: no
+Both gated by the parent `User.admin` resolver chain. The page itself is `noindex` and lives in the workspace hub. Read-only means: no
 composer, no live subscription mounted, and the `ChatMessage` component gets `isInteractiveCollection={false}` plus no approval handler, so
 input collections and approval requests render as static records.
 

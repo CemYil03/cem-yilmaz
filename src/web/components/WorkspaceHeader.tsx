@@ -176,5 +176,11 @@ export function WorkspaceHeader() {
     const { pathname } = useLocation();
     const trailing = useTrailingLabel();
     const crumbs = buildCrumbs(pathname, locale, trailing);
-    return <Header breadcrumbs={crumbs} hideSelectors chatVariant="workspace" />;
+    // The hub at `/workspace` keeps the narrower public-site cap because its
+    // content (greeting + tile grid) is sized to it. Every other workspace
+    // page widens to `8xl` to match its content cap — keeps the header from
+    // sitting narrower than the surface beneath it. See docs/conventions.md
+    // (Page width).
+    const isHub = crumbs.length === 1;
+    return <Header breadcrumbs={crumbs} hideSelectors chatVariant="workspace" width={isHub ? 'standard' : 'wide'} />;
 }

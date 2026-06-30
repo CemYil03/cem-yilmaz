@@ -165,13 +165,13 @@ query ChatPage($chatId: ID!) {
             userId
             name
         }
-    }
-    chat(chatId: $chatId) {
-        chatId
-        title
-        lastModifiedAt
-        messages {
-            ...ChatMessageFields
+        visitorChat(chatId: $chatId) {
+            chatId
+            title
+            lastModifiedAt
+            messages {
+                ...ChatMessageFields
+            }
         }
     }
 }

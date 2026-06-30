@@ -167,6 +167,12 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
     --radius-xl: calc(var(--radius) + 4px);
+    /* Tailwind v4 ships `max-w-{sm…7xl}` out of the box (`7xl` = 80rem). The
+       workspace surfaces are dense, list-heavy, and look right around 1500px —
+       so we extend the container scale with an 8xl token at 96rem (1536px),
+       used as the cap on every workspace page except the hub. Public pages stay
+       on the stock scale. See docs/conventions.md (Workspace width). */
+    --container-8xl: 96rem;
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);

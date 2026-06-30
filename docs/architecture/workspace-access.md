@@ -8,13 +8,19 @@ The site has two surfaces:
 - **Workspace** (`/workspace/*`) — Cem's personal hub: personal-assistant chat, content editors, profile, future calendar/notes/tasks. Must
   be reachable only by Cem.
 
-Both surfaces share the same GraphQL schema. Workspace operations live on dedicated `Admin` / `AdminMutation` namespaces. Something has to
-stop anyone other than Cem from resolving fields under those namespaces.
+Both surfaces share the same GraphQL schema. The workspace **read** namespace hangs off `Session.user.admin`; the **write** namespace lives
+at `Mutation.admin`. Something has to stop anyone other than Cem from resolving fields under those namespaces.
 
 ## Decision
 
-Add `isAdmin: boolean` to the `Users` table. `guardAdmin` and `guardAdminMutation` look the requesting session's user up by `userId` and
-allow the operation only when the row exists and `isAdmin = true`.
+Add `isAdmin: boolean` to the `Users` table.
+
+- **Reads.** `User.admin: Admin` is nullable. The `User.admin` resolver returns the empty `Admin` shell only when the requesting session
+  owns the parent user row AND that row has `isAdmin = true`; in every other case it returns `null`. Because the field is nullable a
+  non-admin caller gets `currentSession.user.admin = null` instead of an exception — the public landing page can ask "is the current visitor
+  an admin?" with a single field check, and workspace pages can render an inline "no access" surface when they encounter null.
+- **Writes.** `Mutation.admin: AdminMutation!` is non-nullable and gated by `guardAdminMutation`, which still throws on non-admins. Writes
+  are not composable from the public surface, so the throw-on-mismatch contract is correct there.
 
 ```ts
 // src/server/db/schema.ts
@@ -27,17 +33,18 @@ export const users = pgTable('Users', {
 ```
 
 ```ts
-// src/server/guards/guardAdmin.ts (guardAdminMutation is identical with a different return type)
-export async function guardAdmin(requestingSession: GqlSSession, serverRuntime: ServerRuntime): Promise<GqlSAdmin> {
-  if (!requestingSession.userId) throw new Error('Unauthorized');
-  const [row] = await serverRuntime.db
-    .select({ isAdmin: users.isAdmin })
-    .from(users)
-    .where(eq(users.userId, requestingSession.userId))
-    .limit(1);
-  if (!row?.isAdmin) throw new Error('Unauthorized');
-  return {} as GqlSAdmin;
-}
+// src/server/graphql/resolversCreate.ts — User.admin resolver
+User: {
+  async admin(parentUser, _, requestingSession) {
+    if (!requestingSession.userId || requestingSession.userId !== parentUser.userId) return null;
+    const [row] = await serverRuntime.db
+      .select({ isAdmin: users.isAdmin })
+      .from(users)
+      .where(eq(users.userId, parentUser.userId))
+      .limit(1);
+    return row?.isAdmin ? ({} as GqlSAdmin) : null;
+  },
+},
 ```
 
 `Users.isAdmin` defaults to `false`, so every newly-created user — including any future signup path — starts non-admin. The flag is set
@@ -46,9 +53,16 @@ manually with `UPDATE "Users" SET "isAdmin" = true WHERE …` for the few accoun
 ### Why a boolean column
 
 - One row per user, one column per fact. The migration is a single `ALTER TABLE`.
-- Reads cost one indexed lookup (`userId` is the primary key) per resolved `Query.admin` / `Mutation.admin`, which fires at most once per
+- Reads cost one indexed lookup (`userId` is the primary key) per resolved `User.admin` / `Mutation.admin`, which fires at most once per
   GraphQL request.
-- The guard already needs to load by `userId` to be meaningful — adding the column is cheaper than introducing a join.
+- The resolver already needs to load by `userId` to be meaningful — adding the column is cheaper than introducing a join.
+
+### Why the read side returns null instead of throwing
+
+The earlier design exposed `Query.admin: Admin!` (non-null) gated by a `guardAdmin` helper that threw on non-admins. That made it impossible
+to ask "is the visitor an admin?" from the public landing page without catching a GraphQL error. Moving the field under `User.admin` and
+making it nullable turns admin-ness into a regular query that anyone can compose; the workspace pages still gate on the field being non-null
+and render the `<WorkspaceUnauthorized />` surface when it's null.
 
 ### Why not the OAuth allowlist (`WORKSPACE_GITHUB_LOGINS`) directly
 
@@ -65,8 +79,9 @@ mechanical migration: copy `userId` for every `isAdmin = true` row into the new 
 
 ### Anonymous sessions
 
-`GqlSSession.userId` is `string | null | undefined` — sessions don't always have an associated user, and most visitors never do. The guards'
-first check rejects any session without a `userId`, so anonymous sessions never reach the DB lookup.
+`GqlSSession.userId` is `string | null | undefined` — sessions don't always have an associated user, and most visitors never do. Anonymous
+sessions resolve `currentSession.user = null`, so `currentSession.user?.admin` short-circuits to `undefined` and never reaches the
+`User.admin` resolver at all.
 
 ## Alternatives Considered
 
@@ -74,6 +89,9 @@ first check rejects any session without a `userId`, so anonymous sessions never 
   there is no `githubLogin` on the session yet — that field only exists once OAuth lands. Adoption is forced to wait for OAuth.
 - **Permissive guard + obscurity** (rely on `noindex` + unlinked + URL-obscurity). Rejected: this was the previous Phase-1 stance. It worked
   while the workspace was empty, but the surface now hosts a real personal assistant; "anyone who types the URL" is too wide.
+- **Top-level `Query.admin: Admin!` gated by `guardAdmin`.** Was the original shape; replaced because the non-null + throw contract was
+  incompatible with composing the field on the public landing page. The single read-side guard helper went away with it; the policy is now
+  inlined as the `User.admin` resolver.
 - **Dedicated `Admins` table from day one.** Rejected: premature. One fact, one user — see above.
 
 ## Consequences
@@ -81,15 +99,15 @@ first check rejects any session without a `userId`, so anonymous sessions never 
 - Adding a new admin is a manual `UPDATE` against the production DB. Acceptable while admin count is single-digit.
 - Forgetting to set `isAdmin` on a fresh device locks Cem out of the workspace until the row is updated. Recovery is a DB write, not a code
   change.
-- The guards now do a DB read per `Query.admin` / `Mutation.admin` resolution. Cost is negligible (PK lookup) and fires at most once per
+- The `User.admin` resolver does a DB read per request that selects the field. Cost is negligible (PK lookup) and fires at most once per
   request.
 - Phase 2 OAuth integrates by writing `isAdmin = true` for every user whose GitHub login is in `WORKSPACE_GITHUB_LOGINS` at callback time.
-  The guards do not change.
+  The resolver does not change.
 
 ## Key Files
 
 - `src/server/db/schema.ts` — `users.isAdmin` column
-- `src/server/guards/guardAdmin.ts` — read namespace gate
+- `src/server/graphql/resolversCreate.ts` — `User.admin` resolver (read side) and `Mutation.admin` guard call site
 - `src/server/guards/guardAdminMutation.ts` — write namespace gate
-- `src/server/graphql/resolversCreate.ts` — guard call sites on `Query.admin` and `Mutation.admin`
+- `src/web/components/WorkspaceUnauthorized.tsx` — shared "no access" surface rendered by workspace pages whose loader saw a null `admin`
 - `drizzle/0009_high_human_cannonball.sql` — migration adding the column

@@ -7,10 +7,11 @@ declare module './generated' {
     export interface GqlSUserMutation {
         userId: string;
     }
-    // Workspace namespaces — gated by `guardAdmin` / `guardAdminMutation`,
-    // which check the `isAdmin` flag on the requesting session's `Users` row.
-    // Set the flag manually in the DB for Cem's accounts. See
-    // `docs/architecture/workspace-access.md`.
+    // Workspace namespaces — the read shell hangs off `User.admin` (nullable;
+    // null for non-admins) and the write shell is `Mutation.admin`, gated by
+    // `guardAdminMutation`. Both check the `isAdmin` flag on the requesting
+    // session's `Users` row; set the flag manually in the DB for Cem's
+    // accounts. See `docs/architecture/workspace-access.md`.
     export interface GqlSAdmin {
         userId?: string;
     }

@@ -5,6 +5,7 @@ import { SearchIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { GlassCard } from '../../../web/components/GlassCard';
+import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import type { GqlCWorkspaceLogsQuery } from '../../../web/graphql/generated';
@@ -18,9 +19,11 @@ import { localeFromParam } from '../../../web/utils/locale';
 import type { Locale } from '../../../web/utils/locale';
 
 // Read-only viewer onto the `Logs` table — surfaces every row the server
-// wrote via `serverRuntime.log.*`. Authorization is the parent `guardAdmin`
-// chain on `admin.logs`; the route itself is `noindex` and (Phase 2) sits
-// behind the workspace OAuth gate.
+// wrote via `serverRuntime.log.*`. Authorization is the `User.admin` resolver
+// chain on `currentSession.user.admin.logs` (returns null for non-admins);
+// the page falls back to `<WorkspaceUnauthorized />` when that chain resolves
+// null. The route itself is also `noindex` and (Phase 2) sits behind the
+// workspace OAuth gate.
 //
 // Filters live in the URL so a deep link reproduces the exact view: `level`
 // narrows to one of the four levels, `search` is a case-insensitive
@@ -46,7 +49,7 @@ const logsSearchSchema = z.object({
     search: z.string().optional(),
 });
 
-type LogRow = GqlCWorkspaceLogsQuery['admin']['logs'][number];
+type LogRow = NonNullable<NonNullable<GqlCWorkspaceLogsQuery['currentSession']['user']>['admin']>['logs'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/logs')({
     validateSearch: logsSearchSchema,
@@ -57,7 +60,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/logs')({
             search: deps.search?.trim() ? deps.search.trim() : null,
             limit: null,
         })();
-        return { logs: data.admin.logs };
+        return { logs: data.currentSession.user?.admin?.logs ?? null };
     },
     staleTime: 0,
     head: ({ params }) => {
@@ -93,8 +96,10 @@ function LogsPage() {
         return () => window.clearTimeout(handle);
     }, [searchDraft, search.search, navigate]);
 
+    if (!logs) return <WorkspaceUnauthorized locale={locale} />;
+
     return (
-        <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-16">
+        <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full pb-16">
             <section className="py-10">
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{title[locale]}</h1>
                 <p className="mt-2 max-w-2xl text-base text-muted-foreground">{description[locale]}</p>

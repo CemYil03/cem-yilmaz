@@ -173,9 +173,13 @@ fragment WorkspaceChatListItem on Chat {
 }
 
 query WorkspaceAssistantChats {
-    admin {
-        chats {
-            ...WorkspaceChatListItem
+    currentSession {
+        user {
+            admin {
+                chats {
+                    ...WorkspaceChatListItem
+                }
+            }
         }
     }
 }
@@ -186,15 +190,15 @@ query WorkspaceChatPage($chatId: ID!) {
         user {
             userId
             name
-        }
-    }
-    admin {
-        chat(chatId: $chatId) {
-            chatId
-            title
-            lastModifiedAt
-            messages {
-                ...WorkspaceChatMessageFields
+            admin {
+                chat(chatId: $chatId) {
+                    chatId
+                    title
+                    lastModifiedAt
+                    messages {
+                        ...WorkspaceChatMessageFields
+                    }
+                }
             }
         }
     }
@@ -273,14 +277,18 @@ mutation WorkspaceChatToolApprovalRespond(
 # what the dropdown initializes to. Fetched alongside the chat list on every
 # `/workspace/assistant` route load. See `docs/features/admin-chat-config.md`.
 query WorkspaceChatConfig {
-    admin {
-        chatConfig {
-            availableModels {
-                modelId
-                label
-                supportedMediaTypes
+    currentSession {
+        user {
+            admin {
+                chatConfig {
+                    availableModels {
+                        modelId
+                        label
+                        supportedMediaTypes
+                    }
+                    defaultModelId
+                }
             }
-            defaultModelId
         }
     }
 }

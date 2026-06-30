@@ -7,7 +7,7 @@ import type { TranscriptMessage } from './chatTranscript';
 import { useChatLiveUpdates } from './useChatLiveUpdates';
 import type { ChatLiveUpdates } from './useChatLiveUpdates';
 
-type WorkspaceChatConfig = GqlCWorkspaceChatConfigQuery['admin']['chatConfig'];
+type WorkspaceChatConfig = NonNullable<NonNullable<GqlCWorkspaceChatConfigQuery['currentSession']['user']>['admin']>['chatConfig'];
 
 // Workspace-assistant coordination — see `docs/features/chat-workspace.md`.
 //
@@ -49,11 +49,23 @@ type WorkspaceChatConfig = GqlCWorkspaceChatConfigQuery['admin']['chatConfig'];
 // routes — not on the public site.
 
 interface WorkspaceAssistantChatContextValue {
+    /** Sheet open/closed — only effective on `<lg` viewports, where the
+     *  workspace layout mounts the Sheet inside a `lg:hidden` wrapper.
+     *  On `lg+` the Sheet is unmounted and the persistent sidebar is the
+     *  assistant surface instead; `isCollapsed` governs that. Calling
+     *  `open()` on `lg+` is harmless — there's no Sheet to receive it. */
     isOpen: boolean;
     setOpen: (open: boolean) => void;
     /** Open the sheet without seeding anything. The workspace floating
      *  launcher uses this. */
     open: () => void;
+    /** Sidebar rail/expanded state on `lg+`. `true` = collapsed to icon
+     *  rail, `false` = expanded column. Persisted to `localStorage` so
+     *  the preference survives reloads. The header assistant button on
+     *  `lg+` toggles this; below `lg` the Sheet's open state is the
+     *  toggle instead. */
+    isCollapsed: boolean;
+    setCollapsed: (collapsed: boolean) => void;
     chatId: string | undefined;
     /** Page-query rows for a resumed chat. Empty when the assistant is on
      *  a fresh chat — the subscription buffer is the source of truth there. */
@@ -98,12 +110,33 @@ export function useWorkspaceAssistantChat(): WorkspaceAssistantChatContextValue 
     return value;
 }
 
+// localStorage key for the sidebar's rail/expanded preference. Read on
+// mount (post-SSR, inside an effect) so the initial server render is
+// deterministic; subsequent toggles write through synchronously.
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'workspaceAssistantSidebar.collapsed';
+
 export function WorkspaceAssistantChatProvider({ children, chatConfig }: { children: ReactNode; chatConfig: WorkspaceChatConfig }) {
     const [isOpen, setOpen] = useState(false);
     const [chatId, setChatId] = useState<string | undefined>(undefined);
     const [loadedMessages, setLoadedMessages] = useState<ReadonlyArray<TranscriptMessage>>([]);
     const [highlightSignal, setHighlightSignal] = useState(0);
     const [selectedModelId, setSelectedModelId] = useState(chatConfig.defaultModelId);
+    // Default to expanded ("always visible") on first load. The persisted
+    // preference is hydrated from `localStorage` in an effect so the SSR
+    // markup and the first client render match — flipping to the persisted
+    // value lands as a layout-effect on the second paint at the latest.
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+        if (stored === 'true') setIsCollapsed(true);
+    }, []);
+    const setCollapsed = useCallback((next: boolean) => {
+        setIsCollapsed(next);
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, next ? 'true' : 'false');
+        }
+    }, []);
     const live = useChatLiveUpdates(chatId);
     const [, setDefaultModel] = useMutation(WorkspaceChatConfigDefaultModelSetDocument);
     const urqlClient = useClient();
@@ -166,7 +199,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
             const result = await urqlClient
                 .query(WorkspaceChatPageDocument, { chatId: id }, { requestPolicy: 'cache-and-network' })
                 .toPromise();
-            const chat = result.data?.admin.chat;
+            const chat = result.data?.currentSession.user?.admin?.chat;
             if (result.error || !chat) {
                 live.endTurn();
                 return;
@@ -183,6 +216,8 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
             isOpen,
             setOpen,
             open,
+            isCollapsed,
+            setCollapsed,
             chatId,
             loadedMessages,
             live,
@@ -197,6 +232,8 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
         [
             isOpen,
             open,
+            isCollapsed,
+            setCollapsed,
             chatId,
             loadedMessages,
             live,

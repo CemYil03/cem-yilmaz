@@ -4,6 +4,7 @@ import { de as deLocale, enUS } from 'date-fns/locale';
 import {
     CheckSquare2Icon,
     ChevronDownIcon,
+    ChevronUpIcon,
     CircleDotIcon,
     ExternalLinkIcon,
     FileIcon,
@@ -31,14 +32,17 @@ import {
     VideoIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useMutation } from 'urql';
 import { z } from 'zod';
 import { uploadFile } from '../../../web/chat/fileUpload';
+import { previewKindFor } from '../../../web/chat/chatAttachmentPreview';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
+import { ChatAttachmentPreviewDialog } from '../../../web/components/chat-message/ChatAttachmentPreviewDialog';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
+import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
 import {
@@ -53,6 +57,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../web/components/base/textarea';
 import type {
     GqlCProjectActivityChannel,
+    GqlCProjectActivityDirection,
     GqlCProjectActivityKind,
     GqlCProjectFileKind,
     GqlCProjectLinkKind,
@@ -91,12 +96,13 @@ import { localeFromParam } from '../../../web/utils/locale';
 // the kanban card on `/workspace/projects`. Single-language, admin-only,
 // noindex. See `docs/features/projects-workspace.md`.
 
-type ProjectRow = GqlCWorkspaceProjectDetailQuery['admin']['project'];
+type WorkspaceProjectDetailAdmin = NonNullable<NonNullable<GqlCWorkspaceProjectDetailQuery['currentSession']['user']>['admin']>;
+type ProjectRow = WorkspaceProjectDetailAdmin['project'];
 type TaskRow = ProjectRow['tasks'][number];
 type ActivityRow = ProjectRow['activities'][number];
 type LinkRow = ProjectRow['links'][number];
 type FileRow = ProjectRow['files'][number];
-type ActiveTimer = GqlCWorkspaceProjectDetailQuery['admin']['activeTimer'];
+type ActiveTimer = WorkspaceProjectDetailAdmin['activeTimer'];
 
 type DetailTab = 'overview' | 'tasks' | 'activity' | 'notes' | 'links' | 'files';
 const TABS = ['overview', 'tasks', 'activity', 'notes', 'links', 'files'] as const satisfies ReadonlyArray<DetailTab>;
@@ -181,6 +187,23 @@ const ACTIVITY_CHANNEL_LABELS: Record<GqlCProjectActivityChannel, { de: string; 
     aiAssistant: { de: 'KI-Assistent', en: 'AI assistant' },
     other: { de: 'Sonstiges', en: 'Other' },
 };
+
+// Direction picker labels for the activity composer. `internal` is set by the
+// server for `work` / `note` / `milestone` rows and is not surfaced as a
+// choice in the picker.
+const ACTIVITY_DIRECTION_LABELS: Record<GqlCProjectActivityDirection, { de: string; en: string }> = {
+    outgoing: { de: 'Von mir', en: 'From me' },
+    incoming: { de: 'Vom Kunden', en: 'From client' },
+    internal: { de: 'Intern', en: 'Internal' },
+};
+
+// Kind-aware default direction for the composer (matches `resolveDirection`
+// in the server command). The form pre-fills with this when adding a new row.
+function defaultDirectionForKind(kind: GqlCProjectActivityKind): GqlCProjectActivityDirection {
+    if (kind === 'work' || kind === 'note' || kind === 'milestone') return 'internal';
+    if (kind === 'clientContact') return 'incoming';
+    return 'outgoing';
+}
 
 const LINK_KIND_ORDER: ReadonlyArray<GqlCProjectLinkKind> = ['github', 'malt', 'figma', 'gdrive', 'notion', 'invoice', 'offer', 'other'];
 const LINK_KIND_LABELS: Record<GqlCProjectLinkKind, { de: string; en: string }> = {
@@ -285,8 +308,9 @@ function WorkspaceProjectDetail() {
     const tab: DetailTab = search.tab ?? 'overview';
     const onChanged = () => router.invalidate();
 
-    const project = data.admin.project;
-    const activeTimer = data.admin.activeTimer ?? null;
+    const admin = data.currentSession.user?.admin;
+    const project = admin?.project ?? null;
+    const activeTimer = admin?.activeTimer ?? null;
 
     // Deep-link focus on a child row, same mechanism as the board page.
     useEffect(() => {
@@ -313,11 +337,22 @@ function WorkspaceProjectDetail() {
         };
     }, [search.focus, tab, navigate]);
 
-    const pinnedLinks = useMemo(() => project.links.filter((l) => l.pinned), [project.links]);
-    const pinnedFiles = useMemo(() => project.files.filter((f) => f.pinned), [project.files]);
+    const pinnedLinks = useMemo(() => project?.links.filter((l) => l.pinned) ?? [], [project?.links]);
+    const pinnedFiles = useMemo(() => project?.files.filter((f) => f.pinned) ?? [], [project?.files]);
+
+    if (!admin) {
+        return <WorkspaceUnauthorized locale={locale} />;
+    }
+    if (!project) {
+        return (
+            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-20 pt-16">
+                <p className="text-sm text-muted-foreground">{{ de: 'Projekt nicht gefunden.', en: 'Project not found.' }[locale]}</p>
+            </main>
+        );
+    }
 
     return (
-        <main className="mx-auto w-full max-w-6xl px-4 py-8 leading-relaxed md:px-8 md:py-10 lg:px-12 lg:py-12">
+        <main className="mx-auto w-full max-w-8xl px-4 py-8 leading-relaxed md:px-8 md:py-10 lg:px-12 lg:py-12">
             <ProjectTitleBlock project={project} locale={locale} onChanged={onChanged} />
 
             <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
@@ -1348,6 +1383,11 @@ function TaskForm({
 
 // --- Activity tab ------------------------------------------------------------
 
+// Activity tab — a chat-style timeline. Outgoing rows (Cem) render
+// right-aligned, incoming rows (client) left-aligned, internal rows
+// (work / note / milestone) render as centered system markers. Read
+// bottom-to-top: newest at the bottom, composer below it, like every
+// chat UI. A date-separator system row marks day changes.
 function ActivitySection({
     activities,
     tasks,
@@ -1365,8 +1405,13 @@ function ActivitySection({
     const [editing, setEditing] = useState<ActivityRow | null>(null);
     const [, del] = useMutation(WorkspaceProjectDetailDeleteActivityDocument);
 
+    // Server returns newest-first; chat UIs read newest-at-bottom. Reverse a copy
+    // (the prop is readonly), then walk in chronological order so the day-separator
+    // logic can compare each row to its predecessor without a second pass.
+    const chronological = useMemo(() => activities.slice().reverse(), [activities]);
+
     return (
-        <section>
+        <section data-tab="activity">
             <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold">{{ de: 'Verlauf', en: 'Activity' }[locale]}</h2>
                 <Button size="sm" variant="ghost" onClick={() => setAdding(true)} disabled={adding || editing !== null}>
@@ -1375,68 +1420,107 @@ function ActivitySection({
                 </Button>
             </div>
 
-            {adding ? (
-                <ActivityForm
-                    activity={null}
-                    projectId={projectId}
-                    tasks={tasks}
-                    locale={locale}
-                    onClose={() => setAdding(false)}
-                    onSaved={() => {
-                        setAdding(false);
-                        onChanged();
-                    }}
-                />
-            ) : null}
-
             {activities.length === 0 && !adding ? (
-                <EmptyState
-                    icon={TimerIcon}
-                    line={
-                        {
-                            de: 'Festhalten, was du gemacht hast — auch kleine Schritte zählen.',
-                            en: 'Capture what you did — small steps count too.',
-                        }[locale]
-                    }
-                    cta={{ de: 'Ersten Eintrag', en: 'First entry' }[locale]}
-                    onAction={() => setAdding(true)}
-                />
+                <div className="mt-4">
+                    <EmptyState
+                        icon={TimerIcon}
+                        line={
+                            {
+                                de: 'Festhalten, was du gemacht hast — auch kleine Schritte zählen.',
+                                en: 'Capture what you did — small steps count too.',
+                            }[locale]
+                        }
+                        cta={{ de: 'Ersten Eintrag', en: 'First entry' }[locale]}
+                        onAction={() => setAdding(true)}
+                    />
+                </div>
             ) : (
-                <ul className="mt-3 flex flex-col gap-2">
-                    {activities.map((a) => (
-                        <li key={a.activityId} data-row-id={a.activityId}>
-                            {editing?.activityId === a.activityId ? (
-                                <ActivityForm
-                                    activity={a}
-                                    projectId={projectId}
-                                    tasks={tasks}
-                                    locale={locale}
-                                    onClose={() => setEditing(null)}
-                                    onSaved={() => {
-                                        setEditing(null);
-                                        onChanged();
-                                    }}
-                                />
-                            ) : (
-                                <ActivityCard
-                                    activity={a}
-                                    locale={locale}
-                                    onEdit={() => setEditing(a)}
-                                    onDelete={async () => {
-                                        await del({ activityId: a.activityId });
-                                        onChanged();
-                                    }}
-                                />
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                <ol className="mt-4 flex flex-col gap-3">
+                    {chronological.map((a, index) => {
+                        const previous = index > 0 ? chronological[index - 1] : null;
+                        const showDaySeparator =
+                            !previous || !isSameDay(a.occurredAt as unknown as string, previous.occurredAt as unknown as string);
+                        const isEditingThis = editing?.activityId === a.activityId;
+                        return (
+                            <Fragment key={a.activityId}>
+                                {showDaySeparator ? <ChatDaySeparator iso={a.occurredAt as unknown as string} locale={locale} /> : null}
+                                <li data-row-id={a.activityId}>
+                                    {isEditingThis ? (
+                                        <ActivityForm
+                                            activity={a}
+                                            projectId={projectId}
+                                            tasks={tasks}
+                                            locale={locale}
+                                            onClose={() => setEditing(null)}
+                                            onSaved={() => {
+                                                setEditing(null);
+                                                onChanged();
+                                            }}
+                                        />
+                                    ) : (
+                                        <ActivityMessage
+                                            activity={a}
+                                            locale={locale}
+                                            onEdit={() => setEditing(a)}
+                                            onDelete={async () => {
+                                                await del({ activityId: a.activityId });
+                                                onChanged();
+                                            }}
+                                        />
+                                    )}
+                                </li>
+                            </Fragment>
+                        );
+                    })}
+                </ol>
             )}
+
+            {adding ? (
+                <div className="mt-4">
+                    <ActivityForm
+                        activity={null}
+                        projectId={projectId}
+                        tasks={tasks}
+                        locale={locale}
+                        onClose={() => setAdding(false)}
+                        onSaved={() => {
+                            setAdding(false);
+                            onChanged();
+                        }}
+                    />
+                </div>
+            ) : null}
         </section>
     );
 }
 
-function ActivityCard({
+function isSameDay(aIso: string, bIso: string): boolean {
+    const a = parseISO(aIso);
+    const b = parseISO(bIso);
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+// Centered "Montag, 14. März" pill — anchors the chat in time without competing
+// with the bubbles. Repeats per day, not per row.
+function ChatDaySeparator({ iso, locale }: { iso: string; locale: Locale }) {
+    const formatted = format(parseISO(iso), locale === 'de' ? 'EEEE, d. MMMM yyyy' : 'EEEE, d MMMM yyyy', {
+        locale: dateFnsLocale(locale),
+    });
+    return (
+        <li aria-hidden className="flex items-center justify-center py-1">
+            <span className="rounded-full bg-muted/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {formatted}
+            </span>
+        </li>
+    );
+}
+
+// Single activity rendered as a chat bubble or system row, picked by direction:
+//   - outgoing → right-aligned bubble, primary tint
+//   - incoming → left-aligned bubble, neutral tint
+//   - internal → centered card. Work-timer rows collapse to a single line
+//     ("Du hast 1 h 15 m gearbeitet · 14:30") with an expand-on-click chevron.
+function ActivityMessage({
     activity,
     locale,
     onEdit,
@@ -1447,82 +1531,202 @@ function ActivityCard({
     onEdit: () => void;
     onDelete: () => void;
 }) {
+    if (activity.direction === 'internal') {
+        return <InternalActivityRow activity={activity} locale={locale} onEdit={onEdit} onDelete={onDelete} />;
+    }
+    return <BubbleActivityRow activity={activity} locale={locale} onEdit={onEdit} onDelete={onDelete} />;
+}
+
+function BubbleActivityRow({
+    activity,
+    locale,
+    onEdit,
+    onDelete,
+}: {
+    activity: ActivityRow;
+    locale: Locale;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
+    const isOutgoing = activity.direction === 'outgoing';
     const Icon = ACTIVITY_KIND_ICONS[activity.kind];
-    const occurredAt = format(parseISO(activity.occurredAt as unknown as string), 'yyyy-MM-dd HH:mm');
-    const isRunning = activity.kind === 'work' && activity.endedAt === null;
+    const time = format(parseISO(activity.occurredAt as unknown as string), 'HH:mm');
+
     return (
-        <div className="flex items-start gap-2 rounded-md border border-border/40 bg-card/20 p-2 text-xs">
-            <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <span className="font-medium">{activity.title}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {ACTIVITY_KIND_LABELS[activity.kind][locale]}
-                    </span>
-                    {activity.channel ? (
-                        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">
-                            {ACTIVITY_CHANNEL_LABELS[activity.channel][locale]}
-                        </span>
-                    ) : null}
-                    {activity.durationSec ? (
-                        <span className="text-[10px] text-muted-foreground">· {formatDuration(activity.durationSec)}</span>
+        <div className={cn('flex w-full', isOutgoing ? 'justify-end' : 'justify-start')}>
+            <div className={cn('group flex max-w-[min(36rem,90%)] flex-col gap-1', isOutgoing ? 'items-end' : 'items-start')}>
+                <div
+                    className={cn(
+                        'flex items-center gap-1.5 text-[11px] text-muted-foreground',
+                        isOutgoing ? 'flex-row-reverse' : 'flex-row',
+                    )}
+                >
+                    <Icon className="size-3" />
+                    <span>{ACTIVITY_KIND_LABELS[activity.kind][locale]}</span>
+                    {activity.channel ? <span>· {ACTIVITY_CHANNEL_LABELS[activity.channel][locale]}</span> : null}
+                    <span>· {time}</span>
+                </div>
+                <div
+                    className={cn(
+                        'relative rounded-2xl border px-3.5 py-2.5 text-sm shadow-sm',
+                        isOutgoing
+                            ? 'rounded-br-md border-primary/20 bg-primary/10 text-foreground'
+                            : 'rounded-bl-md border-border/60 bg-card/60 text-foreground',
+                    )}
+                >
+                    <div className="font-medium">{activity.title}</div>
+                    {activity.notes ? (
+                        <div className="mt-1 whitespace-pre-line text-[13px] text-muted-foreground">{activity.notes}</div>
                     ) : null}
                     {activity.kind === 'offer' && activity.amountCents != null ? (
-                        <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
-                            {formatEur(activity.amountCents)}
-                        </span>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                                {formatEur(activity.amountCents)}
+                            </span>
+                            {activity.offerStatus ? (
+                                <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground">
+                                    {OFFER_STATUS_LABELS[activity.offerStatus][locale]}
+                                </span>
+                            ) : null}
+                        </div>
                     ) : null}
-                    {activity.kind === 'offer' && activity.offerStatus ? (
-                        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">
-                            {OFFER_STATUS_LABELS[activity.offerStatus][locale]}
-                        </span>
+                    {activity.durationSec ? (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                            {{ de: 'Dauer', en: 'Duration' }[locale]}: {formatDuration(activity.durationSec)}
+                        </div>
                     ) : null}
-                    {isRunning ? (
-                        <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                            {{ de: 'läuft', en: 'running' }[locale]}
-                        </span>
-                    ) : null}
+                    {(activity.links.length > 0 || activity.files.length > 0) && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                            {activity.links.map((link) => (
+                                <a
+                                    key={link.projectLinkId}
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 rounded border border-border/60 bg-background/40 px-1.5 py-0.5 text-[11px] hover:bg-muted"
+                                >
+                                    <ExternalLinkIcon className="size-2.5" />
+                                    {link.label || link.url.replace(/^https?:\/\//, '').slice(0, 40)}
+                                </a>
+                            ))}
+                            {activity.files.map((file) => (
+                                <a
+                                    key={file.projectFileId}
+                                    href={file.fileUpload.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 rounded border border-border/60 bg-background/40 px-1.5 py-0.5 text-[11px] hover:bg-muted"
+                                >
+                                    <PaperclipIcon className="size-2.5" />
+                                    {file.label || file.fileUpload.filename}
+                                </a>
+                            ))}
+                        </div>
+                    )}
                 </div>
-                {activity.notes ? <div className="mt-0.5 whitespace-pre-line text-muted-foreground">{activity.notes}</div> : null}
-                {(activity.links.length > 0 || activity.files.length > 0) && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                        {activity.links.map((link) => (
-                            <a
-                                key={link.projectLinkId}
-                                href={link.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 rounded border border-border/60 px-1.5 py-0.5 text-[10px] hover:bg-muted"
-                            >
-                                <ExternalLinkIcon className="size-2.5" />
-                                {link.label || link.url.replace(/^https?:\/\//, '').slice(0, 40)}
-                            </a>
-                        ))}
-                        {activity.files.map((file) => (
-                            <a
-                                key={file.projectFileId}
-                                href={file.fileUpload.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 rounded border border-border/60 px-1.5 py-0.5 text-[10px] hover:bg-muted"
-                            >
-                                <PaperclipIcon className="size-2.5" />
-                                {file.label || file.fileUpload.filename}
-                            </a>
-                        ))}
-                    </div>
-                )}
-                <div className="mt-0.5 text-[10px] text-muted-foreground">{occurredAt}</div>
-            </div>
-            <div className="flex shrink-0 items-center gap-0.5">
-                {activity.kind === 'work' ? null : (
+                <div className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                     <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} onClick={onEdit}>
                         <PencilIcon />
                     </Button>
-                )}
-                <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Löschen', en: 'Delete' }[locale]} onClick={onDelete}>
-                    <Trash2Icon />
-                </Button>
+                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Löschen', en: 'Delete' }[locale]} onClick={onDelete}>
+                        <Trash2Icon />
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function InternalActivityRow({
+    activity,
+    locale,
+    onEdit,
+    onDelete,
+}: {
+    activity: ActivityRow;
+    locale: Locale;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
+    // Work-timer rows are collapsed by default — they're measurements, not
+    // turns, and the timeline reads better when they don't shout. Note and
+    // milestone rows are short by nature; they render expanded.
+    const isWork = activity.kind === 'work';
+    const [expanded, setExpanded] = useState(!isWork);
+    const Icon = ACTIVITY_KIND_ICONS[activity.kind];
+    const isRunning = isWork && activity.endedAt === null;
+    const time = format(parseISO(activity.occurredAt as unknown as string), 'HH:mm');
+
+    if (isWork && !expanded) {
+        const summary = activity.durationSec
+            ? `${{ de: 'Du hast', en: 'You worked' }[locale]} ${formatDuration(activity.durationSec)} ${{ de: 'am Projekt gearbeitet', en: 'on the project' }[locale]}`
+            : isRunning
+              ? { de: 'Arbeit läuft …', en: 'Working …' }[locale]
+              : { de: 'Arbeitseintrag', en: 'Work entry' }[locale];
+        return (
+            <div className="flex items-center justify-center">
+                <button
+                    type="button"
+                    onClick={() => setExpanded(true)}
+                    className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-card/40 px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground"
+                >
+                    <TimerIcon className="size-3" />
+                    <span>{summary}</span>
+                    <span className="opacity-60">· {time}</span>
+                    {isRunning ? (
+                        <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                            {{ de: 'läuft', en: 'running' }[locale]}
+                        </span>
+                    ) : null}
+                    <ChevronDownIcon className="size-3 opacity-60" />
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex w-full justify-center">
+            <div className="group flex w-full max-w-[min(40rem,95%)] items-start gap-2 rounded-lg border border-border/40 bg-card/30 px-3 py-2 text-sm">
+                <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="font-medium">{activity.title}</span>
+                        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                            {ACTIVITY_KIND_LABELS[activity.kind][locale]}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">· {time}</span>
+                        {activity.durationSec ? (
+                            <span className="text-[11px] text-muted-foreground">· {formatDuration(activity.durationSec)}</span>
+                        ) : null}
+                        {isRunning ? (
+                            <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                                {{ de: 'läuft', en: 'running' }[locale]}
+                            </span>
+                        ) : null}
+                    </div>
+                    {activity.notes ? (
+                        <div className="mt-1 whitespace-pre-line text-[13px] text-muted-foreground">{activity.notes}</div>
+                    ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                    {isWork ? (
+                        <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={{ de: 'Einklappen', en: 'Collapse' }[locale]}
+                            onClick={() => setExpanded(false)}
+                        >
+                            <ChevronUpIcon />
+                        </Button>
+                    ) : (
+                        <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} onClick={onEdit}>
+                            <PencilIcon />
+                        </Button>
+                    )}
+                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Löschen', en: 'Delete' }[locale]} onClick={onDelete}>
+                        <Trash2Icon />
+                    </Button>
+                </div>
             </div>
         </div>
     );
@@ -1546,6 +1750,9 @@ function ActivityForm({
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertActivityDocument);
     const [kind, setKind] = useState<GqlCProjectActivityKind>(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'note'));
     const [channel, setChannel] = useState<GqlCProjectActivityChannel | null>(activity?.channel ?? null);
+    const [direction, setDirection] = useState<GqlCProjectActivityDirection>(
+        activity?.direction ?? defaultDirectionForKind(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'note')),
+    );
     const [title, setTitle] = useState(activity?.title ?? '');
     const [notes, setNotes] = useState(activity?.notes ?? '');
     const [occurredAt, setOccurredAt] = useState<Date>(activity ? parseISO(activity.occurredAt as unknown as string) : new Date());
@@ -1563,6 +1770,9 @@ function ActivityForm({
 
     const channelEnabled = kind === 'clientContact' || kind === 'meeting';
     const offerFieldsEnabled = kind === 'offer';
+    // Direction is only a meaningful choice for client-facing kinds. Work /
+    // note / milestone are always `internal` (the server enforces this too).
+    const directionEnabled = kind === 'clientContact' || kind === 'meeting' || kind === 'offer';
 
     return (
         <form
@@ -1579,6 +1789,7 @@ function ActivityForm({
                     taskId,
                     kind,
                     channel: channelEnabled ? channel : null,
+                    direction: directionEnabled ? direction : null,
                     title: title.trim(),
                     notes: notes.trim() || null,
                     occurredAt: occurredAt.toISOString(),
@@ -1599,7 +1810,16 @@ function ActivityForm({
             }}
         >
             <div className="flex flex-wrap gap-2">
-                <Select value={kind} onValueChange={(v: GqlCProjectActivityKind) => setKind(v)}>
+                <Select
+                    value={kind}
+                    onValueChange={(v: GqlCProjectActivityKind) => {
+                        setKind(v);
+                        // Auto-snap direction to the kind-appropriate default so the
+                        // user doesn't have to re-pick it on every switch. Manual
+                        // override still works after this.
+                        setDirection(defaultDirectionForKind(v));
+                    }}
+                >
                     <SelectTrigger className="h-8 w-[160px] text-xs">
                         <SelectValue />
                     </SelectTrigger>
@@ -1626,6 +1846,17 @@ function ActivityForm({
                                     {ACTIVITY_CHANNEL_LABELS[c][locale]}
                                 </SelectItem>
                             ))}
+                        </SelectContent>
+                    </Select>
+                ) : null}
+                {directionEnabled ? (
+                    <Select value={direction} onValueChange={(v: GqlCProjectActivityDirection) => setDirection(v)}>
+                        <SelectTrigger className="h-8 w-[140px] text-xs">
+                            <SelectValue placeholder={{ de: 'Richtung', en: 'Direction' }[locale]} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="outgoing">{ACTIVITY_DIRECTION_LABELS.outgoing[locale]}</SelectItem>
+                            <SelectItem value="incoming">{ACTIVITY_DIRECTION_LABELS.incoming[locale]}</SelectItem>
                         </SelectContent>
                     </Select>
                 ) : null}
@@ -2041,6 +2272,17 @@ function FilesSection({
     onChanged: () => void;
 }) {
     const [adding, setAdding] = useState(false);
+    // Single dialog instance + open/index lifted here so arrow-key navigation
+    // walks every file on the tab, mirroring how `ChatMessageUser` hosts the
+    // dialog for its bubble's attachments. The dialog itself decides per-MIME
+    // whether to render an image, the markdown view, a `<pre>`, or the
+    // generic info card — see `ChatAttachmentPreviewDialog.tsx`.
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewIndex, setPreviewIndex] = useState(0);
+    // Build the attachment list the dialog navigates in one pass — the
+    // ordering matches the rendered `<ul>` below so the index handed to
+    // `onOpenPreview` points at the right row.
+    const attachments = useMemo(() => files.map((f) => f.fileUpload), [files]);
     return (
         <section>
             <div className="flex items-center justify-between">
@@ -2075,27 +2317,67 @@ function FilesSection({
                 />
             ) : (
                 <ul className="mt-3 flex flex-col gap-2">
-                    {files.map((file) => (
+                    {files.map((file, index) => (
                         <li key={file.projectFileId} data-row-id={file.projectFileId}>
-                            <FileCard file={file} locale={locale} onChanged={onChanged} />
+                            <FileCard
+                                file={file}
+                                locale={locale}
+                                onChanged={onChanged}
+                                onOpenPreview={() => {
+                                    setPreviewIndex(index);
+                                    setPreviewOpen(true);
+                                }}
+                            />
                         </li>
                     ))}
                 </ul>
             )}
+            {attachments.length > 0 ? (
+                <ChatAttachmentPreviewDialog
+                    open={previewOpen}
+                    onOpenChange={setPreviewOpen}
+                    attachments={attachments}
+                    index={previewIndex}
+                    onIndexChange={setPreviewIndex}
+                />
+            ) : null}
         </section>
     );
 }
 
-function FileCard({ file, locale, onChanged }: { file: FileRow; locale: Locale; onChanged: () => void }) {
+function FileCard({
+    file,
+    locale,
+    onChanged,
+    onOpenPreview,
+}: {
+    file: FileRow;
+    locale: Locale;
+    onChanged: () => void;
+    onOpenPreview: () => void;
+}) {
     const [, togglePin] = useMutation(WorkspaceProjectFileTogglePinDocument);
     const [, del] = useMutation(WorkspaceProjectFileDeleteDocument);
+    // Image / markdown / text formats get an inline preview (same dialog the
+    // chat surface uses). PDFs and archives fall back to a plain link that
+    // opens in a new tab — the dialog's "other" branch would just show a
+    // download card, so the anchor saves a click.
+    const previewKind = previewKindFor(file.fileUpload.mediaType);
+    const supportsInlinePreview = previewKind === 'image' || previewKind === 'markdown' || previewKind === 'text';
+    const label = file.label || file.fileUpload.filename;
     return (
         <div className="flex items-start gap-2 rounded-md border border-border/40 bg-card/20 p-2 text-sm">
             <FileIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
-                <a href={file.fileUpload.url} target="_blank" rel="noreferrer" className="font-medium hover:underline">
-                    {file.label || file.fileUpload.filename}
-                </a>
+                {supportsInlinePreview ? (
+                    <button type="button" onClick={onOpenPreview} className="text-left font-medium hover:underline">
+                        {label}
+                    </button>
+                ) : (
+                    <a href={file.fileUpload.url} target="_blank" rel="noreferrer" className="font-medium hover:underline">
+                        {label}
+                    </a>
+                )}
                 <div className="text-[11px] text-muted-foreground">
                     {FILE_KIND_LABELS[file.kind][locale]} · {file.fileUpload.mediaType} · {Math.round(file.fileUpload.size / 1024)} KB
                     {file.activityId ? <> · {{ de: 'aus Eintrag', en: 'from entry' }[locale]}</> : null}

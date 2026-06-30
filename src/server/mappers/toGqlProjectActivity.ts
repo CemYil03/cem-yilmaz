@@ -25,6 +25,7 @@ export function toGqlProjectActivity(
         taskId: row.taskId,
         kind: row.kind,
         channel: row.channel,
+        direction: row.direction,
         title: row.title,
         notes: row.notes,
         occurredAt: row.occurredAt,

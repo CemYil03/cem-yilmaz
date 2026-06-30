@@ -167,7 +167,7 @@ Failures are logged and swallowed — the chat path has already returned.
 
 The boundary is one query: `profileSummaryGet` in `src/server/queries/profileSummaryGet.ts`. It selects only `Profile.summary`. The agent
 factory calls it; nothing else does. `prose` and `psychProfile` are reachable only through `Admin.profile` on the read namespace, which is
-gated by `guardAdmin` and never read by any agent.
+reached via `currentSession.user.admin` (non-null only for admin sessions) and never read by any agent.
 
 If you ever feel the urge to widen `profileSummaryGet`, don't. Add a new query.
 

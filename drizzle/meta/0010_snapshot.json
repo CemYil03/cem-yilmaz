@@ -1,0 +1,2678 @@
+{
+    "id": "e9ec5948-c2c1-457a-b305-72da415bc19f",
+    "prevId": "186bdb29-dfdb-4fb8-9d87-c2e7d8f2e6e3",
+    "version": "7",
+    "dialect": "postgresql",
+    "tables": {
+        "public.AdminChatConfig": {
+            "name": "AdminChatConfig",
+            "schema": "",
+            "columns": {
+                "adminChatConfigId": {
+                    "name": "adminChatConfigId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "defaultModelId": {
+                    "name": "defaultModelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessageUserAttachments": {
+            "name": "ChatMessageUserAttachments",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "fileUploadId": {
+                    "name": "fileUploadId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {
+                "ChatMessageUserAttachments_pk": {
+                    "name": "ChatMessageUserAttachments_pk",
+                    "columns": [
+                        {
+                            "expression": "chatMessageId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "fileUploadId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ChatMessageUserAttachments_chatMessageId_idx": {
+                    "name": "ChatMessageUserAttachments_chatMessageId_idx",
+                    "columns": [
+                        {
+                            "expression": "chatMessageId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessageUserAttachments_chatMessageId_ChatMessagesUser_chatMessageId_fk": {
+                    "name": "ChatMessageUserAttachments_chatMessageId_ChatMessagesUser_chatMessageId_fk",
+                    "tableFrom": "ChatMessageUserAttachments",
+                    "tableTo": "ChatMessagesUser",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessageUserAttachments_fileUploadId_FileUploads_fileUploadId_fk": {
+                    "name": "ChatMessageUserAttachments_fileUploadId_FileUploads_fileUploadId_fk",
+                    "tableFrom": "ChatMessageUserAttachments",
+                    "tableTo": "FileUploads",
+                    "columnsFrom": ["fileUploadId"],
+                    "columnsTo": ["fileUploadId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessages": {
+            "name": "ChatMessages",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "chatId": {
+                    "name": "chatId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "kind": {
+                    "name": "kind",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "authorUserId": {
+                    "name": "authorUserId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "parentChatMessageId": {
+                    "name": "parentChatMessageId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "ChatMessages_chatId_createdAt_idx": {
+                    "name": "ChatMessages_chatId_createdAt_idx",
+                    "columns": [
+                        {
+                            "expression": "chatId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "createdAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ChatMessages_kind_idx": {
+                    "name": "ChatMessages_kind_idx",
+                    "columns": [
+                        {
+                            "expression": "kind",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ChatMessages_parentChatMessageId_createdAt_idx": {
+                    "name": "ChatMessages_parentChatMessageId_createdAt_idx",
+                    "columns": [
+                        {
+                            "expression": "parentChatMessageId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "createdAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessages_chatId_Chats_chatId_fk": {
+                    "name": "ChatMessages_chatId_Chats_chatId_fk",
+                    "tableFrom": "ChatMessages",
+                    "tableTo": "Chats",
+                    "columnsFrom": ["chatId"],
+                    "columnsTo": ["chatId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessages_authorUserId_Users_userId_fk": {
+                    "name": "ChatMessages_authorUserId_Users_userId_fk",
+                    "tableFrom": "ChatMessages",
+                    "tableTo": "Users",
+                    "columnsFrom": ["authorUserId"],
+                    "columnsTo": ["userId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessages_parentChatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessages_parentChatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessages",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["parentChatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesAssistantInputCollection": {
+            "name": "ChatMessagesAssistantInputCollection",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "prompt": {
+                    "name": "prompt",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "inputs": {
+                    "name": "inputs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "mode": {
+                    "name": "mode",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'form'"
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesAssistantInputCollection_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesAssistantInputCollection_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesAssistantInputCollection",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesAssistantText": {
+            "name": "ChatMessagesAssistantText",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "body": {
+                    "name": "body",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesAssistantText_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesAssistantText_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesAssistantText",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesToolApprovalRequest": {
+            "name": "ChatMessagesToolApprovalRequest",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "approvalId": {
+                    "name": "approvalId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolCallId": {
+                    "name": "toolCallId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolName": {
+                    "name": "toolName",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolArgs": {
+                    "name": "toolArgs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesToolApprovalRequest_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesToolApprovalRequest_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesToolApprovalRequest",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {
+                "ChatMessagesToolApprovalRequest_approvalId_uniq": {
+                    "name": "ChatMessagesToolApprovalRequest_approvalId_uniq",
+                    "nullsNotDistinct": false,
+                    "columns": ["approvalId"]
+                }
+            },
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesToolApprovalResponse": {
+            "name": "ChatMessagesToolApprovalResponse",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "approvalId": {
+                    "name": "approvalId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "approved": {
+                    "name": "approved",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "reason": {
+                    "name": "reason",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "ChatMessagesToolApprovalResponse_approvalId_uniq": {
+                    "name": "ChatMessagesToolApprovalResponse_approvalId_uniq",
+                    "columns": [
+                        {
+                            "expression": "approvalId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessagesToolApprovalResponse_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesToolApprovalResponse_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesToolApprovalResponse",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessagesToolApprovalResponse_approvalId_ChatMessagesToolApprovalRequest_approvalId_fk": {
+                    "name": "ChatMessagesToolApprovalResponse_approvalId_ChatMessagesToolApprovalRequest_approvalId_fk",
+                    "tableFrom": "ChatMessagesToolApprovalResponse",
+                    "tableTo": "ChatMessagesToolApprovalRequest",
+                    "columnsFrom": ["approvalId"],
+                    "columnsTo": ["approvalId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {
+                "ChatMessagesToolApprovalResponse_approvalId_unique": {
+                    "name": "ChatMessagesToolApprovalResponse_approvalId_unique",
+                    "nullsNotDistinct": false,
+                    "columns": ["approvalId"]
+                }
+            },
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesToolCall": {
+            "name": "ChatMessagesToolCall",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "toolCallId": {
+                    "name": "toolCallId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolName": {
+                    "name": "toolName",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolArgs": {
+                    "name": "toolArgs",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "toolResult": {
+                    "name": "toolResult",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "resultedAt": {
+                    "name": "resultedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "modelId": {
+                    "name": "modelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "inputTokens": {
+                    "name": "inputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "outputTokens": {
+                    "name": "outputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "totalTokens": {
+                    "name": "totalTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "reasoningTokens": {
+                    "name": "reasoningTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "cachedInputTokens": {
+                    "name": "cachedInputTokens",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                }
+            },
+            "indexes": {
+                "ChatMessagesToolCall_toolCallId_idx": {
+                    "name": "ChatMessagesToolCall_toolCallId_idx",
+                    "columns": [
+                        {
+                            "expression": "toolCallId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ChatMessagesToolCall_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesToolCall_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesToolCall",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesUser": {
+            "name": "ChatMessagesUser",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "body": {
+                    "name": "body",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesUser_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesUser_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesUser",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ChatMessagesUserInput": {
+            "name": "ChatMessagesUserInput",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "collectionMessageId": {
+                    "name": "collectionMessageId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "answers": {
+                    "name": "answers",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ChatMessagesUserInput_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ChatMessagesUserInput_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesUserInput",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ChatMessagesUserInput_collectionMessageId_ChatMessagesAssistantInputCollection_chatMessageId_fk": {
+                    "name": "ChatMessagesUserInput_collectionMessageId_ChatMessagesAssistantInputCollection_chatMessageId_fk",
+                    "tableFrom": "ChatMessagesUserInput",
+                    "tableTo": "ChatMessagesAssistantInputCollection",
+                    "columnsFrom": ["collectionMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Chats": {
+            "name": "Chats",
+            "schema": "",
+            "columns": {
+                "chatId": {
+                    "name": "chatId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "title": {
+                    "name": "title",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "scope": {
+                    "name": "scope",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'public'"
+                },
+                "sessionId": {
+                    "name": "sessionId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "lastModifiedAt": {
+                    "name": "lastModifiedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "Chats_sessionId_lastModifiedAt_idx": {
+                    "name": "Chats_sessionId_lastModifiedAt_idx",
+                    "columns": [
+                        {
+                            "expression": "sessionId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "lastModifiedAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "Chats_sessionId_Sessions_sessionId_fk": {
+                    "name": "Chats_sessionId_Sessions_sessionId_fk",
+                    "tableFrom": "Chats",
+                    "tableTo": "Sessions",
+                    "columnsFrom": ["sessionId"],
+                    "columnsTo": ["sessionId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvEducation": {
+            "name": "CvEducation",
+            "schema": "",
+            "columns": {
+                "cvEducationId": {
+                    "name": "cvEducationId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "degreeDe": {
+                    "name": "degreeDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "degreeEn": {
+                    "name": "degreeEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "institutionDe": {
+                    "name": "institutionDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "institutionEn": {
+                    "name": "institutionEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "subjectDe": {
+                    "name": "subjectDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "subjectEn": {
+                    "name": "subjectEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "startDate": {
+                    "name": "startDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "endDate": {
+                    "name": "endDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "notesDe": {
+                    "name": "notesDe",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "notesEn": {
+                    "name": "notesEn",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvEducation_position_idx": {
+                    "name": "CvEducation_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvExperience": {
+            "name": "CvExperience",
+            "schema": "",
+            "columns": {
+                "cvExperienceId": {
+                    "name": "cvExperienceId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "roleDe": {
+                    "name": "roleDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "roleEn": {
+                    "name": "roleEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "companyDe": {
+                    "name": "companyDe",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "companyEn": {
+                    "name": "companyEn",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "startDate": {
+                    "name": "startDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "endDate": {
+                    "name": "endDate",
+                    "type": "date",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "descriptionDe": {
+                    "name": "descriptionDe",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "descriptionEn": {
+                    "name": "descriptionEn",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "technologies": {
+                    "name": "technologies",
+                    "type": "text[]",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'{}'"
+                },
+                "managerName": {
+                    "name": "managerName",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvExperience_position_idx": {
+                    "name": "CvExperience_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvHobby": {
+            "name": "CvHobby",
+            "schema": "",
+            "columns": {
+                "cvHobbyId": {
+                    "name": "cvHobbyId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "textDe": {
+                    "name": "textDe",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "textEn": {
+                    "name": "textEn",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "since": {
+                    "name": "since",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvHobby_position_idx": {
+                    "name": "CvHobby_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.CvSkill": {
+            "name": "CvSkill",
+            "schema": "",
+            "columns": {
+                "cvSkillId": {
+                    "name": "cvSkillId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "category": {
+                    "name": "category",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "label": {
+                    "name": "label",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "CvSkill_category_idx": {
+                    "name": "CvSkill_category_idx",
+                    "columns": [
+                        {
+                            "expression": "category",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "CvSkill_position_idx": {
+                    "name": "CvSkill_position_idx",
+                    "columns": [
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.FileUploads": {
+            "name": "FileUploads",
+            "schema": "",
+            "columns": {
+                "fileUploadId": {
+                    "name": "fileUploadId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "userId": {
+                    "name": "userId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "filename": {
+                    "name": "filename",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "mediaType": {
+                    "name": "mediaType",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "size": {
+                    "name": "size",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "bytes": {
+                    "name": "bytes",
+                    "type": "bytea",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "FileUploads_userId_idx": {
+                    "name": "FileUploads_userId_idx",
+                    "columns": [
+                        {
+                            "expression": "userId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "FileUploads_userId_Users_userId_fk": {
+                    "name": "FileUploads_userId_Users_userId_fk",
+                    "tableFrom": "FileUploads",
+                    "tableTo": "Users",
+                    "columnsFrom": ["userId"],
+                    "columnsTo": ["userId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Logs": {
+            "name": "Logs",
+            "schema": "",
+            "columns": {
+                "logId": {
+                    "name": "logId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "sessionId": {
+                    "name": "sessionId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "level": {
+                    "name": "level",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "message": {
+                    "name": "message",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "context": {
+                    "name": "context",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "Logs_sessionId_Sessions_sessionId_fk": {
+                    "name": "Logs_sessionId_Sessions_sessionId_fk",
+                    "tableFrom": "Logs",
+                    "tableTo": "Sessions",
+                    "columnsFrom": ["sessionId"],
+                    "columnsTo": ["sessionId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Profile": {
+            "name": "Profile",
+            "schema": "",
+            "columns": {
+                "profileId": {
+                    "name": "profileId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "summary": {
+                    "name": "summary",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "prose": {
+                    "name": "prose",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "psychProfile": {
+                    "name": "psychProfile",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "''"
+                },
+                "synthesizedAt": {
+                    "name": "synthesizedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "synthesisModelId": {
+                    "name": "synthesisModelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "observationsSinceSynthesis": {
+                    "name": "observationsSinceSynthesis",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ProfileMessageAnalysis": {
+            "name": "ProfileMessageAnalysis",
+            "schema": "",
+            "columns": {
+                "chatMessageId": {
+                    "name": "chatMessageId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "observationsCreated": {
+                    "name": "observationsCreated",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "analyzerModelId": {
+                    "name": "analyzerModelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "analyzedAt": {
+                    "name": "analyzedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "ProfileMessageAnalysis_chatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ProfileMessageAnalysis_chatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ProfileMessageAnalysis",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["chatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ProfileObservations": {
+            "name": "ProfileObservations",
+            "schema": "",
+            "columns": {
+                "observationId": {
+                    "name": "observationId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "sourceChatMessageId": {
+                    "name": "sourceChatMessageId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "category": {
+                    "name": "category",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "content": {
+                    "name": "content",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "confidence": {
+                    "name": "confidence",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "analyzerModelId": {
+                    "name": "analyzerModelId",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "dismissedAt": {
+                    "name": "dismissedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "ProfileObservations_category_createdAt_idx": {
+                    "name": "ProfileObservations_category_createdAt_idx",
+                    "columns": [
+                        {
+                            "expression": "category",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "createdAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProfileObservations_sourceChatMessageId_idx": {
+                    "name": "ProfileObservations_sourceChatMessageId_idx",
+                    "columns": [
+                        {
+                            "expression": "sourceChatMessageId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProfileObservations_createdAt_idx": {
+                    "name": "ProfileObservations_createdAt_idx",
+                    "columns": [
+                        {
+                            "expression": "createdAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ProfileObservations_sourceChatMessageId_ChatMessages_chatMessageId_fk": {
+                    "name": "ProfileObservations_sourceChatMessageId_ChatMessages_chatMessageId_fk",
+                    "tableFrom": "ProfileObservations",
+                    "tableTo": "ChatMessages",
+                    "columnsFrom": ["sourceChatMessageId"],
+                    "columnsTo": ["chatMessageId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ProjectActivities": {
+            "name": "ProjectActivities",
+            "schema": "",
+            "columns": {
+                "activityId": {
+                    "name": "activityId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "projectId": {
+                    "name": "projectId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "taskId": {
+                    "name": "taskId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "kind": {
+                    "name": "kind",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "channel": {
+                    "name": "channel",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "direction": {
+                    "name": "direction",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'internal'"
+                },
+                "title": {
+                    "name": "title",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "notes": {
+                    "name": "notes",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "occurredAt": {
+                    "name": "occurredAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "startedAt": {
+                    "name": "startedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "endedAt": {
+                    "name": "endedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "durationSec": {
+                    "name": "durationSec",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "amountCents": {
+                    "name": "amountCents",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "offerStatus": {
+                    "name": "offerStatus",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "ProjectActivities_projectId_occurredAt_idx": {
+                    "name": "ProjectActivities_projectId_occurredAt_idx",
+                    "columns": [
+                        {
+                            "expression": "projectId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "occurredAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProjectActivities_taskId_idx": {
+                    "name": "ProjectActivities_taskId_idx",
+                    "columns": [
+                        {
+                            "expression": "taskId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProjectActivities_singleActiveTimer_uniq": {
+                    "name": "ProjectActivities_singleActiveTimer_uniq",
+                    "columns": [
+                        {
+                            "expression": "kind",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": true,
+                    "where": "\"ProjectActivities\".\"endedAt\" IS NULL AND \"ProjectActivities\".\"kind\" = 'work'",
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ProjectActivities_projectId_Projects_projectId_fk": {
+                    "name": "ProjectActivities_projectId_Projects_projectId_fk",
+                    "tableFrom": "ProjectActivities",
+                    "tableTo": "Projects",
+                    "columnsFrom": ["projectId"],
+                    "columnsTo": ["projectId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ProjectActivities_taskId_Tasks_taskId_fk": {
+                    "name": "ProjectActivities_taskId_Tasks_taskId_fk",
+                    "tableFrom": "ProjectActivities",
+                    "tableTo": "Tasks",
+                    "columnsFrom": ["taskId"],
+                    "columnsTo": ["taskId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ProjectFiles": {
+            "name": "ProjectFiles",
+            "schema": "",
+            "columns": {
+                "projectFileId": {
+                    "name": "projectFileId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "projectId": {
+                    "name": "projectId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "activityId": {
+                    "name": "activityId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "fileUploadId": {
+                    "name": "fileUploadId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "label": {
+                    "name": "label",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "kind": {
+                    "name": "kind",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'other'"
+                },
+                "pinned": {
+                    "name": "pinned",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "ProjectFiles_projectId_pinned_idx": {
+                    "name": "ProjectFiles_projectId_pinned_idx",
+                    "columns": [
+                        {
+                            "expression": "projectId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "pinned",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProjectFiles_activityId_idx": {
+                    "name": "ProjectFiles_activityId_idx",
+                    "columns": [
+                        {
+                            "expression": "activityId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProjectFiles_fileUploadId_idx": {
+                    "name": "ProjectFiles_fileUploadId_idx",
+                    "columns": [
+                        {
+                            "expression": "fileUploadId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ProjectFiles_projectId_Projects_projectId_fk": {
+                    "name": "ProjectFiles_projectId_Projects_projectId_fk",
+                    "tableFrom": "ProjectFiles",
+                    "tableTo": "Projects",
+                    "columnsFrom": ["projectId"],
+                    "columnsTo": ["projectId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ProjectFiles_activityId_ProjectActivities_activityId_fk": {
+                    "name": "ProjectFiles_activityId_ProjectActivities_activityId_fk",
+                    "tableFrom": "ProjectFiles",
+                    "tableTo": "ProjectActivities",
+                    "columnsFrom": ["activityId"],
+                    "columnsTo": ["activityId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                },
+                "ProjectFiles_fileUploadId_FileUploads_fileUploadId_fk": {
+                    "name": "ProjectFiles_fileUploadId_FileUploads_fileUploadId_fk",
+                    "tableFrom": "ProjectFiles",
+                    "tableTo": "FileUploads",
+                    "columnsFrom": ["fileUploadId"],
+                    "columnsTo": ["fileUploadId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ProjectLinks": {
+            "name": "ProjectLinks",
+            "schema": "",
+            "columns": {
+                "projectLinkId": {
+                    "name": "projectLinkId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "projectId": {
+                    "name": "projectId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "activityId": {
+                    "name": "activityId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "url": {
+                    "name": "url",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "label": {
+                    "name": "label",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "kind": {
+                    "name": "kind",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'other'"
+                },
+                "pinned": {
+                    "name": "pinned",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "ProjectLinks_projectId_pinned_idx": {
+                    "name": "ProjectLinks_projectId_pinned_idx",
+                    "columns": [
+                        {
+                            "expression": "projectId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "pinned",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProjectLinks_activityId_idx": {
+                    "name": "ProjectLinks_activityId_idx",
+                    "columns": [
+                        {
+                            "expression": "activityId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ProjectLinks_projectId_Projects_projectId_fk": {
+                    "name": "ProjectLinks_projectId_Projects_projectId_fk",
+                    "tableFrom": "ProjectLinks",
+                    "tableTo": "Projects",
+                    "columnsFrom": ["projectId"],
+                    "columnsTo": ["projectId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "ProjectLinks_activityId_ProjectActivities_activityId_fk": {
+                    "name": "ProjectLinks_activityId_ProjectActivities_activityId_fk",
+                    "tableFrom": "ProjectLinks",
+                    "tableTo": "ProjectActivities",
+                    "columnsFrom": ["activityId"],
+                    "columnsTo": ["activityId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.ProjectRequests": {
+            "name": "ProjectRequests",
+            "schema": "",
+            "columns": {
+                "projectRequestId": {
+                    "name": "projectRequestId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "chatId": {
+                    "name": "chatId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "name": {
+                    "name": "name",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "email": {
+                    "name": "email",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "company": {
+                    "name": "company",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "projectType": {
+                    "name": "projectType",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "description": {
+                    "name": "description",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "budget": {
+                    "name": "budget",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "timeline": {
+                    "name": "timeline",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'pendingOtp'"
+                },
+                "otpHash": {
+                    "name": "otpHash",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "otpSalt": {
+                    "name": "otpSalt",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "otpExpiresAt": {
+                    "name": "otpExpiresAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "otpAttempts": {
+                    "name": "otpAttempts",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "verifiedAt": {
+                    "name": "verifiedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "ProjectRequests_status_createdAt_idx": {
+                    "name": "ProjectRequests_status_createdAt_idx",
+                    "columns": [
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "createdAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "ProjectRequests_chatId_idx": {
+                    "name": "ProjectRequests_chatId_idx",
+                    "columns": [
+                        {
+                            "expression": "chatId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "ProjectRequests_chatId_Chats_chatId_fk": {
+                    "name": "ProjectRequests_chatId_Chats_chatId_fk",
+                    "tableFrom": "ProjectRequests",
+                    "tableTo": "Chats",
+                    "columnsFrom": ["chatId"],
+                    "columnsTo": ["chatId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Projects": {
+            "name": "Projects",
+            "schema": "",
+            "columns": {
+                "projectId": {
+                    "name": "projectId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "title": {
+                    "name": "title",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "description": {
+                    "name": "description",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "notes": {
+                    "name": "notes",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'idea'"
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "sourceRequestId": {
+                    "name": "sourceRequestId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "startedAt": {
+                    "name": "startedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "completedAt": {
+                    "name": "completedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "Projects_status_position_idx": {
+                    "name": "Projects_status_position_idx",
+                    "columns": [
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "Projects_sourceRequestId_idx": {
+                    "name": "Projects_sourceRequestId_idx",
+                    "columns": [
+                        {
+                            "expression": "sourceRequestId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "Projects_sourceRequestId_ProjectRequests_projectRequestId_fk": {
+                    "name": "Projects_sourceRequestId_ProjectRequests_projectRequestId_fk",
+                    "tableFrom": "Projects",
+                    "tableTo": "ProjectRequests",
+                    "columnsFrom": ["sourceRequestId"],
+                    "columnsTo": ["projectRequestId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Sessions": {
+            "name": "Sessions",
+            "schema": "",
+            "columns": {
+                "sessionId": {
+                    "name": "sessionId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "userId": {
+                    "name": "userId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "lastInteractionAt": {
+                    "name": "lastInteractionAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "wasTerminatedAt": {
+                    "name": "wasTerminatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "connectionActive": {
+                    "name": "connectionActive",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "userAgent": {
+                    "name": "userAgent",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "ipHash": {
+                    "name": "ipHash",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "Sessions_ipHash_idx": {
+                    "name": "Sessions_ipHash_idx",
+                    "columns": [
+                        {
+                            "expression": "ipHash",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "Sessions_userId_Users_userId_fk": {
+                    "name": "Sessions_userId_Users_userId_fk",
+                    "tableFrom": "Sessions",
+                    "tableTo": "Users",
+                    "columnsFrom": ["userId"],
+                    "columnsTo": ["userId"],
+                    "onDelete": "set null",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Tasks": {
+            "name": "Tasks",
+            "schema": "",
+            "columns": {
+                "taskId": {
+                    "name": "taskId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "projectId": {
+                    "name": "projectId",
+                    "type": "uuid",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "title": {
+                    "name": "title",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "notes": {
+                    "name": "notes",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "status": {
+                    "name": "status",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "'todo'"
+                },
+                "position": {
+                    "name": "position",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": 0
+                },
+                "dueAt": {
+                    "name": "dueAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "completedAt": {
+                    "name": "completedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                },
+                "updatedAt": {
+                    "name": "updatedAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {
+                "Tasks_projectId_position_idx": {
+                    "name": "Tasks_projectId_position_idx",
+                    "columns": [
+                        {
+                            "expression": "projectId",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "position",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                },
+                "Tasks_status_dueAt_idx": {
+                    "name": "Tasks_status_dueAt_idx",
+                    "columns": [
+                        {
+                            "expression": "status",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        },
+                        {
+                            "expression": "dueAt",
+                            "isExpression": false,
+                            "asc": true,
+                            "nulls": "last"
+                        }
+                    ],
+                    "isUnique": false,
+                    "concurrently": false,
+                    "method": "btree",
+                    "with": {}
+                }
+            },
+            "foreignKeys": {
+                "Tasks_projectId_Projects_projectId_fk": {
+                    "name": "Tasks_projectId_Projects_projectId_fk",
+                    "tableFrom": "Tasks",
+                    "tableTo": "Projects",
+                    "columnsFrom": ["projectId"],
+                    "columnsTo": ["projectId"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        },
+        "public.Users": {
+            "name": "Users",
+            "schema": "",
+            "columns": {
+                "userId": {
+                    "name": "userId",
+                    "type": "uuid",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "name": {
+                    "name": "name",
+                    "type": "varchar",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "isAdmin": {
+                    "name": "isAdmin",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "createdAt": {
+                    "name": "createdAt",
+                    "type": "timestamp with time zone",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": "now()"
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": false
+        }
+    },
+    "enums": {},
+    "schemas": {},
+    "sequences": {},
+    "roles": {},
+    "policies": {},
+    "views": {},
+    "_meta": {
+        "columns": {},
+        "schemas": {},
+        "tables": {}
+    }
+}

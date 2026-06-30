@@ -42,7 +42,8 @@ import { taskUpsert } from '../commands/taskUpsert';
 import { userSessionTerminateMany } from '../commands/userSessionTerminateMany';
 import { userUpdate } from '../commands/userUpdate';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { guardAdmin } from '../guards/guardAdmin';
+import { users } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { guardAdminMutation } from '../guards/guardAdminMutation';
 import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
@@ -52,6 +53,7 @@ import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
 import { chatMessageRowLoad } from '../queries/chatMessageRowLoad';
 import { chatsFindBySession } from '../queries/chatsFindBySession';
+import { visitorChatFindOne } from '../queries/visitorChatFindOne';
 import { cvEducationList } from '../queries/cvEducationList';
 import { cvExperienceList } from '../queries/cvExperienceList';
 import { cvHobbyList } from '../queries/cvHobbyList';
@@ -122,9 +124,9 @@ import type {
     GqlSMutationChatInputCollectionRespondArgs,
     GqlSMutationChatMessageCreateArgs,
     GqlSMutationChatToolApprovalRespondArgs,
-    GqlSQueryChatArgs,
     GqlSResolvers,
     GqlSSession,
+    GqlSSessionVisitorChatArgs,
     GqlSSubscriptionChatUpdatesArgs,
     GqlSUser,
     GqlSUserMutation,
@@ -172,8 +174,32 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             visitorChats(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
                 return chatsFindBySession(requestingSession, serverRuntime);
             },
+            visitorChat(_session: GqlSSession, args: GqlSSessionVisitorChatArgs, requestingSession: GqlSSession) {
+                return visitorChatFindOne(args.chatId, requestingSession, serverRuntime);
+            },
             visitorChatQuota(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
                 return visitorChatQuotaFindOne(requestingSession, serverRuntime);
+            },
+        },
+        User: {
+            // Workspace read namespace, resolved only for the session's own
+            // admin user. Null for visitors, non-admin logged-in users, and
+            // cross-user lookups — that nullability is what lets the public
+            // landing page ask "is the current visitor an admin?" with a
+            // single field check instead of catching an exception. Mirrors
+            // the policy `guardAdmin` used to enforce; the previous helper
+            // threw because the schema field was non-nullable. See
+            // `docs/architecture/workspace-access.md`.
+            async admin(parentUser: GqlSUser, _: any, requestingSession: GqlSSession): Promise<GqlSAdmin | null> {
+                if (!requestingSession.userId || requestingSession.userId !== parentUser.userId) {
+                    return null;
+                }
+                const [row] = await serverRuntime.db
+                    .select({ isAdmin: users.isAdmin })
+                    .from(users)
+                    .where(eq(users.userId, parentUser.userId))
+                    .limit(1);
+                return row?.isAdmin ? ({} as GqlSAdmin) : null;
             },
         },
         UserMutation: {
@@ -425,17 +451,11 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             currentSession(_: any, __: any, requestingSession: GqlSSession) {
                 return requestingSession;
             },
-            chat(_: any, args: GqlSQueryChatArgs, requestingSession: GqlSSession) {
-                return chatFindByScope(args.chatId, 'public', requestingSession, serverRuntime);
-            },
             // The CV namespace is public — every visitor can read the
             // timeline on `/cv` and the skill block on `/about`. Return an
             // empty parent shell; per-field resolvers do the actual reads.
             cv() {
                 return {} as GqlSCvQuery;
-            },
-            admin(_: any, __: any, requestingSession: GqlSSession) {
-                return guardAdmin(requestingSession, serverRuntime);
             },
         },
         Mutation: {

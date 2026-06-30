@@ -79,12 +79,13 @@ export const logs = pgTable(
 export type Log = typeof logs.$inferSelect;
 export type LogCreate = typeof logs.$inferInsert;
 
-// `isAdmin` gates the workspace surface (`Query.admin` / `Mutation.admin`).
-// Set manually with `UPDATE "Users" SET "isAdmin" = true WHERE …` for Cem's
-// own accounts; visitors and anonymous sessions never flip it. The column
-// is a stepping stone — once OAuth lands the boolean can be reconciled from
-// the GitHub login allowlist, and a dedicated `Admins` table is a clean
-// upgrade because the column move is mechanical. See `guardAdmin.ts` and
+// `isAdmin` gates the workspace surface — the `User.admin` resolver and the
+// `Mutation.admin` `guardAdminMutation` gate both read this column. Set
+// manually with `UPDATE "Users" SET "isAdmin" = true WHERE …` for Cem's own
+// accounts; visitors and anonymous sessions never flip it. The column is a
+// stepping stone — once OAuth lands the boolean can be reconciled from the
+// GitHub login allowlist, and a dedicated `Admins` table is a clean upgrade
+// because the column move is mechanical. See
 // `docs/architecture/workspace-access.md`.
 export const users = pgTable('Users', {
     userId: uuid().primaryKey(),
@@ -971,6 +972,19 @@ export type ProjectActivityKind = (typeof projectActivityKinds)[number];
 export const projectActivityChannels = ['malt', 'email', 'phone', 'videoCall', 'inPerson', 'aiAssistant', 'other'] as const;
 export type ProjectActivityChannel = (typeof projectActivityChannels)[number];
 
+// Sidedness of an activity row. Drives the chat-style timeline layout on the
+// project detail page — `outgoing` rows render right-aligned (from Cem),
+// `incoming` rows left-aligned (from the client), `internal` rows render as
+// centered system markers (work sessions, freeform notes, milestones).
+//
+// `work` and `note` kinds always carry `internal`; `milestone` is also
+// `internal` by convention (a milestone is a marker, not a turn). The editor
+// only surfaces a direction picker for `clientContact`, `meeting`, and
+// `offer`; for the implicit kinds the command normalizes to `internal`
+// regardless of what the client sent.
+export const projectActivityDirections = ['outgoing', 'incoming', 'internal'] as const;
+export type ProjectActivityDirection = (typeof projectActivityDirections)[number];
+
 // Offer-row state. Meaningful only when `kind = 'offer'`; the UI hides the
 // pill for other kinds. A withdrawn offer keeps the row for history.
 export const projectOfferStatuses = ['sent', 'accepted', 'rejected', 'withdrawn'] as const;
@@ -989,6 +1003,11 @@ export const projectActivities = pgTable(
         // Communication channel; null when kind is `work` / `offer` /
         // `milestone` / `note`. Free to fill for `clientContact` / `meeting`.
         channel: varchar().$type<ProjectActivityChannel>(),
+        // Sidedness — drives the chat-style timeline. `outgoing` = Cem,
+        // `incoming` = client, `internal` = system markers (work / note /
+        // milestone). Defaulted at the command layer so existing rows backfill
+        // sensibly via the migration default.
+        direction: varchar().$type<ProjectActivityDirection>().notNull().default('internal'),
         title: varchar().notNull(),
         notes: text(),
         // When the event happened (call start, email send). For timer rows

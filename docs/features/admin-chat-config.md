@@ -35,12 +35,12 @@ from the active model — `.docx` is pick-able iff the model says so. The picked
 
 The catalog lives in code at `src/server/agents/adminChatModels.ts`. Each entry is `{ modelId, label, supportedMediaTypes }`:
 
-| `modelId`          | Label            | Supported attachment types                                                 |
-| ------------------ | ---------------- | -------------------------------------------------------------------------- |
-| `gemini-2.5-flash` | Gemini 2.5 Flash | Images (png/jpeg/webp/heic/heif), PDF, plain text, markdown, csv           |
-| `gemini-2.5-pro`   | Gemini 2.5 Pro   | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML |
-| `gemini-3.5-flash` | Gemini 3.5 Flash | Same as Flash 2.5                                                          |
-| `gemini-3.5-pro`   | Gemini 3.5 Pro   | Same as Pro 2.5                                                            |
+| `modelId`                | Label                    | Supported attachment types                                                 |
+| ------------------------ | ------------------------ | -------------------------------------------------------------------------- |
+| `gemini-2.5-flash`       | Gemini 2.5 Flash         | Images (png/jpeg/webp/heic/heif), PDF, plain text, markdown, csv           |
+| `gemini-2.5-pro`         | Gemini 2.5 Pro           | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML |
+| `gemini-3.5-flash`       | Gemini 3.5 Flash         | Same as Flash 2.5                                                          |
+| `gemini-3.1-pro-preview` | Gemini 3.1 Pro (preview) | Same as Pro 2.5                                                            |
 
 Why code, not DB: adding or removing a model is a code change anyway — the provider needs to know the id is valid, the supported-media-type
 list is a deployment-time fact, and shipping the catalog as a typed const keeps the resolver and the validator pointing at the same source.

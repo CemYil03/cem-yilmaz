@@ -1,11 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
+import { BriefcaseIcon } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from './base/breadcrumb';
 import { GlassCard } from './GlassCard';
 import { HeaderChatButton } from './HeaderChatButton';
 import { LanguageSelector } from './LanguageSelector';
 import { ThemeSelector } from './ThemeSelector';
+import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
 
@@ -68,6 +70,16 @@ type Props = {
      *  button leads to the admin assistant sheet instead of the irrelevant
      *  visitor sheet. */
     chatVariant?: 'visitor' | 'workspace';
+    /** Width cap on the header itself. `'standard'` (default) matches the
+     *  public site's container; `'wide'` (`max-w-8xl`) matches the broader
+     *  workspace pages so the header doesn't sit narrower than the content
+     *  underneath it. Workspace surfaces pick per-page. */
+    width?: 'standard' | 'wide';
+    /** When `true`, surface a "Workspace" link in the action cluster. The
+     *  parent decides admin-ness (via `currentSession.user.admin`) and only
+     *  passes `true` for admins — the Header itself has no session access.
+     *  Public visitors never see this link. */
+    showWorkspaceLink?: boolean;
 };
 
 /* ----------------------------------------------------------------------------
@@ -83,7 +95,16 @@ type Props = {
  * `overflow-x-clip` instead.
  * ------------------------------------------------------------------------- */
 
-export function Header({ subtitle, navItems, brandLabel, breadcrumbs, hideSelectors, chatVariant = 'visitor' }: Props) {
+export function Header({
+    subtitle,
+    navItems,
+    brandLabel,
+    breadcrumbs,
+    hideSelectors,
+    chatVariant = 'visitor',
+    width = 'standard',
+    showWorkspaceLink = false,
+}: Props) {
     const locale = useLocale();
     const scrolled = useHasScrolled();
     const { pathname } = useLocation();
@@ -92,7 +113,7 @@ export function Header({ subtitle, navItems, brandLabel, breadcrumbs, hideSelect
     return (
         <>
             <ProgressiveBlurTop />
-            <header className="sticky top-4 z-50 mx-auto w-full max-w-6xl px-4 sm:px-8">
+            <header className={cn('sticky top-4 z-50 mx-auto w-full px-4 sm:px-8', width === 'wide' ? 'max-w-8xl' : 'max-w-6xl')}>
                 <GlassCard
                     className={cn(
                         'transition-[background-color,box-shadow] duration-200 ease-out',
@@ -204,6 +225,27 @@ export function Header({ subtitle, navItems, brandLabel, breadcrumbs, hideSelect
                         )}
 
                         <div className="flex items-center gap-1.5 sm:gap-2">
+                            {showWorkspaceLink && (
+                                // Admin-only entry into the personal workspace. Rendered
+                                // exactly when the parent's `currentSession.user.admin`
+                                // resolved non-null — anonymous and non-admin visitors
+                                // never see this. Sized and styled to match the rest of
+                                // the right-side cluster (chat / language / theme): a
+                                // size-10 circular icon button with a tooltip label so
+                                // the row stays visually balanced.
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Link
+                                            to="/{-$locale}/workspace"
+                                            aria-label={{ de: 'Workspace', en: 'Workspace' }[locale]}
+                                            className="grid size-10 cursor-pointer place-items-center rounded-full border border-foreground/10 text-foreground/80 transition hover:bg-foreground/5 active:bg-foreground/10 dark:border-white/10 dark:hover:bg-white/8 dark:active:bg-white/14"
+                                        >
+                                            <BriefcaseIcon className="size-4" aria-hidden />
+                                        </Link>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{{ de: 'Workspace', en: 'Workspace' }[locale]}</TooltipContent>
+                                </Tooltip>
+                            )}
                             <HeaderChatButton variant={chatVariant} />
                             {!hideSelectors && <LanguageSelector />}
                             {!hideSelectors && <ThemeSelector />}

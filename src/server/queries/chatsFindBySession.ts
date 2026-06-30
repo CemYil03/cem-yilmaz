@@ -9,9 +9,9 @@ import { toGqlChat } from '../mappers/toGqlChat';
 // dialog's empty state ("Frühere Chats / Previous chats") so a returning
 // visitor can resume a prior conversation without retyping the question.
 //
-// Returns shells with `messages: []` — `Query.chat(chatId)` materializes a
-// single transcript when the user actually picks one. Loading every
-// transcript here would block dialog open on N reads.
+// Returns shells with `messages: []` — `Session.visitorChat(chatId)`
+// materializes a single transcript when the user actually picks one.
+// Loading every transcript here would block dialog open on N reads.
 //
 // Bounded at 50 because the empty state is a small list, not a paginated
 // inbox. A visitor with a higher count can still resume the newest 50;

@@ -11,6 +11,7 @@ export function toGqlSession(session: Session): GqlSSession {
         // values mirror the corresponding resolvers' return shapes.
         user: null,
         visitorChats: [],
+        visitorChat: {} as never,
         visitorChatQuota: { used: 0, limit: 0, resetsAt: null },
     };
 }

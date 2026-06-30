@@ -79,8 +79,8 @@ also fire-and-forget persists every change as the new default via `WorkspaceChat
 ## `/workspace/assistant`
 
 The dedicated chat surface for the personal assistant. Same shape as the public visitor chat sheet: empty state with the composer, loaded
-state with a header, the transcript, and the composer pinned to the bottom. The loaded transcript reads `Query.admin.chat(chatId)` so a
-stolen chatId from the visitor namespace is rejected by `chatFindByScope`.
+state with a header, the transcript, and the composer pinned to the bottom. The loaded transcript reads
+`currentSession.user.admin.chat(chatId)` so a stolen chatId from the visitor namespace is rejected by `chatFindByScope`.
 
 This route is the **bookmark-able** form of the same conversation that lives in the sheet. The sheet's "Open full-screen" button hands the
 active `chatId` off to this route via a normal navigation; the sheet stays the in-context surface for short questions while doing other
@@ -97,12 +97,14 @@ the personal-assistant composer; the OAuth gate has not been built yet. To keep 
   engines do not list them.
 - None of the workspace paths are added to `SITEMAP_PATHS` in `src/web/seo/sitemapRoutes.ts`. The convention there is explicit: noindex /
   logged-in / transactional pages stay out of the sitemap.
-- The public landing page (`/`) and the site footer **do not link** to `/workspace`. The hub is reachable only by typing the URL.
-- `guardAdmin` (`src/server/guards/guardAdmin.ts`) and `guardAdminMutation` (`src/server/guards/guardAdminMutation.ts`) gate the workspace
-  read and write namespaces. Both check `isAdmin` on the requesting session's `Users` row — anonymous sessions (which never have a `userId`)
-  fail the first check; logged-in non-admin users fail the second. The flag is set manually with a DB `UPDATE` for Cem's own accounts. The
-  split mirrors `guardUserMutation` so write-side policy can diverge from reads (e.g. CSRF, narrower allowlist) without dragging the read
-  path along. See [docs/architecture/workspace-access.md](../architecture/workspace-access.md).
+- The public landing page (`/`) surfaces a "Workspace" link in the header, but only when the requesting session's user resolves
+  `User.admin != null` — non-admin visitors never see the link. The hub is otherwise still reachable only by typing the URL. The site footer
+  continues not to link to `/workspace`.
+- The `User.admin` resolver (read side) and `guardAdminMutation` (`src/server/guards/guardAdminMutation.ts`, write side) gate the workspace
+  namespaces. Both check `isAdmin` on the requesting session's `Users` row — anonymous sessions (which never have a `userId`) bypass to null
+  / fail the first check; logged-in non-admin users fail the second. The flag is set manually with a DB `UPDATE` for Cem's own accounts. The
+  read side returns null instead of throwing so the landing-page check composes cleanly; the write side throws because there's no
+  compositional consumer that needs the soft contract. See [docs/architecture/workspace-access.md](../architecture/workspace-access.md).
 
 See [docs/architecture/workspace-access.md](../architecture/workspace-access.md) for the access model and "Open TODOs" below for the Phase 2
 OAuth work.

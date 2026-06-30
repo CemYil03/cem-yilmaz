@@ -137,6 +137,15 @@ If a comment paraphrases what the next line does, delete the comment and fix the
 - Application-specific components live directly in `src/web/components/`.
 - Use the `cn()` utility from `src/web/utils/cn.ts` for conditional class merging.
 
+### Page width
+
+- **Public pages**: stay on the stock Tailwind container scale — `max-w-{2,3,4,5,6,7}xl` as needed for the page's content.
+- **Workspace pages**: cap on `max-w-8xl` (a project-local extension at `96rem`, defined in `src/styles.css`'s `@theme inline` block). The
+  workspace is a dense, list-heavy surface that benefits from horizontal space on ultra-wide displays without becoming unreadable on a
+  laptop. **Exception**: `/workspace` (the hub) keeps its narrower cap — it's prose / link tiles, not a list.
+- When a workspace page renders prose (long descriptions, markdown), constrain the prose itself with `max-w-prose` (~65ch) inside the wider
+  outer container. The width should serve the content type, not the page type.
+
 ## GraphQL
 
 - The schema is defined SDL-first in `src/server/graphql/schema.graphqls`.

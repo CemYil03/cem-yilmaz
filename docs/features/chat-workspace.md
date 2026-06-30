@@ -1,50 +1,80 @@
 # Workspace chat
 
-The workspace personal-assistant chat is the private counterpart to the public visitor chat. It lives in a right-side **Sheet** mounted once
-at the workspace layout (`src/routes/{-$locale}/workspace.tsx`), so every workspace page inherits it. The shared `<WorkspaceHeader />` puts
-an assistant button in the right-side cluster of every workspace page; that button opens the sheet. The workspace hub's hero composer also
-opens it (with the typed message fired as the first turn).
+The workspace personal-assistant chat is the private counterpart to the public visitor chat. It is mounted once at the workspace layout
+(`src/routes/{-$locale}/workspace.tsx`), so every workspace page inherits it. Two responsive surfaces share the same provider and the same
+chat body:
+
+- **`lg+` — persistent sidebar.** A right-side `<WorkspaceAssistantChatSidebar />` lives **alongside** the workspace surface at all times.
+  It can be collapsed to a narrow icon rail and re-expanded; the rail/expanded preference is persisted to `localStorage`. The chat is in
+  flow, not on top of the page — Cem can ask the assistant a question and keep editing/reading without dismissing anything.
+- **`<lg` — Sheet overlay.** Below `lg` the persistent sidebar is unmounted and the original right-side `<WorkspaceAssistantChatSheet />`
+  takes over. A persistent column is too costly on narrow viewports; the Sheet matches the visitor chat's posture and the iOS keyboard
+  handling carries over.
+
+The shared `<WorkspaceHeader />` puts an assistant button in the right-side cluster of every workspace page. On `lg+` the button toggles the
+sidebar's rail/expanded state; below `lg` it opens the Sheet. The workspace hub's hero composer also seeds a first turn into whichever
+surface is active.
 
 See also:
 
-- [features/chat-visitor.md](./chat-visitor.md) — the parallel public visitor chat. Same primitive (right-side sheet), different agent.
+- [features/chat-visitor.md](./chat-visitor.md) — the parallel public visitor chat. Same Sheet primitive, different agent.
 - [features/chat-web-search.md](./chat-web-search.md) — the admin assistant's Google Search grounding tool. Not on the visitor agent.
-- [features/workspace-hub.md](./workspace-hub.md) — the hub composer that opens this sheet, plus the workspace navigation shell.
-- [features/chat.md](./chat.md) — the chat foundation (transcript, composer, live updates) shared by both sheets.
+- [features/workspace-hub.md](./workspace-hub.md) — the hub composer that seeds the sidebar/sheet, plus the workspace navigation shell.
+- [features/chat.md](./chat.md) — the chat foundation (transcript, composer, live updates) shared by every surface.
 - [architecture/multi-agent-chat.md](../architecture/multi-agent-chat.md) — how visitor and admin chats split at the GraphQL namespace level
   and which agent each one dispatches to.
 
-## Why a sheet (and why one mounted at the workspace layout)
+## Why a persistent sidebar (with a Sheet fallback below `lg`)
 
 The motivating user behaviour: **"the assistant chats with me while I do other tasks, and I can jump off into a focused full-screen when the
-conversation gets long."** A side panel is the right primitive for that — the user is doing something else in the foreground (editing the
-CV, reading a focus area, reviewing visitor chats), and the assistant lives alongside it. A modal dialog would force the user to dismiss it
-to keep working; a separate route would force a navigation away from the task at hand.
+conversation gets long."** On desktop, the right primitive for that is a persistent column — the user is doing something else in the
+foreground (editing the CV, reading a focus area, reviewing visitor chats), and the assistant lives alongside it without any open/close
+dance. A modal dialog would force the user to dismiss it to keep working; a Sheet overlay covers the page the user is operating on. Below
+`lg` a persistent column eats too much of the viewport, so the Sheet remains the right surface there.
 
 Mounting the provider at the `workspace.tsx` layout — one level above every workspace route — does the rest:
 
-- **The conversation survives navigation.** The user can open the sheet on `/workspace/cv`, ask a question, navigate to
-  `/workspace/projects` to consult something, and come back to the sheet with the transcript intact. The provider's `chatId` and the
-  `useChatLiveUpdates` listener both live above the `Outlet`, so they survive child unmounts.
-- **The SSE subscription survives the sheet closing.** The listener is rendered in the provider, not in the sheet itself, so closing the
-  sheet mid-turn does not drop the streaming response. Reopening shows the now-buffered transcript.
-- **Workspace-only.** The provider and sheet only mount on `/workspace/*`. Public pages are unaffected; the public-visitor sheet is a
-  separate component on a separate provider.
+- **The conversation survives navigation.** The user can ask a question on `/workspace/cv`, navigate to `/workspace/projects` to consult
+  something, and come back with the transcript intact. The provider's `chatId` and the `useChatLiveUpdates` listener both live above the
+  `Outlet`, so they survive child unmounts. The sidebar/sheet stays mounted (or re-mounts onto the same provider state) across navigations.
+- **The SSE subscription survives the surface closing.** The listener is rendered in the provider, not in the surface itself, so collapsing
+  the sidebar or closing the Sheet mid-turn does not drop the streaming response. Reopening shows the now-buffered transcript.
+- **Workspace-only.** The provider, sidebar, and Sheet only mount on `/workspace/*`. Public pages are unaffected; the public-visitor Sheet
+  is a separate component on a separate provider.
 
 ## Surfaces
 
-| Entry point                                                                     | How it opens the sheet                                                           | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` + `open()` | The shared `<WorkspaceChatComposer />` on the hub creates the chat directly so attachments / model / approval mode all ride along, then hands the freshly-allocated id to the provider and pops the sheet so the response surfaces in context.                                                                                                                                                                                                                                                             |
-| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useWorkspaceAssistantChat().open()`                                             | Same right-side cluster button as the public site's visitor-chat button, but on workspace surfaces the header passes `chatVariant="workspace"` (set inside `WorkspaceHeader`) so the button leads to the admin assistant sheet instead of the irrelevant visitor sheet. The header is mounted once at the workspace layout, so every workspace page inherits it. This is the single floating-free entry point on every workspace page; the hub's hero composer is the in-flow alternative on `/workspace`. |
-| Sheet's **"Open full-screen"** button                                           | Navigates to `/workspace/assistant?chatId=<id>`                                  | Hands the conversation off to the dedicated full-screen route — the chat row is the same on both sides.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Sheet's recent-chats "View all chats" link                                      | Navigates to `/workspace/assistant`                                              | The empty state's bridge to the dedicated route. Same destination as a fresh-start send: the route's empty state is the at-a-glance list, not a chat-in-progress.                                                                                                                                                                                                                                                                                                                                          |
+| Entry point                                                                     | Behaviour                                                                                                           | Notes                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` + `open()`                                    | The shared `<WorkspaceChatComposer />` on the hub creates the chat directly so attachments / model / approval mode all ride along, then hands the freshly-allocated id to the provider. `open()` is a no-op on `lg+` (the sidebar is already visible); below `lg` it pops the Sheet so the response surfaces in context. |
+| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `lg+`: toggles `isCollapsed` (sidebar rail/expanded). `<lg`: `useWorkspaceAssistantChat().open()` (opens the Sheet) | The button is split via CSS responsive visibility — two buttons render, only the right one for the viewport is visible. The `lg+` button takes `aria-pressed` so the expanded state reads as the active position. The header is mounted once at the workspace layout, so every workspace page inherits it.               |
+| Sidebar / Sheet's **"Open full-screen"** button                                 | Navigates to `/workspace/assistant?chatId=<id>`                                                                     | Hands the conversation off to the dedicated full-screen route — the chat row is the same on both sides. Disabled while a turn is streaming (see "Full-screen route handoff").                                                                                                                                            |
+| Empty-state "View all chats" link                                               | Navigates to `/workspace/assistant`                                                                                 | The empty state's bridge to the dedicated route. Same destination as a fresh-start send: the route's empty state is the at-a-glance list, not a chat-in-progress.                                                                                                                                                        |
 
-The provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`.
+The provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`. Key additions on top of the
+chatId / loadedMessages / live trio:
 
-## Sheet chrome
+- `isCollapsed` + `setCollapsed(next)` — sidebar rail/expanded state. Persisted to `localStorage` under
+  `workspaceAssistantSidebar.collapsed` with a `typeof window` guard so SSR is safe. Initial state is "expanded" (always-visible default);
+  the persisted value is hydrated in a post-mount effect.
+- `isOpen` + `open()` / `setOpen(next)` — Sheet open state. Effective only below `lg` (the Sheet is unmounted on `lg+` via `lg:hidden`).
 
-Three header buttons on the absolute layer above the title:
+## Sidebar chrome (`lg+`)
+
+The expanded sidebar is `w-[26rem]`, sticky to the top of the viewport, with internal `flex-col` so the transcript scrolls inside the
+sidebar while the workspace surface scrolls beneath the header. Two right-cluster buttons:
+
+| Button           | Behaviour                                                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Open full-screen | Navigates to `/workspace/assistant?chatId=<id>` without closing anything else; the provider keeps the chat alive so the sidebar reopens in flight. |
+| Collapse         | Toggles `isCollapsed=true` — the sidebar shrinks to a `w-12` icon rail. Click the rail's sparkle icon to expand again. The preference persists.    |
+
+The collapsed rail shows only the assistant's sparkle glyph and a `PanelRightOpen` chevron; clicking either expands the sidebar back to the
+`26rem` column. No "new chat" or "open full-screen" affordances live on the rail — the user expands first, then acts.
+
+## Sheet chrome (`<lg`)
+
+Three header buttons on the absolute layer above the title (unchanged from before):
 
 | Button           | Position          | Behaviour                                                                                                                                |
 | ---------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,24 +87,25 @@ on mobile, so the header stays pinned at the top of the visible area and the com
 
 ## Composer
 
-Every admin composer — the hub's hero composer, the sheet's composer, and the empty/loaded composers on `/workspace/assistant` — is the same
-`<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`). It is a thin wrapper around the generic `<ChatComposer />` that
-pre-wires the workspace `chatMessageCreate` mutation, its admin-namespace result extractor, the "Ask your assistant…" placeholder, and (via
-the provider) the shared model catalog, currently-selected model id, and `onModelChange` handler. The wrapper still leaves the
+Every admin composer — the hub's hero composer, the sidebar/sheet composer, and the empty/loaded composers on `/workspace/assistant` — is
+the same `<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`). It is a thin wrapper around the generic `<ChatComposer />`
+that pre-wires the workspace `chatMessageCreate` mutation, its admin-namespace result extractor, the "Ask your assistant…" placeholder, and
+(via the provider) the shared model catalog, currently-selected model id, and `onModelChange` handler. The wrapper still leaves the
 surface-specific pieces — `chatId`, `onMessageSent`, `addonStart`, `autoFocus` — as props. Sharing one composer means the dropdowns,
 attachments, and approval-mode selector are identical on every workspace surface, and a model change on one is reflected on the others.
 
-The sheet's instance owns two extras:
+The sidebar and sheet share a single composer wrapper (`<WorkspaceAssistantChatComposer />` in `WorkspaceAssistantChatBody.tsx`) that owns
+two extras:
 
 - **"Start new chat"** — an icon button rendered into `addonStart` once a chat is active. Clicking it calls the provider's `resetChat()`,
   which drops `chatId` and `loadedMessages` so the next send creates a fresh row. The previous chat is still in the database; the
-  recent-chats list (see below) lets the admin resume it from the same surface.
+  recent-chats list lets the admin resume it from the same surface.
 - **Attachments + uploads** — paperclip button + drag-and-drop. The composer owns the upload lifecycle: each picked/dropped file is uploaded
   immediately through `uploadFile()` (`POST /api/file-uploads`), the per-tile UI reflects `uploading` / `uploaded` / `error`, and the
   resolved `fileUploadId`s ride the next `WorkspaceChatMessageCreate` mutation. Errored tiles stay on screen so the user can decide whether
   to remove-and-retry; only `uploaded` ids ride the mutation.
 
-The sheet's instance reads the provider's `chatId` and uses `setChatIdFromHub` as its `onMessageSent` handler, so the first send adopts the
+The composer reads the provider's `chatId` and uses `setChatIdFromHub` as its `onMessageSent` handler, so the first send adopts the
 freshly-allocated chatId into the provider — every subsequent send from any admin composer reuses the same row.
 
 ## Page context
@@ -93,13 +124,13 @@ fetch the live board snapshot when it actually needs structured project data.
 
 ## Recent chats
 
-The sheet's empty state and the dedicated route both render the last 10 admin chats so the user can resume a conversation in place instead
-of routing back through a list. The list is driven by the lightweight `WorkspaceAssistantChats` query (admin namespace, metadata only — no
-transcript). Both surfaces:
+The sidebar/sheet's empty state and the dedicated route all render the last 10 admin chats so the user can resume a conversation in place
+instead of routing back through a list. The list is driven by the lightweight `WorkspaceAssistantChats` query (admin namespace, metadata
+only — no transcript). All surfaces:
 
 - Use `cache-and-network` so a fresh send bumps the resumed chat to the top of the list on the next visit without a hard reload.
-- Slice client-side to `RECENT_CHATS_LIMIT = 10`. The cap is mirrored on both surfaces — they graduate together when the list grows.
-- Resume a row through different code paths: the sheet calls `loadChat(chatId)` on the provider (fetches the transcript, seeds
+- Slice client-side to `RECENT_CHATS_LIMIT = 10`. The cap is mirrored on every surface — they graduate together when the list grows.
+- Resume a row through different code paths: the sidebar/sheet calls `loadChat(chatId)` on the provider (fetches the transcript, seeds
   `loadedMessages`), while the route navigates to `/workspace/assistant?chatId=<id>` and lets its own page-query take over.
 
 On the loaded route, a sidebar (lg+ only) shows the same recent-chats list with the active chat highlighted so the user can switch
@@ -114,32 +145,36 @@ ride that growth instead of staying glued to the bottom edge.
 
 ## Full-screen route handoff
 
-Clicking "Open full-screen" in the sheet:
+Clicking "Open full-screen" in the sidebar or the sheet:
 
-1. Closes the sheet via `setOpen(false)`.
+1. (Sheet only) closes the sheet via `setOpen(false)`.
 2. Navigates to `/workspace/assistant?chatId=<id>` (or `?chatId=undefined` if no chat has started yet).
 3. The route reads `chatId` from the URL search and takes over — empty state when none, loaded transcript when set.
 
 The button is **disabled while a turn is streaming**. Reason: the dedicated route page mounts its own `useChatLiveUpdates(chatId)`, which
-only listens to a `generationId` it allocates itself. The sheet's in-flight stream is on a different `generationId` (the provider's), so
-handing off mid-stream would leave the route page showing the persisted transcript up to the navigation moment plus a missing tail until the
-user sends the next message. Forcing the hand-off to between-turn moments side-steps that — by the time the button re-enables, the turn has
-already persisted, and the route's `WorkspaceChatPage` query (`cache-and-network`) picks up the full transcript on mount.
+only listens to a `generationId` it allocates itself. The sidebar/sheet's in-flight stream is on a different `generationId` (the
+provider's), so handing off mid-stream would leave the route page showing the persisted transcript up to the navigation moment plus a
+missing tail until the user sends the next message. Forcing the hand-off to between-turn moments side-steps that — by the time the button
+re-enables, the turn has already persisted, and the route's `WorkspaceChatPage` query (`cache-and-network`) picks up the full transcript on
+mount.
 
 The provider does NOT drop its `chatId` on the navigation — if the user navigates back to a workspace page (the hub, a focus area), the
-header's assistant button is one click away and reopening shows the same conversation. The route page is the source of truth for "is this
-chat bookmark-able", and the provider is the source of truth for "is there a chat happening right now."
+sidebar (on `lg+`) or the header's assistant button (below `lg`) is one click away and reopening shows the same conversation. The route page
+is the source of truth for "is this chat bookmark-able", and the provider is the source of truth for "is there a chat happening right now."
 
 ## Files
 
 ```
 src/web/chat/
-├── WorkspaceAssistantChatProvider.tsx    Provider — owns chatId, live updates, sticky model selection, setChatIdFromHub, resetChat, loadChat.
-├── WorkspaceAssistantChatSheet.tsx       Sheet — transcript + composer + header chrome (open-full-screen, expand, close).
+├── WorkspaceAssistantChatProvider.tsx    Provider — owns chatId, live updates, sticky model, isCollapsed (lg+), isOpen (<lg).
+├── WorkspaceAssistantChatBody.tsx        Shared body — transcript, empty state, composer. Mounted by both the sidebar and the sheet.
+├── WorkspaceAssistantChatSidebar.tsx     Persistent sidebar (lg+). Expanded column + collapsed icon rail.
+├── WorkspaceAssistantChatSheet.tsx       Sheet (<lg). Same body wrapped in Radix Sheet chrome.
 └── WorkspaceChatComposer.tsx             Shared admin composer — wraps `<ChatComposer />` with the workspace mutation + provider-owned model selection.
 
 src/routes/{-$locale}/
-└── workspace.tsx                         Workspace layout — loads `WorkspaceChatConfig`, wraps `<Outlet />` in the provider, mounts the sheet.
+└── workspace.tsx                         Workspace layout — loads `WorkspaceChatConfig`, wraps `<Outlet />` in the provider, mounts the
+                                          sidebar (lg+) and the sheet (<lg).
 ```
 
 ## Mutations
@@ -170,9 +205,11 @@ Two surface-level conveniences flow from [`architecture/agent-delegation.md`](..
 
 ## Anti-patterns avoided
 
-- **No second `useChatLiveUpdates` in the sheet.** The listener lives once in the provider, not in the sheet, so the SSE stream is immune to
-  the sheet's mount/unmount cycle.
-- **No `chatId` in the sheet's URL.** The sheet is an overlay; the URL is for routes. The full-screen button is the bridge: it puts `chatId`
-  into a real search param and navigates.
-- **No back-button trap.** Opening the sheet does not push history. Closing it (X, Escape, click outside) just dismisses the overlay and the
-  user is exactly where they were.
+- **No second `useChatLiveUpdates` in the sidebar or sheet.** The listener lives once in the provider, not in either surface, so the SSE
+  stream is immune to the sidebar's collapse/expand and the sheet's open/close cycles.
+- **No `chatId` in the sidebar/sheet URL.** Both are in-page surfaces; the URL is for routes. The full-screen button is the bridge: it puts
+  `chatId` into a real search param and navigates.
+- **No back-button trap.** Toggling the sidebar's rail or opening the sheet does not push history. Dismissing them (X, Escape, click outside
+  on the sheet; the collapse glyph on the sidebar) just hides the surface and the user is exactly where they were.
+- **No duplicate surface mount.** The sidebar is `hidden lg:flex` and the sheet is `lg:hidden`, so only one assistant surface is in the DOM
+  per viewport. Resizing across the breakpoint swaps surfaces; the provider state is shared so the conversation carries over.

@@ -3,7 +3,11 @@
 # every workspace surface visit, so this stays cheap and `cache-first`.
 
 query WorkspaceHub {
-    admin {
-        projectRequestsInboxCount
+    currentSession {
+        user {
+            admin {
+                projectRequestsInboxCount
+            }
+        }
     }
 }

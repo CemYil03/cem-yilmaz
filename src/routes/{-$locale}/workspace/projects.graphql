@@ -4,90 +4,94 @@
 # See `docs/features/projects-workspace.md`.
 
 query WorkspaceProjectsPage {
-    admin {
-        projectRequests {
-            projectRequestId
-            chatId
-            name
-            email
-            company
-            projectType
-            description
-            budget
-            timeline
-            status
-            verifiedAt
-            createdAt
-            convertedProject {
-                projectId
-                title
-                status
+    currentSession {
+        user {
+            admin {
+                projectRequests {
+                    projectRequestId
+                    chatId
+                    name
+                    email
+                    company
+                    projectType
+                    description
+                    budget
+                    timeline
+                    status
+                    verifiedAt
+                    createdAt
+                    convertedProject {
+                        projectId
+                        title
+                        status
+                    }
+                }
+                projects {
+                    projectId
+                    title
+                    description
+                    notes
+                    status
+                    position
+                    startedAt
+                    completedAt
+                    createdAt
+                    updatedAt
+                    totalWorkSec
+                    sourceRequest {
+                        projectRequestId
+                        name
+                        email
+                        company
+                        projectType
+                    }
+                    tasks {
+                        taskId
+                        projectId
+                        title
+                        notes
+                        status
+                        position
+                        dueAt
+                        completedAt
+                    }
+                    activities {
+                        activityId
+                        projectId
+                        taskId
+                        kind
+                        channel
+                        title
+                        notes
+                        occurredAt
+                        startedAt
+                        endedAt
+                        durationSec
+                        createdAt
+                    }
+                }
+                standaloneTasks {
+                    taskId
+                    projectId
+                    title
+                    notes
+                    status
+                    position
+                    dueAt
+                    completedAt
+                }
+                activeTimer {
+                    activityId
+                    projectId
+                    taskId
+                    kind
+                    title
+                    occurredAt
+                    startedAt
+                    endedAt
+                    durationSec
+                }
             }
-        }
-        projects {
-            projectId
-            title
-            description
-            notes
-            status
-            position
-            startedAt
-            completedAt
-            createdAt
-            updatedAt
-            totalWorkSec
-            sourceRequest {
-                projectRequestId
-                name
-                email
-                company
-                projectType
-            }
-            tasks {
-                taskId
-                projectId
-                title
-                notes
-                status
-                position
-                dueAt
-                completedAt
-            }
-            activities {
-                activityId
-                projectId
-                taskId
-                kind
-                channel
-                title
-                notes
-                occurredAt
-                startedAt
-                endedAt
-                durationSec
-                createdAt
-            }
-        }
-        standaloneTasks {
-            taskId
-            projectId
-            title
-            notes
-            status
-            position
-            dueAt
-            completedAt
-        }
-        activeTimer {
-            activityId
-            projectId
-            taskId
-            kind
-            title
-            occurredAt
-            startedAt
-            endedAt
-            durationSec
         }
     }
 }

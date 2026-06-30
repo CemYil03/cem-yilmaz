@@ -745,6 +745,7 @@ export interface GqlCProjectActivity {
     amountCents?: Maybe<Scalars['Int']['output']>;
     channel?: Maybe<GqlCProjectActivityChannel>;
     createdAt: Scalars['DateTime']['output'];
+    direction: GqlCProjectActivityDirection;
     durationSec?: Maybe<Scalars['Int']['output']>;
     endedAt?: Maybe<Scalars['DateTime']['output']>;
     files: Array<GqlCProjectFile>;
@@ -774,6 +775,7 @@ export type GqlCProjectActivityCreate = {
     attachLinkPinned?: InputMaybe<Scalars['Boolean']['input']>;
     attachLinkUrl?: InputMaybe<Scalars['String']['input']>;
     channel?: InputMaybe<GqlCProjectActivityChannel>;
+    direction?: InputMaybe<GqlCProjectActivityDirection>;
     durationSec?: InputMaybe<Scalars['Int']['input']>;
     kind: GqlCProjectActivityKind;
     notes?: InputMaybe<Scalars['String']['input']>;
@@ -783,6 +785,8 @@ export type GqlCProjectActivityCreate = {
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title: Scalars['String']['input'];
 };
+
+export type GqlCProjectActivityDirection = 'incoming' | 'internal' | 'outgoing';
 
 export type GqlCProjectActivityKind = 'clientContact' | 'meeting' | 'milestone' | 'note' | 'offer' | 'work';
 
@@ -876,23 +880,22 @@ export type GqlCProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'pause
 
 export interface GqlCQuery {
     __typename?: 'Query';
-    admin: GqlCAdmin;
-    chat: GqlCChat;
     currentSession: GqlCSession;
     cv: GqlCCvQuery;
 }
-
-export type GqlCQueryChatArgs = {
-    chatId: Scalars['ID']['input'];
-};
 
 export interface GqlCSession {
     __typename?: 'Session';
     sessionId: Scalars['ID']['output'];
     user?: Maybe<GqlCUser>;
+    visitorChat: GqlCChat;
     visitorChatQuota: GqlCVisitorChatQuota;
     visitorChats: Array<GqlCChat>;
 }
+
+export type GqlCSessionVisitorChatArgs = {
+    chatId: Scalars['ID']['input'];
+};
 
 export interface GqlCSubscription {
     __typename?: 'Subscription';
@@ -933,6 +936,7 @@ export type GqlCTaskStatus = 'doing' | 'done' | 'todo';
 
 export interface GqlCUser {
     __typename?: 'User';
+    admin?: Maybe<GqlCAdmin>;
     name: Scalars['String']['output'];
     userId: Scalars['ID']['output'];
 }
@@ -1012,7 +1016,9 @@ export type GqlCAboutPageQuery = {
 
 export type GqlCHomePageQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GqlCHomePageQuery = { currentSession: { sessionId: string; user: { name: string } | null } };
+export type GqlCHomePageQuery = {
+    currentSession: { sessionId: string; user: { name: string; admin: { __typename: 'Admin' } | null } | null };
+};
 
 export type GqlCWorkspaceLogsQueryVariables = Exact<{
     level?: Schema.GqlCLogLevel | null | undefined;
@@ -1021,23 +1027,29 @@ export type GqlCWorkspaceLogsQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceLogsQuery = {
-    admin: {
-        logs: Array<{
-            logId: string;
-            level: Schema.GqlCLogLevel;
-            message: string;
-            sessionId: string | null;
-            context: unknown;
-            createdAt: string;
-        }>;
+    currentSession: {
+        user: {
+            admin: {
+                logs: Array<{
+                    logId: string;
+                    level: Schema.GqlCLogLevel;
+                    message: string;
+                    sessionId: string | null;
+                    context: unknown;
+                    createdAt: string;
+                }>;
+            } | null;
+        } | null;
     };
 };
 
 export type GqlCWorkspaceVisitorChatsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceVisitorChatsQuery = {
-    currentSession: { sessionId: string };
-    admin: { publicChats: Array<{ chatId: string; title: string; lastModifiedAt: string }> };
+    currentSession: {
+        sessionId: string;
+        user: { admin: { publicChats: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null } | null;
+    };
 };
 
 export type GqlCWorkspaceVisitorChatQueryVariables = Exact<{
@@ -1045,120 +1057,129 @@ export type GqlCWorkspaceVisitorChatQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceVisitorChatQuery = {
-    currentSession: { sessionId: string };
-    admin: {
-        publicChat: {
-            chatId: string;
-            title: string;
-            lastModifiedAt: string;
-            messages: Array<
-                | {
-                      __typename: 'ChatMessageAssistantInputCollection';
-                      chatMessageId: string;
-                      prompt: string;
-                      mode: string;
-                      createdAt: string;
-                      generation: {
-                          modelId: string;
-                          inputTokens: number | null;
-                          outputTokens: number | null;
-                          totalTokens: number | null;
-                          reasoningTokens: number | null;
-                          cachedInputTokens: number | null;
-                      } | null;
-                      inputs: Array<
-                          | { __typename: 'ChatAssistantInputBoolean'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputDate'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
-                          | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
-                          | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
-                      >;
-                  }
-                | {
-                      __typename: 'ChatMessageAssistantText';
-                      chatMessageId: string;
-                      body: string;
-                      createdAt: string;
-                      generation: {
-                          modelId: string;
-                          inputTokens: number | null;
-                          outputTokens: number | null;
-                          totalTokens: number | null;
-                          reasoningTokens: number | null;
-                          cachedInputTokens: number | null;
-                      } | null;
-                  }
-                | {
-                      __typename: 'ChatMessageToolApprovalRequest';
-                      chatMessageId: string;
-                      approvalId: string;
-                      toolName: string;
-                      args: unknown;
-                      createdAt: string;
-                      generation: {
-                          modelId: string;
-                          inputTokens: number | null;
-                          outputTokens: number | null;
-                          totalTokens: number | null;
-                          reasoningTokens: number | null;
-                          cachedInputTokens: number | null;
-                      } | null;
-                  }
-                | {
-                      __typename: 'ChatMessageToolApprovalResponse';
-                      chatMessageId: string;
-                      approvalId: string;
-                      approved: boolean;
-                      reason: string | null;
-                      createdAt: string;
-                  }
-                | {
-                      __typename: 'ChatMessageToolCall';
-                      chatMessageId: string;
-                      toolName: string;
-                      args: unknown;
-                      parentChatMessageId: string | null;
-                      createdAt: string;
-                  }
-                | {
-                      __typename: 'ChatMessageUser';
-                      chatMessageId: string;
-                      body: string;
-                      createdAt: string;
-                      author: { userId: string; name: string } | null;
-                      attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-                      profileObservations: Array<{
-                          observationId: string;
-                          category: Schema.GqlCProfileObservationCategory;
-                          content: string;
-                          confidence: number | null;
-                          createdAt: string;
-                      }>;
-                  }
-                | {
-                      __typename: 'ChatMessageUserInput';
-                      chatMessageId: string;
-                      collectionMessageId: string;
-                      createdAt: string;
-                      author: { userId: string; name: string } | null;
-                      answers: Array<{
-                          inputId: string;
-                          value:
-                              | { __typename: 'ChatAssistantInputValueBoolean'; boolean: boolean }
-                              | { __typename: 'ChatAssistantInputValueDate'; date: string }
-                              | { __typename: 'ChatAssistantInputValueDateRange'; from: string; to: string }
-                              | { __typename: 'ChatAssistantInputValueDateTime'; dateTime: string }
-                              | { __typename: 'ChatAssistantInputValueString'; value: string }
-                              | { __typename: 'ChatAssistantInputValueStringList'; values: Array<string> }
-                              | { __typename: 'ChatAssistantInputValueTime'; time: string };
-                      }>;
-                  }
-            >;
-        };
+    currentSession: {
+        sessionId: string;
+        user: {
+            admin: {
+                publicChat: {
+                    chatId: string;
+                    title: string;
+                    lastModifiedAt: string;
+                    messages: Array<
+                        | {
+                              __typename: 'ChatMessageAssistantInputCollection';
+                              chatMessageId: string;
+                              prompt: string;
+                              mode: string;
+                              createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
+                              inputs: Array<
+                                  | { __typename: 'ChatAssistantInputBoolean'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputDate'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+                                  | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
+                                  | {
+                                        __typename: 'ChatAssistantInputSingleSelect';
+                                        inputId: string;
+                                        prompt: string;
+                                        options: Array<string>;
+                                    }
+                                  | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
+                              >;
+                          }
+                        | {
+                              __typename: 'ChatMessageAssistantText';
+                              chatMessageId: string;
+                              body: string;
+                              createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
+                          }
+                        | {
+                              __typename: 'ChatMessageToolApprovalRequest';
+                              chatMessageId: string;
+                              approvalId: string;
+                              toolName: string;
+                              args: unknown;
+                              createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
+                          }
+                        | {
+                              __typename: 'ChatMessageToolApprovalResponse';
+                              chatMessageId: string;
+                              approvalId: string;
+                              approved: boolean;
+                              reason: string | null;
+                              createdAt: string;
+                          }
+                        | {
+                              __typename: 'ChatMessageToolCall';
+                              chatMessageId: string;
+                              toolName: string;
+                              args: unknown;
+                              parentChatMessageId: string | null;
+                              createdAt: string;
+                          }
+                        | {
+                              __typename: 'ChatMessageUser';
+                              chatMessageId: string;
+                              body: string;
+                              createdAt: string;
+                              author: { userId: string; name: string } | null;
+                              attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+                              profileObservations: Array<{
+                                  observationId: string;
+                                  category: Schema.GqlCProfileObservationCategory;
+                                  content: string;
+                                  confidence: number | null;
+                                  createdAt: string;
+                              }>;
+                          }
+                        | {
+                              __typename: 'ChatMessageUserInput';
+                              chatMessageId: string;
+                              collectionMessageId: string;
+                              createdAt: string;
+                              author: { userId: string; name: string } | null;
+                              answers: Array<{
+                                  inputId: string;
+                                  value:
+                                      | { __typename: 'ChatAssistantInputValueBoolean'; boolean: boolean }
+                                      | { __typename: 'ChatAssistantInputValueDate'; date: string }
+                                      | { __typename: 'ChatAssistantInputValueDateRange'; from: string; to: string }
+                                      | { __typename: 'ChatAssistantInputValueDateTime'; dateTime: string }
+                                      | { __typename: 'ChatAssistantInputValueString'; value: string }
+                                      | { __typename: 'ChatAssistantInputValueStringList'; values: Array<string> }
+                                      | { __typename: 'ChatAssistantInputValueTime'; time: string };
+                              }>;
+                          }
+                    >;
+                };
+            } | null;
+        } | null;
     };
 };
 
@@ -1296,127 +1317,140 @@ export type GqlCWorkspaceChatListItemFragment = { chatId: string; title: string;
 
 export type GqlCWorkspaceAssistantChatsQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GqlCWorkspaceAssistantChatsQuery = { admin: { chats: Array<{ chatId: string; title: string; lastModifiedAt: string }> } };
+export type GqlCWorkspaceAssistantChatsQuery = {
+    currentSession: { user: { admin: { chats: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null } | null };
+};
 
 export type GqlCWorkspaceChatPageQueryVariables = Exact<{
     chatId: string;
 }>;
 
 export type GqlCWorkspaceChatPageQuery = {
-    currentSession: { sessionId: string; user: { userId: string; name: string } | null };
-    admin: {
-        chat: {
-            chatId: string;
-            title: string;
-            lastModifiedAt: string;
-            messages: Array<
-                | {
-                      __typename: 'ChatMessageAssistantInputCollection';
-                      chatMessageId: string;
-                      prompt: string;
-                      mode: string;
-                      createdAt: string;
-                      generation: {
-                          modelId: string;
-                          inputTokens: number | null;
-                          outputTokens: number | null;
-                          totalTokens: number | null;
-                          reasoningTokens: number | null;
-                          cachedInputTokens: number | null;
-                      } | null;
-                      inputs: Array<
-                          | { __typename: 'ChatAssistantInputBoolean'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputDate'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
-                          | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
-                          | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
-                          | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
-                      >;
-                  }
-                | {
-                      __typename: 'ChatMessageAssistantText';
-                      chatMessageId: string;
-                      body: string;
-                      createdAt: string;
-                      generation: {
-                          modelId: string;
-                          inputTokens: number | null;
-                          outputTokens: number | null;
-                          totalTokens: number | null;
-                          reasoningTokens: number | null;
-                          cachedInputTokens: number | null;
-                      } | null;
-                  }
-                | {
-                      __typename: 'ChatMessageToolApprovalRequest';
-                      chatMessageId: string;
-                      approvalId: string;
-                      toolName: string;
-                      args: unknown;
-                      createdAt: string;
-                      generation: {
-                          modelId: string;
-                          inputTokens: number | null;
-                          outputTokens: number | null;
-                          totalTokens: number | null;
-                          reasoningTokens: number | null;
-                          cachedInputTokens: number | null;
-                      } | null;
-                  }
-                | {
-                      __typename: 'ChatMessageToolApprovalResponse';
-                      chatMessageId: string;
-                      approvalId: string;
-                      approved: boolean;
-                      reason: string | null;
-                      createdAt: string;
-                  }
-                | {
-                      __typename: 'ChatMessageToolCall';
-                      chatMessageId: string;
-                      toolName: string;
-                      args: unknown;
-                      parentChatMessageId: string | null;
-                      createdAt: string;
-                  }
-                | {
-                      __typename: 'ChatMessageUser';
-                      chatMessageId: string;
-                      body: string;
-                      createdAt: string;
-                      author: { userId: string; name: string } | null;
-                      attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-                      profileObservations: Array<{
-                          observationId: string;
-                          category: Schema.GqlCProfileObservationCategory;
-                          content: string;
-                          confidence: number | null;
-                          createdAt: string;
-                      }>;
-                  }
-                | {
-                      __typename: 'ChatMessageUserInput';
-                      chatMessageId: string;
-                      collectionMessageId: string;
-                      createdAt: string;
-                      author: { userId: string; name: string } | null;
-                      answers: Array<{
-                          inputId: string;
-                          value:
-                              | { __typename: 'ChatAssistantInputValueBoolean'; boolean: boolean }
-                              | { __typename: 'ChatAssistantInputValueDate'; date: string }
-                              | { __typename: 'ChatAssistantInputValueDateRange'; from: string; to: string }
-                              | { __typename: 'ChatAssistantInputValueDateTime'; dateTime: string }
-                              | { __typename: 'ChatAssistantInputValueString'; value: string }
-                              | { __typename: 'ChatAssistantInputValueStringList'; values: Array<string> }
-                              | { __typename: 'ChatAssistantInputValueTime'; time: string };
-                      }>;
-                  }
-            >;
-        };
+    currentSession: {
+        sessionId: string;
+        user: {
+            userId: string;
+            name: string;
+            admin: {
+                chat: {
+                    chatId: string;
+                    title: string;
+                    lastModifiedAt: string;
+                    messages: Array<
+                        | {
+                              __typename: 'ChatMessageAssistantInputCollection';
+                              chatMessageId: string;
+                              prompt: string;
+                              mode: string;
+                              createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
+                              inputs: Array<
+                                  | { __typename: 'ChatAssistantInputBoolean'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputDate'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+                                  | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
+                                  | {
+                                        __typename: 'ChatAssistantInputSingleSelect';
+                                        inputId: string;
+                                        prompt: string;
+                                        options: Array<string>;
+                                    }
+                                  | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
+                                  | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
+                              >;
+                          }
+                        | {
+                              __typename: 'ChatMessageAssistantText';
+                              chatMessageId: string;
+                              body: string;
+                              createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
+                          }
+                        | {
+                              __typename: 'ChatMessageToolApprovalRequest';
+                              chatMessageId: string;
+                              approvalId: string;
+                              toolName: string;
+                              args: unknown;
+                              createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
+                          }
+                        | {
+                              __typename: 'ChatMessageToolApprovalResponse';
+                              chatMessageId: string;
+                              approvalId: string;
+                              approved: boolean;
+                              reason: string | null;
+                              createdAt: string;
+                          }
+                        | {
+                              __typename: 'ChatMessageToolCall';
+                              chatMessageId: string;
+                              toolName: string;
+                              args: unknown;
+                              parentChatMessageId: string | null;
+                              createdAt: string;
+                          }
+                        | {
+                              __typename: 'ChatMessageUser';
+                              chatMessageId: string;
+                              body: string;
+                              createdAt: string;
+                              author: { userId: string; name: string } | null;
+                              attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+                              profileObservations: Array<{
+                                  observationId: string;
+                                  category: Schema.GqlCProfileObservationCategory;
+                                  content: string;
+                                  confidence: number | null;
+                                  createdAt: string;
+                              }>;
+                          }
+                        | {
+                              __typename: 'ChatMessageUserInput';
+                              chatMessageId: string;
+                              collectionMessageId: string;
+                              createdAt: string;
+                              author: { userId: string; name: string } | null;
+                              answers: Array<{
+                                  inputId: string;
+                                  value:
+                                      | { __typename: 'ChatAssistantInputValueBoolean'; boolean: boolean }
+                                      | { __typename: 'ChatAssistantInputValueDate'; date: string }
+                                      | { __typename: 'ChatAssistantInputValueDateRange'; from: string; to: string }
+                                      | { __typename: 'ChatAssistantInputValueDateTime'; dateTime: string }
+                                      | { __typename: 'ChatAssistantInputValueString'; value: string }
+                                      | { __typename: 'ChatAssistantInputValueStringList'; values: Array<string> }
+                                      | { __typename: 'ChatAssistantInputValueTime'; time: string };
+                              }>;
+                          }
+                    >;
+                };
+            } | null;
+        } | null;
     };
 };
 
@@ -1460,11 +1494,15 @@ export type GqlCWorkspaceChatToolApprovalRespondMutation = {
 export type GqlCWorkspaceChatConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceChatConfigQuery = {
-    admin: {
-        chatConfig: {
-            defaultModelId: string;
-            availableModels: Array<{ modelId: string; label: string; supportedMediaTypes: Array<string> }>;
-        };
+    currentSession: {
+        user: {
+            admin: {
+                chatConfig: {
+                    defaultModelId: string;
+                    availableModels: Array<{ modelId: string; label: string; supportedMediaTypes: Array<string> }>;
+                };
+            } | null;
+        } | null;
     };
 };
 
@@ -1494,26 +1532,30 @@ export type GqlCWorkspaceProfilePageQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProfilePageQuery = {
-    admin: {
-        profile: {
-            summary: string;
-            prose: string;
-            psychProfile: string;
-            synthesizedAt: string | null;
-            synthesisModelId: string | null;
-            observationsSinceSynthesis: number;
-            observations: Array<{
-                observationId: string;
-                category: Schema.GqlCProfileObservationCategory;
-                content: string;
-                confidence: number | null;
-                sourceChatId: string | null;
-                sourceChatMessageId: string | null;
-                analyzerModelId: string | null;
-                dismissedAt: string | null;
-                createdAt: string;
-            }>;
-        };
+    currentSession: {
+        user: {
+            admin: {
+                profile: {
+                    summary: string;
+                    prose: string;
+                    psychProfile: string;
+                    synthesizedAt: string | null;
+                    synthesisModelId: string | null;
+                    observationsSinceSynthesis: number;
+                    observations: Array<{
+                        observationId: string;
+                        category: Schema.GqlCProfileObservationCategory;
+                        content: string;
+                        confidence: number | null;
+                        sourceChatId: string | null;
+                        sourceChatMessageId: string | null;
+                        analyzerModelId: string | null;
+                        dismissedAt: string | null;
+                        createdAt: string;
+                    }>;
+                };
+            } | null;
+        } | null;
     };
 };
 
@@ -1669,91 +1711,95 @@ export type GqlCWorkspaceCvHobbyReorderMutation = { admin: { cvHobbyReorder: { s
 
 export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GqlCWorkspaceHubQuery = { admin: { projectRequestsInboxCount: number } };
+export type GqlCWorkspaceHubQuery = { currentSession: { user: { admin: { projectRequestsInboxCount: number } | null } | null } };
 
 export type GqlCWorkspaceProjectsPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceProjectsPageQuery = {
-    admin: {
-        projectRequests: Array<{
-            projectRequestId: string;
-            chatId: string | null;
-            name: string;
-            email: string;
-            company: string | null;
-            projectType: Schema.GqlCProjectRequestType;
-            description: string;
-            budget: string | null;
-            timeline: string | null;
-            status: Schema.GqlCProjectRequestStatus;
-            verifiedAt: string | null;
-            createdAt: string;
-            convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
-        }>;
-        projects: Array<{
-            projectId: string;
-            title: string;
-            description: string | null;
-            notes: string | null;
-            status: Schema.GqlCProjectStatus;
-            position: number;
-            startedAt: string | null;
-            completedAt: string | null;
-            createdAt: string;
-            updatedAt: string;
-            totalWorkSec: number;
-            sourceRequest: {
-                projectRequestId: string;
-                name: string;
-                email: string;
-                company: string | null;
-                projectType: Schema.GqlCProjectRequestType;
+    currentSession: {
+        user: {
+            admin: {
+                projectRequests: Array<{
+                    projectRequestId: string;
+                    chatId: string | null;
+                    name: string;
+                    email: string;
+                    company: string | null;
+                    projectType: Schema.GqlCProjectRequestType;
+                    description: string;
+                    budget: string | null;
+                    timeline: string | null;
+                    status: Schema.GqlCProjectRequestStatus;
+                    verifiedAt: string | null;
+                    createdAt: string;
+                    convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
+                }>;
+                projects: Array<{
+                    projectId: string;
+                    title: string;
+                    description: string | null;
+                    notes: string | null;
+                    status: Schema.GqlCProjectStatus;
+                    position: number;
+                    startedAt: string | null;
+                    completedAt: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                    totalWorkSec: number;
+                    sourceRequest: {
+                        projectRequestId: string;
+                        name: string;
+                        email: string;
+                        company: string | null;
+                        projectType: Schema.GqlCProjectRequestType;
+                    } | null;
+                    tasks: Array<{
+                        taskId: string;
+                        projectId: string | null;
+                        title: string;
+                        notes: string | null;
+                        status: Schema.GqlCTaskStatus;
+                        position: number;
+                        dueAt: string | null;
+                        completedAt: string | null;
+                    }>;
+                    activities: Array<{
+                        activityId: string;
+                        projectId: string;
+                        taskId: string | null;
+                        kind: Schema.GqlCProjectActivityKind;
+                        channel: Schema.GqlCProjectActivityChannel | null;
+                        title: string;
+                        notes: string | null;
+                        occurredAt: string;
+                        startedAt: string | null;
+                        endedAt: string | null;
+                        durationSec: number | null;
+                        createdAt: string;
+                    }>;
+                }>;
+                standaloneTasks: Array<{
+                    taskId: string;
+                    projectId: string | null;
+                    title: string;
+                    notes: string | null;
+                    status: Schema.GqlCTaskStatus;
+                    position: number;
+                    dueAt: string | null;
+                    completedAt: string | null;
+                }>;
+                activeTimer: {
+                    activityId: string;
+                    projectId: string;
+                    taskId: string | null;
+                    kind: Schema.GqlCProjectActivityKind;
+                    title: string;
+                    occurredAt: string;
+                    startedAt: string | null;
+                    endedAt: string | null;
+                    durationSec: number | null;
+                } | null;
             } | null;
-            tasks: Array<{
-                taskId: string;
-                projectId: string | null;
-                title: string;
-                notes: string | null;
-                status: Schema.GqlCTaskStatus;
-                position: number;
-                dueAt: string | null;
-                completedAt: string | null;
-            }>;
-            activities: Array<{
-                activityId: string;
-                projectId: string;
-                taskId: string | null;
-                kind: Schema.GqlCProjectActivityKind;
-                channel: Schema.GqlCProjectActivityChannel | null;
-                title: string;
-                notes: string | null;
-                occurredAt: string;
-                startedAt: string | null;
-                endedAt: string | null;
-                durationSec: number | null;
-                createdAt: string;
-            }>;
-        }>;
-        standaloneTasks: Array<{
-            taskId: string;
-            projectId: string | null;
-            title: string;
-            notes: string | null;
-            status: Schema.GqlCTaskStatus;
-            position: number;
-            dueAt: string | null;
-            completedAt: string | null;
-        }>;
-        activeTimer: {
-            activityId: string;
-            projectId: string;
-            taskId: string | null;
-            kind: Schema.GqlCProjectActivityKind;
-            title: string;
-            occurredAt: string;
-            startedAt: string | null;
-            endedAt: string | null;
-            durationSec: number | null;
         } | null;
     };
 };
@@ -1840,103 +1886,108 @@ export type GqlCWorkspaceProjectDetailQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProjectDetailQuery = {
-    admin: {
-        activeTimer: {
-            activityId: string;
-            projectId: string;
-            taskId: string | null;
-            kind: Schema.GqlCProjectActivityKind;
-            title: string;
-            occurredAt: string;
-            startedAt: string | null;
-            endedAt: string | null;
-            durationSec: number | null;
-        } | null;
-        project: {
-            projectId: string;
-            title: string;
-            description: string | null;
-            notes: string | null;
-            status: Schema.GqlCProjectStatus;
-            position: number;
-            startedAt: string | null;
-            completedAt: string | null;
-            createdAt: string;
-            updatedAt: string;
-            totalWorkSec: number;
-            sourceRequest: {
-                projectRequestId: string;
-                name: string;
-                email: string;
-                company: string | null;
-                projectType: Schema.GqlCProjectRequestType;
-                description: string;
-                budget: string | null;
-                timeline: string | null;
+    currentSession: {
+        user: {
+            admin: {
+                activeTimer: {
+                    activityId: string;
+                    projectId: string;
+                    taskId: string | null;
+                    kind: Schema.GqlCProjectActivityKind;
+                    title: string;
+                    occurredAt: string;
+                    startedAt: string | null;
+                    endedAt: string | null;
+                    durationSec: number | null;
+                } | null;
+                project: {
+                    projectId: string;
+                    title: string;
+                    description: string | null;
+                    notes: string | null;
+                    status: Schema.GqlCProjectStatus;
+                    position: number;
+                    startedAt: string | null;
+                    completedAt: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                    totalWorkSec: number;
+                    sourceRequest: {
+                        projectRequestId: string;
+                        name: string;
+                        email: string;
+                        company: string | null;
+                        projectType: Schema.GqlCProjectRequestType;
+                        description: string;
+                        budget: string | null;
+                        timeline: string | null;
+                    } | null;
+                    tasks: Array<{
+                        taskId: string;
+                        projectId: string | null;
+                        title: string;
+                        notes: string | null;
+                        status: Schema.GqlCTaskStatus;
+                        position: number;
+                        dueAt: string | null;
+                        completedAt: string | null;
+                    }>;
+                    activities: Array<{
+                        activityId: string;
+                        projectId: string;
+                        taskId: string | null;
+                        kind: Schema.GqlCProjectActivityKind;
+                        channel: Schema.GqlCProjectActivityChannel | null;
+                        direction: Schema.GqlCProjectActivityDirection;
+                        title: string;
+                        notes: string | null;
+                        occurredAt: string;
+                        startedAt: string | null;
+                        endedAt: string | null;
+                        durationSec: number | null;
+                        amountCents: number | null;
+                        offerStatus: Schema.GqlCProjectOfferStatus | null;
+                        createdAt: string;
+                        links: Array<{
+                            projectLinkId: string;
+                            url: string;
+                            label: string | null;
+                            kind: Schema.GqlCProjectLinkKind;
+                            pinned: boolean;
+                        }>;
+                        files: Array<{
+                            projectFileId: string;
+                            label: string | null;
+                            kind: Schema.GqlCProjectFileKind;
+                            pinned: boolean;
+                            fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                        }>;
+                    }>;
+                    links: Array<{
+                        projectLinkId: string;
+                        projectId: string;
+                        activityId: string | null;
+                        url: string;
+                        label: string | null;
+                        kind: Schema.GqlCProjectLinkKind;
+                        pinned: boolean;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
+                    files: Array<{
+                        projectFileId: string;
+                        projectId: string;
+                        activityId: string | null;
+                        label: string | null;
+                        kind: Schema.GqlCProjectFileKind;
+                        pinned: boolean;
+                        createdAt: string;
+                        updatedAt: string;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                };
             } | null;
-            tasks: Array<{
-                taskId: string;
-                projectId: string | null;
-                title: string;
-                notes: string | null;
-                status: Schema.GqlCTaskStatus;
-                position: number;
-                dueAt: string | null;
-                completedAt: string | null;
-            }>;
-            activities: Array<{
-                activityId: string;
-                projectId: string;
-                taskId: string | null;
-                kind: Schema.GqlCProjectActivityKind;
-                channel: Schema.GqlCProjectActivityChannel | null;
-                title: string;
-                notes: string | null;
-                occurredAt: string;
-                startedAt: string | null;
-                endedAt: string | null;
-                durationSec: number | null;
-                amountCents: number | null;
-                offerStatus: Schema.GqlCProjectOfferStatus | null;
-                createdAt: string;
-                links: Array<{
-                    projectLinkId: string;
-                    url: string;
-                    label: string | null;
-                    kind: Schema.GqlCProjectLinkKind;
-                    pinned: boolean;
-                }>;
-                files: Array<{
-                    projectFileId: string;
-                    label: string | null;
-                    kind: Schema.GqlCProjectFileKind;
-                    pinned: boolean;
-                    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
-                }>;
-            }>;
-            links: Array<{
-                projectLinkId: string;
-                projectId: string;
-                activityId: string | null;
-                url: string;
-                label: string | null;
-                kind: Schema.GqlCProjectLinkKind;
-                pinned: boolean;
-                createdAt: string;
-                updatedAt: string;
-            }>;
-            files: Array<{
-                projectFileId: string;
-                projectId: string;
-                activityId: string | null;
-                label: string | null;
-                kind: Schema.GqlCProjectFileKind;
-                pinned: boolean;
-                createdAt: string;
-                updatedAt: string;
-                fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
-            }>;
-        };
+        } | null;
     };
 };
 
@@ -1984,6 +2035,7 @@ export type GqlCWorkspaceProjectDetailUpsertActivityMutationVariables = Exact<{
     taskId?: string | null | undefined;
     kind: Schema.GqlCProjectActivityKind;
     channel?: Schema.GqlCProjectActivityChannel | null | undefined;
+    direction?: Schema.GqlCProjectActivityDirection | null | undefined;
     title: string;
     notes?: string | null | undefined;
     occurredAt: string;
@@ -2209,118 +2261,121 @@ export type GqlCChatPageQueryVariables = Exact<{
 }>;
 
 export type GqlCChatPageQuery = {
-    currentSession: { sessionId: string; user: { userId: string; name: string } | null };
-    chat: {
-        chatId: string;
-        title: string;
-        lastModifiedAt: string;
-        messages: Array<
-            | {
-                  __typename: 'ChatMessageAssistantInputCollection';
-                  chatMessageId: string;
-                  prompt: string;
-                  mode: string;
-                  createdAt: string;
-                  generation: {
-                      modelId: string;
-                      inputTokens: number | null;
-                      outputTokens: number | null;
-                      totalTokens: number | null;
-                      reasoningTokens: number | null;
-                      cachedInputTokens: number | null;
-                  } | null;
-                  inputs: Array<
-                      | { __typename: 'ChatAssistantInputBoolean'; inputId: string; prompt: string }
-                      | { __typename: 'ChatAssistantInputDate'; inputId: string; prompt: string }
-                      | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
-                      | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
-                      | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
-                      | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
-                      | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
-                      | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
-                      | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
-                  >;
-              }
-            | {
-                  __typename: 'ChatMessageAssistantText';
-                  chatMessageId: string;
-                  body: string;
-                  createdAt: string;
-                  generation: {
-                      modelId: string;
-                      inputTokens: number | null;
-                      outputTokens: number | null;
-                      totalTokens: number | null;
-                      reasoningTokens: number | null;
-                      cachedInputTokens: number | null;
-                  } | null;
-              }
-            | {
-                  __typename: 'ChatMessageToolApprovalRequest';
-                  chatMessageId: string;
-                  approvalId: string;
-                  toolName: string;
-                  args: unknown;
-                  createdAt: string;
-                  generation: {
-                      modelId: string;
-                      inputTokens: number | null;
-                      outputTokens: number | null;
-                      totalTokens: number | null;
-                      reasoningTokens: number | null;
-                      cachedInputTokens: number | null;
-                  } | null;
-              }
-            | {
-                  __typename: 'ChatMessageToolApprovalResponse';
-                  chatMessageId: string;
-                  approvalId: string;
-                  approved: boolean;
-                  reason: string | null;
-                  createdAt: string;
-              }
-            | {
-                  __typename: 'ChatMessageToolCall';
-                  chatMessageId: string;
-                  toolName: string;
-                  args: unknown;
-                  parentChatMessageId: string | null;
-                  createdAt: string;
-              }
-            | {
-                  __typename: 'ChatMessageUser';
-                  chatMessageId: string;
-                  body: string;
-                  createdAt: string;
-                  author: { userId: string; name: string } | null;
-                  attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
-                  profileObservations: Array<{
-                      observationId: string;
-                      category: Schema.GqlCProfileObservationCategory;
-                      content: string;
-                      confidence: number | null;
+    currentSession: {
+        sessionId: string;
+        user: { userId: string; name: string } | null;
+        visitorChat: {
+            chatId: string;
+            title: string;
+            lastModifiedAt: string;
+            messages: Array<
+                | {
+                      __typename: 'ChatMessageAssistantInputCollection';
+                      chatMessageId: string;
+                      prompt: string;
+                      mode: string;
                       createdAt: string;
-                  }>;
-              }
-            | {
-                  __typename: 'ChatMessageUserInput';
-                  chatMessageId: string;
-                  collectionMessageId: string;
-                  createdAt: string;
-                  author: { userId: string; name: string } | null;
-                  answers: Array<{
-                      inputId: string;
-                      value:
-                          | { __typename: 'ChatAssistantInputValueBoolean'; boolean: boolean }
-                          | { __typename: 'ChatAssistantInputValueDate'; date: string }
-                          | { __typename: 'ChatAssistantInputValueDateRange'; from: string; to: string }
-                          | { __typename: 'ChatAssistantInputValueDateTime'; dateTime: string }
-                          | { __typename: 'ChatAssistantInputValueString'; value: string }
-                          | { __typename: 'ChatAssistantInputValueStringList'; values: Array<string> }
-                          | { __typename: 'ChatAssistantInputValueTime'; time: string };
-                  }>;
-              }
-        >;
+                      generation: {
+                          modelId: string;
+                          inputTokens: number | null;
+                          outputTokens: number | null;
+                          totalTokens: number | null;
+                          reasoningTokens: number | null;
+                          cachedInputTokens: number | null;
+                      } | null;
+                      inputs: Array<
+                          | { __typename: 'ChatAssistantInputBoolean'; inputId: string; prompt: string }
+                          | { __typename: 'ChatAssistantInputDate'; inputId: string; prompt: string }
+                          | { __typename: 'ChatAssistantInputDateRange'; inputId: string; prompt: string }
+                          | { __typename: 'ChatAssistantInputDateTime'; inputId: string; prompt: string }
+                          | { __typename: 'ChatAssistantInputMultiSelect'; inputId: string; prompt: string; options: Array<string> }
+                          | { __typename: 'ChatAssistantInputOtp'; inputId: string; prompt: string }
+                          | { __typename: 'ChatAssistantInputSingleSelect'; inputId: string; prompt: string; options: Array<string> }
+                          | { __typename: 'ChatAssistantInputText'; inputId: string; prompt: string }
+                          | { __typename: 'ChatAssistantInputTime'; inputId: string; prompt: string }
+                      >;
+                  }
+                | {
+                      __typename: 'ChatMessageAssistantText';
+                      chatMessageId: string;
+                      body: string;
+                      createdAt: string;
+                      generation: {
+                          modelId: string;
+                          inputTokens: number | null;
+                          outputTokens: number | null;
+                          totalTokens: number | null;
+                          reasoningTokens: number | null;
+                          cachedInputTokens: number | null;
+                      } | null;
+                  }
+                | {
+                      __typename: 'ChatMessageToolApprovalRequest';
+                      chatMessageId: string;
+                      approvalId: string;
+                      toolName: string;
+                      args: unknown;
+                      createdAt: string;
+                      generation: {
+                          modelId: string;
+                          inputTokens: number | null;
+                          outputTokens: number | null;
+                          totalTokens: number | null;
+                          reasoningTokens: number | null;
+                          cachedInputTokens: number | null;
+                      } | null;
+                  }
+                | {
+                      __typename: 'ChatMessageToolApprovalResponse';
+                      chatMessageId: string;
+                      approvalId: string;
+                      approved: boolean;
+                      reason: string | null;
+                      createdAt: string;
+                  }
+                | {
+                      __typename: 'ChatMessageToolCall';
+                      chatMessageId: string;
+                      toolName: string;
+                      args: unknown;
+                      parentChatMessageId: string | null;
+                      createdAt: string;
+                  }
+                | {
+                      __typename: 'ChatMessageUser';
+                      chatMessageId: string;
+                      body: string;
+                      createdAt: string;
+                      author: { userId: string; name: string } | null;
+                      attachments: Array<{ fileUploadId: string; filename: string; mediaType: string; size: number; url: string }>;
+                      profileObservations: Array<{
+                          observationId: string;
+                          category: Schema.GqlCProfileObservationCategory;
+                          content: string;
+                          confidence: number | null;
+                          createdAt: string;
+                      }>;
+                  }
+                | {
+                      __typename: 'ChatMessageUserInput';
+                      chatMessageId: string;
+                      collectionMessageId: string;
+                      createdAt: string;
+                      author: { userId: string; name: string } | null;
+                      answers: Array<{
+                          inputId: string;
+                          value:
+                              | { __typename: 'ChatAssistantInputValueBoolean'; boolean: boolean }
+                              | { __typename: 'ChatAssistantInputValueDate'; date: string }
+                              | { __typename: 'ChatAssistantInputValueDateRange'; from: string; to: string }
+                              | { __typename: 'ChatAssistantInputValueDateTime'; dateTime: string }
+                              | { __typename: 'ChatAssistantInputValueString'; value: string }
+                              | { __typename: 'ChatAssistantInputValueStringList'; values: Array<string> }
+                              | { __typename: 'ChatAssistantInputValueTime'; time: string };
+                      }>;
+                  }
+            >;
+        };
     };
 };
 
@@ -3628,7 +3683,17 @@ export const HomePageDocument = {
                                     name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'name' } }],
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [{ kind: 'Field', name: { kind: 'Name', value: '__typename' } }],
+                                                },
+                                            },
+                                        ],
                                     },
                                 },
                             ],
@@ -3668,39 +3733,57 @@ export const WorkspaceLogsDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'logs' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'level' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'level' } },
-                                        },
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'search' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
-                                        },
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'limit' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
-                                        },
-                                    ],
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'logId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'level' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'message' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'context' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'logs' },
+                                                            arguments: [
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'level' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'level' } },
+                                                                },
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'search' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+                                                                },
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'limit' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+                                                                },
+                                                            ],
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'logId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'level' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'context' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
                                         ],
                                     },
                                 },
@@ -3725,23 +3808,37 @@ export const WorkspaceVisitorChatsDocument = {
                     {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'currentSession' },
-                        selectionSet: { kind: 'SelectionSet', selections: [{ kind: 'Field', name: { kind: 'Name', value: 'sessionId' } }] },
-                    },
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'publicChats' },
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'publicChats' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
                                         ],
                                     },
                                 },
@@ -3773,39 +3870,56 @@ export const WorkspaceVisitorChatDocument = {
                     {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'currentSession' },
-                        selectionSet: { kind: 'SelectionSet', selections: [{ kind: 'Field', name: { kind: 'Name', value: 'sessionId' } }] },
-                    },
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'publicChat' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'chatId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'chatId' } },
-                                        },
-                                    ],
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'messages' },
+                                                name: { kind: 'Name', value: 'admin' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
                                                         {
-                                                            kind: 'FragmentSpread',
-                                                            name: { kind: 'Name', value: 'WorkspaceChatMessageFields' },
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'publicChat' },
+                                                            arguments: [
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'chatId' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'chatId' } },
+                                                                },
+                                                            ],
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'messages' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceChatMessageFields',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
                                                         },
                                                     ],
                                                 },
@@ -4269,16 +4383,39 @@ export const WorkspaceAssistantChatsDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'chats' },
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceChatListItem' } }],
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'chats' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'FragmentSpread',
+                                                                        name: { kind: 'Name', value: 'WorkspaceChatListItem' },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
                                     },
                                 },
                             ],
@@ -4334,43 +4471,46 @@ export const WorkspaceChatPageDocument = {
                                         selections: [
                                             { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                        ],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'chat' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'chatId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'chatId' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'messages' },
+                                                name: { kind: 'Name', value: 'admin' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
                                                         {
-                                                            kind: 'FragmentSpread',
-                                                            name: { kind: 'Name', value: 'WorkspaceChatMessageFields' },
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'chat' },
+                                                            arguments: [
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'chatId' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'chatId' } },
+                                                                },
+                                                            ],
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'messages' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceChatMessageFields',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
                                                         },
                                                     ],
                                                 },
@@ -5179,29 +5319,50 @@ export const WorkspaceChatConfigDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'chatConfig' },
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'availableModels' },
+                                                name: { kind: 'Name', value: 'admin' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'modelId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'supportedMediaTypes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'chatConfig' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'availableModels' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'modelId' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'supportedMediaTypes' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'defaultModelId' } },
+                                                                ],
+                                                            },
+                                                        },
                                                     ],
                                                 },
                                             },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'defaultModelId' } },
                                         ],
                                     },
                                 },
@@ -5286,43 +5447,73 @@ export const WorkspaceProfilePageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'profile' },
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'psychProfile' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'observationsSinceSynthesis' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'observations' },
-                                                arguments: [
-                                                    {
-                                                        kind: 'Argument',
-                                                        name: { kind: 'Name', value: 'category' },
-                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'category' } },
-                                                    },
-                                                    {
-                                                        kind: 'Argument',
-                                                        name: { kind: 'Name', value: 'includeDismissed' },
-                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'includeDismissed' } },
-                                                    },
-                                                ],
+                                                name: { kind: 'Name', value: 'admin' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
                                                         {
-                                                            kind: 'FragmentSpread',
-                                                            name: { kind: 'Name', value: 'WorkspaceProfileObservation' },
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'profile' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'prose' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'psychProfile' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'synthesizedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'synthesisModelId' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'observationsSinceSynthesis' },
+                                                                    },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'observations' },
+                                                                        arguments: [
+                                                                            {
+                                                                                kind: 'Argument',
+                                                                                name: { kind: 'Name', value: 'category' },
+                                                                                value: {
+                                                                                    kind: 'Variable',
+                                                                                    name: { kind: 'Name', value: 'category' },
+                                                                                },
+                                                                            },
+                                                                            {
+                                                                                kind: 'Argument',
+                                                                                name: { kind: 'Name', value: 'includeDismissed' },
+                                                                                value: {
+                                                                                    kind: 'Variable',
+                                                                                    name: { kind: 'Name', value: 'includeDismissed' },
+                                                                                },
+                                                                            },
+                                                                        ],
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceProfileObservation',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
                                                         },
                                                     ],
                                                 },
@@ -6451,10 +6642,30 @@ export const WorkspaceHubDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
-                            selections: [{ kind: 'Field', name: { kind: 'Name', value: 'projectRequestsInboxCount' } }],
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestsInboxCount' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
                         },
                     },
                 ],
@@ -6474,147 +6685,201 @@ export const WorkspaceProjectsPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectRequests' },
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'email' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'company' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'verifiedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'convertedProject' },
+                                                name: { kind: 'Name', value: 'admin' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'projectRequests' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'verifiedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'convertedProject' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'projects' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'sourceRequest' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectRequestId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectType' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'tasks' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'position' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'completedAt' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'activities' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'activityId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'occurredAt' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'startedAt' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'durationSec' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'createdAt' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'standaloneTasks' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'activeTimer' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
+                                                                ],
+                                                            },
+                                                        },
                                                     ],
                                                 },
                                             },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'projects' },
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
-                                            {
-                                                kind: 'Field',
-                                                name: { kind: 'Name', value: 'sourceRequest' },
-                                                selectionSet: {
-                                                    kind: 'SelectionSet',
-                                                    selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
-                                                    ],
-                                                },
-                                            },
-                                            {
-                                                kind: 'Field',
-                                                name: { kind: 'Name', value: 'tasks' },
-                                                selectionSet: {
-                                                    kind: 'SelectionSet',
-                                                    selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                                    ],
-                                                },
-                                            },
-                                            {
-                                                kind: 'Field',
-                                                name: { kind: 'Name', value: 'activities' },
-                                                selectionSet: {
-                                                    kind: 'SelectionSet',
-                                                    selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                                    ],
-                                                },
-                                            },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'standaloneTasks' },
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
                                         ],
                                     },
                                 },
@@ -7328,202 +7593,371 @@ export const WorkspaceProjectDetailDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
+                        name: { kind: 'Name', value: 'currentSession' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    name: { kind: 'Name', value: 'user' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
-                                        ],
-                                    },
-                                },
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'project' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'projectId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'sourceRequest' },
+                                                name: { kind: 'Name', value: 'admin' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'email' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'company' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectType' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'timeline' } },
-                                                    ],
-                                                },
-                                            },
-                                            {
-                                                kind: 'Field',
-                                                name: { kind: 'Name', value: 'tasks' },
-                                                selectionSet: {
-                                                    kind: 'SelectionSet',
-                                                    selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
-                                                    ],
-                                                },
-                                            },
-                                            {
-                                                kind: 'Field',
-                                                name: { kind: 'Name', value: 'activities' },
-                                                selectionSet: {
-                                                    kind: 'SelectionSet',
-                                                    selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'offerStatus' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'links' },
+                                                            name: { kind: 'Name', value: 'activeTimer' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'durationSec' } },
                                                                 ],
                                                             },
                                                         },
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'files' },
+                                                            name: { kind: 'Name', value: 'project' },
+                                                            arguments: [
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'projectId' } },
+                                                                },
+                                                            ],
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'startedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'totalWorkSec' } },
                                                                     {
                                                                         kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        name: { kind: 'Name', value: 'sourceRequest' },
                                                                         selectionSet: {
                                                                             kind: 'SelectionSet',
                                                                             selections: [
                                                                                 {
                                                                                     kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                    name: { kind: 'Name', value: 'projectRequestId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'email' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'company' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectType' },
                                                                                 },
                                                                                 {
                                                                                     kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                    name: { kind: 'Name', value: 'description' },
                                                                                 },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'budget' } },
                                                                                 {
                                                                                     kind: 'Field',
-                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                    name: { kind: 'Name', value: 'timeline' },
                                                                                 },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
-                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
                                                                             ],
                                                                         },
                                                                     },
-                                                                ],
-                                                            },
-                                                        },
-                                                    ],
-                                                },
-                                            },
-                                            {
-                                                kind: 'Field',
-                                                name: { kind: 'Name', value: 'links' },
-                                                selectionSet: {
-                                                    kind: 'SelectionSet',
-                                                    selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectLinkId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-                                                    ],
-                                                },
-                                            },
-                                            {
-                                                kind: 'Field',
-                                                name: { kind: 'Name', value: 'files' },
-                                                selectionSet: {
-                                                    kind: 'SelectionSet',
-                                                    selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectFileId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'activityId' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'label' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-                                                        {
-                                                            kind: 'Field',
-                                                            name: { kind: 'Name', value: 'fileUpload' },
-                                                            selectionSet: {
-                                                                kind: 'SelectionSet',
-                                                                selections: [
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'size' } },
-                                                                    { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'tasks' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'position' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'completedAt' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'activities' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'activityId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'taskId' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'channel' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'direction' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'occurredAt' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'startedAt' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'endedAt' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'durationSec' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'amountCents' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'offerStatus' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'createdAt' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'links' },
+                                                                                    selectionSet: {
+                                                                                        kind: 'SelectionSet',
+                                                                                        selections: [
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: {
+                                                                                                    kind: 'Name',
+                                                                                                    value: 'projectLinkId',
+                                                                                                },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'url' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'label' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'kind' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'pinned' },
+                                                                                            },
+                                                                                        ],
+                                                                                    },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'files' },
+                                                                                    selectionSet: {
+                                                                                        kind: 'SelectionSet',
+                                                                                        selections: [
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: {
+                                                                                                    kind: 'Name',
+                                                                                                    value: 'projectFileId',
+                                                                                                },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'label' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'kind' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'pinned' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'fileUpload' },
+                                                                                                selectionSet: {
+                                                                                                    kind: 'SelectionSet',
+                                                                                                    selections: [
+                                                                                                        {
+                                                                                                            kind: 'Field',
+                                                                                                            name: {
+                                                                                                                kind: 'Name',
+                                                                                                                value: 'fileUploadId',
+                                                                                                            },
+                                                                                                        },
+                                                                                                        {
+                                                                                                            kind: 'Field',
+                                                                                                            name: {
+                                                                                                                kind: 'Name',
+                                                                                                                value: 'filename',
+                                                                                                            },
+                                                                                                        },
+                                                                                                        {
+                                                                                                            kind: 'Field',
+                                                                                                            name: {
+                                                                                                                kind: 'Name',
+                                                                                                                value: 'mediaType',
+                                                                                                            },
+                                                                                                        },
+                                                                                                        {
+                                                                                                            kind: 'Field',
+                                                                                                            name: {
+                                                                                                                kind: 'Name',
+                                                                                                                value: 'size',
+                                                                                                            },
+                                                                                                        },
+                                                                                                        {
+                                                                                                            kind: 'Field',
+                                                                                                            name: {
+                                                                                                                kind: 'Name',
+                                                                                                                value: 'url',
+                                                                                                            },
+                                                                                                        },
+                                                                                                    ],
+                                                                                                },
+                                                                                            },
+                                                                                        ],
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'links' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectLinkId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'activityId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'createdAt' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'updatedAt' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectFileId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'projectId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'activityId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'createdAt' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'updatedAt' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUpload' },
+                                                                                    selectionSet: {
+                                                                                        kind: 'SelectionSet',
+                                                                                        selections: [
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: {
+                                                                                                    kind: 'Name',
+                                                                                                    value: 'fileUploadId',
+                                                                                                },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'filename' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'mediaType' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'size' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'url' },
+                                                                                            },
+                                                                                        ],
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
                                                                 ],
                                                             },
                                                         },
@@ -7923,6 +8357,11 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                 },
                 {
                     kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'direction' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityDirection' } },
+                },
+                {
+                    kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
                 },
@@ -8035,6 +8474,11 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                                                         kind: 'ObjectField',
                                                         name: { kind: 'Name', value: 'channel' },
                                                         value: { kind: 'Variable', name: { kind: 'Name', value: 'channel' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'direction' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'direction' } },
                                                     },
                                                     {
                                                         kind: 'ObjectField',
@@ -8744,31 +9188,33 @@ export const ChatPageDocument = {
                                         ],
                                     },
                                 },
-                            ],
-                        },
-                    },
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'chat' },
-                        arguments: [
-                            {
-                                kind: 'Argument',
-                                name: { kind: 'Name', value: 'chatId' },
-                                value: { kind: 'Variable', name: { kind: 'Name', value: 'chatId' } },
-                            },
-                        ],
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
-                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                                { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'messages' },
+                                    name: { kind: 'Name', value: 'visitorChat' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'chatId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'chatId' } },
+                                        },
+                                    ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'ChatMessageFields' } }],
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'messages' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'FragmentSpread', name: { kind: 'Name', value: 'ChatMessageFields' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
                                     },
                                 },
                             ],

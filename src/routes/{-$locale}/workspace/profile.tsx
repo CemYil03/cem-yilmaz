@@ -19,6 +19,7 @@ import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
 import { GlassCard } from '../../../web/components/GlassCard';
+import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type { GqlCProfileObservationCategory, GqlCWorkspaceProfilePageQuery } from '../../../web/graphql/generated';
 import {
     WorkspaceProfileObservationDismissDocument,
@@ -54,7 +55,7 @@ const pageDescription = {
 
 const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
-type ProfileQueryData = NonNullable<GqlCWorkspaceProfilePageQuery['admin']>;
+type ProfileQueryData = NonNullable<NonNullable<GqlCWorkspaceProfilePageQuery['currentSession']['user']>['admin']>;
 type ProfileData = ProfileQueryData['profile'];
 type ObservationRow = ProfileData['observations'][number];
 type ProfileTab = 'summary' | 'prose' | 'psychProfile';
@@ -105,10 +106,11 @@ function WorkspaceProfilePage() {
     const includeDismissed = search.includeDismissed ?? false;
     const invalidate = () => router.invalidate();
 
-    const profile = data.admin.profile;
+    const profile = data.currentSession.user?.admin?.profile;
+    if (!profile) return <WorkspaceUnauthorized locale={locale} />;
 
     return (
-        <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full pb-20">
+        <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full pb-20">
             <header className="mt-10 mb-10">
                 <p className="max-w-2xl text-base text-muted-foreground">{pageDescription[locale]}</p>
             </header>

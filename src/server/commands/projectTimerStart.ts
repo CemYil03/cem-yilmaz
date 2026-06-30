@@ -48,6 +48,7 @@ export async function projectTimerStart(
                 taskId: args.taskId ?? null,
                 kind: 'work',
                 channel: null,
+                direction: 'internal',
                 title,
                 notes: null,
                 occurredAt: now,

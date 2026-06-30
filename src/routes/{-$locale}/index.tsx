@@ -116,6 +116,11 @@ function HomePage() {
     const locale = useLocale();
     const { ask } = Route.useSearch();
     const { openWithMessage } = useVisitorChat();
+    const data = Route.useLoaderData();
+    // Admin-only "Workspace" entry in the header — non-admins (including
+    // anonymous visitors) get `user.admin = null` and never see it. See
+    // `docs/architecture/workspace-access.md`.
+    const isAdmin = data.currentSession.user?.admin != null;
 
     function openChat(text: string) {
         void openWithMessage(text);
@@ -131,7 +136,7 @@ function HomePage() {
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header />
+            <Header showWorkspaceLink={isAdmin} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full">
                 <Hero locale={locale} onOpenChat={openChat} />
                 <Services locale={locale} />

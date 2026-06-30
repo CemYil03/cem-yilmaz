@@ -1,9 +1,28 @@
 import { eq } from 'drizzle-orm';
 import { fileUploads, projectActivities, projectFiles, projectLinks } from '../db/schema';
-import type { FileUpload, ProjectActivityCreate, ProjectFile, ProjectLink } from '../db/schema';
+import type {
+    FileUpload,
+    ProjectActivityCreate,
+    ProjectActivityDirection,
+    ProjectActivityKind,
+    ProjectFile,
+    ProjectLink,
+} from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationProjectActivityUpsertArgs, GqlSProjectActivity, GqlSSession } from '../graphql/generated';
 import { toGqlProjectActivity } from '../mappers/toGqlProjectActivity';
+
+// Resolve the `direction` column for a non-timer activity. `work` / `note` /
+// `milestone` are always `internal` (they're not a turn in a dialogue); for
+// the client-facing kinds we respect what the client sent and fall back to a
+// kind-appropriate default: a logged client-contact row is most often
+// inbound, while meeting and offer rows are typically outbound from Cem.
+function resolveDirection(kind: ProjectActivityKind, explicit: ProjectActivityDirection | null | undefined): ProjectActivityDirection {
+    if (kind === 'work' || kind === 'note' || kind === 'milestone') return 'internal';
+    if (explicit) return explicit;
+    if (kind === 'clientContact') return 'incoming';
+    return 'outgoing';
+}
 
 // Create or update a project activity row. Reserved for event-style
 // entries (logged call, email, offer drafted, freeform note). Timed work
@@ -51,6 +70,7 @@ export async function projectActivityUpsert(
         taskId: input.taskId ?? null,
         kind: input.kind,
         channel: input.channel ?? null,
+        direction: resolveDirection(input.kind, input.direction),
         title: input.title,
         notes: input.notes ?? null,
         occurredAt: input.occurredAt,

@@ -300,6 +300,13 @@ input UserUpdate {
 type User {
     userId: ID!
     name: String!
+    # Workspace read namespace — non-null only for the session's own admin user
+    # (`Users.isAdmin = true`). Null for visitors, non-admin logged-in users, and
+    # any future cross-user lookups. Lets surfaces like the public landing page
+    # ask "is the current visitor an admin?" with a single nullable field check
+    # instead of catching a `guardAdmin` exception. Mutations still live on
+    # `Mutation.admin`. See `docs/architecture/workspace-access.md`.
+    admin: Admin
 }
 
 type Session {
@@ -307,10 +314,18 @@ type Session {
     user: User
     # Visitor-assistant chats owned by this session, most-recent first. Empty
     # for sessions that have never started a visitor chat. The `messages`
-    # field on each entry is empty — fetch a single chat through `Query.chat`
-    # to materialize its transcript. Used by the chat dialog's empty state
-    # so a returning visitor can resume a prior conversation.
+    # field on each entry is empty — fetch a single chat through
+    # `Session.visitorChat(chatId)` to materialize its transcript. Used by
+    # the chat dialog's empty state so a returning visitor can resume a
+    # prior conversation.
     visitorChats: [Chat!]!
+    # A single visitor chat owned by this session. Resolves only when the
+    # chat row has `scope = 'public'` AND `sessionId = currentSession.sessionId`
+    # — a stolen chatId from another session is rejected even if the scope
+    # is correct. Admin reads still use `currentSession.user.admin.chat(...)` /
+    # `currentSession.user.admin.publicChat(...)` instead. See
+    # `docs/architecture/multi-agent-chat.md`.
+    visitorChat(chatId: ID!): Chat!
     # Rolling-24h cap on visitor-chat user messages from this requester.
     # Counted across (this session) OR (other sessions sharing this `ipHash`)
     # so clearing cookies does not reset the bucket. The visitor dialog
@@ -387,19 +402,12 @@ input ChatAssistantOptions {
 
 type Query {
     currentSession: Session!
-    # A single visitor chat by id. Resolves only `scope = 'public'` chats —
-    # admin reads use `Query.admin.chat(...)` instead. See
-    # `docs/architecture/multi-agent-chat.md`.
-    chat(chatId: ID!): Chat!
     # Public CV namespace — surfaces the timeline (`/cv`) and the
     # skill/hobby blocks (`/about`). Always returns lists ordered by their
     # `position` column, ascending. Edits land via the admin namespace
     # (`Mutation.admin.cv*`), gated by `guardAdminMutation`. See
     # `docs/features/cv.md`.
     cv: CvQuery!
-    # Workspace-only namespace, gated by `guardAdmin`. Visitor sessions get
-    # an authorization error here.
-    admin: Admin!
 }
 
 # Workspace read namespace — Cem's own chats and a separate window onto the
@@ -515,7 +523,7 @@ type Mutation {
         reason: String
         assistantOptions: ChatAssistantOptions!
     ): ChatMessageCreateResult
-    # Workspace-only mutations, gated by `guardAdmin`.
+    # Workspace-only mutations, gated by `guardAdminMutation`.
     admin: AdminMutation!
 }
 
@@ -836,6 +844,16 @@ enum ProjectActivityChannel {
     other
 }
 
+# Sidedness of an activity row. Drives the chat-style timeline layout on the
+# project detail page — `outgoing` rows render right-aligned (from Cem),
+# `incoming` rows left-aligned (from the client), `internal` rows render as
+# centered system markers (work sessions, freeform notes, milestones).
+enum ProjectActivityDirection {
+    outgoing
+    incoming
+    internal
+}
+
 # A single entry on a project's timeline. Covers both logged events
 # (call, email, offer sent) and timed work sessions — the latter populate
 # `startedAt` / `endedAt` and have `kind = work`.
@@ -847,6 +865,9 @@ type ProjectActivity {
     taskId: ID
     kind: ProjectActivityKind!
     channel: ProjectActivityChannel
+    # Sidedness of the row — drives the chat-style timeline layout. Always
+    # set; defaults to `internal` for `work` / `note` / `milestone` kinds.
+    direction: ProjectActivityDirection!
     title: String!
     notes: String
     # When the event happened. Equals `startedAt` on timer rows.
@@ -941,7 +962,7 @@ type ProjectFile {
 }
 
 # Workspace projects read namespace — mounted under `Admin.projects` so
-# the existing `guardAdmin` gate covers it.
+# the resolver chain on `User.admin` covers it.
 extend type Admin {
     # Incoming visitor project briefs, newest first. The `status` argument
     # filters server-side; omit to return every state (including the
@@ -1018,6 +1039,12 @@ input ProjectActivityCreate {
     taskId: ID
     kind: ProjectActivityKind!
     channel: ProjectActivityChannel
+    # Sidedness override. The command normalizes this — `work` / `note` /
+    # `milestone` are always stored as `internal` regardless of what the
+    # client sends. For `clientContact` / `meeting` / `offer` the field is
+    # respected; when omitted the command picks a kind-appropriate default
+    # (`clientContact` → `incoming`, `meeting` / `offer` → `outgoing`).
+    direction: ProjectActivityDirection
     title: String!
     notes: String
     occurredAt: DateTime!
@@ -1068,15 +1095,19 @@ extend type AdminMutation {
     cvExperienceUpsert(input: CvExperienceInput!): CvExperience!
     cvExperienceDelete(cvExperienceId: ID!): MutationResult!
     cvExperienceReorder(orderedIds: [ID!]!): MutationResult!
+
     cvEducationUpsert(input: CvEducationInput!): CvEducation!
     cvEducationDelete(cvEducationId: ID!): MutationResult!
     cvEducationReorder(orderedIds: [ID!]!): MutationResult!
+
     cvSkillUpsert(input: CvSkillInput!): CvSkill!
     cvSkillDelete(cvSkillId: ID!): MutationResult!
     cvSkillReorder(orderedIds: [ID!]!): MutationResult!
+
     cvHobbyUpsert(input: CvHobbyInput!): CvHobby!
     cvHobbyDelete(cvHobbyId: ID!): MutationResult!
     cvHobbyReorder(orderedIds: [ID!]!): MutationResult!
+
     # Soft-dismiss an observation. The row stays in the DB but is excluded
     # from the synthesizer's input. A future "undismiss" mutation could clear
     # `dismissedAt`; today the page treats dismiss as final but reversible by
@@ -1085,6 +1116,7 @@ extend type AdminMutation {
     # Force a synthesis pass now. Enqueues the `profileSynthesize` job. The
     # job updates the `Profile` row and resets `observationsSinceSynthesis`.
     profileSynthesizeRequest: MutationResult!
+
     # --- Workspace projects -------------------------------------------------
     # Archive an incoming request without converting it to a project. Flips
     # `status = archived` so the Inbox tab can hide it by default.
@@ -1098,6 +1130,7 @@ extend type AdminMutation {
     projectUpsert(input: ProjectCreate!): Project!
     projectDelete(projectId: ID!): MutationResult!
     projectReorder(orderedIds: [ID!]!): MutationResult!
+
     taskUpsert(input: TaskCreate!): Task!
     taskDelete(taskId: ID!): MutationResult!
     # Rewrite `position` on the given task ids in array order. Caller scopes
@@ -1109,8 +1142,10 @@ extend type AdminMutation {
     # Create or update an activity row (call logged, email sent, offer
     # drafted, freeform note). `kind = work` rows are reserved for the
     # timer mutations and rejected here.
+
     projectActivityUpsert(input: ProjectActivityCreate!): ProjectActivity!
     projectActivityDelete(activityId: ID!): MutationResult!
+
     # Start a work timer on the given project. Atomically stops the
     # currently-running timer (if any) before inserting the new row, so
     # the one-active-timer invariant holds even across rapid taps.
@@ -1119,6 +1154,7 @@ extend type AdminMutation {
     # Stamp `endedAt = now` and write `durationSec` on the running timer.
     # Idempotent on an already-stopped row — returns the row untouched.
     projectTimerStop(activityId: ID!): ProjectActivity!
+
     # --- Project links & files ---------------------------------------------
     # Create or update an external link associated with the project.
     # `activityId` may only be set on create; once linked, the resource
@@ -1128,6 +1164,7 @@ extend type AdminMutation {
     # Flip `pinned`. Returns the row in its new state so the cache update
     # is a straight write.
     projectLinkTogglePin(projectLinkId: ID!): ProjectLink!
+
     # Create or update a file resource. The caller uploads the file first
     # via `POST /api/file-uploads` and passes the returned `fileUploadId`.
     # On delete the project-file row goes; the underlying upload blob stays
@@ -1173,7 +1210,7 @@ extend type Admin {
 #
 # Workspace surface onto the `Logs` table the server writes to via
 # `serverRuntime.log.*`. Read-only triage — no live tail, no delete. Gated by
-# the parent `guardAdmin` on `Query.admin`. See `docs/features/logging.md`.
+# the resolver chain on `User.admin`. See `docs/features/logging.md`.
 
 enum LogLevel {
     error

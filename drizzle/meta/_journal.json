@@ -71,6 +71,13 @@
             "when": 1782808293539,
             "tag": "0009_high_human_cannonball",
             "breakpoints": true
+        },
+        {
+            "idx": 10,
+            "version": "7",
+            "when": 1782822692094,
+            "tag": "0010_grey_blindfold",
+            "breakpoints": true
         }
     ]
 }

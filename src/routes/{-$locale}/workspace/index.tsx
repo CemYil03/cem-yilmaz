@@ -178,7 +178,7 @@ function WorkspaceHub() {
     const { pathname } = useLocation();
     const data = Route.useLoaderData();
     const badges: Record<NonNullable<FocusArea['badgeKey']>, number> = {
-        projectsInbox: data.admin.projectRequestsInboxCount,
+        projectsInbox: data.currentSession.user?.admin?.projectRequestsInboxCount ?? 0,
     };
 
     return (

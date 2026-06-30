@@ -29,17 +29,30 @@ and split admin reads into the two list queries. It is NOT consulted to pick an 
 - `chats: [Chat!]!` — admin chats.
 - `chat(chatId: ID!): Chat!` — a single admin chat (rejects `public` scope).
 
-`Session.chat(chatId)` is removed. Visitors reading their own chat go through `Query.chat` (resolves any `public` chat by id — Phase 1 keeps
-the unguessable-id model the live subscription already uses; per-user ownership lands when accounts do). Admins read through
-`Query.admin.chat(chatId)` / `Query.admin.publicChat(chatId)`.
+`Session.chat(chatId)` is removed. Visitors reading their own chat go through `Session.visitorChat(chatId)` — the chat is owned by the
+session that created it, and the resolver rejects any read whose `chats.sessionId` doesn't match the requester's session (scope mismatches
+are rejected the same way). Admins read through `currentSession.user.admin.chat(chatId)` / `currentSession.user.admin.publicChat(chatId)`.
 
 ### Schema shape
 
 ```graphql
 type Query {
     currentSession: Session!
-    chat(chatId: ID!): Chat! # public-scope chats only
-    admin: Admin! # gated by guardAdmin
+}
+
+type Session {
+    sessionId: ID!
+    user: User
+    visitorChats: [Chat!]!
+    # scope='public' AND chats.sessionId = currentSession.sessionId
+    visitorChat(chatId: ID!): Chat!
+    visitorChatQuota: VisitorChatQuota!
+}
+
+type User {
+    userId: ID!
+    name: String!
+    admin: Admin # non-null only for the session's own admin user
 }
 
 type Admin {
@@ -163,9 +176,12 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
 - `AdminMutation.*` → resolved chat must have `scope = 'admin'`. The `guardAdminMutation` gate at the `admin` field already keeps
   unauthenticated callers out of the namespace; the per-mutation scope check stops a logged-in admin from accidentally posting into a
   visitor chat by chatId.
-- `Query.admin` → `guardAdmin(session, serverRuntime)`, the read-side counterpart with the same `isAdmin` check. Split from
-  `guardAdminMutation` so write-side policy can diverge (e.g. CSRF, narrower allowlist) without dragging the read path along.
-- `Query.chat(chatId)` → resolved chat must have `scope = 'public'`.
+- `User.admin` → returns null for non-admins (and for cross-user lookups), the `Admin` namespace shell otherwise. Same `isAdmin` check
+  `guardAdminMutation` uses; the read side returns `null` instead of throwing so the field is safely composable from the public landing page
+  (`currentSession.user.admin != null` drives the workspace link there). See [workspace-access.md](./workspace-access.md).
+- `Session.visitorChat(chatId)` → resolved chat must have `scope = 'public'` AND `chats.sessionId = currentSession.sessionId`. A stolen
+  chatId from another visitor's session is rejected with the same generic "not found" error as a wrong-scope hit, so a probing client can't
+  tell the two apart.
 
 ### Routing
 
@@ -173,8 +189,8 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
   `scope = 'public'`. Sends through `Mutation.chatMessageCreate` (visitor namespace).
 - `/workspace` — workspace hub. Hosts the assistant composer as the page hero. Sends through `Mutation.admin.chatMessageCreate` and
   navigates to `/workspace/assistant?chatId=<new id>` on first send.
-- `/workspace/assistant` — loaded personal-assistant chat. Reads `Query.admin.chat(chatId)` and sends follow-up messages through the
-  `AdminMutation.*` namespace. Always creates new chats with `scope = 'admin'`.
+- `/workspace/assistant` — loaded personal-assistant chat. Reads `currentSession.user.admin.chat(chatId)` and sends follow-up messages
+  through the `AdminMutation.*` namespace. Always creates new chats with `scope = 'admin'`.
 
 ## Alternatives Considered
 
@@ -195,8 +211,8 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
   chats stamp `scope`; existing chats are verified to match.
 - The three chat mutations move from `UserMutation` to `Mutation` (visitor) and are mirrored on `AdminMutation` (admin). Client `.graphql`
   operations drop the `user { … }` wrapper.
-- `Session.chat(chatId)` is removed. `Query.chat(chatId)` replaces it for visitor reads; `Query.admin.chat(chatId)` / `publicChat(chatId)`
-  for admin reads.
+- `Session.chat(chatId)` is removed. `Session.visitorChat(chatId)` replaces it for visitor reads (scope + session-ownership check);
+  `currentSession.user.admin.chat(chatId)` / `publicChat(chatId)` for admin reads.
 - `agentUserConversation.ts` is renamed to `agentVisitorAboutCem.ts`. `agentPersonalAssistant.ts` lands as a Phase-2-stub sibling with the
   workspace system prompt.
 - The chat-related architecture docs (`chat.md`, `chat-persistence.md`) keep their links to this doc; the dispatch model described here

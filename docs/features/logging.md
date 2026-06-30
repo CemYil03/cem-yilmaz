@@ -93,7 +93,9 @@ triage:
   present.
 - Filters live in the URL (`?level=…&search=…`) so a view is deep-linkable. No live tail.
 
-The viewer is gated by the parent `guardAdmin` on `Query.admin` — the same chain that protects the rest of the workspace surface.
+The viewer is gated by the `User.admin` resolver chain — the same gate that protects the rest of the workspace surface. A non-admin
+visitor's `currentSession.user.admin` resolves to null, the page treats that as "not authorized" and renders the shared
+`<WorkspaceUnauthorized />` surface instead of crashing.
 
 ### Viewer Files
 

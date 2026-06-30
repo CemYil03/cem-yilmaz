@@ -742,6 +742,7 @@ export interface GqlSProjectActivity {
     amountCents?: Maybe<Scalars['Int']['output']>;
     channel?: Maybe<GqlSProjectActivityChannel>;
     createdAt: Scalars['DateTime']['output'];
+    direction: GqlSProjectActivityDirection;
     durationSec?: Maybe<Scalars['Int']['output']>;
     endedAt?: Maybe<Scalars['DateTime']['output']>;
     files: Array<GqlSProjectFile>;
@@ -771,6 +772,7 @@ export type GqlSProjectActivityCreate = {
     attachLinkPinned?: InputMaybe<Scalars['Boolean']['input']>;
     attachLinkUrl?: InputMaybe<Scalars['String']['input']>;
     channel?: InputMaybe<GqlSProjectActivityChannel>;
+    direction?: InputMaybe<GqlSProjectActivityDirection>;
     durationSec?: InputMaybe<Scalars['Int']['input']>;
     kind: GqlSProjectActivityKind;
     notes?: InputMaybe<Scalars['String']['input']>;
@@ -780,6 +782,8 @@ export type GqlSProjectActivityCreate = {
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title: Scalars['String']['input'];
 };
+
+export type GqlSProjectActivityDirection = 'incoming' | 'internal' | 'outgoing';
 
 export type GqlSProjectActivityKind = 'clientContact' | 'meeting' | 'milestone' | 'note' | 'offer' | 'work';
 
@@ -873,23 +877,22 @@ export type GqlSProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'pause
 
 export interface GqlSQuery {
     __typename?: 'Query';
-    admin: GqlSAdmin;
-    chat: GqlSChat;
     currentSession: GqlSSession;
     cv: GqlSCvQuery;
 }
-
-export type GqlSQueryChatArgs = {
-    chatId: Scalars['ID']['input'];
-};
 
 export interface GqlSSession {
     __typename?: 'Session';
     sessionId: Scalars['ID']['output'];
     user?: Maybe<GqlSUser>;
+    visitorChat: GqlSChat;
     visitorChatQuota: GqlSVisitorChatQuota;
     visitorChats: Array<GqlSChat>;
 }
+
+export type GqlSSessionVisitorChatArgs = {
+    chatId: Scalars['ID']['input'];
+};
 
 export interface GqlSSubscription {
     __typename?: 'Subscription';
@@ -930,6 +933,7 @@ export type GqlSTaskStatus = 'doing' | 'done' | 'todo';
 
 export interface GqlSUser {
     __typename?: 'User';
+    admin?: Maybe<GqlSAdmin>;
     name: Scalars['String']['output'];
     userId: Scalars['ID']['output'];
 }
@@ -1076,8 +1080,11 @@ export type GqlSResolversUnionTypes<_RefType extends Record<string, unknown>> = 
         | GqlSChatMessageToolApprovalRequest
         | GqlSChatMessageToolApprovalResponse
         | GqlSChatMessageToolCall
-        | GqlSChatMessageUser
-        | (Omit<GqlSChatMessageUserInput, 'answers'> & { answers: Array<_RefType['ChatMessageUserInputAnswer']> });
+        | (Omit<GqlSChatMessageUser, 'author'> & { author?: Maybe<_RefType['User']> })
+        | (Omit<GqlSChatMessageUserInput, 'answers' | 'author'> & {
+              answers: Array<_RefType['ChatMessageUserInputAnswer']>;
+              author?: Maybe<_RefType['User']>;
+          });
     ChatUpdate:
         | GqlSChatUpdateAssistantTextChunk
         | (Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: _RefType['ChatMessage'] })
@@ -1130,9 +1137,12 @@ export type GqlSResolversTypes = ResolversObject<{
     ChatMessageToolApprovalRequest: ResolverTypeWrapper<GqlSChatMessageToolApprovalRequest>;
     ChatMessageToolApprovalResponse: ResolverTypeWrapper<GqlSChatMessageToolApprovalResponse>;
     ChatMessageToolCall: ResolverTypeWrapper<GqlSChatMessageToolCall>;
-    ChatMessageUser: ResolverTypeWrapper<GqlSChatMessageUser>;
+    ChatMessageUser: ResolverTypeWrapper<Omit<GqlSChatMessageUser, 'author'> & { author?: Maybe<GqlSResolversTypes['User']> }>;
     ChatMessageUserInput: ResolverTypeWrapper<
-        Omit<GqlSChatMessageUserInput, 'answers'> & { answers: Array<GqlSResolversTypes['ChatMessageUserInputAnswer']> }
+        Omit<GqlSChatMessageUserInput, 'answers' | 'author'> & {
+            answers: Array<GqlSResolversTypes['ChatMessageUserInputAnswer']>;
+            author?: Maybe<GqlSResolversTypes['User']>;
+        }
     >;
     ChatMessageUserInputAnswer: ResolverTypeWrapper<
         Omit<GqlSChatMessageUserInputAnswer, 'value'> & { value: GqlSResolversTypes['ChatAssistantInputValue'] }
@@ -1170,6 +1180,7 @@ export type GqlSResolversTypes = ResolversObject<{
     ProjectActivity: ResolverTypeWrapper<GqlSProjectActivity>;
     ProjectActivityChannel: GqlSProjectActivityChannel;
     ProjectActivityCreate: GqlSProjectActivityCreate;
+    ProjectActivityDirection: GqlSProjectActivityDirection;
     ProjectActivityKind: GqlSProjectActivityKind;
     ProjectCreate: GqlSProjectCreate;
     ProjectFile: ResolverTypeWrapper<GqlSProjectFile>;
@@ -1184,13 +1195,19 @@ export type GqlSResolversTypes = ResolversObject<{
     ProjectRequestType: GqlSProjectRequestType;
     ProjectStatus: GqlSProjectStatus;
     Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
-    Session: ResolverTypeWrapper<Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversTypes['Chat']> }>;
+    Session: ResolverTypeWrapper<
+        Omit<GqlSSession, 'user' | 'visitorChat' | 'visitorChats'> & {
+            user?: Maybe<GqlSResolversTypes['User']>;
+            visitorChat: GqlSResolversTypes['Chat'];
+            visitorChats: Array<GqlSResolversTypes['Chat']>;
+        }
+    >;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Task: ResolverTypeWrapper<GqlSTask>;
     TaskCreate: GqlSTaskCreate;
     TaskStatus: GqlSTaskStatus;
-    User: ResolverTypeWrapper<GqlSUser>;
+    User: ResolverTypeWrapper<Omit<GqlSUser, 'admin'> & { admin?: Maybe<GqlSResolversTypes['Admin']> }>;
     UserCreate: GqlSUserCreate;
     UserMutation: ResolverTypeWrapper<GqlSUserMutation>;
     UserUpdate: GqlSUserUpdate;
@@ -1240,9 +1257,10 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ChatMessageToolApprovalRequest: GqlSChatMessageToolApprovalRequest;
     ChatMessageToolApprovalResponse: GqlSChatMessageToolApprovalResponse;
     ChatMessageToolCall: GqlSChatMessageToolCall;
-    ChatMessageUser: GqlSChatMessageUser;
-    ChatMessageUserInput: Omit<GqlSChatMessageUserInput, 'answers'> & {
+    ChatMessageUser: Omit<GqlSChatMessageUser, 'author'> & { author?: Maybe<GqlSResolversParentTypes['User']> };
+    ChatMessageUserInput: Omit<GqlSChatMessageUserInput, 'answers' | 'author'> & {
         answers: Array<GqlSResolversParentTypes['ChatMessageUserInputAnswer']>;
+        author?: Maybe<GqlSResolversParentTypes['User']>;
     };
     ChatMessageUserInputAnswer: Omit<GqlSChatMessageUserInputAnswer, 'value'> & {
         value: GqlSResolversParentTypes['ChatAssistantInputValue'];
@@ -1281,12 +1299,16 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ProjectLinkUpsert: GqlSProjectLinkUpsert;
     ProjectRequest: GqlSProjectRequest;
     Query: Record<PropertyKey, never>;
-    Session: Omit<GqlSSession, 'visitorChats'> & { visitorChats: Array<GqlSResolversParentTypes['Chat']> };
+    Session: Omit<GqlSSession, 'user' | 'visitorChat' | 'visitorChats'> & {
+        user?: Maybe<GqlSResolversParentTypes['User']>;
+        visitorChat: GqlSResolversParentTypes['Chat'];
+        visitorChats: Array<GqlSResolversParentTypes['Chat']>;
+    };
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
     Task: GqlSTask;
     TaskCreate: GqlSTaskCreate;
-    User: GqlSUser;
+    User: Omit<GqlSUser, 'admin'> & { admin?: Maybe<GqlSResolversParentTypes['Admin']> };
     UserCreate: GqlSUserCreate;
     UserMutation: GqlSUserMutation;
     UserUpdate: GqlSUserUpdate;
@@ -2105,6 +2127,7 @@ export type GqlSProjectActivityResolvers<
     amountCents?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
     channel?: Resolver<Maybe<GqlSResolversTypes['ProjectActivityChannel']>, ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    direction?: Resolver<GqlSResolversTypes['ProjectActivityDirection'], ParentType, ContextType>;
     durationSec?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
     endedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
     files?: Resolver<Array<GqlSResolversTypes['ProjectFile']>, ParentType, ContextType>;
@@ -2174,8 +2197,6 @@ export type GqlSQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Query'] = GqlSResolversParentTypes['Query'],
 > = ResolversObject<{
-    admin?: Resolver<GqlSResolversTypes['Admin'], ParentType, ContextType>;
-    chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSQueryChatArgs, 'chatId'>>;
     currentSession?: Resolver<GqlSResolversTypes['Session'], ParentType, ContextType>;
     cv?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
 }>;
@@ -2186,6 +2207,7 @@ export type GqlSSessionResolvers<
 > = ResolversObject<{
     sessionId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     user?: Resolver<Maybe<GqlSResolversTypes['User']>, ParentType, ContextType>;
+    visitorChat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSSessionVisitorChatArgs, 'chatId'>>;
     visitorChatQuota?: Resolver<GqlSResolversTypes['VisitorChatQuota'], ParentType, ContextType>;
     visitorChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
 }>;
@@ -2224,6 +2246,7 @@ export type GqlSUserResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['User'] = GqlSResolversParentTypes['User'],
 > = ResolversObject<{
+    admin?: Resolver<Maybe<GqlSResolversTypes['Admin']>, ParentType, ContextType>;
     name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     userId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
 }>;
@@ -2359,6 +2382,9 @@ export const GqlSProjectActivityChannelSchema: z.ZodType<
     'aiAssistant' | 'email' | 'inPerson' | 'malt' | 'other' | 'phone' | 'videoCall'
 > = z.enum(['aiAssistant', 'email', 'inPerson', 'malt', 'other', 'phone', 'videoCall']);
 
+export const GqlSProjectActivityDirectionSchema: z.ZodType<'incoming' | 'internal' | 'outgoing', 'incoming' | 'internal' | 'outgoing'> =
+    z.enum(['incoming', 'internal', 'outgoing']);
+
 export const GqlSProjectActivityKindSchema: z.ZodType<
     'clientContact' | 'meeting' | 'milestone' | 'note' | 'offer' | 'work',
     'clientContact' | 'meeting' | 'milestone' | 'note' | 'offer' | 'work'
@@ -2485,6 +2511,7 @@ export function GqlSProjectActivityCreateSchema(): z.ZodObject<Properties<GqlSPr
         attachLinkPinned: z.boolean().nullish(),
         attachLinkUrl: z.string().nullish(),
         channel: GqlSProjectActivityChannelSchema.nullish(),
+        direction: GqlSProjectActivityDirectionSchema.nullish(),
         durationSec: z.number().nullish(),
         kind: GqlSProjectActivityKindSchema,
         notes: z.string().nullish(),

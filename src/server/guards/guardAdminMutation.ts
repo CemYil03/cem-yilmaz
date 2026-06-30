@@ -5,11 +5,13 @@ import type { GqlSAdminMutation, GqlSSession } from '../graphql/generated';
 
 // Gates the workspace write namespace (`Mutation.admin`).
 //
-// Mirrors `guardAdmin` for the read namespace — same `isAdmin` column on
-// the `Users` row drives both. Split into a dedicated guard so write-side
-// policy can diverge later (e.g. narrower allowlist, CSRF posture) without
-// dragging the read path along. See `guardAdmin.ts` for the rationale and
-// `docs/architecture/workspace-access.md` for the broader access model.
+// Read-side equivalent: the `User.admin` resolver in `resolversCreate.ts`
+// runs the same `isAdmin` check but returns null instead of throwing, so the
+// field can be composed off the public `currentSession.user` shape (drives
+// the landing-page workspace link). The write side stays throw-on-mismatch —
+// `Mutation.admin` is non-nullable and the resolver throws when the caller
+// is not an admin so a bad request fails loudly. See
+// `docs/architecture/workspace-access.md`.
 export async function guardAdminMutation(requestingSession: GqlSSession, serverRuntime: ServerRuntime): Promise<GqlSAdminMutation> {
     if (!requestingSession.userId) {
         throw new Error('Unauthorized');

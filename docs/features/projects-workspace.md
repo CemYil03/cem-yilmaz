@@ -87,7 +87,7 @@ Migration: `drizzle/0004_secret_butterfly.sql`.
 
 ### GraphQL
 
-Read namespace under `Admin` (gated by `guardAdmin`):
+Read namespace under `Admin` (reached via `currentSession.user.admin`):
 
 - `admin.projectRequests(status: ProjectRequestStatus): [ProjectRequest!]!` — list (newest first); `convertedProject` field joined in
 - `admin.projectRequestsInboxCount: Int!` — count of `emailVerified` requests without a linked project, drives the hub badge
@@ -192,6 +192,34 @@ Every dedicated tab (Aufgaben, Verlauf, Links, Dateien) shows an `EmptyState` bl
 bilingual prompt, and a primary action button that opens the existing form. Source: the module-scope `EmptyState` helper in the route file.
 The Notes textarea is always rendered; its placeholder carries the welcoming line.
 
+### Activity timeline (chat layout)
+
+The Activity tab renders as a chat-style timeline. Each row carries a `direction` column (`outgoing | incoming | internal`) that drives the
+layout:
+
+- **`outgoing`** — right-aligned bubble with a primary tint. The default for `meeting` and `offer` rows; the typical "I sent this" turn.
+- **`incoming`** — left-aligned bubble with a neutral tint. The default for `clientContact` rows; the typical "client said this" turn.
+- **`internal`** — centered system row. Set by the server (regardless of what the client sent) for `work`, `note`, and `milestone` kinds.
+  Work-timer rows collapse to a single line ("Du hast 1 h 15 m gearbeitet · 14:30") with an expand-on-click chevron — they're measurements,
+  not turns, so they don't shout. Note and milestone rows render expanded.
+
+The feed reads newest-at-bottom (chat convention). A centered day-separator pill marks day boundaries (`Montag, 14. März 2026`). The
+composer sits below the feed, mirroring `/workspace/assistant`.
+
+The activity composer surfaces a **Richtung / Direction** picker only for `clientContact`, `meeting`, and `offer` — the kinds where
+direction is a real choice. Switching kind auto-snaps direction to the kind-appropriate default (`clientContact` → incoming, `meeting` /
+`offer` → outgoing); manual override sticks after that.
+
+The schema:
+
+- `ProjectActivities.direction varchar NOT NULL DEFAULT 'internal'` — backfilled by migration `drizzle/0010_grey_blindfold.sql`:
+  pre-existing `clientContact` rows became `incoming`, `meeting` and `offer` became `outgoing`, everything else (`work` / `note` /
+  `milestone`) is `internal`.
+- Enum: `projectActivityDirections = ['outgoing', 'incoming', 'internal']` in `src/server/db/schema.ts`.
+- GraphQL: `enum ProjectActivityDirection` + `direction: ProjectActivityDirection!` on the type + optional `direction` on
+  `ProjectActivityCreate`. The `projectActivityUpsert` command normalizes `work` / `note` / `milestone` to `internal` regardless of what the
+  client sent.
+
 ### Breadcrumb / chrome
 
 The detail route has no in-page back-link. The way back to the board is the workspace header's breadcrumb trail, where the intermediate
@@ -236,6 +264,22 @@ other reference exists.
 GraphQL: `type ProjectFile { fileUpload: FileUpload! ... }`, `enum ProjectFileKind`, mutations `projectFileUpsert`, `projectFileDelete`,
 `projectFileTogglePin`.
 
+### Inline preview
+
+The Files tab opens images, markdown, and text-ish formats inline via the same `ChatAttachmentPreviewDialog` the chat surface uses
+(`src/web/components/chat-message/ChatAttachmentPreviewDialog.tsx`). Dispatch is shared through `previewKindFor`
+(`src/web/chat/chatAttachmentPreview.ts`): markdown renders through `<AssistantMarkdown />`, other text-ish formats land in a `<pre>`,
+images max-out at 70vh. Anything else (PDF, archives) keeps the previous behaviour — clicking the filename opens the bytes in a new tab. The
+dialog is hoisted on `FilesSection`, so arrow keys walk the full list of files in their on-screen order.
+
+### Agent-authored markdown
+
+The projects sub-agent has a `projectFileCreate` tool (`src/server/agents/toolProjectFileCreate.ts`) that produces a markdown document
+directly from the chat — no upload step. The agent supplies `markdown`, `filename` (`.md`), `kind`, optional `label` / `pinned`, and the
+server command (`src/server/commands/projectFileCreateFromMarkdown.ts`) writes the bytes to `FileUploads` with `mediaType = 'text/markdown'`
+and links the row through `projectFileUpsert`. Scope is intentionally narrow: markdown only and create-only. PDFs, edits, and re-uploads
+still go through the browser path so the call sites stay auditable.
+
 ## Atomic attach on activity create
 
 `projectActivityUpsert` accepts optional `attachLinkUrl` / `attachFileUploadId` (with companion `attachLinkKind` / `attachFileKind` / labels
@@ -266,7 +310,9 @@ history.
 
 The personal assistant at `/workspace/assistant` can read and mutate this board on Cem's instruction. It delegates project/task work to a
 dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `projectUpsert` / `projectDelete` / `taskUpsert` /
-`taskDelete` commands the page uses. See [architecture/agent-delegation.md](../architecture/agent-delegation.md).
+`taskDelete` / `projectActivityUpsert` / `projectLinkUpsert` commands the page uses, plus `projectFileCreate` for agent-authored markdown
+files (see the **Files → Agent-authored markdown** section above). See
+[architecture/agent-delegation.md](../architecture/agent-delegation.md).
 
 ### Deep linking from the assistant
 
@@ -359,9 +405,12 @@ Files:
   `toGqlProject.ts`
 - Queries: `src/server/queries/activeTimerGet.ts`, `projectGet.ts`; lists + totals + links + files are loaded by `projectsList.ts`
 - Commands: `src/server/commands/projectActivityUpsert.ts` (with atomic attach), `projectActivityDelete.ts`, `projectTimerStart.ts`,
-  `projectTimerStop.ts`, `projectLink{Upsert,Delete,TogglePin}.ts`, `projectFile{Upsert,Delete,TogglePin}.ts`
+  `projectTimerStop.ts`, `projectLink{Upsert,Delete,TogglePin}.ts`, `projectFile{Upsert,Delete,TogglePin}.ts`,
+  `projectFileCreateFromMarkdown.ts`
+- Agent tools: `src/server/agents/toolProject{sList,Upsert,Delete,LinkUpsert,ActivityUpsert,FileCreate}.ts`, `toolTask{Upsert,Delete}.ts`,
+  `toolStandaloneTasksList.ts`
 - Tests: `src/server/commands/projectTimerStart.test.ts`, `projectLinkUpsert.test.ts`, `projectFileUpsert.test.ts`,
-  `projectActivityUpsert.test.ts`
+  `projectFileCreateFromMarkdown.test.ts`, `projectActivityUpsert.test.ts`
 - Resolver wiring: `src/server/graphql/resolversCreate.ts`
 - UI: board card in `src/routes/{-$locale}/workspace/projects.tsx`; detail route + tabs + pinned rail in
   `src/routes/{-$locale}/workspace/projects_.$projectId.tsx`; operations in `projects.graphql` (board) and `projects_.$projectId.graphql`

@@ -50,6 +50,8 @@ export function MockWorkspaceAssistantChatProvider({ children, highlightSignal =
                 isOpen: false,
                 setOpen: () => {},
                 open: () => {},
+                isCollapsed: false,
+                setCollapsed: () => {},
                 chatId: undefined,
                 loadedMessages: [],
                 live: noOpLive,

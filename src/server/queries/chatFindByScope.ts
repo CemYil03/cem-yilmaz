@@ -6,10 +6,12 @@ import { toGqlChat } from '../mappers/toGqlChat';
 import { chatMessageRowsLoad } from './chatMessageRowsLoad';
 
 // Resolves a chat by id and refuses to return one whose `scope` doesn't match
-// the namespace the read came from (visitor `Query.chat`, admin
-// `Query.admin.chat`, admin `Query.admin.publicChat`). The scope check is the
-// one knob that splits the read surface — without it a stolen chatId could
-// flow across namespaces. See `docs/architecture/multi-agent-chat.md`.
+// the namespace the read came from (admin `Query.admin.chat`, admin
+// `Query.admin.publicChat`). The scope check is the one knob that splits the
+// admin read surface — without it a stolen chatId could flow across
+// namespaces. Visitor reads go through `Session.visitorChat` /
+// `visitorChatFindOne` instead, which additionally enforces session ownership.
+// See `docs/architecture/multi-agent-chat.md`.
 export async function chatFindByScope(
     chatId: string,
     expectedScope: 'public' | 'admin',

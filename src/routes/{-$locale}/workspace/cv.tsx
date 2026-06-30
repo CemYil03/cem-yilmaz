@@ -84,7 +84,7 @@ function WorkspaceCvEditor() {
     const onChanged = () => router.invalidate();
 
     return (
-        <main className="px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full py-12 leading-relaxed">
+        <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <p className="text-sm text-muted-foreground">{description[locale]}</p>
             <p className="mt-2 text-xs text-muted-foreground">
                 {

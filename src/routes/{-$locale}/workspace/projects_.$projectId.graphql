@@ -7,112 +7,117 @@
 # pages stay independently invalidatable.
 
 query WorkspaceProjectDetail($projectId: ID!) {
-    admin {
-        activeTimer {
-            activityId
-            projectId
-            taskId
-            kind
-            title
-            occurredAt
-            startedAt
-            endedAt
-            durationSec
-        }
-        project(projectId: $projectId) {
-            projectId
-            title
-            description
-            notes
-            status
-            position
-            startedAt
-            completedAt
-            createdAt
-            updatedAt
-            totalWorkSec
-            sourceRequest {
-                projectRequestId
-                name
-                email
-                company
-                projectType
-                description
-                budget
-                timeline
-            }
-            tasks {
-                taskId
-                projectId
-                title
-                notes
-                status
-                position
-                dueAt
-                completedAt
-            }
-            activities {
-                activityId
-                projectId
-                taskId
-                kind
-                channel
-                title
-                notes
-                occurredAt
-                startedAt
-                endedAt
-                durationSec
-                amountCents
-                offerStatus
-                createdAt
-                links {
-                    projectLinkId
-                    url
-                    label
+    currentSession {
+        user {
+            admin {
+                activeTimer {
+                    activityId
+                    projectId
+                    taskId
                     kind
-                    pinned
+                    title
+                    occurredAt
+                    startedAt
+                    endedAt
+                    durationSec
                 }
-                files {
-                    projectFileId
-                    label
-                    kind
-                    pinned
-                    fileUpload {
-                        fileUploadId
-                        filename
-                        mediaType
-                        size
-                        url
+                project(projectId: $projectId) {
+                    projectId
+                    title
+                    description
+                    notes
+                    status
+                    position
+                    startedAt
+                    completedAt
+                    createdAt
+                    updatedAt
+                    totalWorkSec
+                    sourceRequest {
+                        projectRequestId
+                        name
+                        email
+                        company
+                        projectType
+                        description
+                        budget
+                        timeline
                     }
-                }
-            }
-            links {
-                projectLinkId
-                projectId
-                activityId
-                url
-                label
-                kind
-                pinned
-                createdAt
-                updatedAt
-            }
-            files {
-                projectFileId
-                projectId
-                activityId
-                label
-                kind
-                pinned
-                createdAt
-                updatedAt
-                fileUpload {
-                    fileUploadId
-                    filename
-                    mediaType
-                    size
-                    url
+                    tasks {
+                        taskId
+                        projectId
+                        title
+                        notes
+                        status
+                        position
+                        dueAt
+                        completedAt
+                    }
+                    activities {
+                        activityId
+                        projectId
+                        taskId
+                        kind
+                        channel
+                        direction
+                        title
+                        notes
+                        occurredAt
+                        startedAt
+                        endedAt
+                        durationSec
+                        amountCents
+                        offerStatus
+                        createdAt
+                        links {
+                            projectLinkId
+                            url
+                            label
+                            kind
+                            pinned
+                        }
+                        files {
+                            projectFileId
+                            label
+                            kind
+                            pinned
+                            fileUpload {
+                                fileUploadId
+                                filename
+                                mediaType
+                                size
+                                url
+                            }
+                        }
+                    }
+                    links {
+                        projectLinkId
+                        projectId
+                        activityId
+                        url
+                        label
+                        kind
+                        pinned
+                        createdAt
+                        updatedAt
+                    }
+                    files {
+                        projectFileId
+                        projectId
+                        activityId
+                        label
+                        kind
+                        pinned
+                        createdAt
+                        updatedAt
+                        fileUpload {
+                            fileUploadId
+                            filename
+                            mediaType
+                            size
+                            url
+                        }
+                    }
                 }
             }
         }
@@ -198,6 +203,7 @@ mutation WorkspaceProjectDetailUpsertActivity(
     $taskId: ID
     $kind: ProjectActivityKind!
     $channel: ProjectActivityChannel
+    $direction: ProjectActivityDirection
     $title: String!
     $notes: String
     $occurredAt: DateTime!
@@ -221,6 +227,7 @@ mutation WorkspaceProjectDetailUpsertActivity(
                 taskId: $taskId
                 kind: $kind
                 channel: $channel
+                direction: $direction
                 title: $title
                 notes: $notes
                 occurredAt: $occurredAt

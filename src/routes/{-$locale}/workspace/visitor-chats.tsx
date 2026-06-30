@@ -7,6 +7,7 @@ import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
 import { groupMessagesByDate, mergeTranscriptMessages } from '../../../web/chat/chatTranscript';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { ChatMessage } from '../../../web/components/chat-message';
+import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type { GqlCWorkspaceVisitorChatQuery, GqlCWorkspaceVisitorChatsQuery } from '../../../web/graphql/generated';
 import { WorkspaceVisitorChatDocument, WorkspaceVisitorChatsDocument } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
@@ -19,9 +20,11 @@ import type { Locale } from '../../../web/utils/locale';
 // Admin review of what website visitors are asking the AI assistant. Lists
 // every visitor chat (newest first) and lets the admin open a single
 // transcript read-only — no composer, no live subscription, no interactive
-// collection/approval UI. Authorization is the parent `guardAdmin` chain on
-// the GraphQL `admin.publicChats` / `admin.publicChat` queries; this route
-// itself is `noindex` and (Phase 2) sits behind the workspace OAuth gate.
+// collection/approval UI. Authorization is the `User.admin` resolver chain on
+// the GraphQL queries (returns null for non-admins, the namespace shell
+// otherwise); the page falls back to `<WorkspaceUnauthorized />` when the
+// chain resolves null. This route itself is also `noindex` and (Phase 2) sits
+// behind the workspace OAuth gate.
 //
 // Data flow: `chatId` lives in the URL. When absent, the loader returns the
 // chat list; when present, the loader returns a single chat detail. The
@@ -42,9 +45,13 @@ const visitorChatsSearchSchema = z.object({
     chatId: z.string().optional(),
 });
 
+type VisitorChatsAdmin = NonNullable<NonNullable<GqlCWorkspaceVisitorChatsQuery['currentSession']['user']>['admin']>;
+type VisitorChatAdmin = NonNullable<NonNullable<GqlCWorkspaceVisitorChatQuery['currentSession']['user']>['admin']>;
+
 type LoaderData =
-    | { kind: 'list'; chats: GqlCWorkspaceVisitorChatsQuery['admin']['publicChats'] }
-    | { kind: 'detail'; chat: NonNullable<NonNullable<GqlCWorkspaceVisitorChatQuery['admin']>['publicChat']> | null };
+    | { kind: 'unauthorized' }
+    | { kind: 'list'; chats: VisitorChatsAdmin['publicChats'] }
+    | { kind: 'detail'; chat: VisitorChatAdmin['publicChat'] | null };
 
 export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     validateSearch: visitorChatsSearchSchema,
@@ -52,10 +59,14 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     loader: async ({ deps }): Promise<LoaderData> => {
         if (deps.chatId) {
             const data = await routeLoaderGraphqlClient(WorkspaceVisitorChatDocument, { chatId: deps.chatId })();
-            return { kind: 'detail', chat: data.admin.publicChat };
+            const admin = data.currentSession.user?.admin;
+            if (!admin) return { kind: 'unauthorized' };
+            return { kind: 'detail', chat: admin.publicChat };
         }
         const data = await routeLoaderGraphqlClient(WorkspaceVisitorChatsDocument)();
-        return { kind: 'list', chats: data.admin.publicChats };
+        const admin = data.currentSession.user?.admin;
+        if (!admin) return { kind: 'unauthorized' };
+        return { kind: 'list', chats: admin.publicChats };
     },
     staleTime: 0,
     head: ({ params }) => {
@@ -72,8 +83,9 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     component() {
         const data = Route.useLoaderData();
         const locale = useLocale();
+        if (data.kind === 'unauthorized') return <WorkspaceUnauthorized locale={locale} />;
         return (
-            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-16">
+            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full pb-16">
                 {data.kind === 'detail' ? (
                     <VisitorChatDetail chat={data.chat} locale={locale} />
                 ) : (
@@ -84,7 +96,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     },
 });
 
-function VisitorChatsList({ chats, locale }: { chats: GqlCWorkspaceVisitorChatsQuery['admin']['publicChats']; locale: Locale }) {
+function VisitorChatsList({ chats, locale }: { chats: VisitorChatsAdmin['publicChats']; locale: Locale }) {
     return (
         <section className="py-10">
             <p className="max-w-2xl text-base text-muted-foreground">{description[locale]}</p>
@@ -123,13 +135,7 @@ function VisitorChatsList({ chats, locale }: { chats: GqlCWorkspaceVisitorChatsQ
     );
 }
 
-function VisitorChatDetail({
-    chat,
-    locale,
-}: {
-    chat: NonNullable<NonNullable<GqlCWorkspaceVisitorChatQuery['admin']>['publicChat']> | null;
-    locale: Locale;
-}) {
+function VisitorChatDetail({ chat, locale }: { chat: VisitorChatAdmin['publicChat'] | null; locale: Locale }) {
     return (
         <section className="py-10">
             <Link
@@ -160,7 +166,7 @@ function VisitorChatDetail({
 // so collection forms and approval requests render as static records. There
 // are no `appendedMessages` or `streamingTexts` — this view is a snapshot of
 // what's already persisted.
-function ReadOnlyTranscript({ chat }: { chat: NonNullable<NonNullable<GqlCWorkspaceVisitorChatQuery['admin']>['publicChat']> }) {
+function ReadOnlyTranscript({ chat }: { chat: NonNullable<VisitorChatAdmin['publicChat']> }) {
     const allMessages = mergeTranscriptMessages(chat.messages, [] as ReadonlyArray<TranscriptMessage>);
     const groupedMessages = groupMessagesByDate(allMessages);
     return (

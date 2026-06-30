@@ -5,7 +5,7 @@ import type { GqlCChatPageQuery } from '../graphql/generated';
 // so the route reads as "load + render + compose" without inline data
 // reshaping.
 
-export type TranscriptMessage = NonNullable<GqlCChatPageQuery['chat']>['messages'][number];
+export type TranscriptMessage = NonNullable<GqlCChatPageQuery['currentSession']['visitorChat']>['messages'][number];
 
 /** Combine the initial-query rows with the subscription's appended buffer,
  *  deduped by `chatMessageId` and sorted by `createdAt`. Initial rows win —

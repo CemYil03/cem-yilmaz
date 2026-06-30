@@ -3,6 +3,12 @@ query HomePage {
         sessionId
         user {
             name
+            # `__typename` is a presence-only probe: non-null when the user is
+            # an admin, null otherwise. Drives the "Workspace" link in the
+            # landing-page header. See `docs/architecture/workspace-access.md`.
+            admin {
+                __typename
+            }
         }
     }
 }
