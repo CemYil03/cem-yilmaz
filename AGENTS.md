@@ -163,7 +163,8 @@ src/
 │   │       ├── tax.tsx         Tax matters
 │   │       ├── fitness.tsx     Fitness & well-being
 │   │       ├── medical.tsx     Medical (appointments, results, health notes)
-│   │       └── media.tsx       Movies & TV shows
+│   │       ├── media.tsx       Movies & TV shows
+│   │       └── logs.tsx        Server log viewer (read-only triage of the `Logs` table)
 │   └── api/
 │       ├── graphql.ts          POST /api/graphql (queries, mutations)
 │       └── stream.ts           POST /api/stream (subscriptions via SSE)

@@ -32,6 +32,7 @@ import { Route as Char123LocaleChar125WorkspaceProjectsRouteImport } from './rou
 import { Route as Char123LocaleChar125WorkspaceProfileRouteImport } from './routes/{-$locale}/workspace/profile'
 import { Route as Char123LocaleChar125WorkspaceMedicalRouteImport } from './routes/{-$locale}/workspace/medical'
 import { Route as Char123LocaleChar125WorkspaceMediaRouteImport } from './routes/{-$locale}/workspace/media'
+import { Route as Char123LocaleChar125WorkspaceLogsRouteImport } from './routes/{-$locale}/workspace/logs'
 import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './routes/{-$locale}/workspace/fitness'
 import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
 import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
@@ -168,6 +169,12 @@ const Char123LocaleChar125WorkspaceMediaRoute =
     path: '/media',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
+const Char123LocaleChar125WorkspaceLogsRoute =
+  Char123LocaleChar125WorkspaceLogsRouteImport.update({
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
 const Char123LocaleChar125WorkspaceFitnessRoute =
   Char123LocaleChar125WorkspaceFitnessRouteImport.update({
     id: '/fitness',
@@ -226,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
+  '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
   '/{-$locale}/workspace/profile': typeof Char123LocaleChar125WorkspaceProfileRoute
@@ -255,6 +263,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
+  '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
   '/{-$locale}/workspace/profile': typeof Char123LocaleChar125WorkspaceProfileRoute
@@ -287,6 +296,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
+  '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
   '/{-$locale}/workspace/profile': typeof Char123LocaleChar125WorkspaceProfileRoute
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/profile'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/profile'
@@ -380,6 +392,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/profile'
@@ -566,6 +579,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceMediaRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/{-$locale}/workspace/logs': {
+      id: '/{-$locale}/workspace/logs'
+      path: '/logs'
+      fullPath: '/{-$locale}/workspace/logs'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceLogsRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
     '/{-$locale}/workspace/fitness': {
       id: '/{-$locale}/workspace/fitness'
       path: '/fitness'
@@ -616,6 +636,7 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceCvRoute: typeof Char123LocaleChar125WorkspaceCvRoute
   Char123LocaleChar125WorkspaceFinancesRoute: typeof Char123LocaleChar125WorkspaceFinancesRoute
   Char123LocaleChar125WorkspaceFitnessRoute: typeof Char123LocaleChar125WorkspaceFitnessRoute
+  Char123LocaleChar125WorkspaceLogsRoute: typeof Char123LocaleChar125WorkspaceLogsRoute
   Char123LocaleChar125WorkspaceMediaRoute: typeof Char123LocaleChar125WorkspaceMediaRoute
   Char123LocaleChar125WorkspaceMedicalRoute: typeof Char123LocaleChar125WorkspaceMedicalRoute
   Char123LocaleChar125WorkspaceProfileRoute: typeof Char123LocaleChar125WorkspaceProfileRoute
@@ -636,6 +657,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceFinancesRoute,
     Char123LocaleChar125WorkspaceFitnessRoute:
       Char123LocaleChar125WorkspaceFitnessRoute,
+    Char123LocaleChar125WorkspaceLogsRoute:
+      Char123LocaleChar125WorkspaceLogsRoute,
     Char123LocaleChar125WorkspaceMediaRoute:
       Char123LocaleChar125WorkspaceMediaRoute,
     Char123LocaleChar125WorkspaceMedicalRoute:

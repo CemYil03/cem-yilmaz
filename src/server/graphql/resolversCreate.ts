@@ -57,6 +57,7 @@ import { cvExperienceList } from '../queries/cvExperienceList';
 import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
 import { profileGet } from '../queries/profileGet';
+import { logsList } from '../queries/logsList';
 import { profileObservationList } from '../queries/profileObservationList';
 import { projectRequestsList } from '../queries/projectRequestsList';
 import { projectRequestsInboxCount } from '../queries/projectRequestsInboxCount';
@@ -70,6 +71,7 @@ import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 import type {
     GqlSAdmin,
     GqlSAdminChatArgs,
+    GqlSAdminLogsArgs,
     GqlSAdminMutation,
     GqlSAdminMutationChatConfigDefaultModelSetArgs,
     GqlSAdminMutationChatInputCollectionRespondArgs,
@@ -234,6 +236,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                     })),
                     defaultModelId: row.defaultModelId,
                 };
+            },
+            logs(_parent: GqlSAdmin, args: GqlSAdminLogsArgs, requestingSession: GqlSSession) {
+                return logsList(args, requestingSession, serverRuntime);
             },
         },
         AdminProfile: {

@@ -22,6 +22,7 @@ export interface GqlSAdmin {
     chat: GqlSChat;
     chatConfig: GqlSAdminChatConfig;
     chats: Array<GqlSChat>;
+    logs: Array<GqlSLog>;
     profile: GqlSAdminProfile;
     project: GqlSProject;
     projectRequests: Array<GqlSProjectRequest>;
@@ -34,6 +35,12 @@ export interface GqlSAdmin {
 
 export type GqlSAdminChatArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminLogsArgs = {
+    level?: InputMaybe<GqlSLogLevel>;
+    limit?: InputMaybe<Scalars['Int']['input']>;
+    search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlSAdminProjectArgs = {
@@ -641,6 +648,18 @@ export interface GqlSFileUpload {
     url: Scalars['String']['output'];
 }
 
+export interface GqlSLog {
+    __typename?: 'Log';
+    context?: Maybe<Scalars['JSON']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    level: GqlSLogLevel;
+    logId: Scalars['ID']['output'];
+    message: Scalars['String']['output'];
+    sessionId?: Maybe<Scalars['ID']['output']>;
+}
+
+export type GqlSLogLevel = 'debug' | 'error' | 'info' | 'warn';
+
 export interface GqlSMutation {
     __typename?: 'Mutation';
     admin: GqlSAdminMutation;
@@ -1141,6 +1160,8 @@ export type GqlSResolversTypes = ResolversObject<{
     ID: ResolverTypeWrapper<Scalars['ID']['output']>;
     Int: ResolverTypeWrapper<Scalars['Int']['output']>;
     JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
+    Log: ResolverTypeWrapper<GqlSLog>;
+    LogLevel: GqlSLogLevel;
     Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
     MutationResult: ResolverTypeWrapper<GqlSMutationResult>;
     ProfileObservation: ResolverTypeWrapper<GqlSProfileObservation>;
@@ -1246,6 +1267,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ID: Scalars['ID']['output'];
     Int: Scalars['Int']['output'];
     JSON: Scalars['JSON']['output'];
+    Log: GqlSLog;
     Mutation: Record<PropertyKey, never>;
     MutationResult: GqlSMutationResult;
     ProfileObservation: GqlSProfileObservation;
@@ -1279,6 +1301,7 @@ export type GqlSAdminResolvers<
     chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminChatArgs, 'chatId'>>;
     chatConfig?: Resolver<GqlSResolversTypes['AdminChatConfig'], ParentType, ContextType>;
     chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    logs?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminLogsArgs>>;
     profile?: Resolver<GqlSResolversTypes['AdminProfile'], ParentType, ContextType>;
     project?: Resolver<GqlSResolversTypes['Project'], ParentType, ContextType, RequireFields<GqlSAdminProjectArgs, 'projectId'>>;
     projectRequests?: Resolver<Array<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType, Partial<GqlSAdminProjectRequestsArgs>>;
@@ -1990,6 +2013,18 @@ export interface GqlSJsonScalarConfig extends GraphQLScalarTypeConfig<GqlSResolv
     name: 'JSON';
 }
 
+export type GqlSLogResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Log'] = GqlSResolversParentTypes['Log'],
+> = ResolversObject<{
+    context?: Resolver<Maybe<GqlSResolversTypes['JSON']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    level?: Resolver<GqlSResolversTypes['LogLevel'], ParentType, ContextType>;
+    logId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    message?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    sessionId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+}>;
+
 export type GqlSMutationResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Mutation'] = GqlSResolversParentTypes['Mutation'],
@@ -2269,6 +2304,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     DateTime?: GraphQLScalarType;
     FileUpload?: GqlSFileUploadResolvers<ContextType>;
     JSON?: GraphQLScalarType;
+    Log?: GqlSLogResolvers<ContextType>;
     Mutation?: GqlSMutationResolvers<ContextType>;
     MutationResult?: GqlSMutationResultResolvers<ContextType>;
     ProfileObservation?: GqlSProfileObservationResolvers<ContextType>;
@@ -2305,6 +2341,13 @@ export const GqlSCvSkillCategorySchema: z.ZodType<
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools',
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools'
 > = z.enum(['capabilities', 'frameworks', 'languages', 'services', 'tools']);
+
+export const GqlSLogLevelSchema: z.ZodType<'debug' | 'error' | 'info' | 'warn', 'debug' | 'error' | 'info' | 'warn'> = z.enum([
+    'debug',
+    'error',
+    'info',
+    'warn',
+]);
 
 export const GqlSProfileObservationCategorySchema: z.ZodType<
     'behavioral' | 'factual' | 'psychological',

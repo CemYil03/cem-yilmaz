@@ -25,6 +25,7 @@ export interface GqlCAdmin {
     chat: GqlCChat;
     chatConfig: GqlCAdminChatConfig;
     chats: Array<GqlCChat>;
+    logs: Array<GqlCLog>;
     profile: GqlCAdminProfile;
     project: GqlCProject;
     projectRequests: Array<GqlCProjectRequest>;
@@ -37,6 +38,12 @@ export interface GqlCAdmin {
 
 export type GqlCAdminChatArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminLogsArgs = {
+    level?: InputMaybe<GqlCLogLevel>;
+    limit?: InputMaybe<Scalars['Int']['input']>;
+    search?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlCAdminProjectArgs = {
@@ -644,6 +651,18 @@ export interface GqlCFileUpload {
     url: Scalars['String']['output'];
 }
 
+export interface GqlCLog {
+    __typename?: 'Log';
+    context?: Maybe<Scalars['JSON']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    level: GqlCLogLevel;
+    logId: Scalars['ID']['output'];
+    message: Scalars['String']['output'];
+    sessionId?: Maybe<Scalars['ID']['output']>;
+}
+
+export type GqlCLogLevel = 'debug' | 'error' | 'info' | 'warn';
+
 export interface GqlCMutation {
     __typename?: 'Mutation';
     admin: GqlCAdminMutation;
@@ -994,6 +1013,25 @@ export type GqlCAboutPageQuery = {
 export type GqlCHomePageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCHomePageQuery = { currentSession: { sessionId: string; user: { name: string } | null } };
+
+export type GqlCWorkspaceLogsQueryVariables = Exact<{
+    level?: Schema.GqlCLogLevel | null | undefined;
+    search?: string | null | undefined;
+    limit?: number | null | undefined;
+}>;
+
+export type GqlCWorkspaceLogsQuery = {
+    admin: {
+        logs: Array<{
+            logId: string;
+            level: Schema.GqlCLogLevel;
+            message: string;
+            sessionId: string | null;
+            context: unknown;
+            createdAt: string;
+        }>;
+    };
+};
 
 export type GqlCWorkspaceVisitorChatsQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -3601,6 +3639,79 @@ export const HomePageDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCHomePageQuery, GqlCHomePageQueryVariables>;
+export const WorkspaceLogsDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceLogs' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'level' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'LogLevel' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'logs' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'level' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'level' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'search' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'search' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'limit' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'logId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'level' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'context' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceLogsQuery, GqlCWorkspaceLogsQueryVariables>;
 export const WorkspaceVisitorChatsDocument = {
     kind: 'Document',
     definitions: [

@@ -80,3 +80,25 @@ catch (error) {
 - `src/server/utils/loggerCreate.ts` — logger factory
 - `src/server/domain/ServerRuntime.ts` — `log` property on the DI container
 - `src/server/domain/serverRuntimeCreate.ts` — wiring
+
+## Viewer
+
+Cem reads recent log rows in the browser at `/workspace/logs` (workspace hub → "Public site" group → "Logs"). The surface is read-only
+triage:
+
+- Newest-first list, server-clamped to 1000 rows (200 by default).
+- Level filter (`error` / `warn` / `info` / `debug`) and a case-insensitive substring search on `message`. `%` and `_` are escaped
+  server-side so a query like `100%` matches literally.
+- Each row shows level, relative + absolute timestamp, a short `sessionId` chip when set, the message, and a collapsible JSON `context` when
+  present.
+- Filters live in the URL (`?level=…&search=…`) so a view is deep-linkable. No live tail.
+
+The viewer is gated by the parent `guardAdmin` on `Query.admin` — the same chain that protects the rest of the workspace surface.
+
+### Viewer Files
+
+- `src/server/graphql/schema.graphqls` — `Log` type, `LogLevel` enum, `Admin.logs(level, search, limit)` field
+- `src/server/queries/logsList.ts` — query (level/search filters, limit clamping, LIKE-escape)
+- `src/server/mappers/toGqlLog.ts` — DB row → GraphQL
+- `src/routes/{-$locale}/workspace/logs.tsx` — route
+- `src/routes/{-$locale}/workspace/LogsAdminPage.graphql` — client-side query

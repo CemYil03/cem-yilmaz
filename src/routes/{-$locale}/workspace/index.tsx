@@ -8,6 +8,7 @@ import {
     FolderKanbanIcon,
     MessageSquareTextIcon,
     ReceiptTextIcon,
+    ScrollTextIcon,
     SparklesIcon,
     StethoscopeIcon,
     WalletIcon,
@@ -56,6 +57,7 @@ type FocusAreaRoute =
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/profile'
+    | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/visitor-chats';
 
 type FocusArea = {
@@ -132,6 +134,12 @@ const PUBLIC_SITE_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         icon: MessageSquareTextIcon,
         title: { de: 'Besucher-Chats', en: 'Visitor chats' },
         description: { de: 'Was Besucher meinen KI-Assistenten gefragt haben.', en: 'What visitors have asked my AI assistant.' },
+    },
+    {
+        to: '/{-$locale}/workspace/logs',
+        icon: ScrollTextIcon,
+        title: { de: 'Logs', en: 'Logs' },
+        description: { de: 'Server-Logs durchsuchen.', en: 'Inspect server logs.' },
     },
 ];
 

@@ -1,0 +1,17 @@
+# Admin view onto the `Logs` table — rendered at `/workspace/logs`. Gated by
+# the parent `guardAdmin` on `Query.admin`. Read-only: no live tail, no
+# delete; the route lets Cem triage server errors without shelling into the
+# box. See `docs/features/logging.md`.
+
+query WorkspaceLogs($level: LogLevel, $search: String, $limit: Int) {
+    admin {
+        logs(level: $level, search: $search, limit: $limit) {
+            logId
+            level
+            message
+            sessionId
+            context
+            createdAt
+        }
+    }
+}

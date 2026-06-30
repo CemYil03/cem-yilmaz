@@ -1169,6 +1169,42 @@ extend type Admin {
     chatConfig: AdminChatConfig!
 }
 
+# --- Logs --------------------------------------------------------------------
+#
+# Workspace surface onto the `Logs` table the server writes to via
+# `serverRuntime.log.*`. Read-only triage — no live tail, no delete. Gated by
+# the parent `guardAdmin` on `Query.admin`. See `docs/features/logging.md`.
+
+enum LogLevel {
+    error
+    warn
+    info
+    debug
+}
+
+# A single row from the `Logs` table. `context` is the JSONB blob the logger
+# attached at write time — for `Error` inputs that's `{ name, stack }`.
+# Surfaced verbatim as `JSON` so the viewer can pretty-print it. `sessionId`
+# is the session that triggered the log; null when the logger was called
+# without a session (e.g. background jobs, startup).
+type Log {
+    logId: ID!
+    level: LogLevel!
+    message: String!
+    sessionId: ID
+    context: JSON
+    createdAt: DateTime!
+}
+
+extend type Admin {
+    # Recent log rows, newest first. Server-side narrows on `level` (single
+    # level only; the picker is single-select) and on a case-insensitive
+    # `message` substring match — `%` / `_` in `search` are escaped so they
+    # match literally. `limit` caps the result count — defaults to 200,
+    # clamped at 1000 server-side so a runaway client can't OOM the API.
+    logs(level: LogLevel, search: String, limit: Int): [Log!]!
+}
+
 extend type AdminMutation {
     # Persist the admin's chosen default chat model. Rejects ids outside the
     # catalog (`Admin.chatConfig.availableModels`).
