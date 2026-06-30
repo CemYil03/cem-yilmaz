@@ -104,7 +104,8 @@ the personal-assistant composer; the OAuth gate has not been built yet. To keep 
   split mirrors `guardUserMutation` so write-side policy can diverge from reads (e.g. CSRF, narrower allowlist) without dragging the read
   path along. See [docs/architecture/workspace-access.md](../architecture/workspace-access.md).
 
-The README's "Open TODOs Before Public Launch" section calls out that the gate must wrap the whole `/workspace/*` tree before DNS goes live.
+See [docs/architecture/workspace-access.md](../architecture/workspace-access.md) for the access model and "Open TODOs" below for the Phase 2
+OAuth work.
 
 ## Implementation Details
 

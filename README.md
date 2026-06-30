@@ -3,8 +3,8 @@
 Cem Yilmaz's portfolio + personal workspace, hosted at <https://cem-yilmaz.de>.
 
 The public side is a portfolio: about, projects, blog posts, curated web-tool links, and a small AI chat that answers visitors' questions
-about Cem. The private side (`/workspace`, behind GitHub OAuth) is Cem's own platform: a personal AI assistant, content editor, and — over
-time — calendar / notes / tasks.
+about Cem. The private side (`/workspace`, gated by `Users.isAdmin` at the GraphQL layer today; GitHub OAuth at the route layer in Phase 2)
+is Cem's own platform: a personal AI assistant, content editor, and — over time — calendar / notes / tasks.
 
 **Stack:** TanStack Start + React 19 · Apollo Server v5 + URQL (SDL-first GraphQL) · Drizzle ORM + PostgreSQL · graphql-sse (SSE) +
 PostgreSQL NOTIFY/LISTEN · pg-boss · Vercel AI SDK + Google Gemini · Tailwind 4 + shadcn/Radix · Vitest + Playwright · Storybook · Docker
@@ -65,18 +65,18 @@ Notes:
 
 ## Project Surfaces
 
-| Surface                                          | Status   | Auth                                                 |
-| ------------------------------------------------ | -------- | ---------------------------------------------------- |
-| `/` — landing page (incl. visitor AI chat)       | Phase 1  | Public                                               |
-| `/impressum`, `/datenschutz`                     | Phase 1  | Public                                               |
-| `/projects` — static portfolio list              | Phase 1  | Public                                               |
-| `/projects/$id` — DB-backed detail pages         | Phase 3  | Public                                               |
-| `/blog`, `/blog/$slug`                           | Phase 3  | Public                                               |
-| `/tools`                                         | Phase 3  | Public                                               |
-| `/workspace` — hub + assistant composer          | Phase 1  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
-| `/workspace/assistant` — personal assistant      | Phase 1  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
-| `/workspace/projects` — inbox + projects + todos | Phase 2  | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
-| `/workspace/*` — focus-area stubs                | Phase 2+ | Phase 1: ungated (noindex, unlinked); Phase 2: OAuth |
+| Surface                                          | Status   | Auth                                              |
+| ------------------------------------------------ | -------- | ------------------------------------------------- |
+| `/` — landing page (incl. visitor AI chat)       | Phase 1  | Public                                            |
+| `/impressum`, `/datenschutz`                     | Phase 1  | Public                                            |
+| `/projects` — static portfolio list              | Phase 1  | Public                                            |
+| `/projects/$id` — DB-backed detail pages         | Phase 3  | Public                                            |
+| `/blog`, `/blog/$slug`                           | Phase 3  | Public                                            |
+| `/tools`                                         | Phase 3  | Public                                            |
+| `/workspace` — hub + assistant composer          | Phase 1  | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
+| `/workspace/assistant` — personal assistant      | Phase 1  | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
+| `/workspace/projects` — inbox + projects + todos | Phase 2  | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
+| `/workspace/*` — focus-area stubs                | Phase 2+ | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
 
 Phases are tracked in the implementation plan; each lands as its own PR.
 
@@ -108,18 +108,6 @@ npm run storybook            # storybook dev, port 6006
 | [`docs/infrastructure.md`](./docs/infrastructure.md) | Touching deploy, CI, Dockerfile, env vars.                             |
 | `docs/architecture/*.md`                             | Working in that area (api-layer, jobs, chat, auth, file-storage, …).   |
 | `docs/features/*.md`                                 | Working on a shipped feature (portfolio, chat, legal pages, …).        |
-
----
-
-## Open TODOs Before Public Launch
-
-**Fill these in before pointing DNS at production:**
-
-- `src/routes/{-$locale}/datenschutz.tsx` — the page covers hosting (IONOS), the session cookie, the visitor AI chat, chat file attachments,
-  server logs, and data-subject rights. **Verify** the retention periods and the IONOS DPA reference reflect the live setup before launch.
-- `src/routes/{-$locale}/workspace/` — the workspace hub and its focus-area stubs ship **ungated** in Phase 1 (only `noindex` keeps them out
-  of search engines). Wrap the entire `/workspace/*` tree behind the GitHub OAuth gate before pointing DNS at production. See
-  `docs/features/workspace-hub.md`.
 
 ---
 

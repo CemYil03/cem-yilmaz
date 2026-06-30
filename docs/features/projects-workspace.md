@@ -137,18 +137,62 @@ The kanban board lives at `/workspace/projects`; clicking a tile opens `/workspa
 source-request backlink, task counter, total-work label, and a live-timer badge when this project owns the running timer. All other actions
 (edit / delete / start-stop timer / task management / activity log) live on the detail page.
 
-The detail route has its own search-param schema (`?tab=tasks|activity|notes|links|files&focus=<id>`) and a single GraphQL query
+The detail route has its own search-param schema (`?tab=overview|tasks|activity|notes|links|files&focus=<id>`) and a single GraphQL query
 (`WorkspaceProjectDetail`) co-located in `projects_.$projectId.graphql`. The query mirrors the board's nested shape but adds `links` /
 `files` per project and per activity, the new offer columns (`amountCents`, `offerStatus`), and is fetched by
 `admin.project(projectId: ID!)` — a new single-entity counterpart to `admin.projects`. The board page's own GraphQL file no longer needs to
 ship the per-project activity-edit mutations (the detail page owns those); only `projectTimerStart` / `projectTimerStop` and the
 project-level CRUD stayed.
 
-The header carries the title, status pill (a `Select` that mutates `projectUpsert` on change), timer control (re-uses the same Start / Stop
-/ Switch states the board card has), edit / delete buttons, and totals. Five tabs sit beneath it: **Tasks**, **Activity**, **Notes**,
-**Links**, **Files**. Above the tabs is a **pinned rail** — links and files where `pinned = true` show as compact chips so the resources Cem
-actually opens during work (repo URL, Malt mission, signed contract PDF) are one click from the top of the page. The same row appears in its
-full list on the corresponding tab; pin state is the only difference between the two surfaces.
+### Layout
+
+The page is a two-column grid on `lg+` (`minmax(0,1fr) 320px`); both columns stack on smaller widths. A `ProjectTitleBlock` spans both
+columns at the top: large display title, status pill underneath, and the source-request chip alongside.
+
+The **left column** is a single `GlassCard` containing the description and the tab strip. Description renders through `AssistantMarkdown`
+(`src/web/components/AssistantMarkdown.tsx`) so paragraphs, lists, and emphasis are visible — no wall of text. A ghost `Edit` button reveals
+on hover at the top-right of the description; clicking swaps the block to an in-place `Textarea` + Save / Cancel. The tab strip has six
+entries with **Overview as the default** (visiting `/workspace/projects/<id>` with no `?tab` lands there):
+`overview · tasks · activity · notes · links · files`.
+
+The **right column** is a sticky rail (`lg:sticky lg:top-24`) wrapped in `GlassCard`. From top to bottom:
+
+1. **Primary action** — full-width Start / Stop / Switch timer button. While running, the button becomes a single chip showing the live
+   `HH:MM:SS` counter plus a "Stopp" affordance.
+2. **`⋯` action menu** — `DropdownMenu` containing `Notizen bearbeiten` (deep-links to the Notes tab) and a destructive `Projekt löschen`.
+   Delete is intentionally **behind the menu** so it can't be hit by a stray click near the primary timer button.
+3. **Metadata list** — `Erstellt`, `Aktualisiert` (relative when fresh, absolute otherwise), optional `Gestartet` / `Abgeschlossen`,
+   `Arbeitszeit` (live total — `TotalWorkLabel` ticks while the timer runs), `Aufgaben X/Y` with a thin primary-tinted progress bar,
+   `Aktivitäten` count.
+4. **Source-request panel** — only present when the project was converted from an inbox brief. Name, email (mailto), company, type, budget,
+   timeline as compact label / value rows.
+
+### Status pill
+
+The pill is a `DropdownMenu` trigger styled per status — six color classes covering both themes (idea → muted, planning → amber, active →
+emerald, paused → secondary, done → primary, archived → muted/strikethrough). The menu items call the same `projectUpsert` mutation the
+former `Select` did. Source of truth lives in `PROJECT_STATUS_TINTS` at the top of the route file.
+
+### Overview tab
+
+The Overview tab is the glance surface — it surfaces only sections that have content (never a wall of empty states):
+
+- **Up next** — top 3 open tasks (todo first, then doing, sorted by `dueAt nulls last`). Clicking a row deep-links to the Tasks tab with
+  `?focus=<taskId>`.
+- **Letzte Aktivität / Recent activity** — last 5 entries with their kind icons. The header has a `Verlauf ansehen →` deep-link.
+- **Angepinnt / Pinned** — the pinned links and files chips that used to sit above the tab strip. They now have a home; the pre-tab pinned
+  rail is gone.
+- **Notizen** — first 400 chars of `notes` rendered through `AssistantMarkdown` (clamped to 4 lines).
+
+A truly empty project gets a single welcoming card with two CTAs (`Aufgabe anlegen` / `Verlauf öffnen`) instead of all of the above.
+
+### Empty states
+
+Every dedicated tab (Aufgaben, Verlauf, Links, Dateien) shows an `EmptyState` block when the list is empty: a faint Lucide icon, a one-line
+bilingual prompt, and a primary action button that opens the existing form. Source: the module-scope `EmptyState` helper in the route file.
+The Notes textarea is always rendered; its placeholder carries the welcoming line.
+
+### Breadcrumb / chrome
 
 The detail route has no in-page back-link. The way back to the board is the workspace header's breadcrumb trail, where the intermediate
 `projects` crumb collapses to its `FolderKanban` icon (label kept for screen readers) and links to `/workspace/projects`. The trailing crumb

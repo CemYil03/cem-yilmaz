@@ -1,15 +1,19 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
+import { format, formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { de as deLocale, enUS } from 'date-fns/locale';
 import {
     CheckSquare2Icon,
+    ChevronDownIcon,
     CircleDotIcon,
     ExternalLinkIcon,
     FileIcon,
     FlagIcon,
     HandshakeIcon,
+    LayoutDashboardIcon,
     LinkIcon,
     ListTodoIcon,
     MailIcon,
+    MoreHorizontalIcon,
     PaperclipIcon,
     PencilIcon,
     PhoneCallIcon,
@@ -17,6 +21,7 @@ import {
     PinOffIcon,
     PlayIcon,
     PlusIcon,
+    SparklesIcon,
     SquareIcon,
     StickyNoteIcon,
     StopCircleIcon,
@@ -25,12 +30,24 @@ import {
     UploadIcon,
     VideoIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useMutation } from 'urql';
 import { z } from 'zod';
 import { uploadFile } from '../../../web/chat/fileUpload';
+import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
+import { GlassCard } from '../../../web/components/GlassCard';
+import { Reveal } from '../../../web/components/Reveal';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../../../web/components/base/dropdown-menu';
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
@@ -81,16 +98,18 @@ type LinkRow = ProjectRow['links'][number];
 type FileRow = ProjectRow['files'][number];
 type ActiveTimer = GqlCWorkspaceProjectDetailQuery['admin']['activeTimer'];
 
-type DetailTab = 'tasks' | 'activity' | 'notes' | 'links' | 'files';
-const TABS = ['tasks', 'activity', 'notes', 'links', 'files'] as const satisfies ReadonlyArray<DetailTab>;
+type DetailTab = 'overview' | 'tasks' | 'activity' | 'notes' | 'links' | 'files';
+const TABS = ['overview', 'tasks', 'activity', 'notes', 'links', 'files'] as const satisfies ReadonlyArray<DetailTab>;
 const TAB_LABELS: Record<DetailTab, { de: string; en: string }> = {
+    overview: { de: 'Übersicht', en: 'Overview' },
     tasks: { de: 'Aufgaben', en: 'Tasks' },
     activity: { de: 'Verlauf', en: 'Activity' },
     notes: { de: 'Notizen', en: 'Notes' },
     links: { de: 'Links', en: 'Links' },
     files: { de: 'Dateien', en: 'Files' },
 };
-const TAB_ICONS: Record<DetailTab, typeof ListTodoIcon> = {
+const TAB_ICONS: Record<DetailTab, LucideIcon> = {
+    overview: LayoutDashboardIcon,
     tasks: ListTodoIcon,
     activity: TimerIcon,
     notes: StickyNoteIcon,
@@ -106,6 +125,18 @@ const PROJECT_STATUS_LABELS: Record<GqlCProjectStatus, { de: string; en: string 
     paused: { de: 'Pausiert', en: 'Paused' },
     done: { de: 'Fertig', en: 'Done' },
     archived: { de: 'Archiviert', en: 'Archived' },
+};
+
+// Color-coded chip tint per project status. Each entry is a single class string
+// covering background + foreground for both themes — the status pill applies it
+// directly so the surface reads as a state, not just a label.
+const PROJECT_STATUS_TINTS: Record<GqlCProjectStatus, string> = {
+    idea: 'bg-muted text-muted-foreground',
+    planning: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    active: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    paused: 'bg-secondary text-secondary-foreground',
+    done: 'bg-primary/15 text-primary',
+    archived: 'bg-muted/60 text-muted-foreground/70',
 };
 
 const TASK_STATUS_ORDER: ReadonlyArray<GqlCTaskStatus> = ['todo', 'doing', 'done'];
@@ -124,7 +155,7 @@ const ACTIVITY_KIND_LABELS: Record<GqlCProjectActivityKind, { de: string; en: st
     milestone: { de: 'Meilenstein', en: 'Milestone' },
     note: { de: 'Notiz', en: 'Note' },
 };
-const ACTIVITY_KIND_ICONS: Record<GqlCProjectActivityKind, typeof PhoneCallIcon> = {
+const ACTIVITY_KIND_ICONS: Record<GqlCProjectActivityKind, LucideIcon> = {
     clientContact: PhoneCallIcon,
     meeting: VideoIcon,
     work: TimerIcon,
@@ -200,6 +231,27 @@ function formatEur(cents: number | null | undefined): string {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 }
 
+function dateFnsLocale(locale: Locale) {
+    return locale === 'de' ? deLocale : enUS;
+}
+
+// "today" / "vor 3 Tagen" / "Mar 14" — relative when fresh enough to feel
+// recent, absolute once the user would rather just see the date. Used in the
+// rail's metadata list so timestamps don't shout `2026-06-12T09:14:00Z` at
+// the user.
+function formatRelative(iso: string, locale: Locale): string {
+    const parsed = parseISO(iso);
+    const daysAgo = (Date.now() - parsed.getTime()) / 86_400_000;
+    if (daysAgo < 7) {
+        return formatDistanceToNowStrict(parsed, { addSuffix: true, locale: dateFnsLocale(locale) });
+    }
+    return format(parsed, locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: dateFnsLocale(locale) });
+}
+
+function formatAbsolute(iso: string, locale: Locale): string {
+    return format(parseISO(iso), locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: dateFnsLocale(locale) });
+}
+
 // URL state — `tab` selects the section, `focus` lights up a child row.
 const detailSearchSchema = z.object({
     tab: z.enum(TABS).optional(),
@@ -230,7 +282,7 @@ function WorkspaceProjectDetail() {
     const search = Route.useSearch();
     const navigate = Route.useNavigate();
     const router = useRouter();
-    const tab: DetailTab = search.tab ?? 'tasks';
+    const tab: DetailTab = search.tab ?? 'overview';
     const onChanged = () => router.invalidate();
 
     const project = data.admin.project;
@@ -265,65 +317,164 @@ function WorkspaceProjectDetail() {
     const pinnedFiles = useMemo(() => project.files.filter((f) => f.pinned), [project.files]);
 
     return (
-        <main className="px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full py-12 leading-relaxed">
-            <ProjectHeader project={project} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 leading-relaxed md:px-8 md:py-10 lg:px-12 lg:py-12">
+            <ProjectTitleBlock project={project} locale={locale} onChanged={onChanged} />
 
-            {(pinnedLinks.length > 0 || pinnedFiles.length > 0) && (
-                <PinnedRail pinnedLinks={pinnedLinks} pinnedFiles={pinnedFiles} locale={locale} onChanged={onChanged} />
-            )}
+            <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                {/* Main content column */}
+                <GlassCard className="p-5 sm:p-6 lg:p-8">
+                    <ProjectDescription project={project} locale={locale} onChanged={onChanged} />
 
-            <nav className="mt-8 flex gap-1 border-b border-border/60" aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}>
-                {TABS.map((t) => {
-                    const Icon = TAB_ICONS[t];
-                    const isActive = tab === t;
-                    return (
-                        <Link
-                            key={t}
-                            to="/{-$locale}/workspace/projects/$projectId"
-                            params={{ projectId: project.projectId }}
-                            search={(): { tab?: DetailTab } => (t === 'tasks' ? {} : { tab: t })}
-                            replace
-                            className={cn(
-                                '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-                                isActive
-                                    ? 'border-primary text-foreground'
-                                    : 'border-transparent text-muted-foreground hover:text-foreground',
-                            )}
-                            aria-current={isActive ? 'page' : undefined}
-                        >
-                            <Icon className="size-4" />
-                            {TAB_LABELS[t][locale]}
-                        </Link>
-                    );
-                })}
-            </nav>
+                    <nav
+                        className="mt-6 flex flex-wrap gap-x-1 gap-y-1 border-b border-border/60"
+                        aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
+                    >
+                        {TABS.map((t) => {
+                            const Icon = TAB_ICONS[t];
+                            const isActive = tab === t;
+                            return (
+                                <Link
+                                    key={t}
+                                    to="/{-$locale}/workspace/projects/$projectId"
+                                    params={{ projectId: project.projectId }}
+                                    search={(): { tab?: DetailTab } => (t === 'overview' ? {} : { tab: t })}
+                                    replace
+                                    className={cn(
+                                        '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors',
+                                        isActive
+                                            ? 'border-primary font-medium text-foreground'
+                                            : 'border-transparent text-muted-foreground hover:text-foreground',
+                                    )}
+                                    aria-current={isActive ? 'page' : undefined}
+                                >
+                                    <Icon className="size-4" />
+                                    {TAB_LABELS[t][locale]}
+                                </Link>
+                            );
+                        })}
+                    </nav>
 
-            <div className="mt-6">
-                {tab === 'tasks' ? (
-                    <TasksSection tasks={project.tasks} projectId={project.projectId} locale={locale} onChanged={onChanged} />
-                ) : null}
-                {tab === 'activity' ? (
-                    <ActivitySection
-                        activities={project.activities}
-                        tasks={project.tasks}
-                        projectId={project.projectId}
-                        locale={locale}
-                        onChanged={onChanged}
-                    />
-                ) : null}
-                {tab === 'notes' ? <NotesSection project={project} locale={locale} onChanged={onChanged} /> : null}
-                {tab === 'links' ? (
-                    <LinksSection links={project.links} projectId={project.projectId} locale={locale} onChanged={onChanged} />
-                ) : null}
-                {tab === 'files' ? (
-                    <FilesSection files={project.files} projectId={project.projectId} locale={locale} onChanged={onChanged} />
-                ) : null}
+                    <div className="mt-6">
+                        {tab === 'overview' ? (
+                            <OverviewSection
+                                project={project}
+                                pinnedLinks={pinnedLinks}
+                                pinnedFiles={pinnedFiles}
+                                locale={locale}
+                                onChanged={onChanged}
+                            />
+                        ) : null}
+                        {tab === 'tasks' ? (
+                            <TasksSection tasks={project.tasks} projectId={project.projectId} locale={locale} onChanged={onChanged} />
+                        ) : null}
+                        {tab === 'activity' ? (
+                            <ActivitySection
+                                activities={project.activities}
+                                tasks={project.tasks}
+                                projectId={project.projectId}
+                                locale={locale}
+                                onChanged={onChanged}
+                            />
+                        ) : null}
+                        {tab === 'notes' ? <NotesSection project={project} locale={locale} onChanged={onChanged} /> : null}
+                        {tab === 'links' ? (
+                            <LinksSection links={project.links} projectId={project.projectId} locale={locale} onChanged={onChanged} />
+                        ) : null}
+                        {tab === 'files' ? (
+                            <FilesSection files={project.files} projectId={project.projectId} locale={locale} onChanged={onChanged} />
+                        ) : null}
+                    </div>
+                </GlassCard>
+
+                {/* Right rail — sticky on lg+, stacks under content on mobile (grid handles
+                    the stacking; the rail itself doesn't try to be sticky on mobile). */}
+                <div className="lg:sticky lg:top-24">
+                    <ProjectRail project={project} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
+                </div>
             </div>
         </main>
     );
 }
 
-function ProjectHeader({
+// ---------- Title block & rail ----------------------------------------------
+
+function ProjectTitleBlock({ project, locale, onChanged }: { project: ProjectRow; locale: Locale; onChanged: () => void }) {
+    return (
+        <header>
+            <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">{project.title}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+                <ProjectStatusPill project={project} locale={locale} onChanged={onChanged} />
+                {project.sourceRequest ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/40 px-2.5 py-1 text-xs text-muted-foreground">
+                        <MailIcon className="size-3" />
+                        {{ de: 'Anfrage von', en: 'Request from' }[locale]} {project.sourceRequest.name}
+                        {project.sourceRequest.company ? ` · ${project.sourceRequest.company}` : ''}
+                    </span>
+                ) : null}
+            </div>
+        </header>
+    );
+}
+
+function ProjectStatusPill({ project, locale, onChanged }: { project: ProjectRow; locale: Locale; onChanged: () => void }) {
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertProjectDocument);
+    const tint = PROJECT_STATUS_TINTS[project.status];
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button
+                    type="button"
+                    className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                        tint,
+                    )}
+                    aria-label={{ de: 'Status ändern', en: 'Change status' }[locale]}
+                >
+                    <span
+                        aria-hidden
+                        className={cn(
+                            'size-1.5 rounded-full',
+                            project.status === 'active'
+                                ? 'bg-emerald-600 dark:bg-emerald-400'
+                                : project.status === 'planning'
+                                  ? 'bg-amber-600 dark:bg-amber-400'
+                                  : project.status === 'done'
+                                    ? 'bg-primary'
+                                    : 'bg-current opacity-60',
+                        )}
+                    />
+                    {PROJECT_STATUS_LABELS[project.status][locale]}
+                    <ChevronDownIcon className="size-3 opacity-60" />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+                {PROJECT_STATUS_ORDER.map((s) => (
+                    <DropdownMenuItem
+                        key={s}
+                        onSelect={async () => {
+                            if (s === project.status) return;
+                            await upsert({
+                                projectId: project.projectId,
+                                title: project.title,
+                                description: project.description,
+                                notes: project.notes,
+                                status: s,
+                                position: project.position,
+                                startedAt: project.startedAt,
+                                completedAt: project.completedAt,
+                            });
+                            onChanged();
+                        }}
+                    >
+                        {PROJECT_STATUS_LABELS[s][locale]}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+function ProjectRail({
     project,
     activeTimer,
     locale,
@@ -334,105 +485,511 @@ function ProjectHeader({
     locale: Locale;
     onChanged: () => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertProjectDocument);
-    const [, del] = useMutation(WorkspaceProjectDetailDeleteProjectDocument);
     const router = useRouter();
-    const [editing, setEditing] = useState(false);
+    const [, del] = useMutation(WorkspaceProjectDetailDeleteProjectDocument);
 
+    const tasksDone = project.tasks.filter((t) => t.status === 'done').length;
+    const tasksTotal = project.tasks.length;
+    const taskPct = tasksTotal === 0 ? 0 : Math.round((tasksDone / tasksTotal) * 100);
     const isOwnTimerRunning = activeTimer?.projectId === project.projectId;
 
     return (
-        <header>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                    <h1 className="text-2xl font-semibold tracking-tight">{project.title}</h1>
-                    {project.description ? <p className="mt-1 text-sm text-muted-foreground">{project.description}</p> : null}
-                    {project.sourceRequest ? (
-                        <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                            <MailIcon className="size-3" />
-                            {{ de: 'Anfrage von', en: 'Request from' }[locale]} {project.sourceRequest.name}
-                            {project.sourceRequest.company ? ` · ${project.sourceRequest.company}` : ''}
-                        </p>
+        <GlassCard className="p-5">
+            <RailTimerButton projectId={project.projectId} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
+
+            <div className="mt-3 flex justify-end">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Mehr Aktionen', en: 'More actions' }[locale]}>
+                            <MoreHorizontalIcon />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                            onSelect={() => {
+                                // The description edit affordance lives in-place; this menu item
+                                // just deep-links to the Notes tab where free-form editing happens.
+                                void router.navigate({
+                                    to: '/{-$locale}/workspace/projects/$projectId',
+                                    params: { projectId: project.projectId },
+                                    search: { tab: 'notes' },
+                                    replace: true,
+                                });
+                            }}
+                        >
+                            <PencilIcon />
+                            {{ de: 'Notizen bearbeiten', en: 'Edit notes' }[locale]}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={async () => {
+                                if (!confirm({ de: 'Projekt wirklich löschen?', en: 'Delete this project?' }[locale])) return;
+                                await del({ projectId: project.projectId });
+                                void router.navigate({ to: '/{-$locale}/workspace/projects' });
+                            }}
+                        >
+                            <Trash2Icon />
+                            {{ de: 'Projekt löschen', en: 'Delete project' }[locale]}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            <dl className="mt-4 grid gap-3 border-t border-border/40 pt-4 text-xs">
+                <RailRow
+                    label={{ de: 'Erstellt', en: 'Created' }[locale]}
+                    value={formatAbsolute(project.createdAt as unknown as string, locale)}
+                />
+                <RailRow
+                    label={{ de: 'Aktualisiert', en: 'Updated' }[locale]}
+                    value={formatRelative(project.updatedAt as unknown as string, locale)}
+                />
+                {project.startedAt ? (
+                    <RailRow
+                        label={{ de: 'Gestartet', en: 'Started' }[locale]}
+                        value={formatAbsolute(project.startedAt as unknown as string, locale)}
+                    />
+                ) : null}
+                {project.completedAt ? (
+                    <RailRow
+                        label={{ de: 'Abgeschlossen', en: 'Completed' }[locale]}
+                        value={formatAbsolute(project.completedAt as unknown as string, locale)}
+                    />
+                ) : null}
+                <RailRow
+                    label={{ de: 'Arbeitszeit', en: 'Work time' }[locale]}
+                    value={<TotalWorkLabel totalWorkSec={project.totalWorkSec} activeTimer={isOwnTimerRunning ? activeTimer : null} />}
+                />
+                <div>
+                    <div className="flex items-baseline justify-between gap-2">
+                        <dt className="text-muted-foreground">{{ de: 'Aufgaben', en: 'Tasks' }[locale]}</dt>
+                        <dd className="font-medium text-foreground">
+                            {tasksDone} / {tasksTotal}
+                        </dd>
+                    </div>
+                    {tasksTotal > 0 ? (
+                        <div
+                            className="mt-1.5 h-1 overflow-hidden rounded-full bg-border/60"
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={taskPct}
+                        >
+                            <div className="h-full bg-primary transition-[width] duration-500 ease-out" style={{ width: `${taskPct}%` }} />
+                        </div>
                     ) : null}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                    <Select
-                        value={project.status}
-                        onValueChange={async (next: GqlCProjectStatus) => {
-                            await upsert({
-                                projectId: project.projectId,
-                                title: project.title,
-                                description: project.description,
-                                notes: project.notes,
-                                status: next,
-                                position: project.position,
-                                startedAt: project.startedAt,
-                                completedAt: project.completedAt,
-                            });
-                            onChanged();
-                        }}
-                    >
-                        <SelectTrigger className="h-8 w-[150px] text-xs">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {PROJECT_STATUS_ORDER.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                    {PROJECT_STATUS_LABELS[s][locale]}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <TimerControl projectId={project.projectId} activeTimer={activeTimer} locale={locale} onChanged={onChanged} />
-                    <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
-                        onClick={() => setEditing(true)}
-                    >
-                        <PencilIcon />
+                <RailRow label={{ de: 'Aktivitäten', en: 'Activities' }[locale]} value={String(project.activities.length)} />
+            </dl>
+
+            {project.sourceRequest ? <RailSourceRequest sourceRequest={project.sourceRequest} locale={locale} /> : null}
+        </GlassCard>
+    );
+}
+
+function RailRow({ label, value }: { label: string; value: ReactNode }) {
+    return (
+        <div className="flex items-baseline justify-between gap-2">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="text-right font-medium text-foreground">{value}</dd>
+        </div>
+    );
+}
+
+function RailSourceRequest({ sourceRequest, locale }: { sourceRequest: NonNullable<ProjectRow['sourceRequest']>; locale: Locale }) {
+    return (
+        <section className="mt-4 border-t border-border/40 pt-4">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {{ de: 'Anfrage', en: 'Source request' }[locale]}
+            </h3>
+            <dl className="mt-2 grid gap-2 text-xs">
+                <RailRow label={{ de: 'Name', en: 'Name' }[locale]} value={sourceRequest.name} />
+                <RailRow
+                    label={{ de: 'E-Mail', en: 'Email' }[locale]}
+                    value={
+                        <a href={`mailto:${sourceRequest.email}`} className="hover:underline">
+                            {sourceRequest.email}
+                        </a>
+                    }
+                />
+                {sourceRequest.company ? <RailRow label={{ de: 'Firma', en: 'Company' }[locale]} value={sourceRequest.company} /> : null}
+                <RailRow label={{ de: 'Typ', en: 'Type' }[locale]} value={sourceRequest.projectType} />
+                {sourceRequest.budget ? <RailRow label={{ de: 'Budget', en: 'Budget' }[locale]} value={sourceRequest.budget} /> : null}
+                {sourceRequest.timeline ? (
+                    <RailRow label={{ de: 'Zeitraum', en: 'Timeline' }[locale]} value={sourceRequest.timeline} />
+                ) : null}
+            </dl>
+        </section>
+    );
+}
+
+function RailTimerButton({
+    projectId,
+    activeTimer,
+    locale,
+    onChanged,
+}: {
+    projectId: string;
+    activeTimer: ActiveTimer;
+    locale: Locale;
+    onChanged: () => void;
+}) {
+    const [, start] = useMutation(WorkspaceProjectDetailTimerStartDocument);
+    const [, stop] = useMutation(WorkspaceProjectDetailTimerStopDocument);
+    const [busy, setBusy] = useState(false);
+    const isOwn = activeTimer?.projectId === projectId;
+
+    if (isOwn && activeTimer.startedAt) {
+        return (
+            <RailLiveTimer
+                startedAt={activeTimer.startedAt as unknown as string}
+                onStop={async () => {
+                    if (busy) return;
+                    setBusy(true);
+                    await stop({ activityId: activeTimer.activityId });
+                    onChanged();
+                    setBusy(false);
+                }}
+                locale={locale}
+            />
+        );
+    }
+
+    return (
+        <Button
+            className="w-full"
+            disabled={busy}
+            onClick={async () => {
+                setBusy(true);
+                await start({ projectId, taskId: null, title: null });
+                onChanged();
+                setBusy(false);
+            }}
+        >
+            <PlayIcon />
+            {activeTimer ? { de: 'Hier weiterarbeiten', en: 'Switch here' }[locale] : { de: 'Arbeit starten', en: 'Start work' }[locale]}
+        </Button>
+    );
+}
+
+function RailLiveTimer({ startedAt, onStop, locale }: { startedAt: string; onStop: () => void; locale: Locale }) {
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, []);
+    const elapsed = Math.max(0, Math.floor((now - parseISO(startedAt).getTime()) / 1000));
+    return (
+        <Button
+            variant="secondary"
+            className="w-full justify-center gap-2 bg-primary/15 text-primary hover:bg-primary/25"
+            onClick={onStop}
+            aria-label={{ de: 'Timer stoppen', en: 'Stop timer' }[locale]}
+        >
+            <StopCircleIcon />
+            <span className="font-mono text-sm tabular-nums">{formatHms(elapsed)}</span>
+            <span className="text-xs opacity-80">·</span>
+            <span className="text-xs">{{ de: 'Stopp', en: 'Stop' }[locale]}</span>
+        </Button>
+    );
+}
+
+// ---------- Description -----------------------------------------------------
+
+function ProjectDescription({ project, locale, onChanged }: { project: ProjectRow; locale: Locale; onChanged: () => void }) {
+    const [editing, setEditing] = useState(false);
+    if (editing) {
+        return (
+            <ProjectEditForm
+                project={project}
+                locale={locale}
+                onClose={() => setEditing(false)}
+                onSaved={() => {
+                    setEditing(false);
+                    onChanged();
+                }}
+            />
+        );
+    }
+    if (!project.description) {
+        return (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border/60 px-4 py-3 text-xs text-muted-foreground">
+                <span>{{ de: 'Keine Beschreibung.', en: 'No description yet.' }[locale]}</span>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+                    <PencilIcon />
+                    {{ de: 'Hinzufügen', en: 'Add one' }[locale]}
+                </Button>
+            </div>
+        );
+    }
+    return (
+        <div className="group relative">
+            <AssistantMarkdown text={project.description} />
+            <Button
+                size="icon-sm"
+                variant="ghost"
+                className="absolute right-0 top-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+                aria-label={{ de: 'Beschreibung bearbeiten', en: 'Edit description' }[locale]}
+                onClick={() => setEditing(true)}
+            >
+                <PencilIcon />
+            </Button>
+        </div>
+    );
+}
+
+// ---------- Empty-state shared helper --------------------------------------
+
+function EmptyState({ icon: Icon, line, cta, onAction }: { icon: LucideIcon; line: string; cta: string; onAction: () => void }) {
+    return (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border/50 px-6 py-10 text-center">
+            <Icon className="size-8 text-muted-foreground/40" aria-hidden />
+            <p className="max-w-sm text-sm text-muted-foreground">{line}</p>
+            <Button size="sm" onClick={onAction}>
+                <PlusIcon />
+                {cta}
+            </Button>
+        </div>
+    );
+}
+
+// ---------- Overview tab ---------------------------------------------------
+
+function OverviewSection({
+    project,
+    pinnedLinks,
+    pinnedFiles,
+    locale,
+    onChanged,
+}: {
+    project: ProjectRow;
+    pinnedLinks: ReadonlyArray<LinkRow>;
+    pinnedFiles: ReadonlyArray<FileRow>;
+    locale: Locale;
+    onChanged: () => void;
+}) {
+    // Top 3 open tasks — todo first, then doing, dueAt-nulls-last so the rows the user
+    // is most likely to act on bubble up. Mirrors the "next concrete step" framing of
+    // the Overview tab as a glance, not a chase.
+    const upNext = useMemo(() => {
+        const open = project.tasks.filter((t) => t.status !== 'done');
+        return [...open]
+            .sort((a, b) => {
+                const aOrder = a.status === 'todo' ? 0 : 1;
+                const bOrder = b.status === 'todo' ? 0 : 1;
+                if (aOrder !== bOrder) return aOrder - bOrder;
+                const aDue = a.dueAt ? parseISO(a.dueAt as unknown as string).getTime() : Number.POSITIVE_INFINITY;
+                const bDue = b.dueAt ? parseISO(b.dueAt as unknown as string).getTime() : Number.POSITIVE_INFINITY;
+                return aDue - bDue;
+            })
+            .slice(0, 3);
+    }, [project.tasks]);
+
+    const recentActivity = useMemo(() => project.activities.slice(0, 5), [project.activities]);
+
+    const isEmpty =
+        upNext.length === 0 && recentActivity.length === 0 && pinnedLinks.length === 0 && pinnedFiles.length === 0 && !project.notes;
+
+    if (isEmpty) {
+        return (
+            <div className="rounded-md border border-dashed border-border/50 px-6 py-12 text-center">
+                <SparklesIcon className="mx-auto size-8 text-muted-foreground/40" aria-hidden />
+                <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
+                    {
+                        {
+                            de: 'Noch nichts zu zeigen. Leg eine erste Aufgabe an oder halte fest, was als nächstes ansteht.',
+                            en: "Nothing to show yet. Add a first task or jot down what's next.",
+                        }[locale]
+                    }
+                </p>
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    <Button asChild size="sm">
+                        <Link
+                            to="/{-$locale}/workspace/projects/$projectId"
+                            params={{ projectId: project.projectId }}
+                            search={{ tab: 'tasks' }}
+                            replace
+                        >
+                            <PlusIcon />
+                            {{ de: 'Aufgabe anlegen', en: 'Add a task' }[locale]}
+                        </Link>
                     </Button>
-                    <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
-                        onClick={async () => {
-                            if (!confirm({ de: 'Projekt wirklich löschen?', en: 'Delete this project?' }[locale])) return;
-                            await del({ projectId: project.projectId });
-                            void router.navigate({ to: '/{-$locale}/workspace/projects' });
-                        }}
-                    >
-                        <Trash2Icon />
+                    <Button asChild size="sm" variant="ghost">
+                        <Link
+                            to="/{-$locale}/workspace/projects/$projectId"
+                            params={{ projectId: project.projectId }}
+                            search={{ tab: 'activity' }}
+                            replace
+                        >
+                            {{ de: 'Verlauf öffnen', en: 'Open activity' }[locale]}
+                        </Link>
                     </Button>
                 </div>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                {project.totalWorkSec > 0 || isOwnTimerRunning ? (
-                    <span>
-                        {{ de: 'Gesamt', en: 'Total' }[locale]}:{' '}
-                        <TotalWorkLabel totalWorkSec={project.totalWorkSec} activeTimer={isOwnTimerRunning ? activeTimer : null} />
-                    </span>
-                ) : null}
-                <span>
-                    {project.tasks.filter((t) => t.status === 'done').length}/{project.tasks.length}{' '}
-                    {{ de: 'Aufgaben fertig', en: 'tasks done' }[locale]}
-                </span>
-                <span>
-                    {project.activities.length} {{ de: 'Einträge', en: 'entries' }[locale]}
-                </span>
-            </div>
-            {editing ? (
-                <ProjectEditForm
-                    project={project}
-                    locale={locale}
-                    onClose={() => setEditing(false)}
-                    onSaved={() => {
-                        setEditing(false);
-                        onChanged();
-                    }}
-                />
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-6">
+            {upNext.length > 0 ? (
+                <Reveal as="section">
+                    <OverviewSectionHeader
+                        title={{ de: 'Als nächstes', en: 'Up next' }[locale]}
+                        action={{
+                            label: { de: 'Alle Aufgaben', en: 'All tasks' }[locale],
+                            tab: 'tasks',
+                            projectId: project.projectId,
+                        }}
+                    />
+                    <ul className="mt-3 flex flex-col gap-2">
+                        {upNext.map((task) => (
+                            <li key={task.taskId}>
+                                <OverviewUpNextRow task={task} projectId={project.projectId} locale={locale} onChanged={onChanged} />
+                            </li>
+                        ))}
+                    </ul>
+                </Reveal>
             ) : null}
-        </header>
+
+            {recentActivity.length > 0 ? (
+                <Reveal as="section" index={1}>
+                    <OverviewSectionHeader
+                        title={{ de: 'Letzte Aktivität', en: 'Recent activity' }[locale]}
+                        action={{
+                            label: { de: 'Verlauf ansehen', en: 'View activity' }[locale],
+                            tab: 'activity',
+                            projectId: project.projectId,
+                        }}
+                    />
+                    <ul className="mt-3 flex flex-col gap-2">
+                        {recentActivity.map((activity) => (
+                            <li key={activity.activityId} className="flex items-start gap-2 text-xs">
+                                <OverviewActivityRow activity={activity} locale={locale} />
+                            </li>
+                        ))}
+                    </ul>
+                </Reveal>
+            ) : null}
+
+            {pinnedLinks.length > 0 || pinnedFiles.length > 0 ? (
+                <Reveal as="section" index={2}>
+                    <OverviewSectionHeader title={{ de: 'Angepinnt', en: 'Pinned' }[locale]} />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {pinnedLinks.map((link) => (
+                            <LinkChip key={link.projectLinkId} link={link} locale={locale} onChanged={onChanged} />
+                        ))}
+                        {pinnedFiles.map((file) => (
+                            <FileChip key={file.projectFileId} file={file} locale={locale} onChanged={onChanged} />
+                        ))}
+                    </div>
+                </Reveal>
+            ) : null}
+
+            {project.notes ? (
+                <Reveal as="section" index={3}>
+                    <OverviewSectionHeader
+                        title={{ de: 'Notizen', en: 'Notes' }[locale]}
+                        action={{
+                            label: { de: 'Notizen öffnen', en: 'Open notes' }[locale],
+                            tab: 'notes',
+                            projectId: project.projectId,
+                        }}
+                    />
+                    <div className="mt-3 line-clamp-4 text-sm text-muted-foreground">
+                        <AssistantMarkdown text={project.notes.slice(0, 400)} />
+                    </div>
+                </Reveal>
+            ) : null}
+        </div>
+    );
+}
+
+function OverviewSectionHeader({ title, action }: { title: string; action?: { label: string; tab: DetailTab; projectId: string } }) {
+    return (
+        <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
+            {action ? (
+                <Link
+                    to="/{-$locale}/workspace/projects/$projectId"
+                    params={{ projectId: action.projectId }}
+                    search={action.tab === 'overview' ? {} : { tab: action.tab }}
+                    replace
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                    {action.label} →
+                </Link>
+            ) : null}
+        </div>
+    );
+}
+
+function OverviewUpNextRow({
+    task,
+    projectId,
+    locale,
+    onChanged,
+}: {
+    task: TaskRow;
+    projectId: string;
+    locale: Locale;
+    onChanged: () => void;
+}) {
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
+    const StatusIcon = task.status === 'doing' ? CircleDotIcon : SquareIcon;
+    return (
+        <div className="flex items-start gap-2 rounded-md border border-border/40 bg-card/20 p-2 text-sm">
+            <button
+                type="button"
+                aria-label={{ de: 'Status wechseln', en: 'Toggle status' }[locale]}
+                className="mt-0.5 text-muted-foreground hover:text-foreground"
+                onClick={async () => {
+                    const next: GqlCTaskStatus = task.status === 'todo' ? 'doing' : 'done';
+                    await upsert({
+                        taskId: task.taskId,
+                        projectId: task.projectId,
+                        title: task.title,
+                        notes: task.notes,
+                        status: next,
+                        position: task.position,
+                        dueAt: task.dueAt,
+                        completedAt: next === 'done' ? new Date().toISOString() : null,
+                    });
+                    onChanged();
+                }}
+            >
+                <StatusIcon className="size-4" />
+            </button>
+            <Link
+                to="/{-$locale}/workspace/projects/$projectId"
+                params={{ projectId }}
+                search={{ tab: 'tasks', focus: task.taskId }}
+                replace
+                className="min-w-0 flex-1 hover:underline"
+            >
+                <div className="truncate">{task.title}</div>
+                {task.dueAt ? (
+                    <div className="text-[11px] text-muted-foreground">
+                        {{ de: 'Fällig', en: 'Due' }[locale]} {formatAbsolute(task.dueAt as unknown as string, locale)}
+                    </div>
+                ) : null}
+            </Link>
+        </div>
+    );
+}
+
+function OverviewActivityRow({ activity, locale }: { activity: ActivityRow; locale: Locale }) {
+    const Icon = ACTIVITY_KIND_ICONS[activity.kind];
+    return (
+        <div className="flex w-full items-start gap-2 rounded-md border border-border/30 bg-card/10 p-2">
+            <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-foreground">{activity.title}</div>
+                <div className="text-[11px] text-muted-foreground">
+                    {ACTIVITY_KIND_LABELS[activity.kind][locale]} · {formatRelative(activity.occurredAt as unknown as string, locale)}
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -492,77 +1049,6 @@ function ProjectEditForm({
     );
 }
 
-function TimerControl({
-    projectId,
-    activeTimer,
-    locale,
-    onChanged,
-}: {
-    projectId: string;
-    activeTimer: ActiveTimer;
-    locale: Locale;
-    onChanged: () => void;
-}) {
-    const [, start] = useMutation(WorkspaceProjectDetailTimerStartDocument);
-    const [, stop] = useMutation(WorkspaceProjectDetailTimerStopDocument);
-    const [busy, setBusy] = useState(false);
-
-    const isOwn = activeTimer?.projectId === projectId;
-    if (isOwn && activeTimer.startedAt) {
-        return (
-            <LiveTimerPill
-                startedAt={activeTimer.startedAt as unknown as string}
-                onStop={async () => {
-                    if (busy) return;
-                    setBusy(true);
-                    await stop({ activityId: activeTimer.activityId });
-                    onChanged();
-                    setBusy(false);
-                }}
-                locale={locale}
-            />
-        );
-    }
-    return (
-        <Button
-            size="sm"
-            variant="ghost"
-            disabled={busy}
-            onClick={async () => {
-                setBusy(true);
-                await start({ projectId, taskId: null, title: null });
-                onChanged();
-                setBusy(false);
-            }}
-        >
-            <PlayIcon className="size-3" />
-            <span className="ml-1 text-xs">
-                {activeTimer ? { de: 'Wechseln', en: 'Switch here' }[locale] : { de: 'Start', en: 'Start' }[locale]}
-            </span>
-        </Button>
-    );
-}
-
-function LiveTimerPill({ startedAt, onStop, locale }: { startedAt: string; onStop: () => void; locale: Locale }) {
-    const [now, setNow] = useState(() => Date.now());
-    useEffect(() => {
-        const id = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(id);
-    }, []);
-    const elapsed = Math.max(0, Math.floor((now - parseISO(startedAt).getTime()) / 1000));
-    return (
-        <button
-            type="button"
-            onClick={onStop}
-            className="flex items-center gap-1 rounded-md bg-primary/15 px-2 py-1 font-mono text-[11px] text-primary hover:bg-primary/25"
-            aria-label={{ de: 'Timer stoppen', en: 'Stop timer' }[locale]}
-        >
-            <StopCircleIcon className="size-3" />
-            <span>{formatHms(elapsed)}</span>
-        </button>
-    );
-}
-
 function TotalWorkLabel({ totalWorkSec, activeTimer }: { totalWorkSec: number; activeTimer: ActiveTimer | null }) {
     const [now, setNow] = useState(() => Date.now());
     useEffect(() => {
@@ -573,35 +1059,7 @@ function TotalWorkLabel({ totalWorkSec, activeTimer }: { totalWorkSec: number; a
     const live = activeTimer?.startedAt
         ? Math.max(0, Math.floor((now - parseISO(activeTimer.startedAt as unknown as string).getTime()) / 1000))
         : 0;
-    return <span className="font-medium text-foreground">{formatDuration(totalWorkSec + live)}</span>;
-}
-
-function PinnedRail({
-    pinnedLinks,
-    pinnedFiles,
-    locale,
-    onChanged,
-}: {
-    pinnedLinks: ReadonlyArray<LinkRow>;
-    pinnedFiles: ReadonlyArray<FileRow>;
-    locale: Locale;
-    onChanged: () => void;
-}) {
-    return (
-        <section className="mt-6">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {{ de: 'Angepinnt', en: 'Pinned' }[locale]}
-            </h2>
-            <div className="mt-2 flex flex-wrap gap-2">
-                {pinnedLinks.map((link) => (
-                    <LinkChip key={link.projectLinkId} link={link} locale={locale} onChanged={onChanged} />
-                ))}
-                {pinnedFiles.map((file) => (
-                    <FileChip key={file.projectFileId} file={file} locale={locale} onChanged={onChanged} />
-                ))}
-            </div>
-        </section>
-    );
+    return <span>{formatDuration(totalWorkSec + live)}</span>;
 }
 
 function LinkChip({ link, locale, onChanged }: { link: LinkRow; locale: Locale; onChanged: () => void }) {
@@ -717,7 +1175,12 @@ function TasksSection({
                 );
             })}
             {tasks.length === 0 && !adding ? (
-                <p className="mt-4 text-xs text-muted-foreground">{{ de: 'Noch keine Aufgaben.', en: 'No tasks yet.' }[locale]}</p>
+                <EmptyState
+                    icon={ListTodoIcon}
+                    line={{ de: 'Was ist der nächste konkrete Schritt?', en: "What's the next concrete step?" }[locale]}
+                    cta={{ de: 'Erste Aufgabe', en: 'First task' }[locale]}
+                    onAction={() => setAdding(true)}
+                />
             ) : null}
         </section>
     );
@@ -927,7 +1390,17 @@ function ActivitySection({
             ) : null}
 
             {activities.length === 0 && !adding ? (
-                <p className="mt-3 text-xs text-muted-foreground">{{ de: 'Noch keine Einträge.', en: 'No entries yet.' }[locale]}</p>
+                <EmptyState
+                    icon={TimerIcon}
+                    line={
+                        {
+                            de: 'Festhalten, was du gemacht hast — auch kleine Schritte zählen.',
+                            en: 'Capture what you did — small steps count too.',
+                        }[locale]
+                    }
+                    cta={{ de: 'Ersten Eintrag', en: 'First entry' }[locale]}
+                    onAction={() => setAdding(true)}
+                />
             ) : (
                 <ul className="mt-3 flex flex-col gap-2">
                     {activities.map((a) => (
@@ -1318,7 +1791,12 @@ function NotesSection({ project, locale, onChanged }: { project: ProjectRow; loc
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={16}
-                placeholder={{ de: 'Markdown…', en: 'Markdown…' }[locale]}
+                placeholder={
+                    {
+                        de: 'Ein Ort für Gedanken, Skizzen, Entscheidungen. Markdown wird unterstützt.',
+                        en: 'A place for thoughts, sketches, decisions. Markdown supported.',
+                    }[locale]
+                }
             />
             <div className="flex justify-end">
                 <Button
@@ -1383,7 +1861,17 @@ function LinksSection({
                 />
             ) : null}
             {links.length === 0 && !adding ? (
-                <p className="mt-3 text-xs text-muted-foreground">{{ de: 'Noch keine Links.', en: 'No links yet.' }[locale]}</p>
+                <EmptyState
+                    icon={LinkIcon}
+                    line={
+                        {
+                            de: 'Repository, Malt-Mission, Figma — alles, was du oft öffnest.',
+                            en: 'Repository, Malt mission, Figma — anything you open often.',
+                        }[locale]
+                    }
+                    cta={{ de: 'Ersten Link', en: 'First link' }[locale]}
+                    onAction={() => setAdding(true)}
+                />
             ) : (
                 <ul className="mt-3 flex flex-col gap-2">
                     {links.map((link) => (
@@ -1574,7 +2062,17 @@ function FilesSection({
                 />
             ) : null}
             {files.length === 0 && !adding ? (
-                <p className="mt-3 text-xs text-muted-foreground">{{ de: 'Noch keine Dateien.', en: 'No files yet.' }[locale]}</p>
+                <EmptyState
+                    icon={FileIcon}
+                    line={
+                        {
+                            de: 'Verträge, Angebote, Screenshots — leg deine Dateien ab.',
+                            en: 'Contracts, offers, screenshots — drop your files in.',
+                        }[locale]
+                    }
+                    cta={{ de: 'Erste Datei', en: 'First file' }[locale]}
+                    onAction={() => setAdding(true)}
+                />
             ) : (
                 <ul className="mt-3 flex flex-col gap-2">
                     {files.map((file) => (
