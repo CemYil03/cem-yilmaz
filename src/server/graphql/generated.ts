@@ -1014,8 +1014,7 @@ export interface SubscriptionResolverObject<TResult, TParent, TContext, TArgs> {
 }
 
 export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, TArgs> =
-    | SubscriptionSubscriberObject<TResult, TKey, TParent, TContext, TArgs>
-    | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
+    SubscriptionSubscriberObject<TResult, TKey, TParent, TContext, TArgs> | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
 
 export type SubscriptionResolver<
     TResult,
