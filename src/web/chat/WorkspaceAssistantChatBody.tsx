@@ -1,6 +1,5 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { ArrowDownIcon, ArrowUpRightIcon, MessageSquarePlusIcon, MessageSquareTextIcon } from 'lucide-react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
@@ -25,6 +24,7 @@ import {
     WorkspaceChatToolApprovalRespondDocument,
 } from '../graphql/generated';
 import type { Locale } from '../utils/locale';
+import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import { Button } from '../components/base/button';
 
 // Shared inner body for both the workspace-assistant Sheet (narrow viewports)
@@ -42,8 +42,6 @@ const previousChatsLabel = { de: 'Frühere Chats', en: 'Previous chats' };
 const allChatsLabel = { de: 'Alle Chats ansehen', en: 'View all chats' };
 const untitledLabel = { de: 'Ohne Titel', en: 'Untitled' };
 const noPreviousChatsLabel = { de: 'Noch keine Chats.', en: 'No chats yet.' };
-
-const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 // Recent-chats fan-out cap. The query returns every admin chat newest-first;
 // the empty state renders a small at-a-glance list, so we slice to ten.
