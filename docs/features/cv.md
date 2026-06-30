@@ -35,12 +35,14 @@ DB-backed editable timeline + static identity config.
 
 ### Database schema
 
-Each table follows the same shape: a uuid PK, paired `*De` / `*En` text columns for bilingual fields, a `position INT` column the editor
-writes via the reorder mutation, plus `createdAt` / `updatedAt` timestamps. Specifics:
+Each table follows the same shape: a uuid PK, paired `*De` / `*En` text columns for bilingual fields, plus `createdAt` / `updatedAt`
+timestamps. Education, skills, and hobbies carry a `position INT` column the editor writes via their matching reorder mutation; experience
+is the exception — see its bullet below. Specifics:
 
 - `cvExperience` — `startDate` is required, `endDate` is nullable (null = ongoing, rendered as `heute` / `today`). `technologies` is a
   Postgres `text[]` because the labels are display chips, never queried by relation. `managerName` is a single varchar (the PDF can list
-  more than one — the column accepts comma-separated text).
+  more than one — the column accepts comma-separated text). **No `position` column**: experience is intrinsically chronological, so
+  `cvExperienceList` orders rows by `endDate DESC NULLS FIRST, startDate DESC` and the editor has no drag handles.
 - `cvEducation` — `endDate` is required, `startDate` is nullable (Abitur and similar entries only carry an end date).
   `subjectDe`/`subjectEn` default to the empty string so non-degree entries are valid without a sentinel. `notesDe`/`notesEn` carry
   free-form text — the renderer preserves newlines.
@@ -55,8 +57,9 @@ writes via the reorder mutation, plus `createdAt` / `updatedAt` timestamps. Spec
 Read namespace: `Query.cv: CvQuery!` with four lists (`experience`, `education`, `skills`, `hobbies`). Reads are public — visitors hit them
 on `/cv` and `/about` directly.
 
-Write namespace: 12 mutations on `AdminMutation` (`cv*Upsert`, `cv*Delete`, `cv*Reorder`). The whole `Mutation.admin` is gated by
-`guardAdminMutation`, so each entity inherits the gate without a parallel guard.
+Write namespace: 11 mutations on `AdminMutation` (`cv*Upsert`, `cv*Delete`, `cv{Education,Skill,Hobby}Reorder` — experience has no reorder
+mutation; it's sorted by date). The whole `Mutation.admin` is gated by `guardAdminMutation`, so each entity inherits the gate without a
+parallel guard.
 
 The bilingual columns surface as paired `*De` / `*En` GraphQL fields. The client picks per-locale at render time — same model as the inline
 `{ de, en }[locale]` copy pattern in `docs/architecture/i18n.md`. A single locale-aware `text` field would lock the schema to one locale per
@@ -66,12 +69,13 @@ request and complicate the admin editor (which needs both languages on screen at
 
 Mirroring the existing `chat*` files exactly:
 
-- `src/server/queries/cv{Experience,Education,Skill,Hobby}List.ts` — `SELECT … ORDER BY position ASC`.
+- `src/server/queries/cv{Experience,Education,Skill,Hobby}List.ts` — `SELECT … ORDER BY position ASC`, except `cvExperienceList`, which
+  sorts by `endDate DESC NULLS FIRST, startDate DESC`.
 - `src/server/commands/cv{Experience,Education,Skill,Hobby}Upsert.ts` — two-phase per `docs/conventions.md` "Commands". Null `cv*Id` →
   insert; populated id → update.
 - `src/server/commands/cv{Experience,Education,Skill,Hobby}Delete.ts` — single-statement delete, throws on miss.
-- `src/server/commands/cv{Experience,Education,Skill,Hobby}Reorder.ts` — bulk position-rewrite over `orderedIds[]`, wrapped in a transaction
-  so a partial write can't leave the list with duplicate positions.
+- `src/server/commands/cv{Education,Skill,Hobby}Reorder.ts` — bulk position-rewrite over `orderedIds[]`, wrapped in a transaction so a
+  partial write can't leave the list with duplicate positions. Experience has no reorder command.
 - `src/server/mappers/toGqlCv{Experience,Education,Skill,Hobby}.ts` — straight passthrough (no field renaming).
 
 All wired in `src/server/graphql/resolversCreate.ts` alongside the existing chat resolvers.
@@ -97,12 +101,16 @@ keeps the GraphQL wire shape (ISO `YYYY-MM-DD` strings) as its storage type and 
 `format`; a thin `DateField` wrapper in the editor handles the conversion and mirrors the value into a hidden input so native HTML5
 `required` validation still fires (the picker itself is a popover trigger button, not a form control).
 
-Reordering uses a vertical drag-and-drop gesture: every row carries a `GripVertical` handle on its leading edge, the user drags the row into
-its new slot, and on drop the editor commits the new order via the matching `cv*Reorder` mutation (which rewrites every row's `position`
-from a single id list). The on-screen list updates optimistically the instant the drop fires; the admin read query then re-fetches with
-`network-only` so `/cv` and `/about` see the new order on their next request. Drag is implemented with the platform's native HTML5
-drag-and-drop API (no library); a `useReorderableList` hook owns the optimistic state and is reused across all four sections. Reordering is
-scoped per list — for skills, drag is scoped within a single category (cross-category moves are done by editing the row's category field).
+Reordering uses a vertical drag-and-drop gesture on education, skills, and hobbies: every row carries a `GripVertical` handle on its leading
+edge, the user drags the row into its new slot, and on drop the editor commits the new order via the matching `cv*Reorder` mutation (which
+rewrites every row's `position` from a single id list). The on-screen list updates optimistically the instant the drop fires; the admin read
+query then re-fetches with `network-only` so `/cv` and `/about` see the new order on their next request. Drag is implemented with the
+platform's native HTML5 drag-and-drop API (no library); a `useReorderableList` hook owns the optimistic state and is reused across those
+three sections. Reordering is scoped per list — for skills, drag is scoped within a single category (cross-category moves are done by
+editing the row's category field).
+
+The experience section has no drag handles — rows are sorted by `endDate` (ongoing first), then `startDate`, both descending. Editing a
+row's `endDate` and saving moves it to its new slot automatically via the `userUpdates` subscription push.
 
 The skills list itself is rendered grouped by category — same `SKILL_CATEGORIES` order and same `SKILL_CATEGORY_LABELS` used by the public
 `CvSkillGroup` component — so the editor view mirrors the visitor-side `/about` layout, and each category drags independently.

@@ -11,6 +11,8 @@ import type {
 import type { DateTimeDraft, SlotDraft, SlotDraftOf } from '../../chat/chatAssistantInputKinds';
 import { describeInputSlot, formatAnswerValue, serializeSlotAnswer } from '../../chat/chatAssistantInputKinds';
 import { cn } from '../../utils/cn';
+import { DATE_FNS_LOCALE } from '../../utils/dateFnsLocale';
+import { useLocale } from '../../hooks/useLocale';
 import { Button } from '../base/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../base/card';
 import { DatePicker } from '../base/date-picker';
@@ -388,11 +390,13 @@ function DateControl({
     // `DatePicker` works in `Date`; we adapt at the boundary so the wire-shape
     // (ISO `YYYY-MM-DD`) stays the storage type and submit doesn't have to
     // serialize.
+    const locale = useLocale();
     return (
         <DatePicker
             value={value ? parseISO(value) : undefined}
             onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : undefined)}
             className="w-full"
+            locale={DATE_FNS_LOCALE[locale]}
         />
     );
 }
@@ -414,6 +418,7 @@ function DateRangeControl({
     // keeps the wire-shape strings and serialization stays trivial. Submit
     // gating (both endpoints required) lives in `serializeSlotAnswer` — the
     // picker itself happily allows partial selections during interaction.
+    const locale = useLocale();
     const value: DateRange | undefined =
         from || to ? { from: from ? parseISO(from) : undefined, to: to ? parseISO(to) : undefined } : undefined;
     return (
@@ -423,6 +428,7 @@ function DateRangeControl({
                 onChange(next?.from ? format(next.from, 'yyyy-MM-dd') : undefined, next?.to ? format(next.to, 'yyyy-MM-dd') : undefined)
             }
             className="w-full"
+            locale={DATE_FNS_LOCALE[locale]}
         />
     );
 }
@@ -504,12 +510,14 @@ function MultiSelectControl({
 }
 
 function DateTimeControl({ value, onChange }: { value: DateTimeDraft | undefined; onChange: (next: DateTimeDraft) => void }) {
+    const locale = useLocale();
     return (
         <div className="flex gap-2">
             <DatePicker
                 value={value?.date ? parseISO(value.date) : undefined}
                 onValueChange={(next) => onChange({ date: next ? format(next, 'yyyy-MM-dd') : undefined, time: value?.time })}
                 className="flex-1"
+                locale={DATE_FNS_LOCALE[locale]}
             />
             <Input
                 type="time"

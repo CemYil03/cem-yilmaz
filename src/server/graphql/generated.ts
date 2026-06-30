@@ -113,7 +113,6 @@ export interface GqlSAdminMutation {
     cvEducationReorder: GqlSMutationResult;
     cvEducationUpsert: GqlSCvEducation;
     cvExperienceDelete: GqlSMutationResult;
-    cvExperienceReorder: GqlSMutationResult;
     cvExperienceUpsert: GqlSCvExperience;
     cvHobbyDelete: GqlSMutationResult;
     cvHobbyReorder: GqlSMutationResult;
@@ -201,10 +200,6 @@ export type GqlSAdminMutationCvEducationUpsertArgs = {
 
 export type GqlSAdminMutationCvExperienceDeleteArgs = {
     cvExperienceId: Scalars['ID']['input'];
-};
-
-export type GqlSAdminMutationCvExperienceReorderArgs = {
-    orderedIds: Array<Scalars['ID']['input']>;
 };
 
 export type GqlSAdminMutationCvExperienceUpsertArgs = {
@@ -649,7 +644,6 @@ export interface GqlSCvExperience {
     descriptionEn: Scalars['String']['output'];
     endDate?: Maybe<Scalars['Date']['output']>;
     managerName?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
     roleDe: Scalars['String']['output'];
     roleEn: Scalars['String']['output'];
     startDate: Scalars['Date']['output'];
@@ -663,7 +657,6 @@ export type GqlSCvExperienceInput = {
     descriptionEn: Scalars['String']['input'];
     endDate?: InputMaybe<Scalars['Date']['input']>;
     managerName?: InputMaybe<Scalars['String']['input']>;
-    position: Scalars['Int']['input'];
     roleDe: Scalars['String']['input'];
     roleEn: Scalars['String']['input'];
     startDate: Scalars['Date']['input'];
@@ -1527,12 +1520,6 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationCvExperienceDeleteArgs, 'cvExperienceId'>
     >;
-    cvExperienceReorder?: Resolver<
-        GqlSResolversTypes['MutationResult'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationCvExperienceReorderArgs, 'orderedIds'>
-    >;
     cvExperienceUpsert?: Resolver<
         GqlSResolversTypes['CvExperience'],
         ParentType,
@@ -2114,7 +2101,6 @@ export type GqlSCvExperienceResolvers<
     descriptionEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     endDate?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
     managerName?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
-    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     roleDe?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     roleEn?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     startDate?: Resolver<GqlSResolversTypes['Date'], ParentType, ContextType>;
@@ -2613,7 +2599,6 @@ export function GqlSCvExperienceInputSchema(): z.ZodObject<Properties<GqlSCvExpe
         descriptionEn: z.string(),
         endDate: z.string().nullish(),
         managerName: z.string().nullish(),
-        position: z.number(),
         roleDe: z.string(),
         roleEn: z.string(),
         startDate: z.string(),

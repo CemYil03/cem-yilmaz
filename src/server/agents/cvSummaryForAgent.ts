@@ -1,4 +1,4 @@
-import { asc } from 'drizzle-orm';
+import { asc, desc, sql } from 'drizzle-orm';
 import { personalInfo } from '../../web/content/personalInfo';
 import type { CvEducation, CvExperience, CvHobby, CvSkill, CvSkillCategory } from '../db/schema';
 import { cvEducation, cvExperience, cvHobby, cvSkill } from '../db/schema';
@@ -14,7 +14,13 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 // `agentVisitorAboutCem.ts`.
 export async function cvSummaryForAgent(serverRuntime: ServerRuntime): Promise<string> {
     const [experiences, educations, skills, hobbies] = await Promise.all([
-        serverRuntime.db.select().from(cvExperience).orderBy(asc(cvExperience.position)),
+        // Experience is intrinsically chronological — ongoing roles first,
+        // then by `endDate` desc, with `startDate` desc as a tiebreak. Matches
+        // `cvExperienceList` so the agent sees the same order as `/cv`.
+        serverRuntime.db
+            .select()
+            .from(cvExperience)
+            .orderBy(sql`${cvExperience.endDate} DESC NULLS FIRST`, desc(cvExperience.startDate), asc(cvExperience.cvExperienceId)),
         serverRuntime.db.select().from(cvEducation).orderBy(asc(cvEducation.position)),
         serverRuntime.db.select().from(cvSkill).orderBy(asc(cvSkill.position)),
         serverRuntime.db.select().from(cvHobby).orderBy(asc(cvHobby.position)),

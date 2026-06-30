@@ -19,7 +19,6 @@ fragment WorkspaceCvPageUser on User {
                 descriptionEn
                 technologies
                 managerName
-                position
             }
             education {
                 cvEducationId
@@ -76,7 +75,6 @@ mutation WorkspaceCvExperienceUpsert(
     $descriptionEn: String!
     $technologies: [String!]!
     $managerName: String
-    $position: Int!
 ) {
     admin {
         cvExperienceUpsert(
@@ -91,7 +89,6 @@ mutation WorkspaceCvExperienceUpsert(
                 descriptionEn: $descriptionEn
                 technologies: $technologies
                 managerName: $managerName
-                position: $position
             }
         ) {
             cvExperienceId
@@ -176,14 +173,6 @@ mutation WorkspaceCvHobbyUpsert($cvHobbyId: ID, $textDe: String!, $textEn: Strin
 mutation WorkspaceCvHobbyDelete($cvHobbyId: ID!) {
     admin {
         cvHobbyDelete(cvHobbyId: $cvHobbyId) {
-            success
-        }
-    }
-}
-
-mutation WorkspaceCvExperienceReorder($orderedIds: [ID!]!) {
-    admin {
-        cvExperienceReorder(orderedIds: $orderedIds) {
             success
         }
     }

@@ -46,6 +46,7 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -891,6 +892,7 @@ function TaskForm({
                             value={form.dueAt ? parseISO(form.dueAt) : undefined}
                             onValueChange={(next) => setForm({ ...form, dueAt: next ? format(next, 'yyyy-MM-dd') : '' })}
                             className="w-full"
+                            locale={DATE_FNS_LOCALE[locale]}
                         />
                     </Field>
                     <Field label={{ de: 'Notizen', en: 'Notes' }[locale]} fullWidth>

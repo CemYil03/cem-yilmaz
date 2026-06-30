@@ -21,9 +21,9 @@ if (!process.env.DATABASE_URL) {
 const db = drizzle(process.env.DATABASE_URL);
 
 // --- Experience -------------------------------------------------------------
-// Order in the array becomes `position`. The PDF lists newest first; we
-// preserve that — the public timeline reads `ORDER BY position ASC`, so
-// "Senior Full-Stack ..." appears at the top.
+// Experience has no `position` column — the public timeline reads
+// `ORDER BY endDate DESC NULLS FIRST, startDate DESC`, so the ongoing
+// "Senior Full-Stack ..." role appears at the top automatically.
 
 const experienceRows: CvExperienceCreate[] = (
     [
@@ -256,10 +256,9 @@ const experienceRows: CvExperienceCreate[] = (
             ],
             managerName: 'Bernd Helb',
         },
-    ] as Array<Omit<CvExperienceCreate, 'cvExperienceId' | 'position'>>
-).map((row, index) => ({
+    ] as Array<Omit<CvExperienceCreate, 'cvExperienceId'>>
+).map((row) => ({
     cvExperienceId: crypto.randomUUID(),
-    position: index,
     ...row,
 }));
 

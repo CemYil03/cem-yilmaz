@@ -544,25 +544,25 @@ export type ChatMessageUserAttachmentCreate = typeof chatMessageUserAttachments.
 // the labels are display chips, never queried by relation, so a join table
 // would be overhead.
 
-export const cvExperience = pgTable(
-    'CvExperience',
-    {
-        cvExperienceId: uuid().primaryKey(),
-        roleDe: varchar().notNull(),
-        roleEn: varchar().notNull(),
-        company: varchar().notNull(),
-        startDate: date().notNull(),
-        endDate: date(),
-        descriptionDe: text().notNull(),
-        descriptionEn: text().notNull(),
-        technologies: text().array().notNull().default([]),
-        managerName: varchar(),
-        position: integer().notNull(),
-        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
-        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
-    },
-    (table) => [index('CvExperience_position_idx').on(table.position)],
-);
+// `cvExperience` has no `position` column — rows are an inherently
+// chronological list, so the read query orders by `endDate DESC NULLS FIRST,
+// startDate DESC` (ongoing roles first; later end dates beat earlier ones;
+// later start date wins on tie). The other three CV tables stay manually
+// ordered via `position`.
+export const cvExperience = pgTable('CvExperience', {
+    cvExperienceId: uuid().primaryKey(),
+    roleDe: varchar().notNull(),
+    roleEn: varchar().notNull(),
+    company: varchar().notNull(),
+    startDate: date().notNull(),
+    endDate: date(),
+    descriptionDe: text().notNull(),
+    descriptionEn: text().notNull(),
+    technologies: text().array().notNull().default([]),
+    managerName: varchar(),
+    createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+});
 
 export type CvExperience = typeof cvExperience.$inferSelect;
 export type CvExperienceCreate = typeof cvExperience.$inferInsert;

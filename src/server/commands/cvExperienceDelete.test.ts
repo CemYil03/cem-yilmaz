@@ -24,7 +24,6 @@ describe('cvExperienceDelete', () => {
                     descriptionEn: 'd',
                     technologies: [],
                     managerName: null,
-                    position: 0,
                 },
             },
             requestingSession,

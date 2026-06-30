@@ -11,7 +11,6 @@ import { cvEducationDelete } from '../commands/cvEducationDelete';
 import { cvEducationReorder } from '../commands/cvEducationReorder';
 import { cvEducationUpsert } from '../commands/cvEducationUpsert';
 import { cvExperienceDelete } from '../commands/cvExperienceDelete';
-import { cvExperienceReorder } from '../commands/cvExperienceReorder';
 import { cvExperienceUpsert } from '../commands/cvExperienceUpsert';
 import { cvHobbyDelete } from '../commands/cvHobbyDelete';
 import { cvHobbyReorder } from '../commands/cvHobbyReorder';
@@ -92,7 +91,6 @@ import type {
     GqlSAdminMutationCvEducationReorderArgs,
     GqlSAdminMutationCvEducationUpsertArgs,
     GqlSAdminMutationCvExperienceDeleteArgs,
-    GqlSAdminMutationCvExperienceReorderArgs,
     GqlSAdminMutationCvExperienceUpsertArgs,
     GqlSAdminMutationCvHobbyDeleteArgs,
     GqlSAdminMutationCvHobbyReorderArgs,
@@ -386,13 +384,6 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return cvExperienceDelete(userId, args, requestingSession, serverRuntime);
-            },
-            cvExperienceReorder(
-                { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationCvExperienceReorderArgs,
-                requestingSession: GqlSSession,
-            ) {
-                return cvExperienceReorder(userId, args, requestingSession, serverRuntime);
             },
             cvEducationUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationCvEducationUpsertArgs, requestingSession: GqlSSession) {
                 return cvEducationUpsert(userId, args, requestingSession, serverRuntime);

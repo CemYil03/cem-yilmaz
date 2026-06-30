@@ -16,7 +16,6 @@ import {
     WorkspaceCvEducationReorderDocument,
     WorkspaceCvEducationUpsertDocument,
     WorkspaceCvExperienceDeleteDocument,
-    WorkspaceCvExperienceReorderDocument,
     WorkspaceCvExperienceUpsertDocument,
     WorkspaceCvHobbyDeleteDocument,
     WorkspaceCvHobbyReorderDocument,
@@ -32,6 +31,7 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -44,14 +44,17 @@ import { localeFromParam } from '../../../web/utils/locale';
 // URL.
 //
 // One section per CV entity. Each section is a list of cards plus a "new
-// entry" form. Ordering is changed by grabbing the grip handle on a row
-// and dragging it vertically — the matching `cv*Reorder` mutation rewrites
-// every row's `position` from the new id order. New rows are appended
-// (position = current length); their final slot is set by dragging them
-// into place afterwards. Skills are grouped by category on screen and
-// drag is scoped within a single category (cross-category moves require
-// editing the row's category field; visitor-side rendering ignores
-// position across categories anyway).
+// entry" form. The experience list is intrinsically chronological — the
+// server returns it ordered by `endDate` (ongoing roles first) and
+// `startDate`, so there is no drag handle. Education, skills, and hobbies
+// keep manual ordering: grabbing the grip handle on a row and dragging it
+// vertically commits a new `position` via the matching `cv*Reorder`
+// mutation. New rows on those three are appended (position = current
+// length); their final slot is set by dragging them into place afterwards.
+// Skills are grouped by category on screen and drag is scoped within a
+// single category (cross-category moves require editing the row's
+// category field; visitor-side rendering ignores position across
+// categories anyway).
 
 const pageTitle = { de: 'Lebenslauf bearbeiten', en: 'Edit CV' };
 const description = {
@@ -120,14 +123,20 @@ type ExperienceRow = CvData['experience'][number];
 function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow>; locale: Locale }) {
     const [editing, setEditing] = useState<ExperienceRow | 'new' | null>(null);
     const [, deleteMutation] = useMutation(WorkspaceCvExperienceDeleteDocument);
-    const [, reorderMutation] = useMutation(WorkspaceCvExperienceReorderDocument);
-    const ordered = useReorderableList(
-        rows,
-        (r) => r.cvExperienceId,
-        async (ids) => {
-            await reorderMutation({ orderedIds: ids });
-        },
-    );
+
+    // The server already returns experience in chronological order, but a
+    // local sort guards against optimistic-write reorderings between
+    // subscription pushes. Matches the server projection in
+    // `cvExperienceList.ts`: ongoing first, then `endDate` desc, then
+    // `startDate` desc.
+    const sortedRows = useMemo(() => {
+        return [...rows].sort((a, b) => {
+            if (a.endDate === null && b.endDate !== null) return -1;
+            if (b.endDate === null && a.endDate !== null) return 1;
+            if (a.endDate !== b.endDate) return (b.endDate ?? '').localeCompare(a.endDate ?? '');
+            return b.startDate.localeCompare(a.startDate);
+        });
+    }, [rows]);
 
     return (
         <section className="mt-12">
@@ -137,17 +146,15 @@ function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow
                 onAdd={() => setEditing('new')}
                 disabled={editing !== null}
             />
-            {editing === 'new' ? (
-                <ExperienceForm row={null} position={rows.length} locale={locale} onClose={() => setEditing(null)} />
-            ) : null}
+            {editing === 'new' ? <ExperienceForm row={null} locale={locale} onClose={() => setEditing(null)} /> : null}
             <ul className="mt-4 flex flex-col gap-3">
-                {ordered.items.map((row, index) =>
+                {sortedRows.map((row) =>
                     editing && editing !== 'new' && editing.cvExperienceId === row.cvExperienceId ? (
                         <li key={row.cvExperienceId}>
-                            <ExperienceForm row={row} position={row.position} locale={locale} onClose={() => setEditing(null)} />
+                            <ExperienceForm row={row} locale={locale} onClose={() => setEditing(null)} />
                         </li>
                     ) : (
-                        <DraggableItem key={row.cvExperienceId} id={row.cvExperienceId} index={index} state={ordered} locale={locale}>
+                        <li key={row.cvExperienceId}>
                             <RowCard
                                 title={`${row.roleDe} — ${row.company}`}
                                 subtitle={`${row.startDate} → ${row.endDate ?? 'heute'}`}
@@ -158,7 +165,7 @@ function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow
                                 editLabel={rowEditLabel[locale]}
                                 deleteLabel={rowDeleteLabel[locale]}
                             />
-                        </DraggableItem>
+                        </li>
                     ),
                 )}
             </ul>
@@ -166,17 +173,7 @@ function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow
     );
 }
 
-function ExperienceForm({
-    row,
-    position,
-    locale,
-    onClose,
-}: {
-    row: ExperienceRow | null;
-    position: number;
-    locale: Locale;
-    onClose: () => void;
-}) {
+function ExperienceForm({ row, locale, onClose }: { row: ExperienceRow | null; locale: Locale; onClose: () => void }) {
     const [, upsert] = useMutation(WorkspaceCvExperienceUpsertDocument);
     const [form, setForm] = useState({
         roleDe: row?.roleDe ?? '',
@@ -210,7 +207,6 @@ function ExperienceForm({
                         .map((t) => t.trim())
                         .filter(Boolean),
                     managerName: form.managerName || null,
-                    position: row?.position ?? position,
                 });
                 setBusy(false);
                 onClose();
@@ -230,10 +226,10 @@ function ExperienceForm({
                     <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} required />
                 </Field>
                 <Field label={{ de: 'Beginn', en: 'Start' }[locale]}>
-                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} required />
+                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} required locale={locale} />
                 </Field>
                 <Field label={{ de: 'Ende (leer = heute)', en: 'End (blank = ongoing)' }[locale]}>
-                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} />
+                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} locale={locale} />
                 </Field>
                 <Field label={{ de: 'Beschreibung (DE)', en: 'Description (DE)' }[locale]} fullWidth>
                     <Textarea value={form.descriptionDe} onChange={(e) => setForm({ ...form, descriptionDe: e.target.value })} required />
@@ -371,10 +367,10 @@ function EducationForm({
                     <Input value={form.subjectEn} onChange={(e) => setForm({ ...form, subjectEn: e.target.value })} />
                 </Field>
                 <Field label={{ de: 'Beginn (optional)', en: 'Start (optional)' }[locale]}>
-                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} />
+                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} locale={locale} />
                 </Field>
                 <Field label={{ de: 'Ende', en: 'End' }[locale]}>
-                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} required />
+                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} required locale={locale} />
                 </Field>
                 <Field label={{ de: 'Notizen (DE)', en: 'Notes (DE)' }[locale]} fullWidth>
                     <Textarea value={form.notesDe} onChange={(e) => setForm({ ...form, notesDe: e.target.value })} />
@@ -884,7 +880,17 @@ function Field({ label, children, fullWidth }: { label: string; children: React.
 // native HTML5 `required` validation working — the picker itself is a
 // popover trigger button, not a form control, so the browser can't see its
 // value.
-function DateField({ value, onChange, required }: { value: string; onChange: (next: string) => void; required?: boolean }) {
+function DateField({
+    value,
+    onChange,
+    required,
+    locale,
+}: {
+    value: string;
+    onChange: (next: string) => void;
+    required?: boolean;
+    locale: Locale;
+}) {
     return (
         <div className="relative">
             <DatePicker
@@ -892,6 +898,7 @@ function DateField({ value, onChange, required }: { value: string; onChange: (ne
                 onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : '')}
                 className="w-full"
                 captionLayout="dropdown"
+                locale={DATE_FNS_LOCALE[locale]}
             />
             {required ? (
                 <input

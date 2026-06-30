@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import { de as deLocale, enUS as enLocale } from 'date-fns/locale';
 import { ArrowDownIcon, Maximize2Icon, MessageSquareTextIcon, Minimize2Icon, PlusIcon, SparklesIcon } from 'lucide-react';
 import { useLocation } from '@tanstack/react-router';
 import { useMutation, useQuery } from 'urql';
@@ -18,6 +17,7 @@ import {
 import { useIsMobile } from '../hooks/use-mobile';
 import { useVisualViewport } from '../hooks/useVisualViewport';
 import { cn } from '../utils/cn';
+import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
 import { VisitorChatComposer } from './VisitorChatComposer';
@@ -66,8 +66,6 @@ import { Button } from '../components/base/button';
 // of the seeded-once ref or chatId.
 
 const newChatLabel = { de: 'Neuer Chat', en: 'New chat' };
-
-const DATE_FNS_LOCALE: Record<Locale, typeof deLocale> = { de: deLocale, en: enLocale };
 
 interface WebsiteVisitorAssistantChatSheetProps {
     locale: Locale;

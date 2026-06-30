@@ -8,8 +8,9 @@ import { toGqlCvExperience } from '../mappers/toGqlCvExperience';
 // Two-phase upsert: Phase 1 builds the insert/update payload off the GraphQL
 // input, Phase 2 runs the single DB call wrapped in try/catch. When `input.cvExperienceId`
 // is supplied the row with that id is updated; otherwise a new row is created.
-// `position` is written verbatim — the editor sets it explicitly, and a separate
-// `cvExperienceReorder` mutation moves rows around without re-saving every field.
+// Experience has no `position` column — `cvExperienceList` orders rows by
+// `endDate` / `startDate` instead, so there is nothing for the editor to
+// override.
 export async function cvExperienceUpsert(
     userId: string,
     args: GqlSAdminMutationCvExperienceUpsertArgs,
@@ -32,7 +33,6 @@ export async function cvExperienceUpsert(
         descriptionEn: input.descriptionEn,
         technologies: input.technologies,
         managerName: input.managerName ?? null,
-        position: input.position,
         updatedAt: now,
     };
 

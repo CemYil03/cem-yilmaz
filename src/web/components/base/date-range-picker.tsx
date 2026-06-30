@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { format } from 'date-fns';
+import type { Locale } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { Button } from './button';
@@ -15,6 +16,7 @@ function DateRangePicker({
     align = 'start',
     numberOfMonths = 2,
     disabled,
+    locale,
     captionLayout,
     startMonth,
     endMonth,
@@ -26,6 +28,8 @@ function DateRangePicker({
     align?: React.ComponentProps<typeof PopoverContent>['align'];
     numberOfMonths?: number;
     disabled?: React.ComponentProps<typeof Calendar>['disabled'];
+    /** date-fns locale; localizes the trigger label and the calendar grid. */
+    locale?: Locale;
     /**
      * Calendar caption layout. `'label'` (default) renders a plain title with
      * single-month arrows. `'dropdown'` swaps month and year for selectors so
@@ -51,10 +55,10 @@ function DateRangePicker({
                     {value?.from ? (
                         value.to ? (
                             <>
-                                {format(value.from, 'LLL dd, y')} - {format(value.to, 'LLL dd, y')}
+                                {format(value.from, 'LLL dd, y', { locale })} - {format(value.to, 'LLL dd, y', { locale })}
                             </>
                         ) : (
-                            format(value.from, 'LLL dd, y')
+                            format(value.from, 'LLL dd, y', { locale })
                         )
                     ) : (
                         <span>{placeholder}</span>
@@ -69,6 +73,7 @@ function DateRangePicker({
                     onSelect={onValueChange}
                     numberOfMonths={numberOfMonths}
                     disabled={disabled}
+                    locale={locale}
                     captionLayout={captionLayout}
                     startMonth={startMonth}
                     endMonth={endMonth}

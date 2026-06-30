@@ -13,6 +13,5 @@ export function toGqlCvExperience(row: CvExperience): GqlSCvExperience {
         descriptionEn: row.descriptionEn,
         technologies: row.technologies,
         managerName: row.managerName,
-        position: row.position,
     };
 }

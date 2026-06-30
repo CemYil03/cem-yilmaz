@@ -99,6 +99,13 @@
             "when": 1782845153106,
             "tag": "0013_oval_guardian",
             "breakpoints": true
+        },
+        {
+            "idx": 14,
+            "version": "7",
+            "when": 1782853352407,
+            "tag": "0014_special_darkhawk",
+            "breakpoints": true
         }
     ]
 }

@@ -677,8 +677,11 @@ type Subscription {
 # Editable CV content surfaced on `/cv` and `/about`. Bilingual text rides
 # as paired `*De` / `*En` fields — the client renders the locale-matching
 # pair. Proper nouns (company names, institution names) stay on a single
-# untranslated field. `position` is server-authoritative ordering written
-# by `*Reorder`. See `docs/features/cv.md`.
+# untranslated field. `CvEducation`, `CvSkill`, and `CvHobby` carry a
+# `position` field that the editor rewrites via the matching `*Reorder`
+# mutation; `CvExperience` has none — it is intrinsically date-ordered, so
+# the read query sorts by `endDate` (ongoing first) and `startDate`. See
+# `docs/features/cv.md`.
 
 type CvExperience {
     cvExperienceId: ID!
@@ -693,7 +696,6 @@ type CvExperience {
     descriptionEn: String!
     technologies: [String!]!
     managerName: String
-    position: Int!
 }
 
 type CvEducation {
@@ -749,9 +751,11 @@ type CvQuery {
 # --- CV admin write inputs ---------------------------------------------------
 #
 # Upserts use a nullable id: when present the row with that id is updated,
-# when absent a new row is created. The `position` slot lets the editor
-# place a new row at a specific spot; reordering as a whole is a separate
-# `*Reorder` mutation that takes the full id array.
+# when absent a new row is created. For the three position-ordered entities
+# (education, skills, hobbies) the `position` slot lets the editor place a
+# new row at a specific spot; reordering as a whole is a separate
+# `*Reorder` mutation that takes the full id array. `CvExperience` has no
+# `position` — the read query sorts it by `endDate` / `startDate`.
 
 input CvExperienceInput {
     cvExperienceId: ID
@@ -764,7 +768,6 @@ input CvExperienceInput {
     descriptionEn: String!
     technologies: [String!]!
     managerName: String
-    position: Int!
 }
 
 input CvEducationInput {
@@ -1180,7 +1183,6 @@ input ProjectFileUpsert {
 extend type AdminMutation {
     cvExperienceUpsert(input: CvExperienceInput!): CvExperience!
     cvExperienceDelete(cvExperienceId: ID!): MutationResult!
-    cvExperienceReorder(orderedIds: [ID!]!): MutationResult!
 
     cvEducationUpsert(input: CvEducationInput!): CvEducation!
     cvEducationDelete(cvEducationId: ID!): MutationResult!

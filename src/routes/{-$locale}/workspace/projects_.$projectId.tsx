@@ -1338,6 +1338,7 @@ function TaskForm({
                     value={dueAt ?? undefined}
                     onValueChange={(d) => setDueAt(d ?? null)}
                     placeholder={{ de: 'Fällig am', en: 'Due date' }[locale]}
+                    locale={dateFnsLocale(locale)}
                 />
             </div>
             <Textarea
@@ -1856,7 +1857,7 @@ function ActivityForm({
                 rows={2}
             />
             <div className="flex flex-wrap gap-2">
-                <DatePicker value={occurredAt} onValueChange={(d) => setOccurredAt(d ?? new Date())} />
+                <DatePicker value={occurredAt} onValueChange={(d) => setOccurredAt(d ?? new Date())} locale={dateFnsLocale(locale)} />
                 <Input
                     type="number"
                     min="0"

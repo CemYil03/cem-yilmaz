@@ -1,5 +1,6 @@
 # Public CV read query — feeds `/cv` (timeline) and `/about` (skill / hobby
-# blocks). All four lists arrive in `position`-ascending order.
+# blocks). Experience arrives ordered by `endDate` (ongoing first), then
+# `startDate`; the other three lists arrive in `position`-ascending order.
 query CvPage {
     cv {
         experience {
@@ -13,7 +14,6 @@ query CvPage {
             descriptionEn
             technologies
             managerName
-            position
         }
         education {
             cvEducationId

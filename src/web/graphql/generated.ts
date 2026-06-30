@@ -116,7 +116,6 @@ export interface GqlCAdminMutation {
     cvEducationReorder: GqlCMutationResult;
     cvEducationUpsert: GqlCCvEducation;
     cvExperienceDelete: GqlCMutationResult;
-    cvExperienceReorder: GqlCMutationResult;
     cvExperienceUpsert: GqlCCvExperience;
     cvHobbyDelete: GqlCMutationResult;
     cvHobbyReorder: GqlCMutationResult;
@@ -204,10 +203,6 @@ export type GqlCAdminMutationCvEducationUpsertArgs = {
 
 export type GqlCAdminMutationCvExperienceDeleteArgs = {
     cvExperienceId: Scalars['ID']['input'];
-};
-
-export type GqlCAdminMutationCvExperienceReorderArgs = {
-    orderedIds: Array<Scalars['ID']['input']>;
 };
 
 export type GqlCAdminMutationCvExperienceUpsertArgs = {
@@ -652,7 +647,6 @@ export interface GqlCCvExperience {
     descriptionEn: Scalars['String']['output'];
     endDate?: Maybe<Scalars['Date']['output']>;
     managerName?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
     roleDe: Scalars['String']['output'];
     roleEn: Scalars['String']['output'];
     startDate: Scalars['Date']['output'];
@@ -666,7 +660,6 @@ export type GqlCCvExperienceInput = {
     descriptionEn: Scalars['String']['input'];
     endDate?: InputMaybe<Scalars['Date']['input']>;
     managerName?: InputMaybe<Scalars['String']['input']>;
-    position: Scalars['Int']['input'];
     roleDe: Scalars['String']['input'];
     roleEn: Scalars['String']['input'];
     startDate: Scalars['Date']['input'];
@@ -1043,7 +1036,6 @@ export type GqlCCvPageQuery = {
             descriptionEn: string;
             technologies: Array<string>;
             managerName: string | null;
-            position: number;
         }>;
         education: Array<{
             cvEducationId: string;
@@ -1875,7 +1867,6 @@ export type GqlCWorkspaceCvPageUserFragment = {
                 descriptionEn: string;
                 technologies: Array<string>;
                 managerName: string | null;
-                position: number;
             }>;
             education: Array<{
                 cvEducationId: string;
@@ -1914,7 +1905,6 @@ export type GqlCWorkspaceCvPageQuery = {
                         descriptionEn: string;
                         technologies: Array<string>;
                         managerName: string | null;
-                        position: number;
                     }>;
                     education: Array<{
                         cvEducationId: string;
@@ -1954,7 +1944,6 @@ export type GqlCWorkspaceCvPageUpdatesSubscription = {
                     descriptionEn: string;
                     technologies: Array<string>;
                     managerName: string | null;
-                    position: number;
                 }>;
                 education: Array<{
                     cvEducationId: string;
@@ -1987,7 +1976,6 @@ export type GqlCWorkspaceCvExperienceUpsertMutationVariables = Exact<{
     descriptionEn: string;
     technologies: Array<string> | string;
     managerName?: string | null | undefined;
-    position: number;
 }>;
 
 export type GqlCWorkspaceCvExperienceUpsertMutation = { admin: { cvExperienceUpsert: { cvExperienceId: string } } };
@@ -2050,12 +2038,6 @@ export type GqlCWorkspaceCvHobbyDeleteMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceCvHobbyDeleteMutation = { admin: { cvHobbyDelete: { success: boolean } } };
-
-export type GqlCWorkspaceCvExperienceReorderMutationVariables = Exact<{
-    orderedIds: Array<string> | string;
-}>;
-
-export type GqlCWorkspaceCvExperienceReorderMutation = { admin: { cvExperienceReorder: { success: boolean } } };
 
 export type GqlCWorkspaceCvEducationReorderMutationVariables = Exact<{
     orderedIds: Array<string> | string;
@@ -4103,7 +4085,6 @@ export const WorkspaceCvPageUserFragmentDoc = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                                     ],
                                                 },
                                             },
@@ -5079,7 +5060,6 @@ export const CvPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
-                                            { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                         ],
                                     },
                                 },
@@ -7800,7 +7780,6 @@ export const WorkspaceCvPageDocument = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                                     ],
                                                 },
                                             },
@@ -7918,7 +7897,6 @@ export const WorkspaceCvPageUpdatesDocument = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'descriptionEn' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'technologies' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'managerName' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                                     ],
                                                 },
                                             },
@@ -8044,11 +8022,6 @@ export const WorkspaceCvExperienceUpsertDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'managerName' } },
                     type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
                 },
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
-                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -8118,11 +8091,6 @@ export const WorkspaceCvExperienceUpsertDocument = {
                                                         kind: 'ObjectField',
                                                         name: { kind: 'Name', value: 'managerName' },
                                                         value: { kind: 'Variable', name: { kind: 'Name', value: 'managerName' } },
-                                                    },
-                                                    {
-                                                        kind: 'ObjectField',
-                                                        name: { kind: 'Name', value: 'position' },
-                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'position' } },
                                                     },
                                                 ],
                                             },
@@ -8660,58 +8628,6 @@ export const WorkspaceCvHobbyDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCvHobbyDeleteMutation, GqlCWorkspaceCvHobbyDeleteMutationVariables>;
-export const WorkspaceCvExperienceReorderDocument = {
-    kind: 'Document',
-    definitions: [
-        {
-            kind: 'OperationDefinition',
-            operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceCvExperienceReorder' },
-            variableDefinitions: [
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
-                    type: {
-                        kind: 'NonNullType',
-                        type: {
-                            kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-                        },
-                    },
-                },
-            ],
-            selectionSet: {
-                kind: 'SelectionSet',
-                selections: [
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'cvExperienceReorder' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'orderedIds' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<GqlCWorkspaceCvExperienceReorderMutation, GqlCWorkspaceCvExperienceReorderMutationVariables>;
 export const WorkspaceCvEducationReorderDocument = {
     kind: 'Document',
     definitions: [
