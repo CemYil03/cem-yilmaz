@@ -18,9 +18,9 @@ Add `isAdmin: boolean` to the `Users` table.
 - **Reads.** `User.admin: Admin` is nullable. The `User.admin` resolver returns the empty `Admin` shell only when the requesting session
   owns the parent user row AND that row has `isAdmin = true`; in every other case it returns `null`. Because the field is nullable a
   non-admin caller gets `currentSession.user.admin = null` instead of an exception — every public page (landing, `/about`, `/cv`,
-  `/projects`) composes this probe in its route loader and passes the boolean into `<Header showWorkspaceLink=… />`, so the "Workspace"
-  icon button surfaces on every public surface Cem might arrive on. Workspace pages use the same field to render an inline "no access"
-  surface when they encounter null.
+  `/projects`) composes this probe in its route loader and passes the boolean into `<Header showWorkspaceLink=… />`, so the "Workspace" icon
+  button surfaces on every public surface Cem might arrive on. Workspace pages use the same field to render an inline "no access" surface
+  when they encounter null.
 - **Writes.** `Mutation.admin: AdminMutation!` is non-nullable and gated by `guardAdminMutation`, which still throws on non-admins. Writes
   are not composable from the public surface, so the throw-on-mismatch contract is correct there. The guard also stamps the admin's `userId`
   onto the returned `AdminMutation` shell, so every admin-mutation resolver has it on the parent — each command ends with
