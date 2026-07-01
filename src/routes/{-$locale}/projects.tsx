@@ -4,11 +4,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { useVisitorChat } from '../../web/chat/VisitorChatProvider';
 import { Button } from '../../web/components/base/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../../web/components/base/dialog';
+import { Footer } from '../../web/components/Footer';
 import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
 import { Reveal } from '../../web/components/Reveal';
 import { personalInfo } from '../../web/content/personalInfo';
 import { portfolioProjects } from '../../web/content/portfolioProjects';
+import { ProjectsPageDocument } from '../../web/graphql/generated';
+import { routeLoaderGraphqlClient } from '../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../web/hooks/useLocale';
 import { seoMeta } from '../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
@@ -25,6 +28,8 @@ const intro = {
 };
 
 export const Route = createFileRoute('/{-$locale}/projects')({
+    loader: () => routeLoaderGraphqlClient(ProjectsPageDocument)(),
+    staleTime: 0,
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
@@ -41,10 +46,15 @@ export const Route = createFileRoute('/{-$locale}/projects')({
 function ProjectsPage() {
     const locale = useLocale();
     const { openWithMessage } = useVisitorChat();
+    const data = Route.useLoaderData();
+    // Admin-only "Workspace" entry in the header — non-admins (including
+    // anonymous visitors) get `user.admin = null` and never see it. Same
+    // probe as the landing page. See `docs/architecture/workspace-access.md`.
+    const isAdmin = data.currentSession.user?.admin != null;
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header subtitle={`/ ${title[locale].toLowerCase()}`} />
+            <Header subtitle={`/ ${title[locale].toLowerCase()}`} showWorkspaceLink={isAdmin} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full pb-24">
                 <header className="py-12 md:py-16">
                     <h1 className="text-2xl font-bold tracking-tight">{title[locale]}</h1>
@@ -61,6 +71,7 @@ function ProjectsPage() {
 
                 <CallToAction locale={locale} onOpenChat={(text) => openWithMessage(text)} />
             </main>
+            <Footer />
         </div>
     );
 }

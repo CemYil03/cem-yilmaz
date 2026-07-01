@@ -3,6 +3,7 @@ import { DownloadIcon } from 'lucide-react';
 import { Button } from '../../web/components/base/button';
 import type { CvTimelineEntry } from '../../web/components/CvTimeline';
 import { CvTimeline } from '../../web/components/CvTimeline';
+import { Footer } from '../../web/components/Footer';
 import { Header } from '../../web/components/Header';
 import { Reveal } from '../../web/components/Reveal';
 import type { GqlCCvPageQuery } from '../../web/graphql/generated';
@@ -42,10 +43,14 @@ function CvPage() {
     const experience = data.cv.experience;
     const education = data.cv.education;
     const stats = computeStats(experience, locale);
+    // Admin-only "Workspace" entry in the header — non-admins (including
+    // anonymous visitors) get `user.admin = null` and never see it. Same
+    // probe as the landing page. See `docs/architecture/workspace-access.md`.
+    const isAdmin = data.currentSession.user?.admin != null;
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header subtitle={`/ ${title[locale].toLowerCase()}`} />
+            <Header subtitle={`/ ${title[locale].toLowerCase()}`} showWorkspaceLink={isAdmin} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <header className="py-12 md:py-16">
                     <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between md:gap-12">
@@ -104,6 +109,7 @@ function CvPage() {
                     <CvTimeline entries={education.map((row) => mapEducation(row, locale))} locale={locale} />
                 </section>
             </main>
+            <Footer />
         </div>
     );
 }

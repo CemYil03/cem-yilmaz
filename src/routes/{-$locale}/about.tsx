@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowRightIcon, BriefcaseIcon, CodeXmlIcon, MailIcon } from 'lucide-react';
 import { Button } from '../../web/components/base/button';
 import { CvSkillGroup } from '../../web/components/CvSkillGroup';
+import { Footer } from '../../web/components/Footer';
 import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
 import { Reveal } from '../../web/components/Reveal';
@@ -125,10 +126,14 @@ export const Route = createFileRoute('/{-$locale}/about')({
 function AboutPage() {
     const locale = useLocale();
     const data = Route.useLoaderData();
+    // Admin-only "Workspace" entry in the header — non-admins (including
+    // anonymous visitors) get `user.admin = null` and never see it. Same
+    // probe as the landing page. See `docs/architecture/workspace-access.md`.
+    const isAdmin = data.currentSession.user?.admin != null;
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
-            <Header subtitle={`/ ${title[locale].toLowerCase()}`} />
+            <Header subtitle={`/ ${title[locale].toLowerCase()}`} showWorkspaceLink={isAdmin} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <header className="py-12 md:py-16">
                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{title[locale]}</h1>
@@ -175,6 +180,7 @@ function AboutPage() {
                     </Button>
                 </Reveal>
             </main>
+            <Footer />
         </div>
     );
 }

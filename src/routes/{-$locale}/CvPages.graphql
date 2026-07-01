@@ -2,6 +2,18 @@
 # blocks). Experience arrives ordered by `endDate` (ongoing first), then
 # `startDate`; the other three lists arrive in `position`-ascending order.
 query CvPage {
+    currentSession {
+        sessionId
+        user {
+            # Presence-only probe — non-null when the user is an admin. Drives
+            # the "Workspace" link in the public-page header. Mirrors the
+            # pattern used on the landing page (`HomePage.graphql`). See
+            # `docs/architecture/workspace-access.md`.
+            admin {
+                __typename
+            }
+        }
+    }
     cv {
         experience {
             cvExperienceId
@@ -32,6 +44,14 @@ query CvPage {
 }
 
 query AboutPage {
+    currentSession {
+        sessionId
+        user {
+            admin {
+                __typename
+            }
+        }
+    }
     cv {
         skills {
             cvSkillId

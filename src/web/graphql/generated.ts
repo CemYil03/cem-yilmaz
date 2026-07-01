@@ -1024,6 +1024,7 @@ export interface GqlCVisitorChatQuota {
 export type GqlCCvPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCCvPageQuery = {
+    currentSession: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null };
     cv: {
         experience: Array<{
             cvExperienceId: string;
@@ -1056,6 +1057,7 @@ export type GqlCCvPageQuery = {
 export type GqlCAboutPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCAboutPageQuery = {
+    currentSession: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null };
     cv: {
         skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
         hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
@@ -1067,6 +1069,10 @@ export type GqlCHomePageQueryVariables = Exact<{ [key: string]: never }>;
 export type GqlCHomePageQuery = {
     currentSession: { sessionId: string; user: { name: string; admin: { __typename: 'Admin' } | null } | null };
 };
+
+export type GqlCProjectsPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCProjectsPageQuery = { currentSession: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null } };
 
 export type GqlCWorkspaceLogsQueryVariables = Exact<{
     level?: Schema.GqlCLogLevel | null | undefined;
@@ -5040,6 +5046,33 @@ export const CvPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [{ kind: 'Field', name: { kind: 'Name', value: '__typename' } }],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        kind: 'Field',
                         name: { kind: 'Name', value: 'cv' },
                         selectionSet: {
                             kind: 'SelectionSet',
@@ -5101,6 +5134,33 @@ export const AboutPageDocument = {
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [{ kind: 'Field', name: { kind: 'Name', value: '__typename' } }],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
                     {
                         kind: 'Field',
                         name: { kind: 'Name', value: 'cv' },
@@ -5185,6 +5245,48 @@ export const HomePageDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCHomePageQuery, GqlCHomePageQueryVariables>;
+export const ProjectsPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'ProjectsPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [{ kind: 'Field', name: { kind: 'Name', value: '__typename' } }],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCProjectsPageQuery, GqlCProjectsPageQueryVariables>;
 export const WorkspaceLogsDocument = {
     kind: 'Document',
     definitions: [

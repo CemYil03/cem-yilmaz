@@ -126,6 +126,9 @@ extracted — they live in `src/web/chat/WebsiteVisitorAssistantChatSheet.tsx` a
 
 The footer is a shared component at `src/web/components/Footer.tsx` — not a section-helper inside `index.tsx`. It owns its own bilingual
 copy, social-link config, and locale lookup (via `useLocale`), so other public routes can drop it in without threading copy through props.
+It is mounted at the bottom of every public route — `/`, `/about`, `/cv`, `/projects` — so the page-close rhythm matches across the public
+site and the secondary-nav links repeat on every surface a crawler or visitor might land on. The legal pages (`/impressum`, `/datenschutz`)
+deliberately stay footer-less; their layout is intentionally minimal.
 
 Layout: a three-column grid on `md+` (brand block · sitemap · contact), stacked on mobile, with a bottom bar carrying the copyright, an
 origin line ("Designed and built in Germany"), and the legal links to `/impressum` and `/datenschutz`. The brand column repeats the header's
