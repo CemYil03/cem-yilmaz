@@ -1,0 +1,71 @@
+# Workspace todos operations — co-located with the `/workspace/todos`
+# editor route. Reads and writes standalone tasks (rows with
+# `projectId IS NULL`). Project-bound tasks live on the project detail
+# route and its own graphql file; the two surfaces stay disjoint so
+# neither has to filter the other out. See
+# `docs/features/todos.md` and
+# `docs/architecture/state-synchronization.md`.
+
+fragment WorkspaceTodosPageUser on User {
+    admin {
+        standaloneTasks {
+            taskId
+            projectId
+            title
+            notes
+            status
+            position
+            dueAt
+            completedAt
+        }
+    }
+}
+
+query WorkspaceTodosPage {
+    currentSession {
+        user {
+            ...WorkspaceTodosPageUser
+        }
+    }
+}
+
+subscription WorkspaceTodosPageUpdates {
+    userUpdates {
+        ...WorkspaceTodosPageUser
+    }
+}
+
+mutation WorkspaceTodoUpsert(
+    $taskId: ID
+    $title: String!
+    $notes: String
+    $status: TaskStatus!
+    $position: Int!
+    $dueAt: DateTime
+    $completedAt: DateTime
+) {
+    admin {
+        taskUpsert(
+            input: {
+                taskId: $taskId
+                projectId: null
+                title: $title
+                notes: $notes
+                status: $status
+                position: $position
+                dueAt: $dueAt
+                completedAt: $completedAt
+            }
+        ) {
+            taskId
+        }
+    }
+}
+
+mutation WorkspaceTodoDelete($taskId: ID!) {
+    admin {
+        taskDelete(taskId: $taskId) {
+            success
+        }
+    }
+}

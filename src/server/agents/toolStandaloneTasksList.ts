@@ -5,9 +5,9 @@ import type { GqlSSession } from '../graphql/generated';
 import { standaloneTasksList } from '../queries/standaloneTasksList';
 
 // Read tool for `agentPersonalAssistantProjects`. Lists tasks with
-// `projectId IS NULL` — the Todos tab on `/workspace/projects`. Standalone
-// counts are in the snapshot but the full list is not, so the sub-agent
-// calls this when it needs ids or notes.
+// `projectId IS NULL` — the standalone todos surfaced at
+// `/workspace/todos`. Standalone counts are in the snapshot but the full
+// list is not, so the sub-agent calls this when it needs ids or notes.
 
 interface ProjectsAgentReadContext {
     serverRuntime: ServerRuntime;

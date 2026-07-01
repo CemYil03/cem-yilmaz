@@ -7,6 +7,7 @@ import {
     FileTextIcon,
     FilmIcon,
     FolderKanbanIcon,
+    ListTodoIcon,
     MessageSquareTextIcon,
     ReceiptTextIcon,
     ScrollTextIcon,
@@ -52,6 +53,7 @@ type FocusAreaRoute =
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/projects'
+    | '/{-$locale}/workspace/todos'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/fitness'
@@ -68,7 +70,14 @@ type FocusArea = {
     description: { de: string; en: string };
     // Badge value driven by the hub query (e.g. inbox count). Resolved at
     // render time so a card definition is still a static literal.
-    badgeKey?: 'projectsInbox';
+    badgeKey?: 'projectsInbox' | 'todosOpen';
+};
+
+// Screen-reader labels for the tile badges. The number sits in the pill;
+// this narrates what it is counting so a11y trees don't just hear "3".
+const BADGE_ARIA: Record<NonNullable<FocusArea['badgeKey']>, (count: number, locale: Locale) => string> = {
+    projectsInbox: (count, locale) => ({ de: `${count} neue Anfragen`, en: `${count} new requests` })[locale],
+    todosOpen: (count, locale) => ({ de: `${count} offene Todos`, en: `${count} open todos` })[locale],
 };
 
 const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
@@ -84,6 +93,13 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         title: { de: 'Projekte', en: 'Projects' },
         description: { de: 'Persönliche Projekte und nächste Schritte.', en: 'Personal projects and next steps.' },
         badgeKey: 'projectsInbox',
+    },
+    {
+        to: '/{-$locale}/workspace/todos',
+        icon: ListTodoIcon,
+        title: { de: 'Todos', en: 'Todos' },
+        description: { de: 'Schnelle Aufgaben ohne Projektbezug.', en: 'Quick tasks with no project attached.' },
+        badgeKey: 'todosOpen',
     },
     {
         to: '/{-$locale}/workspace/tax',
@@ -182,6 +198,7 @@ function WorkspaceHub() {
     const data = Route.useLoaderData();
     const badges: Record<NonNullable<FocusArea['badgeKey']>, number> = {
         projectsInbox: data.currentSession.user?.admin?.projectRequestsInboxCount ?? 0,
+        todosOpen: data.currentSession.user?.admin?.standaloneOpenTaskCount ?? 0,
     };
 
     return (
@@ -299,13 +316,18 @@ function FocusCardGrid({
     columnsClass: string;
     badges: Record<NonNullable<FocusArea['badgeKey']>, number>;
 }) {
+    // `grid-auto-rows-fr` gives every row the same height, so a tile with a
+    // long description doesn't push its row taller than the others — every
+    // card in the section shares one uniform height. `h-full` on the `<Link>`
+    // lets the `GlassCard`'s own `h-full` actually reach the grid cell.
     return (
-        <div className={cn('grid gap-4 md:grid-cols-2', columnsClass)}>
+        <div className={cn('grid gap-4 md:grid-cols-2 auto-rows-fr', columnsClass)}>
             {areas.map((area) => {
                 const { to, icon: Icon } = area;
                 const badge = area.badgeKey ? badges[area.badgeKey] : 0;
+                const badgeAria = area.badgeKey ? BADGE_ARIA[area.badgeKey](badge, locale) : '';
                 return (
-                    <Link key={to} to={to} className="group">
+                    <Link key={to} to={to} className="group h-full">
                         <GlassCard className="h-full transition-colors hover:bg-white/55 dark:hover:bg-white/8">
                             <CardContent className="flex h-full flex-col gap-1.5 py-5">
                                 {/* Icon + title on one row, arrow tucked into
@@ -322,7 +344,7 @@ function FocusCardGrid({
                                         {badge > 0 ? (
                                             <span
                                                 className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
-                                                aria-label={{ de: `${badge} neue Anfragen`, en: `${badge} new requests` }[locale]}
+                                                aria-label={badgeAria}
                                             >
                                                 {badge}
                                             </span>

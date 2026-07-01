@@ -1,18 +1,20 @@
-# Workspace projects: Inbox + Projects + Tasks
+# Workspace projects: Inbox + Projects
 
-A single workspace surface at `/workspace/projects` for everything project-shaped: incoming visitor briefs (Inbox), ongoing personal
-projects (Projects board), and standalone todos that don't belong to any project (Todos).
+A single workspace surface at `/workspace/projects` for project-shaped work: incoming visitor briefs (Inbox) and ongoing personal projects
+(Projects board). Standalone todos live on their own surface at [/workspace/todos](./todos.md) and never mix into this page.
 
 See also:
 
+- [features/todos.md](./todos.md) — standalone tasks (rows with `projectId IS NULL`).
 - [features/project-requests.md](./project-requests.md) — the OTP-gated visitor flow that produces the rows the Inbox tab triages.
 - [architecture/content-model.md](../architecture/content-model.md) — the DB-backed editable-list pattern this feature follows.
 - [features/cv.md](./cv.md) — the canonical admin-editor implementation the projects UI mirrors.
 
 ## User behavior
 
-The page has three tabs, switched via a `?tab=inbox|projects|todos` search param (defaults to `projects` so deep-links from the hub land on
-the daily-work surface):
+The page has two tabs, switched via a `?tab=inbox|projects` search param (defaults to `projects` so deep-links from the hub land on the
+daily-work surface). A legacy `?tab=todos` link on the loader hot-redirects to `/workspace/todos` so any pre-split bookmark or stale
+assistant message still resolves.
 
 - **Inbox** — every `ProjectRequest` whose visitor verified their email but Cem hasn't triaged yet. Each row shows the visitor, project
   type, submission date, and (on expand) the full brief plus budget/timeline. Two actions: **Archive** flips the request to `archived`
@@ -27,8 +29,6 @@ the daily-work surface):
   no inline edit / delete / start-timer affordances; those all live on the detail page. When this project owns the running timer the tile
   picks up a live `HH:MM:SS` badge in the header corner and a primary-tinted ring so the active project is glanceable on the grid. Tasks
   themselves are listed and edited on the detail route — the board no longer expands them inline.
-- **Todos** — flat task list with the same task primitive, filtered to `projectId IS NULL`. For quick captures that don't (yet) belong to a
-  project.
 
 Each project tile on the **Projects** tab also surfaces a **live-timer badge** when this project owns the running timer; full timer controls
 (start / stop / switch) live on the project detail route — see
@@ -49,8 +49,9 @@ opening the page.
 
 ## Option chosen
 
-Dedicated `Projects` and `Tasks` tables. `Tasks.projectId` is nullable — `IS NULL` rows are standalone todos surfaced on the Todos tab.
-Convert flow runs through `projectUpsert` with `sourceRequestId` set; a single drizzle transaction inserts the project, stamps
+Dedicated `Projects` and `Tasks` tables. `Tasks.projectId` is nullable — `IS NULL` rows are standalone todos surfaced on the separate
+`/workspace/todos` page (see [features/todos.md](./todos.md)); this page never lists them so the two mental spaces stay disjoint. Convert
+flow runs through `projectUpsert` with `sourceRequestId` set; a single drizzle transaction inserts the project, stamps
 `Projects.sourceRequestId`, and archives the request. Single-language (English only) — the page is admin-only and never surfaced publicly,
 so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
 
@@ -92,7 +93,8 @@ Read namespace under `Admin` (reached via `currentSession.user.admin`):
 - `admin.projectRequests(status: ProjectRequestStatus): [ProjectRequest!]!` — list (newest first); `convertedProject` field joined in
 - `admin.projectRequestsInboxCount: Int!` — count of `emailVerified` requests without a linked project, drives the hub badge
 - `admin.projects(status: ProjectStatus): [Project!]!` — board feed; eagerly loads `tasks` + `sourceRequest`
-- `admin.standaloneTasks: [Task!]!` — Todos tab feed
+- `admin.standaloneTasks: [Task!]!` — full list of standalone todos. Consumed by [/workspace/todos](./todos.md), not this page.
+- `admin.standaloneOpenTaskCount: Int!` — hub-badge count of standalone todos in `todo` or `doing`.
 
 Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 
@@ -316,12 +318,12 @@ files (see the **Files → Agent-authored markdown** section above). See
 
 ### Deep linking from the assistant
 
-The orchestrator formats every project / inbox row / task it names as a markdown link with a `?focus=<id>` search param —
-`/workspace/projects?tab=projects&focus=<projectId>`, `…&tab=inbox&focus=<projectRequestId>`, `…&tab=todos&focus=<taskId>`. The page's
-`validateSearch` schema picks `focus` up, a `useEffect` scrolls the `<li data-row-id="<id>">` for the active tab into view, and
-`@keyframes focus-flash` in `src/styles.css` runs a single primary-tinted breath for ~1500ms before the param is dropped via a
-replace-navigate so a refresh doesn't re-flash. Missing or wrong-tab ids no-op silently. See
-[Deep links](../architecture/agent-delegation.md#deep-links).
+The orchestrator formats every project / inbox row it names as a markdown link with a `?focus=<id>` search param —
+`/workspace/projects?tab=projects&focus=<projectId>` and `…&tab=inbox&focus=<projectRequestId>`. Standalone todos deep-link to
+`/workspace/todos?focus=<taskId>` instead (see [features/todos.md](./todos.md)). The page's `validateSearch` schema picks `focus` up, a
+`useEffect` scrolls the `<li data-row-id="<id>">` for the active tab into view, and `@keyframes focus-flash` in `src/styles.css` runs a
+single primary-tinted breath for ~1500ms before the param is dropped via a replace-navigate so a refresh doesn't re-flash. Missing or
+wrong-tab ids no-op silently. See [Deep links](../architecture/agent-delegation.md#deep-links).
 
 ## Project activity timeline & work timer
 

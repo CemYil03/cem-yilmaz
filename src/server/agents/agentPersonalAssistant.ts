@@ -77,7 +77,7 @@ const BASE_SYSTEM_PROMPT = [
     '`summary`. Never invent an id; if you do not have one, just name the thing in plain text.',
     '- Project              → `[<title>](/workspace/projects?tab=projects&focus=<projectId>)`',
     '- Inbox row            → `[<title>](/workspace/projects?tab=inbox&focus=<projectRequestId>)`',
-    '- Standalone task      → `[<title>](/workspace/projects?tab=todos&focus=<taskId>)`',
+    '- Standalone task      → `[<title>](/workspace/todos?focus=<taskId>)`',
     '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
     'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
     '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',

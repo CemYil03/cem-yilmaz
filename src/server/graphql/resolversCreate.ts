@@ -77,6 +77,7 @@ import { activeTimerGet } from '../queries/activeTimerGet';
 import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
 import { standaloneTasksList } from '../queries/standaloneTasksList';
+import { standaloneOpenTaskCount } from '../queries/standaloneOpenTaskCount';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 import type {
     GqlSAdmin,
@@ -267,6 +268,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             standaloneTasks(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
                 return standaloneTasksList(requestingSession, serverRuntime);
+            },
+            standaloneOpenTaskCount(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return standaloneOpenTaskCount(requestingSession, serverRuntime);
             },
             activeTimer(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
                 return activeTimerGet(requestingSession, serverRuntime);

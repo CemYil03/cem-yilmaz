@@ -26,6 +26,7 @@ import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
 import { Route as ApiFileUploadsRouteImport } from './routes/api/file-uploads'
 import { Route as Char123LocaleChar125WorkspaceIndexRouteImport } from './routes/{-$locale}/workspace/index'
 import { Route as Char123LocaleChar125WorkspaceVisitorChatsRouteImport } from './routes/{-$locale}/workspace/visitor-chats'
+import { Route as Char123LocaleChar125WorkspaceTodosRouteImport } from './routes/{-$locale}/workspace/todos'
 import { Route as Char123LocaleChar125WorkspaceTaxRouteImport } from './routes/{-$locale}/workspace/tax'
 import { Route as Char123LocaleChar125WorkspaceSoftwareRouteImport } from './routes/{-$locale}/workspace/software'
 import { Route as Char123LocaleChar125WorkspaceProjectsRouteImport } from './routes/{-$locale}/workspace/projects'
@@ -131,6 +132,12 @@ const Char123LocaleChar125WorkspaceVisitorChatsRoute =
   Char123LocaleChar125WorkspaceVisitorChatsRouteImport.update({
     id: '/visitor-chats',
     path: '/visitor-chats',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceTodosRoute =
+  Char123LocaleChar125WorkspaceTodosRouteImport.update({
+    id: '/todos',
+    path: '/todos',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
 const Char123LocaleChar125WorkspaceTaxRoute =
@@ -240,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
+  '/{-$locale}/workspace/todos': typeof Char123LocaleChar125WorkspaceTodosRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
@@ -270,6 +278,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
+  '/{-$locale}/workspace/todos': typeof Char123LocaleChar125WorkspaceTodosRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceIndexRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
@@ -303,6 +312,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
+  '/{-$locale}/workspace/todos': typeof Char123LocaleChar125WorkspaceTodosRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
   '/{-$locale}/workspace/projects_/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
+    | '/{-$locale}/workspace/todos'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
     | '/{-$locale}/workspace/projects/$projectId'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
+    | '/{-$locale}/workspace/todos'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace'
     | '/{-$locale}/workspace/projects/$projectId'
@@ -399,6 +411,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
+    | '/{-$locale}/workspace/todos'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
     | '/{-$locale}/workspace/projects_/$projectId'
@@ -537,6 +550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/{-$locale}/workspace/todos': {
+      id: '/{-$locale}/workspace/todos'
+      path: '/todos'
+      fullPath: '/{-$locale}/workspace/todos'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTodosRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
     '/{-$locale}/workspace/tax': {
       id: '/{-$locale}/workspace/tax'
       path: '/tax'
@@ -643,6 +663,7 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceProjectsRoute: typeof Char123LocaleChar125WorkspaceProjectsRoute
   Char123LocaleChar125WorkspaceSoftwareRoute: typeof Char123LocaleChar125WorkspaceSoftwareRoute
   Char123LocaleChar125WorkspaceTaxRoute: typeof Char123LocaleChar125WorkspaceTaxRoute
+  Char123LocaleChar125WorkspaceTodosRoute: typeof Char123LocaleChar125WorkspaceTodosRoute
   Char123LocaleChar125WorkspaceVisitorChatsRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   Char123LocaleChar125WorkspaceIndexRoute: typeof Char123LocaleChar125WorkspaceIndexRoute
   Char123LocaleChar125WorkspaceProjectsProjectIdRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
@@ -671,6 +692,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceSoftwareRoute,
     Char123LocaleChar125WorkspaceTaxRoute:
       Char123LocaleChar125WorkspaceTaxRoute,
+    Char123LocaleChar125WorkspaceTodosRoute:
+      Char123LocaleChar125WorkspaceTodosRoute,
     Char123LocaleChar125WorkspaceVisitorChatsRoute:
       Char123LocaleChar125WorkspaceVisitorChatsRoute,
     Char123LocaleChar125WorkspaceIndexRoute:

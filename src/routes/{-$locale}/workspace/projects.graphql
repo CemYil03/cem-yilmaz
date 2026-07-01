@@ -1,12 +1,12 @@
 # Workspace projects operations — co-located with the `/workspace/projects`
-# editor route. Drives the Inbox (`projectRequests`), Projects board
-# (`projects` + nested `tasks`), and standalone Todos tab (`standaloneTasks`).
-# The page's read shape lives in the `WorkspaceProjectsPageUser` fragment so
-# both the route loader query and the live `userUpdates` subscription deliver
-# the exact same payload — mutations no longer trigger `router.invalidate()`;
-# the server pushes the new state over SSE and the page replaces its
-# `useState` with the subscription payload. See
-# `docs/features/projects-workspace.md` and
+# editor route. Drives the Inbox (`projectRequests`) and the Projects
+# board (`projects` + nested `tasks`). Standalone todos live on
+# `/workspace/todos` with its own graphql file. The page's read shape lives
+# in the `WorkspaceProjectsPageUser` fragment so both the route loader query
+# and the live `userUpdates` subscription deliver the exact same payload —
+# mutations no longer trigger `router.invalidate()`; the server pushes the
+# new state over SSE and the page replaces its `useState` with the
+# subscription payload. See `docs/features/projects-workspace.md` and
 # `docs/architecture/state-synchronization.md`.
 
 fragment WorkspaceProjectsPageUser on User {
@@ -73,16 +73,6 @@ fragment WorkspaceProjectsPageUser on User {
                 durationSec
                 createdAt
             }
-        }
-        standaloneTasks {
-            taskId
-            projectId
-            title
-            notes
-            status
-            position
-            dueAt
-            completedAt
         }
         activeTimer {
             activityId
@@ -161,50 +151,6 @@ mutation WorkspaceProjectUpsert(
 mutation WorkspaceProjectReorder($orderedIds: [ID!]!) {
     admin {
         projectReorder(orderedIds: $orderedIds) {
-            success
-        }
-    }
-}
-
-mutation WorkspaceTaskUpsert(
-    $taskId: ID
-    $projectId: ID
-    $title: String!
-    $notes: String
-    $status: TaskStatus!
-    $position: Int!
-    $dueAt: DateTime
-    $completedAt: DateTime
-) {
-    admin {
-        taskUpsert(
-            input: {
-                taskId: $taskId
-                projectId: $projectId
-                title: $title
-                notes: $notes
-                status: $status
-                position: $position
-                dueAt: $dueAt
-                completedAt: $completedAt
-            }
-        ) {
-            taskId
-        }
-    }
-}
-
-mutation WorkspaceTaskDelete($taskId: ID!) {
-    admin {
-        taskDelete(taskId: $taskId) {
-            success
-        }
-    }
-}
-
-mutation WorkspaceTaskReorder($orderedIds: [ID!]!) {
-    admin {
-        taskReorder(orderedIds: $orderedIds) {
             success
         }
     }

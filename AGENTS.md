@@ -157,8 +157,9 @@ src/
 │   │       ├── compass.tsx     AI-built compass (summary / portrait / psychology) — see docs/features/compass.md
 │   │       ├── cv.tsx          CV editor (writes the `Cv*` tables)
 │   │       ├── software.tsx    Software development & architecture
-│   │       ├── projects.tsx    Personal projects board (Inbox + kanban + Todos)
+│   │       ├── projects.tsx    Personal projects board (Inbox + kanban)
 │   │       ├── projects_.$projectId.tsx  Per-project detail (tasks, activity, notes, links, files)
+│   │       ├── todos.tsx       Standalone todos (tasks with no parent project)
 │   │       ├── finances.tsx    Finances (goals, overview, trading & stocks)
 │   │       ├── tax.tsx         Tax matters
 │   │       ├── fitness.tsx     Fitness & well-being

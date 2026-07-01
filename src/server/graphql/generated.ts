@@ -31,6 +31,7 @@ export interface GqlSAdmin {
     projects: Array<GqlSProject>;
     publicChat: GqlSChat;
     publicChats: Array<GqlSChat>;
+    standaloneOpenTaskCount: Scalars['Int']['output'];
     standaloneTasks: Array<GqlSTask>;
 }
 
@@ -1390,6 +1391,7 @@ export type GqlSAdminResolvers<
     projects?: Resolver<Array<GqlSResolversTypes['Project']>, ParentType, ContextType, Partial<GqlSAdminProjectsArgs>>;
     publicChat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminPublicChatArgs, 'chatId'>>;
     publicChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    standaloneOpenTaskCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     standaloneTasks?: Resolver<Array<GqlSResolversTypes['Task']>, ParentType, ContextType>;
 }>;
 

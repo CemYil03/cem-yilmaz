@@ -1064,9 +1064,13 @@ extend type Admin {
     # route. Raises `notFound` when the id does not exist.
     project(projectId: ID!): Project!
     # Standalone todos: rows with `projectId IS NULL`. Project-bound tasks
-    # are reached through `Project.tasks` so the Todos tab and the project
-    # board don't fight over the same list.
+    # are reached through `Project.tasks` so `/workspace/todos` and the
+    # project board don't fight over the same list.
     standaloneTasks: [Task!]!
+    # Count of standalone todos in an open state (`todo` or `doing`).
+    # Drives the Todos badge on the workspace hub. `done` rows are
+    # excluded so the badge tracks "still to do" and not lifetime volume.
+    standaloneOpenTaskCount: Int!
     # The single currently-running work timer, or null if none. Drives the
     # header badge and per-project timer pill. At most one row exists with
     # `endedAt IS NULL AND kind = 'work'` — the DB enforces this via a
