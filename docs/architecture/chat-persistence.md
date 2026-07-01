@@ -61,6 +61,10 @@ chatMessagesUserInput
 persist each call with this column set to the parent delegate row's id. See
 [`agent-delegation.md`](./agent-delegation.md#nested-tool-calls). Added in `drizzle/0006_funny_slyde.sql`.
 
+`chats.title` is authored not by the user but by the `chatTitleGenerate` background job — one cheap LLM call after each assistant turn while
+the title is still empty, with a `NONE`-return sentinel for exchanges that have no discernible topic yet. Single column (not paired
+`titleDe` / `titleEn`) because a chat lives in one language at a time. See [`chat-titles.md`](../features/chat-titles.md).
+
 Why not a single wide `ChatMessages` table with a `kind` discriminator and many nullable columns:
 
 - Half the columns would be NULL in any row. The schema has eight variants with genuinely different shapes.

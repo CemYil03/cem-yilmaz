@@ -171,6 +171,8 @@
         "Systemprompt",
         "tanstack",
         "timestamptz",
+        "titleable",
+        "titler",
         "TMG",
         "transactionally",
         "Transactioned",

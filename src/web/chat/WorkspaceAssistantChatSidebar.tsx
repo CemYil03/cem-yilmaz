@@ -53,22 +53,45 @@ interface WorkspaceAssistantChatSidebarProps {
 }
 
 export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, onWidthCommit }: WorkspaceAssistantChatSidebarProps) {
-    const { chatId, loadedMessages, live } = useWorkspaceAssistantChat();
-    const { toggleSidebar, isMobile } = useSidebar();
+    const { chatId, loadedMessages, live, resetChat } = useWorkspaceAssistantChat();
+    const { toggleSidebar, isMobile, setOpen, setOpenMobile } = useSidebar();
     const navigate = useNavigate();
 
+    // Sidebar and the /workspace/assistant route are two views onto the same
+    // conversation. If we hand off to the route without collapsing the
+    // sidebar the user sees the same transcript twice — once floating in the
+    // dock, once inline in the page. Close the sidebar (mobile Sheet or
+    // desktop docked) and reset the provider so returning to a workspace
+    // page starts a fresh chat rather than restoring the just-opened one.
+    const closeAndReset = useCallback(() => {
+        if (isMobile) setOpenMobile(false);
+        else setOpen(false);
+        resetChat();
+    }, [isMobile, setOpen, setOpenMobile, resetChat]);
+
     const onOpenFullscreen = useCallback(() => {
-        // Hands the conversation off to the dedicated route. Provider keeps
-        // its chatId so navigating back to a workspace page restores the
-        // sidebar in flight.
-        void navigate({ to: '/{-$locale}/workspace/assistant', search: chatId ? { chatId } : { chatId: undefined } });
-    }, [chatId, navigate]);
+        const target = chatId ? { chatId } : { chatId: undefined };
+        closeAndReset();
+        void navigate({ to: '/{-$locale}/workspace/assistant', search: target });
+    }, [chatId, closeAndReset, navigate]);
 
     const allMessages = mergeTranscriptMessages(loadedMessages, live.appendedMessages as ReadonlyArray<TranscriptMessage>);
     const isEmpty = allMessages.length === 0 && !live.isGenerating;
 
     return (
-        <Sidebar side="right" collapsible="offcanvas" variant="sidebar">
+        <Sidebar
+            side="right"
+            collapsible="offcanvas"
+            variant="sidebar"
+            // On `<md` viewports shadcn renders this as a right-side Sheet
+            // whose default width is `w-3/4 sm:max-w-sm` — too narrow for a
+            // chat surface on a phone. Push it to full viewport width so the
+            // transcript, composer, and attachments all get the real estate
+            // they need. `!` beats the SheetContent's own classes; classes
+            // are gated to `max-md:` so the desktop docked column (which
+            // ignores className overrides here anyway) is unaffected.
+            className="max-md:!w-screen max-md:!max-w-none"
+        >
             {/* Left-edge resize handle. Hidden on mobile (the Sheet is full
              *  width on phones anyway). */}
             {!isMobile ? <ResizeHandle minWidthPx={minWidthPx} maxWidthPx={maxWidthPx} onCommit={onWidthCommit} locale={locale} /> : null}
@@ -117,7 +140,7 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
             <SidebarContent className="min-h-0 flex-1 overflow-hidden p-0">
                 <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pt-4 pb-0">
                     {isEmpty ? (
-                        <WorkspaceAssistantChatEmptyState locale={locale} />
+                        <WorkspaceAssistantChatEmptyState locale={locale} onNavigateAway={closeAndReset} />
                     ) : (
                         <WorkspaceAssistantChatTranscript messages={allMessages} streamingTexts={live.streamingTexts} locale={locale} />
                     )}

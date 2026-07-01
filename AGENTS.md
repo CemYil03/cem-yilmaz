@@ -83,6 +83,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Static identity       | Typed config under `src/web/content/`                                      | `src/web/content/personalInfo.ts`              |
 | AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                              | `src/server/agents/agentVisitorAboutCem.ts`    |
 | AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                        | `docs/architecture/multi-agent-chat.md`        |
+| AI chat titles        | Post-turn LLM titler with `NONE`-retry loop on the empty column            | `docs/features/chat-titles.md`                 |
 | AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`     | `src/server/agents/adminChatModels.ts`         |
 | Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled      | `docs/features/compass.md`                     |
 

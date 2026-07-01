@@ -68,6 +68,9 @@ export function serverRuntimeCreate(): ServerRuntime {
             // The analyzer runs once per admin user message — pick a cheap
             // fast model. See `docs/features/compass.md`.
             compassAnalyzerModel: () => google('gemini-2.5-flash'),
+            // Cheapest tier — one call per assistant turn until a real
+            // title lands. See `docs/features/chat-titles.md`.
+            chatTitlerModel: () => google('gemini-2.5-flash-lite'),
             // The synthesizer reads every active observation and rewrites
             // three text fields; runs only when the threshold trips or on
             // explicit request, so a more capable model is worth it.

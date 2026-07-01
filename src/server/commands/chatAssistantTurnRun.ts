@@ -20,6 +20,7 @@ import type {
 } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatAssistantOptions, GqlSSession } from '../graphql/generated';
+import { chatTitleGenerate } from '../jobs/handlers/chatTitleGenerate';
 import { toModelMessages } from '../mappers/toModelMessages';
 import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
 import { chatMessageAppend } from './chatMessageAppend';
@@ -528,6 +529,16 @@ async function runAgentTurn({
         };
         await chatMessageAppend(db, serverRuntime, generationId, assistantSpine, async (transaction) => {
             await transaction.insert(chatMessagesAssistantText).values(assistantVariant);
+        });
+
+        // Fire-and-forget titler. The handler short-circuits on any
+        // non-empty title, so once a real title lands the per-turn
+        // enqueue costs one cheap DB read. When the title is still empty
+        // and the exchange has no discernible topic yet, the handler
+        // leaves it empty and the next turn re-enqueues — see
+        // `docs/features/chat-titles.md`.
+        serverRuntime.jobs.enqueue(chatTitleGenerate, { chatId }).catch((enqueueError) => {
+            serverRuntime.log.error(enqueueError, requestingSession);
         });
     }
 }

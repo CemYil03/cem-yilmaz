@@ -70,7 +70,7 @@ export function WorkspaceAssistantChatEmptyState({
     const chats = (data?.currentSession.user?.admin?.chats ?? []).slice(0, RECENT_CHATS_LIMIT);
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-3 [scrollbar-gutter:stable]">
             <div className="grid place-items-center py-6 text-sm text-muted-foreground">
                 <p>{{ de: 'Wie kann ich helfen?', en: 'How can I help?' }[locale]}</p>
             </div>
@@ -275,7 +275,16 @@ export function WorkspaceAssistantChatTranscript({
 
     return (
         <div className="relative min-h-0 min-w-0">
-            <div ref={scrollRef} onScroll={onScroll} className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-2">
+            {/* `scrollbar-gutter: stable` reserves the scrollbar column at
+             *  all times so the vertical scrollbar sits in its own lane
+             *  instead of overlapping the rightmost message bubbles when it
+             *  appears. `pr-3` gives the bubbles breathing room between
+             *  content and gutter. */}
+            <div
+                ref={scrollRef}
+                onScroll={onScroll}
+                className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-3 [scrollbar-gutter:stable]"
+            >
                 {groupedMessages.map((group) => (
                     <section key={group.date} className="flex min-w-0 flex-col gap-4">
                         <DateSeparator iso={group.date} />

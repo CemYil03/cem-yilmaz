@@ -1,4 +1,5 @@
 import { emailToCemSend } from './handlers/emailToCemSend';
+import { chatTitleGenerate } from './handlers/chatTitleGenerate';
 import { compassAnalyze } from './handlers/compassAnalyze';
 import { compassInterviewScheduledDue } from './handlers/compassInterviewScheduledDue';
 import { compassSynthesize } from './handlers/compassSynthesize';
@@ -15,4 +16,5 @@ export const jobDefinitions: JobDefinition[] = [
     emailToCemSend,
     projectRequestOtpSend,
     projectRequestNotifySend,
+    chatTitleGenerate,
 ];

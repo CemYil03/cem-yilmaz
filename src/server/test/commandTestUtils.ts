@@ -32,6 +32,7 @@ function aiForTest(): ServerRuntime['ai'] {
     return {
         userConversationModel: () => new MockLanguageModelV3(),
         compassAnalyzerModel: () => new MockLanguageModelV3(),
+        chatTitlerModel: () => new MockLanguageModelV3(),
         compassSynthesizerModel: () => new MockLanguageModelV3(),
         compassInterviewerModel: () => new MockLanguageModelV3(),
         // Web-search is provider-executed in production (Gemini runs the

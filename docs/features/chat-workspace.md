@@ -12,7 +12,10 @@ fully off the right edge — there is no leftover icon rail, the workspace surfa
 | Viewport | Surface                                                            | State source                                            |
 | -------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
 | `md+`    | Inline sidebar; collapsing slides it fully off-canvas to the right | shadcn's `useSidebar().open` (cookie `sidebar_state`)   |
-| `<md`    | Right-side Sheet rendered by shadcn's `<Sidebar>` itself           | shadcn's `useSidebar().openMobile` (in-memory per load) |
+| `<md`    | Full-viewport right-side Sheet rendered by shadcn's `<Sidebar>`    | shadcn's `useSidebar().openMobile` (in-memory per load) |
+
+On phones the mobile Sheet is forced to full viewport width (`max-md:!w-screen max-md:!max-w-none` on `<Sidebar>`) — the primitive's
+`w-3/4 sm:max-w-sm` default leaves a chat surface too narrow to type in, so we override it for this consumer.
 
 The default width matches the previous Sheet (`sm:max-w-2xl` ≈ 42rem / 672px). The user can drag the sidebar's left edge outward to widen it
 up to ~960px; the width is persisted to `localStorage` (`workspaceAssistantSidebar.widthPx`) so the preference survives reloads. Dragging
@@ -74,8 +77,8 @@ sibling in the layout so `<SidebarInset>` reflows automatically as the sidebar c
 | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` on the chat provider, then forces the sidebar open via `useSidebar().setOpen(true)` (or `setOpenMobile(true)` on `<md`). The user sees the streaming response without any extra navigation.                                                                |
 | Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useSidebar().toggleSidebar()`. On `md+` this flips the cookie-backed open state; on `<md` it opens/closes shadcn's internal Sheet. The button reads `open` / `openMobile` from `useSidebar` and surfaces the current state as `aria-pressed` so screen readers and the visual pressed style both reflect "the sidebar is here." |
-| Sidebar **"Open full-screen"** button                                           | Navigates to `/workspace/assistant?chatId=<id>`. Disabled while a turn is streaming (see "Full-screen route handoff").                                                                                                                                                                                                           |
-| Empty-state "View all chats" link                                               | Navigates to `/workspace/assistant`. The empty state's bridge to the dedicated route.                                                                                                                                                                                                                                            |
+| Sidebar **"Open full-screen"** button                                           | Closes the sidebar (mobile Sheet or desktop dock), resets the provider so the same conversation isn't showing in two places, then navigates to `/workspace/assistant?chatId=<id>`. Disabled while a turn is streaming (see "Full-screen route handoff").                                                                         |
+| Empty-state "View all chats" link                                               | Closes the sidebar and resets the provider (same reason as "Open full-screen"), then navigates to `/workspace/assistant`. The empty state's bridge to the dedicated route.                                                                                                                                                       |
 
 The chat provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`. It owns chat-layer
 state only — `chatId`, `loadedMessages`, `live`, the recent-chat resume helpers, the sticky model. Sidebar open/close/collapsed state lives
@@ -154,9 +157,10 @@ handing off mid-stream would leave the route page showing the persisted transcri
 user sends the next message. Forcing the hand-off to between-turn moments side-steps that — by the time the button re-enables, the turn has
 already persisted, and the route's `WorkspaceChatPage` query (`cache-and-network`) picks up the full transcript on mount.
 
-The chat provider does NOT drop its `chatId` on the navigation — if the user navigates back to a workspace page, the sidebar (or the mobile
-Sheet) is one toggle away and reopening shows the same conversation. The route page is the source of truth for "is this chat bookmark-able",
-and the provider is the source of truth for "is there a chat happening right now."
+On hand-off the sidebar **closes itself and calls `resetChat()` on the provider**. Without that reset, the same conversation would render
+twice — once inline in the newly-mounted `/workspace/assistant` page and once floating in the still-open dock — and navigating back to a
+workspace page would silently restore the just-handed-off chat in the sidebar. The route's URL is the source of truth from the click onward;
+the sidebar starts empty next time it's opened.
 
 ## Files
 

@@ -157,7 +157,7 @@ function WorkspaceAssistantEmpty({
     const chats = allChats.slice(0, RECENT_CHATS_LIMIT);
     return (
         <main className="mx-auto grid h-[calc(100dvh-5rem)] w-full max-w-2xl grid-rows-[1fr_auto] gap-4 p-6">
-            <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pr-2">
+            <div className="flex min-h-0 flex-col gap-6 overflow-y-auto pr-3 [scrollbar-gutter:stable]">
                 <div className="grid place-items-center py-8 text-sm text-muted-foreground">
                     {live.isGenerating ? (
                         <Spinner className="size-4 text-muted-foreground" />
@@ -346,7 +346,7 @@ function ChatsSidebar({
     return (
         <div className="flex h-full min-h-0 flex-col gap-2">
             <h2 className="text-xs uppercase tracking-wide text-muted-foreground">{previousChatsLabel[locale]}</h2>
-            <ul className="flex min-h-0 flex-col gap-1.5 overflow-y-auto pr-1">
+            <ul className="flex min-h-0 flex-col gap-1.5 overflow-y-auto pr-2 [scrollbar-gutter:stable]">
                 {chats.length === 0 ? (
                     <p className="text-xs text-muted-foreground">{noPreviousChatsLabel[locale]}</p>
                 ) : (
@@ -427,7 +427,11 @@ function ChatTranscript({
 
     return (
         <div className="relative flex-1 min-h-0 min-w-0">
-            <div ref={scrollRef} onScroll={onScroll} className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-2">
+            <div
+                ref={scrollRef}
+                onScroll={onScroll}
+                className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-3 [scrollbar-gutter:stable]"
+            >
                 {groupedMessages.map((group) => (
                     <section key={group.date} className="flex min-w-0 flex-col gap-4">
                         <DateSeparator iso={group.date} />

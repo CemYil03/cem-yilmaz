@@ -50,6 +50,11 @@ export interface ServerRuntime {
         // message). Should be inexpensive and structured-output friendly.
         // See `docs/features/compass.md`.
         compassAnalyzerModel: () => LanguageModel;
+        // Cheap model used by the chat-title generator (one call per
+        // assistant turn while the title is still empty). Bounded,
+        // low-stakes summarization — the flagship tier would be overkill.
+        // See `docs/features/chat-titles.md`.
+        chatTitlerModel: () => LanguageModel;
         // More capable model for the periodic compass synthesizer. Runs far
         // less often than the analyzer (threshold-triggered) and reads every
         // active observation, so the higher per-call cost is amortized.
