@@ -108,6 +108,7 @@ export interface GqlSAdminMutation {
     compassInterviewMessageSend: GqlSMutationResult;
     compassInterviewSkip: GqlSMutationResult;
     compassInterviewStart: GqlSMutationResult;
+    compassInterviewStartNow: GqlSMutationResult;
     compassObservationDismiss: GqlSMutationResult;
     compassSynthesizeRequest: GqlSMutationResult;
     cvEducationDelete: GqlSMutationResult;
@@ -589,7 +590,7 @@ export type GqlSCompassInterviewMessageRole = 'assistant' | 'user';
 
 export type GqlSCompassInterviewStatus = 'completed' | 'in_progress' | 'pending' | 'skipped';
 
-export type GqlSCompassInterviewTriggerReason = 'manual' | 'weekly_cron';
+export type GqlSCompassInterviewTriggerReason = 'manual' | 'scheduled';
 
 export interface GqlSCompassObservation {
     __typename?: 'CompassObservation';
@@ -1491,6 +1492,7 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationCompassInterviewStartArgs, 'interviewId'>
     >;
+    compassInterviewStartNow?: Resolver<GqlSResolversTypes['MutationResult'], ParentType, ContextType>;
     compassObservationDismiss?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -2487,9 +2489,9 @@ export const GqlSCompassInterviewStatusSchema: z.ZodType<
     'completed' | 'in_progress' | 'pending' | 'skipped'
 > = z.enum(['completed', 'in_progress', 'pending', 'skipped']);
 
-export const GqlSCompassInterviewTriggerReasonSchema: z.ZodType<'manual' | 'weekly_cron', 'manual' | 'weekly_cron'> = z.enum([
+export const GqlSCompassInterviewTriggerReasonSchema: z.ZodType<'manual' | 'scheduled', 'manual' | 'scheduled'> = z.enum([
     'manual',
-    'weekly_cron',
+    'scheduled',
 ]);
 
 export const GqlSCompassObservationCategorySchema: z.ZodType<

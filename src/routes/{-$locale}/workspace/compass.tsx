@@ -35,6 +35,7 @@ import {
     WorkspaceCompassInterviewMessageSendDocument,
     WorkspaceCompassInterviewSkipDocument,
     WorkspaceCompassInterviewStartDocument,
+    WorkspaceCompassInterviewStartNowDocument,
     WorkspaceCompassObservationDismissDocument,
     WorkspaceCompassPageDocument,
     WorkspaceCompassPageUpdatesDocument,
@@ -680,8 +681,8 @@ function InterviewsSection({
                 <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
                     {
                         {
-                            de: 'Wöchentlich stellt dir ein Interviewer-Agent gezielte Fragen, um Lücken im Kompass zu füllen. Deine Antworten landen — wie alle Beobachtungen — in der Synthese.',
-                            en: "Once a week an interviewer agent asks you a handful of directed questions to fill in gaps the passive analyzer can't see. Your replies feed the same observations / synthesis pipeline as regular chats.",
+                            de: 'Regelmäßig stellt dir ein Interviewer-Agent gezielte Fragen, um Lücken im Kompass zu füllen. Deine Antworten landen — wie alle Beobachtungen — in der Synthese.',
+                            en: "On a regular cadence an interviewer agent asks you a handful of directed questions to fill in gaps the passive analyzer can't see. Your replies feed the same observations / synthesis pipeline as regular chats.",
                         }[locale]
                     }
                 </p>
@@ -701,6 +702,9 @@ function InterviewsSection({
 }
 
 function NoInterviewCard({ locale, hasHistory }: { locale: Locale; hasHistory: boolean }) {
+    const [, startNowMutation] = useMutation(WorkspaceCompassInterviewStartNowDocument);
+    const [busy, setBusy] = useState(false);
+
     return (
         <GlassCard className="mt-6 px-6 py-8 text-center">
             <div className="mx-auto max-w-md flex flex-col items-center gap-3">
@@ -715,11 +719,27 @@ function NoInterviewCard({ locale, hasHistory }: { locale: Locale; hasHistory: b
                 <p className="text-sm text-muted-foreground">
                     {
                         {
-                            de: 'Das nächste planmäßige Interview erscheint hier automatisch, sobald der Wochen-Cron es einplant.',
-                            en: 'The next scheduled interview will surface here automatically when the weekly cron creates it.',
+                            de: 'Das nächste planmäßige Interview erscheint hier automatisch, sobald es fällig ist. Du kannst aber jederzeit selbst eines starten.',
+                            en: "The next scheduled interview will surface here automatically when it comes due. You can also start one yourself whenever you're ready.",
                         }[locale]
                     }
                 </p>
+                <Button
+                    variant="default"
+                    size="sm"
+                    className="mt-2"
+                    disabled={busy}
+                    onClick={async () => {
+                        setBusy(true);
+                        await startNowMutation({});
+                        // The command publishes `userUpdates`; the page's
+                        // subscription will replace `NoInterviewCard` with
+                        // `PendingInterviewCard` on its own.
+                        setBusy(false);
+                    }}
+                >
+                    {{ de: 'Interview jetzt starten', en: 'Start a new interview' }[locale]}
+                </Button>
             </div>
         </GlassCard>
     );
@@ -808,7 +828,7 @@ function PendingInterviewCard({ interview, locale }: { interview: InterviewWithM
                                 setBusy(null);
                             }}
                         >
-                            {{ de: 'Diese Woche überspringen', en: 'Skip this week' }[locale]}
+                            {{ de: 'Überspringen', en: 'Skip' }[locale]}
                         </Button>
                     ) : (
                         <Button

@@ -148,3 +148,12 @@ mutation WorkspaceCompassInterviewSkip($interviewId: ID!) {
         }
     }
 }
+
+mutation WorkspaceCompassInterviewStartNow {
+    admin {
+        compassInterviewStartNow {
+            success
+            referenceId
+        }
+    }
+}

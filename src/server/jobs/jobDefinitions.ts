@@ -1,6 +1,6 @@
 import { emailToCemSend } from './handlers/emailToCemSend';
 import { compassAnalyze } from './handlers/compassAnalyze';
-import { compassInterviewWeeklyDue } from './handlers/compassInterviewWeeklyDue';
+import { compassInterviewScheduledDue } from './handlers/compassInterviewScheduledDue';
 import { compassSynthesize } from './handlers/compassSynthesize';
 import { projectRequestNotifySend } from './handlers/projectRequestNotifySend';
 import { projectRequestOtpSend } from './handlers/projectRequestOtpSend';
@@ -11,7 +11,7 @@ export const jobDefinitions: JobDefinition[] = [
     signupReminderSend,
     compassAnalyze,
     compassSynthesize,
-    compassInterviewWeeklyDue,
+    compassInterviewScheduledDue,
     emailToCemSend,
     projectRequestOtpSend,
     projectRequestNotifySend,

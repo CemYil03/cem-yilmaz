@@ -4,7 +4,7 @@
 
 The application needs two categories of background work:
 
-1. **Recurring jobs** — run on a cron schedule (e.g., weekly compass interview prompt)
+1. **Recurring jobs** — run on a cron schedule (e.g., scheduled compass interview prompt)
 2. **Queued/scheduled jobs** — enqueued programmatically to run at a specific future time (e.g., send a reminder 24 hours after signup)
 
 ## Decision
@@ -32,7 +32,7 @@ src/server/jobs/
 ├── types.ts                    JobHandler, RecurringJobDefinition, QueuedJobDefinition
 ├── jobDefinitions.ts           Central registry (all jobs imported here)
 └── handlers/
-    ├── compassInterviewWeeklyDue.ts  Weekly cron — inserts a `pending` compass interview
+    ├── compassInterviewScheduledDue.ts  Scheduled cron — inserts a `pending` compass interview
     ├── compassAnalyze.ts       Queued, per admin user message OR interview reply
     ├── compassSynthesize.ts    Queued, threshold- or manually-triggered
     └── signupReminderSend.ts   Example queued job

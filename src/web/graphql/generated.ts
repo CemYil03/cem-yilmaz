@@ -111,6 +111,7 @@ export interface GqlCAdminMutation {
     compassInterviewMessageSend: GqlCMutationResult;
     compassInterviewSkip: GqlCMutationResult;
     compassInterviewStart: GqlCMutationResult;
+    compassInterviewStartNow: GqlCMutationResult;
     compassObservationDismiss: GqlCMutationResult;
     compassSynthesizeRequest: GqlCMutationResult;
     cvEducationDelete: GqlCMutationResult;
@@ -592,7 +593,7 @@ export type GqlCCompassInterviewMessageRole = 'assistant' | 'user';
 
 export type GqlCCompassInterviewStatus = 'completed' | 'in_progress' | 'pending' | 'skipped';
 
-export type GqlCCompassInterviewTriggerReason = 'manual' | 'weekly_cron';
+export type GqlCCompassInterviewTriggerReason = 'manual' | 'scheduled';
 
 export interface GqlCCompassObservation {
     __typename?: 'CompassObservation';
@@ -1859,6 +1860,12 @@ export type GqlCWorkspaceCompassInterviewSkipMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceCompassInterviewSkipMutation = { admin: { compassInterviewSkip: { success: boolean } } };
+
+export type GqlCWorkspaceCompassInterviewStartNowMutationVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceCompassInterviewStartNowMutation = {
+    admin: { compassInterviewStartNow: { success: boolean; referenceId: string | null } };
+};
 
 export type GqlCWorkspaceCvPageUserFragment = {
     admin: {
@@ -7862,6 +7869,41 @@ export const WorkspaceCompassInterviewSkipDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCompassInterviewSkipMutation, GqlCWorkspaceCompassInterviewSkipMutationVariables>;
+export const WorkspaceCompassInterviewStartNowDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewStartNow' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compassInterviewStartNow' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceId' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewStartNowMutation, GqlCWorkspaceCompassInterviewStartNowMutationVariables>;
 export const WorkspaceCvPageDocument = {
     kind: 'Document',
     definitions: [

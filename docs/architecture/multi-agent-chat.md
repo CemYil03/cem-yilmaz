@@ -252,9 +252,9 @@ one turn per `compassInterviewMessageSend` command call.
 - **Why a separate agent factory**: same shape category as the other two (system prompt + tools + model binding) but a different read
   surface — the interviewer is the only place that intentionally widens the firewall to see `summary` + `psychology` + recent observations,
   via the single `compassInterviewContextGet` query. The personal-assistant agent's `compassSummaryGet` read is unchanged.
-- **Trigger**: a recurring `compassInterviewWeeklyDue` pg-boss job creates a `pending` interview row on a cadence. Cem starts it from
-  `/workspace/compass`'s Interviews tab; replies feed the same `compassAnalyze` job (now interview-aware) the admin chat does, so
-  observations land in the same stream.
+- **Trigger**: a recurring `compassInterviewScheduledDue` pg-boss job creates a `pending` interview row on the cadence set by
+  `COMPASS_INTERVIEW_CRON`. Cem starts it from `/workspace/compass`'s Interviews tab; replies feed the same `compassAnalyze` job (now
+  interview-aware) the admin chat does, so observations land in the same stream.
 
 See [`docs/features/compass.md`](../features/compass.md) for the full feature surface and the firewall-exception anchor.
 

@@ -564,7 +564,7 @@ enum CompassInterviewEndReason {
 }
 
 enum CompassInterviewTriggerReason {
-    weekly_cron
+    scheduled
     manual
 }
 
@@ -1226,6 +1226,13 @@ extend type AdminMutation {
     # Skip a `pending` interview without starting it. Clears the cron's
     # idempotency check so next week's invocation creates a fresh one.
     compassInterviewSkip(interviewId: ID!): MutationResult!
+    # Manually create a `pending` interview off the cron cadence — the
+    # "Start a new interview now" button on `/workspace/compass`. Idempotent
+    # with the same "at most one open interview" guard as the scheduled
+    # cron: if an open interview already exists, the mutation returns
+    # success with that interview's id (the caller navigates to it) rather
+    # than a second pending row. See `docs/features/compass.md`.
+    compassInterviewStartNow: MutationResult!
 
     # --- Workspace projects -------------------------------------------------
     # Archive an incoming request without converting it to a project. Flips

@@ -221,9 +221,9 @@ this — an interview is a way to _take a bearing_.
 
 A new **Interviews** tab on `/workspace/compass`, alongside Summary / Portrait / Psychological. Three states:
 
-1. No open interview → quiet empty state explaining the cadence.
-2. Open interview waiting (`pending`) → prominent card with "Start interview" / "Skip this week". A small amber dot on the tab itself flags
-   that something is waiting so Cem sees it from any of the other tabs.
+1. No open interview → quiet empty state explaining the cadence plus a "Start a new interview" button for an off-cycle start.
+2. Open interview waiting (`pending`) → prominent card with "Start interview" / "Skip". A small amber dot on the tab itself flags that
+   something is waiting so Cem sees it from any of the other tabs.
 3. Active interview (`in_progress`) → transcript + composer (pinned by `?interviewId=…`); the agent asks one question per turn, Cem replies,
    the agent decides when it has enough and calls `concludeInterview`. He can also click "End interview" any time.
 
@@ -243,11 +243,16 @@ Beneath all three states sits a quiet "Past interviews" rail with status, due-da
 
 #### Trigger
 
-- **Recurring `compassInterviewWeeklyDue` cron + pull-based page prompt (chosen).** Fires Monday 09:00 server time (`0 9 * * 1`).
-  Idempotent: the handler short-circuits if a `pending` or `in_progress` interview already exists, so a missed week (worker offline, busy
-  week) just resumes next week. No email or push notification — Cem sees the waiting card next time he opens the page.
-- **Manual-only.** Rejected for now; defeats the "refresh the picture on a cadence" goal. The schema retains `triggerReason='manual'` so a
-  future "Start a new interview now" button can land without a migration.
+- **Recurring `compassInterviewScheduledDue` cron + pull-based page prompt (chosen).** Cadence is set by `COMPASS_INTERVIEW_CRON` in
+  `src/server/agents/compassInterviewConfig.ts` — currently daily at 09:00 server time (`0 9 * * *`). That constant is the single source of
+  truth; the DB / GraphQL `triggerReason` is deliberately cadence-neutral (`scheduled` vs `manual`) so shifting the interval is a one-line
+  change. Idempotent: the handler short-circuits if a `pending` or `in_progress` interview already exists, so a missed tick (worker offline,
+  Cem busy) just resumes on the next one — pending rows never pile up. No email or push notification — Cem sees the waiting card next time
+  he opens the page.
+- **Manual-only.** Rejected as the sole trigger — defeats the "refresh the picture on a cadence" goal. But the manual trigger _does_ ship
+  alongside the cron as an off-cycle escape hatch: a "Start a new interview" button on the `NoInterviewCard` calls
+  `AdminMutation.compassInterviewStartNow` (see `src/server/commands/compassInterviewStartNow.ts`), which inserts a `pending` row with
+  `triggerReason='manual'` under the same "at most one open interview" guard as the cron.
 - **Email / push notification.** Rejected. Pulls are calm; pushes are not. Can revisit if the cadence rises.
 
 #### Firewall stance (the deliberate exception)
@@ -275,7 +280,8 @@ CompassInterviews
   status        varchar  -- 'pending' | 'in_progress' | 'completed' | 'skipped'
   dueAt, startedAt?, completedAt?
   endReason     varchar?  -- 'agent_satisfied' | 'user_ended' | 'skipped'
-  triggerReason varchar   -- 'weekly_cron' | 'manual'
+  triggerReason varchar   -- 'scheduled' | 'manual' (cadence-neutral; the cron
+                          --   lives in COMPASS_INTERVIEW_CRON, not this column)
   observationCount int    -- denormalized; bumped by the analyzer
   indexes: (status, dueAt), createdAt
 
@@ -310,6 +316,9 @@ src/server/queries/
 
 src/server/commands/
   compassInterviewStart.ts           pending → in_progress; runs the agent's opening turn
+  compassInterviewStartNow.ts        inserts a fresh `pending` row with triggerReason='manual';
+                                     shares the "at most one open interview" guard with the cron
+                                     (returns the existing id if one is already open).
   compassInterviewMessageSend.ts     appends user msg; runs one agent turn; enqueues
                                      compassAnalyze fire-and-forget; transitions to
                                      'completed' if the agent called concludeInterview.
@@ -317,7 +326,8 @@ src/server/commands/
   compassInterviewSkip.ts            pending → skipped
 
 src/server/jobs/handlers/
-  compassInterviewWeeklyDue.ts       RecurringJobDefinition, cron '0 9 * * 1'.
+  compassInterviewScheduledDue.ts    RecurringJobDefinition, cron driven by
+                                     COMPASS_INTERVIEW_CRON (currently '0 9 * * *').
                                      Idempotent — short-circuits when an open row exists.
   compassAnalyze.ts                  Extended: accepts { chatMessageId } | { interviewMessageId };
                                      branches on which idempotency table / context block / source
@@ -333,14 +343,14 @@ command call. Single sentinel tool `concludeInterview({ note })` that the comman
 persisted on the row. System prompt is anchored to the soft 4–8 question target, asks for one question per turn, matches Cem's reply
 language, and explicitly tells the agent NOT to summarize answers back (the analyzer does that).
 
-Model: `serverRuntime.ai.compassInterviewerModel()` — Gemini 2.5 Pro by default. The interviewer fires only a few times a week and the
+Model: `serverRuntime.ai.compassInterviewerModel()` — Gemini 2.5 Pro by default. The interviewer runs on a low-frequency cadence and the
 question-quality bar is high (probe gaps, don't repeat), so the higher tier is worth it.
 
 ### Cadence and idempotency
 
 At most one open interview exists at a time. The cron handler reads `(status IN ('pending', 'in_progress'))` and exits if one is already
-there, so two firings in the same minute, a worker replay, or a busy week with an un-started interview all converge on one row. The skip
-command transitions `pending → skipped`, clearing the guard so next week's cron creates a fresh row.
+there, so two firings in the same minute, a worker replay, or a busy stretch with an un-started interview all converge on one row. The skip
+command transitions `pending → skipped`, clearing the guard so the next cron tick inserts a fresh row.
 
 Phase-2 follow-up (future): per-user compasses once OAuth lands — the cron then creates one row per active user, gated by per-user
 preferences.
@@ -353,5 +363,6 @@ preferences.
 - "Undismiss" mutation if Cem changes his mind on an observation.
 - Possibly a low-frequency analyzer pass over assistant messages once their reasoning is rich enough to be informative (today: avoided to
   prevent hall-of-mirrors bias).
-- "Start a new interview now" button for off-cycle, manually-triggered interviews. The schema's `triggerReason='manual'` is reserved for
-  this; no migration needed when it lands.
+- **~~"Start a new interview now" button for off-cycle, manually-triggered interviews.~~ Done — `AdminMutation.compassInterviewStartNow` +
+  the button on `NoInterviewCard`; inserts a `pending` row with `triggerReason='manual'` under the same "at most one open interview" guard
+  as the cron.**

@@ -24,6 +24,7 @@ import { compassInterviewStart } from '../commands/compassInterviewStart';
 import { compassInterviewMessageSend } from '../commands/compassInterviewMessageSend';
 import { compassInterviewEnd } from '../commands/compassInterviewEnd';
 import { compassInterviewSkip } from '../commands/compassInterviewSkip';
+import { compassInterviewStartNow } from '../commands/compassInterviewStartNow';
 import { projectActivityDelete } from '../commands/projectActivityDelete';
 import { projectActivityUpsert } from '../commands/projectActivityUpsert';
 import { projectDelete } from '../commands/projectDelete';
@@ -457,6 +458,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return compassInterviewSkip(userId, args, requestingSession, serverRuntime);
+            },
+            compassInterviewStartNow({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
+                return compassInterviewStartNow(userId, requestingSession, serverRuntime);
             },
             projectRequestArchive(
                 { userId }: GqlSAdminMutation,

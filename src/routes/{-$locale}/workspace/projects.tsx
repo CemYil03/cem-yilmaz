@@ -117,11 +117,11 @@ function formatHms(totalSec: number): string {
 // ephemeral local state (which row is expanded, which form is being
 // edited) stays in `useState`.
 //
-// The old `?tab=todos` deep-link is preserved as a redirect on the loader
-// so anything a user still has bookmarked or a stale assistant message
-// still emits lands on `/workspace/todos` instead of a broken tab.
+// The schema still accepts `tab: 'todos'` so bookmarks or stale assistant
+// messages using the legacy deep-link don't 404. `beforeLoad` hot-redirects
+// that case to `/workspace/todos` before the component ever mounts.
 const projectsSearchSchema = z.object({
-    tab: z.enum(TABS).optional(),
+    tab: z.enum([...TABS, 'todos'] as const).optional(),
     inboxView: z.enum(['archive']).optional(),
     // Free-form id; an unmatched value is a no-op (no row, no flash). We
     // don't validate as `uuid()` so a future non-UUID surface (e.g.
@@ -134,17 +134,7 @@ type ProjectsSearch = z.infer<typeof projectsSearchSchema>;
 type WorkspaceProjectsAdmin = NonNullable<GqlCWorkspaceProjectsPageUserFragment['admin']>;
 
 export const Route = createFileRoute('/{-$locale}/workspace/projects')({
-    // We can't fold `todos` into `projectsSearchSchema` (that would surface
-    // it as a live tab). Instead validate a wider schema that accepts the
-    // legacy value, then redirect before the loader runs — a bookmarked
-    // `?tab=todos` still resolves to the todos surface.
-    validateSearch: z
-        .object({
-            tab: z.enum([...TABS, 'todos']).optional(),
-            inboxView: z.enum(['archive']).optional(),
-            focus: z.string().optional(),
-        })
-        .transform((s) => s as ProjectsSearch & { tab?: Tab | 'todos' }),
+    validateSearch: projectsSearchSchema,
     beforeLoad: ({ search, params }) => {
         if (search.tab === 'todos') {
             const locale = params.locale ? `/${params.locale}` : '';
@@ -172,7 +162,10 @@ function WorkspaceProjects() {
     const locale = useLocale();
     const search = Route.useSearch();
     const navigate = Route.useNavigate();
-    const tab: Tab = search.tab ?? 'projects';
+    // `search.tab` may be `'todos'` in the raw URL, but the `beforeLoad`
+    // redirect above hoists that case out before the component mounts —
+    // narrow to the live `Tab` union here.
+    const tab: Tab = search.tab && search.tab !== 'todos' ? search.tab : 'projects';
     const data = Route.useLoaderData();
 
     // Server-authoritative state: seed once from the route loader, then let

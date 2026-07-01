@@ -727,7 +727,7 @@ export type CompassInterviewStatus = (typeof compassInterviewStatuses)[number];
 export const compassInterviewEndReasons = ['agent_satisfied', 'user_ended', 'skipped'] as const;
 export type CompassInterviewEndReason = (typeof compassInterviewEndReasons)[number];
 
-export const compassInterviewTriggerReasons = ['weekly_cron', 'manual'] as const;
+export const compassInterviewTriggerReasons = ['scheduled', 'manual'] as const;
 export type CompassInterviewTriggerReason = (typeof compassInterviewTriggerReasons)[number];
 
 export const compassInterviews = pgTable(
@@ -743,7 +743,7 @@ export const compassInterviews = pgTable(
         // Stamped on `completed` or `skipped`.
         completedAt: timestamp({ withTimezone: true }),
         endReason: varchar().$type<CompassInterviewEndReason>(),
-        triggerReason: varchar().$type<CompassInterviewTriggerReason>().notNull().default('weekly_cron'),
+        triggerReason: varchar().$type<CompassInterviewTriggerReason>().notNull().default('scheduled'),
         // Denormalized count of observations whose source-interview-message
         // belongs to this interview. Kept on the row so the past-interviews
         // list can render "N observations" without a per-row aggregate.
