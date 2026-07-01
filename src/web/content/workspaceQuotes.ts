@@ -34,6 +34,10 @@ const workspaceQuotes: ReadonlyArray<WorkspaceQuote> = [
         de: 'Ich würde keine Summe der Welt dafür eintauschen, morgen nicht wieder aufzuwachen.',
         en: 'I would not trade any sum in the world for not waking up tomorrow.',
     },
+    {
+        de: 'Auf jeden Gipfel folgt ein Abstieg.',
+        en: 'Peaks are always followed by descends.',
+    },
     // Freddie Laker to Richard Branson, recounted in "Losing My Virginity".
     // Cem quoted it in DE shorthand; the canonical English line follows.
     {
