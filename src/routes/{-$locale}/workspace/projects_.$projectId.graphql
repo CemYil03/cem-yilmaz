@@ -50,6 +50,8 @@ fragment WorkspaceProjectDetailUser on User {
                 position
                 dueAt
                 completedAt
+                effort
+                whenBucket
             }
             activities {
                 activityId
@@ -180,6 +182,8 @@ mutation WorkspaceProjectDetailUpsertTask(
     $position: Int!
     $dueAt: DateTime
     $completedAt: DateTime
+    $effort: TaskEffort
+    $whenBucket: TaskWhenBucket
 ) {
     admin {
         taskUpsert(
@@ -192,6 +196,8 @@ mutation WorkspaceProjectDetailUpsertTask(
                 position: $position
                 dueAt: $dueAt
                 completedAt: $completedAt
+                effort: $effort
+                whenBucket: $whenBucket
             }
         ) {
             taskId

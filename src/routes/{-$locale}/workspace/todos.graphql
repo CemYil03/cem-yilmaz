@@ -17,6 +17,8 @@ fragment WorkspaceTodosPageUser on User {
             position
             dueAt
             completedAt
+            effort
+            whenBucket
         }
     }
 }
@@ -43,6 +45,8 @@ mutation WorkspaceTodoUpsert(
     $position: Int!
     $dueAt: DateTime
     $completedAt: DateTime
+    $effort: TaskEffort
+    $whenBucket: TaskWhenBucket
 ) {
     admin {
         taskUpsert(
@@ -55,6 +59,8 @@ mutation WorkspaceTodoUpsert(
                 position: $position
                 dueAt: $dueAt
                 completedAt: $completedAt
+                effort: $effort
+                whenBucket: $whenBucket
             }
         ) {
             taskId

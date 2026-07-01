@@ -83,3 +83,16 @@ surfaces drop the pair. The workspace projects feature is the canonical example:
 site (the page is `noindex` and the data feeds nothing on the visitor surface in Phase 1–2), so paired columns would cost typing without
 buying anything. The schema uses single `title` / `description` / `notes` text columns; the GraphQL types do the same. The CV tables stay
 bilingual because their rows feed `/cv` and `/about` directly. See [features/projects-workspace.md](../features/projects-workspace.md).
+
+## Tasks: added columns
+
+Beyond the base task shape (title, notes, status, position, dueAt, completedAt), the `Tasks` table carries two optional enum columns that
+drive the redesigned todos experience:
+
+- `effort` (`quick` / `focused` / `deep`, nullable) — perceived weight, drives the left-edge color strip on the row card and the composer's
+  default-effort picker.
+- `whenBucket` (`today` / `week` / `someday` / `waiting`, nullable) — when the user intends to act, independent of any due date. Drives the
+  top filter chips.
+
+Both are nullable so pre-existing rows and rows created outside the new composer render cleanly (unclassified rows omit the effort strip and
+skip the metadata chip). See [features/todos-experience.md](../features/todos-experience.md) for the full behaviour spec.

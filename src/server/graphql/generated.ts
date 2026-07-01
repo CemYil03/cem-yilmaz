@@ -962,6 +962,7 @@ export interface GqlSTask {
     completedAt?: Maybe<Scalars['DateTime']['output']>;
     createdAt: Scalars['DateTime']['output'];
     dueAt?: Maybe<Scalars['DateTime']['output']>;
+    effort?: Maybe<GqlSTaskEffort>;
     notes?: Maybe<Scalars['String']['output']>;
     position: Scalars['Int']['output'];
     projectId?: Maybe<Scalars['ID']['output']>;
@@ -969,20 +970,27 @@ export interface GqlSTask {
     taskId: Scalars['ID']['output'];
     title: Scalars['String']['output'];
     updatedAt: Scalars['DateTime']['output'];
+    whenBucket?: Maybe<GqlSTaskWhenBucket>;
 }
 
 export type GqlSTaskCreate = {
     completedAt?: InputMaybe<Scalars['DateTime']['input']>;
     dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+    effort?: InputMaybe<GqlSTaskEffort>;
     notes?: InputMaybe<Scalars['String']['input']>;
     position: Scalars['Int']['input'];
     projectId?: InputMaybe<Scalars['ID']['input']>;
     status: GqlSTaskStatus;
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title: Scalars['String']['input'];
+    whenBucket?: InputMaybe<GqlSTaskWhenBucket>;
 };
 
+export type GqlSTaskEffort = 'deep' | 'focused' | 'quick';
+
 export type GqlSTaskStatus = 'doing' | 'done' | 'todo';
+
+export type GqlSTaskWhenBucket = 'someday' | 'today' | 'waiting' | 'week';
 
 export interface GqlSUser {
     __typename?: 'User';
@@ -1264,7 +1272,9 @@ export type GqlSResolversTypes = ResolversObject<{
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Task: ResolverTypeWrapper<GqlSTask>;
     TaskCreate: GqlSTaskCreate;
+    TaskEffort: GqlSTaskEffort;
     TaskStatus: GqlSTaskStatus;
+    TaskWhenBucket: GqlSTaskWhenBucket;
     User: ResolverTypeWrapper<Omit<GqlSUser, 'admin'> & { admin?: Maybe<GqlSResolversTypes['Admin']> }>;
     UserCreate: GqlSUserCreate;
     UserMutation: ResolverTypeWrapper<GqlSUserMutation>;
@@ -2348,6 +2358,7 @@ export type GqlSTaskResolvers<
     completedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     dueAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    effort?: Resolver<Maybe<GqlSResolversTypes['TaskEffort']>, ParentType, ContextType>;
     notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     projectId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
@@ -2355,6 +2366,7 @@ export type GqlSTaskResolvers<
     taskId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    whenBucket?: Resolver<Maybe<GqlSResolversTypes['TaskWhenBucket']>, ParentType, ContextType>;
 }>;
 
 export type GqlSUserResolvers<
@@ -2554,7 +2566,16 @@ export const GqlSProjectStatusSchema: z.ZodType<
     'active' | 'archived' | 'done' | 'idea' | 'paused' | 'planning'
 > = z.enum(['active', 'archived', 'done', 'idea', 'paused', 'planning']);
 
+export const GqlSTaskEffortSchema: z.ZodType<'deep' | 'focused' | 'quick', 'deep' | 'focused' | 'quick'> = z.enum([
+    'deep',
+    'focused',
+    'quick',
+]);
+
 export const GqlSTaskStatusSchema: z.ZodType<'doing' | 'done' | 'todo', 'doing' | 'done' | 'todo'> = z.enum(['doing', 'done', 'todo']);
+
+export const GqlSTaskWhenBucketSchema: z.ZodType<'someday' | 'today' | 'waiting' | 'week', 'someday' | 'today' | 'waiting' | 'week'> =
+    z.enum(['someday', 'today', 'waiting', 'week']);
 
 export function GqlSChatAssistantOptionsSchema(): z.ZodObject<Properties<GqlSChatAssistantOptions>> {
     return z.object({
@@ -2696,12 +2717,14 @@ export function GqlSTaskCreateSchema(): z.ZodObject<Properties<GqlSTaskCreate>> 
     return z.object({
         completedAt: z.date().nullish(),
         dueAt: z.date().nullish(),
+        effort: GqlSTaskEffortSchema.nullish(),
         notes: z.string().nullish(),
         position: z.number(),
         projectId: z.string().nullish(),
         status: GqlSTaskStatusSchema,
         taskId: z.string().nullish(),
         title: z.string(),
+        whenBucket: GqlSTaskWhenBucketSchema.nullish(),
     });
 }
 

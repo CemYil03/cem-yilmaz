@@ -11,6 +11,8 @@ export function toGqlTask(row: Task): GqlSTask {
         position: row.position,
         dueAt: row.dueAt,
         completedAt: row.completedAt,
+        effort: row.effort,
+        whenBucket: row.whenBucket,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
     };

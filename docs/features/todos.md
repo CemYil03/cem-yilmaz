@@ -1,5 +1,9 @@
 # Workspace todos
 
+> **The interactive experience** — completion ritual, momentum header, inline composer with natural-language parsing, effort strip, filters,
+> focus mode — is documented in [todos-experience.md](./todos-experience.md). This document covers the data model, deep-linking, and how the
+> surface relates to the rest of the workspace.
+
 A dedicated workspace surface at `/workspace/todos` for standalone tasks — the rows in the `Tasks` table with `projectId IS NULL`. Todos are
 quick captures that don't belong to any project: no timer, no activity feed, no lifecycle beyond `todo → doing → done`. Project-bound tasks
 live on the project detail route (`/workspace/projects/$projectId`) and never appear here; the two surfaces are disjoint by construction.

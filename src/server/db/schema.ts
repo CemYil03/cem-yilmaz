@@ -1037,6 +1037,20 @@ export type ProjectCreate = typeof projects.$inferInsert;
 export const taskStatuses = ['todo', 'doing', 'done'] as const;
 export type TaskStatus = (typeof taskStatuses)[number];
 
+// Weight of a task — how much focus it costs to make progress. Optional; a
+// null row is unclassified and renders without the effort bar. Drives the
+// left-edge color strip on the row card and the composer's default-effort
+// picker. See `docs/features/todos-experience.md`.
+export const taskEfforts = ['quick', 'focused', 'deep'] as const;
+export type TaskEffort = (typeof taskEfforts)[number];
+
+// When the user intends to act on the task, independent of any due date.
+// A due date says "must be done by"; the bucket says "I want to do this".
+// Optional; null lets the row float in the general list. Drives the top
+// filter chips (Heute / Diese Woche / Alles / Warten auf).
+export const taskWhenBuckets = ['today', 'week', 'someday', 'waiting'] as const;
+export type TaskWhenBucket = (typeof taskWhenBuckets)[number];
+
 export const tasks = pgTable(
     'Tasks',
     {
@@ -1054,6 +1068,11 @@ export const tasks = pgTable(
         position: integer().notNull().default(0),
         dueAt: timestamp({ withTimezone: true }),
         completedAt: timestamp({ withTimezone: true }),
+        // Perceived weight — quick / focused / deep. Nullable; unclassified
+        // rows render without the left-edge effort strip.
+        effort: varchar().$type<TaskEffort>(),
+        // When the user intends to act. Independent of `dueAt`.
+        whenBucket: varchar().$type<TaskWhenBucket>(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },

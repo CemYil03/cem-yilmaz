@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { format, formatDistanceToNowStrict, parseISO } from 'date-fns';
 import {
-    CheckSquare2Icon,
     ChevronDownIcon,
     ChevronUpIcon,
     CircleDotIcon,
@@ -63,7 +62,9 @@ import type {
     GqlCProjectLinkKind,
     GqlCProjectOfferStatus,
     GqlCProjectStatus,
+    GqlCTaskEffort,
     GqlCTaskStatus,
+    GqlCTaskWhenBucket,
     GqlCWorkspaceProjectDetailUpdatesSubscription,
     GqlCWorkspaceProjectDetailUserFragment,
 } from '../../../web/graphql/generated';
@@ -153,6 +154,26 @@ const TASK_STATUS_LABELS: Record<GqlCTaskStatus, { de: string; en: string }> = {
     todo: { de: 'Offen', en: 'To do' },
     doing: { de: 'Aktiv', en: 'Doing' },
     done: { de: 'Erledigt', en: 'Done' },
+};
+
+// Task effort / when-bucket labels — kept in sync with the standalone
+// todos surface so the visual language is identical on both pages.
+// See `docs/features/todos-experience.md`.
+const TASK_EFFORT_LABELS: Record<GqlCTaskEffort, { de: string; en: string }> = {
+    quick: { de: 'schnell', en: 'quick' },
+    focused: { de: 'fokussiert', en: 'focused' },
+    deep: { de: 'tief', en: 'deep' },
+};
+const TASK_EFFORT_BAR: Record<GqlCTaskEffort, string> = {
+    quick: 'bg-emerald-400',
+    focused: 'bg-amber-400',
+    deep: 'bg-violet-400',
+};
+const TASK_WHEN_LABELS: Record<GqlCTaskWhenBucket, { de: string; en: string }> = {
+    today: { de: 'heute', en: 'today' },
+    week: { de: 'diese Woche', en: 'this week' },
+    someday: { de: 'irgendwann', en: 'someday' },
+    waiting: { de: 'blockiert', en: 'blocked' },
 };
 
 const ACTIVITY_KIND_ORDER: ReadonlyArray<GqlCProjectActivityKind> = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'];
@@ -979,6 +1000,8 @@ function OverviewUpNextRow({ task, projectId, locale }: { task: TaskRow; project
                         position: task.position,
                         dueAt: task.dueAt,
                         completedAt: next === 'done' ? new Date().toISOString() : null,
+                        effort: task.effort ?? null,
+                        whenBucket: task.whenBucket ?? null,
                     });
                 }}
             >
@@ -1201,6 +1224,7 @@ function TaskRow({ task, projectId, locale }: { task: TaskRow; projectId: string
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
     const [, del] = useMutation(WorkspaceProjectDetailDeleteTaskDocument);
     const [editing, setEditing] = useState(false);
+    const [completing, setCompleting] = useState(false);
 
     if (editing) {
         return (
@@ -1217,57 +1241,108 @@ function TaskRow({ task, projectId, locale }: { task: TaskRow; projectId: string
         );
     }
 
-    const StatusIcon = task.status === 'done' ? CheckSquare2Icon : task.status === 'doing' ? CircleDotIcon : SquareIcon;
+    const effortBar = task.effort ? TASK_EFFORT_BAR[task.effort] : 'bg-muted-foreground/25';
+    const done = task.status === 'done';
+    const doing = task.status === 'doing';
+    const meta = [
+        task.effort ? TASK_EFFORT_LABELS[task.effort][locale] : null,
+        task.whenBucket ? TASK_WHEN_LABELS[task.whenBucket][locale] : null,
+        task.dueAt ? `${{ de: 'fällig', en: 'due' }[locale]} ${format(parseISO(task.dueAt as unknown as string), 'dd.MM.')}` : null,
+    ].filter(Boolean);
+
+    const toggle = async () => {
+        // Same three-state cycle as before, plus the completion ritual
+        // hook when we land on `done`.
+        const next: GqlCTaskStatus = task.status === 'todo' ? 'doing' : task.status === 'doing' ? 'done' : 'todo';
+        if (next === 'done') setCompleting(true);
+        await upsert({
+            taskId: task.taskId,
+            projectId: task.projectId,
+            title: task.title,
+            notes: task.notes,
+            status: next,
+            position: task.position,
+            dueAt: task.dueAt,
+            completedAt: next === 'done' ? new Date().toISOString() : null,
+            effort: task.effort ?? null,
+            whenBucket: task.whenBucket ?? null,
+        });
+    };
+
     return (
-        <div className="flex items-start gap-2 text-sm">
-            <button
-                type="button"
-                aria-label={{ de: 'Status wechseln', en: 'Toggle status' }[locale]}
-                className="mt-0.5 text-muted-foreground hover:text-foreground"
-                onClick={async () => {
-                    const next: GqlCTaskStatus = task.status === 'todo' ? 'doing' : task.status === 'doing' ? 'done' : 'todo';
-                    await upsert({
-                        taskId: task.taskId,
-                        projectId: task.projectId,
-                        title: task.title,
-                        notes: task.notes,
-                        status: next,
-                        position: task.position,
-                        dueAt: task.dueAt,
-                        completedAt: next === 'done' ? new Date().toISOString() : null,
-                    });
-                }}
-            >
-                <StatusIcon className="size-4" />
-            </button>
-            <div className="min-w-0 flex-1">
-                <div className={cn('text-sm', task.status === 'done' && 'text-muted-foreground line-through')}>{task.title}</div>
-                {task.dueAt ? (
-                    <div className="text-[11px] text-muted-foreground">
-                        {{ de: 'Fällig', en: 'Due' }[locale]}: {format(parseISO(task.dueAt as unknown as string), 'yyyy-MM-dd')}
-                    </div>
-                ) : null}
-                {task.notes ? <div className="text-[11px] text-muted-foreground">{task.notes}</div> : null}
-            </div>
-            <div className="flex shrink-0 items-center gap-0.5">
-                <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
-                    onClick={() => setEditing(true)}
+        <div
+            data-completing={completing || undefined}
+            className={cn(
+                'group relative overflow-hidden rounded-lg border border-border/50 bg-background/40 px-3 py-2',
+                'transition-all duration-500',
+                'data-[completing]:motion-safe:bg-emerald-100/50 dark:data-[completing]:motion-safe:bg-emerald-900/30',
+                'data-[completing]:opacity-40',
+            )}
+        >
+            <span aria-hidden className={cn('absolute inset-y-0 left-0 w-0.5', effortBar)} />
+            <div className="flex items-start gap-2 pl-2 text-sm">
+                <button
+                    type="button"
+                    aria-label={{ de: 'Status wechseln', en: 'Toggle status' }[locale]}
+                    title={{ de: 'Status wechseln (Offen → Aktiv → Erledigt)', en: 'Cycle status (To do → Doing → Done)' }[locale]}
+                    className={cn(
+                        'mt-0.5 grid size-4 shrink-0 cursor-pointer place-items-center rounded-sm border-2 transition-colors',
+                        done
+                            ? 'border-emerald-500 bg-emerald-500 text-white'
+                            : doing
+                              ? 'border-primary/70'
+                              : 'border-muted-foreground/60 hover:border-emerald-500',
+                    )}
+                    onClick={toggle}
                 >
-                    <PencilIcon />
-                </Button>
-                <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
-                    onClick={async () => {
-                        await del({ taskId: task.taskId });
-                    }}
-                >
-                    <Trash2Icon />
-                </Button>
+                    {done ? (
+                        <svg
+                            viewBox="0 0 20 20"
+                            className="size-2.5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={3}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden
+                        >
+                            <path d="M4 10l4 4 8-8" />
+                        </svg>
+                    ) : doing ? (
+                        <span className="size-1.5 rounded-full bg-primary" />
+                    ) : null}
+                </button>
+                <div className="min-w-0 flex-1">
+                    <div className={cn('text-sm', done && 'text-muted-foreground line-through')}>{task.title}</div>
+                    {meta.length > 0 || task.notes ? (
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                            {meta.map((m, i) => (
+                                <span key={i}>{m}</span>
+                            ))}
+                            {task.notes ? <span className="line-clamp-1 max-w-full">{task.notes}</span> : null}
+                        </div>
+                    ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                        onClick={() => setEditing(true)}
+                    >
+                        <PencilIcon />
+                    </Button>
+                    <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
+                        onClick={async () => {
+                            await del({ taskId: task.taskId });
+                        }}
+                    >
+                        <Trash2Icon />
+                    </Button>
+                </div>
             </div>
         </div>
     );
@@ -1293,6 +1368,8 @@ function TaskForm({
     const [notes, setNotes] = useState(task?.notes ?? '');
     const [status, setStatus] = useState<GqlCTaskStatus>(task?.status ?? 'todo');
     const [dueAt, setDueAt] = useState<Date | null>(task?.dueAt ? parseISO(task.dueAt as unknown as string) : null);
+    const [effort, setEffort] = useState<GqlCTaskEffort | null>(task?.effort ?? null);
+    const [whenBucket, setWhenBucket] = useState<GqlCTaskWhenBucket | null>(task?.whenBucket ?? null);
     const [busy, setBusy] = useState(false);
 
     return (
@@ -1311,13 +1388,15 @@ function TaskForm({
                     position: task?.position ?? nextPosition,
                     dueAt: dueAt ? dueAt.toISOString() : null,
                     completedAt: status === 'done' ? (task?.completedAt ?? new Date().toISOString()) : null,
+                    effort,
+                    whenBucket,
                 });
                 setBusy(false);
                 onSaved();
             }}
         >
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={{ de: 'Aufgabe', en: 'Task' }[locale]} required />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
                 <Select value={status} onValueChange={(v: GqlCTaskStatus) => setStatus(v)}>
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                         <SelectValue />
@@ -1328,6 +1407,29 @@ function TaskForm({
                                 {TASK_STATUS_LABELS[s][locale]}
                             </SelectItem>
                         ))}
+                    </SelectContent>
+                </Select>
+                <Select value={effort ?? 'none'} onValueChange={(v) => setEffort(v === 'none' ? null : (v as GqlCTaskEffort))}>
+                    <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectValue placeholder={{ de: 'Aufwand', en: 'Effort' }[locale]} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">{{ de: 'Aufwand —', en: 'Effort —' }[locale]}</SelectItem>
+                        <SelectItem value="quick">{TASK_EFFORT_LABELS.quick[locale]}</SelectItem>
+                        <SelectItem value="focused">{TASK_EFFORT_LABELS.focused[locale]}</SelectItem>
+                        <SelectItem value="deep">{TASK_EFFORT_LABELS.deep[locale]}</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={whenBucket ?? 'none'} onValueChange={(v) => setWhenBucket(v === 'none' ? null : (v as GqlCTaskWhenBucket))}>
+                    <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectValue placeholder={{ de: 'Wann', en: 'When' }[locale]} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">{{ de: 'Wann —', en: 'When —' }[locale]}</SelectItem>
+                        <SelectItem value="today">{TASK_WHEN_LABELS.today[locale]}</SelectItem>
+                        <SelectItem value="week">{TASK_WHEN_LABELS.week[locale]}</SelectItem>
+                        <SelectItem value="someday">{TASK_WHEN_LABELS.someday[locale]}</SelectItem>
+                        <SelectItem value="waiting">{TASK_WHEN_LABELS.waiting[locale]}</SelectItem>
                     </SelectContent>
                 </Select>
                 <DatePicker

@@ -889,6 +889,25 @@ enum TaskStatus {
     done
 }
 
+# Perceived weight of a task — quick / focused / deep. Drives the left-edge
+# color strip on the todo row card. Nullable; unclassified rows render
+# without a strip.
+enum TaskEffort {
+    quick
+    focused
+    deep
+}
+
+# When the user intends to act on the task, independent of any due date.
+# A due date says "must be done by"; the bucket says "I want to do this".
+# Nullable; a null row floats in the general list.
+enum TaskWhenBucket {
+    today
+    week
+    someday
+    waiting
+}
+
 type Task {
     taskId: ID!
     # Owning project. Null = standalone todo (surfaced on the Todos tab).
@@ -899,6 +918,10 @@ type Task {
     position: Int!
     dueAt: DateTime
     completedAt: DateTime
+    # Perceived weight — quick / focused / deep. Optional.
+    effort: TaskEffort
+    # When the user intends to act. Independent of `dueAt`. Optional.
+    whenBucket: TaskWhenBucket
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -1113,6 +1136,8 @@ input TaskCreate {
     position: Int!
     dueAt: DateTime
     completedAt: DateTime
+    effort: TaskEffort
+    whenBucket: TaskWhenBucket
 }
 
 # Activity create / update payload. `activityId` toggles upsert mode.

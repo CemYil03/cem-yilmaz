@@ -31,6 +31,8 @@ export async function taskUpsert(
         position: input.position,
         dueAt: input.dueAt ?? null,
         completedAt: input.completedAt ?? null,
+        effort: input.effort ?? null,
+        whenBucket: input.whenBucket ?? null,
         updatedAt: now,
     };
 

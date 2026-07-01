@@ -273,11 +273,15 @@ function FocusAreaGrid({ locale, badges }: { locale: Locale; badges: Record<NonN
     return (
         <div className="flex flex-col gap-10 md:gap-12">
             {/* Personal focus areas — daily-use surfaces. Uniform tiling: 1
-             * column on `sm`, 2 on `md`, 4 on `lg`. With seven entries the `lg`
-             * grid fills 4 + 3; the trailing gap on the second row is fine
-             * because the next subgroup starts beneath it anyway. */}
+             * column on `sm`, 2 on `md`, 3 on `xl`, 4 on `2xl`. Jumping
+             * straight to 4 columns at `lg` made each tile so narrow that
+             * single German words ("Medizinisches", "Kompass") had to break
+             * mid-word; the extra step at `xl` keeps tiles wide enough to
+             * hold a one-word title next to the icon at typical laptop
+             * widths, and the 4-column form only unlocks once the viewport
+             * can actually accommodate it. */}
             <section aria-label={{ de: 'Persönliche Bereiche', en: 'Personal areas' }[locale]}>
-                <FocusCardGrid locale={locale} areas={PERSONAL_FOCUS_AREAS} columnsClass="lg:grid-cols-4" badges={badges} />
+                <FocusCardGrid locale={locale} areas={PERSONAL_FOCUS_AREAS} columnsClass="xl:grid-cols-3 2xl:grid-cols-4" badges={badges} />
             </section>
             {/* Public-site management — content that feeds cem-yilmaz.de.
              * Visited rarely (CV updates, scanning visitor chats), so it sits
@@ -336,14 +340,31 @@ function FocusCardGrid({
                                  * cue — it brightens and translates on hover
                                  * instead of carrying its own "Öffnen" label,
                                  * which was redundant with the card itself
-                                 * being clickable. */}
+                                 * being clickable.
+                                 *
+                                 * `min-w-0` on the flex row and its text
+                                 * child lets the title actually shrink; the
+                                 * default `min-width: auto` on a flex item is
+                                 * the content-width, which is why long German
+                                 * words ("Medizinisches") were forcing a
+                                 * mid-word character break. With `min-w-0` +
+                                 * `hyphens-auto` + a `lang` attribute the
+                                 * browser hyphenates on syllable boundaries
+                                 * only when it truly can't fit, and Latin
+                                 * one-word titles ("Todos", "Compass") stay
+                                 * un-hyphenated because they still fit. */}
                                 <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-2 text-primary">
+                                    <div className="flex min-w-0 items-center gap-2 text-primary">
                                         <Icon className="size-5 shrink-0" />
-                                        <CardTitle className="text-base md:text-lg leading-tight">{area.title[locale]}</CardTitle>
+                                        <CardTitle
+                                            lang={locale}
+                                            className="min-w-0 text-base md:text-lg leading-tight hyphens-auto break-words"
+                                        >
+                                            {area.title[locale]}
+                                        </CardTitle>
                                         {badge > 0 ? (
                                             <span
-                                                className="ml-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+                                                className="ml-1 shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
                                                 aria-label={badgeAria}
                                             >
                                                 {badge}
@@ -355,7 +376,9 @@ function FocusCardGrid({
                                         aria-hidden
                                     />
                                 </div>
-                                <CardDescription className="text-sm leading-snug">{area.description[locale]}</CardDescription>
+                                <CardDescription className="text-sm leading-snug hyphens-auto" lang={locale}>
+                                    {area.description[locale]}
+                                </CardDescription>
                             </CardContent>
                         </GlassCard>
                     </Link>

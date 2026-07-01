@@ -375,3 +375,77 @@
     border-radius: 0.5rem;
     animation: focus-flash 1.5s ease-out 1;
 }
+
+/*
+ * Todos row entrance — used on `/workspace/todos`. A small lift + fade the
+ * first time a row card mounts, staggered 60ms per index (capped at 3).
+ * The overshoot easing lands the row on the baseline with a subtle "settle"
+ * that reads as the card being placed, not sliding in. See
+ * `docs/features/todos-experience.md` and `docs/styles/motion.md`.
+ */
+@keyframes todo-row-in {
+    0% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.995);
+    }
+    60% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-todo-row-in {
+    animation: todo-row-in 380ms cubic-bezier(0.34, 1.35, 0.64, 1) both;
+}
+
+/*
+ * Todos completion glow — a soft ring pulses out from the row when the
+ * checkbox is clicked. Short (600ms), single beat, opacity + scale only.
+ * Applied via `data-completing` on the row wrapper.
+ */
+@keyframes todo-row-complete {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 30%, transparent);
+    }
+    60% {
+        box-shadow: 0 0 0 10px color-mix(in oklab, var(--color-primary) 0%, transparent);
+    }
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+[data-completing='true'] {
+    animation: todo-row-complete 600ms ease-out 1;
+}
+
+/*
+ * Momentum dot pop-in — dots on the 7-day header appear with a small
+ * springy scale so the row feels assembled rather than statically
+ * rendered. Staggered 40ms per dot inline; capped at 6 (7 dots).
+ */
+@keyframes todo-dot-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-todo-dot-in {
+    animation: todo-dot-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-todo-row-in,
+    .animate-todo-dot-in,
+    [data-completing='true'] {
+        animation: none;
+    }
+}

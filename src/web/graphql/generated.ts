@@ -965,6 +965,7 @@ export interface GqlCTask {
     completedAt?: Maybe<Scalars['DateTime']['output']>;
     createdAt: Scalars['DateTime']['output'];
     dueAt?: Maybe<Scalars['DateTime']['output']>;
+    effort?: Maybe<GqlCTaskEffort>;
     notes?: Maybe<Scalars['String']['output']>;
     position: Scalars['Int']['output'];
     projectId?: Maybe<Scalars['ID']['output']>;
@@ -972,20 +973,27 @@ export interface GqlCTask {
     taskId: Scalars['ID']['output'];
     title: Scalars['String']['output'];
     updatedAt: Scalars['DateTime']['output'];
+    whenBucket?: Maybe<GqlCTaskWhenBucket>;
 }
 
 export type GqlCTaskCreate = {
     completedAt?: InputMaybe<Scalars['DateTime']['input']>;
     dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+    effort?: InputMaybe<GqlCTaskEffort>;
     notes?: InputMaybe<Scalars['String']['input']>;
     position: Scalars['Int']['input'];
     projectId?: InputMaybe<Scalars['ID']['input']>;
     status: GqlCTaskStatus;
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title: Scalars['String']['input'];
+    whenBucket?: InputMaybe<GqlCTaskWhenBucket>;
 };
 
+export type GqlCTaskEffort = 'deep' | 'focused' | 'quick';
+
 export type GqlCTaskStatus = 'doing' | 'done' | 'todo';
+
+export type GqlCTaskWhenBucket = 'someday' | 'today' | 'waiting' | 'week';
 
 export interface GqlCUser {
     __typename?: 'User';
@@ -2408,6 +2416,8 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
                 position: number;
                 dueAt: string | null;
                 completedAt: string | null;
+                effort: Schema.GqlCTaskEffort | null;
+                whenBucket: Schema.GqlCTaskWhenBucket | null;
             }>;
             activities: Array<{
                 activityId: string;
@@ -2516,6 +2526,8 @@ export type GqlCWorkspaceProjectDetailQuery = {
                         position: number;
                         dueAt: string | null;
                         completedAt: string | null;
+                        effort: Schema.GqlCTaskEffort | null;
+                        whenBucket: Schema.GqlCTaskWhenBucket | null;
                     }>;
                     activities: Array<{
                         activityId: string;
@@ -2625,6 +2637,8 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                     position: number;
                     dueAt: string | null;
                     completedAt: string | null;
+                    effort: Schema.GqlCTaskEffort | null;
+                    whenBucket: Schema.GqlCTaskWhenBucket | null;
                 }>;
                 activities: Array<{
                     activityId: string;
@@ -2712,6 +2726,8 @@ export type GqlCWorkspaceProjectDetailUpsertTaskMutationVariables = Exact<{
     position: number;
     dueAt?: string | null | undefined;
     completedAt?: string | null | undefined;
+    effort?: Schema.GqlCTaskEffort | null | undefined;
+    whenBucket?: Schema.GqlCTaskWhenBucket | null | undefined;
 }>;
 
 export type GqlCWorkspaceProjectDetailUpsertTaskMutation = { admin: { taskUpsert: { taskId: string } } };
@@ -2830,6 +2846,8 @@ export type GqlCWorkspaceTodosPageUserFragment = {
             position: number;
             dueAt: string | null;
             completedAt: string | null;
+            effort: Schema.GqlCTaskEffort | null;
+            whenBucket: Schema.GqlCTaskWhenBucket | null;
         }>;
     } | null;
 };
@@ -2849,6 +2867,8 @@ export type GqlCWorkspaceTodosPageQuery = {
                     position: number;
                     dueAt: string | null;
                     completedAt: string | null;
+                    effort: Schema.GqlCTaskEffort | null;
+                    whenBucket: Schema.GqlCTaskWhenBucket | null;
                 }>;
             } | null;
         } | null;
@@ -2869,6 +2889,8 @@ export type GqlCWorkspaceTodosPageUpdatesSubscription = {
                 position: number;
                 dueAt: string | null;
                 completedAt: string | null;
+                effort: Schema.GqlCTaskEffort | null;
+                whenBucket: Schema.GqlCTaskWhenBucket | null;
             }>;
         } | null;
     };
@@ -2882,6 +2904,8 @@ export type GqlCWorkspaceTodoUpsertMutationVariables = Exact<{
     position: number;
     dueAt?: string | null | undefined;
     completedAt?: string | null | undefined;
+    effort?: Schema.GqlCTaskEffort | null | undefined;
+    whenBucket?: Schema.GqlCTaskWhenBucket | null | undefined;
 }>;
 
 export type GqlCWorkspaceTodoUpsertMutation = { admin: { taskUpsert: { taskId: string } } };
@@ -4416,6 +4440,8 @@ export const WorkspaceProjectDetailUserFragmentDoc = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'effort' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'whenBucket' } },
                                                     ],
                                                 },
                                             },
@@ -4583,6 +4609,8 @@ export const WorkspaceTodosPageUserFragmentDoc = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'effort' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'whenBucket' } },
                                         ],
                                     },
                                 },
@@ -9943,6 +9971,8 @@ export const WorkspaceProjectDetailDocument = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'effort' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'whenBucket' } },
                                                     ],
                                                 },
                                             },
@@ -10194,6 +10224,8 @@ export const WorkspaceProjectDetailUpdatesDocument = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'effort' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'whenBucket' } },
                                                     ],
                                                 },
                                             },
@@ -10555,6 +10587,16 @@ export const WorkspaceProjectDetailUpsertTaskDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
                     type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'effort' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskEffort' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'whenBucket' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskWhenBucket' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -10614,6 +10656,16 @@ export const WorkspaceProjectDetailUpsertTaskDocument = {
                                                         kind: 'ObjectField',
                                                         name: { kind: 'Name', value: 'completedAt' },
                                                         value: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'effort' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'effort' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'whenBucket' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'whenBucket' } },
                                                     },
                                                 ],
                                             },
@@ -11566,6 +11618,8 @@ export const WorkspaceTodosPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'effort' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'whenBucket' } },
                                         ],
                                     },
                                 },
@@ -11625,6 +11679,8 @@ export const WorkspaceTodosPageUpdatesDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'position' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'dueAt' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'effort' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'whenBucket' } },
                                         ],
                                     },
                                 },
@@ -11678,6 +11734,16 @@ export const WorkspaceTodoUpsertDocument = {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
                     type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'effort' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskEffort' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'whenBucket' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskWhenBucket' } },
                 },
             ],
             selectionSet: {
@@ -11738,6 +11804,16 @@ export const WorkspaceTodoUpsertDocument = {
                                                         kind: 'ObjectField',
                                                         name: { kind: 'Name', value: 'completedAt' },
                                                         value: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'effort' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'effort' } },
+                                                    },
+                                                    {
+                                                        kind: 'ObjectField',
+                                                        name: { kind: 'Name', value: 'whenBucket' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'whenBucket' } },
                                                     },
                                                 ],
                                             },
