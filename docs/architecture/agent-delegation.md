@@ -6,7 +6,7 @@ prompt grows unmanageable, and tool-selection accuracy decays past ~10–15 tool
 off to a focused sub-agent.
 
 This doc covers the pattern. The first sub-agent built on it is `agentPersonalAssistantProjects` — see
-[features/projects-workspace.md](../features/projects-workspace.md) for how the user reaches it.
+[features/workspace-projects.md](../features/workspace-projects.md) for how the user reaches it.
 
 ## Decision
 

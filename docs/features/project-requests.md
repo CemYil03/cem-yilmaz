@@ -76,7 +76,7 @@ important gate; the cap exists to keep the assistant honest when it tries to be 
 ## Admin triage
 
 Verified requests surface on the workspace projects page as the **Inbox** tab — see
-[features/projects-workspace.md](./projects-workspace.md). From there the row can be:
+[features/workspace-projects.md](./workspace-projects.md). From there the row can be:
 
 - **Archived** (`projectRequestArchive`) — flips status to `archived` without creating a project. Hidden by default.
 - **Converted to a project** (`projectUpsert` with `sourceRequestId`) — opens the project editor inline on the Inbox row, prefilled with a

@@ -231,7 +231,7 @@ See [agent-delegation.md](./agent-delegation.md) for the full pattern — the su
 
 The personal assistant additionally reads a short synthesized summary on each turn and prepends it to its instructions. The summary is one
 of three artifacts produced by an out-of-loop profiler that watches admin chat messages — see
-[`docs/features/compass.md`](../features/compass.md).
+[`docs/features/workspace-compass.md`](../features/workspace-compass.md).
 
 - **Read path**: `agentPersonalAssistant` calls `compassSummaryGet(serverRuntime)` once per turn and prepends the returned text to its
   system prompt. That is the only compass data that crosses back into a prompt.
@@ -256,7 +256,7 @@ one turn per `compassInterviewMessageSend` command call.
   `COMPASS_INTERVIEW_CRON`. Cem starts it from `/workspace/compass`'s Interviews tab; replies feed the same `compassAnalyze` job (now
   interview-aware) the admin chat does, so observations land in the same stream.
 
-See [`docs/features/compass.md`](../features/compass.md) for the full feature surface and the firewall-exception anchor.
+See [`docs/features/workspace-compass.md`](../features/workspace-compass.md) for the full feature surface and the firewall-exception anchor.
 
 ## Per-turn model selection (admin only)
 

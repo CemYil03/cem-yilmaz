@@ -82,7 +82,7 @@ The `*De` / `*En` column pair is the rule for surfaces visitors render — the v
 surfaces drop the pair. The workspace projects feature is the canonical example: `Projects` and `Tasks` are never rendered to the public
 site (the page is `noindex` and the data feeds nothing on the visitor surface in Phase 1–2), so paired columns would cost typing without
 buying anything. The schema uses single `title` / `description` / `notes` text columns; the GraphQL types do the same. The CV tables stay
-bilingual because their rows feed `/cv` and `/about` directly. See [features/projects-workspace.md](../features/projects-workspace.md).
+bilingual because their rows feed `/cv` and `/about` directly. See [features/workspace-projects.md](../features/workspace-projects.md).
 
 ## Tasks: added columns
 
@@ -95,4 +95,4 @@ drive the redesigned todos experience:
   top filter chips.
 
 Both are nullable so pre-existing rows and rows created outside the new composer render cleanly (unclassified rows omit the effort strip and
-skip the metadata chip). See [features/todos-experience.md](../features/todos-experience.md) for the full behaviour spec.
+skip the metadata chip). See [features/workspace-todos.md](../features/workspace-todos.md) for the full behaviour spec.
