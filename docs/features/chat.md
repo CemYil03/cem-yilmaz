@@ -65,10 +65,10 @@ Streamdown produces between scroll events doesn't drop us out of stick mode. The
 updates and the `useLayoutEffect` consults — `onScroll` fires after the previous layout effect, so the ref always holds the pre-update
 bottom answer the next batch needs. Implemented in `ChatTranscript` inside `src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`.
 
-Assistant text messages render free-floating — no chat bubble, no avatar — directly on the page background. A timestamp and a Copy button
-sit on a single row beneath the body; the Copy button writes the raw markdown body to the clipboard and flashes a check for ~1.5 s. User
-messages keep the right-aligned bubble. Input-collection cards (interactive form, answered summary, or skipped state) render free-floating
-without an avatar.
+Assistant text messages render free-floating — no chat bubble, no avatar — directly on the page background. A timestamp, a **Read-aloud**
+button and a Copy button sit on a single row beneath the body; the Copy button writes the raw markdown body to the clipboard and flashes a
+check for ~1.5 s. The Read-aloud button calls Gemini TTS via `/api/tts` — see [Read-aloud](#read-aloud) below. User messages keep the
+right-aligned bubble. Input-collection cards (interactive form, answered summary, or skipped state) render free-floating without an avatar.
 
 Tool-call pills and approval cards both render a small braces icon-button labelled "Show arguments" via tooltip. Clicking it opens a dialog
 with the call's arguments JSON-pretty-printed — see "Tool argument inspection" below.
@@ -230,6 +230,29 @@ crashing the dialog — in practice tool args are plain JSON, but the column is 
 
 Tool **results** are not exposed; the assistant interprets the result and emits a follow-up text turn (see
 [Chat Foundation](../architecture/chat.md#tool-call-arguments-are-exposed-tool-results-are-not)).
+
+### Read-aloud
+
+Every assistant text message renders a small speaker icon next to the Copy button. Clicking it POSTs the cleaned message text to `/api/tts`,
+which calls **Gemini TTS** (`gemini-2.5-flash-preview-tts`, voice `Kore`) server-side and returns WAV audio. The browser plays it with
+`new Audio()`. Neural-quality output regardless of OS or browser; no on-device voices used.
+
+The button has three visual states: speaker icon (idle) → animated spinner (loading, while the API call is in flight) → filled square (stop,
+while audio is playing). Clicking the square cancels immediately. `speak()` cancels any prior request/audio app-wide so two messages can
+never overlap.
+
+The message body is markdown, so it goes through a small stripper before the API call — code fences are replaced with a spoken "Codeblock" /
+"code block" placeholder, backticks/asterisks are dropped, links keep the label only, list markers and headings are stripped. The text is
+fed to Gemini as plain prose; language is auto-detected by the model (no explicit `lang` param needed).
+
+- API route: `src/routes/api/tts.ts` — POST, no `userId` required (anonymous visitors get TTS too). Uses `GOOGLE_GENERATIVE_AI_API_KEY`.
+- Hook: `src/web/hooks/useSpeechSynthesis.ts` — fetch-based, `state: 'idle' | 'loading' | 'speaking'`, cancel aborts the in-flight fetch or
+  pauses the `Audio` element.
+- Markdown stripper: `src/web/utils/markdownToPlainText.ts` — deterministic regex pass; no `remark`/`unified` dependency.
+- Button: `SpeakButton` in `src/web/components/chat-message/shared.tsx`, alongside `CopyButton`. Both surfaces (workspace assistant and the
+  visitor "Ask me anything" chat) inherit the affordance because `<ChatMessage />` is shared.
+- **Streaming reads are out of scope.** The button reads the final persisted `ChatMessageAssistantText.body`, not the live
+  `ChatUpdateAssistantTextChunk` deltas. Live-stream reading would require hooking `useChatLiveUpdates`; can be added later.
 
 ### Tool approval flow
 

@@ -1321,3 +1321,98 @@ export const projectFiles = pgTable(
 
 export type ProjectFile = typeof projectFiles.$inferSelect;
 export type ProjectFileCreate = typeof projectFiles.$inferInsert;
+
+// --- Media -------------------------------------------------------------------
+//
+// `Movies` and `MediaChannels` back `/workspace/media`. Admin-only, `noindex`
+// surface — no `*De`/`*En` pairs, following the `Projects` / `Tasks`
+// convention (see `docs/architecture/content-model.md`).
+//
+// `topics` is a Postgres `text[]` on both tables — the clustering axis for
+// channels ("tech", "movieCritic", "entertainment") and free-form genre tags
+// on movies. Mirrors `cvExperience.technologies`: display chips + `ANY(topics)`
+// filter for cross-view reads (e.g. `/workspace/software` pulling
+// `mediaChannelsByTopic("tech")`). The `mediaTopics` const array below is the
+// *known* vocabulary the UI autocomplete and `MediaTopic` GraphQL enum
+// surface; the column itself accepts any string so the enum can grow without a
+// migration.
+
+export const movieStatuses = ['watchlist', 'watching', 'watched', 'dropped'] as const;
+export type MovieStatus = (typeof movieStatuses)[number];
+
+export const mediaPlatforms = ['youtube', 'twitch', 'podcast', 'other'] as const;
+export type MediaPlatform = (typeof mediaPlatforms)[number];
+
+export const mediaTopics = [
+    'tech',
+    'ai',
+    'software',
+    'gaming',
+    'movieCritic',
+    'entertainment',
+    'comedy',
+    'science',
+    'business',
+    'news',
+    'music',
+    'sports',
+    'lifestyle',
+    'education',
+] as const;
+export type MediaTopic = (typeof mediaTopics)[number];
+
+// `tmdbId` is UNIQUE-nullable: multiple manually-entered movies can coexist
+// (all NULL) but a TMDB-sourced movie is de-duplicated across re-adds.
+// `posterUrl` / `backdropUrl` are cached CDN URLs from TMDB, not local uploads —
+// see `docs/features/workspace-media.md` for the "no local blob storage"
+// rationale. `rating` is 1..10, admin's own; movie-critic ratings live off-DB.
+export const movies = pgTable(
+    'Movies',
+    {
+        movieId: uuid().primaryKey(),
+        title: varchar().notNull(),
+        tmdbId: integer(),
+        posterUrl: varchar(),
+        backdropUrl: varchar(),
+        releaseDate: date(),
+        runtimeMinutes: integer(),
+        overview: text(),
+        status: varchar().$type<MovieStatus>().notNull().default('watchlist'),
+        rating: integer(),
+        watchedAt: timestamp({ withTimezone: true }),
+        notes: text(),
+        topics: text().array().notNull().default([]),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [uniqueIndex('Movies_tmdbId_key').on(table.tmdbId), index('Movies_status_idx').on(table.status)],
+);
+
+export type Movie = typeof movies.$inferSelect;
+export type MovieCreate = typeof movies.$inferInsert;
+
+// `priority` orders channels within a topic section on the editor (drag-reorder
+// via `useReorderableList`). Reorder is not delta-based — the command rewrites
+// every priority in one txn, matching the CV pattern
+// (`docs/architecture/content-model.md`).
+export const mediaChannels = pgTable(
+    'MediaChannels',
+    {
+        channelId: uuid().primaryKey(),
+        name: varchar().notNull(),
+        platform: varchar().$type<MediaPlatform>().notNull().default('youtube'),
+        url: varchar().notNull(),
+        handle: varchar(),
+        avatarUrl: varchar(),
+        description: text(),
+        topics: text().array().notNull().default([]),
+        priority: integer().notNull().default(0),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('MediaChannels_priority_idx').on(table.priority)],
+);
+
+export type MediaChannel = typeof mediaChannels.$inferSelect;
+export type MediaChannelCreate = typeof mediaChannels.$inferInsert;

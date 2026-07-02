@@ -1389,3 +1389,190 @@ extend type AdminMutation {
     # catalog (`Admin.chatConfig.availableModels`).
     chatConfigDefaultModelSet(modelId: String!): MutationResult!
 }
+
+# --- Media -------------------------------------------------------------------
+#
+# `/workspace/media` — Cem's movie watchlist and favourite YouTube/podcast
+# channels. Admin-only, `noindex`; the CV/public split doesn't apply, so no
+# `*De`/`*En` pairs (matches Projects / Tasks). `topics` is the clustering
+# axis on both entities: a free-form `text[]` whose *known* vocabulary is the
+# `MediaTopic` enum below — new values can be added without a schema change.
+# `/workspace/software` filters channels via `Admin.media.channelsByTopic("tech")`
+# for its "favourite tech YouTubers" section. See
+# `docs/features/workspace-media.md`.
+
+enum MovieStatus {
+    watchlist
+    watching
+    watched
+    dropped
+}
+
+enum MediaPlatform {
+    youtube
+    twitch
+    podcast
+    other
+}
+
+# Known clustering vocabulary. The `topics` column accepts any string so
+# ad-hoc topics work; this enum drives the UI autocomplete and typed writes.
+# Adding a value is a one-line change here plus mirroring in
+# `mediaTopics` (`src/server/db/schema.ts`).
+enum MediaTopic {
+    tech
+    ai
+    software
+    gaming
+    movieCritic
+    entertainment
+    comedy
+    science
+    business
+    news
+    music
+    sports
+    lifestyle
+    education
+}
+
+# A single film Cem tracks. `tmdbId` is present when the row was created via
+# the TMDB search flow — the poster / release / overview fields are cached
+# from TMDB and refresh on re-add. Manually-entered rows carry a null
+# `tmdbId` and whatever the admin typed. `rating` is 1..10 (admin's own).
+type Movie {
+    movieId: ID!
+    title: String!
+    tmdbId: Int
+    posterUrl: String
+    backdropUrl: String
+    releaseDate: Date
+    runtimeMinutes: Int
+    overview: String
+    status: MovieStatus!
+    rating: Int
+    watchedAt: DateTime
+    notes: String
+    topics: [String!]!
+    updatedAt: DateTime!
+}
+
+# A favourite YouTube channel / podcast / stream. `topics` clusters channels
+# for the media page (grouped rows) and for cross-view reads
+# (`Admin.media.channelsByTopic`). `priority` orders channels within a topic
+# section — reorder rewrites priorities in a single txn (see
+# `mediaChannelReorder`), matching the CV reorder pattern.
+type MediaChannel {
+    channelId: ID!
+    name: String!
+    platform: MediaPlatform!
+    url: String!
+    handle: String
+    avatarUrl: String
+    description: String
+    topics: [String!]!
+    priority: Int!
+    notes: String
+    updatedAt: DateTime!
+}
+
+# One TMDB search hit. `posterUrl` is already a fully-qualified
+# `image.tmdb.org` URL (the TMDB client resolves the CDN prefix so the
+# client doesn't need TMDB configuration details).
+type TmdbMovieResult {
+    tmdbId: Int!
+    title: String!
+    releaseDate: Date
+    posterUrl: String
+    overview: String
+}
+
+# One YouTube channel search hit. `canonicalUrl` is pre-composed
+# server-side (prefers the `@handle` form when present, falls back to the
+# stable `/channel/<id>` form) so the client can drop it straight into
+# `MediaChannelInput.url` without knowing YouTube's URL rules.
+type YoutubeChannelResult {
+    channelId: String!
+    title: String!
+    handle: String
+    avatarUrl: String
+    description: String
+    subscriberCount: Int
+    canonicalUrl: String!
+}
+
+# Read namespace mounted under `Admin`. Same posture as `Admin.chatConfig`:
+# gated once at the `Query.admin` boundary by the resolver chain on
+# `User.admin`. Nothing here is public.
+type AdminMediaQuery {
+    movies: [Movie!]!
+    channels: [MediaChannel!]!
+    # Channels whose `topics` array contains `topic`. Case-sensitive.
+    # Used by `/workspace/software` to render its "favourite tech YouTubers"
+    # section without duplicating channel data.
+    channelsByTopic(topic: String!): [MediaChannel!]!
+    # Live TMDB search — returns at most 10 results. Empty list when
+    # `TMDB_API_KEY` is unset, when TMDB is unreachable, or when `query`
+    # trims to empty; the media page treats "empty" as a cue to offer the
+    # manual-entry dialog.
+    tmdbSearch(query: String!): [TmdbMovieResult!]!
+    # Live YouTube channel search — returns at most 10 results, each
+    # enriched with handle + subscriber count. Same empty-fallback
+    # semantics as `tmdbSearch`.
+    youtubeSearch(query: String!): [YoutubeChannelResult!]!
+}
+
+extend type Admin {
+    media: AdminMediaQuery!
+}
+
+input MovieInput {
+    movieId: ID
+    title: String!
+    tmdbId: Int
+    posterUrl: String
+    backdropUrl: String
+    releaseDate: Date
+    runtimeMinutes: Int
+    overview: String
+    status: MovieStatus!
+    rating: Int
+    watchedAt: DateTime
+    notes: String
+    topics: [String!]!
+}
+
+input MediaChannelInput {
+    channelId: ID
+    name: String!
+    platform: MediaPlatform!
+    url: String!
+    handle: String
+    avatarUrl: String
+    description: String
+    topics: [String!]!
+    notes: String
+}
+
+extend type AdminMutation {
+    movieUpsert(input: MovieInput!): Movie!
+    movieDelete(movieId: ID!): MutationResult!
+    # Shortcut: sets `status = watched`, stamps `watchedAt = now`, optionally
+    # writes `rating` (1..10). No-op fields untouched.
+    movieMarkWatched(movieId: ID!, rating: Int): Movie!
+    # Convenience wrapper around `movieUpsert` that fetches full detail from
+    # TMDB by `tmdbId` and inserts a new `Movies` row at the given status
+    # (defaults to `watchlist`). If a row with the same `tmdbId` already
+    # exists, updates that row instead of duplicating. Falls back to a
+    # title-only insert when TMDB is unreachable.
+    movieAddFromTmdb(tmdbId: Int!, status: MovieStatus): Movie!
+
+    mediaChannelUpsert(input: MediaChannelInput!): MediaChannel!
+    mediaChannelDelete(channelId: ID!): MutationResult!
+    # Rewrite `priority` on the given channel ids in array order. Callers
+    # scope the list to a single topic bucket — the server does not enforce
+    # single-topic membership (a channel with multiple topics is reorderable
+    # under each topic section independently, and the last write wins on
+    # `priority`). Matches the CV reorder shape.
+    mediaChannelReorder(orderedIds: [ID!]!): MutationResult!
+}

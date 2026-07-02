@@ -18,6 +18,13 @@ import { cvHobbyUpsert } from '../commands/cvHobbyUpsert';
 import { cvSkillDelete } from '../commands/cvSkillDelete';
 import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillUpsert } from '../commands/cvSkillUpsert';
+import { mediaChannelDelete } from '../commands/mediaChannelDelete';
+import { mediaChannelReorder } from '../commands/mediaChannelReorder';
+import { mediaChannelUpsert } from '../commands/mediaChannelUpsert';
+import { movieAddFromTmdb } from '../commands/movieAddFromTmdb';
+import { movieDelete } from '../commands/movieDelete';
+import { movieMarkWatched } from '../commands/movieMarkWatched';
+import { movieUpsert } from '../commands/movieUpsert';
 import { compassObservationDismiss } from '../commands/compassObservationDismiss';
 import { compassSynthesizeRequest } from '../commands/compassSynthesizeRequest';
 import { compassInterviewStart } from '../commands/compassInterviewStart';
@@ -63,6 +70,9 @@ import { cvEducationList } from '../queries/cvEducationList';
 import { cvExperienceList } from '../queries/cvExperienceList';
 import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
+import { mediaChannelList } from '../queries/mediaChannelList';
+import { mediaChannelsByTopic } from '../queries/mediaChannelsByTopic';
+import { movieList } from '../queries/movieList';
 import { compassGet } from '../queries/compassGet';
 import { compassInterviewActiveDueGet } from '../queries/compassInterviewActiveDueGet';
 import { compassInterviewGet } from '../queries/compassInterviewGet';
@@ -100,6 +110,17 @@ import type {
     GqlSAdminMutationCvSkillDeleteArgs,
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillUpsertArgs,
+    GqlSAdminMutationMediaChannelDeleteArgs,
+    GqlSAdminMutationMediaChannelReorderArgs,
+    GqlSAdminMutationMediaChannelUpsertArgs,
+    GqlSAdminMutationMovieAddFromTmdbArgs,
+    GqlSAdminMutationMovieDeleteArgs,
+    GqlSAdminMutationMovieMarkWatchedArgs,
+    GqlSAdminMutationMovieUpsertArgs,
+    GqlSAdminMediaQuery,
+    GqlSAdminMediaQueryChannelsByTopicArgs,
+    GqlSAdminMediaQueryTmdbSearchArgs,
+    GqlSAdminMediaQueryYoutubeSearchArgs,
     GqlSAdminMutationCompassObservationDismissArgs,
     GqlSAdminMutationCompassInterviewStartArgs,
     GqlSAdminMutationCompassInterviewMessageSendArgs,
@@ -284,6 +305,12 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             cv(): GqlSCvQuery {
                 return {} as GqlSCvQuery;
             },
+            // Media editor namespace — same shell pattern as `cv` above. The
+            // per-field resolvers on `AdminMediaQuery` fan out to the list
+            // queries. See `docs/features/workspace-media.md`.
+            media(): GqlSAdminMediaQuery {
+                return {} as GqlSAdminMediaQuery;
+            },
             async chatConfig(_parent: GqlSAdmin) {
                 // Catalog is server-static — same array on every read. The
                 // saved default is the only DB-bound part; we resolve it here
@@ -356,6 +383,31 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             hobbies(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
                 return cvHobbyList(requestingSession, serverRuntime);
+            },
+        },
+        AdminMediaQuery: {
+            movies(_parent: GqlSAdminMediaQuery, __: any, requestingSession: GqlSSession) {
+                return movieList(requestingSession, serverRuntime);
+            },
+            channels(_parent: GqlSAdminMediaQuery, __: any, requestingSession: GqlSSession) {
+                return mediaChannelList(requestingSession, serverRuntime);
+            },
+            channelsByTopic(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryChannelsByTopicArgs, requestingSession: GqlSSession) {
+                return mediaChannelsByTopic(args.topic, requestingSession, serverRuntime);
+            },
+            // TMDB search sits on the read namespace even though it's a
+            // live third-party fetch — the media page reaches for it every
+            // keystroke through the same URQL client that reads the movie
+            // list, so co-locating them keeps the wiring simple. Empty on
+            // missing API key, on TMDB error, or on empty query.
+            tmdbSearch(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryTmdbSearchArgs) {
+                return serverRuntime.tmdb.searchMovies(args.query);
+            },
+            // Same shape as `tmdbSearch` above — third-party read used only
+            // by the channels-tab typeahead. Empty on missing API key, on
+            // YouTube error, or on empty query.
+            youtubeSearch(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryYoutubeSearchArgs) {
+                return serverRuntime.youtube.searchChannels(args.query);
             },
         },
         AdminMutation: {
@@ -546,6 +598,39 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return adminChatConfigDefaultModelSet(userId, args, requestingSession, serverRuntime);
+            },
+            movieUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMovieUpsertArgs, requestingSession: GqlSSession) {
+                return movieUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            movieDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMovieDeleteArgs, requestingSession: GqlSSession) {
+                return movieDelete(userId, args, requestingSession, serverRuntime);
+            },
+            movieMarkWatched({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMovieMarkWatchedArgs, requestingSession: GqlSSession) {
+                return movieMarkWatched(userId, args, requestingSession, serverRuntime);
+            },
+            movieAddFromTmdb({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMovieAddFromTmdbArgs, requestingSession: GqlSSession) {
+                return movieAddFromTmdb(userId, args, requestingSession, serverRuntime);
+            },
+            mediaChannelUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMediaChannelUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return mediaChannelUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            mediaChannelDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMediaChannelDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return mediaChannelDelete(userId, args, requestingSession, serverRuntime);
+            },
+            mediaChannelReorder(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMediaChannelReorderArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return mediaChannelReorder(userId, args, requestingSession, serverRuntime);
             },
         },
         Query: {

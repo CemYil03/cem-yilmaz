@@ -20,6 +20,7 @@ import { Route as Char123LocaleChar125ImpressumRouteImport } from './routes/{-$l
 import { Route as Char123LocaleChar125DatenschutzRouteImport } from './routes/{-$locale}/datenschutz'
 import { Route as Char123LocaleChar125CvRouteImport } from './routes/{-$locale}/cv'
 import { Route as Char123LocaleChar125AboutRouteImport } from './routes/{-$locale}/about'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiStreamRouteImport } from './routes/api/stream'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
@@ -102,6 +103,11 @@ const Char123LocaleChar125AboutRoute =
     path: '/about',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStreamRoute = ApiStreamRouteImport.update({
   id: '/api/stream',
   path: '/api/stream',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/api/graphql': typeof ApiGraphqlRoute
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
+  '/api/tts': typeof ApiTtsRoute
   '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
   '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByTo {
   '/api/graphql': typeof ApiGraphqlRoute
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
+  '/api/tts': typeof ApiTtsRoute
   '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
   '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/api/graphql': typeof ApiGraphqlRoute
   '/api/health': typeof ApiHealthRoute
   '/api/stream': typeof ApiStreamRoute
+  '/api/tts': typeof ApiTtsRoute
   '/{-$locale}/about': typeof Char123LocaleChar125AboutRoute
   '/{-$locale}/cv': typeof Char123LocaleChar125CvRoute
   '/{-$locale}/datenschutz': typeof Char123LocaleChar125DatenschutzRoute
@@ -328,6 +337,7 @@ export interface FileRouteTypes {
     | '/api/graphql'
     | '/api/health'
     | '/api/stream'
+    | '/api/tts'
     | '/{-$locale}/about'
     | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/api/graphql'
     | '/api/health'
     | '/api/stream'
+    | '/api/tts'
     | '/{-$locale}/about'
     | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/api/graphql'
     | '/api/health'
     | '/api/stream'
+    | '/api/tts'
     | '/{-$locale}/about'
     | '/{-$locale}/cv'
     | '/{-$locale}/datenschutz'
@@ -426,6 +438,7 @@ export interface RootRouteChildren {
   ApiGraphqlRoute: typeof ApiGraphqlRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiStreamRoute: typeof ApiStreamRoute
+  ApiTtsRoute: typeof ApiTtsRoute
   ApiFileUploadsFileUploadIdRoute: typeof ApiFileUploadsFileUploadIdRoute
 }
 
@@ -507,6 +520,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/{-$locale}/about'
       preLoaderRoute: typeof Char123LocaleChar125AboutRouteImport
       parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/stream': {
       id: '/api/stream'
@@ -740,6 +760,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGraphqlRoute: ApiGraphqlRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiStreamRoute: ApiStreamRoute,
+  ApiTtsRoute: ApiTtsRoute,
   ApiFileUploadsFileUploadIdRoute: ApiFileUploadsFileUploadIdRoute,
 }
 export const routeTree = rootRouteImport

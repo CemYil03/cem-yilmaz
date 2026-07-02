@@ -86,6 +86,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | AI chat titles        | Post-turn LLM titler with `NONE`-retry loop on the empty column            | `docs/features/chat-titles.md`                 |
 | AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`     | `src/server/agents/adminChatModels.ts`         |
 | Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled      | `docs/features/workspace-compass.md`           |
+| Media library         | Movies + channels, TMDB auto-fill, topic-clustered cross-views             | `docs/features/workspace-media.md`             |
 
 ## How to Add Things
 
@@ -165,7 +166,7 @@ src/
 │   │       ├── tax.tsx         Tax matters
 │   │       ├── fitness.tsx     Fitness & well-being
 │   │       ├── medical.tsx     Medical (appointments, results, health notes)
-│   │       ├── media.tsx       Movies & TV shows
+│   │       ├── media.tsx       Movies & channels — watchlist, ratings, favourite YouTube/podcast channels clustered by topic
 │   │       └── logs.tsx        Server log viewer (read-only triage of the `Logs` table)
 │   └── api/
 │       ├── graphql.ts          POST /api/graphql (queries, mutations)

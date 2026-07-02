@@ -28,6 +28,7 @@ export interface GqlCAdmin {
     compass: GqlCAdminCompass;
     cv: GqlCCvQuery;
     logs: Array<GqlCLog>;
+    media: GqlCAdminMediaQuery;
     project: GqlCProject;
     projectRequests: Array<GqlCProjectRequest>;
     projectRequestsInboxCount: Scalars['Int']['output'];
@@ -101,6 +102,27 @@ export type GqlCAdminCompassObservationsArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export interface GqlCAdminMediaQuery {
+    __typename?: 'AdminMediaQuery';
+    channels: Array<GqlCMediaChannel>;
+    channelsByTopic: Array<GqlCMediaChannel>;
+    movies: Array<GqlCMovie>;
+    tmdbSearch: Array<GqlCTmdbMovieResult>;
+    youtubeSearch: Array<GqlCYoutubeChannelResult>;
+}
+
+export type GqlCAdminMediaQueryChannelsByTopicArgs = {
+    topic: Scalars['String']['input'];
+};
+
+export type GqlCAdminMediaQueryTmdbSearchArgs = {
+    query: Scalars['String']['input'];
+};
+
+export type GqlCAdminMediaQueryYoutubeSearchArgs = {
+    query: Scalars['String']['input'];
+};
+
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
     chatConfigDefaultModelSet: GqlCMutationResult;
@@ -125,6 +147,13 @@ export interface GqlCAdminMutation {
     cvSkillDelete: GqlCMutationResult;
     cvSkillReorder: GqlCMutationResult;
     cvSkillUpsert: GqlCCvSkill;
+    mediaChannelDelete: GqlCMutationResult;
+    mediaChannelReorder: GqlCMutationResult;
+    mediaChannelUpsert: GqlCMediaChannel;
+    movieAddFromTmdb: GqlCMovie;
+    movieDelete: GqlCMutationResult;
+    movieMarkWatched: GqlCMovie;
+    movieUpsert: GqlCMovie;
     projectActivityDelete: GqlCMutationResult;
     projectActivityUpsert: GqlCProjectActivity;
     projectDelete: GqlCMutationResult;
@@ -233,6 +262,36 @@ export type GqlCAdminMutationCvSkillReorderArgs = {
 
 export type GqlCAdminMutationCvSkillUpsertArgs = {
     input: GqlCCvSkillInput;
+};
+
+export type GqlCAdminMutationMediaChannelDeleteArgs = {
+    channelId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationMediaChannelReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationMediaChannelUpsertArgs = {
+    input: GqlCMediaChannelInput;
+};
+
+export type GqlCAdminMutationMovieAddFromTmdbArgs = {
+    status?: InputMaybe<GqlCMovieStatus>;
+    tmdbId: Scalars['Int']['input'];
+};
+
+export type GqlCAdminMutationMovieDeleteArgs = {
+    movieId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationMovieMarkWatchedArgs = {
+    movieId: Scalars['ID']['input'];
+    rating?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type GqlCAdminMutationMovieUpsertArgs = {
+    input: GqlCMovieInput;
 };
 
 export type GqlCAdminMutationProjectActivityDeleteArgs = {
@@ -731,6 +790,87 @@ export interface GqlCLog {
 
 export type GqlCLogLevel = 'debug' | 'error' | 'info' | 'warn';
 
+export interface GqlCMediaChannel {
+    __typename?: 'MediaChannel';
+    avatarUrl?: Maybe<Scalars['String']['output']>;
+    channelId: Scalars['ID']['output'];
+    description?: Maybe<Scalars['String']['output']>;
+    handle?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    platform: GqlCMediaPlatform;
+    priority: Scalars['Int']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    url: Scalars['String']['output'];
+}
+
+export type GqlCMediaChannelInput = {
+    avatarUrl?: InputMaybe<Scalars['String']['input']>;
+    channelId?: InputMaybe<Scalars['ID']['input']>;
+    description?: InputMaybe<Scalars['String']['input']>;
+    handle?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    platform: GqlCMediaPlatform;
+    topics: Array<Scalars['String']['input']>;
+    url: Scalars['String']['input'];
+};
+
+export type GqlCMediaPlatform = 'other' | 'podcast' | 'twitch' | 'youtube';
+
+export type GqlCMediaTopic =
+    | 'ai'
+    | 'business'
+    | 'comedy'
+    | 'education'
+    | 'entertainment'
+    | 'gaming'
+    | 'lifestyle'
+    | 'movieCritic'
+    | 'music'
+    | 'news'
+    | 'science'
+    | 'software'
+    | 'sports'
+    | 'tech';
+
+export interface GqlCMovie {
+    __typename?: 'Movie';
+    backdropUrl?: Maybe<Scalars['String']['output']>;
+    movieId: Scalars['ID']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    releaseDate?: Maybe<Scalars['Date']['output']>;
+    runtimeMinutes?: Maybe<Scalars['Int']['output']>;
+    status: GqlCMovieStatus;
+    title: Scalars['String']['output'];
+    tmdbId?: Maybe<Scalars['Int']['output']>;
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    watchedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlCMovieInput = {
+    backdropUrl?: InputMaybe<Scalars['String']['input']>;
+    movieId?: InputMaybe<Scalars['ID']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    overview?: InputMaybe<Scalars['String']['input']>;
+    posterUrl?: InputMaybe<Scalars['String']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    releaseDate?: InputMaybe<Scalars['Date']['input']>;
+    runtimeMinutes?: InputMaybe<Scalars['Int']['input']>;
+    status: GqlCMovieStatus;
+    title: Scalars['String']['input'];
+    tmdbId?: InputMaybe<Scalars['Int']['input']>;
+    topics: Array<Scalars['String']['input']>;
+    watchedAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type GqlCMovieStatus = 'dropped' | 'watched' | 'watching' | 'watchlist';
+
 export interface GqlCMutation {
     __typename?: 'Mutation';
     admin: GqlCAdminMutation;
@@ -995,6 +1135,15 @@ export type GqlCTaskStatus = 'doing' | 'done' | 'todo';
 
 export type GqlCTaskWhenBucket = 'someday' | 'today' | 'waiting' | 'week';
 
+export interface GqlCTmdbMovieResult {
+    __typename?: 'TmdbMovieResult';
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    releaseDate?: Maybe<Scalars['Date']['output']>;
+    title: Scalars['String']['output'];
+    tmdbId: Scalars['Int']['output'];
+}
+
 export interface GqlCUser {
     __typename?: 'User';
     admin?: Maybe<GqlCAdmin>;
@@ -1029,6 +1178,17 @@ export interface GqlCVisitorChatQuota {
     limit: Scalars['Int']['output'];
     resetsAt?: Maybe<Scalars['DateTime']['output']>;
     used: Scalars['Int']['output'];
+}
+
+export interface GqlCYoutubeChannelResult {
+    __typename?: 'YoutubeChannelResult';
+    avatarUrl?: Maybe<Scalars['String']['output']>;
+    canonicalUrl: Scalars['String']['output'];
+    channelId: Scalars['String']['output'];
+    description?: Maybe<Scalars['String']['output']>;
+    handle?: Maybe<Scalars['String']['output']>;
+    subscriberCount?: Maybe<Scalars['Int']['output']>;
+    title: Scalars['String']['output'];
 }
 
 export type GqlCCvPageQueryVariables = Exact<{ [key: string]: never }>;
@@ -2085,6 +2245,214 @@ export type GqlCWorkspaceHubQuery = {
     currentSession: { user: { admin: { projectRequestsInboxCount: number; standaloneOpenTaskCount: number } | null } | null };
 };
 
+export type GqlCWorkspaceMediaPageUserFragment = {
+    admin: {
+        media: {
+            movies: Array<{
+                movieId: string;
+                title: string;
+                tmdbId: number | null;
+                posterUrl: string | null;
+                backdropUrl: string | null;
+                releaseDate: string | null;
+                runtimeMinutes: number | null;
+                overview: string | null;
+                status: Schema.GqlCMovieStatus;
+                rating: number | null;
+                watchedAt: string | null;
+                notes: string | null;
+                topics: Array<string>;
+                updatedAt: string;
+            }>;
+            channels: Array<{
+                channelId: string;
+                name: string;
+                platform: Schema.GqlCMediaPlatform;
+                url: string;
+                handle: string | null;
+                avatarUrl: string | null;
+                description: string | null;
+                topics: Array<string>;
+                priority: number;
+                notes: string | null;
+                updatedAt: string;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceMediaPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceMediaPageQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                media: {
+                    movies: Array<{
+                        movieId: string;
+                        title: string;
+                        tmdbId: number | null;
+                        posterUrl: string | null;
+                        backdropUrl: string | null;
+                        releaseDate: string | null;
+                        runtimeMinutes: number | null;
+                        overview: string | null;
+                        status: Schema.GqlCMovieStatus;
+                        rating: number | null;
+                        watchedAt: string | null;
+                        notes: string | null;
+                        topics: Array<string>;
+                        updatedAt: string;
+                    }>;
+                    channels: Array<{
+                        channelId: string;
+                        name: string;
+                        platform: Schema.GqlCMediaPlatform;
+                        url: string;
+                        handle: string | null;
+                        avatarUrl: string | null;
+                        description: string | null;
+                        topics: Array<string>;
+                        priority: number;
+                        notes: string | null;
+                        updatedAt: string;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceMediaPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceMediaPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            media: {
+                movies: Array<{
+                    movieId: string;
+                    title: string;
+                    tmdbId: number | null;
+                    posterUrl: string | null;
+                    backdropUrl: string | null;
+                    releaseDate: string | null;
+                    runtimeMinutes: number | null;
+                    overview: string | null;
+                    status: Schema.GqlCMovieStatus;
+                    rating: number | null;
+                    watchedAt: string | null;
+                    notes: string | null;
+                    topics: Array<string>;
+                    updatedAt: string;
+                }>;
+                channels: Array<{
+                    channelId: string;
+                    name: string;
+                    platform: Schema.GqlCMediaPlatform;
+                    url: string;
+                    handle: string | null;
+                    avatarUrl: string | null;
+                    description: string | null;
+                    topics: Array<string>;
+                    priority: number;
+                    notes: string | null;
+                    updatedAt: string;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceMediaTmdbSearchQueryVariables = Exact<{
+    query: string;
+}>;
+
+export type GqlCWorkspaceMediaTmdbSearchQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                media: {
+                    tmdbSearch: Array<{
+                        tmdbId: number;
+                        title: string;
+                        releaseDate: string | null;
+                        posterUrl: string | null;
+                        overview: string | null;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceMediaYoutubeSearchQueryVariables = Exact<{
+    query: string;
+}>;
+
+export type GqlCWorkspaceMediaYoutubeSearchQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                media: {
+                    youtubeSearch: Array<{
+                        channelId: string;
+                        title: string;
+                        handle: string | null;
+                        avatarUrl: string | null;
+                        description: string | null;
+                        subscriberCount: number | null;
+                        canonicalUrl: string;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceMovieUpsertMutationVariables = Exact<{
+    input: Schema.GqlCMovieInput;
+}>;
+
+export type GqlCWorkspaceMovieUpsertMutation = { admin: { movieUpsert: { movieId: string } } };
+
+export type GqlCWorkspaceMovieDeleteMutationVariables = Exact<{
+    movieId: string;
+}>;
+
+export type GqlCWorkspaceMovieDeleteMutation = { admin: { movieDelete: { success: boolean } } };
+
+export type GqlCWorkspaceMovieMarkWatchedMutationVariables = Exact<{
+    movieId: string;
+    rating?: number | null | undefined;
+}>;
+
+export type GqlCWorkspaceMovieMarkWatchedMutation = { admin: { movieMarkWatched: { movieId: string } } };
+
+export type GqlCWorkspaceMovieAddFromTmdbMutationVariables = Exact<{
+    tmdbId: number;
+    status?: Schema.GqlCMovieStatus | null | undefined;
+}>;
+
+export type GqlCWorkspaceMovieAddFromTmdbMutation = { admin: { movieAddFromTmdb: { movieId: string } } };
+
+export type GqlCWorkspaceMediaChannelUpsertMutationVariables = Exact<{
+    input: Schema.GqlCMediaChannelInput;
+}>;
+
+export type GqlCWorkspaceMediaChannelUpsertMutation = { admin: { mediaChannelUpsert: { channelId: string } } };
+
+export type GqlCWorkspaceMediaChannelDeleteMutationVariables = Exact<{
+    channelId: string;
+}>;
+
+export type GqlCWorkspaceMediaChannelDeleteMutation = { admin: { mediaChannelDelete: { success: boolean } } };
+
+export type GqlCWorkspaceMediaChannelReorderMutationVariables = Exact<{
+    orderedIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceMediaChannelReorderMutation = { admin: { mediaChannelReorder: { success: boolean } } };
+
 export type GqlCWorkspaceProjectsPageUserFragment = {
     admin: {
         projectRequests: Array<{
@@ -2834,6 +3202,29 @@ export type GqlCWorkspaceProjectFileTogglePinMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProjectFileTogglePinMutation = { admin: { projectFileTogglePin: { projectFileId: string; pinned: boolean } } };
+
+export type GqlCWorkspaceSoftwarePageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceSoftwarePageQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                media: {
+                    channelsByTopic: Array<{
+                        channelId: string;
+                        name: string;
+                        platform: Schema.GqlCMediaPlatform;
+                        url: string;
+                        handle: string | null;
+                        avatarUrl: string | null;
+                        description: string | null;
+                        topics: Array<string>;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
 
 export type GqlCWorkspaceTodosPageUserFragment = {
     admin: {
@@ -4204,6 +4595,82 @@ export const WorkspaceCvPageUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCvPageUserFragment, unknown>;
+export const WorkspaceMediaPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMediaPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'media' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'movies' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'movieId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'posterUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'backdropUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'releaseDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'runtimeMinutes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'overview' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'watchedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'channels' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channelId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'platform' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'handle' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'avatarUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'priority' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaPageUserFragment, unknown>;
 export const WorkspaceProjectsPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -9045,6 +9512,741 @@ export const WorkspaceHubDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceHubQuery, GqlCWorkspaceHubQueryVariables>;
+export const WorkspaceMediaPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceMediaPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMediaPageUser' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMediaPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'media' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'movies' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'movieId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'posterUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'backdropUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'releaseDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'runtimeMinutes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'overview' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'watchedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'channels' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channelId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'platform' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'handle' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'avatarUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'priority' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaPageQuery, GqlCWorkspaceMediaPageQueryVariables>;
+export const WorkspaceMediaPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceMediaPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMediaPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMediaPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'media' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'movies' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'movieId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'posterUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'backdropUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'releaseDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'runtimeMinutes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'overview' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'watchedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'channels' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'channelId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'platform' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'handle' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'avatarUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'priority' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaPageUpdatesSubscription, GqlCWorkspaceMediaPageUpdatesSubscriptionVariables>;
+export const WorkspaceMediaTmdbSearchDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceMediaTmdbSearch' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'media' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'tmdbSearch' },
+                                                                        arguments: [
+                                                                            {
+                                                                                kind: 'Argument',
+                                                                                name: { kind: 'Name', value: 'query' },
+                                                                                value: {
+                                                                                    kind: 'Variable',
+                                                                                    name: { kind: 'Name', value: 'query' },
+                                                                                },
+                                                                            },
+                                                                        ],
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'releaseDate' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'posterUrl' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'overview' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaTmdbSearchQuery, GqlCWorkspaceMediaTmdbSearchQueryVariables>;
+export const WorkspaceMediaYoutubeSearchDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceMediaYoutubeSearch' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'media' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'youtubeSearch' },
+                                                                        arguments: [
+                                                                            {
+                                                                                kind: 'Argument',
+                                                                                name: { kind: 'Name', value: 'query' },
+                                                                                value: {
+                                                                                    kind: 'Variable',
+                                                                                    name: { kind: 'Name', value: 'query' },
+                                                                                },
+                                                                            },
+                                                                        ],
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'channelId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'handle' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'avatarUrl' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'description' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'subscriberCount' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'canonicalUrl' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaYoutubeSearchQuery, GqlCWorkspaceMediaYoutubeSearchQueryVariables>;
+export const WorkspaceMovieUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMovieUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MovieInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'movieUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'movieId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMovieUpsertMutation, GqlCWorkspaceMovieUpsertMutationVariables>;
+export const WorkspaceMovieDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMovieDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'movieId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'movieDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'movieId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'movieId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMovieDeleteMutation, GqlCWorkspaceMovieDeleteMutationVariables>;
+export const WorkspaceMovieMarkWatchedDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMovieMarkWatched' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'movieId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'rating' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'movieMarkWatched' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'movieId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'movieId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'rating' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'rating' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'movieId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMovieMarkWatchedMutation, GqlCWorkspaceMovieMarkWatchedMutationVariables>;
+export const WorkspaceMovieAddFromTmdbDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMovieAddFromTmdb' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tmdbId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'MovieStatus' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'movieAddFromTmdb' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tmdbId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tmdbId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'status' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'movieId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMovieAddFromTmdbMutation, GqlCWorkspaceMovieAddFromTmdbMutationVariables>;
+export const WorkspaceMediaChannelUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMediaChannelUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MediaChannelInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'mediaChannelUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'channelId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaChannelUpsertMutation, GqlCWorkspaceMediaChannelUpsertMutationVariables>;
+export const WorkspaceMediaChannelDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMediaChannelDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'channelId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'mediaChannelDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'channelId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'channelId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaChannelDeleteMutation, GqlCWorkspaceMediaChannelDeleteMutationVariables>;
+export const WorkspaceMediaChannelReorderDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMediaChannelReorder' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'mediaChannelReorder' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'orderedIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'orderedIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaChannelReorderMutation, GqlCWorkspaceMediaChannelReorderMutationVariables>;
 export const WorkspaceProjectsPageDocument = {
     kind: 'Document',
     definitions: [
@@ -11561,6 +12763,93 @@ export const WorkspaceProjectFileTogglePinDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectFileTogglePinMutation, GqlCWorkspaceProjectFileTogglePinMutationVariables>;
+export const WorkspaceSoftwarePageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceSoftwarePage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'media' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'channelsByTopic' },
+                                                                        arguments: [
+                                                                            {
+                                                                                kind: 'Argument',
+                                                                                name: { kind: 'Name', value: 'topic' },
+                                                                                value: { kind: 'StringValue', value: 'tech', block: false },
+                                                                            },
+                                                                        ],
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'channelId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'platform' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'handle' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'avatarUrl' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'description' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceSoftwarePageQuery, GqlCWorkspaceSoftwarePageQueryVariables>;
 export const WorkspaceTodosPageDocument = {
     kind: 'Document',
     definitions: [

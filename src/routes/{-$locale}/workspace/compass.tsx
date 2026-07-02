@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
+import { SpeakButton } from '../../../web/components/chat-message/shared';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -316,7 +317,14 @@ function ArtifactBody({ tab, compass, locale }: { tab: 'summary' | 'prose' | 'ps
             </p>
         );
     }
-    return <AssistantMarkdown text={content} className="text-base leading-relaxed" />;
+    return (
+        <div className="flex flex-col gap-2">
+            <AssistantMarkdown text={content} className="text-base leading-relaxed" />
+            <div className="flex items-center gap-1 mt-1">
+                <SpeakButton text={content} />
+            </div>
+        </div>
+    );
 }
 
 function TabExplainer({ tab, locale }: { tab: 'summary' | 'prose' | 'psychology'; locale: Locale }) {
@@ -548,22 +556,25 @@ function ObservationCard({ observation, locale }: { observation: ObservationRow;
                         ) : (
                             <span className="text-muted-foreground italic">{{ de: 'Quelle gelöscht', en: 'Source deleted' }[locale]}</span>
                         )}
-                        {isDismissed ? (
-                            <span className="text-muted-foreground italic">{{ de: 'Verworfen', en: 'Dismissed' }[locale]}</span>
-                        ) : (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={busy}
-                                onClick={async () => {
-                                    setBusy(true);
-                                    await dismiss({ observationId: observation.observationId });
-                                    setBusy(false);
-                                }}
-                            >
-                                {{ de: 'Verwerfen', en: 'Dismiss' }[locale]}
-                            </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                            <SpeakButton text={observation.content} />
+                            {isDismissed ? (
+                                <span className="text-muted-foreground italic">{{ de: 'Verworfen', en: 'Dismissed' }[locale]}</span>
+                            ) : (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={busy}
+                                    onClick={async () => {
+                                        setBusy(true);
+                                        await dismiss({ observationId: observation.observationId });
+                                        setBusy(false);
+                                    }}
+                                >
+                                    {{ de: 'Verwerfen', en: 'Dismiss' }[locale]}
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </GlassCard>
@@ -951,6 +962,11 @@ function InterviewView({ interview, locale }: { interview: InterviewWithMessages
                             )}
                         >
                             <AssistantMarkdown text={m.content} />
+                            {m.role === 'assistant' && (
+                                <div className="flex items-center gap-1 mt-2">
+                                    <SpeakButton text={m.content} />
+                                </div>
+                            )}
                         </div>
                     ))
                 )}

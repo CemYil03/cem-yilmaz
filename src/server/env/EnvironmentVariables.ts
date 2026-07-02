@@ -45,4 +45,15 @@ export interface EnvironmentVariables {
     // address. Optional at the env layer for the same reason as
     // `resendApiKey` — fail-fast happens in `emailServiceCreate`.
     emailFromAddress: string | undefined;
+    // The Movie Database (TMDB) v3 API key used by the `/workspace/media`
+    // movie search + auto-fill flow. Optional: the feature degrades to
+    // manual-entry-only when the key is missing (TMDB search returns an
+    // empty list, no 500). See `docs/features/workspace-media.md`.
+    tmdbApiKey: string | undefined;
+    // YouTube Data API v3 key used by the `/workspace/media` channel
+    // search + auto-fill flow (avatar, handle, description). Same
+    // degrade-gracefully posture as `tmdbApiKey` — missing key means
+    // empty search results and the manual entry path still works. See
+    // `docs/features/workspace-media.md`.
+    youtubeApiKey: string | undefined;
 }

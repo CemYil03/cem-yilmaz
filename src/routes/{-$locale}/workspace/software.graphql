@@ -1,0 +1,25 @@
+# Workspace software page — cross-view onto the media library. The section
+# "Favourite tech YouTubers" pulls channels tagged with the `tech` topic
+# from the media namespace. No cross-referencing FK: the `topics` column on
+# `MediaChannels` is the single source of truth (`docs/features/workspace-media.md`).
+
+query WorkspaceSoftwarePage {
+    currentSession {
+        user {
+            admin {
+                media {
+                    channelsByTopic(topic: "tech") {
+                        channelId
+                        name
+                        platform
+                        url
+                        handle
+                        avatarUrl
+                        description
+                        topics
+                    }
+                }
+            }
+        }
+    }
+}

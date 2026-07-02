@@ -3,6 +3,8 @@ import type { Database, DatabaseTransaction } from '../db';
 import type { ChatUpdateWirePayload } from '../graphql/chatUpdateWirePayload';
 import type { QueuedJobDefinition } from '../jobs/types';
 import type { EmailService } from '../services/emailServiceCreate';
+import type { TmdbClient } from '../services/tmdbClientCreate';
+import type { YoutubeClient } from '../services/youtubeClientCreate';
 import type { BrowserCaptureOptions } from '../utils/browserCapture';
 import type { Logger } from '../utils/loggerCreate';
 
@@ -89,4 +91,15 @@ export interface ServerRuntime {
     // `projectRequestNotifySend`) are the only callers. See
     // `docs/features/chat-email-tools.md`.
     emailService: EmailService;
+    // TMDB (The Movie Database) client used by the `/workspace/media` add
+    // flow — search-as-you-type and auto-fill poster/release/runtime when
+    // the admin picks a match. Missing `TMDB_API_KEY` degrades to
+    // empty-search + manual entry (no throw). See
+    // `docs/features/workspace-media.md`.
+    tmdb: TmdbClient;
+    // YouTube Data API v3 client used by the `/workspace/media` channels
+    // tab — search-as-you-type and auto-fill avatar/handle/description on
+    // channel add. Same posture as `tmdb`: missing `YOUTUBE_API_KEY`
+    // degrades to empty search + manual entry.
+    youtube: YoutubeClient;
 }

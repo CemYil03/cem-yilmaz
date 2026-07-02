@@ -1,9 +1,11 @@
 import * as React from 'react';
 import { format, parseISO } from 'date-fns';
-import { BracesIcon, CheckIcon, CopyIcon } from 'lucide-react';
+import { BracesIcon, CheckIcon, CopyIcon, Loader2Icon, SquareIcon, Volume2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocale } from '../../hooks/useLocale';
+import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { cn } from '../../utils/cn';
+import { markdownToPlainText } from '../../utils/markdownToPlainText';
 import { Button } from '../base/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../base/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../base/tooltip';
@@ -82,6 +84,51 @@ export function CopyButton({ text }: { text: string }) {
             className="opacity-70 hover:opacity-100"
         >
             {copied ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
+        </Button>
+    );
+}
+
+// Inline read-aloud affordance under assistant messages. Calls `/api/tts`
+// (Gemini TTS) so the audio quality is neural regardless of browser/OS.
+// Three-state toggle: speaker (idle) → spinner (loading) → stop square
+// (speaking). `speak()` cancels any prior request so two messages can never
+// overlap across the app.
+export function SpeakButton({ text }: { text: string }) {
+    const locale = useLocale();
+    const { state, speak, cancel } = useSpeechSynthesis();
+    const active = state !== 'idle';
+    const onClick = async () => {
+        if (active) {
+            cancel();
+            return;
+        }
+        try {
+            await speak(markdownToPlainText(text, locale), locale === 'de' ? 'de-DE' : 'en-US');
+        } catch {
+            toast.error({ de: 'Vorlesen fehlgeschlagen', en: 'Read-aloud failed' }[locale]);
+        }
+    };
+    return (
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={
+                active
+                    ? { de: 'Vorlesen stoppen', en: 'Stop reading' }[locale]
+                    : { de: 'Nachricht vorlesen', en: 'Read message aloud' }[locale]
+            }
+            aria-pressed={active}
+            onClick={onClick}
+            className="opacity-70 hover:opacity-100"
+        >
+            {state === 'loading' ? (
+                <Loader2Icon aria-hidden className="animate-spin" />
+            ) : state === 'speaking' ? (
+                <SquareIcon aria-hidden />
+            ) : (
+                <Volume2Icon aria-hidden />
+            )}
         </Button>
     );
 }

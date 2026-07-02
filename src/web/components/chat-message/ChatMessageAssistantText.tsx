@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import type { GqlCChatMessageAssistantText } from '../../graphql/generated';
 import { AssistantMarkdown } from '../AssistantMarkdown';
-import { CopyButton } from './shared';
+import { CopyButton, SpeakButton } from './shared';
 
 export function ChatMessageAssistantTextView({ message }: { message: GqlCChatMessageAssistantText }) {
     return (
@@ -10,6 +10,7 @@ export function ChatMessageAssistantTextView({ message }: { message: GqlCChatMes
                 <AssistantMarkdown text={message.body} />
                 <div className="flex items-center gap-2 text-[11px] opacity-70">
                     <time dateTime={message.createdAt}>{format(parseISO(message.createdAt), 'HH:mm')}</time>
+                    <SpeakButton text={message.body} />
                     <CopyButton text={message.body} />
                 </div>
             </div>

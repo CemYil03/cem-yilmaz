@@ -30,6 +30,16 @@ export function environmentVariablesCreate(source: NodeJS.ProcessEnv = process.e
         // `docs/features/chat-email-tools.md`.
         resendApiKey: source.RESEND_API_KEY,
         emailFromAddress: source.EMAIL_FROM_ADDRESS,
+        // Capability-specific — required only by the `/workspace/media` TMDB
+        // search / auto-fill flow. Validated at the call site in
+        // `tmdbClientCreate`; when missing, that client returns an empty
+        // result set instead of throwing so the media page's manual-entry
+        // path still works. See `docs/features/workspace-media.md`.
+        tmdbApiKey: source.TMDB_API_KEY,
+        // Same posture as `tmdbApiKey`, for the YouTube channel search on
+        // `/workspace/media`. Validated in `youtubeClientCreate`; missing
+        // key → empty results.
+        youtubeApiKey: source.YOUTUBE_API_KEY,
     };
 }
 

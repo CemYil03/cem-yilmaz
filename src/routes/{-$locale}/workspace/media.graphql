@@ -1,0 +1,156 @@
+# Workspace Media editor operations. Co-located with `/workspace/media`. Both
+# the loader query and the live `userUpdates` subscription spread the same
+# `WorkspaceMediaPageUser` fragment so the seed-and-subscribe hook can swap
+# state without a shape mismatch — mutations no longer trigger
+# `router.invalidate()`; every media mutation publishes on the user channel
+# and the page picks up the new payload over SSE. See
+# `docs/architecture/state-synchronization.md`.
+#
+# `tmdbSearch` is intentionally NOT part of the page fragment: it's a live
+# per-keystroke read fired only while the movie tab's search box has text.
+# The page uses `useQuery` with `pause: !debouncedQuery` and
+# `requestPolicy: 'network-only'` so TMDB responses aren't cached.
+
+fragment WorkspaceMediaPageUser on User {
+    admin {
+        media {
+            movies {
+                movieId
+                title
+                tmdbId
+                posterUrl
+                backdropUrl
+                releaseDate
+                runtimeMinutes
+                overview
+                status
+                rating
+                watchedAt
+                notes
+                topics
+                updatedAt
+            }
+            channels {
+                channelId
+                name
+                platform
+                url
+                handle
+                avatarUrl
+                description
+                topics
+                priority
+                notes
+                updatedAt
+            }
+        }
+    }
+}
+
+query WorkspaceMediaPage {
+    currentSession {
+        user {
+            ...WorkspaceMediaPageUser
+        }
+    }
+}
+
+subscription WorkspaceMediaPageUpdates {
+    userUpdates {
+        ...WorkspaceMediaPageUser
+    }
+}
+
+query WorkspaceMediaTmdbSearch($query: String!) {
+    currentSession {
+        user {
+            admin {
+                media {
+                    tmdbSearch(query: $query) {
+                        tmdbId
+                        title
+                        releaseDate
+                        posterUrl
+                        overview
+                    }
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceMediaYoutubeSearch($query: String!) {
+    currentSession {
+        user {
+            admin {
+                media {
+                    youtubeSearch(query: $query) {
+                        channelId
+                        title
+                        handle
+                        avatarUrl
+                        description
+                        subscriberCount
+                        canonicalUrl
+                    }
+                }
+            }
+        }
+    }
+}
+
+mutation WorkspaceMovieUpsert($input: MovieInput!) {
+    admin {
+        movieUpsert(input: $input) {
+            movieId
+        }
+    }
+}
+
+mutation WorkspaceMovieDelete($movieId: ID!) {
+    admin {
+        movieDelete(movieId: $movieId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceMovieMarkWatched($movieId: ID!, $rating: Int) {
+    admin {
+        movieMarkWatched(movieId: $movieId, rating: $rating) {
+            movieId
+        }
+    }
+}
+
+mutation WorkspaceMovieAddFromTmdb($tmdbId: Int!, $status: MovieStatus) {
+    admin {
+        movieAddFromTmdb(tmdbId: $tmdbId, status: $status) {
+            movieId
+        }
+    }
+}
+
+mutation WorkspaceMediaChannelUpsert($input: MediaChannelInput!) {
+    admin {
+        mediaChannelUpsert(input: $input) {
+            channelId
+        }
+    }
+}
+
+mutation WorkspaceMediaChannelDelete($channelId: ID!) {
+    admin {
+        mediaChannelDelete(channelId: $channelId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceMediaChannelReorder($orderedIds: [ID!]!) {
+    admin {
+        mediaChannelReorder(orderedIds: $orderedIds) {
+            success
+        }
+    }
+}

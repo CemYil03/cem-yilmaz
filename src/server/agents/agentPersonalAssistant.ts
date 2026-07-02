@@ -4,6 +4,7 @@ import { adminChatConfigGet } from '../queries/adminChatConfigGet';
 import { compassSummaryGet } from '../queries/compassSummaryGet';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
+import { toolDelegateToMedia } from './toolDelegateToMedia';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
@@ -28,6 +29,7 @@ const BASE_SYSTEM_PROMPT = [
     'Capabilities:',
     '- Plain conversational answers and reasoning.',
     '- Project and task management via `delegateToProjects` — see "When to delegate" below.',
+    '- Movie watchlist and favourite-channels management via `delegateToMedia` — same pattern.',
     '- Web search via `delegateToWebSearch` — see "When to search" below.',
     '- Future: notes, calendar entries, content edits — each in its own sub-agent under the same delegation pattern.',
     '',
@@ -36,10 +38,14 @@ const BASE_SYSTEM_PROMPT = [
     '  deleting, summarizing progress, moving tasks across projects — goes to `delegateToProjects` with a',
     "  natural-language brief. Pass the user's request verbatim plus any context from earlier turns (an id you",
     '  resolved, a date the user named). The sub-agent has the live board snapshot in its own prompt.',
+    '- ANY ask that touches movies (watchlist, ratings, "did I watch X", "add Y to my watchlist", "what should I',
+    '  watch tonight") or favourite channels (adding a YouTube channel, listing tech YouTubers, editing topics)',
+    '  goes to `delegateToMedia` with the same shape. The sub-agent has its own TMDB search tool — you do NOT',
+    '  need `delegateToWebSearch` for film metadata.',
     "- The delegate result is `{ status, summary, mutations?, missingFields? }`. On `status: 'needsMoreInfo'`,",
-    '  call `promptUserForInput` to gather the slots named in `missingFields`, then call `delegateToProjects`',
+    '  call `promptUserForInput` to gather the slots named in `missingFields`, then call the same delegate',
     "  again with the brief enriched by the answers. On `status: 'noOp'`, handle the ask yourself (it was not",
-    "  really about projects). On `status: 'completed'`, narrate `summary` back to Cem; mention specific",
+    "  really about that domain). On `status: 'completed'`, narrate `summary` back to Cem; mention specific",
     '  mutations (created/updated/deleted) when they help him confirm what happened.',
     "- On `status: 'failed'`, the sub-agent or one of its tools threw. `summary` is the one-line error message and",
     '  `mutations` lists any writes that DID land before the throw. Tell Cem plainly what failed (quote the',
@@ -78,6 +84,8 @@ const BASE_SYSTEM_PROMPT = [
     '- Project              → `[<title>](/workspace/projects?tab=projects&focus=<projectId>)`',
     '- Inbox row            → `[<title>](/workspace/projects?tab=inbox&focus=<projectRequestId>)`',
     '- Standalone task      → `[<title>](/workspace/todos?focus=<taskId>)`',
+    '- Movie                → `[<title>](/workspace/media?tab=movies&focus=<movieId>)`',
+    '- Channel              → `[<name>](/workspace/media?tab=channels&focus=<channelId>)`',
     '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
     'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
     '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',
@@ -174,6 +182,16 @@ export async function agentPersonalAssistant({
             // receives here. See
             // `docs/architecture/agent-delegation.md` ("Nested tool calls").
             delegateToProjects: toolDelegateToProjects({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Media sub-agent — movies + favourite channels. TMDB search
+            // lives inside this sub-agent as its own tool; the orchestrator
+            // never needs to search TMDB itself.
+            delegateToMedia: toolDelegateToMedia({
                 serverRuntime,
                 session,
                 chatId,

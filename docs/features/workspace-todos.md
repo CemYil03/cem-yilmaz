@@ -1,9 +1,8 @@
 # Workspace todos
 
-A dedicated workspace surface at `/workspace/todos` for standalone tasks — the rows in the `Tasks` table with `projectId IS NULL`. Todos
-are quick captures that don't belong to any project: no timer, no activity feed, no lifecycle beyond `todo → doing → done`. Project-bound
-tasks live on the project detail route (`/workspace/projects/$projectId`) and never appear here; the two surfaces are disjoint by
-construction.
+A dedicated workspace surface at `/workspace/todos` for standalone tasks — the rows in the `Tasks` table with `projectId IS NULL`. Todos are
+quick captures that don't belong to any project: no timer, no activity feed, no lifecycle beyond `todo → doing → done`. Project-bound tasks
+live on the project detail route (`/workspace/projects/$projectId`) and never appear here; the two surfaces are disjoint by construction.
 
 The surface is small but ritualised — completion is meant to feel earned, momentum is visible, and capture is instant. Both this page and
 the project-tasks section on `/workspace/projects/{projectId}` share the redesigned `Task` shape (see
@@ -18,17 +17,17 @@ See also:
 ## User behavior
 
 The page is a flat list grouped by status (`Offen / Aktiv / Erledigt`). Each row is a title, an optional due date, and a status icon on the
-left that cycles `todo → doing → done → todo` on click. Hover reveals edit + delete affordances. Empty state: a single card that says
-"Keine Todos." — no help copy, no CTA duplication; the composer at the top is already there.
+left that cycles `todo → doing → done → todo` on click. Hover reveals edit + delete affordances. Empty state: a single card that says "Keine
+Todos." — no help copy, no CTA duplication; the composer at the top is already there.
 
 ### Momentum header
 
 Always visible at the top of the page. Two lines:
 
 1. `3 heute erledigt · 2 offen` — completed count first (reframes the surface from "what's left" to "what I've done").
-2. Seven dots — one per day, oldest → newest. Each dot's size scales with that day's completion count (empty = hollow ring, 1 = small,
-   2 = medium, 3+ = full). Today pulses softly. A `🔥 4-Tage-Streak` chip appears when the user has completed something on ≥3 consecutive
-   days ending today or yesterday.
+2. Seven dots — one per day, oldest → newest. Each dot's size scales with that day's completion count (empty = hollow ring, 1 = small, 2 =
+   medium, 3+ = full). Today pulses softly. A `🔥 4-Tage-Streak` chip appears when the user has completed something on ≥3 consecutive days
+   ending today or yesterday.
 
 All values are derived client-side from `completedAt` on the fetched rows — no server work, no denormalized counters. See
 `src/web/utils/todoDerive.ts` (`todayCompletedCount`, `weekDots`, `completionStreak`).
@@ -37,8 +36,8 @@ All values are derived client-side from `completedAt` on the fetched rows — no
 
 Row of pills below the header: `Heute` · `Diese Woche` · `Alles` · `Blockiert`. Each chip carries a tooltip that spells out its rule. The
 active chip is reflected in the URL as `?view=today|week|waiting` (the default `all` is omitted so URLs stay clean), so reloads and shared
-links preserve the current view. Chip clicks use `replace` navigation — the back button doesn't get polluted with every filter tap.
-Matching rules:
+links preserve the current view. Chip clicks use `replace` navigation — the back button doesn't get polluted with every filter tap. Matching
+rules:
 
 - **Heute** — `whenBucket === 'today'` OR `dueAt` today or overdue.
 - **Diese Woche** — Heute rules + `whenBucket === 'week'` + `dueAt` within 7 days.
@@ -48,18 +47,18 @@ Matching rules:
 
 ### Inline composer
 
-An always-visible input at the top: `Was noch?`. Right side has three toggle buttons (⚡ 🎯 🧠) for the default effort of items being
-typed; selection is sticky within the session. Enter submits, clears, and keeps focus so the user can machine-gun rapid captures. Empty
-submissions are ignored. Errors are logged by URQL as usual; the composer doesn't surface toast state (the row simply doesn't appear).
+An always-visible input at the top: `Was noch?`. Right side has three toggle buttons (⚡ 🎯 🧠) for the default effort of items being typed;
+selection is sticky within the session. Enter submits, clears, and keeps focus so the user can machine-gun rapid captures. Empty submissions
+are ignored. Errors are logged by URQL as usual; the composer doesn't surface toast state (the row simply doesn't appear).
 
 The composer's `GlassCard` wrapper carries a `focus-within` ring so triggering focus by any means — click, the `n` hotkey, or the
 empty-state `New todo` button — reads visually even though the input itself is chrome-less.
 
-**Filter-aware default `whenBucket`.** If the user is looking at the `Heute`, `Diese Woche`, or `Blockiert` filter chip and captures a
-plain title with no NL bucket token, the new row is planted in the bucket that filter is showing (`today` / `week` / `waiting`).
-Otherwise the row would be created with `whenBucket=null` and instantly disappear from view — reading as a capture failure. On the `Alles`
-filter the bucket stays `null`. If NL-parsed metadata still puts the row outside the current filter (e.g. `!someday` typed on `Heute`),
-the page silently switches the filter to `Alles` so the user sees the row they just created.
+**Filter-aware default `whenBucket`.** If the user is looking at the `Heute`, `Diese Woche`, or `Blockiert` filter chip and captures a plain
+title with no NL bucket token, the new row is planted in the bucket that filter is showing (`today` / `week` / `waiting`). Otherwise the row
+would be created with `whenBucket=null` and instantly disappear from view — reading as a capture failure. On the `Alles` filter the bucket
+stays `null`. If NL-parsed metadata still puts the row outside the current filter (e.g. `!someday` typed on `Heute`), the page silently
+switches the filter to `Alles` so the user sees the row they just created.
 
 ### Natural-language parsing
 
@@ -90,8 +89,8 @@ Each open row is a card with a 4-pixel left-edge strip whose color encodes effor
 Below the title, a muted metadata line combines the effort label, the when-bucket label, and the due date (`fällig 15.03.`) — only present
 bits render, so unclassified rows stay clean. Notes clamp to one line; the full note is visible after clicking edit.
 
-Hover surfaces three icon buttons on the right: **snooze** (moves to `whenBucket=someday`, clears `dueAt`; a `waiting` row keeps its
-bucket since it isn't the user's to move — the due date still clears), **edit**, **delete**.
+Hover surfaces three icon buttons on the right: **snooze** (moves to `whenBucket=someday`, clears `dueAt`; a `waiting` row keeps its bucket
+since it isn't the user's to move — the due date still clears), **edit**, **delete**.
 
 ### Completion ritual
 
@@ -103,8 +102,8 @@ Clicking the checkbox on an open row plays three beats:
 3. The title's strike-through animates from left to right via a `background-image` gradient (`background-size: 0% → 100%` over 300 ms),
    reading as hand-drawn rather than as a `text-decoration: line-through`.
 
-The `WorkspaceTodoUpsert` mutation with `status: 'done'` and `completedAt: now` fires in parallel with the ritual — the server push
-unmounts the row from the open list and it appears under **Heute erledigt · N** at the bottom.
+The `WorkspaceTodoUpsert` mutation with `status: 'done'` and `completedAt: now` fires in parallel with the ritual — the server push unmounts
+the row from the open list and it appears under **Heute erledigt · N** at the bottom.
 
 Milestones trigger a `<Celebration>` in a fixed-position layer above everything:
 
@@ -118,9 +117,9 @@ break resume).
 ### Focus mode
 
 Press `f` (or click the target icon in the header) with any open todo present to enter focus mode: a fixed overlay centres the top todo,
-everything else is pushed behind a blurred backdrop. Enter completes the todo and exits; `Esc` exits without completing. The page-level
-`n` / `f` bindings are suspended while the overlay is up so `n` can't focus a composer that isn't mounted. Focus mode is reflected in the
-URL as `?mode=focus` so a reload keeps the user in the same surface and the chat assistant can deep-link into it.
+everything else is pushed behind a blurred backdrop. Enter completes the todo and exits; `Esc` exits without completing. The page-level `n`
+/ `f` bindings are suspended while the overlay is up so `n` can't focus a composer that isn't mounted. Focus mode is reflected in the URL as
+`?mode=focus` so a reload keeps the user in the same surface and the chat assistant can deep-link into it.
 
 ### Keyboard shortcuts
 
@@ -136,8 +135,8 @@ Shortcut handling lives in `src/web/hooks/useHotkeys.ts` — small, no dependenc
 
 ### Empty state as reward
 
-When the filtered list is empty, the page renders a large sparkle glyph, `Alles erledigt.` / `All done.`, and — if the user has completed
-≥5 today — a subtitle acknowledging the productivity. A `New todo` button focuses the composer.
+When the filtered list is empty, the page renders a large sparkle glyph, `Alles erledigt.` / `All done.`, and — if the user has completed ≥5
+today — a subtitle acknowledging the productivity. A `New todo` button focuses the composer.
 
 ### Deep linking
 
@@ -158,8 +157,8 @@ Deep-linking from the personal assistant: any standalone task the agent referenc
 
 Dedicated route, same `Tasks` table. `projectId IS NULL` = standalone todo. The page reads only `admin.standaloneTasks` and writes through
 `admin.taskUpsert(input: { projectId: null, … })` / `admin.taskDelete`. Project-bound tasks flow through the same commands with a real
-`projectId`; the server enforces access via `guardAdminMutation` — nothing on the schema forbids either side from touching the other's
-rows, but nothing in the client asks it to.
+`projectId`; the server enforces access via `guardAdminMutation` — nothing on the schema forbids either side from touching the other's rows,
+but nothing in the client asks it to.
 
 ## Implementation details
 
@@ -205,8 +204,8 @@ replace the entire page state in one push — no `router.invalidate()`.
 ### URL state
 
 Everything the user is currently looking at is encoded in query params so reloads and shared links reproduce the exact view. User
-preferences ("Heute erledigt" open state) intentionally stay in `localStorage` — they're who-the-user-is, not what-they're-looking-at,
-and shouldn't propagate through a share link.
+preferences ("Heute erledigt" open state) intentionally stay in `localStorage` — they're who-the-user-is, not what-they're-looking-at, and
+shouldn't propagate through a share link.
 
 | Param   | Values                         | Meaning                                                         |
 | ------- | ------------------------------ | --------------------------------------------------------------- |

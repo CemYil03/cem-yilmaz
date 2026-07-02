@@ -50,8 +50,8 @@ opening the page.
 ## Option chosen
 
 Dedicated `Projects` and `Tasks` tables. `Tasks.projectId` is nullable — `IS NULL` rows are standalone todos surfaced on the separate
-`/workspace/todos` page (see [features/workspace-todos.md](./workspace-todos.md)); this page never lists them so the two mental spaces stay disjoint. Convert
-flow runs through `projectUpsert` with `sourceRequestId` set; a single drizzle transaction inserts the project, stamps
+`/workspace/todos` page (see [features/workspace-todos.md](./workspace-todos.md)); this page never lists them so the two mental spaces stay
+disjoint. Convert flow runs through `projectUpsert` with `sourceRequestId` set; a single drizzle transaction inserts the project, stamps
 `Projects.sourceRequestId`, and archives the request. Single-language (English only) — the page is admin-only and never surfaced publicly,
 so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
 
@@ -320,10 +320,10 @@ files (see the **Files → Agent-authored markdown** section above). See
 
 The orchestrator formats every project / inbox row it names as a markdown link with a `?focus=<id>` search param —
 `/workspace/projects?tab=projects&focus=<projectId>` and `…&tab=inbox&focus=<projectRequestId>`. Standalone todos deep-link to
-`/workspace/todos?focus=<taskId>` instead (see [features/workspace-todos.md](./workspace-todos.md)). The page's `validateSearch` schema picks `focus` up, a
-`useEffect` scrolls the `<li data-row-id="<id>">` for the active tab into view, and `@keyframes focus-flash` in `src/styles.css` runs a
-single primary-tinted breath for ~1500ms before the param is dropped via a replace-navigate so a refresh doesn't re-flash. Missing or
-wrong-tab ids no-op silently. See [Deep links](../architecture/agent-delegation.md#deep-links).
+`/workspace/todos?focus=<taskId>` instead (see [features/workspace-todos.md](./workspace-todos.md)). The page's `validateSearch` schema
+picks `focus` up, a `useEffect` scrolls the `<li data-row-id="<id>">` for the active tab into view, and `@keyframes focus-flash` in
+`src/styles.css` runs a single primary-tinted breath for ~1500ms before the param is dropped via a replace-navigate so a refresh doesn't
+re-flash. Missing or wrong-tab ids no-op silently. See [Deep links](../architecture/agent-delegation.md#deep-links).
 
 ## Project activity timeline & work timer
 

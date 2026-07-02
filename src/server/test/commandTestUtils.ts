@@ -95,6 +95,18 @@ function serverRuntimeStubCreate(): ServerRuntime {
                 throw new Error('emailService.sendEmail not used');
             }) as unknown as ServerRuntime['emailService']['sendEmail'],
         },
+        // TMDB is only reached by the media commands. Stub returns empty /
+        // null so a media test that lands here without wiring its own mock
+        // gets the same shape a production runtime with a missing key would
+        // deliver — never the network.
+        tmdb: {
+            searchMovies: vi.fn(async () => []),
+            getMovie: vi.fn(async () => null),
+        },
+        // Same posture for the YouTube channel search.
+        youtube: {
+            searchChannels: vi.fn(async () => []),
+        },
     };
 }
 
