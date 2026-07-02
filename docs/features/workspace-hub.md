@@ -14,7 +14,7 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
 - Sending a message from the hub composer creates a new admin-scope chat and pops the workspace assistant sheet so the streaming response
   surfaces in context. The hub itself stays a hub — every visit lands on the empty composer again.
 - The focus-area cards are split into two subgroups:
-  - **Personal areas** (top): Software, Projects, Finances, Tax, Fitness, Medical, Movies & TV — the daily-use surfaces.
+  - **Personal areas** (top): Software, Projects, Finances, Inventory, Tax, Fitness, Medical, Movies & TV, Travel — the daily-use surfaces.
   - **Public site** (bottom, under a small muted "Öffentliche Website / Public site" heading): CV, Visitor chats. These manage what appears
     on the public `cem-yilmaz.de` (the CV editor writes the `Cv*` tables that feed `/cv` and `/about`; the visitor-chats surface is for
     reading what visitors have asked the public assistant). They sit at the bottom because they're touched rarely compared to the personal
@@ -24,10 +24,12 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
     - Software → `/workspace/software`
     - Projects → `/workspace/projects`
     - Finances → `/workspace/finances`
+    - Inventory → `/workspace/inventory`
     - Tax → `/workspace/tax`
     - Fitness → `/workspace/fitness`
     - Medical → `/workspace/medical`
     - Movies & TV → `/workspace/media`
+    - Travel → `/workspace/travel`
     - Visitor chats → `/workspace/visitor-chats`
 - Each focus-area page is a placeholder: the area name + icon, a one-line "this area is being built out" body, and a muted "Coming soon"
   line. No per-page back-link — the workspace header's breadcrumb trail is the way back to `/workspace`.
@@ -121,10 +123,12 @@ src/routes/{-$locale}/workspace/
 ├── software.tsx                       → /workspace/software
 ├── projects.tsx                       → /workspace/projects
 ├── finances.tsx                       → /workspace/finances
+├── inventory.tsx                      → /workspace/inventory
 ├── tax.tsx                            → /workspace/tax
 ├── fitness.tsx                        → /workspace/fitness
 ├── medical.tsx                        → /workspace/medical
-└── media.tsx                          → /workspace/media
+├── media.tsx                          → /workspace/media
+└── travel.tsx                         → /workspace/travel
 ```
 
 All page files follow the same shape as `src/routes/{-$locale}/index.tsx` and `src/routes/{-$locale}/datenschutz.tsx`:

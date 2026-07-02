@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
     CheckIcon,
@@ -254,13 +254,6 @@ function WorkspaceMedia() {
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
     if (!media) return null;
 
-    const setTab = (next: Tab) => {
-        void navigate({
-            search: (prev) => ({ ...prev, tab: next === 'movies' ? undefined : next, focus: undefined }),
-            replace: true,
-        });
-    };
-
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <p className="text-sm text-muted-foreground">{pageDescription[locale]}</p>
@@ -270,12 +263,23 @@ function WorkspaceMedia() {
                     const Icon = TAB_ICONS[t];
                     const isActive = tab === t;
                     return (
-                        <button
+                        <Link
                             key={t}
-                            type="button"
-                            onClick={() => setTab(t)}
+                            to="/{-$locale}/workspace/media"
+                            from="/{-$locale}/workspace/media"
+                            // Default tab (`movies`) drops the key so the canonical
+                            // URL for the landing view has no `?tab=`. Also clear
+                            // the `focus` deep-link on switch so a stale row
+                            // reference doesn't try to scroll into view on the
+                            // other tab.
+                            search={(prev) => ({
+                                ...prev,
+                                tab: t === 'movies' ? undefined : t,
+                                focus: undefined,
+                            })}
+                            replace
                             className={cn(
-                                '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-sm',
+                                '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                                 isActive
                                     ? 'border-primary text-foreground'
                                     : 'border-transparent text-muted-foreground hover:text-foreground',
@@ -284,7 +288,7 @@ function WorkspaceMedia() {
                         >
                             <Icon className="size-4" />
                             {TAB_LABELS[t][locale]}
-                        </button>
+                        </Link>
                     );
                 })}
             </nav>

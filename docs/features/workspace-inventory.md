@@ -1,0 +1,153 @@
+# Workspace Inventory
+
+Track material belongings — what Cem owns, what each item is worth today, how it's been serviced, and how its value moves over time. This is
+the material-assets counterpart to `workspace-finances` (which is instruments / accounts / trading), split into its own focus area because
+the two have different data shapes and very different update cadences: finances is checked weekly, inventory is touched when something is
+acquired, sold, gifted, damaged, repriced, or serviced.
+
+## Why a separate category
+
+Considered — and rejected — folding this into `workspace-finances`:
+
+- **Different data shape.** Finances is accounts, holdings, and running totals. Inventory is per-item rows with purchase date, warranty
+  expiry, serial number, condition, photos, and depreciation.
+- **Different update cadence.** A stocks portfolio is checked frequently; a coffee machine's warranty is looked at once every two years.
+  Cramming both into one page would push either into the noise.
+- **Different reasons to open it.** Insurance claims, resale, gifting, moving house — none of those benefit from being next to trading P&L.
+
+Considered — and rejected — renaming `finances` to `assets`:
+
+- The umbrella reads clean on paper (stocks + material things = "assets") but breaks daily use: it forces two very different rhythms into
+  one surface.
+
+The category is called **Inventory** (not `belongings` / `assets` / `possessions`) because that's the noun Cem will type into the address
+bar when he needs it.
+
+## User Behavior
+
+- `/workspace/inventory` lists every tracked item, grouped by category (Electronics, Appliance, Kitchen, Furniture, Vehicle, Clothing, Tool,
+  Sports, Other). Each category header shows the item count and the sum of current values in that section.
+- **Overview strip** at the top of the page: material net worth (sum of `currentValueCents` across owned items), owned-item count, and up to
+  three upcoming warranty expirations (within 60 days) with links straight to their detail page.
+- **Item card** on the list carries name + brand/model, a warranty badge (green ≥90d out, amber <90d, red past), an optional condition pill,
+  purchase date, and current value. Click → item detail. Hover reveals inline edit / delete buttons.
+- **Disposal-state tabs**: `Owned` (default), `All`, `Sold`, `Gifted`, `Lost`, `Disposed`. Rendered as the workspace's canonical top-of-page
+  underlined section tabs (see [conventions.md](../conventions.md#top-of-page-sub-view-switcher)). Active tab lives in the URL as
+  `?filter=…` (the default `owned` is dropped so the canonical landing URL has no query string), so a bookmark to "show me disposed items"
+  round-trips.
+- **Item detail** (`/workspace/inventory/{itemId}`) is the busy surface:
+  - Header with name + brand/model + disposalState pill + "Change status" button.
+  - Facts grid: purchase date, purchase price, current value (with inline "Reprice"), serial number, warranty end + provider + notes,
+    long-form notes.
+  - **Valuations**: a small SVG sparkline of value over time plus a chronological table. Each repricing is journaled — the cached
+    `currentValueCents` on the item is the single source of truth for the list view, so the sparkline reads from the journal without
+    touching the cache.
+  - **Service history**: repair / service / replacement / other events with date, vendor, cost, notes, and an optional `nextDueAt` that
+    surfaces as a "next service due" line on the entry.
+  - **Files**: receipts, warranty PDFs, invoices, photos, manuals. Upload via the existing `POST /api/file-uploads` → `itemFileAttach`
+    two-step; each file carries a `kind` and can be pinned. Files can be attached at the item level or to a specific service entry
+    (invoices, typically) — the entry card shows the invoice inline, and the item-level Files section shows the same file too.
+- **Disposal**: setting an item to sold / gifted / lost / disposed keeps the row (so material net worth is reconcilable and the history
+  survives), stamps `disposedAt` (defaults to now), and drops the row from the default list. Reverting to `owned` clears the stamp.
+
+## Cross-references
+
+- `/workspace/finances` will eventually display a "material net worth" tile that reads `admin.inventory.materialNetWorthCents` — the field
+  is already exposed; the tile lands when the finances page is next touched.
+- `/workspace/tax` may consume inventory data later (depreciation on business equipment) — no dependency yet.
+
+## Design decisions
+
+### Why a hard-coded category enum
+
+`itemCategories` is a `const` array in `src/server/db/schema.ts` mirrored as `ItemCategory` in the GraphQL schema. The alternative — a
+user-editable `ItemCategories` table — was rejected for v1: the taxonomy is stable ("electronics", "appliance", "kitchen", …), the UI
+autocomplete never needs to grow one-off values, and a new category is a one-line change plus a codegen run. Elevate to a table only if the
+list starts churning weekly.
+
+### Why a separate `ItemFiles` join table
+
+The alternative — a `fileUploadId` array on the item row — was rejected. `ItemFiles` carries its own metadata (kind, pin, optional
+service-entry link) and the same pattern already works on `ProjectFiles`. Reusing `FileUploads` for the raw bytes means the upload flow, the
+`/api/file-uploads/:id` download route, and the byte-storage strategy stay identical to chat attachments and project files. Cascade
+semantics: deleting an item removes the join rows but preserves the underlying uploads (they belong to the user); deleting a service entry
+sets the join's `serviceEntryId` to null so the invoice stays visible on the item.
+
+### Why cache `currentValueCents` on the item
+
+Every list read and the material-net-worth aggregate could compute the "latest by valuedAt" from `ItemValuations` — but at the cost of a
+correlated subquery per row. Caching the latest valuation on the item lets the list surface hit one indexed table and read the cached column
+directly. The `itemReprice` command is the single writer: it inserts the journal row and updates the cache in one transaction, so they can't
+drift.
+
+### Why `itemReprice` and `itemDispose` are not part of `itemUpsert`
+
+Both mutations have coupled side-effects (`itemReprice` writes the valuation journal; `itemDispose` conditionally clears `disposedAt`) and
+the wrong pattern would let a naive `itemUpsert` call silently overwrite the cache without a matching journal row. Splitting them makes the
+semantics obvious at the call site: "the composer edits facts; repricing and disposal are their own actions."
+
+## Implementation Details
+
+### Route
+
+- `src/routes/{-$locale}/workspace/inventory.tsx` — list page. Overview strip + disposal-state tabs + grouped list + create/edit dialog +
+  delete alert.
+- `src/routes/{-$locale}/workspace/inventory_.$itemId.tsx` — detail page. Header, facts grid, valuations (sparkline + journal), service
+  history, files.
+- `src/routes/{-$locale}/workspace/inventory.graphql` and `.../inventory_.$itemId.graphql` — co-located operations. The list uses the
+  `WorkspaceInventoryPageUser` fragment (items + `materialNetWorthCents` + `upcomingWarrantyExpirations`) for seed-and-subscribe; the detail
+  uses `WorkspaceInventoryDetailUser` for the singular `item(id)` fetch with valuations, service entries, and files.
+
+### State synchronization
+
+Same seed-and-subscribe posture as `/workspace/media` — mutations don't call `router.invalidate()`. Every command publishes on the
+`userUpdates` channel, and the page reconciles by swapping its `useState` with the incoming subscription payload. See
+[docs/architecture/state-synchronization.md](../architecture/state-synchronization.md).
+
+### Schema
+
+Four tables in `src/server/db/schema.ts` under a `--- Inventory ---` section:
+
+- `Items` — one row per possession, plus a cached `currentValueCents` snapshot and a `disposalState` (owned / sold / gifted / lost /
+  disposed).
+- `ItemValuations` — repricing journal, `(itemId, valuedAt DESC)` indexed.
+- `ItemServiceEntries` — service events with optional `nextDueAt`.
+- `ItemFiles` — join between items and `FileUploads`, with optional `serviceEntryId` for invoices tied to specific events.
+
+Enums (`itemCategories`, `itemConditions`, `itemDisposalStates`, `itemServiceKinds`, `itemFileKinds`) are const arrays exported alongside
+the tables, mirrored as GraphQL enums.
+
+### GraphQL
+
+- Read: `AdminInventoryQuery` mounted on `extend type Admin`. Fields: `items(includeDisposed)`, `item(itemId)`, `materialNetWorthCents`,
+  `upcomingWarrantyExpirations(withinDays)`.
+- Write: 9 mutations under `extend type AdminMutation` — `itemUpsert`, `itemDelete`, `itemDispose`, `itemReprice`, `itemServiceEntryUpsert`,
+  `itemServiceEntryDelete`, `itemFileAttach`, `itemFileDelete`, `itemFileTogglePin`.
+- Gated once at `Mutation.admin → guardAdminMutation`; child resolvers assume they're guarded (same posture as Media / Projects).
+
+### CQRS wiring
+
+- `src/server/commands/item*.ts` — one file per mutation.
+- `src/server/queries/{itemsList,itemGet,materialNetWorthCentsGet,upcomingWarrantyExpirationsList}.ts`.
+- `src/server/mappers/{toGqlItem,toGqlItemValuation,toGqlItemServiceEntry,toGqlItemFile}.ts`.
+- Wired in `src/server/graphql/resolversCreate.ts` — the single entry point.
+
+### Breadcrumb
+
+`WORKSPACE_TITLES` and `WORKSPACE_ICONS` already carry the `inventory` segment (icon: `PackageIcon`). The detail route registers a
+`TRAILING_LABEL_SELECTORS` entry in `WorkspaceHeader.tsx` so the trailing crumb shows the item's name instead of its UUID — same shape the
+project detail already uses.
+
+### SEO
+
+`noindex: true` on both routes, not in `SITEMAP_PATHS` — same posture as the rest of `/workspace/*`.
+
+## Open TODOs
+
+- **Finances tile.** Once `/workspace/finances` graduates from stub, add a "material net worth" tile reading
+  `admin.inventory.materialNetWorthCents` and link to `/workspace/inventory`. Schema side is ready.
+- **Category taxonomy.** The hard-coded enum is fine today. If ad-hoc categories start showing up in notes, promote to an `ItemCategories`
+  table (with a user-editable list + default seed).
+- **Bulk actions.** Multi-select on the list for "mark as sold" / "export" would be nice but out of scope for v1.
+- **Reminders.** `nextDueAt` on service entries and `warrantyEndsAt` on items don't fire anything yet. A job that pushes into
+  `/workspace/todos` (or a personal-assistant nudge) is a natural follow-up.

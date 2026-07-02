@@ -1,0 +1,87 @@
+# Workspace Inventory editor operations. Co-located with `/workspace/inventory`.
+# Same seed-and-subscribe posture as `/workspace/media`: the loader query and
+# the live `userUpdates` subscription spread `WorkspaceInventoryPageUser` so
+# mutations don't need to re-invalidate — every item mutation publishes on
+# the user channel and the page picks up the new payload over SSE. See
+# `docs/architecture/state-synchronization.md`.
+
+fragment WorkspaceInventoryPageUser on User {
+    admin {
+        inventory {
+            materialNetWorthCents
+            items {
+                itemId
+                categoryKey
+                name
+                brand
+                model
+                serialNumber
+                purchasedAt
+                purchasePriceCents
+                currentValueCents
+                condition
+                disposalState
+                disposedAt
+                warrantyEndsAt
+                warrantyProvider
+                warrantyNotes
+                notes
+                createdAt
+                updatedAt
+            }
+            upcomingWarrantyExpirations(withinDays: 60) {
+                itemId
+                name
+                brand
+                model
+                warrantyEndsAt
+            }
+        }
+    }
+}
+
+query WorkspaceInventoryPage {
+    currentSession {
+        user {
+            ...WorkspaceInventoryPageUser
+        }
+    }
+}
+
+subscription WorkspaceInventoryPageUpdates {
+    userUpdates {
+        ...WorkspaceInventoryPageUser
+    }
+}
+
+mutation WorkspaceItemUpsert($input: ItemInput!) {
+    admin {
+        itemUpsert(input: $input) {
+            itemId
+        }
+    }
+}
+
+mutation WorkspaceItemDelete($itemId: ID!) {
+    admin {
+        itemDelete(itemId: $itemId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceItemDispose($itemId: ID!, $state: ItemDisposalState!, $disposedAt: DateTime) {
+    admin {
+        itemDispose(itemId: $itemId, state: $state, disposedAt: $disposedAt) {
+            itemId
+        }
+    }
+}
+
+mutation WorkspaceItemReprice($itemId: ID!, $valueCents: Int!, $valuedAt: DateTime, $note: String) {
+    admin {
+        itemReprice(itemId: $itemId, valueCents: $valueCents, valuedAt: $valuedAt, note: $note) {
+            itemId
+        }
+    }
+}

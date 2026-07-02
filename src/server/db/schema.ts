@@ -1416,3 +1416,192 @@ export const mediaChannels = pgTable(
 
 export type MediaChannel = typeof mediaChannels.$inferSelect;
 export type MediaChannelCreate = typeof mediaChannels.$inferInsert;
+
+// --- Inventory ---------------------------------------------------------------
+//
+// `Items` and its satellites (`ItemValuations`, `ItemServiceEntries`,
+// `ItemFiles`) back `/workspace/inventory`. Admin-only, `noindex` — no
+// `*De`/`*En` pairs, matching Media / Projects / Tasks. See
+// `docs/features/workspace-inventory.md`.
+//
+// The design intentionally splits three concerns onto their own tables:
+//   - **Valuations** are a journal so material net worth can be plotted over
+//     time; the current value is *also* cached on the `Items` row
+//     (`currentValueCents`) so the list surface and the finances-overview
+//     tile read it without touching the journal.
+//   - **Service entries** are events (service / repair / replacement), with
+//     an optional `nextDueAt` reminder. Independent of warranty.
+//   - **Files** reuse the existing `FileUploads` table (bytea in Postgres —
+//     no S3), following the `ProjectFiles` shape. A file can optionally
+//     attach to a specific service entry (e.g. an invoice).
+//
+// Category taxonomy stays hard-coded (`itemCategories` below) — the media
+// convention for known-vocabulary enums. A new category is a one-line change
+// here plus a mirror in the `ItemCategory` GraphQL enum. If categories ever
+// need to be user-editable, elevate to a `ItemCategories` table.
+
+export const itemCategories = [
+    'electronics',
+    'appliance',
+    'kitchen',
+    'furniture',
+    'vehicle',
+    'clothing',
+    'tool',
+    'sports',
+    'other',
+] as const;
+export type ItemCategory = (typeof itemCategories)[number];
+
+export const itemConditions = ['new', 'likeNew', 'good', 'fair', 'poor'] as const;
+export type ItemCondition = (typeof itemConditions)[number];
+
+export const itemDisposalStates = ['owned', 'sold', 'gifted', 'lost', 'disposed'] as const;
+export type ItemDisposalState = (typeof itemDisposalStates)[number];
+
+export const itemServiceKinds = ['service', 'repair', 'replacement', 'other'] as const;
+export type ItemServiceKind = (typeof itemServiceKinds)[number];
+
+export const itemFileKinds = ['photo', 'receipt', 'warranty', 'manual', 'invoice', 'other'] as const;
+export type ItemFileKind = (typeof itemFileKinds)[number];
+
+// `currentValueCents` is a cached snapshot of the latest `ItemValuations` row
+// so the list surface and finances tile never need to `MAX(valuedAt)` at
+// query time. The `itemReprice` command is the single writer: journal insert
+// + this cache update in one transaction.
+export const items = pgTable(
+    'Items',
+    {
+        itemId: uuid().primaryKey(),
+        categoryKey: varchar().$type<ItemCategory>().notNull().default('other'),
+        name: varchar().notNull(),
+        brand: varchar(),
+        model: varchar(),
+        serialNumber: varchar(),
+        purchasedAt: date(),
+        purchasePriceCents: integer(),
+        currentValueCents: integer(),
+        condition: varchar().$type<ItemCondition>(),
+        disposalState: varchar().$type<ItemDisposalState>().notNull().default('owned'),
+        disposedAt: timestamp({ withTimezone: true }),
+        warrantyEndsAt: date(),
+        warrantyProvider: varchar(),
+        warrantyNotes: text(),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        index('Items_disposalState_idx').on(table.disposalState),
+        index('Items_warrantyEndsAt_idx').on(table.warrantyEndsAt),
+        index('Items_categoryKey_idx').on(table.categoryKey),
+    ],
+);
+
+export type Item = typeof items.$inferSelect;
+export type ItemCreate = typeof items.$inferInsert;
+
+// Repricing journal. `itemReprice` writes one row here and updates the cached
+// `items.currentValueCents` in the same transaction. `valuedAt` defaults to
+// now but is settable — an appraisal from last month can be back-dated.
+export const itemValuations = pgTable(
+    'ItemValuations',
+    {
+        valuationId: uuid().primaryKey(),
+        itemId: uuid().notNull(),
+        valueCents: integer().notNull(),
+        valuedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        note: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.itemId],
+            foreignColumns: [items.itemId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('ItemValuations_itemId_valuedAt_idx').on(table.itemId, table.valuedAt),
+    ],
+);
+
+export type ItemValuation = typeof itemValuations.$inferSelect;
+export type ItemValuationCreate = typeof itemValuations.$inferInsert;
+
+// Service events on an item — services, repairs, replacements, other. The
+// optional `nextDueAt` drives a "next service due" reminder computed by the
+// list query. Independent of warranty; both live on the item and are
+// surfaced side-by-side on the detail page.
+export const itemServiceEntries = pgTable(
+    'ItemServiceEntries',
+    {
+        serviceEntryId: uuid().primaryKey(),
+        itemId: uuid().notNull(),
+        kind: varchar().$type<ItemServiceKind>().notNull().default('service'),
+        performedAt: date().notNull(),
+        vendor: varchar(),
+        costCents: integer(),
+        notes: text(),
+        nextDueAt: date(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.itemId],
+            foreignColumns: [items.itemId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('ItemServiceEntries_itemId_performedAt_idx').on(table.itemId, table.performedAt),
+    ],
+);
+
+export type ItemServiceEntry = typeof itemServiceEntries.$inferSelect;
+export type ItemServiceEntryCreate = typeof itemServiceEntries.$inferInsert;
+
+// Join row pinning `FileUploads` to an item (and optionally a specific
+// service entry, e.g. an invoice). Mirrors `projectFiles`: the underlying
+// upload is owned by the user that posted it and lives on `fileUploads`; on
+// service-entry delete the join's `serviceEntryId` sets to null (the file
+// still belongs to the item), on upload delete the whole join cascades.
+export const itemFiles = pgTable(
+    'ItemFiles',
+    {
+        itemFileId: uuid().primaryKey(),
+        itemId: uuid().notNull(),
+        serviceEntryId: uuid(),
+        fileUploadId: uuid().notNull(),
+        label: varchar(),
+        kind: varchar().$type<ItemFileKind>().notNull().default('other'),
+        pinned: boolean().notNull().default(false),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.itemId],
+            foreignColumns: [items.itemId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.serviceEntryId],
+            foreignColumns: [itemServiceEntries.serviceEntryId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        foreignKey({
+            columns: [table.fileUploadId],
+            foreignColumns: [fileUploads.fileUploadId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('ItemFiles_itemId_pinned_idx').on(table.itemId, table.pinned),
+        index('ItemFiles_serviceEntryId_idx').on(table.serviceEntryId),
+        index('ItemFiles_fileUploadId_idx').on(table.fileUploadId),
+    ],
+);
+
+export type ItemFile = typeof itemFiles.$inferSelect;
+export type ItemFileCreate = typeof itemFiles.$inferInsert;

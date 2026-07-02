@@ -18,6 +18,15 @@ import { cvHobbyUpsert } from '../commands/cvHobbyUpsert';
 import { cvSkillDelete } from '../commands/cvSkillDelete';
 import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillUpsert } from '../commands/cvSkillUpsert';
+import { itemDelete } from '../commands/itemDelete';
+import { itemDispose } from '../commands/itemDispose';
+import { itemFileAttach } from '../commands/itemFileAttach';
+import { itemFileDelete } from '../commands/itemFileDelete';
+import { itemFileTogglePin } from '../commands/itemFileTogglePin';
+import { itemReprice } from '../commands/itemReprice';
+import { itemServiceEntryDelete } from '../commands/itemServiceEntryDelete';
+import { itemServiceEntryUpsert } from '../commands/itemServiceEntryUpsert';
+import { itemUpsert } from '../commands/itemUpsert';
 import { mediaChannelDelete } from '../commands/mediaChannelDelete';
 import { mediaChannelReorder } from '../commands/mediaChannelReorder';
 import { mediaChannelUpsert } from '../commands/mediaChannelUpsert';
@@ -72,6 +81,10 @@ import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
 import { mediaChannelList } from '../queries/mediaChannelList';
 import { mediaChannelsByTopic } from '../queries/mediaChannelsByTopic';
+import { itemGet } from '../queries/itemGet';
+import { itemsList } from '../queries/itemsList';
+import { materialNetWorthCentsGet } from '../queries/materialNetWorthCentsGet';
+import { upcomingWarrantyExpirationsList } from '../queries/upcomingWarrantyExpirationsList';
 import { movieList } from '../queries/movieList';
 import { compassGet } from '../queries/compassGet';
 import { compassInterviewActiveDueGet } from '../queries/compassInterviewActiveDueGet';
@@ -110,6 +123,15 @@ import type {
     GqlSAdminMutationCvSkillDeleteArgs,
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillUpsertArgs,
+    GqlSAdminMutationItemDeleteArgs,
+    GqlSAdminMutationItemDisposeArgs,
+    GqlSAdminMutationItemFileAttachArgs,
+    GqlSAdminMutationItemFileDeleteArgs,
+    GqlSAdminMutationItemFileTogglePinArgs,
+    GqlSAdminMutationItemRepriceArgs,
+    GqlSAdminMutationItemServiceEntryDeleteArgs,
+    GqlSAdminMutationItemServiceEntryUpsertArgs,
+    GqlSAdminMutationItemUpsertArgs,
     GqlSAdminMutationMediaChannelDeleteArgs,
     GqlSAdminMutationMediaChannelReorderArgs,
     GqlSAdminMutationMediaChannelUpsertArgs,
@@ -117,6 +139,10 @@ import type {
     GqlSAdminMutationMovieDeleteArgs,
     GqlSAdminMutationMovieMarkWatchedArgs,
     GqlSAdminMutationMovieUpsertArgs,
+    GqlSAdminInventoryQuery,
+    GqlSAdminInventoryQueryItemArgs,
+    GqlSAdminInventoryQueryItemsArgs,
+    GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs,
     GqlSAdminMediaQuery,
     GqlSAdminMediaQueryChannelsByTopicArgs,
     GqlSAdminMediaQueryTmdbSearchArgs,
@@ -311,6 +337,12 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             media(): GqlSAdminMediaQuery {
                 return {} as GqlSAdminMediaQuery;
             },
+            // Inventory namespace — same shell pattern. Per-field resolvers
+            // on `AdminInventoryQuery` fan out to the item / valuation /
+            // net-worth queries. See `docs/features/workspace-inventory.md`.
+            inventory(): GqlSAdminInventoryQuery {
+                return {} as GqlSAdminInventoryQuery;
+            },
             async chatConfig(_parent: GqlSAdmin) {
                 // Catalog is server-static — same array on every read. The
                 // saved default is the only DB-bound part; we resolve it here
@@ -408,6 +440,24 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             // YouTube error, or on empty query.
             youtubeSearch(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryYoutubeSearchArgs) {
                 return serverRuntime.youtube.searchChannels(args.query);
+            },
+        },
+        AdminInventoryQuery: {
+            items(_parent: GqlSAdminInventoryQuery, args: GqlSAdminInventoryQueryItemsArgs, requestingSession: GqlSSession) {
+                return itemsList(args.includeDisposed ?? false, requestingSession, serverRuntime);
+            },
+            item(_parent: GqlSAdminInventoryQuery, args: GqlSAdminInventoryQueryItemArgs, requestingSession: GqlSSession) {
+                return itemGet(args.itemId, requestingSession, serverRuntime);
+            },
+            materialNetWorthCents(_parent: GqlSAdminInventoryQuery, __: any, requestingSession: GqlSSession) {
+                return materialNetWorthCentsGet(requestingSession, serverRuntime);
+            },
+            upcomingWarrantyExpirations(
+                _parent: GqlSAdminInventoryQuery,
+                args: GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return upcomingWarrantyExpirationsList(args.withinDays ?? 90, requestingSession, serverRuntime);
             },
         },
         AdminMutation: {
@@ -631,6 +681,41 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return mediaChannelReorder(userId, args, requestingSession, serverRuntime);
+            },
+            itemUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemUpsertArgs, requestingSession: GqlSSession) {
+                return itemUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            itemDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemDeleteArgs, requestingSession: GqlSSession) {
+                return itemDelete(userId, args, requestingSession, serverRuntime);
+            },
+            itemDispose({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemDisposeArgs, requestingSession: GqlSSession) {
+                return itemDispose(userId, args, requestingSession, serverRuntime);
+            },
+            itemReprice({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemRepriceArgs, requestingSession: GqlSSession) {
+                return itemReprice(userId, args, requestingSession, serverRuntime);
+            },
+            itemServiceEntryUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationItemServiceEntryUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return itemServiceEntryUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            itemServiceEntryDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationItemServiceEntryDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return itemServiceEntryDelete(userId, args, requestingSession, serverRuntime);
+            },
+            itemFileAttach({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFileAttachArgs, requestingSession: GqlSSession) {
+                return itemFileAttach(userId, args, requestingSession, serverRuntime);
+            },
+            itemFileDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFileDeleteArgs, requestingSession: GqlSSession) {
+                return itemFileDelete(userId, args, requestingSession, serverRuntime);
+            },
+            itemFileTogglePin({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFileTogglePinArgs, requestingSession: GqlSSession) {
+                return itemFileTogglePin(userId, args, requestingSession, serverRuntime);
             },
         },
         Query: {

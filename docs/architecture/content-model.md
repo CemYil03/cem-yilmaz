@@ -85,6 +85,11 @@ site (the page is `noindex` and the data feeds nothing on the visitor surface in
 buying anything. The schema uses single `title` / `description` / `notes` text columns; the GraphQL types do the same. The CV tables stay
 bilingual because their rows feed `/cv` and `/about` directly. See [features/workspace-projects.md](../features/workspace-projects.md).
 
+The Media (`Movies` / `MediaChannels`) and Inventory (`Items` / `ItemValuations` / `ItemServiceEntries` / `ItemFiles`) tables follow the
+same admin-only, no-`*De`/`*En` posture. Inventory reuses the shared `FileUploads` table for receipts / warranty PDFs / photos through an
+`ItemFiles` join, mirroring how `ProjectFiles` handles project attachments — the bytes never live on the domain table, only on
+`FileUploads`. See [features/workspace-inventory.md](../features/workspace-inventory.md).
+
 ## Tasks: added columns
 
 Beyond the base task shape (title, notes, status, position, dueAt, completedAt), the `Tasks` table carries two optional enum columns that

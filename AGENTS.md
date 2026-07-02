@@ -87,6 +87,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`     | `src/server/agents/adminChatModels.ts`         |
 | Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled      | `docs/features/workspace-compass.md`           |
 | Media library         | Movies + channels, TMDB auto-fill, topic-clustered cross-views             | `docs/features/workspace-media.md`             |
+| Inventory             | Items + valuations + service log + receipt uploads; material net worth     | `docs/features/workspace-inventory.md`         |
 
 ## How to Add Things
 
@@ -163,6 +164,8 @@ src/
 │   │       ├── projects_.$projectId.tsx  Per-project detail (tasks, activity, notes, links, files)
 │   │       ├── todos.tsx       Standalone todos (tasks with no parent project)
 │   │       ├── finances.tsx    Finances (goals, overview, trading & stocks)
+│   │       ├── inventory.tsx   Inventory — material assets, warranty, valuations, service log
+│   │       ├── inventory_.$itemId.tsx  Per-item detail (facts, valuations sparkline, service history, files)
 │   │       ├── tax.tsx         Tax matters
 │   │       ├── fitness.tsx     Fitness & well-being
 │   │       ├── medical.tsx     Medical (appointments, results, health notes)

@@ -27,6 +27,7 @@ export interface GqlCAdmin {
     chats: Array<GqlCChat>;
     compass: GqlCAdminCompass;
     cv: GqlCCvQuery;
+    inventory: GqlCAdminInventoryQuery;
     logs: Array<GqlCLog>;
     media: GqlCAdminMediaQuery;
     project: GqlCProject;
@@ -102,6 +103,26 @@ export type GqlCAdminCompassObservationsArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export interface GqlCAdminInventoryQuery {
+    __typename?: 'AdminInventoryQuery';
+    item?: Maybe<GqlCItem>;
+    items: Array<GqlCItem>;
+    materialNetWorthCents: Scalars['Int']['output'];
+    upcomingWarrantyExpirations: Array<GqlCItem>;
+}
+
+export type GqlCAdminInventoryQueryItemArgs = {
+    itemId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminInventoryQueryItemsArgs = {
+    includeDisposed?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type GqlCAdminInventoryQueryUpcomingWarrantyExpirationsArgs = {
+    withinDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export interface GqlCAdminMediaQuery {
     __typename?: 'AdminMediaQuery';
     channels: Array<GqlCMediaChannel>;
@@ -147,6 +168,15 @@ export interface GqlCAdminMutation {
     cvSkillDelete: GqlCMutationResult;
     cvSkillReorder: GqlCMutationResult;
     cvSkillUpsert: GqlCCvSkill;
+    itemDelete: GqlCMutationResult;
+    itemDispose: GqlCItem;
+    itemFileAttach: GqlCItemFile;
+    itemFileDelete: GqlCMutationResult;
+    itemFileTogglePin: GqlCItemFile;
+    itemReprice: GqlCItem;
+    itemServiceEntryDelete: GqlCMutationResult;
+    itemServiceEntryUpsert: GqlCItemServiceEntry;
+    itemUpsert: GqlCItem;
     mediaChannelDelete: GqlCMutationResult;
     mediaChannelReorder: GqlCMutationResult;
     mediaChannelUpsert: GqlCMediaChannel;
@@ -262,6 +292,47 @@ export type GqlCAdminMutationCvSkillReorderArgs = {
 
 export type GqlCAdminMutationCvSkillUpsertArgs = {
     input: GqlCCvSkillInput;
+};
+
+export type GqlCAdminMutationItemDeleteArgs = {
+    itemId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationItemDisposeArgs = {
+    disposedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    itemId: Scalars['ID']['input'];
+    state: GqlCItemDisposalState;
+};
+
+export type GqlCAdminMutationItemFileAttachArgs = {
+    input: GqlCItemFileAttachInput;
+};
+
+export type GqlCAdminMutationItemFileDeleteArgs = {
+    itemFileId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationItemFileTogglePinArgs = {
+    itemFileId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationItemRepriceArgs = {
+    itemId: Scalars['ID']['input'];
+    note?: InputMaybe<Scalars['String']['input']>;
+    valueCents: Scalars['Int']['input'];
+    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type GqlCAdminMutationItemServiceEntryDeleteArgs = {
+    serviceEntryId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationItemServiceEntryUpsertArgs = {
+    input: GqlCItemServiceEntryInput;
+};
+
+export type GqlCAdminMutationItemUpsertArgs = {
+    input: GqlCItemInput;
 };
 
 export type GqlCAdminMutationMediaChannelDeleteArgs = {
@@ -776,6 +847,112 @@ export interface GqlCFileUpload {
     mediaType: Scalars['String']['output'];
     size: Scalars['Int']['output'];
     url: Scalars['String']['output'];
+}
+
+export interface GqlCItem {
+    __typename?: 'Item';
+    brand?: Maybe<Scalars['String']['output']>;
+    categoryKey: GqlCItemCategory;
+    condition?: Maybe<GqlCItemCondition>;
+    createdAt: Scalars['DateTime']['output'];
+    currentValueCents?: Maybe<Scalars['Int']['output']>;
+    disposalState: GqlCItemDisposalState;
+    disposedAt?: Maybe<Scalars['DateTime']['output']>;
+    files: Array<GqlCItemFile>;
+    itemId: Scalars['ID']['output'];
+    model?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    purchasePriceCents?: Maybe<Scalars['Int']['output']>;
+    purchasedAt?: Maybe<Scalars['Date']['output']>;
+    serialNumber?: Maybe<Scalars['String']['output']>;
+    serviceEntries: Array<GqlCItemServiceEntry>;
+    updatedAt: Scalars['DateTime']['output'];
+    valuations: Array<GqlCItemValuation>;
+    warrantyEndsAt?: Maybe<Scalars['Date']['output']>;
+    warrantyNotes?: Maybe<Scalars['String']['output']>;
+    warrantyProvider?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCItemCategory = 'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle';
+
+export type GqlCItemCondition = 'fair' | 'good' | 'likeNew' | 'new' | 'poor';
+
+export type GqlCItemDisposalState = 'disposed' | 'gifted' | 'lost' | 'owned' | 'sold';
+
+export interface GqlCItemFile {
+    __typename?: 'ItemFile';
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlCFileUpload;
+    itemFileId: Scalars['ID']['output'];
+    itemId: Scalars['ID']['output'];
+    kind: GqlCItemFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    serviceEntryId?: Maybe<Scalars['ID']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCItemFileAttachInput = {
+    fileUploadId: Scalars['ID']['input'];
+    itemId: Scalars['ID']['input'];
+    kind: GqlCItemFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlCItemFileKind = 'invoice' | 'manual' | 'other' | 'photo' | 'receipt' | 'warranty';
+
+export type GqlCItemInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    categoryKey: GqlCItemCategory;
+    condition?: InputMaybe<GqlCItemCondition>;
+    itemId?: InputMaybe<Scalars['ID']['input']>;
+    model?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    purchasePriceCents?: InputMaybe<Scalars['Int']['input']>;
+    purchasedAt?: InputMaybe<Scalars['Date']['input']>;
+    serialNumber?: InputMaybe<Scalars['String']['input']>;
+    warrantyEndsAt?: InputMaybe<Scalars['Date']['input']>;
+    warrantyNotes?: InputMaybe<Scalars['String']['input']>;
+    warrantyProvider?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlCItemServiceEntry {
+    __typename?: 'ItemServiceEntry';
+    costCents?: Maybe<Scalars['Int']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    files: Array<GqlCItemFile>;
+    kind: GqlCItemServiceKind;
+    nextDueAt?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    performedAt: Scalars['Date']['output'];
+    serviceEntryId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    vendor?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCItemServiceEntryInput = {
+    costCents?: InputMaybe<Scalars['Int']['input']>;
+    itemId: Scalars['ID']['input'];
+    kind: GqlCItemServiceKind;
+    nextDueAt?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    performedAt: Scalars['Date']['input'];
+    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
+    vendor?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCItemServiceKind = 'other' | 'repair' | 'replacement' | 'service';
+
+export interface GqlCItemValuation {
+    __typename?: 'ItemValuation';
+    note?: Maybe<Scalars['String']['output']>;
+    valuationId: Scalars['ID']['output'];
+    valueCents: Scalars['Int']['output'];
+    valuedAt: Scalars['DateTime']['output'];
 }
 
 export interface GqlCLog {
@@ -2244,6 +2421,353 @@ export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 export type GqlCWorkspaceHubQuery = {
     currentSession: { user: { admin: { projectRequestsInboxCount: number; standaloneOpenTaskCount: number } | null } | null };
 };
+
+export type GqlCWorkspaceInventoryPageUserFragment = {
+    admin: {
+        inventory: {
+            materialNetWorthCents: number;
+            items: Array<{
+                itemId: string;
+                categoryKey: Schema.GqlCItemCategory;
+                name: string;
+                brand: string | null;
+                model: string | null;
+                serialNumber: string | null;
+                purchasedAt: string | null;
+                purchasePriceCents: number | null;
+                currentValueCents: number | null;
+                condition: Schema.GqlCItemCondition | null;
+                disposalState: Schema.GqlCItemDisposalState;
+                disposedAt: string | null;
+                warrantyEndsAt: string | null;
+                warrantyProvider: string | null;
+                warrantyNotes: string | null;
+                notes: string | null;
+                createdAt: string;
+                updatedAt: string;
+            }>;
+            upcomingWarrantyExpirations: Array<{
+                itemId: string;
+                name: string;
+                brand: string | null;
+                model: string | null;
+                warrantyEndsAt: string | null;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceInventoryPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceInventoryPageQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                inventory: {
+                    materialNetWorthCents: number;
+                    items: Array<{
+                        itemId: string;
+                        categoryKey: Schema.GqlCItemCategory;
+                        name: string;
+                        brand: string | null;
+                        model: string | null;
+                        serialNumber: string | null;
+                        purchasedAt: string | null;
+                        purchasePriceCents: number | null;
+                        currentValueCents: number | null;
+                        condition: Schema.GqlCItemCondition | null;
+                        disposalState: Schema.GqlCItemDisposalState;
+                        disposedAt: string | null;
+                        warrantyEndsAt: string | null;
+                        warrantyProvider: string | null;
+                        warrantyNotes: string | null;
+                        notes: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
+                    upcomingWarrantyExpirations: Array<{
+                        itemId: string;
+                        name: string;
+                        brand: string | null;
+                        model: string | null;
+                        warrantyEndsAt: string | null;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceInventoryPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceInventoryPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            inventory: {
+                materialNetWorthCents: number;
+                items: Array<{
+                    itemId: string;
+                    categoryKey: Schema.GqlCItemCategory;
+                    name: string;
+                    brand: string | null;
+                    model: string | null;
+                    serialNumber: string | null;
+                    purchasedAt: string | null;
+                    purchasePriceCents: number | null;
+                    currentValueCents: number | null;
+                    condition: Schema.GqlCItemCondition | null;
+                    disposalState: Schema.GqlCItemDisposalState;
+                    disposedAt: string | null;
+                    warrantyEndsAt: string | null;
+                    warrantyProvider: string | null;
+                    warrantyNotes: string | null;
+                    notes: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+                upcomingWarrantyExpirations: Array<{
+                    itemId: string;
+                    name: string;
+                    brand: string | null;
+                    model: string | null;
+                    warrantyEndsAt: string | null;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceItemUpsertMutationVariables = Exact<{
+    input: Schema.GqlCItemInput;
+}>;
+
+export type GqlCWorkspaceItemUpsertMutation = { admin: { itemUpsert: { itemId: string } } };
+
+export type GqlCWorkspaceItemDeleteMutationVariables = Exact<{
+    itemId: string;
+}>;
+
+export type GqlCWorkspaceItemDeleteMutation = { admin: { itemDelete: { success: boolean } } };
+
+export type GqlCWorkspaceItemDisposeMutationVariables = Exact<{
+    itemId: string;
+    state: Schema.GqlCItemDisposalState;
+    disposedAt?: string | null | undefined;
+}>;
+
+export type GqlCWorkspaceItemDisposeMutation = { admin: { itemDispose: { itemId: string } } };
+
+export type GqlCWorkspaceItemRepriceMutationVariables = Exact<{
+    itemId: string;
+    valueCents: number;
+    valuedAt?: string | null | undefined;
+    note?: string | null | undefined;
+}>;
+
+export type GqlCWorkspaceItemRepriceMutation = { admin: { itemReprice: { itemId: string } } };
+
+export type GqlCWorkspaceInventoryDetailUserFragment = {
+    admin: {
+        inventory: {
+            item: {
+                itemId: string;
+                categoryKey: Schema.GqlCItemCategory;
+                name: string;
+                brand: string | null;
+                model: string | null;
+                serialNumber: string | null;
+                purchasedAt: string | null;
+                purchasePriceCents: number | null;
+                currentValueCents: number | null;
+                condition: Schema.GqlCItemCondition | null;
+                disposalState: Schema.GqlCItemDisposalState;
+                disposedAt: string | null;
+                warrantyEndsAt: string | null;
+                warrantyProvider: string | null;
+                warrantyNotes: string | null;
+                notes: string | null;
+                createdAt: string;
+                updatedAt: string;
+                valuations: Array<{ valuationId: string; valueCents: number; valuedAt: string; note: string | null }>;
+                serviceEntries: Array<{
+                    serviceEntryId: string;
+                    kind: Schema.GqlCItemServiceKind;
+                    performedAt: string;
+                    vendor: string | null;
+                    costCents: number | null;
+                    notes: string | null;
+                    nextDueAt: string | null;
+                    files: Array<{
+                        itemFileId: string;
+                        kind: Schema.GqlCItemFileKind;
+                        label: string | null;
+                        pinned: boolean;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                }>;
+                files: Array<{
+                    itemFileId: string;
+                    itemId: string;
+                    serviceEntryId: string | null;
+                    kind: Schema.GqlCItemFileKind;
+                    label: string | null;
+                    pinned: boolean;
+                    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                }>;
+            } | null;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceInventoryDetailQueryVariables = Exact<{
+    itemId: string;
+}>;
+
+export type GqlCWorkspaceInventoryDetailQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                inventory: {
+                    item: {
+                        itemId: string;
+                        categoryKey: Schema.GqlCItemCategory;
+                        name: string;
+                        brand: string | null;
+                        model: string | null;
+                        serialNumber: string | null;
+                        purchasedAt: string | null;
+                        purchasePriceCents: number | null;
+                        currentValueCents: number | null;
+                        condition: Schema.GqlCItemCondition | null;
+                        disposalState: Schema.GqlCItemDisposalState;
+                        disposedAt: string | null;
+                        warrantyEndsAt: string | null;
+                        warrantyProvider: string | null;
+                        warrantyNotes: string | null;
+                        notes: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                        valuations: Array<{ valuationId: string; valueCents: number; valuedAt: string; note: string | null }>;
+                        serviceEntries: Array<{
+                            serviceEntryId: string;
+                            kind: Schema.GqlCItemServiceKind;
+                            performedAt: string;
+                            vendor: string | null;
+                            costCents: number | null;
+                            notes: string | null;
+                            nextDueAt: string | null;
+                            files: Array<{
+                                itemFileId: string;
+                                kind: Schema.GqlCItemFileKind;
+                                label: string | null;
+                                pinned: boolean;
+                                fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                            }>;
+                        }>;
+                        files: Array<{
+                            itemFileId: string;
+                            itemId: string;
+                            serviceEntryId: string | null;
+                            kind: Schema.GqlCItemFileKind;
+                            label: string | null;
+                            pinned: boolean;
+                            fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                        }>;
+                    } | null;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceInventoryDetailUpdatesSubscriptionVariables = Exact<{
+    itemId: string;
+}>;
+
+export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            inventory: {
+                item: {
+                    itemId: string;
+                    categoryKey: Schema.GqlCItemCategory;
+                    name: string;
+                    brand: string | null;
+                    model: string | null;
+                    serialNumber: string | null;
+                    purchasedAt: string | null;
+                    purchasePriceCents: number | null;
+                    currentValueCents: number | null;
+                    condition: Schema.GqlCItemCondition | null;
+                    disposalState: Schema.GqlCItemDisposalState;
+                    disposedAt: string | null;
+                    warrantyEndsAt: string | null;
+                    warrantyProvider: string | null;
+                    warrantyNotes: string | null;
+                    notes: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                    valuations: Array<{ valuationId: string; valueCents: number; valuedAt: string; note: string | null }>;
+                    serviceEntries: Array<{
+                        serviceEntryId: string;
+                        kind: Schema.GqlCItemServiceKind;
+                        performedAt: string;
+                        vendor: string | null;
+                        costCents: number | null;
+                        notes: string | null;
+                        nextDueAt: string | null;
+                        files: Array<{
+                            itemFileId: string;
+                            kind: Schema.GqlCItemFileKind;
+                            label: string | null;
+                            pinned: boolean;
+                            fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                        }>;
+                    }>;
+                    files: Array<{
+                        itemFileId: string;
+                        itemId: string;
+                        serviceEntryId: string | null;
+                        kind: Schema.GqlCItemFileKind;
+                        label: string | null;
+                        pinned: boolean;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                } | null;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceItemServiceEntryUpsertMutationVariables = Exact<{
+    input: Schema.GqlCItemServiceEntryInput;
+}>;
+
+export type GqlCWorkspaceItemServiceEntryUpsertMutation = { admin: { itemServiceEntryUpsert: { serviceEntryId: string } } };
+
+export type GqlCWorkspaceItemServiceEntryDeleteMutationVariables = Exact<{
+    serviceEntryId: string;
+}>;
+
+export type GqlCWorkspaceItemServiceEntryDeleteMutation = { admin: { itemServiceEntryDelete: { success: boolean } } };
+
+export type GqlCWorkspaceItemFileAttachMutationVariables = Exact<{
+    input: Schema.GqlCItemFileAttachInput;
+}>;
+
+export type GqlCWorkspaceItemFileAttachMutation = { admin: { itemFileAttach: { itemFileId: string } } };
+
+export type GqlCWorkspaceItemFileDeleteMutationVariables = Exact<{
+    itemFileId: string;
+}>;
+
+export type GqlCWorkspaceItemFileDeleteMutation = { admin: { itemFileDelete: { success: boolean } } };
+
+export type GqlCWorkspaceItemFileTogglePinMutationVariables = Exact<{
+    itemFileId: string;
+}>;
+
+export type GqlCWorkspaceItemFileTogglePinMutation = { admin: { itemFileTogglePin: { itemFileId: string } } };
 
 export type GqlCWorkspaceMediaPageUserFragment = {
     admin: {
@@ -4595,6 +5119,270 @@ export const WorkspaceCvPageUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCvPageUserFragment, unknown>;
+export const WorkspaceInventoryPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceInventoryPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'inventory' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'materialNetWorthCents' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'items' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'serialNumber' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasePriceCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposalState' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyProvider' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyNotes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'upcomingWarrantyExpirations' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'withinDays' },
+                                                        value: { kind: 'IntValue', value: '60' },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceInventoryPageUserFragment, unknown>;
+export const WorkspaceInventoryDetailUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceInventoryDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'inventory' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'item' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'itemId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'serialNumber' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasePriceCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposalState' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyProvider' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyNotes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'valuations' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valuationId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valueCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valuedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'note' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'serviceEntries' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'serviceEntryId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'performedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'vendor' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'costCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'itemFileId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUpload' },
+                                                                                    selectionSet: {
+                                                                                        kind: 'SelectionSet',
+                                                                                        selections: [
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: {
+                                                                                                    kind: 'Name',
+                                                                                                    value: 'fileUploadId',
+                                                                                                },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'filename' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'mediaType' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'size' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'url' },
+                                                                                            },
+                                                                                        ],
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'files' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'itemFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'serviceEntryId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceInventoryDetailUserFragment, unknown>;
 export const WorkspaceMediaPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -9512,6 +10300,1106 @@ export const WorkspaceHubDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceHubQuery, GqlCWorkspaceHubQueryVariables>;
+export const WorkspaceInventoryPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceInventoryPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceInventoryPageUser' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceInventoryPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'inventory' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'materialNetWorthCents' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'items' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'serialNumber' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasePriceCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposalState' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyProvider' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyNotes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'upcomingWarrantyExpirations' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'withinDays' },
+                                                        value: { kind: 'IntValue', value: '60' },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceInventoryPageQuery, GqlCWorkspaceInventoryPageQueryVariables>;
+export const WorkspaceInventoryPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceInventoryPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceInventoryPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceInventoryPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'inventory' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'materialNetWorthCents' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'items' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'serialNumber' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasePriceCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposalState' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyProvider' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyNotes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'upcomingWarrantyExpirations' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'withinDays' },
+                                                        value: { kind: 'IntValue', value: '60' },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceInventoryPageUpdatesSubscription, GqlCWorkspaceInventoryPageUpdatesSubscriptionVariables>;
+export const WorkspaceItemUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'itemId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemUpsertMutation, GqlCWorkspaceItemUpsertMutationVariables>;
+export const WorkspaceItemDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'itemId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemDeleteMutation, GqlCWorkspaceItemDeleteMutationVariables>;
+export const WorkspaceItemDisposeDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemDispose' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'state' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemDisposalState' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'disposedAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemDispose' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'itemId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'state' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'state' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'disposedAt' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'disposedAt' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'itemId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemDisposeMutation, GqlCWorkspaceItemDisposeMutationVariables>;
+export const WorkspaceItemRepriceDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemReprice' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'valueCents' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'valuedAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'note' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemReprice' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'itemId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'valueCents' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'valueCents' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'valuedAt' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'valuedAt' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'note' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'note' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'itemId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemRepriceMutation, GqlCWorkspaceItemRepriceMutationVariables>;
+export const WorkspaceInventoryDetailDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceInventoryDetail' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceInventoryDetailUser' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceInventoryDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'inventory' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'item' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'itemId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'serialNumber' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasePriceCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposalState' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyProvider' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyNotes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'valuations' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valuationId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valueCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valuedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'note' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'serviceEntries' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'serviceEntryId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'performedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'vendor' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'costCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'itemFileId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUpload' },
+                                                                                    selectionSet: {
+                                                                                        kind: 'SelectionSet',
+                                                                                        selections: [
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: {
+                                                                                                    kind: 'Name',
+                                                                                                    value: 'fileUploadId',
+                                                                                                },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'filename' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'mediaType' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'size' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'url' },
+                                                                                            },
+                                                                                        ],
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'files' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'itemFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'serviceEntryId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceInventoryDetailQuery, GqlCWorkspaceInventoryDetailQueryVariables>;
+export const WorkspaceInventoryDetailUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceInventoryDetailUpdates' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceInventoryDetailUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceInventoryDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'inventory' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'item' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'itemId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'itemId' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'model' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'serialNumber' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'purchasePriceCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'condition' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposalState' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'disposedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyEndsAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyProvider' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'warrantyNotes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'valuations' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valuationId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valueCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'valuedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'note' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'serviceEntries' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'serviceEntryId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'performedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'vendor' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'costCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'itemFileId' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUpload' },
+                                                                                    selectionSet: {
+                                                                                        kind: 'SelectionSet',
+                                                                                        selections: [
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: {
+                                                                                                    kind: 'Name',
+                                                                                                    value: 'fileUploadId',
+                                                                                                },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'filename' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'mediaType' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'size' },
+                                                                                            },
+                                                                                            {
+                                                                                                kind: 'Field',
+                                                                                                name: { kind: 'Name', value: 'url' },
+                                                                                            },
+                                                                                        ],
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'files' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'itemFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'itemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'serviceEntryId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceInventoryDetailUpdatesSubscription, GqlCWorkspaceInventoryDetailUpdatesSubscriptionVariables>;
+export const WorkspaceItemServiceEntryUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemServiceEntryUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemServiceEntryInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemServiceEntryUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'serviceEntryId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemServiceEntryUpsertMutation, GqlCWorkspaceItemServiceEntryUpsertMutationVariables>;
+export const WorkspaceItemServiceEntryDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemServiceEntryDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'serviceEntryId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemServiceEntryDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'serviceEntryId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'serviceEntryId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemServiceEntryDeleteMutation, GqlCWorkspaceItemServiceEntryDeleteMutationVariables>;
+export const WorkspaceItemFileAttachDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemFileAttach' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemFileAttachInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemFileAttach' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'itemFileId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemFileAttachMutation, GqlCWorkspaceItemFileAttachMutationVariables>;
+export const WorkspaceItemFileDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemFileDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'itemFileId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemFileDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'itemFileId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'itemFileId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemFileDeleteMutation, GqlCWorkspaceItemFileDeleteMutationVariables>;
+export const WorkspaceItemFileTogglePinDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceItemFileTogglePin' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'itemFileId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'itemFileTogglePin' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'itemFileId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'itemFileId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'itemFileId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceItemFileTogglePinMutation, GqlCWorkspaceItemFileTogglePinMutationVariables>;
 export const WorkspaceMediaPageDocument = {
     kind: 'Document',
     definitions: [

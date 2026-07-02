@@ -9,6 +9,8 @@ import {
     FolderKanbanIcon,
     ListTodoIcon,
     MessageSquareTextIcon,
+    PackageIcon,
+    PlaneIcon,
     ReceiptTextIcon,
     ScrollTextIcon,
     StethoscopeIcon,
@@ -55,10 +57,12 @@ type FocusAreaRoute =
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/todos'
     | '/{-$locale}/workspace/finances'
+    | '/{-$locale}/workspace/inventory'
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/fitness'
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/media'
+    | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/visitor-chats';
@@ -120,6 +124,12 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         description: { de: 'Ziele, Überblick, Trading.', en: 'Goals, overview, trading.' },
     },
     {
+        to: '/{-$locale}/workspace/inventory',
+        icon: PackageIcon,
+        title: { de: 'Inventar', en: 'Inventory' },
+        description: { de: 'Besitztümer und aktueller Wert.', en: 'Belongings and current value.' },
+    },
+    {
         to: '/{-$locale}/workspace/fitness',
         icon: DumbbellIcon,
         title: { de: 'Fitness', en: 'Fitness' },
@@ -136,6 +146,12 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         icon: FilmIcon,
         title: { de: 'Filme & Serien', en: 'Movies & TV' },
         description: { de: 'Watchlist und Gesehenes.', en: 'Watchlist and watched.' },
+    },
+    {
+        to: '/{-$locale}/workspace/travel',
+        icon: PlaneIcon,
+        title: { de: 'Reisen', en: 'Travel' },
+        description: { de: 'Trips, Packlisten, Vorbereitung.', en: 'Trips, packing lists, prep.' },
     },
 ];
 

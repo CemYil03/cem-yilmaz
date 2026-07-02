@@ -9,6 +9,8 @@ import {
     ListTodoIcon,
     MessageCircleIcon,
     MessageSquareTextIcon,
+    PackageIcon,
+    PlaneIcon,
     ReceiptTextIcon,
     StethoscopeIcon,
     WalletIcon,
@@ -48,10 +50,12 @@ const WORKSPACE_TITLES: Record<string, { de: string; en: string }> = {
     projects: { de: 'Projekte', en: 'Projects' },
     todos: { de: 'Todos', en: 'Todos' },
     finances: { de: 'Finanzen', en: 'Finances' },
+    inventory: { de: 'Inventar', en: 'Inventory' },
     tax: { de: 'Steuern', en: 'Tax' },
     fitness: { de: 'Fitness', en: 'Fitness' },
     medical: { de: 'Medizinisches', en: 'Medical' },
     media: { de: 'Filme & Serien', en: 'Movies & TV' },
+    travel: { de: 'Reisen', en: 'Travel' },
     'visitor-chats': { de: 'Besucher-Chats', en: 'Visitor chats' },
 };
 
@@ -65,10 +69,12 @@ const WORKSPACE_ICONS: Record<string, LucideIcon> = {
     projects: FolderKanbanIcon,
     todos: ListTodoIcon,
     finances: WalletIcon,
+    inventory: PackageIcon,
     tax: ReceiptTextIcon,
     fitness: DumbbellIcon,
     medical: StethoscopeIcon,
     media: FilmIcon,
+    travel: PlaneIcon,
     'visitor-chats': MessageSquareTextIcon,
 };
 
@@ -148,6 +154,15 @@ const TRAILING_LABEL_SELECTORS: ReadonlyArray<{
             return typeof project?.title === 'string' ? project.title : undefined;
         },
     },
+    {
+        routeId: '/{-$locale}/workspace/inventory_/$itemId',
+        select: (loaderData) => {
+            const item = (
+                loaderData as { currentSession?: { user?: { admin?: { inventory?: { item?: { name?: string } | null } } } } } | undefined
+            )?.currentSession?.user?.admin?.inventory?.item;
+            return typeof item?.name === 'string' ? item.name : undefined;
+        },
+    },
 ];
 
 // `hasSelector: true` means the active route owns the trailing crumb's
@@ -179,11 +194,9 @@ export function WorkspaceHeader() {
     const { pathname } = useLocation();
     const trailing = useTrailingLabel();
     const crumbs = buildCrumbs(pathname, locale, trailing);
-    // The hub at `/workspace` keeps the narrower public-site cap because its
-    // content (greeting + tile grid) is sized to it. Every other workspace
-    // page widens to `8xl` to match its content cap — keeps the header from
-    // sitting narrower than the surface beneath it. See docs/conventions.md
-    // (Page width).
-    const isHub = crumbs.length === 1;
-    return <Header breadcrumbs={crumbs} hideLanguageSelector chatVariant="workspace" width={isHub ? 'standard' : 'wide'} contained />;
+    // Every workspace page — including the hub — uses the wider `8xl` cap so
+    // the header lines up across the section. Keeping the hub narrower made
+    // the chrome shift horizontally when navigating between the hub and a
+    // focus area. See docs/conventions.md (Page width).
+    return <Header breadcrumbs={crumbs} hideLanguageSelector chatVariant="workspace" width="wide" contained />;
 }

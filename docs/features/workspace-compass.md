@@ -188,8 +188,9 @@ If you ever feel the urge to widen `compassSummaryGet`, don't. Add a new query.
 
 `/workspace/compass`:
 
-- **Synthesis hero** — three-tab strip (Summary / Portrait / Psychological), tab-specific explainer text ("This text is injected" vs. "Yours
-  only" vs. "Firewalled"), markdown-rendered body, and a "Re-synthesize now" button.
+- **Synthesis hero** — four-tab underlined section-tab bar (Summary / Portrait / Psychological / Interviews) matching the workspace's
+  canonical top-of-page switcher (see [conventions.md](../conventions.md#top-of-page-sub-view-switcher)), tab-specific explainer text ("This
+  text is injected" vs. "Yours only" vs. "Firewalled"), markdown-rendered body, and a "Re-synthesize now" button.
 - **Observations stream** — category filter chips (All / Factual / Behavioral / Psychological), a "Show dismissed" toggle, then a vertical
   list of observation cards with: category chip, confidence dots, age, content, "View source" deep-link to the originating chat, and a
   "Dismiss" button.

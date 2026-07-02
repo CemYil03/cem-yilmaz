@@ -1,11 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
     BrainIcon,
     CheckIcon,
     Clock9Icon,
-    FlameIcon,
     FocusIcon,
+    HourglassIcon,
     ListChecksIcon,
     MoonIcon,
     PencilIcon,
@@ -15,6 +15,7 @@ import {
     Trash2Icon,
     ZapIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
@@ -50,7 +51,7 @@ import { cn } from '../../../web/utils/cn';
 import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
-import { completionStreak, todayCompletedCount, todayStart, weekDots } from '../../../web/utils/todoDerive';
+import { todayStart } from '../../../web/utils/todoDerive';
 import { todoParse } from '../../../web/utils/todoParse';
 
 // Workspace todos — the standalone-tasks surface. Everything with
@@ -59,9 +60,10 @@ import { todoParse } from '../../../web/utils/todoParse';
 // a database view. Each row carries `effort` (quick / focused / deep) and
 // `whenBucket` (today / week / someday / waiting) so the user can match
 // tasks to the moment they're in. The completion click animates in three
-// beats (check draw → row tint → strike-through) and moves the row to the
-// "Heute erledigt" section. Milestones at the 3rd / 5th / 10th completion
-// of the day trigger a small non-blocking celebration.
+// beats (check draw → row tint → strike-through) and drops the row from
+// the open list; the `Erledigt` filter chip shows the archive of all
+// completed rows, grouped by day. Milestones at the 3rd / 5th / 10th
+// completion of the day trigger a small non-blocking celebration.
 //
 // Admin-only, single-language on the wire (no *De / *En pairs); the page
 // is noindex and reachable only via the hub tile, the header breadcrumb,
@@ -100,13 +102,14 @@ const WHEN_LABELS: Record<GqlCTaskWhenBucket, { de: string; en: string }> = {
     waiting: { de: 'blockiert', en: 'blocked' },
 };
 
-type FilterKey = 'today' | 'week' | 'all' | 'waiting';
+type FilterKey = 'today' | 'week' | 'all' | 'waiting' | 'done';
 
 const FILTER_LABELS: Record<FilterKey, { de: string; en: string }> = {
     today: { de: 'Heute', en: 'Today' },
     week: { de: 'Diese Woche', en: 'This week' },
     all: { de: 'Alles', en: 'All' },
     waiting: { de: 'Blockiert', en: 'Blocked' },
+    done: { de: 'Erledigt', en: 'Done' },
 };
 
 // Deterministic affirmation pool — picked by `count % pool.length` so the
@@ -141,12 +144,11 @@ const description = {
 // - `mode`   — `focus` when the focus-mode overlay is up; omitted otherwise.
 // - `edit`   — taskId whose inline edit form is open; omitted otherwise.
 //
-// Only view state lives in the URL — user preferences (done-today section
-// open state) stay in localStorage since they're who-the-user-is, not
-// what-they're-looking-at.
+// Everything the user is looking at lives in the URL so reloads and shared
+// links reproduce the exact view.
 const todosSearchSchema = z.object({
     focus: z.string().optional(),
-    view: z.enum(['today', 'week', 'all', 'waiting']).optional(),
+    view: z.enum(['today', 'week', 'all', 'waiting', 'done']).optional(),
     mode: z.literal('focus').optional(),
     edit: z.string().optional(),
 });
@@ -289,12 +291,21 @@ function TodosExperience({
 
     // Rows we consider "open" (todo + doing). Filtered per the top chips.
     const openRows = useMemo(() => rows.filter((r) => r.status !== 'done'), [rows]);
+    const doneRows = useMemo(
+        () =>
+            rows
+                .filter((r) => r.status === 'done' && r.completedAt)
+                .slice()
+                .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime()),
+        [rows],
+    );
     const doneToday = useMemo(() => {
         const start = todayStart();
-        return rows.filter((r) => r.status === 'done' && r.completedAt && new Date(r.completedAt) >= start);
-    }, [rows]);
+        return doneRows.filter((r) => new Date(r.completedAt!) >= start);
+    }, [doneRows]);
 
     const filteredOpen = useMemo(() => filterRows(openRows, filter), [openRows, filter]);
+    const showingDone = filter === 'done';
     const nextPosition = openRows.length;
 
     // The celebration layer is a fixed-position sibling of the app tree that
@@ -329,171 +340,102 @@ function TodosExperience({
     return (
         <div className="flex flex-col gap-6">
             <Reveal>
-                <MomentumHeader
-                    rows={rows}
+                <FilterChips
+                    filter={filter}
+                    onFilter={onFilterChange}
                     locale={locale}
                     focusMode={focusMode}
                     onToggleFocus={() => onFocusModeChange(!focusMode)}
                     canFocus={filteredOpen.length > 0}
+                    doneCount={doneRows.length}
                 />
             </Reveal>
 
-            <Reveal index={1}>
-                <FilterChips filter={filter} onFilter={onFilterChange} locale={locale} />
-            </Reveal>
+            {showingDone ? (
+                <Reveal index={1}>
+                    <DoneList rows={doneRows} locale={locale} />
+                </Reveal>
+            ) : (
+                <>
+                    <Reveal index={1}>
+                        <InlineComposer
+                            ref={composerRef}
+                            locale={locale}
+                            nextPosition={nextPosition}
+                            filter={filter}
+                            onCreated={(created) => {
+                                // If the newly-captured row would fall outside the current
+                                // filter (e.g. user typed a plain title on the `Blockiert`
+                                // chip), silently switch to `Alles` so it doesn't feel
+                                // like the row was swallowed.
+                                if (!rowMatchesFilter(created, filter)) onFilterChange('all');
+                            }}
+                        />
+                    </Reveal>
 
-            <Reveal index={2}>
-                <InlineComposer
-                    ref={composerRef}
-                    locale={locale}
-                    nextPosition={nextPosition}
-                    filter={filter}
-                    onCreated={(created) => {
-                        // If the newly-captured row would fall outside the current
-                        // filter (e.g. user typed a plain title on the `Blockiert`
-                        // chip), silently switch to `Alles` so it doesn't feel
-                        // like the row was swallowed.
-                        if (!rowMatchesFilter(created, filter)) onFilterChange('all');
-                    }}
-                />
-            </Reveal>
+                    <Reveal index={2}>
+                        <TodoList
+                            rows={filteredOpen}
+                            locale={locale}
+                            totalDoneToday={doneToday.length}
+                            editingId={editingId}
+                            onEditingIdChange={onEditingIdChange}
+                        />
+                    </Reveal>
 
-            <Reveal index={3}>
-                <TodoList
-                    rows={filteredOpen}
-                    locale={locale}
-                    totalDoneToday={doneToday.length}
-                    editingId={editingId}
-                    onEditingIdChange={onEditingIdChange}
-                />
-            </Reveal>
-
-            {filteredOpen.length === 0 ? (
-                <EmptyReward
-                    locale={locale}
-                    doneTodayCount={doneToday.length}
-                    onFocus={() => {
-                        composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        composerRef.current?.focus();
-                    }}
-                />
-            ) : null}
-
-            {doneToday.length > 0 ? <DoneTodayCollapsible rows={doneToday} locale={locale} /> : null}
-        </div>
-    );
-}
-
-// --- Momentum header --------------------------------------------------------
-
-function MomentumHeader({
-    rows,
-    locale,
-    focusMode,
-    onToggleFocus,
-    canFocus,
-}: {
-    rows: ReadonlyArray<TaskRow>;
-    locale: Locale;
-    focusMode: boolean;
-    onToggleFocus: () => void;
-    canFocus: boolean;
-}) {
-    const [now, setNow] = useState<Date | null>(null);
-    // Only compute derived values on the client — Date-based derivation
-    // during SSR would produce nondeterministic markup.
-    useEffect(() => setNow(new Date()), []);
-
-    if (!now) {
-        // SSR placeholder: keep the layout stable, defer the numbers.
-        return <div className="h-24" />;
-    }
-
-    const doneCount = todayCompletedCount(rows, now);
-    const openCountValue = rows.filter((r) => r.status !== 'done').length;
-    const dots = weekDots(rows, now);
-    const streak = completionStreak(rows, now);
-
-    return (
-        <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-                <p className="text-xl font-semibold tracking-tight text-foreground">
-                    <span className="text-muted-foreground">
-                        {doneCount > 0
-                            ? { de: `${doneCount} heute erledigt`, en: `${doneCount} done today` }[locale]
-                            : { de: 'noch nichts erledigt heute', en: 'nothing done today yet' }[locale]}
-                    </span>
-                    <span className="mx-2 text-muted-foreground">·</span>
-                    <span className="text-muted-foreground">{{ de: `${openCountValue} offen`, en: `${openCountValue} open` }[locale]}</span>
-                </p>
-                <div className="mt-3 flex items-center gap-3">
-                    <div className="flex items-end gap-1.5">
-                        {dots.map((d, i) => (
-                            <Tooltip key={i}>
-                                <TooltipTrigger asChild>
-                                    <span
-                                        className={cn(
-                                            'block rounded-full transition-all motion-safe:animate-todo-dot-in',
-                                            d.isToday && 'motion-safe:animate-pulse-dot',
-                                            d.count === 0 && 'size-2 border border-muted-foreground/40 bg-transparent',
-                                            d.count === 1 && 'size-2 bg-emerald-400/70',
-                                            d.count === 2 && 'size-2.5 bg-emerald-500/80',
-                                            d.count >= 3 && 'size-3 bg-emerald-500',
-                                        )}
-                                        style={{ animationDelay: `${i * 45}ms` }}
-                                    />
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                    {d.date.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: '2-digit' })}
-                                    <span className="ml-1 opacity-60">·</span>{' '}
-                                    {d.count === 0
-                                        ? { de: 'nichts', en: 'nothing' }[locale]
-                                        : { de: `${d.count} erledigt`, en: `${d.count} done` }[locale]}
-                                </TooltipContent>
-                            </Tooltip>
-                        ))}
-                    </div>
-                    {streak >= 3 ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                            <FlameIcon className="size-3.5" />
-                            {{ de: `${streak}-Tage-Streak`, en: `${streak}-day streak` }[locale]}
-                        </span>
+                    {filteredOpen.length === 0 ? (
+                        <EmptyReward
+                            locale={locale}
+                            doneTodayCount={doneToday.length}
+                            onFocus={() => {
+                                composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                composerRef.current?.focus();
+                            }}
+                        />
                     ) : null}
-                </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            size="icon-sm"
-                            variant={focusMode ? 'default' : 'ghost'}
-                            onClick={onToggleFocus}
-                            disabled={!canFocus}
-                            aria-label={{ de: 'Fokus-Modus', en: 'Focus mode' }[locale]}
-                            aria-pressed={focusMode}
-                        >
-                            <FocusIcon />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                        {
-                            {
-                                de: 'Fokus-Modus — zeigt nur das oberste Todo (f)',
-                                en: 'Focus mode — show only the top todo (f)',
-                            }[locale]
-                        }
-                    </TooltipContent>
-                </Tooltip>
-            </div>
+                </>
+            )}
         </div>
     );
 }
 
 // --- Filter chips -----------------------------------------------------------
 
-function FilterChips({ filter, onFilter, locale }: { filter: FilterKey; onFilter: (f: FilterKey) => void; locale: Locale }) {
-    const options: ReadonlyArray<FilterKey> = ['today', 'week', 'all', 'waiting'];
+// Canonical top-of-page sub-view switcher — underlined section tabs.
+// The buckets are section-shaped views over the same list rather than a
+// search dropdown, so they share the same visual language as
+// `projects.tsx`, `compass.tsx`, and every other workspace switcher. See
+// `docs/conventions.md` — "Top-of-page sub-view switcher".
+//
+// The right-aligned focus-mode toggle rides on the same row: it's a
+// section-level action, not a tab, so it sits outside the `<nav>` in a
+// flex sibling that pushes it to the right edge while the tabs claim the
+// underline.
+function FilterChips({
+    filter,
+    onFilter,
+    locale,
+    focusMode,
+    onToggleFocus,
+    canFocus,
+    doneCount,
+}: {
+    filter: FilterKey;
+    onFilter: (f: FilterKey) => void;
+    locale: Locale;
+    focusMode: boolean;
+    onToggleFocus: () => void;
+    canFocus: boolean;
+    doneCount: number;
+}) {
+    const options: ReadonlyArray<FilterKey> = ['today', 'week', 'all', 'waiting', 'done'];
+    const icons: Record<FilterKey, LucideIcon> = {
+        today: TargetIcon,
+        week: Clock9Icon,
+        all: ListChecksIcon,
+        waiting: HourglassIcon,
+        done: CheckIcon,
+    };
     const hints: Record<FilterKey, { de: string; en: string }> = {
         today: {
             de: 'Nur Todos für heute — Bucket „heute" oder überfällig',
@@ -511,34 +453,79 @@ function FilterChips({ filter, onFilter, locale }: { filter: FilterKey; onFilter
             de: 'Blockiert — wartet auf jemand anderen',
             en: 'Blocked — waiting on someone else',
         },
+        done: {
+            de: 'Erledigt — alle abgeschlossenen Todos, nach Tag gruppiert',
+            en: 'Done — all completed todos, grouped by day',
+        },
     };
     return (
-        <div className="flex flex-wrap gap-1.5">
-            {options.map((key) => {
-                const active = filter === key;
-                return (
-                    <Tooltip key={key}>
-                        <TooltipTrigger asChild>
-                            <Button
-                                size="sm"
-                                variant={active ? 'secondary' : 'ghost'}
-                                onClick={() => onFilter(key)}
-                                className={cn('rounded-full', active && 'shadow-xs')}
-                                aria-pressed={active}
-                            >
-                                {FILTER_LABELS[key][locale]}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">{hints[key][locale]}</TooltipContent>
-                    </Tooltip>
-                );
-            })}
+        <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border/60">
+            <nav className="flex flex-wrap gap-1" aria-label={{ de: 'Filter', en: 'Filters' }[locale]}>
+                {options.map((key) => {
+                    const active = filter === key;
+                    const Icon = icons[key];
+                    return (
+                        <Tooltip key={key}>
+                            <TooltipTrigger asChild>
+                                <Link
+                                    to="/{-$locale}/workspace/todos"
+                                    from="/{-$locale}/workspace/todos"
+                                    search={(prev) => ({ ...prev, view: key === 'all' ? undefined : key })}
+                                    replace
+                                    onClick={() => onFilter(key)}
+                                    className={cn(
+                                        '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                                        active
+                                            ? 'border-primary text-foreground'
+                                            : 'border-transparent text-muted-foreground hover:text-foreground',
+                                    )}
+                                    aria-current={active ? 'page' : undefined}
+                                >
+                                    <Icon className="size-4" />
+                                    {FILTER_LABELS[key][locale]}
+                                    {key === 'done' && doneCount > 0 ? (
+                                        <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                            {doneCount}
+                                        </span>
+                                    ) : null}
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">{hints[key][locale]}</TooltipContent>
+                        </Tooltip>
+                    );
+                })}
+            </nav>
+
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        size="icon-sm"
+                        variant={focusMode ? 'default' : 'ghost'}
+                        onClick={onToggleFocus}
+                        disabled={!canFocus}
+                        aria-label={{ de: 'Fokus-Modus', en: 'Focus mode' }[locale]}
+                        aria-pressed={focusMode}
+                        className="mb-1"
+                    >
+                        <FocusIcon />
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                    {
+                        {
+                            de: 'Fokus-Modus — zeigt nur das oberste Todo (f)',
+                            en: 'Focus mode — show only the top todo (f)',
+                        }[locale]
+                    }
+                </TooltipContent>
+            </Tooltip>
         </div>
     );
 }
 
 function filterRows(rows: ReadonlyArray<TaskRow>, filter: FilterKey): TaskRow[] {
     if (filter === 'all') return rows.slice();
+    if (filter === 'done') return []; // Done rows are rendered separately; keep `filteredOpen` empty.
     const nowDay = todayStart();
     const weekEnd = new Date(nowDay);
     weekEnd.setDate(weekEnd.getDate() + 7);
@@ -1107,92 +1094,129 @@ function Field({ label, children, fullWidth }: { label: string; children: React.
     );
 }
 
-// --- Done today collapsible ------------------------------------------------
+// --- Done list -------------------------------------------------------------
 
-function DoneTodayCollapsible({ rows, locale }: { rows: ReadonlyArray<TaskRow>; locale: Locale }) {
-    const [open, setOpen] = useState(false);
-    const [hydrated, setHydrated] = useState(false);
+// Groups all completed rows by day (Heute / Gestern / earlier days as
+// `dd.MM.yyyy`). Rendered when the `Erledigt` filter chip is active.
+function DoneList({ rows, locale }: { rows: ReadonlyArray<TaskRow>; locale: Locale }) {
     const [, upsert] = useMutation(WorkspaceTodoUpsertDocument);
+    const [, del] = useMutation(WorkspaceTodoDeleteDocument);
 
-    useEffect(() => {
-        try {
-            setOpen(localStorage.getItem('todos:doneOpen') === '1');
-        } catch {
-            /* soft-fail */
-        }
-        setHydrated(true);
-    }, []);
+    const groups = useMemo(() => groupDoneByDay(rows, locale), [rows, locale]);
 
-    useEffect(() => {
-        if (!hydrated) return;
-        try {
-            localStorage.setItem('todos:doneOpen', open ? '1' : '0');
-        } catch {
-            /* soft-fail */
-        }
-    }, [open, hydrated]);
+    if (rows.length === 0) {
+        return (
+            <div className="mt-2 flex flex-col items-center gap-3 py-10 text-center">
+                <ListChecksIcon className="size-10 text-muted-foreground/60" />
+                <p className="text-sm text-muted-foreground">
+                    {{ de: 'Noch nichts abgeschlossen.', en: 'Nothing completed yet.' }[locale]}
+                </p>
+            </div>
+        );
+    }
 
     return (
-        <section className="mt-4">
-            <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                aria-expanded={open}
-                className="flex cursor-pointer items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
-            >
-                <span
-                    className={cn(
-                        'inline-block transition-transform duration-200 motion-reduce:transition-none',
-                        open ? 'rotate-90' : 'rotate-0',
-                    )}
-                    aria-hidden
-                >
-                    ▸
-                </span>
-                <ListChecksIcon className="size-3.5" />
-                {{ de: `Heute erledigt · ${rows.length}`, en: `Done today · ${rows.length}` }[locale]}
-            </button>
-            {open ? (
-                <ul className="mt-2 flex flex-col gap-1">
-                    {rows.map((task) => (
-                        <li
-                            key={task.taskId}
-                            className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-background/40"
-                        >
-                            <CheckIcon className="size-3.5 shrink-0 text-emerald-500" />
-                            <span className="min-w-0 flex-1 truncate line-through decoration-muted-foreground/40">{task.title}</span>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        size="icon-xs"
-                                        variant="ghost"
-                                        aria-label={{ de: 'Wiederherstellen', en: 'Restore' }[locale]}
-                                        className="opacity-0 transition-opacity group-hover:opacity-100"
-                                        onClick={async () => {
-                                            await upsert({
-                                                taskId: task.taskId,
-                                                title: task.title,
-                                                notes: task.notes ?? null,
-                                                status: 'todo',
-                                                position: task.position,
-                                                dueAt: task.dueAt ?? null,
-                                                completedAt: null,
-                                                effort: task.effort ?? null,
-                                                whenBucket: task.whenBucket ?? null,
-                                            });
-                                        }}
-                                    >
-                                        <RotateCcwIcon />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="left">{{ de: 'Wiederherstellen', en: 'Restore' }[locale]}</TooltipContent>
-                            </Tooltip>
-                        </li>
-                    ))}
-                </ul>
-            ) : null}
-        </section>
+        <div className="flex flex-col gap-6">
+            {groups.map((group) => (
+                <section key={group.key} className="flex flex-col gap-2">
+                    <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <ListChecksIcon className="size-3.5" />
+                        {group.label} · {group.rows.length}
+                    </h3>
+                    <ul className="flex flex-col gap-1">
+                        {group.rows.map((task) => (
+                            <li
+                                key={task.taskId}
+                                className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-background/40"
+                            >
+                                <CheckIcon className="size-3.5 shrink-0 text-emerald-500" />
+                                <span className="min-w-0 flex-1 truncate line-through decoration-muted-foreground/40">{task.title}</span>
+                                {task.completedAt ? (
+                                    <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
+                                        {format(new Date(task.completedAt), 'HH:mm')}
+                                    </span>
+                                ) : null}
+                                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                size="icon-xs"
+                                                variant="ghost"
+                                                aria-label={{ de: 'Wiederherstellen', en: 'Restore' }[locale]}
+                                                onClick={async () => {
+                                                    await upsert({
+                                                        taskId: task.taskId,
+                                                        title: task.title,
+                                                        notes: task.notes ?? null,
+                                                        status: 'todo',
+                                                        position: task.position,
+                                                        dueAt: task.dueAt ?? null,
+                                                        completedAt: null,
+                                                        effort: task.effort ?? null,
+                                                        whenBucket: task.whenBucket ?? null,
+                                                    });
+                                                }}
+                                            >
+                                                <RotateCcwIcon />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">{{ de: 'Wiederherstellen', en: 'Restore' }[locale]}</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                size="icon-xs"
+                                                variant="ghost"
+                                                aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
+                                                onClick={async () => {
+                                                    await del({ taskId: task.taskId });
+                                                }}
+                                            >
+                                                <Trash2Icon />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">{{ de: 'Löschen', en: 'Delete' }[locale]}</TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            ))}
+        </div>
     );
+}
+
+type DoneGroup = { key: string; label: string; rows: TaskRow[] };
+
+// Bucket done rows into `Heute` / `Gestern` / `<date>` groups. Rows arrive
+// pre-sorted by `completedAt` desc, so the groups come out in that order too.
+function groupDoneByDay(rows: ReadonlyArray<TaskRow>, locale: Locale): DoneGroup[] {
+    const today = todayStart();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const groupsByKey = new Map<string, DoneGroup>();
+    for (const row of rows) {
+        if (!row.completedAt) continue;
+        const completedAt = new Date(row.completedAt);
+        const dayStart = new Date(completedAt);
+        dayStart.setHours(0, 0, 0, 0);
+        const key = dayStart.toISOString();
+        let group = groupsByKey.get(key);
+        if (!group) {
+            const label =
+                dayStart.getTime() === today.getTime()
+                    ? { de: 'Heute', en: 'Today' }[locale]
+                    : dayStart.getTime() === yesterday.getTime()
+                      ? { de: 'Gestern', en: 'Yesterday' }[locale]
+                      : format(dayStart, 'EEEE, dd.MM.yyyy', { locale: DATE_FNS_LOCALE[locale] });
+            group = { key, label, rows: [] };
+            groupsByKey.set(key, group);
+        }
+        group.rows.push(row);
+    }
+    return Array.from(groupsByKey.values());
 }
 
 // --- Empty state (as a reward) ---------------------------------------------
@@ -1270,31 +1294,33 @@ function FocusModeView({ row, locale, onExit }: { row: TaskRow; locale: Locale; 
         return () => window.removeEventListener('keydown', listener);
     }, [complete, onExit]);
 
+    const focusMeta = [
+        row.effort ? EFFORT_LABELS[row.effort][locale] : null,
+        row.whenBucket ? WHEN_LABELS[row.whenBucket][locale] : null,
+        row.dueAt ? `${{ de: 'fällig', en: 'due' }[locale]} ${format(new Date(row.dueAt), 'dd.MM.yyyy')}` : null,
+    ].filter(Boolean);
+
     return (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-background/70 px-6 backdrop-blur-xl">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                <MoonIcon className="mr-1 inline size-3" />
-                {{ de: 'Fokus', en: 'Focus' }[locale]}
-            </span>
-            <h2 className="max-w-3xl text-center text-3xl font-semibold text-foreground md:text-4xl">{row.title}</h2>
-            {row.effort || row.dueAt ? (
-                <p className="text-sm text-muted-foreground">
-                    {[
-                        row.effort ? EFFORT_LABELS[row.effort][locale] : null,
-                        row.dueAt ? `${{ de: 'fällig', en: 'due' }[locale]} ${format(new Date(row.dueAt), 'dd.MM.yyyy')}` : null,
-                    ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                </p>
-            ) : null}
-            <div className="mt-6 flex gap-3">
-                <Button size="lg" variant="default" onClick={() => void complete()} disabled={completing}>
-                    <CheckIcon />
-                    {{ de: 'Erledigt (Enter)', en: 'Done (Enter)' }[locale]}
-                </Button>
-                <Button size="lg" variant="ghost" onClick={onExit}>
-                    {{ de: 'Zurück (Esc)', en: 'Back (Esc)' }[locale]}
-                </Button>
+        <div className="fixed inset-0 z-40 flex flex-col items-center bg-background/70 px-6 py-16 backdrop-blur-xl overflow-y-auto">
+            <div className="my-auto flex w-full max-w-3xl flex-col items-center gap-6">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                    <MoonIcon className="mr-1 inline size-3" />
+                    {{ de: 'Fokus', en: 'Focus' }[locale]}
+                </span>
+                <h2 className="text-center text-3xl font-semibold text-foreground md:text-4xl">{row.title}</h2>
+                {focusMeta.length > 0 ? <p className="text-sm text-muted-foreground">{focusMeta.join(' · ')}</p> : null}
+                {row.notes ? (
+                    <p className="max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-muted-foreground">{row.notes}</p>
+                ) : null}
+                <div className="mt-6 flex gap-3">
+                    <Button size="lg" variant="default" onClick={() => void complete()} disabled={completing}>
+                        <CheckIcon />
+                        {{ de: 'Erledigt (Enter)', en: 'Done (Enter)' }[locale]}
+                    </Button>
+                    <Button size="lg" variant="ghost" onClick={onExit}>
+                        {{ de: 'Zurück (Esc)', en: 'Back (Esc)' }[locale]}
+                    </Button>
+                </div>
             </div>
         </div>
     );

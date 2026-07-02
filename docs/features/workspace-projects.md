@@ -151,7 +151,9 @@ project-level CRUD stayed.
 The page is a two-column grid on `lg+` (`minmax(0,1fr) 320px`); both columns stack on smaller widths. A `ProjectTitleBlock` spans both
 columns at the top: large display title, status pill underneath, and the source-request chip alongside.
 
-The **left column** is a single `GlassCard` containing the description and the tab strip. Description renders through `AssistantMarkdown`
+The **left column** holds the description followed by the section-tab bar and the active tab's body, sitting flat on the page (no wrapping
+`GlassCard` — the underlined switcher spans the section, matching the workspace's canonical top-of-page pattern; see
+[conventions.md](../conventions.md#top-of-page-sub-view-switcher)). Description renders through `AssistantMarkdown`
 (`src/web/components/AssistantMarkdown.tsx`) so paragraphs, lists, and emphasis are visible — no wall of text. A ghost `Edit` button reveals
 on hover at the top-right of the description; clicking swaps the block to an in-place `Textarea` + Save / Cancel. The tab strip has six
 entries with **Overview as the default** (visiting `/workspace/projects/<id>` with no `?tab` lands there):
@@ -265,6 +267,15 @@ other reference exists.
 
 GraphQL: `type ProjectFile { fileUpload: FileUpload! ... }`, `enum ProjectFileKind`, mutations `projectFileUpsert`, `projectFileDelete`,
 `projectFileTogglePin`.
+
+### Drop zone
+
+The Files-tab upload form (`FileUploadForm` in `projects_.$projectId.tsx`) is a dashed-border drop zone rather than a raw
+`<input type="file">`. Clicking it opens the OS file picker; dragging a file over it flips the border and background to the brand ring and
+inline copy switches to "Drop file here" / "Datei hier ablegen". Once a file is picked the zone shows filename + size and "Click or drop to
+replace". The visual state and drag-depth counter follow the same pattern as `MessageComposer.tsx` so the highlight stays stable while the
+cursor crosses child elements. Only single-file selection is supported here — activity attachments still use the compact "+ file" button on
+the composer.
 
 ### Inline preview
 

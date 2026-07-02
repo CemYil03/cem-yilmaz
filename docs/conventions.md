@@ -137,6 +137,34 @@ If a comment paraphrases what the next line does, delete the comment and fix the
 - Application-specific components live directly in `src/web/components/`.
 - Use the `cn()` utility from `src/web/utils/cn.ts` for conditional class merging.
 
+### Top-of-page sub-view switcher
+
+Every workspace page that lets the user choose between sub-views (compass artifacts, projects vs. inbox, todos filters, media movies vs.
+channels, project-detail tabs, inventory disposal states) uses the same **underlined section-tab** pattern. This is the workspace's single
+switcher affordance — don't invent segmented controls, pill chips, or dropdowns for the top of a page.
+
+Rules:
+
+- Wrapper: `<nav aria-label="Sections" className="flex gap-1 border-b border-border/60">`. Never `role="tablist"` — these are section links,
+  not ARIA tab panels.
+- Item: TanStack Router `<Link>` — never a bare `<button>` with imperative `navigate()`. Reload and back must Just Work.
+- Class list on each item: `-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors`, plus the
+  active/inactive branch:
+  - Active: `border-primary text-foreground` + `aria-current="page"`.
+  - Inactive: `border-transparent text-muted-foreground hover:text-foreground`.
+- Every tab renders a Lucide icon (`className="size-4"`) before its label. Consistency beats minimalism here.
+- URL state lives in a `?tab=` (or `?view=` / `?filter=`) search param validated by `validateSearch`. The default tab drops the key from the
+  URL so the canonical landing URL has no query string. Other view-related params (e.g. `focus`, `interviewId`) that only make sense on one
+  tab should be cleared on switch.
+- Optional trailing badge: `<span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">` for a count,
+  or `<span className="size-1.5 rounded-full bg-amber-500" aria-hidden />` for a status dot.
+- If a section-level action (e.g. focus-mode toggle, "New item" button) needs to ride on the same row, put it in a flex sibling next to the
+  `<nav>` inside a shared border container — do not stuff it inside the `<nav>`.
+
+Reference implementations: `src/routes/{-$locale}/workspace/projects.tsx` (canonical), `compass.tsx`, `todos.tsx`, `media.tsx`,
+`inventory.tsx`, `projects_.$projectId.tsx`. When this pattern proves stable across more pages, extract a `<Tabs>` primitive under
+`src/web/components/base/`; until then, the pattern lives at the call site.
+
 ### Page width
 
 - **Public pages**: stay on the stock Tailwind container scale — `max-w-{2,3,4,5,6,7}xl` as needed for the page's content.

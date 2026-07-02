@@ -1,0 +1,128 @@
+# Workspace Inventory detail-view operations, co-located with
+# `/workspace/inventory/$itemId`. The detail loader pulls the singular
+# `admin.inventory.item(itemId)` — which includes valuations, service
+# entries, and files. Same seed-and-subscribe posture as the list.
+
+fragment WorkspaceInventoryDetailUser on User {
+    admin {
+        inventory {
+            item(itemId: $itemId) {
+                itemId
+                categoryKey
+                name
+                brand
+                model
+                serialNumber
+                purchasedAt
+                purchasePriceCents
+                currentValueCents
+                condition
+                disposalState
+                disposedAt
+                warrantyEndsAt
+                warrantyProvider
+                warrantyNotes
+                notes
+                createdAt
+                updatedAt
+                valuations {
+                    valuationId
+                    valueCents
+                    valuedAt
+                    note
+                }
+                serviceEntries {
+                    serviceEntryId
+                    kind
+                    performedAt
+                    vendor
+                    costCents
+                    notes
+                    nextDueAt
+                    files {
+                        itemFileId
+                        kind
+                        label
+                        pinned
+                        fileUpload {
+                            fileUploadId
+                            filename
+                            mediaType
+                            size
+                            url
+                        }
+                    }
+                }
+                files {
+                    itemFileId
+                    itemId
+                    serviceEntryId
+                    kind
+                    label
+                    pinned
+                    fileUpload {
+                        fileUploadId
+                        filename
+                        mediaType
+                        size
+                        url
+                    }
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceInventoryDetail($itemId: ID!) {
+    currentSession {
+        user {
+            ...WorkspaceInventoryDetailUser
+        }
+    }
+}
+
+subscription WorkspaceInventoryDetailUpdates($itemId: ID!) {
+    userUpdates {
+        ...WorkspaceInventoryDetailUser
+    }
+}
+
+mutation WorkspaceItemServiceEntryUpsert($input: ItemServiceEntryInput!) {
+    admin {
+        itemServiceEntryUpsert(input: $input) {
+            serviceEntryId
+        }
+    }
+}
+
+mutation WorkspaceItemServiceEntryDelete($serviceEntryId: ID!) {
+    admin {
+        itemServiceEntryDelete(serviceEntryId: $serviceEntryId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceItemFileAttach($input: ItemFileAttachInput!) {
+    admin {
+        itemFileAttach(input: $input) {
+            itemFileId
+        }
+    }
+}
+
+mutation WorkspaceItemFileDelete($itemFileId: ID!) {
+    admin {
+        itemFileDelete(itemFileId: $itemFileId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceItemFileTogglePin($itemFileId: ID!) {
+    admin {
+        itemFileTogglePin(itemFileId: $itemFileId) {
+            itemFileId
+        }
+    }
+}

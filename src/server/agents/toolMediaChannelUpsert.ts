@@ -11,9 +11,9 @@ const mediaChannelUpsertInputSchema = z.object({
     channelId: z.uuid().nullish().describe('Omit to create; pass an existing id to edit.'),
     name: z.string().min(1).max(200).describe('Channel display name.'),
     platform: GqlSMediaPlatformSchema.describe('youtube | twitch | podcast | other'),
-    url: z.string().url().describe("Canonical URL to the channel's home page."),
+    url: z.url().describe("Canonical URL to the channel's home page."),
     handle: z.string().max(80).nullish().describe('Public handle, e.g. `@fireship`.'),
-    avatarUrl: z.string().url().nullish(),
+    avatarUrl: z.url().nullish(),
     description: z.string().max(1000).nullish(),
     topics: z
         .array(z.string())

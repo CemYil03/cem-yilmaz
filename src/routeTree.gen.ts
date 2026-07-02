@@ -27,6 +27,7 @@ import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
 import { Route as ApiFileUploadsRouteImport } from './routes/api/file-uploads'
 import { Route as Char123LocaleChar125WorkspaceIndexRouteImport } from './routes/{-$locale}/workspace/index'
 import { Route as Char123LocaleChar125WorkspaceVisitorChatsRouteImport } from './routes/{-$locale}/workspace/visitor-chats'
+import { Route as Char123LocaleChar125WorkspaceTravelRouteImport } from './routes/{-$locale}/workspace/travel'
 import { Route as Char123LocaleChar125WorkspaceTodosRouteImport } from './routes/{-$locale}/workspace/todos'
 import { Route as Char123LocaleChar125WorkspaceTaxRouteImport } from './routes/{-$locale}/workspace/tax'
 import { Route as Char123LocaleChar125WorkspaceSoftwareRouteImport } from './routes/{-$locale}/workspace/software'
@@ -34,6 +35,7 @@ import { Route as Char123LocaleChar125WorkspaceProjectsRouteImport } from './rou
 import { Route as Char123LocaleChar125WorkspaceMedicalRouteImport } from './routes/{-$locale}/workspace/medical'
 import { Route as Char123LocaleChar125WorkspaceMediaRouteImport } from './routes/{-$locale}/workspace/media'
 import { Route as Char123LocaleChar125WorkspaceLogsRouteImport } from './routes/{-$locale}/workspace/logs'
+import { Route as Char123LocaleChar125WorkspaceInventoryRouteImport } from './routes/{-$locale}/workspace/inventory'
 import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './routes/{-$locale}/workspace/fitness'
 import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
 import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
@@ -41,6 +43,7 @@ import { Route as Char123LocaleChar125WorkspaceCompassRouteImport } from './rout
 import { Route as Char123LocaleChar125WorkspaceAssistantRouteImport } from './routes/{-$locale}/workspace/assistant'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
 import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
+import { Route as Char123LocaleChar125WorkspaceInventoryItemIdRouteImport } from './routes/{-$locale}/workspace/inventory_.$itemId'
 
 const Char123LocaleChar125Route = Char123LocaleChar125RouteImport.update({
   id: '/{-$locale}',
@@ -140,6 +143,12 @@ const Char123LocaleChar125WorkspaceVisitorChatsRoute =
     path: '/visitor-chats',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
+const Char123LocaleChar125WorkspaceTravelRoute =
+  Char123LocaleChar125WorkspaceTravelRouteImport.update({
+    id: '/travel',
+    path: '/travel',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
 const Char123LocaleChar125WorkspaceTodosRoute =
   Char123LocaleChar125WorkspaceTodosRouteImport.update({
     id: '/todos',
@@ -180,6 +189,12 @@ const Char123LocaleChar125WorkspaceLogsRoute =
   Char123LocaleChar125WorkspaceLogsRouteImport.update({
     id: '/logs',
     path: '/logs',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceInventoryRoute =
+  Char123LocaleChar125WorkspaceInventoryRouteImport.update({
+    id: '/inventory',
+    path: '/inventory',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
 const Char123LocaleChar125WorkspaceFitnessRoute =
@@ -224,6 +239,12 @@ const Char123LocaleChar125WorkspaceProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
+const Char123LocaleChar125WorkspaceInventoryItemIdRoute =
+  Char123LocaleChar125WorkspaceInventoryItemIdRouteImport.update({
+    id: '/inventory_/$itemId',
+    path: '/inventory/$itemId',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/llms.txt': typeof LlmsDottxtRoute
@@ -248,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
+  '/{-$locale}/workspace/inventory': typeof Char123LocaleChar125WorkspaceInventoryRoute
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
@@ -255,8 +277,10 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
   '/{-$locale}/workspace/todos': typeof Char123LocaleChar125WorkspaceTodosRoute
+  '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 export interface FileRoutesByTo {
@@ -280,6 +304,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
+  '/{-$locale}/workspace/inventory': typeof Char123LocaleChar125WorkspaceInventoryRoute
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
@@ -287,8 +312,10 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
   '/{-$locale}/workspace/todos': typeof Char123LocaleChar125WorkspaceTodosRoute
+  '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 export interface FileRoutesById {
@@ -315,6 +342,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
   '/{-$locale}/workspace/fitness': typeof Char123LocaleChar125WorkspaceFitnessRoute
+  '/{-$locale}/workspace/inventory': typeof Char123LocaleChar125WorkspaceInventoryRoute
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
@@ -322,8 +350,10 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
   '/{-$locale}/workspace/todos': typeof Char123LocaleChar125WorkspaceTodosRoute
+  '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/inventory_/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects_/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 export interface FileRouteTypes {
@@ -351,6 +381,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/inventory'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
@@ -358,8 +389,10 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/todos'
+    | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -383,6 +416,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/inventory'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
@@ -390,8 +424,10 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/todos'
+    | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace'
+    | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
   id:
     | '__root__'
@@ -417,6 +453,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
     | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/inventory'
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
@@ -424,8 +461,10 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/todos'
+    | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/{-$locale}/workspace/inventory_/$itemId'
     | '/{-$locale}/workspace/projects_/$projectId'
   fileRoutesById: FileRoutesById
 }
@@ -570,6 +609,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/{-$locale}/workspace/travel': {
+      id: '/{-$locale}/workspace/travel'
+      path: '/travel'
+      fullPath: '/{-$locale}/workspace/travel'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTravelRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
     '/{-$locale}/workspace/todos': {
       id: '/{-$locale}/workspace/todos'
       path: '/todos'
@@ -617,6 +663,13 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/{-$locale}/workspace/logs'
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceLogsRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/inventory': {
+      id: '/{-$locale}/workspace/inventory'
+      path: '/inventory'
+      fullPath: '/{-$locale}/workspace/inventory'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceInventoryRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
     '/{-$locale}/workspace/fitness': {
@@ -668,6 +721,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/{-$locale}/workspace/inventory_/$itemId': {
+      id: '/{-$locale}/workspace/inventory_/$itemId'
+      path: '/inventory/$itemId'
+      fullPath: '/{-$locale}/workspace/inventory/$itemId'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceInventoryItemIdRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
   }
 }
 
@@ -677,6 +737,7 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceCvRoute: typeof Char123LocaleChar125WorkspaceCvRoute
   Char123LocaleChar125WorkspaceFinancesRoute: typeof Char123LocaleChar125WorkspaceFinancesRoute
   Char123LocaleChar125WorkspaceFitnessRoute: typeof Char123LocaleChar125WorkspaceFitnessRoute
+  Char123LocaleChar125WorkspaceInventoryRoute: typeof Char123LocaleChar125WorkspaceInventoryRoute
   Char123LocaleChar125WorkspaceLogsRoute: typeof Char123LocaleChar125WorkspaceLogsRoute
   Char123LocaleChar125WorkspaceMediaRoute: typeof Char123LocaleChar125WorkspaceMediaRoute
   Char123LocaleChar125WorkspaceMedicalRoute: typeof Char123LocaleChar125WorkspaceMedicalRoute
@@ -684,8 +745,10 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceSoftwareRoute: typeof Char123LocaleChar125WorkspaceSoftwareRoute
   Char123LocaleChar125WorkspaceTaxRoute: typeof Char123LocaleChar125WorkspaceTaxRoute
   Char123LocaleChar125WorkspaceTodosRoute: typeof Char123LocaleChar125WorkspaceTodosRoute
+  Char123LocaleChar125WorkspaceTravelRoute: typeof Char123LocaleChar125WorkspaceTravelRoute
   Char123LocaleChar125WorkspaceVisitorChatsRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   Char123LocaleChar125WorkspaceIndexRoute: typeof Char123LocaleChar125WorkspaceIndexRoute
+  Char123LocaleChar125WorkspaceInventoryItemIdRoute: typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   Char123LocaleChar125WorkspaceProjectsProjectIdRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 
@@ -700,6 +763,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceFinancesRoute,
     Char123LocaleChar125WorkspaceFitnessRoute:
       Char123LocaleChar125WorkspaceFitnessRoute,
+    Char123LocaleChar125WorkspaceInventoryRoute:
+      Char123LocaleChar125WorkspaceInventoryRoute,
     Char123LocaleChar125WorkspaceLogsRoute:
       Char123LocaleChar125WorkspaceLogsRoute,
     Char123LocaleChar125WorkspaceMediaRoute:
@@ -714,10 +779,14 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceTaxRoute,
     Char123LocaleChar125WorkspaceTodosRoute:
       Char123LocaleChar125WorkspaceTodosRoute,
+    Char123LocaleChar125WorkspaceTravelRoute:
+      Char123LocaleChar125WorkspaceTravelRoute,
     Char123LocaleChar125WorkspaceVisitorChatsRoute:
       Char123LocaleChar125WorkspaceVisitorChatsRoute,
     Char123LocaleChar125WorkspaceIndexRoute:
       Char123LocaleChar125WorkspaceIndexRoute,
+    Char123LocaleChar125WorkspaceInventoryItemIdRoute:
+      Char123LocaleChar125WorkspaceInventoryItemIdRoute,
     Char123LocaleChar125WorkspaceProjectsProjectIdRoute:
       Char123LocaleChar125WorkspaceProjectsProjectIdRoute,
   }

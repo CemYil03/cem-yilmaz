@@ -24,6 +24,7 @@ export interface GqlSAdmin {
     chats: Array<GqlSChat>;
     compass: GqlSAdminCompass;
     cv: GqlSCvQuery;
+    inventory: GqlSAdminInventoryQuery;
     logs: Array<GqlSLog>;
     media: GqlSAdminMediaQuery;
     project: GqlSProject;
@@ -99,6 +100,26 @@ export type GqlSAdminCompassObservationsArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export interface GqlSAdminInventoryQuery {
+    __typename?: 'AdminInventoryQuery';
+    item?: Maybe<GqlSItem>;
+    items: Array<GqlSItem>;
+    materialNetWorthCents: Scalars['Int']['output'];
+    upcomingWarrantyExpirations: Array<GqlSItem>;
+}
+
+export type GqlSAdminInventoryQueryItemArgs = {
+    itemId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminInventoryQueryItemsArgs = {
+    includeDisposed?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs = {
+    withinDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export interface GqlSAdminMediaQuery {
     __typename?: 'AdminMediaQuery';
     channels: Array<GqlSMediaChannel>;
@@ -144,6 +165,15 @@ export interface GqlSAdminMutation {
     cvSkillDelete: GqlSMutationResult;
     cvSkillReorder: GqlSMutationResult;
     cvSkillUpsert: GqlSCvSkill;
+    itemDelete: GqlSMutationResult;
+    itemDispose: GqlSItem;
+    itemFileAttach: GqlSItemFile;
+    itemFileDelete: GqlSMutationResult;
+    itemFileTogglePin: GqlSItemFile;
+    itemReprice: GqlSItem;
+    itemServiceEntryDelete: GqlSMutationResult;
+    itemServiceEntryUpsert: GqlSItemServiceEntry;
+    itemUpsert: GqlSItem;
     mediaChannelDelete: GqlSMutationResult;
     mediaChannelReorder: GqlSMutationResult;
     mediaChannelUpsert: GqlSMediaChannel;
@@ -259,6 +289,47 @@ export type GqlSAdminMutationCvSkillReorderArgs = {
 
 export type GqlSAdminMutationCvSkillUpsertArgs = {
     input: GqlSCvSkillInput;
+};
+
+export type GqlSAdminMutationItemDeleteArgs = {
+    itemId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationItemDisposeArgs = {
+    disposedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    itemId: Scalars['ID']['input'];
+    state: GqlSItemDisposalState;
+};
+
+export type GqlSAdminMutationItemFileAttachArgs = {
+    input: GqlSItemFileAttachInput;
+};
+
+export type GqlSAdminMutationItemFileDeleteArgs = {
+    itemFileId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationItemFileTogglePinArgs = {
+    itemFileId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationItemRepriceArgs = {
+    itemId: Scalars['ID']['input'];
+    note?: InputMaybe<Scalars['String']['input']>;
+    valueCents: Scalars['Int']['input'];
+    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type GqlSAdminMutationItemServiceEntryDeleteArgs = {
+    serviceEntryId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationItemServiceEntryUpsertArgs = {
+    input: GqlSItemServiceEntryInput;
+};
+
+export type GqlSAdminMutationItemUpsertArgs = {
+    input: GqlSItemInput;
 };
 
 export type GqlSAdminMutationMediaChannelDeleteArgs = {
@@ -773,6 +844,112 @@ export interface GqlSFileUpload {
     mediaType: Scalars['String']['output'];
     size: Scalars['Int']['output'];
     url: Scalars['String']['output'];
+}
+
+export interface GqlSItem {
+    __typename?: 'Item';
+    brand?: Maybe<Scalars['String']['output']>;
+    categoryKey: GqlSItemCategory;
+    condition?: Maybe<GqlSItemCondition>;
+    createdAt: Scalars['DateTime']['output'];
+    currentValueCents?: Maybe<Scalars['Int']['output']>;
+    disposalState: GqlSItemDisposalState;
+    disposedAt?: Maybe<Scalars['DateTime']['output']>;
+    files: Array<GqlSItemFile>;
+    itemId: Scalars['ID']['output'];
+    model?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    purchasePriceCents?: Maybe<Scalars['Int']['output']>;
+    purchasedAt?: Maybe<Scalars['Date']['output']>;
+    serialNumber?: Maybe<Scalars['String']['output']>;
+    serviceEntries: Array<GqlSItemServiceEntry>;
+    updatedAt: Scalars['DateTime']['output'];
+    valuations: Array<GqlSItemValuation>;
+    warrantyEndsAt?: Maybe<Scalars['Date']['output']>;
+    warrantyNotes?: Maybe<Scalars['String']['output']>;
+    warrantyProvider?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlSItemCategory = 'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle';
+
+export type GqlSItemCondition = 'fair' | 'good' | 'likeNew' | 'new' | 'poor';
+
+export type GqlSItemDisposalState = 'disposed' | 'gifted' | 'lost' | 'owned' | 'sold';
+
+export interface GqlSItemFile {
+    __typename?: 'ItemFile';
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlSFileUpload;
+    itemFileId: Scalars['ID']['output'];
+    itemId: Scalars['ID']['output'];
+    kind: GqlSItemFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    serviceEntryId?: Maybe<Scalars['ID']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSItemFileAttachInput = {
+    fileUploadId: Scalars['ID']['input'];
+    itemId: Scalars['ID']['input'];
+    kind: GqlSItemFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlSItemFileKind = 'invoice' | 'manual' | 'other' | 'photo' | 'receipt' | 'warranty';
+
+export type GqlSItemInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    categoryKey: GqlSItemCategory;
+    condition?: InputMaybe<GqlSItemCondition>;
+    itemId?: InputMaybe<Scalars['ID']['input']>;
+    model?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    purchasePriceCents?: InputMaybe<Scalars['Int']['input']>;
+    purchasedAt?: InputMaybe<Scalars['Date']['input']>;
+    serialNumber?: InputMaybe<Scalars['String']['input']>;
+    warrantyEndsAt?: InputMaybe<Scalars['Date']['input']>;
+    warrantyNotes?: InputMaybe<Scalars['String']['input']>;
+    warrantyProvider?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlSItemServiceEntry {
+    __typename?: 'ItemServiceEntry';
+    costCents?: Maybe<Scalars['Int']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    files: Array<GqlSItemFile>;
+    kind: GqlSItemServiceKind;
+    nextDueAt?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    performedAt: Scalars['Date']['output'];
+    serviceEntryId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    vendor?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlSItemServiceEntryInput = {
+    costCents?: InputMaybe<Scalars['Int']['input']>;
+    itemId: Scalars['ID']['input'];
+    kind: GqlSItemServiceKind;
+    nextDueAt?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    performedAt: Scalars['Date']['input'];
+    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
+    vendor?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSItemServiceKind = 'other' | 'repair' | 'replacement' | 'service';
+
+export interface GqlSItemValuation {
+    __typename?: 'ItemValuation';
+    note?: Maybe<Scalars['String']['output']>;
+    valuationId: Scalars['ID']['output'];
+    valueCents: Scalars['Int']['output'];
+    valuedAt: Scalars['DateTime']['output'];
 }
 
 export interface GqlSLog {
@@ -1324,6 +1501,7 @@ export type GqlSResolversTypes = ResolversObject<{
     AdminChatConfig: ResolverTypeWrapper<GqlSAdminChatConfig>;
     AdminChatModel: ResolverTypeWrapper<GqlSAdminChatModel>;
     AdminCompass: ResolverTypeWrapper<GqlSAdminCompass>;
+    AdminInventoryQuery: ResolverTypeWrapper<GqlSAdminInventoryQuery>;
     AdminMediaQuery: ResolverTypeWrapper<GqlSAdminMediaQuery>;
     AdminMutation: ResolverTypeWrapper<GqlSAdminMutation>;
     Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
@@ -1398,6 +1576,18 @@ export type GqlSResolversTypes = ResolversObject<{
     FileUpload: ResolverTypeWrapper<GqlSFileUpload>;
     ID: ResolverTypeWrapper<Scalars['ID']['output']>;
     Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+    Item: ResolverTypeWrapper<GqlSItem>;
+    ItemCategory: GqlSItemCategory;
+    ItemCondition: GqlSItemCondition;
+    ItemDisposalState: GqlSItemDisposalState;
+    ItemFile: ResolverTypeWrapper<GqlSItemFile>;
+    ItemFileAttachInput: GqlSItemFileAttachInput;
+    ItemFileKind: GqlSItemFileKind;
+    ItemInput: GqlSItemInput;
+    ItemServiceEntry: ResolverTypeWrapper<GqlSItemServiceEntry>;
+    ItemServiceEntryInput: GqlSItemServiceEntryInput;
+    ItemServiceKind: GqlSItemServiceKind;
+    ItemValuation: ResolverTypeWrapper<GqlSItemValuation>;
     JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
     Log: ResolverTypeWrapper<GqlSLog>;
     LogLevel: GqlSLogLevel;
@@ -1463,6 +1653,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     AdminChatConfig: GqlSAdminChatConfig;
     AdminChatModel: GqlSAdminChatModel;
     AdminCompass: GqlSAdminCompass;
+    AdminInventoryQuery: GqlSAdminInventoryQuery;
     AdminMediaQuery: GqlSAdminMediaQuery;
     AdminMutation: GqlSAdminMutation;
     Boolean: Scalars['Boolean']['output'];
@@ -1526,6 +1717,13 @@ export type GqlSResolversParentTypes = ResolversObject<{
     FileUpload: GqlSFileUpload;
     ID: Scalars['ID']['output'];
     Int: Scalars['Int']['output'];
+    Item: GqlSItem;
+    ItemFile: GqlSItemFile;
+    ItemFileAttachInput: GqlSItemFileAttachInput;
+    ItemInput: GqlSItemInput;
+    ItemServiceEntry: GqlSItemServiceEntry;
+    ItemServiceEntryInput: GqlSItemServiceEntryInput;
+    ItemValuation: GqlSItemValuation;
     JSON: Scalars['JSON']['output'];
     Log: GqlSLog;
     MediaChannel: GqlSMediaChannel;
@@ -1572,6 +1770,7 @@ export type GqlSAdminResolvers<
     chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
     compass?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
     cv?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
+    inventory?: Resolver<GqlSResolversTypes['AdminInventoryQuery'], ParentType, ContextType>;
     logs?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminLogsArgs>>;
     media?: Resolver<GqlSResolversTypes['AdminMediaQuery'], ParentType, ContextType>;
     project?: Resolver<GqlSResolversTypes['Project'], ParentType, ContextType, RequireFields<GqlSAdminProjectArgs, 'projectId'>>;
@@ -1626,6 +1825,26 @@ export type GqlSAdminCompassResolvers<
     synthesisInProgress?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
     synthesisModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     synthesizedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+}>;
+
+export type GqlSAdminInventoryQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminInventoryQuery'] = GqlSResolversParentTypes['AdminInventoryQuery'],
+> = ResolversObject<{
+    item?: Resolver<Maybe<GqlSResolversTypes['Item']>, ParentType, ContextType, RequireFields<GqlSAdminInventoryQueryItemArgs, 'itemId'>>;
+    items?: Resolver<
+        Array<GqlSResolversTypes['Item']>,
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminInventoryQueryItemsArgs, 'includeDisposed'>
+    >;
+    materialNetWorthCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    upcomingWarrantyExpirations?: Resolver<
+        Array<GqlSResolversTypes['Item']>,
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs, 'withinDays'>
+    >;
 }>;
 
 export type GqlSAdminMediaQueryResolvers<
@@ -1780,6 +1999,55 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationCvSkillUpsertArgs, 'input'>
     >;
+    itemDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemDeleteArgs, 'itemId'>
+    >;
+    itemDispose?: Resolver<
+        GqlSResolversTypes['Item'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemDisposeArgs, 'itemId' | 'state'>
+    >;
+    itemFileAttach?: Resolver<
+        GqlSResolversTypes['ItemFile'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemFileAttachArgs, 'input'>
+    >;
+    itemFileDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemFileDeleteArgs, 'itemFileId'>
+    >;
+    itemFileTogglePin?: Resolver<
+        GqlSResolversTypes['ItemFile'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemFileTogglePinArgs, 'itemFileId'>
+    >;
+    itemReprice?: Resolver<
+        GqlSResolversTypes['Item'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemRepriceArgs, 'itemId' | 'valueCents'>
+    >;
+    itemServiceEntryDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemServiceEntryDeleteArgs, 'serviceEntryId'>
+    >;
+    itemServiceEntryUpsert?: Resolver<
+        GqlSResolversTypes['ItemServiceEntry'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemServiceEntryUpsertArgs, 'input'>
+    >;
+    itemUpsert?: Resolver<GqlSResolversTypes['Item'], ParentType, ContextType, RequireFields<GqlSAdminMutationItemUpsertArgs, 'input'>>;
     mediaChannelDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -2412,6 +2680,74 @@ export type GqlSFileUploadResolvers<
     url?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type GqlSItemResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Item'] = GqlSResolversParentTypes['Item'],
+> = ResolversObject<{
+    brand?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    categoryKey?: Resolver<GqlSResolversTypes['ItemCategory'], ParentType, ContextType>;
+    condition?: Resolver<Maybe<GqlSResolversTypes['ItemCondition']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    currentValueCents?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    disposalState?: Resolver<GqlSResolversTypes['ItemDisposalState'], ParentType, ContextType>;
+    disposedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    files?: Resolver<Array<GqlSResolversTypes['ItemFile']>, ParentType, ContextType>;
+    itemId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    model?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    purchasePriceCents?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    purchasedAt?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    serialNumber?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    serviceEntries?: Resolver<Array<GqlSResolversTypes['ItemServiceEntry']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    valuations?: Resolver<Array<GqlSResolversTypes['ItemValuation']>, ParentType, ContextType>;
+    warrantyEndsAt?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    warrantyNotes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    warrantyProvider?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type GqlSItemFileResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ItemFile'] = GqlSResolversParentTypes['ItemFile'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    fileUpload?: Resolver<GqlSResolversTypes['FileUpload'], ParentType, ContextType>;
+    itemFileId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    itemId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['ItemFileKind'], ParentType, ContextType>;
+    label?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    pinned?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    serviceEntryId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSItemServiceEntryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ItemServiceEntry'] = GqlSResolversParentTypes['ItemServiceEntry'],
+> = ResolversObject<{
+    costCents?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    files?: Resolver<Array<GqlSResolversTypes['ItemFile']>, ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['ItemServiceKind'], ParentType, ContextType>;
+    nextDueAt?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    performedAt?: Resolver<GqlSResolversTypes['Date'], ParentType, ContextType>;
+    serviceEntryId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    vendor?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type GqlSItemValuationResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ItemValuation'] = GqlSResolversParentTypes['ItemValuation'],
+> = ResolversObject<{
+    note?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    valuationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    valueCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    valuedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export interface GqlSJsonScalarConfig extends GraphQLScalarTypeConfig<GqlSResolversTypes['JSON'], any> {
     name: 'JSON';
 }
@@ -2712,6 +3048,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     AdminChatConfig?: GqlSAdminChatConfigResolvers<ContextType>;
     AdminChatModel?: GqlSAdminChatModelResolvers<ContextType>;
     AdminCompass?: GqlSAdminCompassResolvers<ContextType>;
+    AdminInventoryQuery?: GqlSAdminInventoryQueryResolvers<ContextType>;
     AdminMediaQuery?: GqlSAdminMediaQueryResolvers<ContextType>;
     AdminMutation?: GqlSAdminMutationResolvers<ContextType>;
     Chat?: GqlSChatResolvers<ContextType>;
@@ -2759,6 +3096,10 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Date?: GraphQLScalarType;
     DateTime?: GraphQLScalarType;
     FileUpload?: GqlSFileUploadResolvers<ContextType>;
+    Item?: GqlSItemResolvers<ContextType>;
+    ItemFile?: GqlSItemFileResolvers<ContextType>;
+    ItemServiceEntry?: GqlSItemServiceEntryResolvers<ContextType>;
+    ItemValuation?: GqlSItemValuationResolvers<ContextType>;
     JSON?: GraphQLScalarType;
     Log?: GqlSLogResolvers<ContextType>;
     MediaChannel?: GqlSMediaChannelResolvers<ContextType>;
@@ -2822,6 +3163,31 @@ export const GqlSCvSkillCategorySchema: z.ZodType<
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools',
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools'
 > = z.enum(['capabilities', 'frameworks', 'languages', 'services', 'tools']);
+
+export const GqlSItemCategorySchema: z.ZodType<
+    'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle',
+    'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle'
+> = z.enum(['appliance', 'clothing', 'electronics', 'furniture', 'kitchen', 'other', 'sports', 'tool', 'vehicle']);
+
+export const GqlSItemConditionSchema: z.ZodType<
+    'fair' | 'good' | 'likeNew' | 'new' | 'poor',
+    'fair' | 'good' | 'likeNew' | 'new' | 'poor'
+> = z.enum(['fair', 'good', 'likeNew', 'new', 'poor']);
+
+export const GqlSItemDisposalStateSchema: z.ZodType<
+    'disposed' | 'gifted' | 'lost' | 'owned' | 'sold',
+    'disposed' | 'gifted' | 'lost' | 'owned' | 'sold'
+> = z.enum(['disposed', 'gifted', 'lost', 'owned', 'sold']);
+
+export const GqlSItemFileKindSchema: z.ZodType<
+    'invoice' | 'manual' | 'other' | 'photo' | 'receipt' | 'warranty',
+    'invoice' | 'manual' | 'other' | 'photo' | 'receipt' | 'warranty'
+> = z.enum(['invoice', 'manual', 'other', 'photo', 'receipt', 'warranty']);
+
+export const GqlSItemServiceKindSchema: z.ZodType<
+    'other' | 'repair' | 'replacement' | 'service',
+    'other' | 'repair' | 'replacement' | 'service'
+> = z.enum(['other', 'repair', 'replacement', 'service']);
 
 export const GqlSLogLevelSchema: z.ZodType<'debug' | 'error' | 'info' | 'warn', 'debug' | 'error' | 'info' | 'warn'> = z.enum([
     'debug',
@@ -3008,6 +3374,48 @@ export function GqlSCvSkillInputSchema(): z.ZodObject<Properties<GqlSCvSkillInpu
         cvSkillId: z.string().nullish(),
         label: z.string(),
         position: z.number(),
+    });
+}
+
+export function GqlSItemFileAttachInputSchema(): z.ZodObject<Properties<GqlSItemFileAttachInput>> {
+    return z.object({
+        fileUploadId: z.string(),
+        itemId: z.string(),
+        kind: GqlSItemFileKindSchema,
+        label: z.string().nullish(),
+        pinned: z.boolean().nullish(),
+        serviceEntryId: z.string().nullish(),
+    });
+}
+
+export function GqlSItemInputSchema(): z.ZodObject<Properties<GqlSItemInput>> {
+    return z.object({
+        brand: z.string().nullish(),
+        categoryKey: GqlSItemCategorySchema,
+        condition: GqlSItemConditionSchema.nullish(),
+        itemId: z.string().nullish(),
+        model: z.string().nullish(),
+        name: z.string(),
+        notes: z.string().nullish(),
+        purchasePriceCents: z.number().nullish(),
+        purchasedAt: z.string().nullish(),
+        serialNumber: z.string().nullish(),
+        warrantyEndsAt: z.string().nullish(),
+        warrantyNotes: z.string().nullish(),
+        warrantyProvider: z.string().nullish(),
+    });
+}
+
+export function GqlSItemServiceEntryInputSchema(): z.ZodObject<Properties<GqlSItemServiceEntryInput>> {
+    return z.object({
+        costCents: z.number().nullish(),
+        itemId: z.string(),
+        kind: GqlSItemServiceKindSchema,
+        nextDueAt: z.string().nullish(),
+        notes: z.string().nullish(),
+        performedAt: z.string(),
+        serviceEntryId: z.string().nullish(),
+        vendor: z.string().nullish(),
     });
 }
 

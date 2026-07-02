@@ -381,12 +381,17 @@ function WorkspaceProjectDetail() {
             <ProjectTitleBlock project={project} locale={locale} />
 
             <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-                {/* Main content column */}
-                <GlassCard className="p-5 sm:p-6 lg:p-8">
+                {/* Main content column. The section switcher sits above the tab body
+                 * on the flat page background — same shape as `/workspace/inventory`
+                 * and the other workspace pages. Wrapping the switcher inside a
+                 * `GlassCard` used to leave the underline floating mid-card, which
+                 * broke the "underlined tabs span the section" convention (see
+                 * `docs/conventions.md` — "Top-of-page sub-view switcher"). */}
+                <div className="min-w-0">
                     <ProjectDescription project={project} locale={locale} />
 
                     <nav
-                        className="mt-6 flex flex-wrap gap-x-1 gap-y-1 border-b border-border/60"
+                        className="mt-6 flex flex-wrap gap-1 border-b border-border/60"
                         aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
                     >
                         {TABS.map((t) => {
@@ -400,9 +405,9 @@ function WorkspaceProjectDetail() {
                                     search={(): { tab?: DetailTab } => (t === 'overview' ? {} : { tab: t })}
                                     replace
                                     className={cn(
-                                        '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors',
+                                        '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                                         isActive
-                                            ? 'border-primary font-medium text-foreground'
+                                            ? 'border-primary text-foreground'
                                             : 'border-transparent text-muted-foreground hover:text-foreground',
                                     )}
                                     aria-current={isActive ? 'page' : undefined}
@@ -431,7 +436,7 @@ function WorkspaceProjectDetail() {
                         {tab === 'links' ? <LinksSection links={project.links} projectId={project.projectId} locale={locale} /> : null}
                         {tab === 'files' ? <FilesSection files={project.files} projectId={project.projectId} locale={locale} /> : null}
                     </div>
-                </GlassCard>
+                </div>
 
                 {/* Right rail — sticky on lg+, stacks under content on mobile (grid handles
                     the stacking; the rail itself doesn't try to be sticky on mobile). */}
@@ -2458,15 +2463,22 @@ function FileUploadForm({
     const [kind, setKind] = useState<GqlCProjectFileKind>('other');
     const [pinned, setPinned] = useState(false);
     const [busy, setBusy] = useState(false);
+    const [file, setFile] = useState<File | null>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
+    // Drag events fire on children too, so a simple boolean flickers as the
+    // cursor crosses the icon/text — mirror the composer's depth counter
+    // (`MessageComposer.tsx`) to keep the highlight stable.
+    const dragDepthRef = useRef(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string | null>(null);
+
+    const isFileDrag = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false;
 
     return (
         <form
             className="mt-2 grid gap-2 rounded-md border border-border/60 bg-card/40 p-3 text-xs"
             onSubmit={async (e) => {
                 e.preventDefault();
-                const file = fileInputRef.current?.files?.[0];
                 if (!file) {
                     setError({ de: 'Bitte eine Datei wählen.', en: 'Pick a file.' }[locale]);
                     return;
@@ -2493,7 +2505,75 @@ function FileUploadForm({
                 }
             }}
         >
-            <input ref={fileInputRef} type="file" required className="text-xs" />
+            <input
+                ref={fileInputRef}
+                type="file"
+                className="sr-only"
+                onChange={(e) => {
+                    const picked = e.target.files?.[0] ?? null;
+                    if (picked) {
+                        setFile(picked);
+                        setError(null);
+                    }
+                    // Reset so picking the same file twice still fires `change`.
+                    e.target.value = '';
+                }}
+            />
+            <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(event) => {
+                    if (!isFileDrag(event.nativeEvent)) return;
+                    event.preventDefault();
+                    dragDepthRef.current += 1;
+                    setIsDragOver(true);
+                }}
+                onDragOver={(event) => {
+                    if (!isFileDrag(event.nativeEvent)) return;
+                    // preventDefault on dragover is required for drop to fire.
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'copy';
+                }}
+                onDragLeave={() => {
+                    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+                    if (dragDepthRef.current === 0) setIsDragOver(false);
+                }}
+                onDrop={(event) => {
+                    if (!isFileDrag(event.nativeEvent)) return;
+                    event.preventDefault();
+                    dragDepthRef.current = 0;
+                    setIsDragOver(false);
+                    const dropped = event.dataTransfer.files[0];
+                    if (dropped) {
+                        setFile(dropped);
+                        setError(null);
+                    }
+                }}
+                className={cn(
+                    'flex flex-col items-center justify-center gap-1.5 rounded-md border border-dashed px-4 py-6 text-center transition-colors',
+                    'border-border/70 bg-background/40 hover:border-brand/60 hover:bg-background/70',
+                    'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30 focus-visible:border-brand',
+                    isDragOver && 'border-brand bg-brand/5 ring-[3px] ring-brand/30',
+                )}
+            >
+                <UploadIcon className={cn('size-5', isDragOver ? 'text-brand' : 'text-muted-foreground')} />
+                {file ? (
+                    <>
+                        <span className="max-w-full truncate text-xs font-medium">{file.name}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                            {Math.max(1, Math.round(file.size / 1024))} KB ·{' '}
+                            {{ de: 'Klicken oder ziehen zum Ersetzen', en: 'Click or drop to replace' }[locale]}
+                        </span>
+                    </>
+                ) : (
+                    <>
+                        <span className="text-xs font-medium">{{ de: 'Datei hier ablegen', en: 'Drop file here' }[locale]}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                            {{ de: 'oder klicken, um zu wählen', en: 'or click to browse' }[locale]}
+                        </span>
+                    </>
+                )}
+            </button>
             <div className="flex items-center gap-2">
                 <Select value={kind} onValueChange={(v: GqlCProjectFileKind) => setKind(v)}>
                     <SelectTrigger className="h-8 w-[140px] text-xs">
@@ -2517,7 +2597,7 @@ function FileUploadForm({
                 <Button type="button" variant="ghost" size="sm" onClick={onClose}>
                     {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
                 </Button>
-                <Button type="submit" size="sm" disabled={busy}>
+                <Button type="submit" size="sm" disabled={busy || !file}>
                     {busy ? { de: 'Lädt…', en: 'Uploading…' }[locale] : { de: 'Hochladen', en: 'Upload' }[locale]}
                 </Button>
             </div>

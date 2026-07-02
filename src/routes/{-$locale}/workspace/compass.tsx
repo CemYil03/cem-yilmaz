@@ -90,7 +90,7 @@ const compassSearchSchema = z.object({
     category: z.enum(OBSERVATION_CATEGORIES).optional(),
     includeDismissed: z.boolean().optional(),
     tab: z.enum(COMPASS_TABS).optional(),
-    interviewId: z.string().uuid().optional(),
+    interviewId: z.uuid().optional(),
 });
 
 type CompassSearch = z.infer<typeof compassSearchSchema>;
@@ -195,28 +195,26 @@ function SynthesisHero({ compass, locale, activeTab }: { compass: CompassData; l
 
     return (
         <section aria-label={{ de: 'Synthese', en: 'Synthesis' }[locale]}>
-            <div className="flex flex-wrap items-end justify-between gap-4">
-                <TabStrip locale={locale} active={activeTab} hasPendingInterview={compass.interviewPending != null} />
-                {!isInterviewsTab ? (
-                    <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-                        {synthesizedLabel ? (
-                            <span>
-                                {{ de: 'Synthetisiert', en: 'Synthesized' }[locale]} · {synthesizedLabel}
-                            </span>
-                        ) : (
-                            <span>{{ de: 'Noch nicht synthetisiert', en: 'Not synthesized yet' }[locale]}</span>
-                        )}
-                        {compass.observationsSinceSynthesis > 0 ? (
-                            <span className="text-amber-600 dark:text-amber-400">
-                                {compass.observationsSinceSynthesis}{' '}
-                                {compass.observationsSinceSynthesis === 1
-                                    ? { de: 'neue Beobachtung', en: 'new observation' }[locale]
-                                    : { de: 'neue Beobachtungen', en: 'new observations' }[locale]}
-                            </span>
-                        ) : null}
-                    </div>
-                ) : null}
-            </div>
+            <TabStrip locale={locale} active={activeTab} hasPendingInterview={compass.interviewPending != null} />
+            {!isInterviewsTab ? (
+                <div className="mt-3 flex flex-wrap justify-end gap-x-3 text-xs text-muted-foreground">
+                    {synthesizedLabel ? (
+                        <span>
+                            {{ de: 'Synthetisiert', en: 'Synthesized' }[locale]} · {synthesizedLabel}
+                        </span>
+                    ) : (
+                        <span>{{ de: 'Noch nicht synthetisiert', en: 'Not synthesized yet' }[locale]}</span>
+                    )}
+                    {compass.observationsSinceSynthesis > 0 ? (
+                        <span className="text-amber-600 dark:text-amber-400">
+                            {compass.observationsSinceSynthesis}{' '}
+                            {compass.observationsSinceSynthesis === 1
+                                ? { de: 'neue Beobachtung', en: 'new observation' }[locale]
+                                : { de: 'neue Beobachtungen', en: 'new observations' }[locale]}
+                        </span>
+                    ) : null}
+                </div>
+            ) : null}
 
             {!isInterviewsTab ? (
                 <GlassCard className="mt-4 px-6 py-6 md:px-8 md:py-7">
@@ -249,6 +247,10 @@ function SynthesisHero({ compass, locale, activeTab }: { compass: CompassData; l
     );
 }
 
+// Canonical top-of-page sub-view switcher — underlined section tabs. Same
+// DOM shape and class list as `projects.tsx`, `todos.tsx`, and every other
+// workspace switcher. See `docs/conventions.md` — "Top-of-page sub-view
+// switcher".
 function TabStrip({ locale, active, hasPendingInterview }: { locale: Locale; active: CompassTab; hasPendingInterview: boolean }) {
     const tabs: { id: CompassTab; label: { de: string; en: string }; icon: LucideIcon; badge?: boolean }[] = [
         { id: 'summary', label: { de: 'Kurz', en: 'Summary' }, icon: ShieldCheckIcon },
@@ -262,11 +264,7 @@ function TabStrip({ locale, active, hasPendingInterview }: { locale: Locale; act
         },
     ];
     return (
-        <div
-            role="tablist"
-            aria-label={{ de: 'Kompass-Sicht', en: 'Compass view' }[locale]}
-            className="flex gap-1 rounded-lg bg-muted/40 p-1"
-        >
+        <nav className="flex gap-1 border-b border-border/60" aria-label={{ de: 'Kompass-Sicht', en: 'Compass view' }[locale]}>
             {tabs.map((t) => {
                 const isActive = active === t.id;
                 const Icon = t.icon;
@@ -284,22 +282,19 @@ function TabStrip({ locale, active, hasPendingInterview }: { locale: Locale; act
                             interviewId: t.id === 'interviews' ? prev.interviewId : undefined,
                         })}
                         replace
-                        role="tab"
-                        aria-selected={isActive}
                         className={cn(
-                            'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                            isActive
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-background/60',
+                            '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                            isActive ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
                         )}
+                        aria-current={isActive ? 'page' : undefined}
                     >
-                        <Icon className="size-3.5" />
+                        <Icon className="size-4" />
                         {t.label[locale]}
-                        {t.badge ? <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" /> : null}
+                        {t.badge ? <span className="ml-0.5 size-1.5 rounded-full bg-amber-500" aria-hidden="true" /> : null}
                     </Link>
                 );
             })}
-        </div>
+        </nav>
     );
 }
 

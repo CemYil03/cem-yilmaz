@@ -127,6 +127,13 @@
             "when": 1782978634666,
             "tag": "0017_violet_giant_man",
             "breakpoints": true
+        },
+        {
+            "idx": 18,
+            "version": "7",
+            "when": 1783000688036,
+            "tag": "0018_quick_dakota_north",
+            "breakpoints": true
         }
     ]
 }

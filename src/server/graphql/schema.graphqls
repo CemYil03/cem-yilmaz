@@ -1576,3 +1576,216 @@ extend type AdminMutation {
     # `priority`). Matches the CV reorder shape.
     mediaChannelReorder(orderedIds: [ID!]!): MutationResult!
 }
+
+# --- Inventory ---------------------------------------------------------------
+#
+# `/workspace/inventory` — Cem's material assets (coffee machine, car, TV,
+# monitors, …), each with warranty, a service log, receipt / photo uploads,
+# and a repricing journal so a "material net worth" number can surface on
+# the finances overview. Admin-only, `noindex`; matches the Media / Projects
+# posture. See `docs/features/workspace-inventory.md`.
+
+# Category taxonomy is hard-coded; new values add here + in `itemCategories`
+# in `src/server/db/schema.ts`. Elevate to a table only if categories ever
+# need to be user-editable.
+enum ItemCategory {
+    electronics
+    appliance
+    kitchen
+    furniture
+    vehicle
+    clothing
+    tool
+    sports
+    other
+}
+
+enum ItemCondition {
+    new
+    likeNew
+    good
+    fair
+    poor
+}
+
+enum ItemDisposalState {
+    owned
+    sold
+    gifted
+    lost
+    disposed
+}
+
+enum ItemServiceKind {
+    service
+    repair
+    replacement
+    other
+}
+
+enum ItemFileKind {
+    photo
+    receipt
+    warranty
+    manual
+    invoice
+    other
+}
+
+# One tracked possession. `currentValueCents` is the cached snapshot of the
+# most recent `ItemValuation` — the `itemReprice` mutation writes the journal
+# row and this cached column in one transaction, so the list surface and
+# `materialNetWorthCents` never need to `MAX(valuedAt)` at read time.
+#
+# `valuations` / `serviceEntries` / `files` are populated on the singular
+# `item(id)` fetch. On the plural `items` list they resolve to `[]` — mirrors
+# how `projectsList` returns projects without their tasks and `projectGet`
+# returns them with. Detail-view callers use the singular query.
+type Item {
+    itemId: ID!
+    categoryKey: ItemCategory!
+    name: String!
+    brand: String
+    model: String
+    serialNumber: String
+    purchasedAt: Date
+    purchasePriceCents: Int
+    currentValueCents: Int
+    condition: ItemCondition
+    disposalState: ItemDisposalState!
+    disposedAt: DateTime
+    warrantyEndsAt: Date
+    warrantyProvider: String
+    warrantyNotes: String
+    notes: String
+    valuations: [ItemValuation!]!
+    serviceEntries: [ItemServiceEntry!]!
+    files: [ItemFile!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# One repricing entry in the item's journal. `valuedAt` defaults to insert
+# time but is settable so a back-dated appraisal reads correctly on the
+# sparkline. Ordered `valuedAt DESC` on read.
+type ItemValuation {
+    valuationId: ID!
+    valueCents: Int!
+    valuedAt: DateTime!
+    note: String
+}
+
+# One service / repair / replacement event on an item. `nextDueAt` powers the
+# "next service due" reminder — independent of warranty (which lives on the
+# item itself).
+type ItemServiceEntry {
+    serviceEntryId: ID!
+    kind: ItemServiceKind!
+    performedAt: Date!
+    vendor: String
+    costCents: Int
+    notes: String
+    nextDueAt: Date
+    # Files attached specifically to this entry (e.g. the invoice). The
+    # broader `Item.files` list also contains these — this field is the
+    # scoped view.
+    files: [ItemFile!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# A file attached to an item. Wraps the shared `FileUpload` store with
+# inventory metadata (kind, pin state, optional service-entry link). The
+# `fileUpload.url` field is the download path.
+type ItemFile {
+    itemFileId: ID!
+    itemId: ID!
+    serviceEntryId: ID
+    fileUpload: FileUpload!
+    label: String
+    kind: ItemFileKind!
+    pinned: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# Read namespace mounted under `Admin`. Gated once at the `Query.admin`
+# boundary by the resolver chain on `User.admin`.
+type AdminInventoryQuery {
+    # All tracked items. Disposed / sold / gifted / lost rows are hidden by
+    # default so the list surface stays focused on currently-owned things;
+    # `includeDisposed: true` returns the full history for the "All" filter.
+    items(includeDisposed: Boolean = false): [Item!]!
+    # Single item by id, loaded fully (valuations, service entries, files).
+    # Null when the id does not exist.
+    item(itemId: ID!): Item
+    # Sum of `currentValueCents` over items with `disposalState = 'owned'`.
+    # Drives the overview strip and the future finances-page cross-reference
+    # tile. Nullable columns count as 0.
+    materialNetWorthCents: Int!
+    # Items whose warranty ends within the given window. Ordered
+    # `warrantyEndsAt ASC` so the soonest expirations sit on top of the
+    # overview list.
+    upcomingWarrantyExpirations(withinDays: Int = 90): [Item!]!
+}
+
+extend type Admin {
+    inventory: AdminInventoryQuery!
+}
+
+input ItemInput {
+    itemId: ID
+    categoryKey: ItemCategory!
+    name: String!
+    brand: String
+    model: String
+    serialNumber: String
+    purchasedAt: Date
+    purchasePriceCents: Int
+    condition: ItemCondition
+    warrantyEndsAt: Date
+    warrantyProvider: String
+    warrantyNotes: String
+    notes: String
+}
+
+input ItemServiceEntryInput {
+    serviceEntryId: ID
+    itemId: ID!
+    kind: ItemServiceKind!
+    performedAt: Date!
+    vendor: String
+    costCents: Int
+    notes: String
+    nextDueAt: Date
+}
+
+# `itemFileAttach` payload. The client first uploads bytes via
+# `POST /api/file-uploads`, then calls this mutation with the returned
+# `fileUploadId` — same two-step shape as `projectFileUpsert`.
+input ItemFileAttachInput {
+    itemId: ID!
+    serviceEntryId: ID
+    fileUploadId: ID!
+    label: String
+    kind: ItemFileKind!
+    pinned: Boolean
+}
+
+extend type AdminMutation {
+    itemUpsert(input: ItemInput!): Item!
+    itemDelete(itemId: ID!): MutationResult!
+    # Set the disposal state (sold / gifted / lost / disposed). `disposedAt`
+    # defaults to now when omitted. Reverting to `owned` clears `disposedAt`.
+    itemDispose(itemId: ID!, state: ItemDisposalState!, disposedAt: DateTime): Item!
+    # Journal a new valuation and update the cached `currentValueCents` in
+    # one transaction. `valuedAt` defaults to now.
+    itemReprice(itemId: ID!, valueCents: Int!, valuedAt: DateTime, note: String): Item!
+
+    itemServiceEntryUpsert(input: ItemServiceEntryInput!): ItemServiceEntry!
+    itemServiceEntryDelete(serviceEntryId: ID!): MutationResult!
+
+    itemFileAttach(input: ItemFileAttachInput!): ItemFile!
+    itemFileDelete(itemFileId: ID!): MutationResult!
+    itemFileTogglePin(itemFileId: ID!): ItemFile!
+}
