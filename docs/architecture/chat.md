@@ -388,5 +388,7 @@ in their own files and are wired directly into the agent's `tools` map.
 - `src/server/agents/toolPromptUserForInput.ts` — the `execute`-less tool that produces input collections
 - `src/server/mappers/toModelMessages.ts` — the only file that imports AI SDK content types
 - `src/web/components/chat-message/` — one render file per `ChatMessage` variant + shared row primitives
+- `src/web/chat/ChatTranscriptShared.tsx` — the shared transcript renderer used by every chat surface. See
+  [`chat-transcript.md`](./chat-transcript.md).
 - `src/web/chat/chatAssistantInputKinds.ts` — slot-kind registry
 - `src/web/chat/useChatLiveUpdates.tsx` — per-turn live state, `<ChatUpdatesListener />`, `beginTurn()`

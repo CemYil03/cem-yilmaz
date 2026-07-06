@@ -11,7 +11,11 @@ import { cn } from '../utils/cn';
 
 export function AssistantMarkdown({ text, className, streaming = false }: { text: string; className?: string; streaming?: boolean }) {
     if (streaming && !text) {
-        return <span className={cn('text-sm leading-relaxed text-foreground opacity-60', className)}>Thinking…</span>;
+        // Shimmer sweep across the label reads as "the assistant is actively
+        // thinking" — a signal, not an idle placeholder. `shimmer` is a pure-CSS
+        // utility from the shadcn package; the highlight derives from
+        // `currentColor` so it adapts to light/dark without extra config.
+        return <span className={cn('shimmer text-sm leading-relaxed text-muted-foreground', className)}>Thinking…</span>;
     }
     return (
         <Streamdown

@@ -84,6 +84,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                              | `src/server/agents/agentVisitorAboutCem.ts`    |
 | AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                        | `docs/architecture/multi-agent-chat.md`        |
 | AI chat titles        | Post-turn LLM titler with `NONE`-retry loop on the empty column            | `docs/features/chat-titles.md`                 |
+| AI chat transcript    | Shared MessageScroller-backed transcript for every chat surface            | `docs/architecture/chat-transcript.md`         |
 | AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`     | `src/server/agents/adminChatModels.ts`         |
 | Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled      | `docs/features/workspace-compass.md`           |
 | Media library         | Movies + channels, TMDB auto-fill, topic-clustered cross-views             | `docs/features/workspace-media.md`             |

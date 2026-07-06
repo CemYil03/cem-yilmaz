@@ -1,24 +1,13 @@
 import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
-import { ArrowDownIcon } from 'lucide-react';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import { useMutation } from 'urql';
-import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
-import {
-    findLatestCollectionId,
-    findPendingApprovalIds,
-    findUserInputByCollectionId,
-    groupMessagesByDate,
-    mergeTranscriptMessages,
-    partitionByParent,
-} from '../../../web/chat/chatTranscript';
+import { ChatTranscript } from '../../../web/chat/ChatTranscriptShared';
+import { mergeTranscriptMessages } from '../../../web/chat/chatTranscript';
 import { toFlatAnswerInput } from '../../../web/chat/chatAssistantInputKinds';
 import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from '../../../web/chat/WorkspaceChatComposer';
-import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
-import { ChatMessage } from '../../../web/components/chat-message';
 import type { GqlCChatAssistantInputValue, GqlCWorkspaceChatPageQuery } from '../../../web/graphql/generated';
 import {
     WorkspaceChatInputCollectionRespondDocument,
@@ -42,7 +31,9 @@ import type { Locale } from '../../../web/utils/locale';
 //
 // Rendered surface: the chat's title on top, the transcript centered on
 // `max-w-3xl`, and the shared `<WorkspaceChatComposer />` parked at the
-// viewport bottom. No chat-list chrome — the sidebar is that.
+// viewport bottom. No chat-list chrome — the sidebar is that. The
+// transcript itself is the shared `<ChatTranscript />` — same component
+// the sidebar body and the visitor sheet use.
 
 export const Route = createFileRoute('/{-$locale}/workspace/assistant/$chatId')({
     loader: ({ params }) => routeLoaderGraphqlClient(WorkspaceChatPageDocument, { chatId: params.chatId })(),
@@ -142,6 +133,8 @@ function WorkspaceAssistantPage({
         [respondToApproval, live, selectedModelId],
     );
 
+    const messages = mergeTranscriptMessages(chat.messages, live.appendedMessages);
+
     // Standard chat layout — composer parks against the viewport bottom
     // and the transcript scrolls in between. The workspace layout wraps
     // the outlet in `flex min-h-screen flex-col`, so we give main a
@@ -159,14 +152,15 @@ function WorkspaceAssistantPage({
     // the hub, whose hero composer is where a fresh chat starts.
     return (
         <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-3xl flex-col gap-4 sm:p-6 px-2">
-            <ChatTranscript
-                chat={chat}
-                appendedMessages={live.appendedMessages}
-                streamingTexts={live.streamingTexts}
-                onCollectionSubmit={onCollectionSubmit}
-                onApprovalRespond={onApprovalRespond}
-                jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
-            />
+            <div className="relative flex-1 min-h-0 min-w-0">
+                <ChatTranscript
+                    messages={messages}
+                    streamingTexts={live.streamingTexts}
+                    onCollectionSubmit={onCollectionSubmit}
+                    onApprovalRespond={onApprovalRespond}
+                    jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
+                />
+            </div>
             <WorkspaceChatComposer
                 chatId={chat.chatId}
                 isLocked={live.isGenerating}
@@ -177,140 +171,5 @@ function WorkspaceAssistantPage({
                 autoFocus
             />
         </main>
-    );
-}
-
-// --- Transcript --------------------------------------------------------------
-//
-// Mirrors the transcript layout used by the sidebar and the visitor sheet.
-// If a third caller shows up this should move to a shared component; for
-// two callers the duplication is the smaller cost.
-
-function ChatTranscript({
-    chat,
-    appendedMessages,
-    streamingTexts,
-    onCollectionSubmit,
-    onApprovalRespond,
-    jumpToLatestLabel,
-}: {
-    chat: NonNullable<AssistantChat>;
-    appendedMessages: ReadonlyArray<TranscriptMessage>;
-    streamingTexts: Readonly<Record<string, string>>;
-    onCollectionSubmit: (
-        collectionMessageId: string,
-        answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>,
-    ) => void;
-    onApprovalRespond: (approvalId: string, approved: boolean, reason?: string) => void;
-    jumpToLatestLabel: string;
-}) {
-    const allMessages = mergeTranscriptMessages(chat.messages, appendedMessages);
-    const latestCollectionId = findLatestCollectionId(allMessages);
-    const pendingApprovalIds = findPendingApprovalIds(allMessages);
-    const userInputByCollection = findUserInputByCollectionId(allMessages);
-    // Sub-agent tool-call children render under their parent's card — see
-    // `docs/architecture/agent-delegation.md` ("Nested tool calls").
-    const { topLevel, childrenByParentId } = partitionByParent(allMessages);
-    const groupedMessages = groupMessagesByDate(topLevel);
-
-    const streamingEntries = Object.entries(streamingTexts);
-
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const [isAtBottom, setIsAtBottom] = useState(true);
-    const isAtBottomRef = useRef(true);
-    const lastContentSignature = `${allMessages.length}|${streamingEntries.map(([id, text]) => `${id}:${text.length}`).join(',')}`;
-
-    useLayoutEffect(() => {
-        if (!isAtBottomRef.current) return;
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollTop = el.scrollHeight;
-    }, [lastContentSignature]);
-
-    const onScroll = useCallback(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-        const next = distanceFromBottom < 64;
-        if (next !== isAtBottomRef.current) {
-            isAtBottomRef.current = next;
-            setIsAtBottom(next);
-        }
-    }, []);
-
-    const jumpToLatest = useCallback(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-    }, []);
-
-    return (
-        <div className="relative flex-1 min-h-0 min-w-0">
-            <div
-                ref={scrollRef}
-                onScroll={onScroll}
-                className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden scrollbar-gutter-stable"
-            >
-                {groupedMessages.map((group) => (
-                    <section key={group.date} className="flex min-w-0 flex-col gap-4">
-                        <DateSeparator iso={group.date} />
-                        {group.messages.map((message) => {
-                            const approvalRespondHandler =
-                                message.__typename === 'ChatMessageToolApprovalRequest' && pendingApprovalIds.has(message.approvalId)
-                                    ? onApprovalRespond
-                                    : undefined;
-                            const collectionUserInput =
-                                message.__typename === 'ChatMessageAssistantInputCollection'
-                                    ? userInputByCollection.get(message.chatMessageId)
-                                    : undefined;
-                            const children =
-                                message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
-                            return (
-                                <ChatMessage
-                                    key={message.chatMessageId}
-                                    message={message}
-                                    isInteractiveCollection={
-                                        message.__typename === 'ChatMessageAssistantInputCollection' &&
-                                        message.chatMessageId === latestCollectionId
-                                    }
-                                    collectionUserInput={collectionUserInput}
-                                    onCollectionSubmit={onCollectionSubmit}
-                                    onApprovalRespond={approvalRespondHandler}
-                                    children={children}
-                                />
-                            );
-                        })}
-                    </section>
-                ))}
-                {streamingEntries.length > 0 ? (
-                    <section className="flex min-w-0 flex-col gap-4">
-                        {streamingEntries.map(([streamingId, text]) => (
-                            <AssistantMarkdown key={streamingId} text={text} streaming />
-                        ))}
-                    </section>
-                ) : null}
-            </div>
-            {!isAtBottom ? (
-                <button
-                    type="button"
-                    onClick={jumpToLatest}
-                    aria-label={jumpToLatestLabel}
-                    className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-md hover:bg-accent"
-                >
-                    <ArrowDownIcon className="size-3.5" />
-                    {jumpToLatestLabel}
-                </button>
-            ) : null}
-        </div>
-    );
-}
-
-function DateSeparator({ iso }: { iso: string }) {
-    return (
-        <div className="flex items-center gap-3 text-[11px] uppercase tracking-wide text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            <time dateTime={iso}>{format(parseISO(iso), 'PP')}</time>
-            <span className="h-px flex-1 bg-border" />
-        </div>
     );
 }

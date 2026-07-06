@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent, ReactNode } from 'react';
-import { CheckIcon, CircleAlertIcon, FileIcon, PaperclipIcon, SendIcon, XIcon } from 'lucide-react';
+import { CheckIcon, FileIcon, PaperclipIcon, SendIcon, XIcon } from 'lucide-react';
+import {
+    Attachment,
+    AttachmentAction,
+    AttachmentActions,
+    AttachmentContent,
+    AttachmentDescription,
+    AttachmentGroup,
+    AttachmentMedia,
+    AttachmentTitle,
+} from './base/attachment';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from './base/input-group';
 import { Spinner } from './base/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
@@ -246,15 +256,21 @@ export function MessageComposer({
                 )}
             >
                 {attachmentsEnabled && hasAttachments ? (
-                    <InputGroupAddon align="block-start" className="flex-wrap gap-2">
-                        {currentAttachments.map((attachment) => (
-                            <AttachmentPreview
-                                key={attachment.localId}
-                                attachment={attachment}
-                                disabled={inputsLocked}
-                                onRemove={() => onAttachmentRemove(attachment.localId)}
-                            />
-                        ))}
+                    <InputGroupAddon align="block-start" className="gap-0 py-1">
+                        {/* AttachmentGroup lays the tiles in a horizontally
+                            scrollable row with scroll-fade-x on the edges,
+                            so a long list stays browsable without wrapping
+                            the composer. */}
+                        <AttachmentGroup>
+                            {currentAttachments.map((attachment) => (
+                                <AttachmentPreview
+                                    key={attachment.localId}
+                                    attachment={attachment}
+                                    disabled={inputsLocked}
+                                    onRemove={() => onAttachmentRemove(attachment.localId)}
+                                />
+                            ))}
+                        </AttachmentGroup>
                     </InputGroupAddon>
                 ) : null}
 
@@ -387,42 +403,41 @@ function AttachmentPreview({
         return () => URL.revokeObjectURL(url);
     }, [file, isImage]);
 
+    // Map the composer's tri-state upload lifecycle onto the shadcn
+    // `Attachment` state prop. The primitive drives the visual treatment —
+    // dashed border for idle, shimmer on the title while uploading,
+    // destructive tint on error, solid on done — so we don't have to
+    // hand-roll overlays for each state. `orientation="vertical"` gives us
+    // the stacked-image tile the previous inline preview was building by
+    // hand.
+    const attachmentState = status === 'uploading' ? 'uploading' : status === 'error' ? 'error' : 'done';
+    const description = status === 'error' ? error : formatBytes(file.size);
+
     return (
-        <div className="relative size-16 shrink-0" title={status === 'error' ? error : undefined}>
-            {/* The clip lives on an inner wrapper so the absolutely-positioned
-                X button can sit outside the tile without being cut off. */}
-            <div className="relative flex size-full items-center justify-center overflow-hidden rounded-md border border-input bg-background">
-                {isImage && objectUrl ? (
-                    <img src={objectUrl} alt={file.name} className="size-full object-cover" />
-                ) : (
-                    <div className="flex flex-col items-center justify-center gap-1 p-1 text-[10px] text-muted-foreground">
-                        <FileIcon className="size-5" />
-                        <span className="line-clamp-2 text-center leading-tight break-all">{file.name}</span>
-                    </div>
-                )}
-                {status === 'uploading' ? (
-                    // Translucent overlay so the file preview stays visible
-                    // beneath — gives the user a sense the upload is on top of
-                    // their file rather than blocking it out.
-                    <div className="absolute inset-0 grid place-items-center bg-background/70">
-                        <Spinner className="size-4 text-muted-foreground" />
-                    </div>
-                ) : null}
-                {status === 'error' ? (
-                    <div className="absolute inset-0 grid place-items-center bg-destructive/20 text-destructive">
-                        <CircleAlertIcon className="size-5" />
-                    </div>
-                ) : null}
-            </div>
-            <button
-                type="button"
-                aria-label={`Remove ${file.name}`}
-                disabled={disabled}
-                onClick={onRemove}
-                className="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full bg-foreground text-background shadow-sm hover:bg-foreground/90 disabled:opacity-50 cursor-pointer"
-            >
-                <XIcon className="size-3" />
-            </button>
-        </div>
+        <Attachment size="sm" orientation="vertical" state={attachmentState} title={status === 'error' ? error : undefined}>
+            <AttachmentMedia variant={isImage && objectUrl ? 'image' : 'icon'}>
+                {isImage && objectUrl ? <img src={objectUrl} alt={file.name} /> : <FileIcon aria-hidden />}
+            </AttachmentMedia>
+            <AttachmentContent>
+                <AttachmentTitle>{file.name}</AttachmentTitle>
+                {description ? <AttachmentDescription>{description}</AttachmentDescription> : null}
+            </AttachmentContent>
+            <AttachmentActions>
+                <AttachmentAction type="button" disabled={disabled} onClick={onRemove} aria-label={`Remove ${file.name}`}>
+                    <XIcon aria-hidden />
+                </AttachmentAction>
+            </AttachmentActions>
+        </Attachment>
     );
+}
+
+// Small helper so the tile description reads as "1.2 MB" instead of raw
+// bytes. The shadcn examples use the same 1024-base formatting; keeping it
+// local avoids pulling in a formatting library for one call site.
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(kb < 10 ? 1 : 0)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(mb < 10 ? 1 : 0)} MB`;
 }

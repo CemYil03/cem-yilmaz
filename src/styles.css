@@ -3,6 +3,12 @@
 
 @import 'tw-animate-css';
 
+/* shadcn shared utilities — brings in `shimmer` (streaming-status text sweep)
+   and `scroll-fade` (edge mask on scroll containers). Both are pure CSS,
+   scoped to `@utility` classes, and adopted opt-in via className. See
+   docs/architecture/chat-transcript.md for where they land in the chat. */
+@import 'shadcn/tailwind.css';
+
 /*
  * Self-hosted variable fonts — bundled at build time via @fontsource-variable
  * so first paint already has the right metrics. No external request, no FOUT,

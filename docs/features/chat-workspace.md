@@ -191,13 +191,17 @@ src/web/chat/
 ├── WorkspaceAssistantChatBody.tsx        Sidebar body — chat browser (search + paginated list), loaded-state header ("Back to chats" + "Open in its own page"), transcript, composer.
 ├── WorkspaceAssistantChatSidebar.tsx     The shadcn `<Sidebar collapsible="offcanvas" side="right">` frame.
 ├── WorkspaceChatComposer.tsx             Shared admin composer — wraps `<ChatComposer />` with the workspace mutation + provider-owned model selection.
+├── ChatTranscriptShared.tsx              Shared transcript renderer (MessageScroller-backed) — used here, in the deep-link route, and in the visitor sheet. See docs/architecture/chat-transcript.md.
 └── workspaceChatListBuckets.ts           Day-bucketing helper (`Today` / `Yesterday` / `This week` / `Earlier`) used by the sidebar's chat browser.
 
 src/web/components/
 └── HeaderChatButton.tsx                  Workspace variant calls `useSidebar().toggleSidebar()` and reads `open` / `openMobile` for `aria-pressed`.
 
 src/web/components/base/
-└── sidebar.tsx                           shadcn's Sidebar primitive (registry, do not modify casually).
+├── sidebar.tsx                           shadcn's Sidebar primitive (registry, do not modify casually).
+├── message-scroller.tsx                  shadcn's MessageScroller primitive (registry) — backs `<ChatTranscript />`.
+├── marker.tsx                            shadcn's Marker primitive (registry) — used for the transcript's date separators.
+└── attachment.tsx                        shadcn's Attachment primitive (registry) — used by the composer's file tiles.
 
 src/routes/{-$locale}/
 ├── workspace.tsx                         Workspace layout — loads `WorkspaceChatConfig`, mounts `WorkspaceAssistantChatProvider` + `<SidebarProvider>` + `<SidebarInset>` + `<WorkspaceAssistantChatSidebar />`.
@@ -232,6 +236,14 @@ Two surface-level conveniences flow from [`architecture/agent-delegation.md`](..
   in the transcript shows the sub-agent's own tool calls (`projectsList`, `projectUpsert`, `taskUpsert`, …) indented under it. The user
   reads "Created project X" plus the actual sequence of DB writes that produced it. See
   [Nested tool calls](../architecture/agent-delegation.md#nested-tool-calls).
+
+## Transcript scroll behaviour
+
+Every admin surface — the sidebar body, the deep-link route, and (with the visitor sheet) the public "Ask me anything" surface — renders its
+transcript through the shared `<ChatTranscript />` at `src/web/chat/ChatTranscriptShared.tsx`. The scroll behaviour (follow-only-while-
+at-the-live-edge, anchor new turns near the top of the viewport, reopen saved conversations at the last user message, edge fade on the
+bottom of the viewport, jump-to-latest pill) is delegated to shadcn's `MessageScroller` primitive. See
+[`architecture/chat-transcript.md`](../architecture/chat-transcript.md).
 
 ## Anti-patterns avoided
 

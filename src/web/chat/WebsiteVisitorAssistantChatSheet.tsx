@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import { ArrowDownIcon, Maximize2Icon, MessageSquareTextIcon, Minimize2Icon, PlusIcon, SparklesIcon } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import { Maximize2Icon, MessageSquareTextIcon, Minimize2Icon, PlusIcon, SparklesIcon } from 'lucide-react';
 import { useLocation } from '@tanstack/react-router';
 import { useMutation, useQuery } from 'urql';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/base/sheet';
 import { Spinner } from '../components/base/spinner';
-import { AssistantMarkdown } from '../components/AssistantMarkdown';
-import { ChatMessage } from '../components/chat-message';
 import type { GqlCChatAssistantInputValue, GqlCChatPageQuery, GqlCVisitorChatListItemFragment } from '../graphql/generated';
 import {
     ChatInputCollectionRespondDocument,
@@ -20,16 +18,10 @@ import { cn } from '../utils/cn';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
+import { ChatTranscript as SharedChatTranscript } from './ChatTranscriptShared';
 import { VisitorChatComposer } from './VisitorChatComposer';
+import { mergeTranscriptMessages } from './chatTranscript';
 import type { TranscriptMessage } from './chatTranscript';
-import {
-    findLatestCollectionId,
-    findPendingApprovalIds,
-    findUserInputByCollectionId,
-    groupMessagesByDate,
-    partitionByParent,
-    mergeTranscriptMessages,
-} from './chatTranscript';
 import { useVisitorChat } from './VisitorChatProvider';
 import { Button } from '../components/base/button';
 
@@ -375,9 +367,8 @@ function ChatLoaded({
 
 // --- Transcript --------------------------------------------------------------
 //
-// The shape mirrors the old `/chat` route's `ChatTranscript`. Once a third
-// surface lands this can move into a shared `src/web/chat/` component
-// alongside the helpers and the composer.
+// Thin wrapper over the shared `<ChatTranscript />` — same shape the workspace
+// surfaces use. See `docs/architecture/chat-transcript.md`.
 
 function ChatTranscript({
     chat,
@@ -400,120 +391,17 @@ function ChatTranscript({
     jumpToLatestLabel: string;
 }) {
     const allMessages = mergeTranscriptMessages(chat.messages, appendedMessages);
-    const latestCollectionId = findLatestCollectionId(allMessages);
-    const pendingApprovalIds = findPendingApprovalIds(allMessages);
-    const userInputByCollection = findUserInputByCollectionId(allMessages);
-    // Visitor agent doesn't delegate today, so `childrenByParentId` is always
-    // empty here; threading it through keeps the render parity with the
-    // workspace transcript so a future delegation pattern lands without UI
-    // changes.
-    const { topLevel, childrenByParentId } = partitionByParent(allMessages);
-    const groupedMessages = groupMessagesByDate(topLevel);
-
-    const streamingEntries = Object.entries(streamingTexts);
-
-    // Stick-to-bottom: keep the transcript pinned to the latest message as
-    // content streams in. The decision to re-pin is read from a ref that
-    // `onScroll` updates and the `useLayoutEffect` consults — `onScroll`
-    // fires after the previous layout effect, so the ref holds the
-    // pre-update bottom answer the next batch needs.
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const [isAtBottom, setIsAtBottom] = useState(true);
-    const isAtBottomRef = useRef(true);
-    const lastContentSignature = `${allMessages.length}|${streamingEntries.map(([id, text]) => `${id}:${text.length}`).join(',')}`;
-
-    useLayoutEffect(() => {
-        if (!isAtBottomRef.current) return;
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollTop = el.scrollHeight;
-    }, [lastContentSignature]);
-
-    const onScroll = useCallback(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-        const next = distanceFromBottom < 64;
-        if (next !== isAtBottomRef.current) {
-            isAtBottomRef.current = next;
-            setIsAtBottom(next);
-        }
-    }, []);
-
-    const jumpToLatest = useCallback(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-    }, []);
-
     return (
-        <div className="relative min-h-0 min-w-0">
-            <div ref={scrollRef} onScroll={onScroll} className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto overflow-x-hidden pr-2">
-                {fetching && allMessages.length === 0 ? (
-                    <div className="grid place-items-center py-8">
-                        <Spinner className="size-4 text-muted-foreground" />
-                    </div>
-                ) : null}
-                {groupedMessages.map((group) => (
-                    <section key={group.date} className="flex min-w-0 flex-col gap-4">
-                        <DateSeparator iso={group.date} />
-                        {group.messages.map((message) => {
-                            const approvalRespondHandler =
-                                message.__typename === 'ChatMessageToolApprovalRequest' && pendingApprovalIds.has(message.approvalId)
-                                    ? onApprovalRespond
-                                    : undefined;
-                            const collectionUserInput =
-                                message.__typename === 'ChatMessageAssistantInputCollection'
-                                    ? userInputByCollection.get(message.chatMessageId)
-                                    : undefined;
-                            const children =
-                                message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
-                            return (
-                                <ChatMessage
-                                    key={message.chatMessageId}
-                                    message={message}
-                                    isInteractiveCollection={
-                                        message.__typename === 'ChatMessageAssistantInputCollection' &&
-                                        message.chatMessageId === latestCollectionId
-                                    }
-                                    collectionUserInput={collectionUserInput}
-                                    onCollectionSubmit={onCollectionSubmit}
-                                    onApprovalRespond={approvalRespondHandler}
-                                    children={children}
-                                />
-                            );
-                        })}
-                    </section>
-                ))}
-                {streamingEntries.length > 0 ? (
-                    <section className="flex min-w-0 flex-col gap-4">
-                        {streamingEntries.map(([streamingId, text]) => (
-                            <AssistantMarkdown key={streamingId} text={text} streaming />
-                        ))}
-                    </section>
-                ) : null}
-            </div>
-            {!isAtBottom ? (
-                <button
-                    type="button"
-                    onClick={jumpToLatest}
-                    aria-label={jumpToLatestLabel}
-                    className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-md hover:bg-accent"
-                >
-                    <ArrowDownIcon className="size-3.5" />
-                    {jumpToLatestLabel}
-                </button>
-            ) : null}
-        </div>
-    );
-}
-
-function DateSeparator({ iso }: { iso: string }) {
-    return (
-        <div className="flex items-center gap-3 text-[11px] uppercase tracking-wide text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            <time dateTime={iso}>{format(parseISO(iso), 'PP')}</time>
-            <span className="h-px flex-1 bg-border" />
+        <div className="relative min-h-0 min-w-0 flex-1">
+            <SharedChatTranscript
+                messages={allMessages}
+                streamingTexts={streamingTexts}
+                onCollectionSubmit={onCollectionSubmit}
+                onApprovalRespond={onApprovalRespond}
+                jumpToLatestLabel={jumpToLatestLabel}
+                initialFetching={fetching}
+                viewportClassName="pr-2"
+            />
         </div>
     );
 }
