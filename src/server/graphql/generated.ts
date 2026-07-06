@@ -22,6 +22,7 @@ export interface GqlSAdmin {
     chat: GqlSChat;
     chatConfig: GqlSAdminChatConfig;
     chats: Array<GqlSChat>;
+    chatsCount: Scalars['Int']['output'];
     compass: GqlSAdminCompass;
     cv: GqlSCvQuery;
     inventory: GqlSAdminInventoryQuery;
@@ -39,6 +40,16 @@ export interface GqlSAdmin {
 
 export type GqlSAdminChatArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminChatsArgs = {
+    limit?: InputMaybe<Scalars['Int']['input']>;
+    offset?: InputMaybe<Scalars['Int']['input']>;
+    query?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSAdminChatsCountArgs = {
+    query?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlSAdminLogsArgs = {
@@ -1767,7 +1778,8 @@ export type GqlSAdminResolvers<
     activeTimer?: Resolver<Maybe<GqlSResolversTypes['ProjectActivity']>, ParentType, ContextType>;
     chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminChatArgs, 'chatId'>>;
     chatConfig?: Resolver<GqlSResolversTypes['AdminChatConfig'], ParentType, ContextType>;
-    chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType, Partial<GqlSAdminChatsArgs>>;
+    chatsCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType, Partial<GqlSAdminChatsCountArgs>>;
     compass?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
     cv?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
     inventory?: Resolver<GqlSResolversTypes['AdminInventoryQuery'], ParentType, ContextType>;

@@ -156,7 +156,7 @@ src/
 │   │   ├── datenschutz.tsx     Privacy notice (GDPR)
 │   │   └── workspace/          Personal workspace hub + focus areas (noindex; Phase 2 OAuth-gated)
 │   │       ├── index.tsx       Hub: greeting + assistant composer + links to each focus area
-│   │       ├── assistant.tsx   Personal-assistant chat (admin-scope)
+│   │       ├── assistant.$chatId.tsx  Deep-link view of one admin chat (`/workspace/assistant/<chatId>`) — bookmark-friendly, sidebar-independent
 │   │       ├── compass.tsx     AI-built compass (summary / portrait / psychology) — see docs/features/workspace-compass.md
 │   │       ├── cv.tsx          CV editor (writes the `Cv*` tables)
 │   │       ├── software.tsx    Software development & architecture

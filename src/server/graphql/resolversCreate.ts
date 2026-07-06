@@ -72,6 +72,7 @@ import { toGqlCompassInterview } from '../mappers/toGqlCompassInterview';
 import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
+import { adminChats, adminChatsCount } from '../queries/adminChats';
 import { chatMessageRowLoad } from '../queries/chatMessageRowLoad';
 import { chatsFindBySession } from '../queries/chatsFindBySession';
 import { visitorChatFindOne } from '../queries/visitorChatFindOne';
@@ -106,6 +107,8 @@ import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 import type {
     GqlSAdmin,
     GqlSAdminChatArgs,
+    GqlSAdminChatsArgs,
+    GqlSAdminChatsCountArgs,
     GqlSAdminLogsArgs,
     GqlSAdminMutation,
     GqlSAdminMutationChatConfigDefaultModelSetArgs,
@@ -278,8 +281,11 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             publicChat(_parent: GqlSAdmin, args: GqlSAdminPublicChatArgs, requestingSession: GqlSSession) {
                 return chatFindByScope(args.chatId, 'public', requestingSession, serverRuntime);
             },
-            chats(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
-                return chatListByScope('admin', requestingSession, serverRuntime);
+            chats(_parent: GqlSAdmin, args: GqlSAdminChatsArgs, requestingSession: GqlSSession) {
+                return adminChats(args, requestingSession, serverRuntime);
+            },
+            chatsCount(_parent: GqlSAdmin, args: GqlSAdminChatsCountArgs, requestingSession: GqlSSession) {
+                return adminChatsCount(args, requestingSession, serverRuntime);
             },
             chat(_parent: GqlSAdmin, args: GqlSAdminChatArgs, requestingSession: GqlSSession) {
                 return chatFindByScope(args.chatId, 'admin', requestingSession, serverRuntime);

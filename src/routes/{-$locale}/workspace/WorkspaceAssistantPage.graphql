@@ -161,24 +161,30 @@ fragment WorkspaceChatMessageFields on ChatMessage {
     }
 }
 
-# Lightweight metadata list — used by the sheet's "recent chats" section
-# and by the dedicated route's empty / sidebar surfaces. Returns every
-# admin chat newest-first; callers slice the list to ten before rendering
-# so the wire shape stays stable when the cap shifts later. The full
-# transcript is fetched on demand via `WorkspaceChatPage(chatId)`.
+# Lightweight metadata list — used by the sidebar's chat browser. Returns
+# `Chat` shells (empty `messages` array) so the browser can render titles
+# and timestamps cheaply; the transcript loads on demand through
+# `WorkspaceChatPage(chatId)` when the user opens a row.
 fragment WorkspaceChatListItem on Chat {
     chatId
     title
     lastModifiedAt
 }
 
-query WorkspaceAssistantChats {
+# Paged + searchable admin-chat browser feed for the sidebar. All three
+# variables are optional at the schema level; the client always passes
+# `limit` + `offset`, and `query` when the search field is non-empty.
+# `chatsCount` (same optional `query`) drives the "Show more" gate on the
+# client side — subtract `offset + items.length` to know if more rows
+# exist for the same filter.
+query WorkspaceAssistantChatsPage($limit: Int!, $offset: Int!, $query: String) {
     currentSession {
         user {
             admin {
-                chats {
+                chats(limit: $limit, offset: $offset, query: $query) {
                     ...WorkspaceChatListItem
                 }
+                chatsCount(query: $query)
             }
         }
     }

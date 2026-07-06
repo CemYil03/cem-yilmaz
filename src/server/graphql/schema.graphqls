@@ -419,8 +419,29 @@ type Admin {
     publicChats: [Chat!]!
     # A single visitor chat by id. Rejects `scope = 'admin'` chats.
     publicChat(chatId: ID!): Chat!
-    # Admin (`scope = 'admin'`) chats, newest first.
-    chats: [Chat!]!
+    # Admin (`scope = 'admin'`) chats, newest first by `lastModifiedAt`.
+    # Backs the workspace assistant sidebar's chat browser. All three
+    # arguments are optional so the field is drop-in compatible with an
+    # unfiltered "give me every admin chat" call:
+    #
+    #   - `limit` caps the returned batch (server clamps to a sane
+    #     ceiling); omit for the full list.
+    #   - `offset` picks the page (0-indexed); omit for the top of the
+    #     list.
+    #   - `query` — when set to a non-blank trimmed string — filters the
+    #     underlying rows by matching either the chat title OR any
+    #     user-message body (case-insensitive substring). Assistant text
+    #     is intentionally not searched.
+    #
+    # The returned `Chat` shells carry an empty `messages` array — fetch
+    # the transcript with `chat(chatId)` when the user opens one. Pair
+    # with `chatsCount(query)` to drive "Show more" (server does not
+    # return a page-size + hasMore combo).
+    chats(limit: Int, offset: Int, query: String): [Chat!]!
+    # Total number of admin chats matching the same optional `query` as
+    # `chats(...)`. The client subtracts `offset + items.length` to
+    # decide whether "Show more" is still meaningful.
+    chatsCount(query: String): Int!
     # A single admin chat by id. Rejects `scope = 'public'` chats.
     chat(chatId: ID!): Chat!
     # The AI-built compass of Cem. Reads three synthesized text artifacts

@@ -1,11 +1,11 @@
-import { useNavigate } from '@tanstack/react-router';
-import { ExternalLinkIcon, PanelRightCloseIcon, SparklesIcon } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { PanelRightCloseIcon, SparklesIcon } from 'lucide-react';
+import { useRef, useState } from 'react';
 import type { TranscriptMessage } from './chatTranscript';
 import { mergeTranscriptMessages } from './chatTranscript';
 import {
+    WorkspaceAssistantChatBrowser,
     WorkspaceAssistantChatComposer,
-    WorkspaceAssistantChatEmptyState,
+    WorkspaceAssistantChatLoadedHeader,
     WorkspaceAssistantChatTranscript,
 } from './WorkspaceAssistantChatBody';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
@@ -28,12 +28,18 @@ import type { Locale } from '../utils/locale';
 //     no React re-render of this subtree per frame — and commits to
 //     `localStorage` on pointer release so reloads keep the preference.
 //
-// State (chatId, live updates, recent chats, sticky model) all lives on
-// `WorkspaceAssistantChatProvider`. This file is purely the frame.
+// State (chatId, live updates, sticky model) all lives on
+// `WorkspaceAssistantChatProvider`. This file is purely the frame; the
+// browser / transcript / composer components live in
+// `WorkspaceAssistantChatBody.tsx`.
+//
+// The sidebar's two states — chat browser vs. loaded transcript — are
+// switched on `chatId + live` rather than a local flag so every entry
+// point (browser row, hub-composer first-send, deep-link `resetChat`)
+// funnels through the provider and stays consistent.
 //
 // See `docs/features/chat-workspace.md`.
 
-const openFullscreenLabel = { de: 'Im Vollbild öffnen', en: 'Open full-screen' };
 const collapseLabel = { de: 'Assistent ausblenden', en: 'Hide assistant' };
 const assistantLabel = { de: 'Persönlicher Assistent', en: 'Personal assistant' };
 const assistantSubtitle = {
@@ -53,30 +59,16 @@ interface WorkspaceAssistantChatSidebarProps {
 }
 
 export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, onWidthCommit }: WorkspaceAssistantChatSidebarProps) {
-    const { chatId, loadedMessages, live, resetChat } = useWorkspaceAssistantChat();
-    const { toggleSidebar, isMobile, setOpen, setOpenMobile } = useSidebar();
-    const navigate = useNavigate();
+    const { chatId, loadedMessages, live } = useWorkspaceAssistantChat();
+    const { toggleSidebar, isMobile } = useSidebar();
 
-    // Sidebar and the /workspace/assistant route are two views onto the same
-    // conversation. If we hand off to the route without collapsing the
-    // sidebar the user sees the same transcript twice — once floating in the
-    // dock, once inline in the page. Close the sidebar (mobile Sheet or
-    // desktop docked) and reset the provider so returning to a workspace
-    // page starts a fresh chat rather than restoring the just-opened one.
-    const closeAndReset = useCallback(() => {
-        if (isMobile) setOpenMobile(false);
-        else setOpen(false);
-        resetChat();
-    }, [isMobile, setOpen, setOpenMobile, resetChat]);
-
-    const onOpenFullscreen = useCallback(() => {
-        const target = chatId ? { chatId } : { chatId: undefined };
-        closeAndReset();
-        void navigate({ to: '/{-$locale}/workspace/assistant', search: target });
-    }, [chatId, closeAndReset, navigate]);
-
+    // `hasActiveChat` — the sidebar shows a transcript for any chat that
+    // has been picked, is streaming, or has any live-appended messages.
+    // Absent all of those, the browser takes over. Checking `chatId`
+    // alone would flash the browser between a fresh send and the server
+    // returning a chatId; `live.isGenerating` covers that gap.
     const allMessages = mergeTranscriptMessages(loadedMessages, live.appendedMessages as ReadonlyArray<TranscriptMessage>);
-    const isEmpty = allMessages.length === 0 && !live.isGenerating;
+    const hasActiveChat = !!chatId || live.isGenerating || allMessages.length > 0;
 
     return (
         <Sidebar
@@ -110,20 +102,6 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
                             <TooltipTrigger asChild>
                                 <button
                                     type="button"
-                                    onClick={onOpenFullscreen}
-                                    disabled={live.isGenerating}
-                                    aria-label={openFullscreenLabel[locale]}
-                                    className="grid size-7 place-items-center rounded-md text-sidebar-foreground/70 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-hidden focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                    <ExternalLinkIcon className="size-4" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>{openFullscreenLabel[locale]}</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    type="button"
                                     onClick={toggleSidebar}
                                     aria-label={collapseLabel[locale]}
                                     className="grid size-7 place-items-center rounded-md text-sidebar-foreground/70 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-hidden focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar"
@@ -138,11 +116,14 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
             </SidebarHeader>
 
             <SidebarContent className="min-h-0 flex-1 overflow-hidden p-0">
-                <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pt-4 pb-0">
-                    {isEmpty ? (
-                        <WorkspaceAssistantChatEmptyState locale={locale} onNavigateAway={closeAndReset} />
+                <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pt-4 pb-0">
+                    {hasActiveChat ? (
+                        <>
+                            <WorkspaceAssistantChatLoadedHeader locale={locale} />
+                            <WorkspaceAssistantChatTranscript messages={allMessages} streamingTexts={live.streamingTexts} locale={locale} />
+                        </>
                     ) : (
-                        <WorkspaceAssistantChatTranscript messages={allMessages} streamingTexts={live.streamingTexts} locale={locale} />
+                        <WorkspaceAssistantChatBrowser locale={locale} />
                     )}
                 </div>
             </SidebarContent>

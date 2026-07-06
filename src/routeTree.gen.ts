@@ -40,10 +40,10 @@ import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './rout
 import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
 import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
 import { Route as Char123LocaleChar125WorkspaceCompassRouteImport } from './routes/{-$locale}/workspace/compass'
-import { Route as Char123LocaleChar125WorkspaceAssistantRouteImport } from './routes/{-$locale}/workspace/assistant'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
 import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
 import { Route as Char123LocaleChar125WorkspaceInventoryItemIdRouteImport } from './routes/{-$locale}/workspace/inventory_.$itemId'
+import { Route as Char123LocaleChar125WorkspaceAssistantChatIdRouteImport } from './routes/{-$locale}/workspace/assistant.$chatId'
 
 const Char123LocaleChar125Route = Char123LocaleChar125RouteImport.update({
   id: '/{-$locale}',
@@ -221,12 +221,6 @@ const Char123LocaleChar125WorkspaceCompassRoute =
     path: '/compass',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
-const Char123LocaleChar125WorkspaceAssistantRoute =
-  Char123LocaleChar125WorkspaceAssistantRouteImport.update({
-    id: '/assistant',
-    path: '/assistant',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
 const ApiFileUploadsFileUploadIdRoute =
   ApiFileUploadsFileUploadIdRouteImport.update({
     id: '/api/file-uploads_/$fileUploadId',
@@ -243,6 +237,12 @@ const Char123LocaleChar125WorkspaceInventoryItemIdRoute =
   Char123LocaleChar125WorkspaceInventoryItemIdRouteImport.update({
     id: '/inventory_/$itemId',
     path: '/inventory/$itemId',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceAssistantChatIdRoute =
+  Char123LocaleChar125WorkspaceAssistantChatIdRouteImport.update({
+    id: '/assistant/$chatId',
+    path: '/assistant/$chatId',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
 
@@ -264,7 +264,6 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceRouteWithChildren
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
-  '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
   '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
@@ -280,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
@@ -299,7 +299,6 @@ export interface FileRoutesByTo {
   '/{-$locale}/projects': typeof Char123LocaleChar125ProjectsRoute
   '/{-$locale}': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
-  '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
   '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
@@ -315,6 +314,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
@@ -337,7 +337,6 @@ export interface FileRoutesById {
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceRouteWithChildren
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads_/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
-  '/{-$locale}/workspace/assistant': typeof Char123LocaleChar125WorkspaceAssistantRoute
   '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
@@ -353,6 +352,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory_/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects_/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
@@ -376,7 +376,6 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace'
     | '/{-$locale}/'
     | '/api/file-uploads/$fileUploadId'
-    | '/{-$locale}/workspace/assistant'
     | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
@@ -392,6 +391,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
   fileRoutesByTo: FileRoutesByTo
@@ -411,7 +411,6 @@ export interface FileRouteTypes {
     | '/{-$locale}/projects'
     | '/{-$locale}'
     | '/api/file-uploads/$fileUploadId'
-    | '/{-$locale}/workspace/assistant'
     | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
@@ -427,6 +426,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace'
+    | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
   id:
@@ -448,7 +448,6 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace'
     | '/{-$locale}/'
     | '/api/file-uploads_/$fileUploadId'
-    | '/{-$locale}/workspace/assistant'
     | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
@@ -464,6 +463,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory_/$itemId'
     | '/{-$locale}/workspace/projects_/$projectId'
   fileRoutesById: FileRoutesById
@@ -700,13 +700,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceCompassRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
-    '/{-$locale}/workspace/assistant': {
-      id: '/{-$locale}/workspace/assistant'
-      path: '/assistant'
-      fullPath: '/{-$locale}/workspace/assistant'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceAssistantRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
     '/api/file-uploads_/$fileUploadId': {
       id: '/api/file-uploads_/$fileUploadId'
       path: '/api/file-uploads/$fileUploadId'
@@ -728,11 +721,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceInventoryItemIdRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/{-$locale}/workspace/assistant/$chatId': {
+      id: '/{-$locale}/workspace/assistant/$chatId'
+      path: '/assistant/$chatId'
+      fullPath: '/{-$locale}/workspace/assistant/$chatId'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceAssistantChatIdRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
   }
 }
 
 interface Char123LocaleChar125WorkspaceRouteChildren {
-  Char123LocaleChar125WorkspaceAssistantRoute: typeof Char123LocaleChar125WorkspaceAssistantRoute
   Char123LocaleChar125WorkspaceCompassRoute: typeof Char123LocaleChar125WorkspaceCompassRoute
   Char123LocaleChar125WorkspaceCvRoute: typeof Char123LocaleChar125WorkspaceCvRoute
   Char123LocaleChar125WorkspaceFinancesRoute: typeof Char123LocaleChar125WorkspaceFinancesRoute
@@ -748,14 +747,13 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceTravelRoute: typeof Char123LocaleChar125WorkspaceTravelRoute
   Char123LocaleChar125WorkspaceVisitorChatsRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   Char123LocaleChar125WorkspaceIndexRoute: typeof Char123LocaleChar125WorkspaceIndexRoute
+  Char123LocaleChar125WorkspaceAssistantChatIdRoute: typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   Char123LocaleChar125WorkspaceInventoryItemIdRoute: typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   Char123LocaleChar125WorkspaceProjectsProjectIdRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
 }
 
 const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceRouteChildren =
   {
-    Char123LocaleChar125WorkspaceAssistantRoute:
-      Char123LocaleChar125WorkspaceAssistantRoute,
     Char123LocaleChar125WorkspaceCompassRoute:
       Char123LocaleChar125WorkspaceCompassRoute,
     Char123LocaleChar125WorkspaceCvRoute: Char123LocaleChar125WorkspaceCvRoute,
@@ -785,6 +783,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceVisitorChatsRoute,
     Char123LocaleChar125WorkspaceIndexRoute:
       Char123LocaleChar125WorkspaceIndexRoute,
+    Char123LocaleChar125WorkspaceAssistantChatIdRoute:
+      Char123LocaleChar125WorkspaceAssistantChatIdRoute,
     Char123LocaleChar125WorkspaceInventoryItemIdRoute:
       Char123LocaleChar125WorkspaceInventoryItemIdRoute,
     Char123LocaleChar125WorkspaceProjectsProjectIdRoute:

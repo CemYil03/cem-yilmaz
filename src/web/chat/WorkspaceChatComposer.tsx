@@ -7,10 +7,10 @@ import { WorkspaceChatMessageCreateDocument } from '../graphql/generated';
 import type { Locale } from '../utils/locale';
 
 // Admin-namespace composer used on every workspace surface that lets the
-// user send a message — the hub composer on `/workspace`, the sheet
-// composer mounted at the workspace layout, and the empty/loaded
-// composer on `/workspace/assistant`. It is a thin wrapper around
-// `<ChatComposer />` that:
+// user send a message — the hub composer on `/workspace`, the sidebar
+// composer mounted at the workspace layout, and the composer on the
+// per-chat deep-link route `/workspace/assistant/<chatId>`. It is a thin
+// wrapper around `<ChatComposer />` that:
 //
 // - dispatches the workspace `chatMessageCreate` mutation (so the server
 //   routes to `agentPersonalAssistant` — see
@@ -83,6 +83,7 @@ export function WorkspaceChatComposer({
 }: WorkspaceChatComposerProps) {
     const { chatConfig, selectedModelId, onModelChange } = useWorkspaceAssistantChat();
     const [mode, setMode] = useState<ToolCallApprovalMode>('auto');
+
     return (
         <ChatComposer
             locale={locale}

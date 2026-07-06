@@ -200,9 +200,9 @@ function WorkspaceHub() {
     const locale = useLocale();
     // The assistant chat lives in the workspace-layout provider (one level
     // up). The hub composer is the shared `<WorkspaceChatComposer />` — same
-    // composer the sidebar and `/workspace/assistant` use, so the model
-    // dropdown / attachments / approval-mode selector are identical across
-    // surfaces. On send success the provider adopts the freshly-allocated
+    // composer the sidebar and `/workspace/assistant/<chatId>` deep-link use,
+    // so the model dropdown / attachments / approval-mode selector are
+    // identical across surfaces. On send success the provider adopts the freshly-allocated
     // chatId (`setChatIdFromHub`) and the sidebar is forced open (via
     // shadcn's `useSidebar`) so the streaming response surfaces in context.
     // The provider keeps the conversation alive across focus-area

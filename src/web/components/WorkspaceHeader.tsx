@@ -163,6 +163,21 @@ const TRAILING_LABEL_SELECTORS: ReadonlyArray<{
             return typeof item?.name === 'string' ? item.name : undefined;
         },
     },
+    {
+        // Assistant deep-link route — swap the cryptic chatId for the
+        // chat's title so the breadcrumb reads e.g. "Assistant / Bike
+        // service plan" instead of "Assistant / 8c1a…". Untitled chats
+        // (the LLM titler hasn't run yet) fall back to the same
+        // "Untitled" placeholder used by the sidebar and visitor sheet.
+        routeId: '/{-$locale}/workspace/assistant/$chatId',
+        select: (loaderData) => {
+            const chat = (loaderData as { currentSession?: { user?: { admin?: { chat?: { title?: string } | null } } } } | undefined)
+                ?.currentSession?.user?.admin?.chat;
+            if (!chat) return undefined;
+            const title = typeof chat.title === 'string' ? chat.title.trim() : '';
+            return title.length > 0 ? title : 'Untitled';
+        },
+    },
 ];
 
 // `hasSelector: true` means the active route owns the trailing crumb's

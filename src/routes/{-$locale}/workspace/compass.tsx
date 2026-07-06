@@ -541,8 +541,8 @@ function ObservationCard({ observation, locale }: { observation: ObservationRow;
                     <div className="flex items-center justify-between gap-3 text-xs">
                         {observation.sourceChatId ? (
                             <Link
-                                to="/{-$locale}/workspace/assistant"
-                                search={{ chatId: observation.sourceChatId }}
+                                to="/{-$locale}/workspace/assistant/$chatId"
+                                params={{ chatId: observation.sourceChatId }}
                                 className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <MessageSquareTextIcon className="size-3.5" />

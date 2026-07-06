@@ -37,8 +37,8 @@ See also:
 
 ## Why a persistent sidebar
 
-The motivating user behaviour: **"the assistant chats with me while I do other tasks, and I can jump off into a focused full-screen when the
-conversation gets long."** The right primitive for that is a persistent column — the user is doing something else in the foreground (editing
+The motivating user behaviour: **"the assistant chats with me while I do other tasks, and I can open a specific chat in its own page when I
+want to focus on it."** The right primitive for that is a persistent column — the user is doing something else in the foreground (editing
 the CV, reading a focus area, reviewing visitor chats), and the assistant lives alongside it without any open/close dance. A modal dialog
 forces the user to dismiss it to keep working; an overlay Sheet covers the page the user is operating on. shadcn's `<Sidebar>` is
 specifically a docked column primitive and is the right tool here.
@@ -73,12 +73,14 @@ sibling in the layout so `<SidebarInset>` reflows automatically as the sidebar c
 
 ## Surfaces
 
-| Entry point                                                                     | Behaviour                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` on the chat provider, then forces the sidebar open via `useSidebar().setOpen(true)` (or `setOpenMobile(true)` on `<md`). The user sees the streaming response without any extra navigation.                                                                |
-| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useSidebar().toggleSidebar()`. On `md+` this flips the cookie-backed open state; on `<md` it opens/closes shadcn's internal Sheet. The button reads `open` / `openMobile` from `useSidebar` and surfaces the current state as `aria-pressed` so screen readers and the visual pressed style both reflect "the sidebar is here." |
-| Sidebar **"Open full-screen"** button                                           | Closes the sidebar (mobile Sheet or desktop dock), resets the provider so the same conversation isn't showing in two places, then navigates to `/workspace/assistant?chatId=<id>`. Disabled while a turn is streaming (see "Full-screen route handoff").                                                                         |
-| Empty-state "View all chats" link                                               | Closes the sidebar and resets the provider (same reason as "Open full-screen"), then navigates to `/workspace/assistant`. The empty state's bridge to the dedicated route.                                                                                                                                                       |
+| Entry point                                                                     | Behaviour                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` on the chat provider, then forces the sidebar open via `useSidebar().setOpen(true)` (or `setOpenMobile(true)` on `<md`). The user sees the streaming response without any extra navigation.                                                                                                  |
+| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useSidebar().toggleSidebar()`. On `md+` this flips the cookie-backed open state; on `<md` it opens/closes shadcn's internal Sheet. The button reads `open` / `openMobile` from `useSidebar` and surfaces the current state as `aria-pressed` so screen readers and the visual pressed style both reflect "the sidebar is here."                                   |
+| Sidebar chat browser row                                                        | User clicks a row in the sidebar's chat list; provider fires `loadChat(chatId)` which fetches the transcript and seeds `loadedMessages`. The sidebar's own `hasActiveChat` flag flips true so the transcript replaces the browser column in place.                                                                                                                 |
+| Sidebar loaded-state "Back to chats"                                            | Small in-transcript link that calls `resetChat()` on the provider. Drops `chatId + loadedMessages` and the browser reappears.                                                                                                                                                                                                                                      |
+| Sidebar loaded-state "Open in its own page"                                     | Closes the sidebar (mobile Sheet or desktop dock), resets the provider (`resetChat`) so the same conversation isn't showing in two places, then navigates to `/workspace/assistant/<chatId>`. Disabled while a turn is streaming — the deep-link route mounts its own `useChatLiveUpdates` on a fresh `generationId` and can't observe the in-flight sidebar turn. |
+| Deep-link route `/workspace/assistant/<chatId>`                                 | URL-driven, bookmark-friendly view of one chat. Reads the chatId from the path, loads the transcript with `WorkspaceChatPage(chatId)`, renders a `max-w-3xl` reading column with the shared composer at the bottom. No landing/index page — a fresh chat starts from the hub composer.                                                                             |
 
 The chat provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`. It owns chat-layer
 state only — `chatId`, `loadedMessages`, `live`, the recent-chat resume helpers, the sticky model. Sidebar open/close/collapsed state lives
@@ -88,11 +90,11 @@ on shadcn's `useSidebar()`.
 
 The sidebar renders, top to bottom:
 
-| Slot               | Contents                                                                                                                                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<SidebarHeader>`  | Title row (sparkle glyph + "Personal assistant" + one-line subtitle), an "Open full-screen" button, and a "Hide assistant" button (`<PanelRightCloseIcon />`) that calls `useSidebar().toggleSidebar()`. |
-| `<SidebarContent>` | The shared chat body — empty state with recent-chats list, or transcript when populated. Owns its own scroll container.                                                                                  |
-| `<SidebarFooter>`  | The shared `<WorkspaceChatComposer />`.                                                                                                                                                                  |
+| Slot               | Contents                                                                                                                                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<SidebarHeader>`  | Title row (sparkle glyph + "Personal assistant" + one-line subtitle) and a "Hide assistant" button (`<PanelRightCloseIcon />`) that calls `useSidebar().toggleSidebar()`.                                                                                           |
+| `<SidebarContent>` | Two surfaces gated on `hasActiveChat`. Without a chat: the chat browser — a search input plus a paginated list of past chats. With a chat: a "Back to chats" / "Open in its own page" row followed by the transcript. Owns its own scroll containers.               |
+| `<SidebarFooter>`  | The shared `<WorkspaceChatComposer />`. Always mounted — a user can start typing without first navigating out of the browser, and the composer's first send simply creates a new chat (adopting the freshly-allocated id into the provider via `setChatIdFromHub`). |
 
 A 2px drag handle sits on the sidebar's left edge (`md+` only). Pulling it leftward widens the sidebar; pulling it rightward narrows it back
 down to the 42rem default. The new width is committed to `localStorage` on pointer release, so reloads keep the user's chosen width.
@@ -102,12 +104,58 @@ During a drag the handle sets `data-resizing="true"` on the `<SidebarProvider>` 
 switches them off while the flag is set, so the sidebar edge tracks the pointer 1:1 instead of chasing through a 200ms ease per
 `pointermove`. The flag is removed on pointer release, restoring the open/close animation.
 
-The transcript / empty state / composer are in `src/web/chat/WorkspaceAssistantChatBody.tsx` so the sidebar is purely the frame.
+The browser / transcript / composer bodies are in `src/web/chat/WorkspaceAssistantChatBody.tsx` so the sidebar is purely the frame.
+
+## Chat browser
+
+When no chat is loaded, the sidebar's content column shows a chat browser: a search input at the top, a paginated list of admin chats
+underneath, day-bucketed (`Today` / `Yesterday` / `This week` / `Earlier`) so a wall of "vor N Stunden" rows collapses into scannable
+sections. Bucketing lives in `src/web/chat/workspaceChatListBuckets.ts`.
+
+The list is backed by the `WorkspaceAssistantChatsPage(limit, offset, query)` GraphQL query, which reads two sibling fields on `Admin` —
+`chats(limit, offset, query)` for the current page's shells and `chatsCount(query)` for the total — both resolved by
+`src/server/queries/adminChats.ts`:
+
+- **Search.** When `query` is set, the server matches EITHER the chat title OR any user-message body (case-insensitive `ILIKE '%…%'` with
+  `%` / `_` / `\` escaped). Assistant text is intentionally NOT searched — the intent of "find the chat where I said X" is anchored on the
+  user's own words, not the model's paraphrase. The client debounces typing by 300ms (`SEARCH_DEBOUNCE_MS`) so a keystroke doesn't fire a
+  request per character; a fresh query resets pagination. `chats` and `chatsCount` share one predicate helper so the two fields cannot drift
+  on filter semantics.
+- **Pagination.** The client asks for `CHATS_PAGE_SIZE = 10` rows on first render. "Show more" grows the requested `limit` by 10 (same
+  offset 0, urql caches the smaller subset) so a single query drives the whole grown list rather than concatenating pages on the client. The
+  client compares `chats.length` against `chatsCount` to gate the "Show more" button — cheaper than a `limit + 1` peek and it also lets us
+  surface the total elsewhere without another round-trip. `MAX_LIMIT = 20` at the server clamps a runaway `limit`; grow it in lock-step with
+  the client's page size if the browser ever renders more per screen. All three arguments on `Admin.chats` are optional so the field is
+  drop-in for a plain "list every admin chat" call.
+- **Reactivity.** `cache-and-network` request policy — a fresh send updates `lastModifiedAt`, and the next time the browser mounts (or urql
+  revalidates in-place) the resumed chat reorders to the top without a hard reload.
+
+Row click calls `loadChat(chatId)` on the provider, which fetches the transcript via `WorkspaceChatPage(chatId)` and seeds `loadedMessages`.
+The sidebar's `hasActiveChat` gate flips true and the transcript replaces the browser in place. "Back to chats" (small link at the top of
+the transcript) resets the provider and the browser is back.
+
+## Deep-link route
+
+`/workspace/assistant/<chatId>` (`src/routes/{-$locale}/workspace/assistant.$chatId.tsx`) is a URL-driven view of one chat —
+bookmark-friendly, sharable, refresh-safe. Layout: the transcript centered on `max-w-3xl` and the shared composer parked at the viewport
+bottom. The chat title lives in the workspace header's trailing breadcrumb (via `WorkspaceHeader`'s `TRAILING_LABEL_SELECTORS`) — the
+in-page header is gone so the reading column starts at the top with no redundant title bar, and the "Workspace" crumb is the only "back"
+affordance. Untitled chats (titler hasn't run yet) fall back to "Untitled" in the crumb rather than exposing the raw id.
+
+Fresh chats start from the workspace hub composer (`/workspace`) — the sidebar covers "resume an existing chat", the hub covers "start a new
+one", so this route needs no landing / index sibling and no in-page "New chat" button.
+
+Clicking "Open in its own page" in the sidebar's loaded-state header dismisses the sidebar (mobile Sheet or desktop dock) and calls
+`resetChat()` on the provider before navigating to `/workspace/assistant/<chatId>`. Without that reset the same conversation would render
+twice — once in the docked column, once inline in the newly-mounted route — and returning to a workspace page later would silently restore
+the just-handed-off chat in the sidebar. From the click onward the URL is the source of truth; the sidebar is empty next time it opens. The
+button is **disabled while a turn is streaming** — the deep-link route mounts its own `useChatLiveUpdates(chatId)` on a fresh `generationId`
+and can't pick up the sidebar's in-flight stream, so we force the hand-off to a between-turn moment.
 
 ## Composer
 
-Every admin composer — the hub's hero composer, the sidebar's composer, and the empty/loaded composers on `/workspace/assistant` — is the
-same `<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`). It is a thin wrapper around the generic `<ChatComposer />` that
+Every admin composer — the hub's hero composer, the sidebar's composer, and the composer on the deep-link route — is the same
+`<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`). It is a thin wrapper around the generic `<ChatComposer />` that
 pre-wires the workspace `chatMessageCreate` mutation, its admin-namespace result extractor, the "Ask your assistant…" placeholder, and (via
 the chat provider) the shared model catalog, currently-selected model id, and `onModelChange` handler.
 
@@ -135,41 +183,15 @@ encodes in the path, and "what am I looking at" on `/workspace/projects` is the 
 signal — no rendered DOM, no row payload — so it must not invent specifics it wasn't otherwise given. It already has `delegateToProjects` to
 fetch the live board snapshot when it actually needs structured project data.
 
-## Recent chats
-
-The sidebar's empty state and the dedicated route both render the last 10 admin chats so the user can resume a conversation in place instead
-of routing back through a list. The list is driven by the lightweight `WorkspaceAssistantChats` query (admin namespace, metadata only — no
-transcript). Both surfaces:
-
-- Use `cache-and-network` so a fresh send bumps the resumed chat to the top of the list on the next visit without a hard reload.
-- Slice client-side to `RECENT_CHATS_LIMIT = 10`. The cap is mirrored across surfaces.
-- Resume a row through different code paths: the sidebar calls `loadChat(chatId)` on the chat provider (fetches the transcript, seeds
-  `loadedMessages`), while the route navigates to `/workspace/assistant?chatId=<id>` and lets its own page-query take over.
-
-## Full-screen route handoff
-
-Clicking "Open full-screen" in the sidebar navigates to `/workspace/assistant?chatId=<id>` (or `?chatId=undefined` if no chat has started
-yet). The route reads `chatId` from the URL search and takes over — empty state when none, loaded transcript when set.
-
-The button is **disabled while a turn is streaming**. Reason: the dedicated route page mounts its own `useChatLiveUpdates(chatId)`, which
-only listens to a `generationId` it allocates itself. The sidebar's in-flight stream is on a different `generationId` (the provider's), so
-handing off mid-stream would leave the route page showing the persisted transcript up to the navigation moment plus a missing tail until the
-user sends the next message. Forcing the hand-off to between-turn moments side-steps that — by the time the button re-enables, the turn has
-already persisted, and the route's `WorkspaceChatPage` query (`cache-and-network`) picks up the full transcript on mount.
-
-On hand-off the sidebar **closes itself and calls `resetChat()` on the provider**. Without that reset, the same conversation would render
-twice — once inline in the newly-mounted `/workspace/assistant` page and once floating in the still-open dock — and navigating back to a
-workspace page would silently restore the just-handed-off chat in the sidebar. The route's URL is the source of truth from the click onward;
-the sidebar starts empty next time it's opened.
-
 ## Files
 
 ```
 src/web/chat/
-├── WorkspaceAssistantChatProvider.tsx    Chat provider — owns chatId, live updates, sticky model, recent-chat resume.
-├── WorkspaceAssistantChatBody.tsx        Shared body — transcript, empty state, composer. Reusable so the same code renders inside the sidebar's expanded column and (in future) any other host.
-├── WorkspaceAssistantChatSidebar.tsx     The shadcn `<Sidebar collapsible="icon" side="right">` frame.
-└── WorkspaceChatComposer.tsx             Shared admin composer — wraps `<ChatComposer />` with the workspace mutation + provider-owned model selection.
+├── WorkspaceAssistantChatProvider.tsx    Chat provider — owns chatId, live updates, sticky model, resume helpers.
+├── WorkspaceAssistantChatBody.tsx        Sidebar body — chat browser (search + paginated list), loaded-state header ("Back to chats" + "Open in its own page"), transcript, composer.
+├── WorkspaceAssistantChatSidebar.tsx     The shadcn `<Sidebar collapsible="offcanvas" side="right">` frame.
+├── WorkspaceChatComposer.tsx             Shared admin composer — wraps `<ChatComposer />` with the workspace mutation + provider-owned model selection.
+└── workspaceChatListBuckets.ts           Day-bucketing helper (`Today` / `Yesterday` / `This week` / `Earlier`) used by the sidebar's chat browser.
 
 src/web/components/
 └── HeaderChatButton.tsx                  Workspace variant calls `useSidebar().toggleSidebar()` and reads `open` / `openMobile` for `aria-pressed`.
@@ -178,7 +200,11 @@ src/web/components/base/
 └── sidebar.tsx                           shadcn's Sidebar primitive (registry, do not modify casually).
 
 src/routes/{-$locale}/
-└── workspace.tsx                         Workspace layout — loads `WorkspaceChatConfig`, mounts `WorkspaceAssistantChatProvider` + `<SidebarProvider>` + `<SidebarInset>` + `<WorkspaceAssistantChatSidebar />`.
+├── workspace.tsx                         Workspace layout — loads `WorkspaceChatConfig`, mounts `WorkspaceAssistantChatProvider` + `<SidebarProvider>` + `<SidebarInset>` + `<WorkspaceAssistantChatSidebar />`.
+└── workspace/assistant.$chatId.tsx       Deep-link route — URL-driven view of one chat by id.
+
+src/server/queries/
+└── adminChats.ts                     Paged + searchable admin chat browser feed. Exports `adminChats` (list) and `adminChatsCount` (total for the same filter). `ILIKE` on title OR any user-message body; the two share one predicate helper so they cannot drift.
 ```
 
 ## Mutations
@@ -190,7 +216,7 @@ All mutations go through the `admin.*` namespace so the server dispatches to `ag
 - `WorkspaceChatToolApprovalRespond` — approve / decline a tool call when the agent runs with `requireToolCallApprovals: true`.
 
 `requireToolCallApprovals` is set per send by the composer's approval-mode dropdown — Auto fires the mutation with `false`, Manual with
-`true`. The dropdown lives in the shared `<WorkspaceChatComposer />`, so every admin surface (hub, sidebar, full-screen route) exposes the
+`true`. The dropdown lives in the shared `<WorkspaceChatComposer />`, so every admin surface (hub, sidebar, deep-link route) exposes the
 same toggle.
 
 ## Transcript affordances tied to the agent-delegation pattern
@@ -211,9 +237,12 @@ Two surface-level conveniences flow from [`architecture/agent-delegation.md`](..
 
 - **No second `useChatLiveUpdates` in the sidebar.** The listener lives once in the chat provider, not in the sidebar, so the SSE stream is
   immune to the sidebar's collapse/expand and the mobile Sheet's open/close cycles.
-- **No `chatId` in the sidebar's URL.** The sidebar is an in-page surface; the URL is for routes. The full-screen button is the bridge: it
-  puts `chatId` into a real search param and navigates.
+- **No `chatId` in the sidebar's URL.** The sidebar is an in-page surface; the URL is for routes. "Open in its own page" is the bridge — it
+  closes the sidebar and resets the provider before navigating to `/workspace/assistant/<chatId>`, so the chat is only on screen in one
+  place at a time.
+- **No landing route.** `/workspace/assistant` is no longer a page; a fresh chat starts from the hub composer, and existing chats live under
+  `/workspace/assistant/<chatId>`. Cuts the duplicate "how do I start" surface and lets the sidebar own chat browsing.
 - **No back-button trap.** Toggling the sidebar's rail or opening the mobile Sheet does not push history.
-- **No custom sidebar primitive.** We use shadcn's `<Sidebar collapsible="icon" side="right">` directly. The theme tokens (`--sidebar`,
+- **No custom sidebar primitive.** We use shadcn's `<Sidebar collapsible="offcanvas" side="right">` directly. The theme tokens (`--sidebar`,
   `--sidebar-accent`, `--sidebar-ring`, …) are already wired in `src/styles.css`; the cookie persistence, keyboard shortcut, and mobile
   Sheet all come for free.

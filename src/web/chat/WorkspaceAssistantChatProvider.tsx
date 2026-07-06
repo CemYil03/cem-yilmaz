@@ -22,11 +22,13 @@ type WorkspaceChatConfig = NonNullable<NonNullable<GqlCWorkspaceChatConfigQuery[
 //     shortcut, mobile Sheet built in) — this provider does NOT track it.
 //     The header assistant button calls `useSidebar().toggleSidebar()` to
 //     toggle from anywhere inside the workspace subtree.
-//   - The "Open full-screen" button in the sidebar hands the conversation
-//     off to `/workspace/assistant?chatId=<id>` via plain navigation; the
-//     full-screen route is the source of truth from then on (URL-routable
-//     and bookmark-friendly).
-//   - Every admin composer (hub, sidebar, `/workspace/assistant`) reads its
+//   - The sidebar's "Open in its own page" affordance navigates to
+//     `/workspace/assistant/<chatId>` — a bookmark-friendly deep link into
+//     one chat. The sidebar keeps its own instance of the same transcript,
+//     so there's no hand-off: the URL is a bonus surface, not the source
+//     of truth.
+//   - Every admin composer (hub, sidebar, `/workspace/assistant/<chatId>`)
+//     reads its
 //     model catalog + currently-selected model from the same place — the
 //     provider — so the dropdown choice on one surface is immediately
 //     reflected on the others. The catalog comes from the workspace

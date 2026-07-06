@@ -25,6 +25,7 @@ export interface GqlCAdmin {
     chat: GqlCChat;
     chatConfig: GqlCAdminChatConfig;
     chats: Array<GqlCChat>;
+    chatsCount: Scalars['Int']['output'];
     compass: GqlCAdminCompass;
     cv: GqlCCvQuery;
     inventory: GqlCAdminInventoryQuery;
@@ -42,6 +43,16 @@ export interface GqlCAdmin {
 
 export type GqlCAdminChatArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminChatsArgs = {
+    limit?: InputMaybe<Scalars['Int']['input']>;
+    offset?: InputMaybe<Scalars['Int']['input']>;
+    query?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminChatsCountArgs = {
+    query?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlCAdminLogsArgs = {
@@ -1716,10 +1727,16 @@ export type GqlCWorkspaceChatMessageFieldsFragment =
 
 export type GqlCWorkspaceChatListItemFragment = { chatId: string; title: string; lastModifiedAt: string };
 
-export type GqlCWorkspaceAssistantChatsQueryVariables = Exact<{ [key: string]: never }>;
+export type GqlCWorkspaceAssistantChatsPageQueryVariables = Exact<{
+    limit: number;
+    offset: number;
+    query?: string | null | undefined;
+}>;
 
-export type GqlCWorkspaceAssistantChatsQuery = {
-    currentSession: { user: { admin: { chats: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null } | null };
+export type GqlCWorkspaceAssistantChatsPageQuery = {
+    currentSession: {
+        user: { admin: { chatsCount: number; chats: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null } | null;
+    };
 };
 
 export type GqlCWorkspaceChatPageQueryVariables = Exact<{
@@ -7289,13 +7306,30 @@ export const WorkspaceVisitorChatDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceVisitorChatQuery, GqlCWorkspaceVisitorChatQueryVariables>;
-export const WorkspaceAssistantChatsDocument = {
+export const WorkspaceAssistantChatsPageDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'query',
-            name: { kind: 'Name', value: 'WorkspaceAssistantChats' },
+            name: { kind: 'Name', value: 'WorkspaceAssistantChatsPage' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'offset' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+            ],
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -7320,6 +7354,23 @@ export const WorkspaceAssistantChatsDocument = {
                                                         {
                                                             kind: 'Field',
                                                             name: { kind: 'Name', value: 'chats' },
+                                                            arguments: [
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'limit' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'limit' } },
+                                                                },
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'offset' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'offset' } },
+                                                                },
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'query' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+                                                                },
+                                                            ],
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
@@ -7329,6 +7380,17 @@ export const WorkspaceAssistantChatsDocument = {
                                                                     },
                                                                 ],
                                                             },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'chatsCount' },
+                                                            arguments: [
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'query' },
+                                                                    value: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+                                                                },
+                                                            ],
                                                         },
                                                     ],
                                                 },
@@ -7356,7 +7418,7 @@ export const WorkspaceAssistantChatsDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceAssistantChatsQuery, GqlCWorkspaceAssistantChatsQueryVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceAssistantChatsPageQuery, GqlCWorkspaceAssistantChatsPageQueryVariables>;
 export const WorkspaceChatPageDocument = {
     kind: 'Document',
     definitions: [
