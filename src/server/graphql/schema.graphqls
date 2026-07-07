@@ -498,6 +498,13 @@ type AdminCompass {
     # or `in_progress` (mid-conversation). The page surfaces this as the
     # "interview waiting" / "resume" card. Null when no open interview.
     interviewPending: CompassInterview
+    # AI-suggested next interview topic — set by the analyzer when a message
+    # contains a time-sensitive signal. Null when no suggestion is active.
+    scheduledInterviewTopic: CompassInterviewTopic
+    # When the suggested interview should happen (set alongside topic).
+    scheduledInterviewAt: DateTime
+    # One-sentence reason the analyzer emitted this suggestion.
+    scheduledInterviewReason: String
 }
 
 enum CompassObservationCategory {
@@ -552,6 +559,7 @@ type CompassInterview {
     completedAt: DateTime
     endReason: CompassInterviewEndReason
     triggerReason: CompassInterviewTriggerReason!
+    topic: CompassInterviewTopic!
     # Denormalized count of observations the analyzer extracted from this
     # interview's user replies. Surfaced on the past-interviews list so Cem
     # sees at a glance how much signal a given week produced.
@@ -587,6 +595,15 @@ enum CompassInterviewEndReason {
 enum CompassInterviewTriggerReason {
     scheduled
     manual
+}
+
+enum CompassInterviewTopic {
+    general
+    career
+    relationships
+    fitness
+    health
+    stress
 }
 
 enum CompassInterviewMessageRole {
@@ -1277,8 +1294,13 @@ extend type AdminMutation {
     # with the same "at most one open interview" guard as the scheduled
     # cron: if an open interview already exists, the mutation returns
     # success with that interview's id (the caller navigates to it) rather
-    # than a second pending row. See `docs/features/compass.md`.
-    compassInterviewStartNow: MutationResult!
+    # than a second pending row. Optional `topic` selects the interview focus
+    # (defaults to `general`). See `docs/features/compass.md`.
+    compassInterviewStartNow(topic: CompassInterviewTopic): MutationResult!
+    # Dismiss the AI-suggested interview hint on the Compass row without
+    # acting on it. Clears `scheduledInterviewTopic/At/Reason` so the
+    # suggestion card disappears.
+    compassScheduledInterviewDismiss: MutationResult!
 
     # --- Workspace projects -------------------------------------------------
     # Archive an incoming request without converting it to a project. Flips

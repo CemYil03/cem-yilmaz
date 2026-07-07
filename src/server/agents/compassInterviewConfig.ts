@@ -25,3 +25,54 @@ export const COMPASS_INTERVIEW_MAX_QUESTIONS = 8;
 // context. Enough to know what is already covered and avoid asking the
 // same thing twice; bounded so the prompt stays small.
 export const COMPASS_INTERVIEW_RECENT_OBSERVATIONS_COUNT = 25;
+
+// Interview topics — each maps to a focused system-prompt addendum that
+// narrows the interviewer's question angles. 'general' is a broad check-in
+// with no specific domain constraint.
+export const compassInterviewTopics = ['general', 'career', 'relationships', 'fitness', 'health', 'stress'] as const;
+export type CompassInterviewTopic = (typeof compassInterviewTopics)[number];
+
+// Fallback rotation used by the cron handler when no AI-suggested hint is
+// pending. 'general' appears in every other slot so broad check-ins remain
+// frequent; the five domain topics fill the gaps.
+export const COMPASS_INTERVIEW_TOPIC_ROTATION: CompassInterviewTopic[] = [
+    'general',
+    'career',
+    'general',
+    'relationships',
+    'general',
+    'fitness',
+    'general',
+    'health',
+    'general',
+    'stress',
+];
+
+// Per-topic system-prompt addendum injected into `agentCompassInterviewer`
+// directly after the base instructions. Each entry is a list of lines that
+// will be joined with '\n' and wrapped in a "--- Interview focus: TOPIC ---"
+// header.
+export const COMPASS_INTERVIEW_TOPIC_PROMPTS: Record<CompassInterviewTopic, string[]> = {
+    general: ['This is a general check-in. Vary your angles freely: mood, energy, work focus, relationships, recent stressors.'],
+    career: [
+        'This interview is focused on career and professional life.',
+        'Probe: current projects, upcoming decisions, job satisfaction, career direction, ambitions, anything stalling him.',
+        'If recent observations mention an upcoming decision or transition, probe that directly.',
+    ],
+    relationships: [
+        'This interview is focused on relationships — personal and professional.',
+        'Probe: close relationships, social energy, recent friction or warmth, loneliness vs. connection, how work affects relationships.',
+    ],
+    fitness: [
+        'This interview is focused on physical health and fitness.',
+        'Probe: current routine, energy levels, sleep quality, recent changes, what he is avoiding, goals around his body.',
+    ],
+    health: [
+        'This interview is focused on health — physical, medical, and habitual.',
+        'Probe: recent health events, ongoing concerns, diet, sleep, medical follow-ups he may have mentioned.',
+    ],
+    stress: [
+        'This interview is focused on stress and mental load.',
+        'Probe: current stressors, what is weighing on him, coping mechanisms, what he is procrastinating on, what he cannot stop thinking about.',
+    ],
+};

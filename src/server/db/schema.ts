@@ -668,6 +668,13 @@ export const compass = pgTable('Compass', {
     // synthesizer auto-triggers when this crosses
     // `COMPASS_SYNTHESIS_THRESHOLD` (`src/server/agents/compassConfig.ts`).
     observationsSinceSynthesis: integer().notNull().default(0),
+    // AI-suggested next interview — set by the analyzer when a message
+    // contains a time-sensitive signal (upcoming decision, deadline, acute
+    // stressor). The cron handler consumes this before falling back to the
+    // rotation. Cleared after use or when Cem dismisses the suggestion.
+    scheduledInterviewTopic: varchar(),
+    scheduledInterviewAt: timestamp({ withTimezone: true }),
+    scheduledInterviewReason: text(),
     createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
 });
@@ -730,6 +737,9 @@ export type CompassInterviewEndReason = (typeof compassInterviewEndReasons)[numb
 export const compassInterviewTriggerReasons = ['scheduled', 'manual'] as const;
 export type CompassInterviewTriggerReason = (typeof compassInterviewTriggerReasons)[number];
 
+export const compassInterviewTopics = ['general', 'career', 'relationships', 'fitness', 'health', 'stress'] as const;
+export type CompassInterviewTopic = (typeof compassInterviewTopics)[number];
+
 export const compassInterviews = pgTable(
     'CompassInterviews',
     {
@@ -744,6 +754,10 @@ export const compassInterviews = pgTable(
         completedAt: timestamp({ withTimezone: true }),
         endReason: varchar().$type<CompassInterviewEndReason>(),
         triggerReason: varchar().$type<CompassInterviewTriggerReason>().notNull().default('scheduled'),
+        // The domain focus for this interview. Drives per-topic system-prompt
+        // injection in `agentCompassInterviewer`; surfaces as a badge on the
+        // page. 'general' is a broad check-in with no specific focus area.
+        topic: varchar().$type<CompassInterviewTopic>().notNull().default('general'),
         // Denormalized count of observations whose source-interview-message
         // belongs to this interview. Kept on the row so the past-interviews
         // list can render "N observations" without a per-row aggregate.

@@ -37,6 +37,7 @@ fragment WorkspaceCompassInterviewSummary on CompassInterview {
     completedAt
     endReason
     triggerReason
+    topic
     observationCount
 }
 
@@ -63,6 +64,9 @@ fragment WorkspaceCompassPageUser on User {
             interviewPending {
                 ...WorkspaceCompassInterviewWithMessages
             }
+            scheduledInterviewTopic
+            scheduledInterviewAt
+            scheduledInterviewReason
             interviews {
                 ...WorkspaceCompassInterviewSummary
             }
@@ -149,11 +153,19 @@ mutation WorkspaceCompassInterviewSkip($interviewId: ID!) {
     }
 }
 
-mutation WorkspaceCompassInterviewStartNow {
+mutation WorkspaceCompassInterviewStartNow($topic: CompassInterviewTopic) {
     admin {
-        compassInterviewStartNow {
+        compassInterviewStartNow(topic: $topic) {
             success
             referenceId
+        }
+    }
+}
+
+mutation WorkspaceCompassScheduledInterviewDismiss {
+    admin {
+        compassScheduledInterviewDismiss {
+            success
         }
     }
 }

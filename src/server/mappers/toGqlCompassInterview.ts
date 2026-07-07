@@ -15,6 +15,7 @@ export function toGqlCompassInterview(row: CompassInterview, messages: CompassIn
         completedAt: row.completedAt,
         endReason: row.endReason,
         triggerReason: row.triggerReason,
+        topic: row.topic,
         observationCount: row.observationCount,
         messages: messages.map(toGqlCompassInterviewMessage),
     };

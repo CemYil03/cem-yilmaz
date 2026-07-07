@@ -48,6 +48,7 @@ import { compassInterviewMessageSend } from '../commands/compassInterviewMessage
 import { compassInterviewEnd } from '../commands/compassInterviewEnd';
 import { compassInterviewSkip } from '../commands/compassInterviewSkip';
 import { compassInterviewStartNow } from '../commands/compassInterviewStartNow';
+import { compassScheduledInterviewDismiss } from '../commands/compassScheduledInterviewDismiss';
 import { projectActivityDelete } from '../commands/projectActivityDelete';
 import { projectActivityUpsert } from '../commands/projectActivityUpsert';
 import { projectDelete } from '../commands/projectDelete';
@@ -173,6 +174,7 @@ import type {
     GqlSAdminMutationCompassInterviewMessageSendArgs,
     GqlSAdminMutationCompassInterviewEndArgs,
     GqlSAdminMutationCompassInterviewSkipArgs,
+    GqlSAdminMutationCompassInterviewStartNowArgs,
     GqlSAdminCompassInterviewArgs,
     GqlSAdminMutationProjectActivityDeleteArgs,
     GqlSAdminMutationProjectActivityUpsertArgs,
@@ -602,8 +604,15 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             ) {
                 return compassInterviewSkip(userId, args, requestingSession, serverRuntime);
             },
-            compassInterviewStartNow({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
-                return compassInterviewStartNow(userId, requestingSession, serverRuntime);
+            compassInterviewStartNow(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationCompassInterviewStartNowArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return compassInterviewStartNow(userId, args, requestingSession, serverRuntime);
+            },
+            compassScheduledInterviewDismiss({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
+                return compassScheduledInterviewDismiss(userId, requestingSession, serverRuntime);
             },
             projectRequestArchive(
                 { userId }: GqlSAdminMutation,

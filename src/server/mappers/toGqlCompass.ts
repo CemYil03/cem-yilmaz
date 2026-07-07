@@ -1,5 +1,5 @@
 import type { Compass } from '../db/schema';
-import type { GqlSAdminCompass } from '../graphql/generated';
+import type { GqlSAdminCompass, GqlSCompassInterviewTopic } from '../graphql/generated';
 
 // Three text artifacts plus the synthesis bookkeeping. Several `AdminCompass`
 // fields are resolved separately by the parent's field resolvers — `observations`
@@ -16,5 +16,10 @@ export function toGqlCompass(
         synthesizedAt: row.synthesizedAt,
         synthesisModelId: row.synthesisModelId,
         observationsSinceSynthesis: row.observationsSinceSynthesis,
+        // DB stores as plain varchar; cast to the GQL enum — values are kept in
+        // sync by the analyzer which only writes values from compassInterviewTopics.
+        scheduledInterviewTopic: (row.scheduledInterviewTopic as GqlSCompassInterviewTopic | null) ?? null,
+        scheduledInterviewAt: row.scheduledInterviewAt ?? null,
+        scheduledInterviewReason: row.scheduledInterviewReason ?? null,
     };
 }

@@ -62,6 +62,7 @@ export async function compassInterviewMessageSend(
             serverRuntime,
             messages: transcript.map((row) => ({ role: row.role, content: row.content })),
             locale,
+            topic: interview.topic,
         });
 
         // 3) Persist the assistant turn — even when concluded, if the agent

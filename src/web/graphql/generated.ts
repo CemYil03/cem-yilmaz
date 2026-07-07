@@ -100,6 +100,9 @@ export interface GqlCAdminCompass {
     observationsSinceSynthesis: Scalars['Int']['output'];
     prose: Scalars['String']['output'];
     psychology: Scalars['String']['output'];
+    scheduledInterviewAt?: Maybe<Scalars['DateTime']['output']>;
+    scheduledInterviewReason?: Maybe<Scalars['String']['output']>;
+    scheduledInterviewTopic?: Maybe<GqlCCompassInterviewTopic>;
     summary: Scalars['String']['output'];
     synthesisInProgress: Scalars['Boolean']['output'];
     synthesisModelId?: Maybe<Scalars['String']['output']>;
@@ -175,6 +178,7 @@ export interface GqlCAdminMutation {
     compassInterviewStart: GqlCMutationResult;
     compassInterviewStartNow: GqlCMutationResult;
     compassObservationDismiss: GqlCMutationResult;
+    compassScheduledInterviewDismiss: GqlCMutationResult;
     compassSynthesizeRequest: GqlCMutationResult;
     cvEducationDelete: GqlCMutationResult;
     cvEducationReorder: GqlCMutationResult;
@@ -270,6 +274,10 @@ export type GqlCAdminMutationCompassInterviewSkipArgs = {
 
 export type GqlCAdminMutationCompassInterviewStartArgs = {
     interviewId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationCompassInterviewStartNowArgs = {
+    topic?: InputMaybe<GqlCCompassInterviewTopic>;
 };
 
 export type GqlCAdminMutationCompassObservationDismissArgs = {
@@ -761,6 +769,7 @@ export interface GqlCCompassInterview {
     observationCount: Scalars['Int']['output'];
     startedAt?: Maybe<Scalars['DateTime']['output']>;
     status: GqlCCompassInterviewStatus;
+    topic: GqlCCompassInterviewTopic;
     triggerReason: GqlCCompassInterviewTriggerReason;
 }
 
@@ -778,6 +787,8 @@ export interface GqlCCompassInterviewMessage {
 export type GqlCCompassInterviewMessageRole = 'assistant' | 'user';
 
 export type GqlCCompassInterviewStatus = 'completed' | 'in_progress' | 'pending' | 'skipped';
+
+export type GqlCCompassInterviewTopic = 'career' | 'fitness' | 'general' | 'health' | 'relationships' | 'stress';
 
 export type GqlCCompassInterviewTriggerReason = 'manual' | 'scheduled';
 
@@ -2103,6 +2114,7 @@ export type GqlCWorkspaceCompassInterviewSummaryFragment = {
     completedAt: string | null;
     endReason: Schema.GqlCCompassInterviewEndReason | null;
     triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+    topic: Schema.GqlCCompassInterviewTopic;
     observationCount: number;
 };
 
@@ -2114,6 +2126,7 @@ export type GqlCWorkspaceCompassInterviewWithMessagesFragment = {
     completedAt: string | null;
     endReason: Schema.GqlCCompassInterviewEndReason | null;
     triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+    topic: Schema.GqlCCompassInterviewTopic;
     observationCount: number;
     messages: Array<{ interviewMessageId: string; role: Schema.GqlCCompassInterviewMessageRole; content: string; createdAt: string }>;
 };
@@ -2128,6 +2141,9 @@ export type GqlCWorkspaceCompassPageUserFragment = {
             synthesisModelId: string | null;
             observationsSinceSynthesis: number;
             synthesisInProgress: boolean;
+            scheduledInterviewTopic: Schema.GqlCCompassInterviewTopic | null;
+            scheduledInterviewAt: string | null;
+            scheduledInterviewReason: string | null;
             observations: Array<{
                 observationId: string;
                 category: Schema.GqlCCompassObservationCategory;
@@ -2149,6 +2165,7 @@ export type GqlCWorkspaceCompassPageUserFragment = {
                 completedAt: string | null;
                 endReason: Schema.GqlCCompassInterviewEndReason | null;
                 triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                topic: Schema.GqlCCompassInterviewTopic;
                 observationCount: number;
                 messages: Array<{
                     interviewMessageId: string;
@@ -2165,6 +2182,7 @@ export type GqlCWorkspaceCompassPageUserFragment = {
                 completedAt: string | null;
                 endReason: Schema.GqlCCompassInterviewEndReason | null;
                 triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                topic: Schema.GqlCCompassInterviewTopic;
                 observationCount: number;
             }>;
         };
@@ -2188,6 +2206,9 @@ export type GqlCWorkspaceCompassPageQuery = {
                     synthesisModelId: string | null;
                     observationsSinceSynthesis: number;
                     synthesisInProgress: boolean;
+                    scheduledInterviewTopic: Schema.GqlCCompassInterviewTopic | null;
+                    scheduledInterviewAt: string | null;
+                    scheduledInterviewReason: string | null;
                     observations: Array<{
                         observationId: string;
                         category: Schema.GqlCCompassObservationCategory;
@@ -2209,6 +2230,7 @@ export type GqlCWorkspaceCompassPageQuery = {
                         completedAt: string | null;
                         endReason: Schema.GqlCCompassInterviewEndReason | null;
                         triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                        topic: Schema.GqlCCompassInterviewTopic;
                         observationCount: number;
                         messages: Array<{
                             interviewMessageId: string;
@@ -2225,6 +2247,7 @@ export type GqlCWorkspaceCompassPageQuery = {
                         completedAt: string | null;
                         endReason: Schema.GqlCCompassInterviewEndReason | null;
                         triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                        topic: Schema.GqlCCompassInterviewTopic;
                         observationCount: number;
                     }>;
                 };
@@ -2249,6 +2272,9 @@ export type GqlCWorkspaceCompassPageUpdatesSubscription = {
                 synthesisModelId: string | null;
                 observationsSinceSynthesis: number;
                 synthesisInProgress: boolean;
+                scheduledInterviewTopic: Schema.GqlCCompassInterviewTopic | null;
+                scheduledInterviewAt: string | null;
+                scheduledInterviewReason: string | null;
                 observations: Array<{
                     observationId: string;
                     category: Schema.GqlCCompassObservationCategory;
@@ -2270,6 +2296,7 @@ export type GqlCWorkspaceCompassPageUpdatesSubscription = {
                     completedAt: string | null;
                     endReason: Schema.GqlCCompassInterviewEndReason | null;
                     triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                    topic: Schema.GqlCCompassInterviewTopic;
                     observationCount: number;
                     messages: Array<{
                         interviewMessageId: string;
@@ -2286,6 +2313,7 @@ export type GqlCWorkspaceCompassPageUpdatesSubscription = {
                     completedAt: string | null;
                     endReason: Schema.GqlCCompassInterviewEndReason | null;
                     triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                    topic: Schema.GqlCCompassInterviewTopic;
                     observationCount: number;
                 }>;
             };
@@ -2310,6 +2338,7 @@ export type GqlCWorkspaceCompassInterviewQuery = {
                         completedAt: string | null;
                         endReason: Schema.GqlCCompassInterviewEndReason | null;
                         triggerReason: Schema.GqlCCompassInterviewTriggerReason;
+                        topic: Schema.GqlCCompassInterviewTopic;
                         observationCount: number;
                         messages: Array<{
                             interviewMessageId: string;
@@ -2365,11 +2394,17 @@ export type GqlCWorkspaceCompassInterviewSkipMutationVariables = Exact<{
 
 export type GqlCWorkspaceCompassInterviewSkipMutation = { admin: { compassInterviewSkip: { success: boolean } } };
 
-export type GqlCWorkspaceCompassInterviewStartNowMutationVariables = Exact<{ [key: string]: never }>;
+export type GqlCWorkspaceCompassInterviewStartNowMutationVariables = Exact<{
+    topic?: Schema.GqlCCompassInterviewTopic | null | undefined;
+}>;
 
 export type GqlCWorkspaceCompassInterviewStartNowMutation = {
     admin: { compassInterviewStartNow: { success: boolean; referenceId: string | null } };
 };
+
+export type GqlCWorkspaceCompassScheduledInterviewDismissMutationVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceCompassScheduledInterviewDismissMutation = { admin: { compassScheduledInterviewDismiss: { success: boolean } } };
 
 export type GqlCWorkspaceCvPageUserFragment = {
     admin: {
@@ -5309,6 +5344,7 @@ export const WorkspaceCompassInterviewSummaryFragmentDoc = {
                     { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topic' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
                 ],
             },
@@ -5370,6 +5406,7 @@ export const WorkspaceCompassInterviewWithMessagesFragmentDoc = {
                     { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topic' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
                 ],
             },
@@ -5457,6 +5494,9 @@ export const WorkspaceCompassPageUserFragmentDoc = {
                                                     ],
                                                 },
                                             },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewTopic' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewReason' } },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'interviews' },
@@ -5493,6 +5533,7 @@ export const WorkspaceCompassPageUserFragmentDoc = {
                     { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topic' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
                 ],
             },
@@ -9306,6 +9347,7 @@ export const WorkspaceCompassPageDocument = {
                     { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topic' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
                 ],
             },
@@ -9407,6 +9449,9 @@ export const WorkspaceCompassPageDocument = {
                                                     ],
                                                 },
                                             },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewTopic' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewReason' } },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'interviews' },
@@ -9499,6 +9544,7 @@ export const WorkspaceCompassPageUpdatesDocument = {
                     { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topic' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
                 ],
             },
@@ -9600,6 +9646,9 @@ export const WorkspaceCompassPageUpdatesDocument = {
                                                     ],
                                                 },
                                             },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewTopic' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewAt' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewReason' } },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'interviews' },
@@ -9720,6 +9769,7 @@ export const WorkspaceCompassInterviewDocument = {
                     { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'endReason' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'triggerReason' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topic' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'observationCount' } },
                 ],
             },
@@ -10047,6 +10097,13 @@ export const WorkspaceCompassInterviewStartNowDocument = {
             kind: 'OperationDefinition',
             operation: 'mutation',
             name: { kind: 'Name', value: 'WorkspaceCompassInterviewStartNow' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'topic' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewTopic' } },
+                },
+            ],
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -10059,6 +10116,13 @@ export const WorkspaceCompassInterviewStartNowDocument = {
                                 {
                                     kind: 'Field',
                                     name: { kind: 'Name', value: 'compassInterviewStartNow' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'topic' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'topic' } },
+                                        },
+                                    ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -10075,6 +10139,41 @@ export const WorkspaceCompassInterviewStartNowDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCompassInterviewStartNowMutation, GqlCWorkspaceCompassInterviewStartNowMutationVariables>;
+export const WorkspaceCompassScheduledInterviewDismissDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceCompassScheduledInterviewDismiss' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'compassScheduledInterviewDismiss' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<
+    GqlCWorkspaceCompassScheduledInterviewDismissMutation,
+    GqlCWorkspaceCompassScheduledInterviewDismissMutationVariables
+>;
 export const WorkspaceCvPageDocument = {
     kind: 'Document',
     definitions: [

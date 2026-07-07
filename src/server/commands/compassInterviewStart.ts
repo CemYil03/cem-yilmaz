@@ -50,7 +50,12 @@ export async function compassInterviewStart(
         }
 
         if (!existingMessage) {
-            const result = await agentCompassInterviewer({ serverRuntime, messages: [], locale });
+            const result = await agentCompassInterviewer({
+                serverRuntime,
+                messages: [],
+                locale,
+                topic: interview.topic,
+            });
             if (result.content) {
                 const insert: CompassInterviewMessageCreate = {
                     interviewMessageId: crypto.randomUUID(),

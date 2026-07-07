@@ -3,7 +3,12 @@ import type { ModelMessage } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { compassInterviewContextGet } from '../queries/compassInterviewContextGet';
-import { COMPASS_INTERVIEW_MAX_QUESTIONS, COMPASS_INTERVIEW_MIN_QUESTIONS } from './compassInterviewConfig';
+import type { CompassInterviewTopic } from './compassInterviewConfig';
+import {
+    COMPASS_INTERVIEW_MAX_QUESTIONS,
+    COMPASS_INTERVIEW_MIN_QUESTIONS,
+    COMPASS_INTERVIEW_TOPIC_PROMPTS,
+} from './compassInterviewConfig';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 
 // Psychological-interview agent — see `docs/features/compass.md`
@@ -56,6 +61,9 @@ export interface CompassInterviewAgentOptions {
     // recent user turn was written in, so this is only used to seed the
     // opening question when there is no user turn yet.
     locale: 'de' | 'en';
+    // The domain focus for this interview. Drives the topic-specific section
+    // injected after the base system prompt. Defaults to 'general'.
+    topic?: CompassInterviewTopic;
 }
 
 const SYSTEM_PROMPT_BASE = [
@@ -89,7 +97,13 @@ const SYSTEM_PROMPT_BASE = [
     `  one reply. The minimum is ${COMPASS_INTERVIEW_MIN_QUESTIONS} questions unless Cem actively asks to stop.`,
 ].join('\n');
 
-function buildSystemPrompt(args: { summary: string; psychology: string; recentObservations: string[]; locale: 'de' | 'en' }): string {
+function buildSystemPrompt(args: {
+    summary: string;
+    psychology: string;
+    recentObservations: string[];
+    locale: 'de' | 'en';
+    topic: CompassInterviewTopic;
+}): string {
     const sections = [currentDateForAgent(), '', SYSTEM_PROMPT_BASE, ''];
 
     sections.push(
@@ -97,6 +111,12 @@ function buildSystemPrompt(args: { summary: string; psychology: string; recentOb
         `- Cem's preferred UI language right now is ${args.locale === 'de' ? 'German' : 'English'}. Use this only when there is no user turn yet to match against.`,
         '',
     );
+
+    // Topic-specific focus section — injected between the base instructions
+    // and the context block so the interviewer knows its angle before reading
+    // what is already covered.
+    const topicLines = COMPASS_INTERVIEW_TOPIC_PROMPTS[args.topic];
+    sections.push(`--- Interview focus: ${args.topic.toUpperCase()} ---`, ...topicLines, '');
 
     sections.push('Context about Cem — use this to ASK NEW QUESTIONS, not to recap:');
     sections.push('');
@@ -135,6 +155,7 @@ export async function agentCompassInterviewer({
     serverRuntime,
     messages,
     locale,
+    topic = 'general',
 }: CompassInterviewAgentOptions): Promise<CompassInterviewAgentResult> {
     const context = await compassInterviewContextGet(serverRuntime);
     const system = buildSystemPrompt({
@@ -142,6 +163,7 @@ export async function agentCompassInterviewer({
         psychology: context.psychology,
         recentObservations: context.recentObservations,
         locale,
+        topic,
     });
 
     // When the transcript is empty this is the opening turn — feed the model

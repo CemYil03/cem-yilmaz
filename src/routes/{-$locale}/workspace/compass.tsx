@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import {
     BrainIcon,
+    BriefcaseIcon,
+    DumbbellIcon,
     EyeOffIcon,
     InfoIcon,
     MessageCircleQuestionIcon,
@@ -9,8 +11,11 @@ import {
     RefreshCwIcon,
     SendIcon,
     ShieldCheckIcon,
+    StethoscopeIcon,
     UserRoundIcon,
+    UsersIcon,
     WavesIcon,
+    ZapIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -30,6 +35,7 @@ import type {
     GqlCWorkspaceCompassPageUpdatesSubscription,
     GqlCWorkspaceCompassPageUpdatesSubscriptionVariables,
     GqlCWorkspaceCompassPageUserFragment,
+    GqlCCompassInterviewTopic,
 } from '../../../web/graphql/generated';
 import {
     WorkspaceCompassInterviewEndDocument,
@@ -40,6 +46,7 @@ import {
     WorkspaceCompassObservationDismissDocument,
     WorkspaceCompassPageDocument,
     WorkspaceCompassPageUpdatesDocument,
+    WorkspaceCompassScheduledInterviewDismissDocument,
     WorkspaceCompassSynthesizeRequestDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
@@ -463,6 +470,50 @@ const CATEGORY_ACCENT: Record<GqlCCompassObservationCategory, string> = {
     psychological: 'bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-500/30',
 };
 
+// --- Interview topic labels / icons -----------------------------------------
+
+const TOPIC_LABELS: Record<GqlCCompassInterviewTopic, { de: string; en: string }> = {
+    general: { de: 'Allgemein', en: 'General' },
+    career: { de: 'Karriere', en: 'Career' },
+    relationships: { de: 'Beziehungen', en: 'Relationships' },
+    fitness: { de: 'Fitness', en: 'Fitness' },
+    health: { de: 'Gesundheit', en: 'Health' },
+    stress: { de: 'Stress', en: 'Stress' },
+};
+
+const TOPIC_ICONS: Record<GqlCCompassInterviewTopic, LucideIcon> = {
+    general: MessageCircleQuestionIcon,
+    career: BriefcaseIcon,
+    relationships: UsersIcon,
+    fitness: DumbbellIcon,
+    health: StethoscopeIcon,
+    stress: ZapIcon,
+};
+
+const TOPIC_ACCENT: Record<GqlCCompassInterviewTopic, string> = {
+    general: 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/30',
+    career: 'bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/30',
+    relationships: 'bg-pink-500/10 text-pink-600 dark:text-pink-300 border-pink-500/30',
+    fitness: 'bg-green-500/10 text-green-600 dark:text-green-300 border-green-500/30',
+    health: 'bg-teal-500/10 text-teal-600 dark:text-teal-300 border-teal-500/30',
+    stress: 'bg-orange-500/10 text-orange-600 dark:text-orange-300 border-orange-500/30',
+};
+
+function InterviewTopicBadge({ topic, locale }: { topic: GqlCCompassInterviewTopic; locale: Locale }) {
+    const Icon = TOPIC_ICONS[topic];
+    return (
+        <span
+            className={cn(
+                'inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full border',
+                TOPIC_ACCENT[topic],
+            )}
+        >
+            <Icon className="size-3" />
+            {TOPIC_LABELS[topic][locale]}
+        </span>
+    );
+}
+
 function FilterChips({ active, locale }: { active: ObservationFilter; locale: Locale }) {
     const filters: { id: ObservationFilter; label: { de: string; en: string } }[] = [
         { id: 'all', label: { de: 'Alle', en: 'All' } },
@@ -702,50 +753,84 @@ function InterviewsSection({
                 <NoInterviewCard locale={locale} hasHistory={interviews.length > 0} />
             )}
 
+            {!focusedInterview && compass.scheduledInterviewTopic && compass.scheduledInterviewAt ? (
+                <ScheduleHintCard
+                    topic={compass.scheduledInterviewTopic}
+                    scheduledAt={compass.scheduledInterviewAt as unknown as string}
+                    reason={compass.scheduledInterviewReason ?? null}
+                    locale={locale}
+                />
+            ) : null}
+
             <PastInterviewsRail interviews={interviews} locale={locale} activeInterviewId={activeInterviewId} />
         </section>
     );
 }
 
 function NoInterviewCard({ locale, hasHistory }: { locale: Locale; hasHistory: boolean }) {
+    const navigate = useNavigate();
     const [, startNowMutation] = useMutation(WorkspaceCompassInterviewStartNowDocument);
-    const [busy, setBusy] = useState(false);
+    const [, startMutation] = useMutation(WorkspaceCompassInterviewStartDocument);
+    const [busy, setBusy] = useState<GqlCCompassInterviewTopic | null>(null);
+
+    async function startTopic(topic: GqlCCompassInterviewTopic) {
+        if (busy) return;
+        setBusy(topic);
+        const startNowResult = await startNowMutation({ topic });
+        const interviewId = startNowResult.data?.admin.compassInterviewStartNow.referenceId;
+        if (interviewId) {
+            await startMutation({ interviewId });
+            await navigate({
+                to: '/{-$locale}/workspace/compass',
+                from: '/{-$locale}/workspace/compass',
+                search: (prev: CompassSearch): CompassSearch => ({ ...prev, tab: 'interviews', interviewId }),
+                replace: true,
+            });
+        }
+        setBusy(null);
+    }
+
+    const topics: GqlCCompassInterviewTopic[] = ['general', 'career', 'relationships', 'fitness', 'health', 'stress'];
 
     return (
-        <GlassCard className="mt-6 px-6 py-8 text-center">
-            <div className="mx-auto max-w-md flex flex-col items-center gap-3">
-                <div className="rounded-full bg-primary/10 p-3 text-primary">
-                    <MessageCircleQuestionIcon className="size-6" />
-                </div>
-                <h3 className="font-semibold text-foreground">
-                    {hasHistory
-                        ? { de: 'Kein laufendes Interview', en: 'No interview waiting' }[locale]
-                        : { de: 'Noch kein Interview', en: 'No interviews yet' }[locale]}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                    {
+        <GlassCard className="mt-6 px-6 py-8">
+            <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1">
+                    <h3 className="font-semibold text-foreground">
+                        {hasHistory
+                            ? { de: 'Kein laufendes Interview', en: 'No interview waiting' }[locale]
+                            : { de: 'Noch kein Interview', en: 'No interviews yet' }[locale]}
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-xl">
                         {
-                            de: 'Das nächste planmäßige Interview erscheint hier automatisch, sobald es fällig ist. Du kannst aber jederzeit selbst eines starten.',
-                            en: "The next scheduled interview will surface here automatically when it comes due. You can also start one yourself whenever you're ready.",
-                        }[locale]
-                    }
-                </p>
-                <Button
-                    variant="default"
-                    size="sm"
-                    className="mt-2"
-                    disabled={busy}
-                    onClick={async () => {
-                        setBusy(true);
-                        await startNowMutation({});
-                        // The command publishes `userUpdates`; the page's
-                        // subscription will replace `NoInterviewCard` with
-                        // `PendingInterviewCard` on its own.
-                        setBusy(false);
-                    }}
-                >
-                    {{ de: 'Interview jetzt starten', en: 'Start a new interview' }[locale]}
-                </Button>
+                            {
+                                de: 'Wähle ein Thema und der Interviewer-Agent stellt sofort die erste Frage.',
+                                en: 'Pick a topic and the interviewer will open with a focused first question.',
+                            }[locale]
+                        }
+                    </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {topics.map((topic) => {
+                        const Icon = TOPIC_ICONS[topic];
+                        const isLoading = busy === topic;
+                        return (
+                            <button
+                                key={topic}
+                                disabled={busy !== null}
+                                onClick={() => startTopic(topic)}
+                                className={cn(
+                                    'flex flex-col items-start gap-2 rounded-lg border px-4 py-3 text-left text-sm transition-colors',
+                                    busy !== null && busy !== topic ? 'opacity-40' : '',
+                                    'border-border/40 hover:border-border hover:bg-muted/40 disabled:cursor-not-allowed',
+                                )}
+                            >
+                                <Icon className={cn('size-4', isLoading ? 'animate-pulse' : '')} />
+                                <span className="font-medium text-foreground">{TOPIC_LABELS[topic][locale]}</span>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         </GlassCard>
     );
@@ -773,12 +858,15 @@ function PendingInterviewCard({ interview, locale }: { interview: InterviewWithM
         <GlassCard className="mt-6 px-6 py-6 md:px-8 md:py-7">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="flex flex-col gap-2 max-w-xl">
-                    <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                        <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
-                        {isPending
-                            ? { de: 'Interview wartet', en: 'Interview waiting' }[locale]
-                            : { de: 'Interview läuft', en: 'Interview in progress' }[locale]}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                            <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                            {isPending
+                                ? { de: 'Interview wartet', en: 'Interview waiting' }[locale]
+                                : { de: 'Interview läuft', en: 'Interview in progress' }[locale]}
+                        </span>
+                        <InterviewTopicBadge topic={interview.topic} locale={locale} />
+                    </div>
                     <h3 className="text-lg font-semibold tracking-tight">
                         {isPending
                             ? { de: 'Bereit, ein paar Fragen zu beantworten?', en: 'Ready for a few directed questions?' }[locale]
@@ -887,14 +975,17 @@ function InterviewView({ interview, locale }: { interview: InterviewWithMessages
         <GlassCard className="mt-6 px-6 py-6 md:px-8 md:py-7">
             <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border/40 pb-4">
                 <div>
-                    <h3 className="text-base font-semibold tracking-tight">
-                        {{ de: 'Interview', en: 'Interview' }[locale]} ·{' '}
-                        <span className="text-muted-foreground font-normal">
-                            {formatDistanceToNow(parseISO(interview.dueAt as unknown as string), {
-                                addSuffix: true,
-                                locale: DATE_FNS_LOCALE[locale],
-                            })}
+                    <h3 className="text-base font-semibold tracking-tight flex items-center gap-2 flex-wrap">
+                        <span>
+                            {{ de: 'Interview', en: 'Interview' }[locale]} ·{' '}
+                            <span className="text-muted-foreground font-normal">
+                                {formatDistanceToNow(parseISO(interview.dueAt as unknown as string), {
+                                    addSuffix: true,
+                                    locale: DATE_FNS_LOCALE[locale],
+                                })}
+                            </span>
                         </span>
+                        <InterviewTopicBadge topic={interview.topic} locale={locale} />
                     </h3>
                     <p className="mt-1 text-xs text-muted-foreground">
                         <InterviewStatusBadge status={interview.status} locale={locale} />
@@ -1024,6 +1115,92 @@ function InterviewView({ interview, locale }: { interview: InterviewWithMessages
     );
 }
 
+// Renders a quiet suggestion row when the AI analyzer emitted a schedule hint
+// (time-sensitive signal like an upcoming decision). Dismissible without acting.
+function ScheduleHintCard({
+    topic,
+    scheduledAt,
+    reason,
+    locale,
+}: {
+    topic: GqlCCompassInterviewTopic;
+    scheduledAt: string;
+    reason: string | null;
+    locale: Locale;
+}) {
+    const navigate = useNavigate();
+    const [, startNowMutation] = useMutation(WorkspaceCompassInterviewStartNowDocument);
+    const [, startMutation] = useMutation(WorkspaceCompassInterviewStartDocument);
+    const [, dismissMutation] = useMutation(WorkspaceCompassScheduledInterviewDismissDocument);
+    const [busy, setBusy] = useState<'start' | 'dismiss' | null>(null);
+
+    const ageLabel = useMemo(
+        () =>
+            formatDistanceToNow(parseISO(scheduledAt), {
+                addSuffix: true,
+                locale: DATE_FNS_LOCALE[locale],
+            }),
+        [scheduledAt, locale],
+    );
+
+    return (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm">
+            <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <InfoIcon className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span className="font-medium text-foreground">
+                        {
+                            {
+                                de: `${TOPIC_LABELS[topic].de}-Interview empfohlen`,
+                                en: `${TOPIC_LABELS[topic].en} interview suggested`,
+                            }[locale]
+                        }{' '}
+                        · <span className="font-normal text-muted-foreground">{ageLabel}</span>
+                    </span>
+                    <InterviewTopicBadge topic={topic} locale={locale} />
+                </div>
+                {reason ? <p className="text-xs text-muted-foreground pl-5">"{reason}"</p> : null}
+            </div>
+            <div className="flex items-center gap-2">
+                <Button
+                    variant="default"
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={async () => {
+                        setBusy('start');
+                        const startNowResult = await startNowMutation({ topic });
+                        const interviewId = startNowResult.data?.admin.compassInterviewStartNow.referenceId;
+                        if (interviewId) {
+                            await startMutation({ interviewId });
+                            await navigate({
+                                to: '/{-$locale}/workspace/compass',
+                                from: '/{-$locale}/workspace/compass',
+                                search: (prev: CompassSearch): CompassSearch => ({ ...prev, tab: 'interviews', interviewId }),
+                                replace: true,
+                            });
+                        }
+                        setBusy(null);
+                    }}
+                >
+                    {{ de: 'Jetzt starten', en: 'Start now' }[locale]}
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={async () => {
+                        setBusy('dismiss');
+                        await dismissMutation({});
+                        setBusy(null);
+                    }}
+                >
+                    {{ de: 'Ignorieren', en: 'Dismiss' }[locale]}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 function InterviewStatusBadge({ status, locale }: { status: InterviewSummary['status']; locale: Locale }) {
     const label: { de: string; en: string } =
         status === 'pending'
@@ -1070,12 +1247,13 @@ function PastInterviewsRail({
                                     isActive ? 'border-primary/40 bg-primary/5' : 'border-border/40 hover:border-border hover:bg-muted/40',
                                 )}
                             >
-                                <span className="flex flex-col">
-                                    <span className="font-medium text-foreground">
+                                <span className="flex flex-col gap-1">
+                                    <span className="font-medium text-foreground flex items-center gap-2 flex-wrap">
                                         {formatDistanceToNow(parseISO(i.dueAt as unknown as string), {
                                             addSuffix: true,
                                             locale: DATE_FNS_LOCALE[locale],
                                         })}
+                                        <InterviewTopicBadge topic={i.topic} locale={locale} />
                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                         <InterviewStatusBadge status={i.status} locale={locale} />

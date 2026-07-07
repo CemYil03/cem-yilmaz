@@ -74,7 +74,7 @@ Inline pill rendered below the user message when observations exist. Three optio
 
 ## Implementation
 
-### Schema
+### Storage
 
 Three tables in `src/server/db/schema.ts`:
 
@@ -85,6 +85,9 @@ Compass                                       -- singleton row
   synthesizedAt timestamp?
   synthesisModelId varchar?
   observationsSinceSynthesis int
+  scheduledInterviewTopic varchar?   -- AI-suggested next interview topic
+  scheduledInterviewAt    timestamp? -- when the hint fires
+  scheduledInterviewReason text?     -- one-sentence rationale from the analyzer
   createdAt, updatedAt timestamp
 
 CompassObservations
@@ -281,8 +284,9 @@ CompassInterviews
   status        varchar  -- 'pending' | 'in_progress' | 'completed' | 'skipped'
   dueAt, startedAt?, completedAt?
   endReason     varchar?  -- 'agent_satisfied' | 'user_ended' | 'skipped'
-  triggerReason varchar   -- 'scheduled' | 'manual' (cadence-neutral; the cron
-                          --   lives in COMPASS_INTERVIEW_CRON, not this column)
+  triggerReason varchar   -- 'scheduled' | 'manual'
+  topic         varchar   -- 'general' | 'career' | 'relationships' | 'fitness' | 'health' | 'stress'
+                          --   drives per-topic system-prompt injection in agentCompassInterviewer
   observationCount int    -- denormalized; bumped by the analyzer
   indexes: (status, dueAt), createdAt
 
@@ -317,9 +321,12 @@ src/server/queries/
 
 src/server/commands/
   compassInterviewStart.ts           pending → in_progress; runs the agent's opening turn
-  compassInterviewStartNow.ts        inserts a fresh `pending` row with triggerReason='manual';
-                                     shares the "at most one open interview" guard with the cron
+  compassInterviewStartNow.ts        inserts a fresh `pending` row with triggerReason='manual'
+                                     and the caller-supplied topic (defaults to 'general').
+                                     Shares the "at most one open interview" guard with the cron
                                      (returns the existing id if one is already open).
+  compassScheduledInterviewDismiss.ts clears Compass.scheduledInterview* fields; called when
+                                     Cem dismisses the AI-suggested hint without acting.
   compassInterviewMessageSend.ts     appends user msg; runs one agent turn; enqueues
                                      compassAnalyze fire-and-forget; transitions to
                                      'completed' if the agent called concludeInterview.
@@ -337,7 +344,47 @@ src/server/jobs/handlers/
                                      exactly what gives the reply its meaning).
 ```
 
-### Agent shape
+### Interview topics
+
+Each interview has a `topic` field (`general | career | relationships | fitness | health | stress`) stored on `CompassInterviews`. The topic
+drives a per-topic section injected into the interviewer's system prompt, narrowing its question angles for that session:
+
+- `general` — broad check-in, varies freely (mood, energy, work focus, relationships, stressors)
+- `career` — current projects, upcoming decisions, job satisfaction, career direction
+- `relationships` — close relationships, social energy, friction, loneliness vs. connection
+- `fitness` — current routine, energy levels, sleep quality, physical goals
+- `health` — recent health events, concerns, diet, medical follow-ups
+- `stress` — current stressors, mental load, coping, procrastination, recurring thoughts
+
+The per-topic prompt lines live in `COMPASS_INTERVIEW_TOPIC_PROMPTS` in `src/server/agents/compassInterviewConfig.ts`.
+
+### Cron topic selection and smart scheduling
+
+The cron handler (`compassInterviewScheduledDue`) picks the topic for each scheduled interview in priority order:
+
+1. **AI-suggested hint** — if `Compass.scheduledInterviewAt` is in the past (due), use `Compass.scheduledInterviewTopic` and clear the three
+   hint fields after inserting the row.
+2. **Rotation fallback** — look at the last completed/skipped interview's topic and take the next entry in
+   `COMPASS_INTERVIEW_TOPIC_ROTATION`. The rotation is
+   `['general', 'career', 'general', 'relationships', 'general', 'fitness', 'general', 'health', 'general', 'stress']` — general appears
+   every other slot so broad check-ins remain frequent.
+
+**AI-driven hints** are emitted by the analyzer (`compassAnalyze`) when a message contains a time-sensitive signal (upcoming career
+decision, concrete deadline, acute stressor). The analyzer extends `OBSERVATION_SCHEMA` with an optional
+`scheduleHint: { topic, daysFromNow, reason }` field; when set, it updates `Compass.scheduledInterviewTopic/At/Reason` only if the new hint
+fires sooner than the current one (or no hint exists). The hint is shown as a suggestion card on `/workspace/compass` — Cem can start it
+immediately or dismiss it. "Start now" calls `compassInterviewStartNow(topic)` and immediately starts the interview. "Dismiss" calls
+`compassScheduledInterviewDismiss`, which clears the three fields.
+
+### User behavior — topic picker
+
+The **Interviews** tab `NoInterviewCard` now shows a 2×3 grid of topic cards (icon + label). Clicking a topic:
+
+1. Calls `compassInterviewStartNow(topic)` to create the pending row.
+2. Immediately calls `compassInterviewStart(interviewId)` to fire the agent's opening turn.
+3. Navigates straight into the transcript view (`?tab=interviews&interviewId=…`).
+
+Topic badges appear on the pending/active card header, the transcript view header, and each row in the past-interviews rail.
 
 `agentCompassInterviewer` uses `generateText` (not `ToolLoopAgent`) because each "step" is Cem typing his reply, which arrives on a separate
 command call. Single sentinel tool `concludeInterview({ note })` that the command branches on — its `note` is logged for audit, not
