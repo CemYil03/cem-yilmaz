@@ -42,6 +42,14 @@ mapper `src/server/mappers/toGqlFileUpload.ts` produces the `FileUpload` GraphQL
 New consumers (avatars, generated artifacts, etc.) follow the same pattern — reference `FileUploads.fileUploadId` from a domain-specific
 join row, layer per-consumer cascade and authorization rules on top. A new domain-specific blob table is the exception, not the default.
 
+**One such exception is `TtsAudioCache`** — the read-aloud feature's server-side cache of synthesized MP3 clips. It lives outside
+`FileUploads` because it doesn't fit either of the store's core invariants: its rows are not owned by a user (the cache is anonymous and
+shared across sessions, so re-listening to the same message from any device is a hit), and its primary key is content-derived
+(`sha256(text|voice|model|format)`) rather than a UUID. Making `FileUploads.userId` nullable to accommodate it would loosen the ownership
+model every other consumer relies on. The exception carries a matching bespoke access path (`ttsAudioCacheLoad`, `ttsAudioCacheUpsert`) and
+is documented in [Read-aloud](../features/chat.md#read-aloud). Future domains with the same shape — anonymous, content-addressed, shared —
+belong in their own table too; user-owned uploads still default to `FileUploads`.
+
 The upload and download routes are likewise consumer-agnostic:
 
 - `POST /api/file-uploads` — multipart upload, returns `{ fileUploadId, filename, mediaType, size }`.

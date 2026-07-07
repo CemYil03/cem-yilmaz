@@ -89,6 +89,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled      | `docs/features/workspace-compass.md`           |
 | Media library         | Movies + channels, TMDB auto-fill, topic-clustered cross-views             | `docs/features/workspace-media.md`             |
 | Inventory             | Items + valuations + service log + receipt uploads; material net worth     | `docs/features/workspace-inventory.md`         |
+| Medical               | Health journal + appointment tracker; documentarian sub-agent with triage  | `docs/features/workspace-medical.md`           |
 
 ## How to Add Things
 

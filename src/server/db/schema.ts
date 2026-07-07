@@ -1745,3 +1745,31 @@ export const itemFiles = pgTable(
 
 export type ItemFile = typeof itemFiles.$inferSelect;
 export type ItemFileCreate = typeof itemFiles.$inferInsert;
+
+// Content-addressed cache for `/api/tts` audio. The primary key is a
+// SHA-256 hex of `${text}|${voice}|${model}|${format}` — identical inputs
+// produce the same key, so re-listening to a message is a plain SELECT and
+// skips Gemini entirely.
+//
+// Not a consumer of `FileUploads`: those rows are user-owned (cascade on user
+// delete, download route gates on `userId`), while TTS bytes are anonymous
+// and shared across sessions. A dedicated table keeps the ownership model
+// clean.
+//
+// `format` is carried both in the column and in the hash so a format
+// migration (e.g. WAV → MP3) never collides with older rows — old rows
+// simply become unreachable and can be dropped by a future eviction job.
+export const ttsAudioCache = pgTable('TtsAudioCache', {
+    contentHash: text().primaryKey(),
+    mediaType: varchar().notNull(),
+    voice: varchar().notNull(),
+    model: varchar().notNull(),
+    format: varchar().notNull(),
+    size: integer().notNull(),
+    bytes: bytea().notNull(),
+    createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    lastAccessedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+});
+
+export type TtsAudioCacheRow = typeof ttsAudioCache.$inferSelect;
+export type TtsAudioCacheCreate = typeof ttsAudioCache.$inferInsert;

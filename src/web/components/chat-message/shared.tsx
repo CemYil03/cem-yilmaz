@@ -93,17 +93,28 @@ export function CopyButton({ text }: { text: string }) {
 // Three-state toggle: speaker (idle) → spinner (loading) → stop square
 // (speaking). `speak()` cancels any prior request so two messages can never
 // overlap across the app.
+//
+// Hover / focus pre-warms the request: the fetch starts as soon as the
+// pointer or keyboard focus lands on the button, so by the time the user
+// actually clicks, either the server cache has already returned the audio
+// or the streaming synthesis is well underway. The hook de-dupes on `text`,
+// so hovering the same button twice costs nothing extra.
 export function SpeakButton({ text }: { text: string }) {
     const locale = useLocale();
-    const { state, speak, cancel } = useSpeechSynthesis();
+    const { state, speak, preload, cancel } = useSpeechSynthesis();
     const active = state !== 'idle';
+    const spokenText = React.useMemo(() => markdownToPlainText(text, locale), [text, locale]);
+    const onPrefetch = () => {
+        if (active) return;
+        preload(spokenText);
+    };
     const onClick = async () => {
         if (active) {
             cancel();
             return;
         }
         try {
-            await speak(markdownToPlainText(text, locale), locale === 'de' ? 'de-DE' : 'en-US');
+            await speak(spokenText, locale === 'de' ? 'de-DE' : 'en-US');
         } catch {
             toast.error({ de: 'Vorlesen fehlgeschlagen', en: 'Read-aloud failed' }[locale]);
         }
@@ -120,6 +131,8 @@ export function SpeakButton({ text }: { text: string }) {
             }
             aria-pressed={active}
             onClick={onClick}
+            onMouseEnter={onPrefetch}
+            onFocus={onPrefetch}
             className="opacity-70 hover:opacity-100"
         >
             {state === 'loading' ? (

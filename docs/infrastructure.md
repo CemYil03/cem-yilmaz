@@ -26,6 +26,12 @@ Chromium needs (fonts, libnss, libatk, ...) and download the matching Chromium b
 `node:24-slim` base is required — Chromium's prebuilt binaries are linked against glibc and will not run on Alpine. See
 [architecture/server-side-rendering.md](./architecture/server-side-rendering.md) for the full design.
 
+**`ffmpeg-static` is the other runtime dependency that ships a native binary via npm.** The read-aloud feature transcodes Gemini's PCM
+output into MP3 (see [chat.md#read-aloud](./features/chat.md#read-aloud)); the transcoder spawns the pinned `ffmpeg` binary that ships with
+`ffmpeg-static`. Because it's a plain npm package with a prebuilt binary, no `apt-get install ffmpeg` layer is needed and the same package
+works on macOS for local dev. Like Playwright, it lives in `dependencies` (not `devDependencies`) so `npm ci --omit=dev` in the runtime
+stage still installs it.
+
 #### Build output: nitro + TanStack Start
 
 The `tanstackStart()` Vite plugin alone emits only a fetch-handler module (`export default { fetch }`) at `dist/server/server.js`. That
