@@ -49,12 +49,9 @@ try {
         console.log('\nDry run. Re-run with --apply to insert missing rows.');
         if (phantoms.length > 0) console.log('Add --remove-phantoms to also delete phantom rows.');
     } else {
-            try {
+        try {
             for (const m of missing) {
-                await client.query(
-                    'INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)',
-                    [m.hash, m.when],
-                );
+                await client.query('INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)', [m.hash, m.when]);
                 console.log(`inserted ${m.tag}`);
             }
             if (removePhantoms) {
