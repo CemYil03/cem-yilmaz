@@ -89,6 +89,12 @@ async function playViaMediaSource(
     blobUrlRef.current = url;
 
     const audio = new Audio();
+    // `preload='auto'` tells the browser to eagerly consume data from the
+    // MediaSource as it arrives, rather than waiting for a `play()` call
+    // to opt in. Combined with kicking the reader pump BEFORE calling
+    // `.play()` (see below), this cuts first-audio latency to roughly
+    // "time to decode the first MP3 frame".
+    audio.preload = 'auto';
     audio.src = url;
     audioRef.current = audio;
 
@@ -131,18 +137,15 @@ async function playViaMediaSource(
     };
     sourceBuffer.addEventListener('updateend', flush);
 
-    // Kick playback off immediately — the browser will wait on data as
-    // needed and fire `playing` when the first frames decode.
-    try {
-        await audio.play();
-    } catch {
-        // Autoplay might be denied on some paths (not the click handler
-        // path we're on, but be defensive). The `playing` listener above
-        // still resolves the state transition when audio actually starts.
-    }
-
-    // Reader pump — writes into `pending`, kicks `flush` each turn.
-    (async () => {
+    // START THE READER PUMP FIRST. `audio.play()` returns a promise that
+    // resolves when playback actually begins — which requires MP3 data in
+    // the `SourceBuffer`, which requires this pump to have already read
+    // and appended it. If we awaited `.play()` before starting the pump,
+    // the two would deadlock until a browser fallback heuristic fired
+    // (seconds of unexplained silence). Fire the pump synchronously here,
+    // then kick `.play()` without awaiting — the `playing` event
+    // listener wired above flips state as soon as audio truly starts.
+    void (async () => {
         try {
             for (;;) {
                 const { value, done } = await reader.read();
@@ -161,6 +164,13 @@ async function playViaMediaSource(
             // clean up state.
         }
     })();
+
+    // Fire-and-forget. The `playing` event listener drives the state
+    // transition when audio actually starts producing output.
+    void audio.play().catch(() => {
+        // Autoplay might be denied on some paths (not the click handler
+        // path we're on, but be defensive).
+    });
 }
 
 async function playViaBlob(

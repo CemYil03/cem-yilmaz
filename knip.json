@@ -15,6 +15,7 @@
         "src/web/components/base/**/*.tsx",
         "scripts/seedCv.ts",
         "scripts/captureProjectScreenshots.ts",
+        "scripts/migrationsReconcile.ts",
         ".storybook/vite.config.ts"
     ],
     "ignoreDependencies": [

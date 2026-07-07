@@ -11,36 +11,47 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantWebSearch } from './agentPersonalAssistantWebSearch';
 
-// Orchestrator-side tool that delegates a web-search brief to
-// `agentPersonalAssistantWebSearch`. Runs the sub-agent in-process inside
-// `execute` and returns its written answer to the orchestrator. See
-// `docs/architecture/agent-delegation.md` for the pattern and
-// `docs/features/chat-web-search.md` for the why-wrap reasoning.
+// Orchestrator-side tool that delegates a batch of web-search briefs to
+// `agentPersonalAssistantWebSearch`. Runs one sub-agent per brief
+// concurrently inside `execute` and returns their written answers back to
+// the orchestrator. See `docs/architecture/agent-delegation.md` for the
+// delegation pattern and `docs/features/chat-web-search.md` for the
+// why-wrap reasoning + the batched-briefs contract.
 //
 // Same nested-tool-call persistence shape as `toolDelegateToProjects`:
-// pre-write a `chatMessagesToolCall` row up front with `toolResult: null`,
-// thread its `chatMessageId` into the sub-agent's `onStepEnd` as
-// `parentChatMessageId`, then once the sub-agent finishes update the row
-// with the result. The orchestrator's outer `onStepEnd` skips the row via
-// the shared `preWrittenToolCallIds` set.
+// pre-write a single `chatMessagesToolCall` row up front with
+// `toolResult: null`, thread its `chatMessageId` into every sub-agent's
+// `onStepEnd` as `parentChatMessageId`, then once the batch settles
+// update the row with the aggregated result. The orchestrator's outer
+// `onStepEnd` skips the row via the shared `preWrittenToolCallIds` set.
 //
-// Failure surfacing also mirrors `toolDelegateToProjects`: `agent.generate`
-// is wrapped in a try/catch that logs and returns `{ status: 'failed',
-// summary }`. Without it, an SDK or provider exception would land in the
-// AI SDK's inert `tool-error` envelope, the orchestrator would invent an
-// apology, and nothing would reach `serverRuntime.log` from this layer.
+// Fan-out is web-search-only. Projects/media stay 1:1 because they carry
+// mutation logs and DB-writing state that parallel runs would race on;
+// web search is stateless (provider-executed) so N concurrent sub-agents
+// are safe. See `docs/architecture/agent-delegation.md`.
+//
+// Failure surfacing mirrors `toolDelegateToProjects` per-brief: each
+// `agent.generate` is wrapped in a try/catch that logs and produces a
+// `{ status: 'failed', summary }` entry. `Promise.allSettled` ensures one
+// throw does not swallow the surviving briefs. Without the per-brief
+// catch an SDK or provider exception would land in the AI SDK's inert
+// `tool-error` envelope, the orchestrator would invent an apology, and
+// nothing would reach `serverRuntime.log` from this layer.
 
 const delegateToWebSearchInputSchema = z.object({
-    brief: z
-        .string()
+    briefs: z
+        .array(z.string().min(1).max(2000))
         .min(1)
-        .max(2000)
+        .max(5)
         .describe(
             [
-                'Natural-language search brief for the web-search sub-agent. State what to look up plainly — the sub-agent',
-                'will pick a query, run a Google search via grounding, and reply with a focused answer plus inline',
-                "`[title](url)` citations. Pass relevant context (a person's name, a library version, a timeframe) so the",
-                'sub-agent can refine the query without a second round.',
+                'Array of independent, natural-language search briefs. Each brief is handed to its own web-search',
+                'sub-agent and they all run in parallel — so batch naturally-parallel questions ("compare X, Y, Z",',
+                '"latest on A and B") into one call instead of chaining delegations. Pass a single-item array for a',
+                'lone question. Each brief should stand on its own: state what to look up plainly, include the context',
+                "(a person's name, a library version, a timeframe) the sub-agent needs to pick a good query. Each",
+                'sub-agent runs Google Search grounding and replies with a focused answer plus inline `[title](url)`',
+                'citations.',
             ].join(' '),
         ),
 });
@@ -71,6 +82,17 @@ function summarizeError(error: unknown): string {
     return 'unknown error';
 }
 
+interface WebSearchBriefResult {
+    brief: string;
+    status: 'completed' | 'failed';
+    summary: string;
+}
+
+interface WebSearchBatchResult {
+    status: 'completed' | 'partial' | 'failed';
+    results: WebSearchBriefResult[];
+}
+
 export function toolDelegateToWebSearch({
     serverRuntime,
     session,
@@ -80,27 +102,28 @@ export function toolDelegateToWebSearch({
 }: DelegateToWebSearchContext) {
     return tool({
         description: [
-            'Hand a web-search brief to the web-search sub-agent. Use this for anything time-sensitive or external —',
-            'current prices, recent releases, news, library/API docs, library version status, sports results — that',
-            'you cannot answer from this prompt or from the workspace data. Pass the brief in natural language; the',
-            'sub-agent owns the query, runs Google Search grounding, and replies with an answer plus inline',
-            '`[title](url)` citations.',
-            "The tool result is shaped `{ status: 'completed' | 'failed', summary }`.",
-            'On `completed`, narrate or quote `summary` back to the user — the inline citations in `summary` are the',
-            'sources; do not append a separate "Sources:" block.',
-            'On `failed`, the sub-agent or the provider call threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry automatically and do NOT invent a softer phrasing like',
-            '"search is unavailable".',
+            'Hand a batch of independent web-search briefs to web-search sub-agents. Use this for anything',
+            'time-sensitive or external — current prices, recent releases, news, library/API docs, library version',
+            'status, sports results — that you cannot answer from this prompt or from the workspace data. Pass an',
+            'array of natural-language briefs; the tool spins up one sub-agent per brief, they run Google Search',
+            'grounding in parallel, and each replies with an answer plus inline `[title](url)` citations. Prefer one',
+            'batched call over multiple sequential ones — batching is why this tool takes an array.',
+            "The tool result is shaped `{ status: 'completed' | 'partial' | 'failed', results: [{ brief, status,",
+            'summary }, ...] }`. `status` is `completed` when every brief succeeded, `failed` when every brief threw,',
+            '`partial` when some of each. On per-entry `completed`, narrate or quote `summary` back to the user — its',
+            'inline citations are the sources; do not append a separate "Sources:" block. On per-entry `failed`, the',
+            'sub-agent or the provider call threw — `summary` carries the one-line error message; tell Cem plainly',
+            'which brief failed. Do NOT retry automatically and do NOT invent a softer phrasing like "search is',
+            'unavailable".',
             'Do NOT use this for things already in this prompt, workspace data (use `delegateToProjects` for the',
-            'project board), or pure reasoning / arithmetic / code questions. One delegation per turn is usually',
-            'enough.',
+            'project board), or pure reasoning / arithmetic / code questions.',
         ].join(' '),
         inputSchema: delegateToWebSearchInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;
-            // Pre-write the delegate row so the sub-agent's child rows have an
-            // existing parent to FK against. `toolResult` and `resultedAt`
-            // are filled in below after `agent.generate` resolves.
+            // Pre-write the delegate row so every sub-agent's child rows have
+            // an existing parent to FK against. `toolResult` and `resultedAt`
+            // are filled in below after the batch settles.
             const parentChatMessageId = crypto.randomUUID();
             const parentSpine: ChatMessageRowCreate = {
                 chatMessageId: parentChatMessageId,
@@ -123,11 +146,15 @@ export function toolDelegateToWebSearch({
             });
             preWrittenToolCallIds.add(toolCallId);
 
-            // Sub-agent persistence — every tool call it makes lands as a
-            // child row pointing at `parentChatMessageId`. The shared
-            // `chatPersistStep` helper does the work; we just bind the
-            // context. The sub-agent has no `promptUserForInput`, so the
-            // `endedOnPromptForInput` slot is intentionally absent.
+            // Sub-agent persistence — every tool call any sub-agent makes
+            // lands as a child row pointing at `parentChatMessageId`. The
+            // shared `chatPersistStep` helper does the work; we just bind
+            // the context once and share it across all sub-agents in the
+            // batch. `childPreWrittenToolCallIds` is a plain `Set`, and
+            // concurrent sub-agents mint distinct `toolCallId`s, so
+            // parallel `.add()` is safe. The sub-agents have no
+            // `promptUserForInput`, so the `endedOnPromptForInput` slot
+            // is intentionally absent.
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {
                 chatId,
@@ -137,31 +164,50 @@ export function toolDelegateToWebSearch({
                 parentChatMessageId,
                 preWrittenToolCallIds: childPreWrittenToolCallIds,
             };
-            const agent = await agentPersonalAssistantWebSearch({
-                session,
-                serverRuntime,
-                onStepEnd: async (step: OnStepEndStep) => {
-                    await chatPersistStep(step, childOnStepContext);
-                },
+
+            // Fan out one sub-agent per brief. `agentPersonalAssistantWebSearch`
+            // returns a fresh `ToolLoopAgent` per call, so nothing is shared
+            // between concurrent runs. `Promise.allSettled` guarantees one
+            // thrown promise cannot swallow the others; per-brief try/catch
+            // still runs `serverRuntime.log.error` so nothing goes silent.
+            const runOne = async (brief: string): Promise<WebSearchBriefResult> => {
+                try {
+                    const agent = await agentPersonalAssistantWebSearch({
+                        session,
+                        serverRuntime,
+                        onStepEnd: async (step: OnStepEndStep) => {
+                            await chatPersistStep(step, childOnStepContext);
+                        },
+                    });
+                    const result = await agent.generate({ messages: [{ role: 'user', content: brief }] });
+                    const text = typeof result.text === 'string' ? result.text : '';
+                    return { brief, status: 'completed', summary: text };
+                } catch (error) {
+                    serverRuntime.log.error(error, session);
+                    return { brief, status: 'failed', summary: summarizeError(error) };
+                }
+            };
+            const settled = await Promise.allSettled(input.briefs.map((brief) => runOne(brief)));
+            // Every `runOne` catches its own errors and resolves to a
+            // `WebSearchBriefResult`, so `settled` is effectively all
+            // `fulfilled`. The `rejected` branch is defensive — an error
+            // in the try/catch scaffolding itself (impossible in practice)
+            // would land here rather than being swallowed.
+            const results: WebSearchBriefResult[] = settled.map((entry, index) => {
+                if (entry.status === 'fulfilled') return entry.value;
+                const brief = input.briefs[index] ?? '';
+                serverRuntime.log.error(entry.reason, session);
+                return { brief, status: 'failed', summary: summarizeError(entry.reason) };
             });
+            const successCount = results.filter((r) => r.status === 'completed').length;
+            const batchStatus: WebSearchBatchResult['status'] =
+                successCount === results.length ? 'completed' : successCount === 0 ? 'failed' : 'partial';
+            const toolResult: WebSearchBatchResult = { status: batchStatus, results };
 
-            // Same try/catch shape as `toolDelegateToProjects` — see that
-            // file's comment block. Any throw from the sub-agent run lands
-            // in `serverRuntime.log.error` here and is surfaced to the
-            // orchestrator as a structured `failed` result.
-            let toolResult: { status: 'completed' | 'failed'; summary: string };
-            try {
-                const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
-                const text = typeof result.text === 'string' ? result.text : '';
-                toolResult = { status: 'completed', summary: text };
-            } catch (error) {
-                serverRuntime.log.error(error, session);
-                toolResult = { status: 'failed', summary: summarizeError(error) };
-            }
-
-            // Stamp the result onto the pre-written row and republish a fresh
-            // `messageAppended` so the UI re-renders the now-complete delegate
-            // card (with its result available to the tool-args inspector).
+            // Stamp the aggregated result onto the pre-written row and
+            // republish a fresh `messageAppended` so the UI re-renders the
+            // now-complete delegate card (with its result available to the
+            // tool-args inspector).
             await db
                 .update(chatMessagesToolCall)
                 .set({ toolResult: toolResult as unknown as JSONValue, resultedAt: new Date() })

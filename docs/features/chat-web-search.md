@@ -24,8 +24,26 @@ The agent is prompted to **skip** search for things it can already answer:
 - Workspace data (projects, tasks) — that goes through `delegateToProjects`, which has the live snapshot.
 - Pure reasoning / arithmetic / code questions.
 
-The orchestrator delegates once per turn at most; the search sub-agent itself runs up to one refinement internally before giving up, so the
-agent does not chain searches indefinitely.
+Each sub-agent runs up to one refinement internally before giving up, so a single delegation never spirals into an open-ended search
+session.
+
+### Batched briefs
+
+`delegateToWebSearch` takes an array — `briefs: string[]` (min 1, max 5) — rather than a single query. Each brief spins up its own
+`agentPersonalAssistantWebSearch` instance; the delegate tool fans out with `Promise.allSettled` so all sub-agents hit Google Search
+grounding in parallel. This is the one delegate in the workspace that fans out: web search is stateless and provider-executed, so there's no
+mutation log to serialize (see [architecture/agent-delegation.md](../architecture/agent-delegation.md) for why projects and media stay 1:1).
+
+The orchestrator is prompted to batch naturally-parallel questions ("compare React, Vue, Svelte", "latest on X and Y") into a single call
+rather than chaining delegations across turns. A single-item array covers the lone-question case.
+
+The result envelope is `{ status: 'completed' | 'partial' | 'failed', results: Array<{ brief, status, summary }> }`. `status` on the batch
+is `completed` if every brief succeeded, `failed` if every brief threw, `partial` otherwise. Each `results` entry carries its own
+`status`/`summary` — the orchestrator narrates each brief individually and names any that failed. Per-brief errors are caught inside the
+fan-out and logged via `serverRuntime.log.error` so a partial failure never goes silent.
+
+In the transcript the delegate row stays flat: one `delegateToWebSearch` pill with N `Called googleSearch` child rows FK'd to it. This
+matches the single-brief shape today and needs no renderer changes.
 
 ## Scope
 
@@ -59,15 +77,15 @@ The admin agent doesn't register `googleSearch` directly. It's wrapped in a dele
 orchestrator's tool map contains only function tools. The sub-agent's tool map contains only the provider tool. See
 [Why wrapped in a sub-agent](#why-wrapped-in-a-sub-agent) for the reason.
 
-| File                                                   | What it does                                                                                                                                                                                                                                               |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/server/domain/ServerRuntime.ts`                   | Adds `webSearchTool: () => Tool` to the `ai` factory surface so the provider binding has a single home.                                                                                                                                                    |
-| `src/server/domain/serverRuntimeCreate.ts`             | Binds `webSearchTool` to `google.tools.googleSearch({})`. Keeps `@ai-sdk/google` out of the agent files.                                                                                                                                                   |
-| `src/server/agents/toolWebSearch.ts`                   | Thin wrapper returning `serverRuntime.ai.webSearchTool()`. Used only by the web-search sub-agent.                                                                                                                                                          |
-| `src/server/agents/agentPersonalAssistantWebSearch.ts` | Sub-agent factory. `ToolLoopAgent` with `googleSearch` as its **only** tool, `isStepCount(4)` ceiling, Flash-fallback model. System prompt teaches it to run at most one refinement, inline `[title](url)` citations, and stay in the search lane.         |
-| `src/server/agents/toolDelegateToWebSearch.ts`         | Orchestrator-side delegate tool. Pre-writes its own `chatMessagesToolCall` row so sub-agent child rows can FK to it; wraps `agent.generate` in try/catch and surfaces failure as `{ status: 'failed', summary }` — same shape as `toolDelegateToProjects`. |
-| `src/server/agents/agentPersonalAssistant.ts`          | Registers `delegateToWebSearch: toolDelegateToWebSearch(...)` in `tools:` and teaches the system prompt when to use / when to skip it.                                                                                                                     |
-| `src/server/test/commandTestUtils.ts`                  | Stubs `webSearchTool` on the mock `ServerRuntime` so command tests keep building without hitting Gemini.                                                                                                                                                   |
+| File                                                   | What it does                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/server/domain/ServerRuntime.ts`                   | Adds `webSearchTool: () => Tool` to the `ai` factory surface so the provider binding has a single home.                                                                                                                                                                                                                                                                                      |
+| `src/server/domain/serverRuntimeCreate.ts`             | Binds `webSearchTool` to `google.tools.googleSearch({})`. Keeps `@ai-sdk/google` out of the agent files.                                                                                                                                                                                                                                                                                     |
+| `src/server/agents/toolWebSearch.ts`                   | Thin wrapper returning `serverRuntime.ai.webSearchTool()`. Used only by the web-search sub-agent.                                                                                                                                                                                                                                                                                            |
+| `src/server/agents/agentPersonalAssistantWebSearch.ts` | Sub-agent factory. `ToolLoopAgent` with `googleSearch` as its **only** tool, `isStepCount(4)` ceiling, Flash-fallback model. System prompt teaches it to run at most one refinement, inline `[title](url)` citations, and stay in the search lane.                                                                                                                                           |
+| `src/server/agents/toolDelegateToWebSearch.ts`         | Orchestrator-side delegate tool. Takes `briefs: string[]` (1–5) and fans out one sub-agent per brief with `Promise.allSettled`. Pre-writes its own `chatMessagesToolCall` row so every sub-agent's child rows FK to it; per-brief try/catch surfaces failure as an entry-level `{ status: 'failed', summary }` and the batch as `{ status: 'completed' \| 'partial' \| 'failed', results }`. |
+| `src/server/agents/agentPersonalAssistant.ts`          | Registers `delegateToWebSearch: toolDelegateToWebSearch(...)` in `tools:` and teaches the system prompt when to use / when to skip it.                                                                                                                                                                                                                                                       |
+| `src/server/test/commandTestUtils.ts`                  | Stubs `webSearchTool` on the mock `ServerRuntime` so command tests keep building without hitting Gemini.                                                                                                                                                                                                                                                                                     |
 
 The visitor agent (`agentVisitorAboutCem`) is not touched.
 

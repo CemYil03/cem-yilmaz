@@ -5,6 +5,7 @@ import { Client } from 'pg';
 type JournalEntry = { idx: number; when: number; tag: string };
 type Journal = { entries: JournalEntry[] };
 
+// eslint-disable-next-line no-restricted-syntax
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
     console.error('DATABASE_URL is not set');

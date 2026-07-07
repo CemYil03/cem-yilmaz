@@ -42,6 +42,18 @@ persistence.
   requires `generationId` plumbing back into the orchestrator's turn-runner. Instead the sub-agent returns a `needsMoreInfo` JSON sentinel
   and the orchestrator owns the back-and-forth.
 
+### Parallel fan-out (web search only)
+
+`delegateToWebSearch` takes `briefs: string[]` and fans out one sub-agent per brief with `Promise.allSettled`. All sub-agent tool-call rows
+FK to the single pre-written delegate row (flat under one parent — no new nesting depth in the transcript renderer), and the delegate's
+`toolResult` carries a per-brief `{ brief, status, summary }` array plus an aggregated batch `status` of `completed` / `partial` / `failed`.
+
+Web search is the only delegate that fans out. The sub-agent is stateless and provider-executed (Gemini owns the search round-trip), so N
+concurrent instances are safe. `delegateToProjects` and `delegateToMedia` stay 1:1: they carry mutation logs and issue DB writes, and
+running parallel copies of one domain sub-agent would race on the same tables and shared `ProjectsAgentMutationLog` closure. If a future
+read-only domain sub-agent shows up (pure lookups, no writes, no shared log), the fan-out shape can be reused; anything with a mutation log
+stays 1:1.
+
 ### Mutation log
 
 Each mutation tool the sub-agent calls pushes onto a closure-shared `ProjectsAgentMutationLog` — a plain `MutationRecord[]` allocated fresh
