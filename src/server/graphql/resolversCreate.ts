@@ -30,6 +30,13 @@ import { itemUpsert } from '../commands/itemUpsert';
 import { mediaChannelDelete } from '../commands/mediaChannelDelete';
 import { mediaChannelReorder } from '../commands/mediaChannelReorder';
 import { mediaChannelUpsert } from '../commands/mediaChannelUpsert';
+import { medicalAppointmentComplete } from '../commands/medicalAppointmentComplete';
+import { medicalAppointmentDelete } from '../commands/medicalAppointmentDelete';
+import { medicalAppointmentUpsert } from '../commands/medicalAppointmentUpsert';
+import { medicalRecordDelete } from '../commands/medicalRecordDelete';
+import { medicalRecordFileAttach } from '../commands/medicalRecordFileAttach';
+import { medicalRecordFileDelete } from '../commands/medicalRecordFileDelete';
+import { medicalRecordUpsert } from '../commands/medicalRecordUpsert';
 import { movieAddFromTmdb } from '../commands/movieAddFromTmdb';
 import { movieDelete } from '../commands/movieDelete';
 import { movieMarkWatched } from '../commands/movieMarkWatched';
@@ -82,6 +89,9 @@ import { cvHobbyList } from '../queries/cvHobbyList';
 import { cvSkillList } from '../queries/cvSkillList';
 import { mediaChannelList } from '../queries/mediaChannelList';
 import { mediaChannelsByTopic } from '../queries/mediaChannelsByTopic';
+import { medicalAppointmentList } from '../queries/medicalAppointmentList';
+import { medicalCategoryOverview } from '../queries/medicalCategoryOverview';
+import { medicalRecordList } from '../queries/medicalRecordList';
 import { itemGet } from '../queries/itemGet';
 import { itemsList } from '../queries/itemsList';
 import { materialNetWorthCentsGet } from '../queries/materialNetWorthCentsGet';
@@ -138,6 +148,13 @@ import type {
     GqlSAdminMutationMediaChannelDeleteArgs,
     GqlSAdminMutationMediaChannelReorderArgs,
     GqlSAdminMutationMediaChannelUpsertArgs,
+    GqlSAdminMutationMedicalAppointmentCompleteArgs,
+    GqlSAdminMutationMedicalAppointmentDeleteArgs,
+    GqlSAdminMutationMedicalAppointmentUpsertArgs,
+    GqlSAdminMutationMedicalRecordDeleteArgs,
+    GqlSAdminMutationMedicalRecordFileAttachArgs,
+    GqlSAdminMutationMedicalRecordFileDeleteArgs,
+    GqlSAdminMutationMedicalRecordUpsertArgs,
     GqlSAdminMutationMovieAddFromTmdbArgs,
     GqlSAdminMutationMovieDeleteArgs,
     GqlSAdminMutationMovieMarkWatchedArgs,
@@ -150,6 +167,7 @@ import type {
     GqlSAdminMediaQueryChannelsByTopicArgs,
     GqlSAdminMediaQueryTmdbSearchArgs,
     GqlSAdminMediaQueryYoutubeSearchArgs,
+    GqlSAdminMedicalQuery,
     GqlSAdminMutationCompassObservationDismissArgs,
     GqlSAdminMutationCompassInterviewStartArgs,
     GqlSAdminMutationCompassInterviewMessageSendArgs,
@@ -349,6 +367,12 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             inventory(): GqlSAdminInventoryQuery {
                 return {} as GqlSAdminInventoryQuery;
             },
+            // Medical namespace — same shell pattern. Per-field resolvers on
+            // `AdminMedicalQuery` fan out to the appointment / record /
+            // overview queries. See `docs/features/workspace-medical.md`.
+            medical(): GqlSAdminMedicalQuery {
+                return {} as GqlSAdminMedicalQuery;
+            },
             async chatConfig(_parent: GqlSAdmin) {
                 // Catalog is server-static — same array on every read. The
                 // saved default is the only DB-bound part; we resolve it here
@@ -464,6 +488,17 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return upcomingWarrantyExpirationsList(args.withinDays ?? 90, requestingSession, serverRuntime);
+            },
+        },
+        AdminMedicalQuery: {
+            appointments(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
+                return medicalAppointmentList(requestingSession, serverRuntime);
+            },
+            records(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
+                return medicalRecordList(requestingSession, serverRuntime);
+            },
+            overview(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
+                return medicalCategoryOverview(requestingSession, serverRuntime);
             },
         },
         AdminMutation: {
@@ -687,6 +722,55 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return mediaChannelReorder(userId, args, requestingSession, serverRuntime);
+            },
+            medicalAppointmentUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMedicalAppointmentUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return medicalAppointmentUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            medicalAppointmentDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMedicalAppointmentDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return medicalAppointmentDelete(userId, args, requestingSession, serverRuntime);
+            },
+            medicalAppointmentComplete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMedicalAppointmentCompleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return medicalAppointmentComplete(userId, args, requestingSession, serverRuntime);
+            },
+            medicalRecordUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMedicalRecordUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return medicalRecordUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            medicalRecordDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMedicalRecordDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return medicalRecordDelete(userId, args, requestingSession, serverRuntime);
+            },
+            medicalRecordFileAttach(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMedicalRecordFileAttachArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return medicalRecordFileAttach(userId, args, requestingSession, serverRuntime);
+            },
+            medicalRecordFileDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationMedicalRecordFileDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return medicalRecordFileDelete(userId, args, requestingSession, serverRuntime);
             },
             itemUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemUpsertArgs, requestingSession: GqlSSession) {
                 return itemUpsert(userId, args, requestingSession, serverRuntime);

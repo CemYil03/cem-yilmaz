@@ -1,0 +1,153 @@
+# Workspace Medical editor operations. Co-located with `/workspace/medical`.
+# Both the loader query and the live `userUpdates` subscription spread the
+# same `WorkspaceMedicalPageUser` fragment so the seed-and-subscribe hook
+# can swap state without a shape mismatch — mutations no longer trigger
+# `router.invalidate()`; every medical mutation publishes on the user
+# channel and the page picks up the new payload over SSE. See
+# `docs/architecture/state-synchronization.md`.
+
+fragment WorkspaceMedicalPageAppointment on MedicalAppointment {
+    appointmentId
+    category
+    providerName
+    title
+    notes
+    scheduledAt
+    completedAt
+    nextDueAt
+    status
+    topics
+    createdAt
+    updatedAt
+}
+
+fragment WorkspaceMedicalPageRecordFile on MedicalRecordFile {
+    recordFileId
+    recordId
+    label
+    pinned
+    createdAt
+    updatedAt
+    fileUpload {
+        fileUploadId
+        filename
+        mediaType
+        size
+        url
+    }
+}
+
+fragment WorkspaceMedicalPageRecord on MedicalRecord {
+    recordId
+    category
+    title
+    summary
+    severity
+    symptoms
+    bodyAreas
+    occurredAt
+    resolvedAt
+    appointmentId
+    topics
+    createdAt
+    updatedAt
+    files {
+        ...WorkspaceMedicalPageRecordFile
+    }
+}
+
+fragment WorkspaceMedicalPageUser on User {
+    admin {
+        medical {
+            appointments {
+                ...WorkspaceMedicalPageAppointment
+            }
+            records {
+                ...WorkspaceMedicalPageRecord
+            }
+            overview {
+                category
+                defaultCadenceMonths
+                lastCompletedAt
+                nextDueAt
+                isOverdue
+                upcoming {
+                    ...WorkspaceMedicalPageAppointment
+                }
+                recentRecords {
+                    ...WorkspaceMedicalPageRecord
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceMedicalPage {
+    currentSession {
+        user {
+            ...WorkspaceMedicalPageUser
+        }
+    }
+}
+
+subscription WorkspaceMedicalPageUpdates {
+    userUpdates {
+        ...WorkspaceMedicalPageUser
+    }
+}
+
+mutation WorkspaceMedicalAppointmentUpsert($input: MedicalAppointmentInput!) {
+    admin {
+        medicalAppointmentUpsert(input: $input) {
+            appointmentId
+        }
+    }
+}
+
+mutation WorkspaceMedicalAppointmentDelete($appointmentId: ID!) {
+    admin {
+        medicalAppointmentDelete(appointmentId: $appointmentId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceMedicalAppointmentComplete($appointmentId: ID!, $completedAt: DateTime, $nextDueAt: DateTime) {
+    admin {
+        medicalAppointmentComplete(appointmentId: $appointmentId, completedAt: $completedAt, nextDueAt: $nextDueAt) {
+            appointmentId
+        }
+    }
+}
+
+mutation WorkspaceMedicalRecordUpsert($input: MedicalRecordInput!) {
+    admin {
+        medicalRecordUpsert(input: $input) {
+            recordId
+        }
+    }
+}
+
+mutation WorkspaceMedicalRecordDelete($recordId: ID!) {
+    admin {
+        medicalRecordDelete(recordId: $recordId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceMedicalRecordFileAttach($input: MedicalRecordFileAttachInput!) {
+    admin {
+        medicalRecordFileAttach(input: $input) {
+            recordFileId
+        }
+    }
+}
+
+mutation WorkspaceMedicalRecordFileDelete($recordFileId: ID!) {
+    admin {
+        medicalRecordFileDelete(recordFileId: $recordFileId) {
+            success
+        }
+    }
+}

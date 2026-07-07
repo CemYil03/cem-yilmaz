@@ -1417,6 +1417,146 @@ export const mediaChannels = pgTable(
 export type MediaChannel = typeof mediaChannels.$inferSelect;
 export type MediaChannelCreate = typeof mediaChannels.$inferInsert;
 
+// --- Medical -----------------------------------------------------------------
+//
+// `MedicalAppointments`, `MedicalRecords`, and `MedicalRecordFiles` back
+// `/workspace/medical`. Admin-only, `noindex`; no `*De`/`*En` pairs (matches
+// Media / Inventory). See `docs/features/workspace-medical.md`.
+//
+// The feature has two purposes:
+//   - **Health journal** — `MedicalRecords` are chat-authored write-ups born
+//     from conversations with the personal assistant ("I have a red patch on
+//     my forearm…"). The medical sub-agent asks clarifiers, then files a
+//     structured record with symptoms / body areas / severity / free-form
+//     summary. Optionally attaches photos (join → `FileUploads`).
+//   - **Appointment tracker** — `MedicalAppointments` are scheduled or
+//     completed visits with a provider. Grouped by `category` (dentist, GP,
+//     dermatology, …). "When is my next dentist visit?" reads
+//     `nextDueAt ?? lastCompletedAt + defaultCadence` — the cadence lives as
+//     a static config (`medicalCategoryCadence.ts`), not a table.
+//
+// Records and appointments cross-link: a record can reference the appointment
+// that produced it (or vice-versa a follow-up appointment can be filed from a
+// record). The FK is nullable and `set null` on appointment delete so records
+// survive appointment cleanup.
+
+export const medicalCategories = ['dentist', 'gp', 'dermatology', 'eyes', 'mentalHealth', 'ent', 'physio', 'other'] as const;
+export type MedicalCategory = (typeof medicalCategories)[number];
+
+export const medicalAppointmentStatuses = ['scheduled', 'completed', 'cancelled', 'missed'] as const;
+export type MedicalAppointmentStatus = (typeof medicalAppointmentStatuses)[number];
+
+export const medicalRecordSeverities = ['info', 'mild', 'moderate', 'severe'] as const;
+export type MedicalRecordSeverity = (typeof medicalRecordSeverities)[number];
+
+// A scheduled or completed appointment with a provider. `providerName` is
+// free-text (no dedicated `MedicalProvider` table in v1 — see the feature
+// doc for the deferred-provider-directory rationale). `scheduledAt` is the
+// intended time; `completedAt` stamps when the visit actually happened.
+// `nextDueAt` is an explicit override for the "next visit" question — when
+// absent, the category's default cadence applies.
+export const medicalAppointments = pgTable(
+    'MedicalAppointments',
+    {
+        appointmentId: uuid().primaryKey(),
+        category: varchar().$type<MedicalCategory>().notNull().default('other'),
+        providerName: varchar(),
+        title: varchar().notNull(),
+        notes: text(),
+        scheduledAt: timestamp({ withTimezone: true }).notNull(),
+        completedAt: timestamp({ withTimezone: true }),
+        nextDueAt: timestamp({ withTimezone: true }),
+        status: varchar().$type<MedicalAppointmentStatus>().notNull().default('scheduled'),
+        topics: text().array().notNull().default([]),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        index('MedicalAppointments_category_idx').on(table.category),
+        index('MedicalAppointments_scheduledAt_idx').on(table.scheduledAt),
+    ],
+);
+
+export type MedicalAppointment = typeof medicalAppointments.$inferSelect;
+export type MedicalAppointmentCreate = typeof medicalAppointments.$inferInsert;
+
+// A health-journal entry, usually authored by the medical sub-agent from a
+// chat conversation. `summary` is the agent's structured writeup;
+// `symptoms` / `bodyAreas` are free-form `text[]` so the vocabulary can grow
+// without migrations (mirrors `Movies.topics`). `appointmentId` is optional
+// — a record can reference the appointment that produced it (or a future
+// follow-up); on appointment delete the FK is nulled so the record survives.
+export const medicalRecords = pgTable(
+    'MedicalRecords',
+    {
+        recordId: uuid().primaryKey(),
+        category: varchar().$type<MedicalCategory>().notNull().default('other'),
+        title: varchar().notNull(),
+        summary: text().notNull(),
+        severity: varchar().$type<MedicalRecordSeverity>(),
+        symptoms: text().array().notNull().default([]),
+        bodyAreas: text().array().notNull().default([]),
+        occurredAt: timestamp({ withTimezone: true }),
+        resolvedAt: timestamp({ withTimezone: true }),
+        appointmentId: uuid(),
+        topics: text().array().notNull().default([]),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.appointmentId],
+            foreignColumns: [medicalAppointments.appointmentId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('MedicalRecords_category_idx').on(table.category),
+        index('MedicalRecords_appointmentId_idx').on(table.appointmentId),
+        index('MedicalRecords_occurredAt_idx').on(table.occurredAt),
+    ],
+);
+
+export type MedicalRecord = typeof medicalRecords.$inferSelect;
+export type MedicalRecordCreate = typeof medicalRecords.$inferInsert;
+
+// Join row pinning `FileUploads` to a medical record — the "attach the photo
+// you sent in chat to this dermatology record" wire. Mirrors `ItemFiles` and
+// `ProjectFiles`: the raw bytes live once in `FileUploads`, this row is the
+// domain-specific reference. On record delete the join cascades; on upload
+// delete the join also cascades (the file was the anchor, so losing it means
+// the reference is meaningless).
+export const medicalRecordFiles = pgTable(
+    'MedicalRecordFiles',
+    {
+        recordFileId: uuid().primaryKey(),
+        recordId: uuid().notNull(),
+        fileUploadId: uuid().notNull(),
+        label: varchar(),
+        pinned: boolean().notNull().default(false),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.recordId],
+            foreignColumns: [medicalRecords.recordId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.fileUploadId],
+            foreignColumns: [fileUploads.fileUploadId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('MedicalRecordFiles_recordId_pinned_idx').on(table.recordId, table.pinned),
+        index('MedicalRecordFiles_fileUploadId_idx').on(table.fileUploadId),
+    ],
+);
+
+export type MedicalRecordFile = typeof medicalRecordFiles.$inferSelect;
+export type MedicalRecordFileCreate = typeof medicalRecordFiles.$inferInsert;
+
 // --- Inventory ---------------------------------------------------------------
 //
 // `Items` and its satellites (`ItemValuations`, `ItemServiceEntries`,

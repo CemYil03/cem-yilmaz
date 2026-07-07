@@ -28,6 +28,7 @@ export interface GqlSAdmin {
     inventory: GqlSAdminInventoryQuery;
     logs: Array<GqlSLog>;
     media: GqlSAdminMediaQuery;
+    medical: GqlSAdminMedicalQuery;
     project: GqlSProject;
     projectRequests: Array<GqlSProjectRequest>;
     projectRequestsInboxCount: Scalars['Int']['output'];
@@ -152,6 +153,13 @@ export type GqlSAdminMediaQueryYoutubeSearchArgs = {
     query: Scalars['String']['input'];
 };
 
+export interface GqlSAdminMedicalQuery {
+    __typename?: 'AdminMedicalQuery';
+    appointments: Array<GqlSMedicalAppointment>;
+    overview: Array<GqlSMedicalCategoryOverview>;
+    records: Array<GqlSMedicalRecord>;
+}
+
 export interface GqlSAdminMutation {
     __typename?: 'AdminMutation';
     chatConfigDefaultModelSet: GqlSMutationResult;
@@ -188,6 +196,13 @@ export interface GqlSAdminMutation {
     mediaChannelDelete: GqlSMutationResult;
     mediaChannelReorder: GqlSMutationResult;
     mediaChannelUpsert: GqlSMediaChannel;
+    medicalAppointmentComplete: GqlSMedicalAppointment;
+    medicalAppointmentDelete: GqlSMutationResult;
+    medicalAppointmentUpsert: GqlSMedicalAppointment;
+    medicalRecordDelete: GqlSMutationResult;
+    medicalRecordFileAttach: GqlSMedicalRecordFile;
+    medicalRecordFileDelete: GqlSMutationResult;
+    medicalRecordUpsert: GqlSMedicalRecord;
     movieAddFromTmdb: GqlSMovie;
     movieDelete: GqlSMutationResult;
     movieMarkWatched: GqlSMovie;
@@ -353,6 +368,36 @@ export type GqlSAdminMutationMediaChannelReorderArgs = {
 
 export type GqlSAdminMutationMediaChannelUpsertArgs = {
     input: GqlSMediaChannelInput;
+};
+
+export type GqlSAdminMutationMedicalAppointmentCompleteArgs = {
+    appointmentId: Scalars['ID']['input'];
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    nextDueAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type GqlSAdminMutationMedicalAppointmentDeleteArgs = {
+    appointmentId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationMedicalAppointmentUpsertArgs = {
+    input: GqlSMedicalAppointmentInput;
+};
+
+export type GqlSAdminMutationMedicalRecordDeleteArgs = {
+    recordId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationMedicalRecordFileAttachArgs = {
+    input: GqlSMedicalRecordFileAttachInput;
+};
+
+export type GqlSAdminMutationMedicalRecordFileDeleteArgs = {
+    recordFileId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationMedicalRecordUpsertArgs = {
+    input: GqlSMedicalRecordInput;
 };
 
 export type GqlSAdminMutationMovieAddFromTmdbArgs = {
@@ -1020,6 +1065,103 @@ export type GqlSMediaTopic =
     | 'sports'
     | 'tech';
 
+export interface GqlSMedicalAppointment {
+    __typename?: 'MedicalAppointment';
+    appointmentId: Scalars['ID']['output'];
+    category: GqlSMedicalCategory;
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    providerName?: Maybe<Scalars['String']['output']>;
+    scheduledAt: Scalars['DateTime']['output'];
+    status: GqlSMedicalAppointmentStatus;
+    title: Scalars['String']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSMedicalAppointmentInput = {
+    appointmentId?: InputMaybe<Scalars['ID']['input']>;
+    category: GqlSMedicalCategory;
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    nextDueAt?: InputMaybe<Scalars['DateTime']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    providerName?: InputMaybe<Scalars['String']['input']>;
+    scheduledAt: Scalars['DateTime']['input'];
+    status: GqlSMedicalAppointmentStatus;
+    title: Scalars['String']['input'];
+    topics: Array<Scalars['String']['input']>;
+};
+
+export type GqlSMedicalAppointmentStatus = 'cancelled' | 'completed' | 'missed' | 'scheduled';
+
+export type GqlSMedicalCategory = 'dentist' | 'dermatology' | 'ent' | 'eyes' | 'gp' | 'mentalHealth' | 'other' | 'physio';
+
+export interface GqlSMedicalCategoryOverview {
+    __typename?: 'MedicalCategoryOverview';
+    category: GqlSMedicalCategory;
+    defaultCadenceMonths?: Maybe<Scalars['Int']['output']>;
+    isOverdue: Scalars['Boolean']['output'];
+    lastCompletedAt?: Maybe<Scalars['DateTime']['output']>;
+    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
+    recentRecords: Array<GqlSMedicalRecord>;
+    upcoming: Array<GqlSMedicalAppointment>;
+}
+
+export interface GqlSMedicalRecord {
+    __typename?: 'MedicalRecord';
+    appointmentId?: Maybe<Scalars['ID']['output']>;
+    bodyAreas: Array<Scalars['String']['output']>;
+    category: GqlSMedicalCategory;
+    createdAt: Scalars['DateTime']['output'];
+    files: Array<GqlSMedicalRecordFile>;
+    occurredAt?: Maybe<Scalars['DateTime']['output']>;
+    recordId: Scalars['ID']['output'];
+    resolvedAt?: Maybe<Scalars['DateTime']['output']>;
+    severity?: Maybe<GqlSMedicalRecordSeverity>;
+    summary: Scalars['String']['output'];
+    symptoms: Array<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface GqlSMedicalRecordFile {
+    __typename?: 'MedicalRecordFile';
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlSFileUpload;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    recordFileId: Scalars['ID']['output'];
+    recordId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSMedicalRecordFileAttachInput = {
+    fileUploadId: Scalars['ID']['input'];
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    recordId: Scalars['ID']['input'];
+};
+
+export type GqlSMedicalRecordInput = {
+    appointmentId?: InputMaybe<Scalars['ID']['input']>;
+    bodyAreas: Array<Scalars['String']['input']>;
+    category: GqlSMedicalCategory;
+    fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+    occurredAt?: InputMaybe<Scalars['DateTime']['input']>;
+    recordId?: InputMaybe<Scalars['ID']['input']>;
+    resolvedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    severity?: InputMaybe<GqlSMedicalRecordSeverity>;
+    summary: Scalars['String']['input'];
+    symptoms: Array<Scalars['String']['input']>;
+    title: Scalars['String']['input'];
+    topics: Array<Scalars['String']['input']>;
+};
+
+export type GqlSMedicalRecordSeverity = 'info' | 'mild' | 'moderate' | 'severe';
+
 export interface GqlSMovie {
     __typename?: 'Movie';
     backdropUrl?: Maybe<Scalars['String']['output']>;
@@ -1514,6 +1656,7 @@ export type GqlSResolversTypes = ResolversObject<{
     AdminCompass: ResolverTypeWrapper<GqlSAdminCompass>;
     AdminInventoryQuery: ResolverTypeWrapper<GqlSAdminInventoryQuery>;
     AdminMediaQuery: ResolverTypeWrapper<GqlSAdminMediaQuery>;
+    AdminMedicalQuery: ResolverTypeWrapper<GqlSAdminMedicalQuery>;
     AdminMutation: ResolverTypeWrapper<GqlSAdminMutation>;
     Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
     Chat: ResolverTypeWrapper<Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversTypes['ChatMessage']> }>;
@@ -1606,6 +1749,16 @@ export type GqlSResolversTypes = ResolversObject<{
     MediaChannelInput: GqlSMediaChannelInput;
     MediaPlatform: GqlSMediaPlatform;
     MediaTopic: GqlSMediaTopic;
+    MedicalAppointment: ResolverTypeWrapper<GqlSMedicalAppointment>;
+    MedicalAppointmentInput: GqlSMedicalAppointmentInput;
+    MedicalAppointmentStatus: GqlSMedicalAppointmentStatus;
+    MedicalCategory: GqlSMedicalCategory;
+    MedicalCategoryOverview: ResolverTypeWrapper<GqlSMedicalCategoryOverview>;
+    MedicalRecord: ResolverTypeWrapper<GqlSMedicalRecord>;
+    MedicalRecordFile: ResolverTypeWrapper<GqlSMedicalRecordFile>;
+    MedicalRecordFileAttachInput: GqlSMedicalRecordFileAttachInput;
+    MedicalRecordInput: GqlSMedicalRecordInput;
+    MedicalRecordSeverity: GqlSMedicalRecordSeverity;
     Movie: ResolverTypeWrapper<GqlSMovie>;
     MovieInput: GqlSMovieInput;
     MovieStatus: GqlSMovieStatus;
@@ -1666,6 +1819,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     AdminCompass: GqlSAdminCompass;
     AdminInventoryQuery: GqlSAdminInventoryQuery;
     AdminMediaQuery: GqlSAdminMediaQuery;
+    AdminMedicalQuery: GqlSAdminMedicalQuery;
     AdminMutation: GqlSAdminMutation;
     Boolean: Scalars['Boolean']['output'];
     Chat: Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversParentTypes['ChatMessage']> };
@@ -1739,6 +1893,13 @@ export type GqlSResolversParentTypes = ResolversObject<{
     Log: GqlSLog;
     MediaChannel: GqlSMediaChannel;
     MediaChannelInput: GqlSMediaChannelInput;
+    MedicalAppointment: GqlSMedicalAppointment;
+    MedicalAppointmentInput: GqlSMedicalAppointmentInput;
+    MedicalCategoryOverview: GqlSMedicalCategoryOverview;
+    MedicalRecord: GqlSMedicalRecord;
+    MedicalRecordFile: GqlSMedicalRecordFile;
+    MedicalRecordFileAttachInput: GqlSMedicalRecordFileAttachInput;
+    MedicalRecordInput: GqlSMedicalRecordInput;
     Movie: GqlSMovie;
     MovieInput: GqlSMovieInput;
     Mutation: Record<PropertyKey, never>;
@@ -1785,6 +1946,7 @@ export type GqlSAdminResolvers<
     inventory?: Resolver<GqlSResolversTypes['AdminInventoryQuery'], ParentType, ContextType>;
     logs?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminLogsArgs>>;
     media?: Resolver<GqlSResolversTypes['AdminMediaQuery'], ParentType, ContextType>;
+    medical?: Resolver<GqlSResolversTypes['AdminMedicalQuery'], ParentType, ContextType>;
     project?: Resolver<GqlSResolversTypes['Project'], ParentType, ContextType, RequireFields<GqlSAdminProjectArgs, 'projectId'>>;
     projectRequests?: Resolver<Array<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType, Partial<GqlSAdminProjectRequestsArgs>>;
     projectRequestsInboxCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
@@ -1883,6 +2045,15 @@ export type GqlSAdminMediaQueryResolvers<
         ContextType,
         RequireFields<GqlSAdminMediaQueryYoutubeSearchArgs, 'query'>
     >;
+}>;
+
+export type GqlSAdminMedicalQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminMedicalQuery'] = GqlSResolversParentTypes['AdminMedicalQuery'],
+> = ResolversObject<{
+    appointments?: Resolver<Array<GqlSResolversTypes['MedicalAppointment']>, ParentType, ContextType>;
+    overview?: Resolver<Array<GqlSResolversTypes['MedicalCategoryOverview']>, ParentType, ContextType>;
+    records?: Resolver<Array<GqlSResolversTypes['MedicalRecord']>, ParentType, ContextType>;
 }>;
 
 export type GqlSAdminMutationResolvers<
@@ -2077,6 +2248,48 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationMediaChannelUpsertArgs, 'input'>
+    >;
+    medicalAppointmentComplete?: Resolver<
+        GqlSResolversTypes['MedicalAppointment'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMedicalAppointmentCompleteArgs, 'appointmentId'>
+    >;
+    medicalAppointmentDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMedicalAppointmentDeleteArgs, 'appointmentId'>
+    >;
+    medicalAppointmentUpsert?: Resolver<
+        GqlSResolversTypes['MedicalAppointment'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMedicalAppointmentUpsertArgs, 'input'>
+    >;
+    medicalRecordDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMedicalRecordDeleteArgs, 'recordId'>
+    >;
+    medicalRecordFileAttach?: Resolver<
+        GqlSResolversTypes['MedicalRecordFile'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMedicalRecordFileAttachArgs, 'input'>
+    >;
+    medicalRecordFileDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMedicalRecordFileDeleteArgs, 'recordFileId'>
+    >;
+    medicalRecordUpsert?: Resolver<
+        GqlSResolversTypes['MedicalRecord'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMedicalRecordUpsertArgs, 'input'>
     >;
     movieAddFromTmdb?: Resolver<
         GqlSResolversTypes['Movie'],
@@ -2793,6 +3006,70 @@ export type GqlSMediaChannelResolvers<
     url?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type GqlSMedicalAppointmentResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['MedicalAppointment'] = GqlSResolversParentTypes['MedicalAppointment'],
+> = ResolversObject<{
+    appointmentId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    category?: Resolver<GqlSResolversTypes['MedicalCategory'], ParentType, ContextType>;
+    completedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    nextDueAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    providerName?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    scheduledAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['MedicalAppointmentStatus'], ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    topics?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSMedicalCategoryOverviewResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['MedicalCategoryOverview'] = GqlSResolversParentTypes['MedicalCategoryOverview'],
+> = ResolversObject<{
+    category?: Resolver<GqlSResolversTypes['MedicalCategory'], ParentType, ContextType>;
+    defaultCadenceMonths?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    isOverdue?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    lastCompletedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    nextDueAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    recentRecords?: Resolver<Array<GqlSResolversTypes['MedicalRecord']>, ParentType, ContextType>;
+    upcoming?: Resolver<Array<GqlSResolversTypes['MedicalAppointment']>, ParentType, ContextType>;
+}>;
+
+export type GqlSMedicalRecordResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['MedicalRecord'] = GqlSResolversParentTypes['MedicalRecord'],
+> = ResolversObject<{
+    appointmentId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    bodyAreas?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    category?: Resolver<GqlSResolversTypes['MedicalCategory'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    files?: Resolver<Array<GqlSResolversTypes['MedicalRecordFile']>, ParentType, ContextType>;
+    occurredAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    recordId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    resolvedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    severity?: Resolver<Maybe<GqlSResolversTypes['MedicalRecordSeverity']>, ParentType, ContextType>;
+    summary?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    symptoms?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    topics?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSMedicalRecordFileResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['MedicalRecordFile'] = GqlSResolversParentTypes['MedicalRecordFile'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    fileUpload?: Resolver<GqlSResolversTypes['FileUpload'], ParentType, ContextType>;
+    label?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    pinned?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    recordFileId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    recordId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export type GqlSMovieResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Movie'] = GqlSResolversParentTypes['Movie'],
@@ -3062,6 +3339,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     AdminCompass?: GqlSAdminCompassResolvers<ContextType>;
     AdminInventoryQuery?: GqlSAdminInventoryQueryResolvers<ContextType>;
     AdminMediaQuery?: GqlSAdminMediaQueryResolvers<ContextType>;
+    AdminMedicalQuery?: GqlSAdminMedicalQueryResolvers<ContextType>;
     AdminMutation?: GqlSAdminMutationResolvers<ContextType>;
     Chat?: GqlSChatResolvers<ContextType>;
     ChatAssistantInput?: GqlSChatAssistantInputResolvers<ContextType>;
@@ -3115,6 +3393,10 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     JSON?: GraphQLScalarType;
     Log?: GqlSLogResolvers<ContextType>;
     MediaChannel?: GqlSMediaChannelResolvers<ContextType>;
+    MedicalAppointment?: GqlSMedicalAppointmentResolvers<ContextType>;
+    MedicalCategoryOverview?: GqlSMedicalCategoryOverviewResolvers<ContextType>;
+    MedicalRecord?: GqlSMedicalRecordResolvers<ContextType>;
+    MedicalRecordFile?: GqlSMedicalRecordFileResolvers<ContextType>;
     Movie?: GqlSMovieResolvers<ContextType>;
     Mutation?: GqlSMutationResolvers<ContextType>;
     MutationResult?: GqlSMutationResultResolvers<ContextType>;
@@ -3256,6 +3538,19 @@ export const GqlSMediaTopicSchema: z.ZodType<
     'sports',
     'tech',
 ]);
+
+export const GqlSMedicalAppointmentStatusSchema: z.ZodType<
+    'cancelled' | 'completed' | 'missed' | 'scheduled',
+    'cancelled' | 'completed' | 'missed' | 'scheduled'
+> = z.enum(['cancelled', 'completed', 'missed', 'scheduled']);
+
+export const GqlSMedicalCategorySchema: z.ZodType<
+    'dentist' | 'dermatology' | 'ent' | 'eyes' | 'gp' | 'mentalHealth' | 'other' | 'physio',
+    'dentist' | 'dermatology' | 'ent' | 'eyes' | 'gp' | 'mentalHealth' | 'other' | 'physio'
+> = z.enum(['dentist', 'dermatology', 'ent', 'eyes', 'gp', 'mentalHealth', 'other', 'physio']);
+
+export const GqlSMedicalRecordSeveritySchema: z.ZodType<'info' | 'mild' | 'moderate' | 'severe', 'info' | 'mild' | 'moderate' | 'severe'> =
+    z.enum(['info', 'mild', 'moderate', 'severe']);
 
 export const GqlSMovieStatusSchema: z.ZodType<
     'dropped' | 'watched' | 'watching' | 'watchlist',
@@ -3442,6 +3737,47 @@ export function GqlSMediaChannelInputSchema(): z.ZodObject<Properties<GqlSMediaC
         platform: GqlSMediaPlatformSchema,
         topics: z.array(z.string()),
         url: z.string(),
+    });
+}
+
+export function GqlSMedicalAppointmentInputSchema(): z.ZodObject<Properties<GqlSMedicalAppointmentInput>> {
+    return z.object({
+        appointmentId: z.string().nullish(),
+        category: GqlSMedicalCategorySchema,
+        completedAt: z.date().nullish(),
+        nextDueAt: z.date().nullish(),
+        notes: z.string().nullish(),
+        providerName: z.string().nullish(),
+        scheduledAt: z.date(),
+        status: GqlSMedicalAppointmentStatusSchema,
+        title: z.string(),
+        topics: z.array(z.string()),
+    });
+}
+
+export function GqlSMedicalRecordFileAttachInputSchema(): z.ZodObject<Properties<GqlSMedicalRecordFileAttachInput>> {
+    return z.object({
+        fileUploadId: z.string(),
+        label: z.string().nullish(),
+        pinned: z.boolean().nullish(),
+        recordId: z.string(),
+    });
+}
+
+export function GqlSMedicalRecordInputSchema(): z.ZodObject<Properties<GqlSMedicalRecordInput>> {
+    return z.object({
+        appointmentId: z.string().nullish(),
+        bodyAreas: z.array(z.string()),
+        category: GqlSMedicalCategorySchema,
+        fileUploadIds: z.array(z.string()).nullish(),
+        occurredAt: z.date().nullish(),
+        recordId: z.string().nullish(),
+        resolvedAt: z.date().nullish(),
+        severity: GqlSMedicalRecordSeveritySchema.nullish(),
+        summary: z.string(),
+        symptoms: z.array(z.string()),
+        title: z.string(),
+        topics: z.array(z.string()),
     });
 }
 

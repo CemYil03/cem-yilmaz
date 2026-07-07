@@ -31,6 +31,7 @@ export interface GqlCAdmin {
     inventory: GqlCAdminInventoryQuery;
     logs: Array<GqlCLog>;
     media: GqlCAdminMediaQuery;
+    medical: GqlCAdminMedicalQuery;
     project: GqlCProject;
     projectRequests: Array<GqlCProjectRequest>;
     projectRequestsInboxCount: Scalars['Int']['output'];
@@ -155,6 +156,13 @@ export type GqlCAdminMediaQueryYoutubeSearchArgs = {
     query: Scalars['String']['input'];
 };
 
+export interface GqlCAdminMedicalQuery {
+    __typename?: 'AdminMedicalQuery';
+    appointments: Array<GqlCMedicalAppointment>;
+    overview: Array<GqlCMedicalCategoryOverview>;
+    records: Array<GqlCMedicalRecord>;
+}
+
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
     chatConfigDefaultModelSet: GqlCMutationResult;
@@ -191,6 +199,13 @@ export interface GqlCAdminMutation {
     mediaChannelDelete: GqlCMutationResult;
     mediaChannelReorder: GqlCMutationResult;
     mediaChannelUpsert: GqlCMediaChannel;
+    medicalAppointmentComplete: GqlCMedicalAppointment;
+    medicalAppointmentDelete: GqlCMutationResult;
+    medicalAppointmentUpsert: GqlCMedicalAppointment;
+    medicalRecordDelete: GqlCMutationResult;
+    medicalRecordFileAttach: GqlCMedicalRecordFile;
+    medicalRecordFileDelete: GqlCMutationResult;
+    medicalRecordUpsert: GqlCMedicalRecord;
     movieAddFromTmdb: GqlCMovie;
     movieDelete: GqlCMutationResult;
     movieMarkWatched: GqlCMovie;
@@ -356,6 +371,36 @@ export type GqlCAdminMutationMediaChannelReorderArgs = {
 
 export type GqlCAdminMutationMediaChannelUpsertArgs = {
     input: GqlCMediaChannelInput;
+};
+
+export type GqlCAdminMutationMedicalAppointmentCompleteArgs = {
+    appointmentId: Scalars['ID']['input'];
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    nextDueAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type GqlCAdminMutationMedicalAppointmentDeleteArgs = {
+    appointmentId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationMedicalAppointmentUpsertArgs = {
+    input: GqlCMedicalAppointmentInput;
+};
+
+export type GqlCAdminMutationMedicalRecordDeleteArgs = {
+    recordId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationMedicalRecordFileAttachArgs = {
+    input: GqlCMedicalRecordFileAttachInput;
+};
+
+export type GqlCAdminMutationMedicalRecordFileDeleteArgs = {
+    recordFileId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationMedicalRecordUpsertArgs = {
+    input: GqlCMedicalRecordInput;
 };
 
 export type GqlCAdminMutationMovieAddFromTmdbArgs = {
@@ -1022,6 +1067,103 @@ export type GqlCMediaTopic =
     | 'software'
     | 'sports'
     | 'tech';
+
+export interface GqlCMedicalAppointment {
+    __typename?: 'MedicalAppointment';
+    appointmentId: Scalars['ID']['output'];
+    category: GqlCMedicalCategory;
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    providerName?: Maybe<Scalars['String']['output']>;
+    scheduledAt: Scalars['DateTime']['output'];
+    status: GqlCMedicalAppointmentStatus;
+    title: Scalars['String']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCMedicalAppointmentInput = {
+    appointmentId?: InputMaybe<Scalars['ID']['input']>;
+    category: GqlCMedicalCategory;
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    nextDueAt?: InputMaybe<Scalars['DateTime']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    providerName?: InputMaybe<Scalars['String']['input']>;
+    scheduledAt: Scalars['DateTime']['input'];
+    status: GqlCMedicalAppointmentStatus;
+    title: Scalars['String']['input'];
+    topics: Array<Scalars['String']['input']>;
+};
+
+export type GqlCMedicalAppointmentStatus = 'cancelled' | 'completed' | 'missed' | 'scheduled';
+
+export type GqlCMedicalCategory = 'dentist' | 'dermatology' | 'ent' | 'eyes' | 'gp' | 'mentalHealth' | 'other' | 'physio';
+
+export interface GqlCMedicalCategoryOverview {
+    __typename?: 'MedicalCategoryOverview';
+    category: GqlCMedicalCategory;
+    defaultCadenceMonths?: Maybe<Scalars['Int']['output']>;
+    isOverdue: Scalars['Boolean']['output'];
+    lastCompletedAt?: Maybe<Scalars['DateTime']['output']>;
+    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
+    recentRecords: Array<GqlCMedicalRecord>;
+    upcoming: Array<GqlCMedicalAppointment>;
+}
+
+export interface GqlCMedicalRecord {
+    __typename?: 'MedicalRecord';
+    appointmentId?: Maybe<Scalars['ID']['output']>;
+    bodyAreas: Array<Scalars['String']['output']>;
+    category: GqlCMedicalCategory;
+    createdAt: Scalars['DateTime']['output'];
+    files: Array<GqlCMedicalRecordFile>;
+    occurredAt?: Maybe<Scalars['DateTime']['output']>;
+    recordId: Scalars['ID']['output'];
+    resolvedAt?: Maybe<Scalars['DateTime']['output']>;
+    severity?: Maybe<GqlCMedicalRecordSeverity>;
+    summary: Scalars['String']['output'];
+    symptoms: Array<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface GqlCMedicalRecordFile {
+    __typename?: 'MedicalRecordFile';
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlCFileUpload;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    recordFileId: Scalars['ID']['output'];
+    recordId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCMedicalRecordFileAttachInput = {
+    fileUploadId: Scalars['ID']['input'];
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    recordId: Scalars['ID']['input'];
+};
+
+export type GqlCMedicalRecordInput = {
+    appointmentId?: InputMaybe<Scalars['ID']['input']>;
+    bodyAreas: Array<Scalars['String']['input']>;
+    category: GqlCMedicalCategory;
+    fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+    occurredAt?: InputMaybe<Scalars['DateTime']['input']>;
+    recordId?: InputMaybe<Scalars['ID']['input']>;
+    resolvedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    severity?: InputMaybe<GqlCMedicalRecordSeverity>;
+    summary: Scalars['String']['input'];
+    symptoms: Array<Scalars['String']['input']>;
+    title: Scalars['String']['input'];
+    topics: Array<Scalars['String']['input']>;
+};
+
+export type GqlCMedicalRecordSeverity = 'info' | 'mild' | 'moderate' | 'severe';
 
 export interface GqlCMovie {
     __typename?: 'Movie';
@@ -2993,6 +3135,380 @@ export type GqlCWorkspaceMediaChannelReorderMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceMediaChannelReorderMutation = { admin: { mediaChannelReorder: { success: boolean } } };
+
+export type GqlCWorkspaceMedicalPageAppointmentFragment = {
+    appointmentId: string;
+    category: Schema.GqlCMedicalCategory;
+    providerName: string | null;
+    title: string;
+    notes: string | null;
+    scheduledAt: string;
+    completedAt: string | null;
+    nextDueAt: string | null;
+    status: Schema.GqlCMedicalAppointmentStatus;
+    topics: Array<string>;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type GqlCWorkspaceMedicalPageRecordFileFragment = {
+    recordFileId: string;
+    recordId: string;
+    label: string | null;
+    pinned: boolean;
+    createdAt: string;
+    updatedAt: string;
+    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+};
+
+export type GqlCWorkspaceMedicalPageRecordFragment = {
+    recordId: string;
+    category: Schema.GqlCMedicalCategory;
+    title: string;
+    summary: string;
+    severity: Schema.GqlCMedicalRecordSeverity | null;
+    symptoms: Array<string>;
+    bodyAreas: Array<string>;
+    occurredAt: string | null;
+    resolvedAt: string | null;
+    appointmentId: string | null;
+    topics: Array<string>;
+    createdAt: string;
+    updatedAt: string;
+    files: Array<{
+        recordFileId: string;
+        recordId: string;
+        label: string | null;
+        pinned: boolean;
+        createdAt: string;
+        updatedAt: string;
+        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+    }>;
+};
+
+export type GqlCWorkspaceMedicalPageUserFragment = {
+    admin: {
+        medical: {
+            appointments: Array<{
+                appointmentId: string;
+                category: Schema.GqlCMedicalCategory;
+                providerName: string | null;
+                title: string;
+                notes: string | null;
+                scheduledAt: string;
+                completedAt: string | null;
+                nextDueAt: string | null;
+                status: Schema.GqlCMedicalAppointmentStatus;
+                topics: Array<string>;
+                createdAt: string;
+                updatedAt: string;
+            }>;
+            records: Array<{
+                recordId: string;
+                category: Schema.GqlCMedicalCategory;
+                title: string;
+                summary: string;
+                severity: Schema.GqlCMedicalRecordSeverity | null;
+                symptoms: Array<string>;
+                bodyAreas: Array<string>;
+                occurredAt: string | null;
+                resolvedAt: string | null;
+                appointmentId: string | null;
+                topics: Array<string>;
+                createdAt: string;
+                updatedAt: string;
+                files: Array<{
+                    recordFileId: string;
+                    recordId: string;
+                    label: string | null;
+                    pinned: boolean;
+                    createdAt: string;
+                    updatedAt: string;
+                    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                }>;
+            }>;
+            overview: Array<{
+                category: Schema.GqlCMedicalCategory;
+                defaultCadenceMonths: number | null;
+                lastCompletedAt: string | null;
+                nextDueAt: string | null;
+                isOverdue: boolean;
+                upcoming: Array<{
+                    appointmentId: string;
+                    category: Schema.GqlCMedicalCategory;
+                    providerName: string | null;
+                    title: string;
+                    notes: string | null;
+                    scheduledAt: string;
+                    completedAt: string | null;
+                    nextDueAt: string | null;
+                    status: Schema.GqlCMedicalAppointmentStatus;
+                    topics: Array<string>;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+                recentRecords: Array<{
+                    recordId: string;
+                    category: Schema.GqlCMedicalCategory;
+                    title: string;
+                    summary: string;
+                    severity: Schema.GqlCMedicalRecordSeverity | null;
+                    symptoms: Array<string>;
+                    bodyAreas: Array<string>;
+                    occurredAt: string | null;
+                    resolvedAt: string | null;
+                    appointmentId: string | null;
+                    topics: Array<string>;
+                    createdAt: string;
+                    updatedAt: string;
+                    files: Array<{
+                        recordFileId: string;
+                        recordId: string;
+                        label: string | null;
+                        pinned: boolean;
+                        createdAt: string;
+                        updatedAt: string;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                }>;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceMedicalPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceMedicalPageQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                medical: {
+                    appointments: Array<{
+                        appointmentId: string;
+                        category: Schema.GqlCMedicalCategory;
+                        providerName: string | null;
+                        title: string;
+                        notes: string | null;
+                        scheduledAt: string;
+                        completedAt: string | null;
+                        nextDueAt: string | null;
+                        status: Schema.GqlCMedicalAppointmentStatus;
+                        topics: Array<string>;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
+                    records: Array<{
+                        recordId: string;
+                        category: Schema.GqlCMedicalCategory;
+                        title: string;
+                        summary: string;
+                        severity: Schema.GqlCMedicalRecordSeverity | null;
+                        symptoms: Array<string>;
+                        bodyAreas: Array<string>;
+                        occurredAt: string | null;
+                        resolvedAt: string | null;
+                        appointmentId: string | null;
+                        topics: Array<string>;
+                        createdAt: string;
+                        updatedAt: string;
+                        files: Array<{
+                            recordFileId: string;
+                            recordId: string;
+                            label: string | null;
+                            pinned: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                            fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                        }>;
+                    }>;
+                    overview: Array<{
+                        category: Schema.GqlCMedicalCategory;
+                        defaultCadenceMonths: number | null;
+                        lastCompletedAt: string | null;
+                        nextDueAt: string | null;
+                        isOverdue: boolean;
+                        upcoming: Array<{
+                            appointmentId: string;
+                            category: Schema.GqlCMedicalCategory;
+                            providerName: string | null;
+                            title: string;
+                            notes: string | null;
+                            scheduledAt: string;
+                            completedAt: string | null;
+                            nextDueAt: string | null;
+                            status: Schema.GqlCMedicalAppointmentStatus;
+                            topics: Array<string>;
+                            createdAt: string;
+                            updatedAt: string;
+                        }>;
+                        recentRecords: Array<{
+                            recordId: string;
+                            category: Schema.GqlCMedicalCategory;
+                            title: string;
+                            summary: string;
+                            severity: Schema.GqlCMedicalRecordSeverity | null;
+                            symptoms: Array<string>;
+                            bodyAreas: Array<string>;
+                            occurredAt: string | null;
+                            resolvedAt: string | null;
+                            appointmentId: string | null;
+                            topics: Array<string>;
+                            createdAt: string;
+                            updatedAt: string;
+                            files: Array<{
+                                recordFileId: string;
+                                recordId: string;
+                                label: string | null;
+                                pinned: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                                fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                            }>;
+                        }>;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceMedicalPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceMedicalPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            medical: {
+                appointments: Array<{
+                    appointmentId: string;
+                    category: Schema.GqlCMedicalCategory;
+                    providerName: string | null;
+                    title: string;
+                    notes: string | null;
+                    scheduledAt: string;
+                    completedAt: string | null;
+                    nextDueAt: string | null;
+                    status: Schema.GqlCMedicalAppointmentStatus;
+                    topics: Array<string>;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+                records: Array<{
+                    recordId: string;
+                    category: Schema.GqlCMedicalCategory;
+                    title: string;
+                    summary: string;
+                    severity: Schema.GqlCMedicalRecordSeverity | null;
+                    symptoms: Array<string>;
+                    bodyAreas: Array<string>;
+                    occurredAt: string | null;
+                    resolvedAt: string | null;
+                    appointmentId: string | null;
+                    topics: Array<string>;
+                    createdAt: string;
+                    updatedAt: string;
+                    files: Array<{
+                        recordFileId: string;
+                        recordId: string;
+                        label: string | null;
+                        pinned: boolean;
+                        createdAt: string;
+                        updatedAt: string;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                }>;
+                overview: Array<{
+                    category: Schema.GqlCMedicalCategory;
+                    defaultCadenceMonths: number | null;
+                    lastCompletedAt: string | null;
+                    nextDueAt: string | null;
+                    isOverdue: boolean;
+                    upcoming: Array<{
+                        appointmentId: string;
+                        category: Schema.GqlCMedicalCategory;
+                        providerName: string | null;
+                        title: string;
+                        notes: string | null;
+                        scheduledAt: string;
+                        completedAt: string | null;
+                        nextDueAt: string | null;
+                        status: Schema.GqlCMedicalAppointmentStatus;
+                        topics: Array<string>;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
+                    recentRecords: Array<{
+                        recordId: string;
+                        category: Schema.GqlCMedicalCategory;
+                        title: string;
+                        summary: string;
+                        severity: Schema.GqlCMedicalRecordSeverity | null;
+                        symptoms: Array<string>;
+                        bodyAreas: Array<string>;
+                        occurredAt: string | null;
+                        resolvedAt: string | null;
+                        appointmentId: string | null;
+                        topics: Array<string>;
+                        createdAt: string;
+                        updatedAt: string;
+                        files: Array<{
+                            recordFileId: string;
+                            recordId: string;
+                            label: string | null;
+                            pinned: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                            fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                        }>;
+                    }>;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceMedicalAppointmentUpsertMutationVariables = Exact<{
+    input: Schema.GqlCMedicalAppointmentInput;
+}>;
+
+export type GqlCWorkspaceMedicalAppointmentUpsertMutation = { admin: { medicalAppointmentUpsert: { appointmentId: string } } };
+
+export type GqlCWorkspaceMedicalAppointmentDeleteMutationVariables = Exact<{
+    appointmentId: string;
+}>;
+
+export type GqlCWorkspaceMedicalAppointmentDeleteMutation = { admin: { medicalAppointmentDelete: { success: boolean } } };
+
+export type GqlCWorkspaceMedicalAppointmentCompleteMutationVariables = Exact<{
+    appointmentId: string;
+    completedAt?: string | null | undefined;
+    nextDueAt?: string | null | undefined;
+}>;
+
+export type GqlCWorkspaceMedicalAppointmentCompleteMutation = { admin: { medicalAppointmentComplete: { appointmentId: string } } };
+
+export type GqlCWorkspaceMedicalRecordUpsertMutationVariables = Exact<{
+    input: Schema.GqlCMedicalRecordInput;
+}>;
+
+export type GqlCWorkspaceMedicalRecordUpsertMutation = { admin: { medicalRecordUpsert: { recordId: string } } };
+
+export type GqlCWorkspaceMedicalRecordDeleteMutationVariables = Exact<{
+    recordId: string;
+}>;
+
+export type GqlCWorkspaceMedicalRecordDeleteMutation = { admin: { medicalRecordDelete: { success: boolean } } };
+
+export type GqlCWorkspaceMedicalRecordFileAttachMutationVariables = Exact<{
+    input: Schema.GqlCMedicalRecordFileAttachInput;
+}>;
+
+export type GqlCWorkspaceMedicalRecordFileAttachMutation = { admin: { medicalRecordFileAttach: { recordFileId: string } } };
+
+export type GqlCWorkspaceMedicalRecordFileDeleteMutationVariables = Exact<{
+    recordFileId: string;
+}>;
+
+export type GqlCWorkspaceMedicalRecordFileDeleteMutation = { admin: { medicalRecordFileDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectsPageUserFragment = {
     admin: {
@@ -5476,6 +5992,316 @@ export const WorkspaceMediaPageUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceMediaPageUserFragment, unknown>;
+export const WorkspaceMedicalPageAppointmentFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'providerName' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'scheduledAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalPageAppointmentFragment, unknown>;
+export const WorkspaceMedicalPageRecordFileFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalPageRecordFileFragment, unknown>;
+export const WorkspaceMedicalPageRecordFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'severity' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'symptoms' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'bodyAreas' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'resolvedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'files' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalPageRecordFragment, unknown>;
+export const WorkspaceMedicalPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medical' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'appointments' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'records' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'overview' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'defaultCadenceMonths' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'lastCompletedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isOverdue' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'upcoming' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'FragmentSpread',
+                                                                        name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recentRecords' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'FragmentSpread',
+                                                                        name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'providerName' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'scheduledAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'severity' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'symptoms' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'bodyAreas' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'resolvedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'files' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' } }],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalPageUserFragment, unknown>;
 export const WorkspaceProjectsPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -12197,6 +13023,760 @@ export const WorkspaceMediaChannelReorderDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceMediaChannelReorderMutation, GqlCWorkspaceMediaChannelReorderMutationVariables>;
+export const WorkspaceMedicalPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMedicalPageUser' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'providerName' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'scheduledAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'severity' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'symptoms' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'bodyAreas' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'resolvedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'files' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medical' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'appointments' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'records' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'overview' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'defaultCadenceMonths' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'lastCompletedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isOverdue' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'upcoming' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'FragmentSpread',
+                                                                        name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recentRecords' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'FragmentSpread',
+                                                                        name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalPageQuery, GqlCWorkspaceMedicalPageQueryVariables>;
+export const WorkspaceMedicalPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMedicalPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'providerName' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'scheduledAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'completedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recordId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'severity' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'symptoms' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'bodyAreas' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'occurredAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'resolvedAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'files' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceMedicalPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medical' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'appointments' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'records' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'overview' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'defaultCadenceMonths' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'lastCompletedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextDueAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isOverdue' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'upcoming' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'FragmentSpread',
+                                                                        name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recentRecords' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'FragmentSpread',
+                                                                        name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalPageUpdatesSubscription, GqlCWorkspaceMedicalPageUpdatesSubscriptionVariables>;
+export const WorkspaceMedicalAppointmentUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMedicalAppointmentUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointmentInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medicalAppointmentUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalAppointmentUpsertMutation, GqlCWorkspaceMedicalAppointmentUpsertMutationVariables>;
+export const WorkspaceMedicalAppointmentDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMedicalAppointmentDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'appointmentId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medicalAppointmentDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'appointmentId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'appointmentId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalAppointmentDeleteMutation, GqlCWorkspaceMedicalAppointmentDeleteMutationVariables>;
+export const WorkspaceMedicalAppointmentCompleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMedicalAppointmentComplete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'appointmentId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'nextDueAt' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'DateTime' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medicalAppointmentComplete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'appointmentId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'appointmentId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'completedAt' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'completedAt' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'nextDueAt' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'nextDueAt' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'appointmentId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalAppointmentCompleteMutation, GqlCWorkspaceMedicalAppointmentCompleteMutationVariables>;
+export const WorkspaceMedicalRecordUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMedicalRecordUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medicalRecordUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'recordId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalRecordUpsertMutation, GqlCWorkspaceMedicalRecordUpsertMutationVariables>;
+export const WorkspaceMedicalRecordDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMedicalRecordDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'recordId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medicalRecordDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'recordId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'recordId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalRecordDeleteMutation, GqlCWorkspaceMedicalRecordDeleteMutationVariables>;
+export const WorkspaceMedicalRecordFileAttachDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMedicalRecordFileAttach' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFileAttachInput' } },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medicalRecordFileAttach' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'recordFileId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalRecordFileAttachMutation, GqlCWorkspaceMedicalRecordFileAttachMutationVariables>;
+export const WorkspaceMedicalRecordFileDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMedicalRecordFileDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'recordFileId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'medicalRecordFileDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'recordFileId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'recordFileId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMedicalRecordFileDeleteMutation, GqlCWorkspaceMedicalRecordFileDeleteMutationVariables>;
 export const WorkspaceProjectsPageDocument = {
     kind: 'Document',
     definitions: [

@@ -1598,6 +1598,186 @@ extend type AdminMutation {
     mediaChannelReorder(orderedIds: [ID!]!): MutationResult!
 }
 
+# --- Medical -----------------------------------------------------------------
+#
+# `/workspace/medical` — Cem's health journal and appointment tracker.
+# Admin-only, `noindex`; no `*De`/`*En` pairs (matches Media / Inventory).
+# Two surfaces backed by two tables plus a `FileUploads` join:
+#
+#   - `MedicalRecord` — a chat-authored writeup ("red patch on forearm, four
+#     days, itching"). The medical sub-agent asks clarifiers and files these
+#     from the workspace assistant chat. Optionally carries photo attachments
+#     (`MedicalRecordFiles` → `FileUploads`, same wire as inventory receipts).
+#   - `MedicalAppointment` — scheduled or completed visits with a provider.
+#     Grouped by `category`. "When is my next dentist visit?" reads
+#     `nextDueAt ?? lastCompletedAt + defaultCadence`; the cadence lives as
+#     a static config server-side, not a table.
+#
+# See `docs/features/workspace-medical.md`.
+
+enum MedicalCategory {
+    dentist
+    gp
+    dermatology
+    eyes
+    mentalHealth
+    ent
+    physio
+    other
+}
+
+enum MedicalAppointmentStatus {
+    scheduled
+    completed
+    cancelled
+    missed
+}
+
+enum MedicalRecordSeverity {
+    info
+    mild
+    moderate
+    severe
+}
+
+# A scheduled or completed appointment. `providerName` is free-text (no
+# `MedicalProvider` table in v1). `scheduledAt` is the intended time,
+# `completedAt` stamps when the visit actually happened. `nextDueAt`
+# overrides the category cadence when the doctor sets a specific follow-up.
+type MedicalAppointment {
+    appointmentId: ID!
+    category: MedicalCategory!
+    providerName: String
+    title: String!
+    notes: String
+    scheduledAt: DateTime!
+    completedAt: DateTime
+    nextDueAt: DateTime
+    status: MedicalAppointmentStatus!
+    topics: [String!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# A file attached to a medical record. Same two-step wire as inventory
+# receipts: client `POST /api/file-uploads` → gets a `fileUploadId` → calls
+# `medicalRecordFileAttach` (or passes it inline via `MedicalRecordInput.fileUploadIds`).
+type MedicalRecordFile {
+    recordFileId: ID!
+    recordId: ID!
+    fileUpload: FileUpload!
+    label: String
+    pinned: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# A health-journal entry. `summary` is the agent's (or admin's) structured
+# writeup. `symptoms` / `bodyAreas` are free-form so the vocabulary can grow
+# without migrations. `appointmentId` optionally links the record to the
+# visit that produced it or a follow-up.
+type MedicalRecord {
+    recordId: ID!
+    category: MedicalCategory!
+    title: String!
+    summary: String!
+    severity: MedicalRecordSeverity
+    symptoms: [String!]!
+    bodyAreas: [String!]!
+    occurredAt: DateTime
+    resolvedAt: DateTime
+    appointmentId: ID
+    topics: [String!]!
+    files: [MedicalRecordFile!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# One row per `MedicalCategory` for the Overview tab. `defaultCadenceMonths`
+# is the static config; `lastCompletedAt` is the most recent `completed`
+# appointment in that category; `nextDueAt` prefers the explicit override on
+# the last completed appointment and falls back to
+# `lastCompletedAt + defaultCadence`; `isOverdue = nextDueAt < now`.
+# `upcoming` lists the near-term scheduled visits; `recentRecords` lists the
+# last handful of records so the overview card previews recent history.
+type MedicalCategoryOverview {
+    category: MedicalCategory!
+    defaultCadenceMonths: Int
+    lastCompletedAt: DateTime
+    nextDueAt: DateTime
+    isOverdue: Boolean!
+    upcoming: [MedicalAppointment!]!
+    recentRecords: [MedicalRecord!]!
+}
+
+# Read namespace mounted under `Admin`. Gated once at the `Query.admin`
+# boundary by the resolver chain on `User.admin`.
+type AdminMedicalQuery {
+    appointments: [MedicalAppointment!]!
+    records: [MedicalRecord!]!
+    overview: [MedicalCategoryOverview!]!
+}
+
+extend type Admin {
+    medical: AdminMedicalQuery!
+}
+
+input MedicalAppointmentInput {
+    appointmentId: ID
+    category: MedicalCategory!
+    providerName: String
+    title: String!
+    notes: String
+    scheduledAt: DateTime!
+    completedAt: DateTime
+    nextDueAt: DateTime
+    status: MedicalAppointmentStatus!
+    topics: [String!]!
+}
+
+input MedicalRecordInput {
+    recordId: ID
+    category: MedicalCategory!
+    title: String!
+    summary: String!
+    severity: MedicalRecordSeverity
+    symptoms: [String!]!
+    bodyAreas: [String!]!
+    occurredAt: DateTime
+    resolvedAt: DateTime
+    appointmentId: ID
+    topics: [String!]!
+    # Optional: attach these already-uploaded files to the record in the
+    # same transaction. Each id must reference an existing `FileUploads`
+    # row owned by the admin user. Same wire as inventory receipts —
+    # the client uploads bytes first via `POST /api/file-uploads`.
+    fileUploadIds: [ID!]
+}
+
+# `medicalRecordFileAttach` payload. Same two-step upload contract as
+# `itemFileAttach`: client uploads bytes → gets `fileUploadId` → calls this.
+input MedicalRecordFileAttachInput {
+    recordId: ID!
+    fileUploadId: ID!
+    label: String
+    pinned: Boolean
+}
+
+extend type AdminMutation {
+    medicalAppointmentUpsert(input: MedicalAppointmentInput!): MedicalAppointment!
+    medicalAppointmentDelete(appointmentId: ID!): MutationResult!
+    # Shortcut: sets `status = completed`, stamps `completedAt` (defaults to
+    # now), optionally writes `nextDueAt` for the "book me in six months"
+    # follow-up. Untouched fields stay as-is.
+    medicalAppointmentComplete(appointmentId: ID!, completedAt: DateTime, nextDueAt: DateTime): MedicalAppointment!
+
+    medicalRecordUpsert(input: MedicalRecordInput!): MedicalRecord!
+    medicalRecordDelete(recordId: ID!): MutationResult!
+
+    medicalRecordFileAttach(input: MedicalRecordFileAttachInput!): MedicalRecordFile!
+    medicalRecordFileDelete(recordFileId: ID!): MutationResult!
+}
+
 # --- Inventory ---------------------------------------------------------------
 #
 # `/workspace/inventory` — Cem's material assets (coffee machine, car, TV,

@@ -5,6 +5,7 @@ import { compassSummaryGet } from '../queries/compassSummaryGet';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { toolDelegateToMedia } from './toolDelegateToMedia';
+import { toolDelegateToMedical } from './toolDelegateToMedical';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
@@ -30,6 +31,7 @@ const BASE_SYSTEM_PROMPT = [
     '- Plain conversational answers and reasoning.',
     '- Project and task management via `delegateToProjects` — see "When to delegate" below.',
     '- Movie watchlist and favourite-channels management via `delegateToMedia` — same pattern.',
+    '- Health journal and medical appointments via `delegateToMedical` — same pattern.',
     '- Web search via `delegateToWebSearch` — see "When to search" below.',
     '- Future: notes, calendar entries, content edits — each in its own sub-agent under the same delegation pattern.',
     '',
@@ -42,6 +44,15 @@ const BASE_SYSTEM_PROMPT = [
     '  watch tonight") or favourite channels (adding a YouTube channel, listing tech YouTubers, editing topics)',
     '  goes to `delegateToMedia` with the same shape. The sub-agent has its own TMDB search tool — you do NOT',
     '  need `delegateToWebSearch` for film metadata.',
+    '- ANY ask that touches health (symptoms, injuries, "log this rash", "what should I do about X") or medical',
+    '  appointments (scheduling, "I just went to the dentist", "when is my next visit due") goes to',
+    '  `delegateToMedical`. The sub-agent is a **documentarian with gentle triage** — it captures what Cem tells',
+    '  it into a structured record and can offer low-risk practical suggestions, but it does NOT diagnose or',
+    '  prescribe. Do NOT try to answer medical questions yourself even if the sub-agent seems overkill for a',
+    '  small ask — routing every health-adjacent turn through it keeps the disclaimer + red-flag rules in one',
+    '  place. If Cem pasted a photo into this turn AND the topic is health-related, forward the `fileUploadIds`',
+    '  in the delegate call so the sub-agent can attach the photo to the record it files. You may briefly',
+    '  describe what the photo shows in the `brief` (the sub-agent does not see the bytes; you do).',
     "- The delegate result is `{ status, summary, mutations?, missingFields? }`. On `status: 'needsMoreInfo'`,",
     '  call `promptUserForInput` to gather the slots named in `missingFields`, then call the same delegate',
     "  again with the brief enriched by the answers. On `status: 'noOp'`, handle the ask yourself (it was not",
@@ -86,6 +97,8 @@ const BASE_SYSTEM_PROMPT = [
     '- Standalone task      → `[<title>](/workspace/todos?focus=<taskId>)`',
     '- Movie                → `[<title>](/workspace/media?tab=movies&focus=<movieId>)`',
     '- Channel              → `[<name>](/workspace/media?tab=channels&focus=<channelId>)`',
+    '- Medical record       → `[<title>](/workspace/medical?tab=records&focus=<recordId>)`',
+    '- Medical appointment  → `[<title>](/workspace/medical?tab=appointments&focus=<appointmentId>)`',
     '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
     'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
     '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',
@@ -192,6 +205,19 @@ export async function agentPersonalAssistant({
             // lives inside this sub-agent as its own tool; the orchestrator
             // never needs to search TMDB itself.
             delegateToMedia: toolDelegateToMedia({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Medical sub-agent — health journal + appointments. Documentarian
+            // with gentle triage; red-flag rules embedded in the sub-agent's
+            // system prompt. When Cem attaches a photo AND the topic is
+            // health-related, the orchestrator forwards `fileUploadIds` here
+            // so the sub-agent can attach the file to the record it files.
+            // See `docs/features/workspace-medical.md`.
+            delegateToMedical: toolDelegateToMedical({
                 serverRuntime,
                 session,
                 chatId,
