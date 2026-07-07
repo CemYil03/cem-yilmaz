@@ -97,6 +97,28 @@ npm run db:migrate
 
 Migration files live in the `drizzle/` directory and are committed to version control.
 
+**Do not run `db:push` against prod or your dev DB.** `db:push` diffs your local `schema.ts` against the live DB and applies changes
+directly, bypassing the `drizzle/` folder entirely — so the `drizzle.__drizzle_migrations` tracking table is never updated. The next
+`db:migrate` will then try to re-run every unrecorded migration and fail on already-existing tables. `db:push` is only for the CI test
+container (`drizzle-kit push` in `pipeline.yml`), which starts from an empty database each run.
+
+If `db:push` has already been run by accident, the schema is up-to-date but the tracking table is out of sync. Recover with:
+
+```bash
+# Dry run — shows missing migration hashes and any phantom rows in the ledger
+npx tsx scripts/migrationsReconcile.ts
+
+# Apply the fix — inserts the missing hashes (transactional; use --remove-phantoms if the dry run flagged any)
+npx tsx scripts/migrationsReconcile.ts --apply --remove-phantoms
+
+# Verify
+npm run db:check-applied
+```
+
+`scripts/migrationsReconcile.ts` reads `drizzle/meta/_journal.json`, hashes each migration's SQL the same way Drizzle does
+(`sha256(file content)`), and inserts any hash that isn't already in `drizzle.__drizzle_migrations`, using the journal's `when` as
+`created_at`. It never mutates schema — only the ledger. Run it once locally, then again with the prod `DATABASE_URL` for Coolify's DB.
+
 ## Continuous Integration & Deployment (GitHub Actions)
 
 CI and CD live in a single workflow: `.github/workflows/pipeline.yml`. Gate jobs run in parallel on every pull request and push to `main`;
