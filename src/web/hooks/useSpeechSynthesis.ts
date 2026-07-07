@@ -16,25 +16,29 @@ import { useCallback, useRef, useState } from 'react';
 //      `new Audio(url)`. First-audio latency = full download + Gemini
 //      wall-clock, but functionality never breaks.
 //
-// The public interface adds `preload(text)` — SpeakButton wires it to
-// `onMouseEnter` / `onFocus` so the fetch is already in flight by the time
-// the user clicks. If the next `speak()` is called with the same text,
-// the preload's in-flight response is adopted verbatim (no extra request).
+// The public interface exposes a real transport — `speak` starts from
+// position 0, `pause` and `resume` toggle without losing position, `stop`
+// hard-cancels. `preload(text)` is wired to `SpeakButton`'s onMouseEnter /
+// onFocus so the fetch is already in flight by the time the user clicks.
+// If the next `speak()` is called with the same text, the preload's
+// in-flight response is adopted verbatim (no extra request).
 //
-// Global single-utterance semantics: `speak()` cancels any in-flight
-// request or playing audio before starting a new one, so two messages can
-// never overlap across the app.
+// Global single-utterance semantics: `speak()` calls `stop()` first, so
+// two messages can never overlap across the app — even one that is
+// paused elsewhere gets hard-stopped when a new one starts.
 
 type SpeechLang = 'de-DE' | 'en-US';
-type SpeechState = 'idle' | 'loading' | 'speaking';
+type SpeechState = 'idle' | 'loading' | 'playing' | 'paused';
 
 export interface UseSpeechSynthesis {
     // Always true — capability is server-side and unconditionally available.
     supported: true;
     state: SpeechState;
     speak: (text: string, lang: SpeechLang) => void;
+    pause: () => void;
+    resume: () => void;
+    stop: () => void;
     preload: (text: string) => void;
-    cancel: () => void;
 }
 
 const PRELOAD_MIME = 'audio/mpeg';
@@ -57,11 +61,26 @@ function canUseMediaSource(): boolean {
     }
 }
 
+// Wire the shared `playing` / `pause` listeners onto a fresh
+// `HTMLAudioElement`. Both playback paths (MSE and blob) reach for this so
+// a native pause (media keys, mediaSession, headphone unplug) syncs state
+// exactly the same way as an in-app pause button click.
+//
+// We deliberately do NOT listen to `play` — that event fires the moment
+// `.play()` is called, before any decoded audio has been produced. The
+// button would flip to `[⏸]` while there is still nothing audible. The
+// `playing` event fires when the browser actually starts producing
+// output, which is the transition we care about.
+function wireTransportListeners(audio: HTMLAudioElement, onStateChange: (next: 'playing' | 'paused') => void): void {
+    audio.addEventListener('playing', () => onStateChange('playing'));
+    audio.addEventListener('pause', () => onStateChange('paused'));
+}
+
 async function playViaMediaSource(
     response: Response,
     audioRef: React.MutableRefObject<HTMLAudioElement | null>,
     blobUrlRef: React.MutableRefObject<string | null>,
-    onPlaying: () => void,
+    onStateChange: (next: 'playing' | 'paused') => void,
 ): Promise<void> {
     if (!response.body) throw new Error('TTS response has no body');
 
@@ -81,13 +100,7 @@ async function playViaMediaSource(
 
     const sourceBuffer = mediaSource.addSourceBuffer(PRELOAD_MIME);
 
-    let started = false;
-    audio.addEventListener('playing', () => {
-        if (!started) {
-            started = true;
-            onPlaying();
-        }
-    });
+    wireTransportListeners(audio, onStateChange);
 
     const reader = response.body.getReader();
     const pending: Uint8Array[] = [];
@@ -154,7 +167,7 @@ async function playViaBlob(
     response: Response,
     audioRef: React.MutableRefObject<HTMLAudioElement | null>,
     blobUrlRef: React.MutableRefObject<string | null>,
-    onPlaying: () => void,
+    onStateChange: (next: 'playing' | 'paused') => void,
 ): Promise<void> {
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
@@ -162,19 +175,23 @@ async function playViaBlob(
 
     const audio = new Audio(url);
     audioRef.current = audio;
-    audio.addEventListener('playing', () => onPlaying(), { once: true });
+    wireTransportListeners(audio, onStateChange);
     await audio.play();
 }
 
 export function useSpeechSynthesis(): UseSpeechSynthesis {
     const [state, setState] = useState<SpeechState>('idle');
     // Track current audio element, fetch abort controller, blob URL, and
-    // any in-flight preload so cancel() can tear down either phase
+    // any in-flight preload so stop() can tear down either phase
     // (loading, preloading, or playing) without needing state.
     const abortRef = useRef<AbortController | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const blobUrlRef = useRef<string | null>(null);
     const preloadRef = useRef<PreloadEntry | null>(null);
+    // Track whether the user asked for a stop, so the native `pause` event
+    // fired by `stopInternal()`'s `audio.pause()` call doesn't flip us
+    // into the `paused` state instead of `idle`.
+    const stoppingRef = useRef(false);
 
     const clearPreload = useCallback(() => {
         const preload = preloadRef.current;
@@ -184,7 +201,8 @@ export function useSpeechSynthesis(): UseSpeechSynthesis {
         preloadRef.current = null;
     }, []);
 
-    const cancelInternal = useCallback(() => {
+    const stopInternal = useCallback(() => {
+        stoppingRef.current = true;
         if (abortRef.current) {
             abortRef.current.abort();
             abortRef.current = null;
@@ -198,13 +216,33 @@ export function useSpeechSynthesis(): UseSpeechSynthesis {
             URL.revokeObjectURL(blobUrlRef.current);
             blobUrlRef.current = null;
         }
+        stoppingRef.current = false;
     }, []);
 
-    const cancel = useCallback(() => {
-        cancelInternal();
+    const stop = useCallback(() => {
+        stopInternal();
         clearPreload();
         setState('idle');
-    }, [cancelInternal, clearPreload]);
+    }, [stopInternal, clearPreload]);
+
+    const pause = useCallback(() => {
+        if (!audioRef.current) return;
+        audioRef.current.pause();
+        // The `pause` listener wired in the helpers will also fire and
+        // set state to `paused` — this direct set keeps state in sync
+        // even in the (unlikely) case listeners haven't attached yet.
+        setState('paused');
+    }, []);
+
+    const resume = useCallback(() => {
+        if (!audioRef.current) return;
+        void audioRef.current.play().catch(() => {
+            // If the browser refuses (rare — resume follows a user
+            // gesture), the `pause` listener will keep the state at
+            // `paused` and the user can retry.
+        });
+        setState('playing');
+    }, []);
 
     const preload = useCallback(
         (text: string) => {
@@ -239,8 +277,9 @@ export function useSpeechSynthesis(): UseSpeechSynthesis {
 
     const speak = useCallback(
         (text: string, _lang: SpeechLang) => {
-            // Cancel whatever is playing first — global single-utterance rule.
-            cancelInternal();
+            // Hard-stop whatever is playing / paused first — global
+            // single-utterance rule.
+            stopInternal();
 
             // Adopt matching preload if any; otherwise start a fresh fetch.
             let controller: AbortController;
@@ -264,6 +303,15 @@ export function useSpeechSynthesis(): UseSpeechSynthesis {
             abortRef.current = controller;
             setState('loading');
 
+            // Callback the helpers use to sync state on native
+            // pause/resume events. Ignored while `stopInternal` is running
+            // — that path is tearing the audio down and drives state to
+            // `idle` explicitly.
+            const onStateChange = (next: 'playing' | 'paused') => {
+                if (stoppingRef.current) return;
+                setState(next);
+            };
+
             (async () => {
                 try {
                     const response = await responsePromise;
@@ -272,12 +320,11 @@ export function useSpeechSynthesis(): UseSpeechSynthesis {
                         throw new Error(message);
                     }
 
-                    const onPlaying = () => setState('speaking');
                     const useMse = canUseMediaSource();
                     if (useMse) {
-                        await playViaMediaSource(response, audioRef, blobUrlRef, onPlaying);
+                        await playViaMediaSource(response, audioRef, blobUrlRef, onStateChange);
                     } else {
-                        await playViaBlob(response, audioRef, blobUrlRef, onPlaying);
+                        await playViaBlob(response, audioRef, blobUrlRef, onStateChange);
                     }
 
                     const audio = audioRef.current;
@@ -309,7 +356,7 @@ export function useSpeechSynthesis(): UseSpeechSynthesis {
                     }
                 } catch (err) {
                     if ((err as { name?: string }).name === 'AbortError') {
-                        // Cancelled intentionally — state is already set by cancel().
+                        // Cancelled intentionally — state is already set by stop().
                         return;
                     }
                     abortRef.current = null;
@@ -319,8 +366,8 @@ export function useSpeechSynthesis(): UseSpeechSynthesis {
                 }
             })();
         },
-        [cancelInternal, clearPreload],
+        [stopInternal, clearPreload],
     );
 
-    return { supported: true, state, speak, preload, cancel };
+    return { supported: true, state, speak, pause, resume, stop, preload };
 }

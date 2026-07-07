@@ -4,15 +4,22 @@
 //
 // Two-pass algorithm:
 //   1. Split on sentence terminators (.!?…) followed by whitespace.
-//   2. Greedily coalesce back into ~TARGET-length blocks so each Gemini
-//      call still has enough prosodic context.
+//   2. Emit the FIRST sentence (up to a hard char cap) as its own chunk
+//      so audio starts flowing after ~1 Gemini call. Then greedily
+//      coalesce the remainder into ~TARGET-length blocks so subsequent
+//      calls still have enough prosodic context.
 //
 // A dependency-free regex pass matches `markdownToPlainText.ts`'s stance;
 // natural-language sentence splitting is not a solved problem in general
 // but the assistant's own prose is well-behaved.
 
 const TARGET_CHUNK_LENGTH = 300;
-const MIN_CHUNK_LENGTH = 120;
+// The first chunk gets a small cap so first-audio latency is bounded by a
+// short synthesis call, not by "at least one sentence of prose". If the
+// natural first sentence is longer than this, we split it at the last
+// word boundary before the cap — Gemini still speaks a coherent phrase,
+// and the second chunk starts synthesizing while the first one plays.
+const FIRST_CHUNK_MAX_LENGTH = 80;
 
 export function textToSentences(input: string): string[] {
     const trimmed = input.trim();
@@ -25,16 +32,28 @@ export function textToSentences(input: string): string[] {
     if (parts.length === 0) return [trimmed];
 
     const chunks: string[] = [];
-    let buffer = '';
 
+    // First chunk — as small as possible for fast first-audio.
+    const firstSentence = parts.shift() as string;
+    if (firstSentence.length <= FIRST_CHUNK_MAX_LENGTH) {
+        chunks.push(firstSentence);
+    } else {
+        // Split at the last word boundary before the cap. The remainder
+        // is prepended to the next-chunk buffer so no words are lost.
+        const cut = firstSentence.lastIndexOf(' ', FIRST_CHUNK_MAX_LENGTH);
+        const splitAt = cut > 0 ? cut : FIRST_CHUNK_MAX_LENGTH;
+        chunks.push(firstSentence.slice(0, splitAt));
+        parts.unshift(firstSentence.slice(splitAt).trimStart());
+    }
+
+    // Remaining chunks — coalesce up to TARGET for prosody.
+    let buffer = '';
     for (const part of parts) {
         if (!buffer) {
             buffer = part;
             continue;
         }
-        // Coalesce until we're near TARGET; if the next part would push us
-        // way past, flush what we have.
-        if (buffer.length < MIN_CHUNK_LENGTH || buffer.length + 1 + part.length <= TARGET_CHUNK_LENGTH) {
+        if (buffer.length + 1 + part.length <= TARGET_CHUNK_LENGTH) {
             buffer = `${buffer} ${part}`;
         } else {
             chunks.push(buffer);

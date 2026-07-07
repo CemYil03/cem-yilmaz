@@ -233,14 +233,17 @@ Tool **results** are not exposed; the assistant interprets the result and emits 
 
 ### Read-aloud
 
-Every assistant text message renders a small speaker icon next to the Copy button. Clicking it POSTs the cleaned message text to `/api/tts`,
-which calls **Gemini TTS** (`gemini-2.5-flash-preview-tts`, voice `Zephyr`) server-side and returns MP3 audio. The browser plays it via
-`MediaSource` — bytes are appended to a `SourceBuffer` as they arrive, so playback starts on the first ~100 ms of audio rather than the full
-download. Neural-quality output regardless of OS or browser; no on-device voices used.
+Every assistant text message renders a small **read-aloud transport** next to the Copy button. Clicking the primary button POSTs the cleaned
+message text to `/api/tts`, which calls **Gemini TTS** (`gemini-2.5-flash-preview-tts`, voice `Zephyr`) server-side and returns MP3 audio.
+The browser plays it via `MediaSource` — bytes are appended to a `SourceBuffer` as they arrive, so playback starts on the first ~100 ms of
+audio rather than the full download. Neural-quality output regardless of OS or browser; no on-device voices used.
 
-The button has three visual states: speaker icon (idle) → animated spinner (loading, while the API call is in flight) → filled square (stop,
-while audio is playing). Clicking the square cancels immediately. `speak()` cancels any prior request/audio app-wide so two messages can
-never overlap.
+The primary button walks through four states — speaker icon (idle) → animated spinner (loading, while the API call is in flight) → pause
+icon (playing) → play icon (paused). A separate **stop** button (filled square) appears alongside the primary while audio is playing or
+paused; it hard-resets to idle so a subsequent click starts from position 0. Pause keeps the audio element and its buffered MP3 in place, so
+resuming picks up exactly where it left off — nothing is re-fetched or re-synthesized. Native pause/play events (mediaSession, media keys,
+headphone unplug) sync into the same state via listeners on the `HTMLAudioElement`. `speak()` on any button hard-stops any prior playback
+(or pause) app-wide before starting, so two messages can never overlap.
 
 The message body is markdown, so it goes through a small stripper before the API call — code fences are replaced with a spoken "Codeblock" /
 "code block" placeholder, backticks/asterisks are dropped, links keep the label only, list markers and headings are stripped. The text is
@@ -268,9 +271,10 @@ app's lifetime.
   Cache miss returns a chunked `audio/mpeg` stream (`Cache-Control: no-store` — the completed clip is cached server-side but the
   intermediate stream is not). Cache hit returns the full clip with `Cache-Control: private, max-age=86400` and an `ETag` matching the
   content hash. `sessionUpsert` runs on every request as the anchor for a future rate limit.
-- Hook: `src/web/hooks/useSpeechSynthesis.ts` — fetch-based, `state: 'idle' | 'loading' | 'speaking'`, cancel aborts the in-flight fetch,
-  kills the `MediaSource` pump, and pauses the `Audio` element. Progressive fallback to a blob-download path when `MediaSource` or
-  `audio/mpeg` support is unavailable.
+- Hook: `src/web/hooks/useSpeechSynthesis.ts` — fetch-based, `state: 'idle' | 'loading' | 'playing' | 'paused'`. Exposes `speak`, `pause`,
+  `resume`, `stop`, `preload`. `stop` aborts the in-flight fetch, kills the `MediaSource` pump, and pauses the `Audio` element; `pause` and
+  `resume` toggle without tearing anything down. Progressive fallback to a blob-download path when `MediaSource` or `audio/mpeg` support is
+  unavailable.
 - Cache: table `TtsAudioCache` (`src/server/db/schema.ts`), query `ttsAudioCacheLoad`, command `ttsAudioCacheUpsert`, key helper
   `ttsContentHash` — SHA-256 of `${text}|${voice}|${model}|${format}` so a wire-format migration never returns stale bytes.
 - Transcoder: `src/server/utils/audioTranscode.ts` — streaming PCM → MP3 via `ffmpeg-static` (pinned binary, libmp3lame compiled in, no

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { format, parseISO } from 'date-fns';
-import { BracesIcon, CheckIcon, CopyIcon, Loader2Icon, SquareIcon, Volume2Icon } from 'lucide-react';
+import { BracesIcon, CheckIcon, CopyIcon, Loader2Icon, PauseIcon, PlayIcon, SquareIcon, Volume2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocale } from '../../hooks/useLocale';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
@@ -90,27 +90,39 @@ export function CopyButton({ text }: { text: string }) {
 
 // Inline read-aloud affordance under assistant messages. Calls `/api/tts`
 // (Gemini TTS) so the audio quality is neural regardless of browser/OS.
-// Three-state toggle: speaker (idle) → spinner (loading) → stop square
-// (speaking). `speak()` cancels any prior request so two messages can never
-// overlap across the app.
+//
+// Renders a small transport:
+//   - idle:    [▶]                — click starts playback
+//   - loading: [⏳]                — click cancels the pending request
+//   - playing: [⏸]  [■]           — pause without losing position; stop resets
+//   - paused:  [▶]  [■]           — resume from position; stop resets
+//
+// `speak()` hard-stops any prior playback (in this or any other button)
+// before starting, so two messages can never overlap across the app.
 //
 // Hover / focus pre-warms the request: the fetch starts as soon as the
-// pointer or keyboard focus lands on the button, so by the time the user
-// actually clicks, either the server cache has already returned the audio
-// or the streaming synthesis is well underway. The hook de-dupes on `text`,
-// so hovering the same button twice costs nothing extra.
+// pointer or keyboard focus lands on the primary button, so by the time
+// the user actually clicks, either the server cache has already returned
+// the audio or the streaming synthesis is well underway. The hook
+// de-dupes on `text`, so hovering the same button twice costs nothing
+// extra; pre-warm stays on regardless of the current state because the
+// cache absorbs the cost.
 export function SpeakButton({ text }: { text: string }) {
     const locale = useLocale();
-    const { state, speak, preload, cancel } = useSpeechSynthesis();
-    const active = state !== 'idle';
+    const { state, speak, pause, resume, stop, preload } = useSpeechSynthesis();
     const spokenText = React.useMemo(() => markdownToPlainText(text, locale), [text, locale]);
-    const onPrefetch = () => {
-        if (active) return;
-        preload(spokenText);
-    };
-    const onClick = async () => {
-        if (active) {
-            cancel();
+    const onPrefetch = () => preload(spokenText);
+    const onPrimaryClick = async () => {
+        if (state === 'loading') {
+            stop();
+            return;
+        }
+        if (state === 'playing') {
+            pause();
+            return;
+        }
+        if (state === 'paused') {
+            resume();
             return;
         }
         try {
@@ -119,30 +131,53 @@ export function SpeakButton({ text }: { text: string }) {
             toast.error({ de: 'Vorlesen fehlgeschlagen', en: 'Read-aloud failed' }[locale]);
         }
     };
+    const primaryIcon =
+        state === 'loading' ? (
+            <Loader2Icon aria-hidden className="animate-spin" />
+        ) : state === 'playing' ? (
+            <PauseIcon aria-hidden />
+        ) : state === 'paused' ? (
+            <PlayIcon aria-hidden />
+        ) : (
+            <Volume2Icon aria-hidden />
+        );
+    const primaryLabel =
+        state === 'loading'
+            ? { de: 'Vorlesen abbrechen', en: 'Cancel' }[locale]
+            : state === 'playing'
+              ? { de: 'Pausieren', en: 'Pause' }[locale]
+              : state === 'paused'
+                ? { de: 'Fortsetzen', en: 'Resume' }[locale]
+                : { de: 'Nachricht vorlesen', en: 'Read message aloud' }[locale];
+    const showStop = state === 'playing' || state === 'paused';
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={
-                active
-                    ? { de: 'Vorlesen stoppen', en: 'Stop reading' }[locale]
-                    : { de: 'Nachricht vorlesen', en: 'Read message aloud' }[locale]
-            }
-            aria-pressed={active}
-            onClick={onClick}
-            onMouseEnter={onPrefetch}
-            onFocus={onPrefetch}
-            className="opacity-70 hover:opacity-100"
-        >
-            {state === 'loading' ? (
-                <Loader2Icon aria-hidden className="animate-spin" />
-            ) : state === 'speaking' ? (
-                <SquareIcon aria-hidden />
-            ) : (
-                <Volume2Icon aria-hidden />
+        <>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={primaryLabel}
+                aria-pressed={state !== 'idle'}
+                onClick={onPrimaryClick}
+                onMouseEnter={onPrefetch}
+                onFocus={onPrefetch}
+                className="opacity-70 hover:opacity-100"
+            >
+                {primaryIcon}
+            </Button>
+            {showStop && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={{ de: 'Vorlesen stoppen', en: 'Stop reading' }[locale]}
+                    onClick={stop}
+                    className="opacity-70 hover:opacity-100"
+                >
+                    <SquareIcon aria-hidden />
+                </Button>
             )}
-        </Button>
+        </>
     );
 }
 

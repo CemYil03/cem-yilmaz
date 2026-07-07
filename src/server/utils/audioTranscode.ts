@@ -37,6 +37,12 @@ const encoderArgs = (sampleRate: number): string[] => [
     '64k',
     '-f',
     'mp3',
+    // Flush each encoded MP3 frame to stdout as soon as it's ready
+    // instead of holding frames in the muxer buffer. Matters for the
+    // streaming pipeline where every millisecond of extra buffering
+    // shows up as first-audio delay on the client.
+    '-flush_packets',
+    '1',
     'pipe:1',
     '-loglevel',
     'error',
