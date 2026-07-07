@@ -65,15 +65,23 @@ const config = defineConfig({
     // production nitro bundle (rollup external) — the runtime image
     // installs it as a real `node_modules` dependency. See
     // `docs/architecture/server-side-rendering.md`.
+    //
+    // `ffmpeg-static` is a CJS package that resolves its bundled ffmpeg
+    // binary via `__dirname`. Nitro's ESM bundle has no `__dirname`, so
+    // inlining it throws `ReferenceError: __dirname is not defined in ES
+    // module scope` at module init in production. Same treatment as
+    // Playwright: keep it external so it loads from `node_modules` at
+    // runtime with its CJS wrapper (and neighbouring `ffmpeg` binary)
+    // intact. The runtime image installs it via `npm ci --omit=dev`.
     optimizeDeps: {
-        exclude: ['playwright', 'playwright-core'],
+        exclude: ['playwright', 'playwright-core', 'ffmpeg-static'],
     },
     plugins: [
         apiSecFetchDestStrip(),
         devtools(),
         nitro({
             rollupConfig: {
-                external: ['playwright', 'playwright-core'],
+                external: ['playwright', 'playwright-core', 'ffmpeg-static'],
             },
         }),
         tailwindcss(),
