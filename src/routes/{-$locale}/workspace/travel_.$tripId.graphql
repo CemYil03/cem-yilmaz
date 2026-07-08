@@ -1,0 +1,123 @@
+# Workspace Travel detail-view operations, co-located with
+# `/workspace/travel/$tripId`. The detail loader pulls the singular
+# `admin.travel.trip(tripId)` — days pre-joined with activities, packing
+# items pre-joined too. Same seed-and-subscribe posture as the list.
+
+fragment WorkspaceTravelDetailUser on User {
+    admin {
+        travel {
+            trip(tripId: $tripId) {
+                tripId
+                title
+                destination
+                startsOn
+                endsOn
+                status
+                transportMode
+                accommodation
+                notes
+                createdAt
+                updatedAt
+                days {
+                    tripDayId
+                    tripId
+                    dayNumber
+                    date
+                    title
+                    summary
+                    activities {
+                        tripActivityId
+                        tripDayId
+                        position
+                        startsAt
+                        endsAt
+                        title
+                        location
+                        url
+                        notes
+                    }
+                }
+                packingItems {
+                    tripPackingItemId
+                    tripId
+                    category
+                    label
+                    quantity
+                    packed
+                    position
+                    notes
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceTravelDetail($tripId: ID!) {
+    currentSession {
+        user {
+            ...WorkspaceTravelDetailUser
+        }
+    }
+}
+
+subscription WorkspaceTravelDetailUpdates($tripId: ID!) {
+    userUpdates {
+        ...WorkspaceTravelDetailUser
+    }
+}
+
+mutation WorkspaceTripDayUpsert($input: TripDayInput!) {
+    admin {
+        tripDayUpsert(input: $input) {
+            tripDayId
+        }
+    }
+}
+
+mutation WorkspaceTripDayDelete($tripDayId: ID!) {
+    admin {
+        tripDayDelete(tripDayId: $tripDayId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTripActivityUpsert($input: TripActivityInput!) {
+    admin {
+        tripActivityUpsert(input: $input) {
+            tripActivityId
+        }
+    }
+}
+
+mutation WorkspaceTripActivityDelete($tripActivityId: ID!) {
+    admin {
+        tripActivityDelete(tripActivityId: $tripActivityId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTripPackingItemUpsert($input: TripPackingItemInput!) {
+    admin {
+        tripPackingItemUpsert(input: $input) {
+            tripPackingItemId
+        }
+    }
+}
+
+mutation WorkspaceTripPackingItemDelete($tripPackingItemId: ID!) {
+    admin {
+        tripPackingItemDelete(tripPackingItemId: $tripPackingItemId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTripPackingItemToggle($tripPackingItemId: ID!) {
+    admin {
+        tripPackingItemToggle(tripPackingItemId: $tripPackingItemId) {
+            tripPackingItemId
+        }
+    }
+}

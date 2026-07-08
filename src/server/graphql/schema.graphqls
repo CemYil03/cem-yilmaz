@@ -2042,3 +2042,173 @@ extend type AdminMutation {
     itemFileDelete(itemFileId: ID!): MutationResult!
     itemFileTogglePin(itemFileId: ID!): ItemFile!
 }
+
+# --- Travel -----------------------------------------------------------------
+#
+# `/workspace/travel` — Cem's trip planner. Three-tier: `Trip` holds meta
+# (destination, dates, transport, accommodation), `TripDay` is a first-class
+# per-day bucket ("Day 3 in Rome"), `TripActivity` is a single item on that
+# day. `TripPackingItem` is a trip-scoped checklist grouped by free-text
+# `category`. Admin-only, `noindex`; no `*De`/`*En` pairs.
+#
+# The three-tier shape exists so the AI assistant can persist a day-by-day
+# itinerary from a chat and future chats read it from the DB instead of the
+# transcript — the whole reason the feature exists. See
+# `docs/features/workspace-travel.md`.
+
+enum TripStatus {
+    draft
+    planned
+    active
+    completed
+    cancelled
+}
+
+enum TransportMode {
+    flight
+    train
+    car
+    ferry
+    mixed
+}
+
+# One activity within a `TripDay`. `startsAt` / `endsAt` are wall-clock strings
+# (`HH:MM` or `HH:MM:SS`) — a single tz would be a lie for a location-scoped
+# plan. Ordered by `position ASC` within a day; the client also honours times
+# when both `startsAt` values are set.
+type TripActivity {
+    tripActivityId: ID!
+    tripDayId: ID!
+    position: Int!
+    startsAt: String
+    endsAt: String
+    title: String!
+    location: String
+    url: String
+    notes: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# One day of a trip. `dayNumber` is the 1-based ordinal the agent addresses
+# ("Day 3"). `date` is nullable — a draft trip may have days before the
+# calendar dates are settled. `summary` is the paragraph the agent writes to
+# frame the day; `activities` is ordered by position ascending.
+type TripDay {
+    tripDayId: ID!
+    tripId: ID!
+    dayNumber: Int!
+    date: Date
+    title: String
+    summary: String
+    activities: [TripActivity!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# One row on the trip's packing checklist. `category` is free text so the
+# agent can invent a new bucket without a migration; the UI groups by it.
+type TripPackingItem {
+    tripPackingItemId: ID!
+    tripId: ID!
+    category: String!
+    label: String!
+    quantity: Int!
+    packed: Boolean!
+    position: Int!
+    notes: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# A trip. On the list surface `days` / `packingItems` may still resolve fully
+# so the cards can show progress badges without a second fetch — the payload
+# stays small because trip volume is low (dozens, not thousands).
+type Trip {
+    tripId: ID!
+    title: String!
+    destination: String!
+    startsOn: Date
+    endsOn: Date
+    status: TripStatus!
+    transportMode: TransportMode
+    accommodation: String
+    notes: String
+    days: [TripDay!]!
+    packingItems: [TripPackingItem!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# Read namespace mounted under `Admin`. Gated once at the `Query.admin`
+# boundary by the resolver chain on `User.admin`.
+type AdminTravelQuery {
+    # All trips, sorted `startsOn NULLS LAST, createdAt DESC`.
+    trips: [Trip!]!
+    # Single trip by id — null when the id does not exist.
+    trip(tripId: ID!): Trip
+}
+
+extend type Admin {
+    travel: AdminTravelQuery!
+}
+
+input TripInput {
+    tripId: ID
+    title: String!
+    destination: String!
+    startsOn: Date
+    endsOn: Date
+    status: TripStatus!
+    transportMode: TransportMode
+    accommodation: String
+    notes: String
+}
+
+input TripDayInput {
+    tripDayId: ID
+    tripId: ID!
+    dayNumber: Int!
+    date: Date
+    title: String
+    summary: String
+}
+
+input TripActivityInput {
+    tripActivityId: ID
+    tripDayId: ID!
+    position: Int
+    startsAt: String
+    endsAt: String
+    title: String!
+    location: String
+    url: String
+    notes: String
+}
+
+input TripPackingItemInput {
+    tripPackingItemId: ID
+    tripId: ID!
+    category: String!
+    label: String!
+    quantity: Int
+    packed: Boolean
+    position: Int
+    notes: String
+}
+
+extend type AdminMutation {
+    tripUpsert(input: TripInput!): Trip!
+    tripDelete(tripId: ID!): MutationResult!
+
+    tripDayUpsert(input: TripDayInput!): TripDay!
+    tripDayDelete(tripDayId: ID!): MutationResult!
+
+    tripActivityUpsert(input: TripActivityInput!): TripActivity!
+    tripActivityDelete(tripActivityId: ID!): MutationResult!
+
+    tripPackingItemUpsert(input: TripPackingItemInput!): TripPackingItem!
+    tripPackingItemDelete(tripPackingItemId: ID!): MutationResult!
+    # Shortcut: flip `packed` for one item. Returns the updated row.
+    tripPackingItemToggle(tripPackingItemId: ID!): TripPackingItem!
+}

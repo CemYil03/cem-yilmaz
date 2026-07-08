@@ -41,6 +41,7 @@ import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './rou
 import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
 import { Route as Char123LocaleChar125WorkspaceCompassRouteImport } from './routes/{-$locale}/workspace/compass'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
+import { Route as Char123LocaleChar125WorkspaceTravelTripIdRouteImport } from './routes/{-$locale}/workspace/travel_.$tripId'
 import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
 import { Route as Char123LocaleChar125WorkspaceInventoryItemIdRouteImport } from './routes/{-$locale}/workspace/inventory_.$itemId'
 import { Route as Char123LocaleChar125WorkspaceAssistantChatIdRouteImport } from './routes/{-$locale}/workspace/assistant.$chatId'
@@ -227,6 +228,12 @@ const ApiFileUploadsFileUploadIdRoute =
     path: '/api/file-uploads/$fileUploadId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const Char123LocaleChar125WorkspaceTravelTripIdRoute =
+  Char123LocaleChar125WorkspaceTravelTripIdRouteImport.update({
+    id: '/travel_/$tripId',
+    path: '/travel/$tripId',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
 const Char123LocaleChar125WorkspaceProjectsProjectIdRoute =
   Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport.update({
     id: '/projects_/$projectId',
@@ -282,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
+  '/{-$locale}/workspace/travel/$tripId': typeof Char123LocaleChar125WorkspaceTravelTripIdRoute
 }
 export interface FileRoutesByTo {
   '/llms.txt': typeof LlmsDottxtRoute
@@ -317,6 +325,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
+  '/{-$locale}/workspace/travel/$tripId': typeof Char123LocaleChar125WorkspaceTravelTripIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -355,6 +364,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory_/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects_/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
+  '/{-$locale}/workspace/travel_/$tripId': typeof Char123LocaleChar125WorkspaceTravelTripIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
+    | '/{-$locale}/workspace/travel/$tripId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/llms.txt'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
+    | '/{-$locale}/workspace/travel/$tripId'
   id:
     | '__root__'
     | '/llms.txt'
@@ -466,6 +478,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory_/$itemId'
     | '/{-$locale}/workspace/projects_/$projectId'
+    | '/{-$locale}/workspace/travel_/$tripId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -707,6 +720,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFileUploadsFileUploadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/{-$locale}/workspace/travel_/$tripId': {
+      id: '/{-$locale}/workspace/travel_/$tripId'
+      path: '/travel/$tripId'
+      fullPath: '/{-$locale}/workspace/travel/$tripId'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTravelTripIdRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
     '/{-$locale}/workspace/projects_/$projectId': {
       id: '/{-$locale}/workspace/projects_/$projectId'
       path: '/projects/$projectId'
@@ -750,6 +770,7 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceAssistantChatIdRoute: typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   Char123LocaleChar125WorkspaceInventoryItemIdRoute: typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   Char123LocaleChar125WorkspaceProjectsProjectIdRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
+  Char123LocaleChar125WorkspaceTravelTripIdRoute: typeof Char123LocaleChar125WorkspaceTravelTripIdRoute
 }
 
 const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceRouteChildren =
@@ -789,6 +810,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceInventoryItemIdRoute,
     Char123LocaleChar125WorkspaceProjectsProjectIdRoute:
       Char123LocaleChar125WorkspaceProjectsProjectIdRoute,
+    Char123LocaleChar125WorkspaceTravelTripIdRoute:
+      Char123LocaleChar125WorkspaceTravelTripIdRoute,
   }
 
 const Char123LocaleChar125WorkspaceRouteWithChildren =

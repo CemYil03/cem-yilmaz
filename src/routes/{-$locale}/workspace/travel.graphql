@@ -1,0 +1,65 @@
+# Workspace Travel editor operations. Co-located with `/workspace/travel`.
+# Same seed-and-subscribe posture as `/workspace/inventory`: the loader query
+# and the live `userUpdates` subscription spread `WorkspaceTravelPageUser` so
+# mutations don't need to re-invalidate — every trip mutation publishes on the
+# user channel and the page picks up the new payload over SSE. See
+# `docs/architecture/state-synchronization.md`.
+
+fragment WorkspaceTravelPageUser on User {
+    admin {
+        travel {
+            trips {
+                tripId
+                title
+                destination
+                startsOn
+                endsOn
+                status
+                transportMode
+                accommodation
+                notes
+                days {
+                    tripDayId
+                    dayNumber
+                    date
+                }
+                packingItems {
+                    tripPackingItemId
+                    packed
+                }
+                createdAt
+                updatedAt
+            }
+        }
+    }
+}
+
+query WorkspaceTravelPage {
+    currentSession {
+        user {
+            ...WorkspaceTravelPageUser
+        }
+    }
+}
+
+subscription WorkspaceTravelPageUpdates {
+    userUpdates {
+        ...WorkspaceTravelPageUser
+    }
+}
+
+mutation WorkspaceTripUpsert($input: TripInput!) {
+    admin {
+        tripUpsert(input: $input) {
+            tripId
+        }
+    }
+}
+
+mutation WorkspaceTripDelete($tripId: ID!) {
+    admin {
+        tripDelete(tripId: $tripId) {
+            success
+        }
+    }
+}

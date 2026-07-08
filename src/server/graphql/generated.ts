@@ -37,6 +37,7 @@ export interface GqlSAdmin {
     publicChats: Array<GqlSChat>;
     standaloneOpenTaskCount: Scalars['Int']['output'];
     standaloneTasks: Array<GqlSTask>;
+    travel: GqlSAdminTravelQuery;
 }
 
 export type GqlSAdminChatArgs = {
@@ -229,6 +230,15 @@ export interface GqlSAdminMutation {
     taskDelete: GqlSMutationResult;
     taskReorder: GqlSMutationResult;
     taskUpsert: GqlSTask;
+    tripActivityDelete: GqlSMutationResult;
+    tripActivityUpsert: GqlSTripActivity;
+    tripDayDelete: GqlSMutationResult;
+    tripDayUpsert: GqlSTripDay;
+    tripDelete: GqlSMutationResult;
+    tripPackingItemDelete: GqlSMutationResult;
+    tripPackingItemToggle: GqlSTripPackingItem;
+    tripPackingItemUpsert: GqlSTripPackingItem;
+    tripUpsert: GqlSTrip;
 }
 
 export type GqlSAdminMutationChatConfigDefaultModelSetArgs = {
@@ -500,6 +510,52 @@ export type GqlSAdminMutationTaskReorderArgs = {
 
 export type GqlSAdminMutationTaskUpsertArgs = {
     input: GqlSTaskCreate;
+};
+
+export type GqlSAdminMutationTripActivityDeleteArgs = {
+    tripActivityId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationTripActivityUpsertArgs = {
+    input: GqlSTripActivityInput;
+};
+
+export type GqlSAdminMutationTripDayDeleteArgs = {
+    tripDayId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationTripDayUpsertArgs = {
+    input: GqlSTripDayInput;
+};
+
+export type GqlSAdminMutationTripDeleteArgs = {
+    tripId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationTripPackingItemDeleteArgs = {
+    tripPackingItemId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationTripPackingItemToggleArgs = {
+    tripPackingItemId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationTripPackingItemUpsertArgs = {
+    input: GqlSTripPackingItemInput;
+};
+
+export type GqlSAdminMutationTripUpsertArgs = {
+    input: GqlSTripInput;
+};
+
+export interface GqlSAdminTravelQuery {
+    __typename?: 'AdminTravelQuery';
+    trip?: Maybe<GqlSTrip>;
+    trips: Array<GqlSTrip>;
+}
+
+export type GqlSAdminTravelQueryTripArgs = {
+    tripId: Scalars['ID']['input'];
 };
 
 export interface GqlSChat {
@@ -1509,6 +1565,113 @@ export interface GqlSTmdbMovieResult {
     tmdbId: Scalars['Int']['output'];
 }
 
+export type GqlSTransportMode = 'car' | 'ferry' | 'flight' | 'mixed' | 'train';
+
+export interface GqlSTrip {
+    __typename?: 'Trip';
+    accommodation?: Maybe<Scalars['String']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    days: Array<GqlSTripDay>;
+    destination: Scalars['String']['output'];
+    endsOn?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    packingItems: Array<GqlSTripPackingItem>;
+    startsOn?: Maybe<Scalars['Date']['output']>;
+    status: GqlSTripStatus;
+    title: Scalars['String']['output'];
+    transportMode?: Maybe<GqlSTransportMode>;
+    tripId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface GqlSTripActivity {
+    __typename?: 'TripActivity';
+    createdAt: Scalars['DateTime']['output'];
+    endsAt?: Maybe<Scalars['String']['output']>;
+    location?: Maybe<Scalars['String']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    startsAt?: Maybe<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    tripActivityId: Scalars['ID']['output'];
+    tripDayId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    url?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlSTripActivityInput = {
+    endsAt?: InputMaybe<Scalars['String']['input']>;
+    location?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    startsAt?: InputMaybe<Scalars['String']['input']>;
+    title: Scalars['String']['input'];
+    tripActivityId?: InputMaybe<Scalars['ID']['input']>;
+    tripDayId: Scalars['ID']['input'];
+    url?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlSTripDay {
+    __typename?: 'TripDay';
+    activities: Array<GqlSTripActivity>;
+    createdAt: Scalars['DateTime']['output'];
+    date?: Maybe<Scalars['Date']['output']>;
+    dayNumber: Scalars['Int']['output'];
+    summary?: Maybe<Scalars['String']['output']>;
+    title?: Maybe<Scalars['String']['output']>;
+    tripDayId: Scalars['ID']['output'];
+    tripId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSTripDayInput = {
+    date?: InputMaybe<Scalars['Date']['input']>;
+    dayNumber: Scalars['Int']['input'];
+    summary?: InputMaybe<Scalars['String']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
+    tripDayId?: InputMaybe<Scalars['ID']['input']>;
+    tripId: Scalars['ID']['input'];
+};
+
+export type GqlSTripInput = {
+    accommodation?: InputMaybe<Scalars['String']['input']>;
+    destination: Scalars['String']['input'];
+    endsOn?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    startsOn?: InputMaybe<Scalars['Date']['input']>;
+    status: GqlSTripStatus;
+    title: Scalars['String']['input'];
+    transportMode?: InputMaybe<GqlSTransportMode>;
+    tripId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlSTripPackingItem {
+    __typename?: 'TripPackingItem';
+    category: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    label: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    packed: Scalars['Boolean']['output'];
+    position: Scalars['Int']['output'];
+    quantity: Scalars['Int']['output'];
+    tripId: Scalars['ID']['output'];
+    tripPackingItemId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSTripPackingItemInput = {
+    category: Scalars['String']['input'];
+    label: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    packed?: InputMaybe<Scalars['Boolean']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    quantity?: InputMaybe<Scalars['Int']['input']>;
+    tripId: Scalars['ID']['input'];
+    tripPackingItemId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlSTripStatus = 'active' | 'cancelled' | 'completed' | 'draft' | 'planned';
+
 export interface GqlSUser {
     __typename?: 'User';
     admin?: Maybe<GqlSAdmin>;
@@ -1698,6 +1861,7 @@ export type GqlSResolversTypes = ResolversObject<{
     AdminMediaQuery: ResolverTypeWrapper<GqlSAdminMediaQuery>;
     AdminMedicalQuery: ResolverTypeWrapper<GqlSAdminMedicalQuery>;
     AdminMutation: ResolverTypeWrapper<GqlSAdminMutation>;
+    AdminTravelQuery: ResolverTypeWrapper<GqlSAdminTravelQuery>;
     Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
     Chat: ResolverTypeWrapper<Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversTypes['ChatMessage']> }>;
     ChatAssistantInput: ResolverTypeWrapper<GqlSResolversUnionTypes<GqlSResolversTypes>['ChatAssistantInput']>;
@@ -1843,6 +2007,16 @@ export type GqlSResolversTypes = ResolversObject<{
     TaskStatus: GqlSTaskStatus;
     TaskWhenBucket: GqlSTaskWhenBucket;
     TmdbMovieResult: ResolverTypeWrapper<GqlSTmdbMovieResult>;
+    TransportMode: GqlSTransportMode;
+    Trip: ResolverTypeWrapper<GqlSTrip>;
+    TripActivity: ResolverTypeWrapper<GqlSTripActivity>;
+    TripActivityInput: GqlSTripActivityInput;
+    TripDay: ResolverTypeWrapper<GqlSTripDay>;
+    TripDayInput: GqlSTripDayInput;
+    TripInput: GqlSTripInput;
+    TripPackingItem: ResolverTypeWrapper<GqlSTripPackingItem>;
+    TripPackingItemInput: GqlSTripPackingItemInput;
+    TripStatus: GqlSTripStatus;
     User: ResolverTypeWrapper<Omit<GqlSUser, 'admin'> & { admin?: Maybe<GqlSResolversTypes['Admin']> }>;
     UserCreate: GqlSUserCreate;
     UserMutation: ResolverTypeWrapper<GqlSUserMutation>;
@@ -1866,6 +2040,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     AdminMediaQuery: GqlSAdminMediaQuery;
     AdminMedicalQuery: GqlSAdminMedicalQuery;
     AdminMutation: GqlSAdminMutation;
+    AdminTravelQuery: GqlSAdminTravelQuery;
     Boolean: Scalars['Boolean']['output'];
     Chat: Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversParentTypes['ChatMessage']> };
     ChatAssistantInput: GqlSResolversUnionTypes<GqlSResolversParentTypes>['ChatAssistantInput'];
@@ -1973,6 +2148,14 @@ export type GqlSResolversParentTypes = ResolversObject<{
     Task: GqlSTask;
     TaskCreate: GqlSTaskCreate;
     TmdbMovieResult: GqlSTmdbMovieResult;
+    Trip: GqlSTrip;
+    TripActivity: GqlSTripActivity;
+    TripActivityInput: GqlSTripActivityInput;
+    TripDay: GqlSTripDay;
+    TripDayInput: GqlSTripDayInput;
+    TripInput: GqlSTripInput;
+    TripPackingItem: GqlSTripPackingItem;
+    TripPackingItemInput: GqlSTripPackingItemInput;
     User: Omit<GqlSUser, 'admin'> & { admin?: Maybe<GqlSResolversParentTypes['Admin']> };
     UserCreate: GqlSUserCreate;
     UserMutation: GqlSUserMutation;
@@ -2004,6 +2187,7 @@ export type GqlSAdminResolvers<
     publicChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
     standaloneOpenTaskCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     standaloneTasks?: Resolver<Array<GqlSResolversTypes['Task']>, ParentType, ContextType>;
+    travel?: Resolver<GqlSResolversTypes['AdminTravelQuery'], ParentType, ContextType>;
 }>;
 
 export type GqlSAdminChatConfigResolvers<
@@ -2471,6 +2655,63 @@ export type GqlSAdminMutationResolvers<
         RequireFields<GqlSAdminMutationTaskReorderArgs, 'orderedIds'>
     >;
     taskUpsert?: Resolver<GqlSResolversTypes['Task'], ParentType, ContextType, RequireFields<GqlSAdminMutationTaskUpsertArgs, 'input'>>;
+    tripActivityDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripActivityDeleteArgs, 'tripActivityId'>
+    >;
+    tripActivityUpsert?: Resolver<
+        GqlSResolversTypes['TripActivity'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripActivityUpsertArgs, 'input'>
+    >;
+    tripDayDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripDayDeleteArgs, 'tripDayId'>
+    >;
+    tripDayUpsert?: Resolver<
+        GqlSResolversTypes['TripDay'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripDayUpsertArgs, 'input'>
+    >;
+    tripDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripDeleteArgs, 'tripId'>
+    >;
+    tripPackingItemDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripPackingItemDeleteArgs, 'tripPackingItemId'>
+    >;
+    tripPackingItemToggle?: Resolver<
+        GqlSResolversTypes['TripPackingItem'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripPackingItemToggleArgs, 'tripPackingItemId'>
+    >;
+    tripPackingItemUpsert?: Resolver<
+        GqlSResolversTypes['TripPackingItem'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripPackingItemUpsertArgs, 'input'>
+    >;
+    tripUpsert?: Resolver<GqlSResolversTypes['Trip'], ParentType, ContextType, RequireFields<GqlSAdminMutationTripUpsertArgs, 'input'>>;
+}>;
+
+export type GqlSAdminTravelQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminTravelQuery'] = GqlSResolversParentTypes['AdminTravelQuery'],
+> = ResolversObject<{
+    trip?: Resolver<Maybe<GqlSResolversTypes['Trip']>, ParentType, ContextType, RequireFields<GqlSAdminTravelQueryTripArgs, 'tripId'>>;
+    trips?: Resolver<Array<GqlSResolversTypes['Trip']>, ParentType, ContextType>;
 }>;
 
 export type GqlSChatResolvers<
@@ -3389,6 +3630,73 @@ export type GqlSTmdbMovieResultResolvers<
     tmdbId?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
+export type GqlSTripResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Trip'] = GqlSResolversParentTypes['Trip'],
+> = ResolversObject<{
+    accommodation?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    days?: Resolver<Array<GqlSResolversTypes['TripDay']>, ParentType, ContextType>;
+    destination?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    endsOn?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    packingItems?: Resolver<Array<GqlSResolversTypes['TripPackingItem']>, ParentType, ContextType>;
+    startsOn?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['TripStatus'], ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    transportMode?: Resolver<Maybe<GqlSResolversTypes['TransportMode']>, ParentType, ContextType>;
+    tripId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSTripActivityResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['TripActivity'] = GqlSResolversParentTypes['TripActivity'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    endsAt?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    location?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    startsAt?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    tripActivityId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    tripDayId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    url?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type GqlSTripDayResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['TripDay'] = GqlSResolversParentTypes['TripDay'],
+> = ResolversObject<{
+    activities?: Resolver<Array<GqlSResolversTypes['TripActivity']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    date?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    dayNumber?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    summary?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    title?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    tripDayId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    tripId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSTripPackingItemResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['TripPackingItem'] = GqlSResolversParentTypes['TripPackingItem'],
+> = ResolversObject<{
+    category?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    label?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    packed?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    quantity?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    tripId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    tripPackingItemId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export type GqlSUserResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['User'] = GqlSResolversParentTypes['User'],
@@ -3447,6 +3755,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     AdminMediaQuery?: GqlSAdminMediaQueryResolvers<ContextType>;
     AdminMedicalQuery?: GqlSAdminMedicalQueryResolvers<ContextType>;
     AdminMutation?: GqlSAdminMutationResolvers<ContextType>;
+    AdminTravelQuery?: GqlSAdminTravelQueryResolvers<ContextType>;
     Chat?: GqlSChatResolvers<ContextType>;
     ChatAssistantInput?: GqlSChatAssistantInputResolvers<ContextType>;
     ChatAssistantInputBoolean?: GqlSChatAssistantInputBooleanResolvers<ContextType>;
@@ -3520,6 +3829,10 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Subscription?: GqlSSubscriptionResolvers<ContextType>;
     Task?: GqlSTaskResolvers<ContextType>;
     TmdbMovieResult?: GqlSTmdbMovieResultResolvers<ContextType>;
+    Trip?: GqlSTripResolvers<ContextType>;
+    TripActivity?: GqlSTripActivityResolvers<ContextType>;
+    TripDay?: GqlSTripDayResolvers<ContextType>;
+    TripPackingItem?: GqlSTripPackingItemResolvers<ContextType>;
     User?: GqlSUserResolvers<ContextType>;
     UserMutation?: GqlSUserMutationResolvers<ContextType>;
     VisitorChatQuota?: GqlSVisitorChatQuotaResolvers<ContextType>;
@@ -3725,6 +4038,16 @@ export const GqlSTaskStatusSchema: z.ZodType<'doing' | 'done' | 'todo', 'doing' 
 
 export const GqlSTaskWhenBucketSchema: z.ZodType<'someday' | 'today' | 'waiting' | 'week', 'someday' | 'today' | 'waiting' | 'week'> =
     z.enum(['someday', 'today', 'waiting', 'week']);
+
+export const GqlSTransportModeSchema: z.ZodType<
+    'car' | 'ferry' | 'flight' | 'mixed' | 'train',
+    'car' | 'ferry' | 'flight' | 'mixed' | 'train'
+> = z.enum(['car', 'ferry', 'flight', 'mixed', 'train']);
+
+export const GqlSTripStatusSchema: z.ZodType<
+    'active' | 'cancelled' | 'completed' | 'draft' | 'planned',
+    'active' | 'cancelled' | 'completed' | 'draft' | 'planned'
+> = z.enum(['active', 'cancelled', 'completed', 'draft', 'planned']);
 
 export function GqlSChatAssistantOptionsSchema(): z.ZodObject<Properties<GqlSChatAssistantOptions>> {
     return z.object({
@@ -3989,6 +4312,58 @@ export function GqlSTaskCreateSchema(): z.ZodObject<Properties<GqlSTaskCreate>> 
         taskId: z.string().nullish(),
         title: z.string(),
         whenBucket: GqlSTaskWhenBucketSchema.nullish(),
+    });
+}
+
+export function GqlSTripActivityInputSchema(): z.ZodObject<Properties<GqlSTripActivityInput>> {
+    return z.object({
+        endsAt: z.string().nullish(),
+        location: z.string().nullish(),
+        notes: z.string().nullish(),
+        position: z.number().nullish(),
+        startsAt: z.string().nullish(),
+        title: z.string(),
+        tripActivityId: z.string().nullish(),
+        tripDayId: z.string(),
+        url: z.string().nullish(),
+    });
+}
+
+export function GqlSTripDayInputSchema(): z.ZodObject<Properties<GqlSTripDayInput>> {
+    return z.object({
+        date: z.string().nullish(),
+        dayNumber: z.number(),
+        summary: z.string().nullish(),
+        title: z.string().nullish(),
+        tripDayId: z.string().nullish(),
+        tripId: z.string(),
+    });
+}
+
+export function GqlSTripInputSchema(): z.ZodObject<Properties<GqlSTripInput>> {
+    return z.object({
+        accommodation: z.string().nullish(),
+        destination: z.string(),
+        endsOn: z.string().nullish(),
+        notes: z.string().nullish(),
+        startsOn: z.string().nullish(),
+        status: GqlSTripStatusSchema,
+        title: z.string(),
+        transportMode: GqlSTransportModeSchema.nullish(),
+        tripId: z.string().nullish(),
+    });
+}
+
+export function GqlSTripPackingItemInputSchema(): z.ZodObject<Properties<GqlSTripPackingItemInput>> {
+    return z.object({
+        category: z.string(),
+        label: z.string(),
+        notes: z.string().nullish(),
+        packed: z.boolean().nullish(),
+        position: z.number().nullish(),
+        quantity: z.number().nullish(),
+        tripId: z.string(),
+        tripPackingItemId: z.string().nullish(),
     });
 }
 

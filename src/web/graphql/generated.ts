@@ -40,6 +40,7 @@ export interface GqlCAdmin {
     publicChats: Array<GqlCChat>;
     standaloneOpenTaskCount: Scalars['Int']['output'];
     standaloneTasks: Array<GqlCTask>;
+    travel: GqlCAdminTravelQuery;
 }
 
 export type GqlCAdminChatArgs = {
@@ -232,6 +233,15 @@ export interface GqlCAdminMutation {
     taskDelete: GqlCMutationResult;
     taskReorder: GqlCMutationResult;
     taskUpsert: GqlCTask;
+    tripActivityDelete: GqlCMutationResult;
+    tripActivityUpsert: GqlCTripActivity;
+    tripDayDelete: GqlCMutationResult;
+    tripDayUpsert: GqlCTripDay;
+    tripDelete: GqlCMutationResult;
+    tripPackingItemDelete: GqlCMutationResult;
+    tripPackingItemToggle: GqlCTripPackingItem;
+    tripPackingItemUpsert: GqlCTripPackingItem;
+    tripUpsert: GqlCTrip;
 }
 
 export type GqlCAdminMutationChatConfigDefaultModelSetArgs = {
@@ -503,6 +513,52 @@ export type GqlCAdminMutationTaskReorderArgs = {
 
 export type GqlCAdminMutationTaskUpsertArgs = {
     input: GqlCTaskCreate;
+};
+
+export type GqlCAdminMutationTripActivityDeleteArgs = {
+    tripActivityId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationTripActivityUpsertArgs = {
+    input: GqlCTripActivityInput;
+};
+
+export type GqlCAdminMutationTripDayDeleteArgs = {
+    tripDayId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationTripDayUpsertArgs = {
+    input: GqlCTripDayInput;
+};
+
+export type GqlCAdminMutationTripDeleteArgs = {
+    tripId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationTripPackingItemDeleteArgs = {
+    tripPackingItemId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationTripPackingItemToggleArgs = {
+    tripPackingItemId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationTripPackingItemUpsertArgs = {
+    input: GqlCTripPackingItemInput;
+};
+
+export type GqlCAdminMutationTripUpsertArgs = {
+    input: GqlCTripInput;
+};
+
+export interface GqlCAdminTravelQuery {
+    __typename?: 'AdminTravelQuery';
+    trip?: Maybe<GqlCTrip>;
+    trips: Array<GqlCTrip>;
+}
+
+export type GqlCAdminTravelQueryTripArgs = {
+    tripId: Scalars['ID']['input'];
 };
 
 export interface GqlCChat {
@@ -1511,6 +1567,113 @@ export interface GqlCTmdbMovieResult {
     title: Scalars['String']['output'];
     tmdbId: Scalars['Int']['output'];
 }
+
+export type GqlCTransportMode = 'car' | 'ferry' | 'flight' | 'mixed' | 'train';
+
+export interface GqlCTrip {
+    __typename?: 'Trip';
+    accommodation?: Maybe<Scalars['String']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    days: Array<GqlCTripDay>;
+    destination: Scalars['String']['output'];
+    endsOn?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    packingItems: Array<GqlCTripPackingItem>;
+    startsOn?: Maybe<Scalars['Date']['output']>;
+    status: GqlCTripStatus;
+    title: Scalars['String']['output'];
+    transportMode?: Maybe<GqlCTransportMode>;
+    tripId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface GqlCTripActivity {
+    __typename?: 'TripActivity';
+    createdAt: Scalars['DateTime']['output'];
+    endsAt?: Maybe<Scalars['String']['output']>;
+    location?: Maybe<Scalars['String']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    startsAt?: Maybe<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    tripActivityId: Scalars['ID']['output'];
+    tripDayId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    url?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCTripActivityInput = {
+    endsAt?: InputMaybe<Scalars['String']['input']>;
+    location?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    startsAt?: InputMaybe<Scalars['String']['input']>;
+    title: Scalars['String']['input'];
+    tripActivityId?: InputMaybe<Scalars['ID']['input']>;
+    tripDayId: Scalars['ID']['input'];
+    url?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlCTripDay {
+    __typename?: 'TripDay';
+    activities: Array<GqlCTripActivity>;
+    createdAt: Scalars['DateTime']['output'];
+    date?: Maybe<Scalars['Date']['output']>;
+    dayNumber: Scalars['Int']['output'];
+    summary?: Maybe<Scalars['String']['output']>;
+    title?: Maybe<Scalars['String']['output']>;
+    tripDayId: Scalars['ID']['output'];
+    tripId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCTripDayInput = {
+    date?: InputMaybe<Scalars['Date']['input']>;
+    dayNumber: Scalars['Int']['input'];
+    summary?: InputMaybe<Scalars['String']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
+    tripDayId?: InputMaybe<Scalars['ID']['input']>;
+    tripId: Scalars['ID']['input'];
+};
+
+export type GqlCTripInput = {
+    accommodation?: InputMaybe<Scalars['String']['input']>;
+    destination: Scalars['String']['input'];
+    endsOn?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    startsOn?: InputMaybe<Scalars['Date']['input']>;
+    status: GqlCTripStatus;
+    title: Scalars['String']['input'];
+    transportMode?: InputMaybe<GqlCTransportMode>;
+    tripId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlCTripPackingItem {
+    __typename?: 'TripPackingItem';
+    category: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    label: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    packed: Scalars['Boolean']['output'];
+    position: Scalars['Int']['output'];
+    quantity: Scalars['Int']['output'];
+    tripId: Scalars['ID']['output'];
+    tripPackingItemId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCTripPackingItemInput = {
+    category: Scalars['String']['input'];
+    label: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    packed?: InputMaybe<Scalars['Boolean']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    quantity?: InputMaybe<Scalars['Int']['input']>;
+    tripId: Scalars['ID']['input'];
+    tripPackingItemId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlCTripStatus = 'active' | 'cancelled' | 'completed' | 'draft' | 'planned';
 
 export interface GqlCUser {
     __typename?: 'User';
@@ -4442,6 +4605,297 @@ export type GqlCWorkspaceTodoDeleteMutationVariables = Exact<{
 
 export type GqlCWorkspaceTodoDeleteMutation = { admin: { taskDelete: { success: boolean } } };
 
+export type GqlCWorkspaceTravelPageUserFragment = {
+    admin: {
+        travel: {
+            trips: Array<{
+                tripId: string;
+                title: string;
+                destination: string;
+                startsOn: string | null;
+                endsOn: string | null;
+                status: Schema.GqlCTripStatus;
+                transportMode: Schema.GqlCTransportMode | null;
+                accommodation: string | null;
+                notes: string | null;
+                createdAt: string;
+                updatedAt: string;
+                days: Array<{ tripDayId: string; dayNumber: number; date: string | null }>;
+                packingItems: Array<{ tripPackingItemId: string; packed: boolean }>;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceTravelPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceTravelPageQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                travel: {
+                    trips: Array<{
+                        tripId: string;
+                        title: string;
+                        destination: string;
+                        startsOn: string | null;
+                        endsOn: string | null;
+                        status: Schema.GqlCTripStatus;
+                        transportMode: Schema.GqlCTransportMode | null;
+                        accommodation: string | null;
+                        notes: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                        days: Array<{ tripDayId: string; dayNumber: number; date: string | null }>;
+                        packingItems: Array<{ tripPackingItemId: string; packed: boolean }>;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceTravelPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceTravelPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            travel: {
+                trips: Array<{
+                    tripId: string;
+                    title: string;
+                    destination: string;
+                    startsOn: string | null;
+                    endsOn: string | null;
+                    status: Schema.GqlCTripStatus;
+                    transportMode: Schema.GqlCTransportMode | null;
+                    accommodation: string | null;
+                    notes: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                    days: Array<{ tripDayId: string; dayNumber: number; date: string | null }>;
+                    packingItems: Array<{ tripPackingItemId: string; packed: boolean }>;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceTripUpsertMutationVariables = Exact<{
+    input: Schema.GqlCTripInput;
+}>;
+
+export type GqlCWorkspaceTripUpsertMutation = { admin: { tripUpsert: { tripId: string } } };
+
+export type GqlCWorkspaceTripDeleteMutationVariables = Exact<{
+    tripId: string;
+}>;
+
+export type GqlCWorkspaceTripDeleteMutation = { admin: { tripDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTravelDetailUserFragment = {
+    admin: {
+        travel: {
+            trip: {
+                tripId: string;
+                title: string;
+                destination: string;
+                startsOn: string | null;
+                endsOn: string | null;
+                status: Schema.GqlCTripStatus;
+                transportMode: Schema.GqlCTransportMode | null;
+                accommodation: string | null;
+                notes: string | null;
+                createdAt: string;
+                updatedAt: string;
+                days: Array<{
+                    tripDayId: string;
+                    tripId: string;
+                    dayNumber: number;
+                    date: string | null;
+                    title: string | null;
+                    summary: string | null;
+                    activities: Array<{
+                        tripActivityId: string;
+                        tripDayId: string;
+                        position: number;
+                        startsAt: string | null;
+                        endsAt: string | null;
+                        title: string;
+                        location: string | null;
+                        url: string | null;
+                        notes: string | null;
+                    }>;
+                }>;
+                packingItems: Array<{
+                    tripPackingItemId: string;
+                    tripId: string;
+                    category: string;
+                    label: string;
+                    quantity: number;
+                    packed: boolean;
+                    position: number;
+                    notes: string | null;
+                }>;
+            } | null;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceTravelDetailQueryVariables = Exact<{
+    tripId: string;
+}>;
+
+export type GqlCWorkspaceTravelDetailQuery = {
+    currentSession: {
+        user: {
+            admin: {
+                travel: {
+                    trip: {
+                        tripId: string;
+                        title: string;
+                        destination: string;
+                        startsOn: string | null;
+                        endsOn: string | null;
+                        status: Schema.GqlCTripStatus;
+                        transportMode: Schema.GqlCTransportMode | null;
+                        accommodation: string | null;
+                        notes: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                        days: Array<{
+                            tripDayId: string;
+                            tripId: string;
+                            dayNumber: number;
+                            date: string | null;
+                            title: string | null;
+                            summary: string | null;
+                            activities: Array<{
+                                tripActivityId: string;
+                                tripDayId: string;
+                                position: number;
+                                startsAt: string | null;
+                                endsAt: string | null;
+                                title: string;
+                                location: string | null;
+                                url: string | null;
+                                notes: string | null;
+                            }>;
+                        }>;
+                        packingItems: Array<{
+                            tripPackingItemId: string;
+                            tripId: string;
+                            category: string;
+                            label: string;
+                            quantity: number;
+                            packed: boolean;
+                            position: number;
+                            notes: string | null;
+                        }>;
+                    } | null;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceTravelDetailUpdatesSubscriptionVariables = Exact<{
+    tripId: string;
+}>;
+
+export type GqlCWorkspaceTravelDetailUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            travel: {
+                trip: {
+                    tripId: string;
+                    title: string;
+                    destination: string;
+                    startsOn: string | null;
+                    endsOn: string | null;
+                    status: Schema.GqlCTripStatus;
+                    transportMode: Schema.GqlCTransportMode | null;
+                    accommodation: string | null;
+                    notes: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                    days: Array<{
+                        tripDayId: string;
+                        tripId: string;
+                        dayNumber: number;
+                        date: string | null;
+                        title: string | null;
+                        summary: string | null;
+                        activities: Array<{
+                            tripActivityId: string;
+                            tripDayId: string;
+                            position: number;
+                            startsAt: string | null;
+                            endsAt: string | null;
+                            title: string;
+                            location: string | null;
+                            url: string | null;
+                            notes: string | null;
+                        }>;
+                    }>;
+                    packingItems: Array<{
+                        tripPackingItemId: string;
+                        tripId: string;
+                        category: string;
+                        label: string;
+                        quantity: number;
+                        packed: boolean;
+                        position: number;
+                        notes: string | null;
+                    }>;
+                } | null;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceTripDayUpsertMutationVariables = Exact<{
+    input: Schema.GqlCTripDayInput;
+}>;
+
+export type GqlCWorkspaceTripDayUpsertMutation = { admin: { tripDayUpsert: { tripDayId: string } } };
+
+export type GqlCWorkspaceTripDayDeleteMutationVariables = Exact<{
+    tripDayId: string;
+}>;
+
+export type GqlCWorkspaceTripDayDeleteMutation = { admin: { tripDayDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTripActivityUpsertMutationVariables = Exact<{
+    input: Schema.GqlCTripActivityInput;
+}>;
+
+export type GqlCWorkspaceTripActivityUpsertMutation = { admin: { tripActivityUpsert: { tripActivityId: string } } };
+
+export type GqlCWorkspaceTripActivityDeleteMutationVariables = Exact<{
+    tripActivityId: string;
+}>;
+
+export type GqlCWorkspaceTripActivityDeleteMutation = { admin: { tripActivityDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTripPackingItemUpsertMutationVariables = Exact<{
+    input: Schema.GqlCTripPackingItemInput;
+}>;
+
+export type GqlCWorkspaceTripPackingItemUpsertMutation = { admin: { tripPackingItemUpsert: { tripPackingItemId: string } } };
+
+export type GqlCWorkspaceTripPackingItemDeleteMutationVariables = Exact<{
+    tripPackingItemId: string;
+}>;
+
+export type GqlCWorkspaceTripPackingItemDeleteMutation = { admin: { tripPackingItemDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTripPackingItemToggleMutationVariables = Exact<{
+    tripPackingItemId: string;
+}>;
+
+export type GqlCWorkspaceTripPackingItemToggleMutation = { admin: { tripPackingItemToggle: { tripPackingItemId: string } } };
+
 export type GqlCChatMessageGenerationFragment = {
     modelId: string;
     inputTokens: number | null;
@@ -6804,6 +7258,207 @@ export const WorkspaceTodosPageUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceTodosPageUserFragment, unknown>;
+export const WorkspaceTravelPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTravelPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'travel' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'trips' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'destination' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'transportMode' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'accommodation' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'days' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dayNumber' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'packingItems' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'packed' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTravelPageUserFragment, unknown>;
+export const WorkspaceTravelDetailUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTravelDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'travel' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'trip' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'tripId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'destination' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'transportMode' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'accommodation' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'days' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dayNumber' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'activities' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'tripActivityId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'tripDayId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'position' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'startsAt' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'endsAt' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'location' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'packingItems' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'quantity' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'packed' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTravelDetailUserFragment, unknown>;
 export const ChatMessageGenerationFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -16962,6 +17617,928 @@ export const WorkspaceTodoDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceTodoDeleteMutation, GqlCWorkspaceTodoDeleteMutationVariables>;
+export const WorkspaceTravelPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceTravelPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceTravelPageUser' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTravelPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'travel' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'trips' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'destination' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'transportMode' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'accommodation' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'days' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dayNumber' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'packingItems' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'packed' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTravelPageQuery, GqlCWorkspaceTravelPageQueryVariables>;
+export const WorkspaceTravelPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceTravelPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceTravelPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTravelPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'travel' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'trips' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'destination' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'transportMode' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'accommodation' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'days' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dayNumber' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'packingItems' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'packed' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTravelPageUpdatesSubscription, GqlCWorkspaceTravelPageUpdatesSubscriptionVariables>;
+export const WorkspaceTripUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripUpsertMutation, GqlCWorkspaceTripUpsertMutationVariables>;
+export const WorkspaceTripDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tripId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripDeleteMutation, GqlCWorkspaceTripDeleteMutationVariables>;
+export const WorkspaceTravelDetailDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceTravelDetail' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'currentSession' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceTravelDetailUser' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTravelDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'travel' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'trip' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'tripId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'destination' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'transportMode' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'accommodation' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'days' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dayNumber' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'activities' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'tripActivityId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'tripDayId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'position' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'startsAt' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'endsAt' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'location' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'packingItems' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'quantity' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'packed' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTravelDetailQuery, GqlCWorkspaceTravelDetailQueryVariables>;
+export const WorkspaceTravelDetailUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceTravelDetailUpdates' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceTravelDetailUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTravelDetailUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'travel' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'trip' },
+                                                arguments: [
+                                                    {
+                                                        kind: 'Argument',
+                                                        name: { kind: 'Name', value: 'tripId' },
+                                                        value: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                                                    },
+                                                ],
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'destination' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'transportMode' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'accommodation' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'days' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'dayNumber' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'activities' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'tripActivityId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'tripDayId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'position' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'startsAt' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'endsAt' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'location' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'packingItems' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'tripId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'quantity' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'packed' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTravelDetailUpdatesSubscription, GqlCWorkspaceTravelDetailUpdatesSubscriptionVariables>;
+export const WorkspaceTripDayUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripDayUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripDayInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripDayUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripDayUpsertMutation, GqlCWorkspaceTripDayUpsertMutationVariables>;
+export const WorkspaceTripDayDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripDayDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripDayId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripDayDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tripDayId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripDayId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripDayDeleteMutation, GqlCWorkspaceTripDayDeleteMutationVariables>;
+export const WorkspaceTripActivityUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripActivityUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripActivityInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripActivityUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripActivityId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripActivityUpsertMutation, GqlCWorkspaceTripActivityUpsertMutationVariables>;
+export const WorkspaceTripActivityDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripActivityDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivityId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripActivityDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tripActivityId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivityId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripActivityDeleteMutation, GqlCWorkspaceTripActivityDeleteMutationVariables>;
+export const WorkspaceTripPackingItemUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripPackingItemUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripPackingItemInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripPackingItemUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemUpsertMutation, GqlCWorkspaceTripPackingItemUpsertMutationVariables>;
+export const WorkspaceTripPackingItemDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripPackingItemDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripPackingItemDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tripPackingItemId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemDeleteMutation, GqlCWorkspaceTripPackingItemDeleteMutationVariables>;
+export const WorkspaceTripPackingItemToggleDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripPackingItemToggle' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripPackingItemToggle' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tripPackingItemId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemToggleMutation, GqlCWorkspaceTripPackingItemToggleMutationVariables>;
 export const ChatPageDocument = {
     kind: 'Document',
     definitions: [

@@ -7,6 +7,7 @@ import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaff
 import { toolDelegateToMedia } from './toolDelegateToMedia';
 import { toolDelegateToMedical } from './toolDelegateToMedical';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
+import { toolDelegateToTravel } from './toolDelegateToTravel';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
@@ -32,6 +33,7 @@ const BASE_SYSTEM_PROMPT = [
     '- Project and task management via `delegateToProjects` — see "When to delegate" below.',
     '- Movie watchlist and favourite-channels management via `delegateToMedia` — same pattern.',
     '- Health journal and medical appointments via `delegateToMedical` — same pattern.',
+    '- Trip planning (itinerary, day-by-day activities, per-trip packing list) via `delegateToTravel` — same pattern.',
     '- Web search via `delegateToWebSearch` — see "When to search" below.',
     '- Future: notes, calendar entries, content edits — each in its own sub-agent under the same delegation pattern.',
     '',
@@ -53,6 +55,10 @@ const BASE_SYSTEM_PROMPT = [
     '  place. If Cem pasted a photo into this turn AND the topic is health-related, forward the `fileUploadIds`',
     '  in the delegate call so the sub-agent can attach the photo to the record it files. You may briefly',
     '  describe what the photo shows in the `brief` (the sub-agent does not see the bytes; you do).',
+    '- ANY ask that touches trip planning — creating a trip, sketching a day-by-day itinerary, adding activities,',
+    '  managing the packing list, marking things packed — goes to `delegateToTravel`. This is the durable-plan path:',
+    '  the sub-agent writes the itinerary to Postgres so a future chat can read it back without replaying this',
+    '  conversation. Do NOT try to draft an itinerary in plain chat and expect it to persist.',
     "- The delegate result is `{ status, summary, mutations?, missingFields? }`. On `status: 'needsMoreInfo'`,",
     '  call `promptUserForInput` to gather the slots named in `missingFields`, then call the same delegate',
     "  again with the brief enriched by the answers. On `status: 'noOp'`, handle the ask yourself (it was not",
@@ -105,6 +111,7 @@ const BASE_SYSTEM_PROMPT = [
     '- Channel              → `[<name>](/workspace/media?tab=channels&focus=<channelId>)`',
     '- Medical record       → `[<title>](/workspace/medical?tab=records&focus=<recordId>)`',
     '- Medical appointment  → `[<title>](/workspace/medical?tab=appointments&focus=<appointmentId>)`',
+    '- Trip                 → `[<title>](/workspace/travel/<tripId>)`',
     '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
     'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
     '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',
@@ -224,6 +231,18 @@ export async function agentPersonalAssistant({
             // so the sub-agent can attach the file to the record it files.
             // See `docs/features/workspace-medical.md`.
             delegateToMedical: toolDelegateToMedical({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Travel sub-agent — trips, day-by-day itinerary, packing list.
+            // The whole point of this delegate is durable trip planning: the
+            // itinerary lands in Postgres so a fresh chat session reads the
+            // plan from `AdminTravelQuery.trip(...)` instead of replaying the
+            // conversation. See `docs/features/workspace-travel.md`.
+            delegateToTravel: toolDelegateToTravel({
                 serverRuntime,
                 session,
                 chatId,

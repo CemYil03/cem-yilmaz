@@ -64,32 +64,33 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 
 ## Architecture at a Glance
 
-| Concern               | Pattern                                                                    | Key Files                                      |
-| --------------------- | -------------------------------------------------------------------------- | ---------------------------------------------- |
-| Server-side structure | CQRS — commands/, queries/, mappers/                                       | `docs/architecture/server-architecture.md`     |
-| Dependency injection  | ServerRuntime container                                                    | `src/server/domain/ServerRuntime.ts`           |
-| Environment variables | Central validated `EnvironmentVariables` — no direct `process.env` reads   | `src/server/env/environmentVariablesCreate.ts` |
-| Authentication        | Cookie-based automatic sessions; Phase 2 adds GitHub OAuth on top          | `src/server/utils/sessionUpsert.ts`            |
-| Authorization         | Guard functions (`guard{Entity}{Ctx}`)                                     | `src/server/guards/`                           |
-| Workspace access      | `isAdmin` column on `Users`; `guardAdmin` / `guardAdminMutation` enforce   | `docs/architecture/workspace-access.md`        |
-| GraphQL               | SDL-first, Apollo Server v5, URQL client                                   | `src/server/graphql/schema.graphqls`           |
-| Real-time             | Subscriptions over SSE, PostgreSQL NOTIFY/LISTEN                           | `src/server/graphql/PubSubPostgres.ts`         |
-| Background jobs       | pg-boss via `serverRuntime.jobs.enqueue()`                                 | `docs/architecture/jobs.md`                    |
-| Server-side rendering | Singleton headless Chromium via `serverRuntime.browser.capture()`          | `docs/architecture/server-side-rendering.md`   |
-| SEO                   | `seoMeta()` per page; dynamic `/sitemap.xml` and `/robots.txt`             | `docs/architecture/seo.md`                     |
-| AI-search (GEO)       | `/llms.txt`, ProfilePage/FAQPage JSON-LD, AI bot allowlist, chat deep-link | `docs/architecture/ai-search.md`               |
-| Code generation       | `npm run graphql:generate` — server `GqlS*`, client `GqlC*`                | `codegen.ts`                                   |
-| Editable content      | DB tables (CV, future projects/blog/tools) + admin UI under `/workspace`   | `docs/architecture/content-model.md`           |
-| Static identity       | Typed config under `src/web/content/`                                      | `src/web/content/personalInfo.ts`              |
-| AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                              | `src/server/agents/agentVisitorAboutCem.ts`    |
-| AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                        | `docs/architecture/multi-agent-chat.md`        |
-| AI chat titles        | Post-turn LLM titler with `NONE`-retry loop on the empty column            | `docs/features/chat-titles.md`                 |
-| AI chat transcript    | Shared MessageScroller-backed transcript for every chat surface            | `docs/architecture/chat-transcript.md`         |
-| AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`     | `src/server/agents/adminChatModels.ts`         |
-| Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled      | `docs/features/workspace-compass.md`           |
-| Media library         | Movies + channels, TMDB auto-fill, topic-clustered cross-views             | `docs/features/workspace-media.md`             |
-| Inventory             | Items + valuations + service log + receipt uploads; material net worth     | `docs/features/workspace-inventory.md`         |
-| Medical               | Health journal + appointment tracker; documentarian sub-agent with triage  | `docs/features/workspace-medical.md`           |
+| Concern               | Pattern                                                                                                   | Key Files                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Server-side structure | CQRS — commands/, queries/, mappers/                                                                      | `docs/architecture/server-architecture.md`     |
+| Dependency injection  | ServerRuntime container                                                                                   | `src/server/domain/ServerRuntime.ts`           |
+| Environment variables | Central validated `EnvironmentVariables` — no direct `process.env` reads                                  | `src/server/env/environmentVariablesCreate.ts` |
+| Authentication        | Cookie-based automatic sessions; Phase 2 adds GitHub OAuth on top                                         | `src/server/utils/sessionUpsert.ts`            |
+| Authorization         | Guard functions (`guard{Entity}{Ctx}`)                                                                    | `src/server/guards/`                           |
+| Workspace access      | `isAdmin` column on `Users`; `guardAdmin` / `guardAdminMutation` enforce                                  | `docs/architecture/workspace-access.md`        |
+| GraphQL               | SDL-first, Apollo Server v5, URQL client                                                                  | `src/server/graphql/schema.graphqls`           |
+| Real-time             | Subscriptions over SSE, PostgreSQL NOTIFY/LISTEN                                                          | `src/server/graphql/PubSubPostgres.ts`         |
+| Background jobs       | pg-boss via `serverRuntime.jobs.enqueue()`                                                                | `docs/architecture/jobs.md`                    |
+| Server-side rendering | Singleton headless Chromium via `serverRuntime.browser.capture()`                                         | `docs/architecture/server-side-rendering.md`   |
+| SEO                   | `seoMeta()` per page; dynamic `/sitemap.xml` and `/robots.txt`                                            | `docs/architecture/seo.md`                     |
+| AI-search (GEO)       | `/llms.txt`, ProfilePage/FAQPage JSON-LD, AI bot allowlist, chat deep-link                                | `docs/architecture/ai-search.md`               |
+| Code generation       | `npm run graphql:generate` — server `GqlS*`, client `GqlC*`                                               | `codegen.ts`                                   |
+| Editable content      | DB tables (CV, future projects/blog/tools) + admin UI under `/workspace`                                  | `docs/architecture/content-model.md`           |
+| Static identity       | Typed config under `src/web/content/`                                                                     | `src/web/content/personalInfo.ts`              |
+| AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                                                             | `src/server/agents/agentVisitorAboutCem.ts`    |
+| AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                                                       | `docs/architecture/multi-agent-chat.md`        |
+| AI chat titles        | Post-turn LLM titler with `NONE`-retry loop on the empty column                                           | `docs/features/chat-titles.md`                 |
+| AI chat transcript    | Shared MessageScroller-backed transcript for every chat surface                                           | `docs/architecture/chat-transcript.md`         |
+| AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`                                    | `src/server/agents/adminChatModels.ts`         |
+| Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled                                     | `docs/features/workspace-compass.md`           |
+| Media library         | Movies + channels, TMDB auto-fill, topic-clustered cross-views                                            | `docs/features/workspace-media.md`             |
+| Inventory             | Items + valuations + service log + receipt uploads; material net worth                                    | `docs/features/workspace-inventory.md`         |
+| Medical               | Health journal + appointment tracker; documentarian sub-agent with triage                                 | `docs/features/workspace-medical.md`           |
+| Travel                | Trips → days → activities + per-trip packing list; planner sub-agent writes durable itineraries from chat | `docs/features/workspace-travel.md`            |
 
 ## How to Add Things
 
@@ -172,6 +173,8 @@ src/
 │   │       ├── fitness.tsx     Fitness & well-being
 │   │       ├── medical.tsx     Medical (appointments, results, health notes)
 │   │       ├── media.tsx       Movies & channels — watchlist, ratings, favourite YouTube/podcast channels clustered by topic
+│   │       ├── travel.tsx      Travel — trips list (upcoming / past) + new-trip dialog
+│   │       ├── travel_.$tripId.tsx  Per-trip detail (itinerary: day cards + activities; packing list grouped by category)
 │   │       └── logs.tsx        Server log viewer (read-only triage of the `Logs` table)
 │   └── api/
 │       ├── graphql.ts          POST /api/graphql (queries, mutations)

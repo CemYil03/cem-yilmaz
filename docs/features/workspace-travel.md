@@ -1,37 +1,55 @@
 # Workspace Travel
 
-Everything that gets Cem out the door for a trip: the list of upcoming and past trips, the reusable packing-list template plus per-trip
-additions, and the small pile of pre-departure todos ("stop the mail", "charge the power bank") that don't belong in general `/todos`.
+Trip planner for Cem: an admin editor at `/workspace/travel` plus a durable AI use-case where the workspace assistant drafts a day-by-day
+itinerary and packing list directly into Postgres. The whole point of the persistence layer is that a fresh chat can read the plan back
+without replaying the conversation.
 
 ## Why a separate category
 
-The immediate need is a travel packing list. Considered — and rejected — putting it under an existing area:
+The immediate need is a trip planner with a day-by-day itinerary and a per-trip packing list. Considered — and rejected — putting it under
+an existing area:
 
-- **Under `todos`.** Works if a packing list is just a checklist. But packing lists are **templated** — Cem has a base list he reuses on
-  every trip, plus trip-specific additions. `todos` doesn't model templates or trip-scoping, and packing coexists with pre-trip errands
-  (visa, transport, mail hold) that only make sense grouped by trip.
+- **Under `todos`.** Works if a packing list is just a checklist. But packing coexists with an itinerary and pre-trip errands (visa,
+  transport, mail hold) that only make sense grouped by trip. `todos` doesn't model trip-scoping.
 - **Under `projects`.** A trip could be modeled as a project — but `projects` is kanban-shaped for ongoing work with tasks / notes / links /
-  files. A trip is bounded, has a departure date, and accretes trip-shaped artefacts (itinerary, bookings, packing) that don't map cleanly
+  files. A trip is bounded, has a departure date, and accretes trip-shaped artefacts (itinerary, activities, packing) that don't map cleanly
   onto the project shape.
 
-A new category, scoped to `travel` from day one, gives room for the obvious near-term additions (itinerary, bookings, transport, visas)
-without a rename later. If it turns out travel really only ever means packing, the surface can shrink — but starting narrower and regretting
-it is more expensive than starting broad and letting some subsections stay empty.
+A new category, scoped to `travel` from day one, gives room for the obvious near-term additions (bookings, transport, visas) without a
+rename later.
 
 ## User Behavior
 
-_Phase 1 ships the stub only._ The full behavior below is what the surface is being built toward:
+`/workspace/travel` is the list surface. Cards show one trip each with destination, dates, status, day count, and packing progress
+(`x/y packed`). Two tabs — **Upcoming** (default) and **Past** — group by status; upcoming holds anything not `completed` / `cancelled`,
+past holds the rest. A "New trip" button opens the base-facts dialog (title, destination, dates, status, transport, accommodation, notes).
 
-- `/workspace/travel` shows a two-part landing:
-  - **Upcoming trips** — cards for trips whose departure date is in the future, sorted soonest first. Each card shows destination, dates, a
-    packing-progress badge (`x / y packed`), and a pre-trip-todos badge (`x / y done`).
-  - **Past trips** — collapsed by default, expandable to a chronologically-descending list.
-- **Base packing list** is a reusable template edited from a settings-style corner of the page. Every new trip starts from the base list as
-  a fresh copy; edits to a trip's list don't retroactively touch the base or any other trip.
-- **Per-trip detail** (linked from a trip card): trip meta (destination, departure/return, transport mode, accommodation), the packing
-  checklist (grouped by category — Documents, Electronics, Clothing, Toiletries, etc.), and pre-trip todos with due dates relative to
-  departure (e.g. "3 days before").
-- **Trip-scoped todos** stay on the trip. `/workspace/todos` still exists for un-scoped tasks; the two don't spill into each other.
+`/workspace/travel/<tripId>` is the per-trip detail. Header renders the trip's facts; below it two side-by-side sections:
+
+- **Itinerary** — one collapsible block per `TripDay` (labeled "Day N · date · title"). Inside each day is an ordered list of
+  `TripActivities` with time, title, location, url, notes. Add / edit / delete affordances at both levels.
+- **Packing list** — checkbox rows grouped by free-text `category` (Documents, Electronics, Clothing, Toiletries, …). Each row shows
+  quantity when > 1 and a notes preview. Checking the box calls `tripPackingItemToggle`.
+
+## The AI use-case (the whole reason this feature exists)
+
+The workspace assistant at `/workspace/assistant` gains a `delegateToTravel` tool that hands trip briefs to `agentPersonalAssistantTravel`.
+Cem says _"plan me a 3-day trip to Rome from Aug 5–7 with one main activity per day"_, and the sub-agent runs a chain of `tripUpsert` →
+three `tripDayUpsert` → three `tripActivityUpsert` writes in a single turn. The trip surfaces on `/workspace/travel` immediately over
+`userUpdates`; a fresh chat later reads the plan from the DB via the same `travelSnapshotForAgent` call that primes the sub-agent's system
+prompt.
+
+The sub-agent's rules:
+
+- **Bias toward drafting.** A vague scope ("a couple of things per day") is enough — pick well-known highlights for the destination and file
+  them as activities. Ask for clarification only when a required field is genuinely missing (no destination, no dates for a new trip,
+  ambiguity between multiple existing trips).
+- **Never invent ids.** Ids come from the snapshot or from a tool result earlier in the same turn.
+- **Reply in the user's language** (German or English).
+- **Times are wall-clock strings** (`HH:MM` / `HH:MM:SS`). The trip is location-scoped; a timezone offset would be a lie.
+- **`needsMoreInfo` / `noOp` sentinels** for the two escape hatches — same shape as every other domain sub-agent (`agent-delegation.md`).
+
+The packing list is trip-scoped in v1: adding "Passport" to Rome doesn't touch Berlin. See _Future work_ for the reusable-template idea.
 
 ## Cross-references
 
@@ -41,35 +59,72 @@ _Phase 1 ships the stub only._ The full behavior below is what the surface is be
 
 ## Implementation Details
 
+### Schema (in `src/server/db/schema.ts`)
+
+Four tables, admin-only convention — no `userId` on domain rows, no `*De`/`*En` pairs, PK is `<entity>Id`:
+
+- **`Trips`** — `tripId`, `title`, `destination`, `startsOn`, `endsOn`, `status` (`draft` | `planned` | `active` | `completed` |
+  `cancelled`, default `draft`), `transportMode` (`flight` | `train` | `car` | `ferry` | `mixed`, nullable), `accommodation`, `notes`,
+  timestamps.
+- **`TripDays`** — FK to `Trips` (cascade), `dayNumber` (1-based, unique per trip), `date` (nullable), `title`, `summary`, timestamps.
+- **`TripActivities`** — FK to `TripDays` (cascade), `position` (int, indexed with `tripDayId`), `startsAt` / `endsAt` (wall-clock varchar),
+  `title`, `location`, `url`, `notes`, timestamps.
+- **`TripPackingItems`** — FK to `Trips` (cascade), `category`, `label`, `quantity`, `packed`, `position`, `notes`, timestamps.
+
+Enum tuples exported as `TRIP_STATUSES` and `TRANSPORT_MODES`, mirrored in `schema.graphqls` as `TripStatus` / `TransportMode`.
+
+### CQRS wiring
+
+Standard `commands/` (`tripUpsert`, `tripDelete`, `tripDayUpsert`, `tripDayDelete`, `tripActivityUpsert`, `tripActivityDelete`,
+`tripPackingItemUpsert`, `tripPackingItemDelete`, `tripPackingItemToggle`), `queries/` (`tripList`, `tripGet`), `mappers/` (`toGqlTrip`,
+`toGqlTripDay`, `toGqlTripActivity`, `toGqlTripPackingItem`). Every command ends with `serverRuntime.publish.userUpdates({ userId })` so the
+seeded-and-subscribed pages replace state on write.
+
+Resolver wiring lives in `src/server/graphql/resolversCreate.ts`: `Admin.travel` shell, `AdminTravelQuery.trips` / `AdminTravelQuery.trip`,
+and mutation handlers on `AdminMutation`. `guardAdminMutation` at the parent field authorizes once.
+
+### Sub-agent
+
+- Factory: `src/server/agents/agentPersonalAssistantTravel.ts` — model pinned to `ADMIN_CHAT_MODEL_FALLBACK_ID` (Flash), `stopWhen` is
+  `[isStepCount(10)]`, system prompt embeds `currentDateForAgent()` and `travelSnapshotForAgent`.
+- Snapshot: `src/server/agents/travelSnapshotForAgent.ts` — compact markdown listing every trip with day count, per-day activities, and
+  packing progress. Each row keeps its id inline so the agent can address it in mutation tools without a `tripsList` call.
+- Read tools: `toolTripsList`, `toolTripGet`.
+- Mutation tools: `toolTripUpsert`, `toolTripDelete`, `toolTripDayUpsert`, `toolTripDayDelete`, `toolTripActivityUpsert`,
+  `toolTripActivityDelete`, `toolTripPackingItemUpsert`, `toolTripPackingItemDelete`, `toolTripPackingItemToggle`. Each is a thin wrapper
+  around the matching command; input schemas are hand-built `z.object`s (ISO strings, not `z.date()`) per the agent-delegation convention.
+- Mutation-log `TravelAgentMutationKind` union covers add / update / delete for each entity plus the packing-item toggle. Every tool pushes
+  `{ kind, id, title }` on success — the orchestrator uses these to narrate what changed.
+- Delegate: `src/server/agents/toolDelegateToTravel.ts` — structural copy of `toolDelegateToMedia.ts`. Pre-writes its parent
+  `chatMessagesToolCall` row, spawns the sub-agent with a `childOnStepContext` that persists nested calls under the delegate row, wraps
+  `agent.generate` in try/catch → `status: 'failed'`.
+- Registered on `agentPersonalAssistant` alongside the other four delegates. System prompt extended with the "when to delegate" travel
+  bullet and the `/workspace/travel/<tripId>` deep-link template.
+
 ### Route
 
-`src/routes/{-$locale}/workspace/travel.tsx` — standard stub shape identical to `tax.tsx` / `medical.tsx`: `createFileRoute` with
-`seoMeta({ noindex: true })`, one `<main>` block with a body paragraph and a muted "coming soon" line. The workspace header (mounted at the
-layout) provides the breadcrumb + icon.
+`src/routes/{-$locale}/workspace/travel.tsx` — list surface. Loader hits `WorkspaceTravelPageDocument`; the page seeds-and-subscribes via
+`useWorkspaceTravelLiveUser`. `?tab=` in the search schema chooses upcoming vs past. `noindex: true`, not in `SITEMAP_PATHS`.
 
-### Hub tile
+`src/routes/{-$locale}/workspace/travel_.$tripId.tsx` — per-trip detail. Loader hits `WorkspaceTravelDetailDocument` with `tripId` from the
+route params; the page seeds-and-subscribes via `useWorkspaceTravelDetailLiveUser(seed, tripId)`. Sections are two-column on `xl+` screens,
+stacked below (`grid xl:grid-cols-5` — 3 for itinerary, 2 for packing).
 
-`PERSONAL_FOCUS_AREAS` in `src/routes/{-$locale}/workspace/index.tsx` gets one new entry, placed near the end of the personal grid
-(lifestyle / occasional, not daily).
+### Hub tile, breadcrumb, SEO
 
-### Breadcrumb
+Already in place from the Phase-1 stub: `PERSONAL_FOCUS_AREAS` entry with `PlaneIcon`, `WORKSPACE_TITLES.travel`, `WORKSPACE_ICONS.travel`.
+Every travel route is `noindex: true` and absent from `SITEMAP_PATHS` — same posture as the rest of `/workspace/*`.
 
-`WORKSPACE_TITLES` and `WORKSPACE_ICONS` in `src/web/components/WorkspaceHeader.tsx` get the `travel` segment. Icon: `PlaneIcon` from
-`lucide-react`.
+## Future Work
 
-### SEO
-
-`noindex: true`, not in `SITEMAP_PATHS` — same posture as the rest of `/workspace/*`.
-
-## Open TODOs
-
-- **Phase 2+ — schema.** `Trips` table (drizzle): id, userId, destinationDe, destinationEn (see the bilingual DB-content convention),
-  departsOn, returnsOn (nullable), transportMode, accommodationNotes, createdAt, updatedAt.
-- **Phase 2+ — packing.** `PackingTemplates` (the base list, one per user) and `PackingItems` (rows on either a template or a trip,
-  discriminated by nullable foreign keys), each with: label, category, `packed` boolean (trip-scoped only), quantity, notes.
-- **Phase 2+ — trip todos.** Either extend the existing `Tasks` table with a nullable `tripId` FK, or introduce `TripTodos` — decide when
-  the detail page is built based on whether trip todos need the full tasks model (activity, attachments) or a slimmer one.
-- **Phase 2+ — GraphQL.** `admin.trips`, `admin.trip(id)`, `admin.tripCreate`, `admin.tripUpdate`, `admin.tripDelete`, plus packing-item
-  mutations; standard CQRS split.
-- **Phase 2+ — template seed.** Ship the base packing list as an empty template on first render; do **not** seed with a generic default — a
-  wrong default is worse than an empty list.
+- **Reusable base packing template.** A `PackingTemplates` singleton per user, plus `PackingItems` rows discriminated by nullable FKs
+  (template vs. trip). A new trip starts by copying the template rows onto itself; template edits do not retroactively touch a trip's list.
+  Deferred because the AI use-case is complete without it — the assistant can seed the packing list per trip on demand.
+- **Bookings.** Structured rows for flights, hotels, reservations with confirmation numbers, times, references. Currently expressed as an
+  activity with a `url` and free-text `notes`.
+- **Cost tracking / budget.** Per-activity or per-booking cost, running total, currency. Overlaps with the Finances area and is deferred
+  until that area lands.
+- **File attachments per trip.** Boarding passes, hotel confirmations, insurance PDFs. Would mirror `MedicalRecordFiles` — a `TripFiles`
+  join between `Trips` and the shared `FileUploads` table. Deferred because the current AI-driven flow does not need binary artefacts.
+- **Compass ingestion.** `travelSnapshotForAgent` is currently only read by the travel sub-agent. Feeding it into the compass would let the
+  personal-assistant orchestrator answer "when did I last go to Istanbul?" without a delegation.
