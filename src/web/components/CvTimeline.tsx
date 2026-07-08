@@ -1,4 +1,5 @@
 import type { Locale } from '../utils/locale';
+import { AssistantMarkdown } from './AssistantMarkdown';
 import { GlassCard } from './GlassCard';
 import { Reveal } from './Reveal';
 
@@ -83,7 +84,7 @@ export function CvTimeline({ entries, locale }: { entries: ReadonlyArray<CvTimel
                                 </p>
                                 <h3 className="text-lg font-semibold tracking-tight">{entry.title}</h3>
                                 <p className="text-sm text-muted-foreground">{entry.subtitle}</p>
-                                {entry.description ? <p className="mt-3 text-sm leading-relaxed">{entry.description}</p> : null}
+                                {entry.description ? <AssistantMarkdown text={entry.description} className="mt-3" /> : null}
                                 {entry.technologies && entry.technologies.length > 0 ? (
                                     <ul className="mt-3 flex flex-wrap gap-1.5">
                                         {entry.technologies.map((tech) => (

@@ -391,7 +391,7 @@ function WorkspaceProjectDetail() {
                     <ProjectDescription project={project} locale={locale} />
 
                     <nav
-                        className="mt-6 flex flex-wrap gap-1 border-b border-border/60"
+                        className="mt-6 flex gap-1 overflow-x-auto border-b border-border/60 scrollbar-none"
                         aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
                     >
                         {TABS.map((t) => {

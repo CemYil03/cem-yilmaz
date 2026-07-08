@@ -136,7 +136,7 @@ export function Header({
                             // and the trail to the right shows the user where they
                             // are inside the hierarchy. Used on workspace surfaces,
                             // where the page's location *is* the brand.
-                            <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex min-w-0 items-center gap-3 overflow-hidden">
                                 <Link
                                     to="/{-$locale}"
                                     aria-label="Home"
@@ -145,8 +145,8 @@ export function Header({
                                     <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
                                     <img src="/favicon-dark.ico" className="hidden size-8 dark:block" alt="" />
                                 </Link>
-                                <Breadcrumb className="min-w-0">
-                                    <BreadcrumbList className="flex-nowrap">
+                                <Breadcrumb className="min-w-0 overflow-hidden">
+                                    <BreadcrumbList className="flex-nowrap overflow-hidden">
                                         {breadcrumbs.map((crumb, index) => {
                                             const isLast = index === breadcrumbs.length - 1;
                                             const Icon = crumb.icon;

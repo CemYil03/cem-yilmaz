@@ -210,7 +210,10 @@ function WorkspaceMedical() {
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <p className="text-sm text-muted-foreground">{pageDescription[locale]}</p>
 
-            <nav className="mt-8 flex gap-1 border-b border-border/60" aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}>
+            <nav
+                className="mt-8 flex gap-1 overflow-x-auto border-b border-border/60 scrollbar-none"
+                aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
+            >
                 {TABS.map((t) => {
                     const Icon = TAB_ICONS[t];
                     const isActive = tab === t;
