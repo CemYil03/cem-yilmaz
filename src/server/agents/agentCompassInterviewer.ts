@@ -1,4 +1,4 @@
-import { generateText, tool } from 'ai';
+import { generateText, streamText, tool } from 'ai';
 import type { ModelMessage } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
@@ -11,17 +11,19 @@ import {
 } from './compassInterviewConfig';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 
-// Psychological-interview agent — see `docs/features/compass.md`
+// Psychological-interview agent — see `docs/features/workspace-compass.md`
 // ("Psychological-interview agent").
 //
-// Runs out-of-band from the chat runner. Each interview turn is one call to
-// this function: the command (`compassInterviewMessageSend` /
-// `compassInterviewStart`) loads the running transcript, hands it here, and
-// persists whatever this returns as a new assistant row in
-// `CompassInterviewMessages`. There is no streaming, no approval lifecycle,
-// no tool-call persistence — the only "tool" is `concludeInterview`, which
-// is the agent's way of saying "I have enough; close the interview." Its
-// payload is captured into `endNote` for the audit trail.
+// Runs out-of-band from the chat runner because the interview writes to its
+// own `CompassInterviewMessages` table with a shape (role + content only)
+// that doesn't fit the polymorphic `ChatMessage` union used by admin/visitor
+// chats. Exposes both a streaming and a non-streaming entry so the
+// message-send / start commands can drive a live UI while tests exercise
+// the same code path in a single-shot mock.
+//
+// The only "tool" is `concludeInterview`, which is the agent's way of saying
+// "I have enough; close the interview." Its payload is captured into
+// `endNote` for the audit trail.
 //
 // FIREWALL EXCEPTION — the personal assistant sees only `Compass.summary`.
 // The interviewer sees `summary` + `psychology` + recent observations,
@@ -151,57 +153,125 @@ const concludeInterviewTool = tool({
     }),
 });
 
-export async function agentCompassInterviewer({
+// Shared setup: system prompt + core AI-SDK params. `generate` and `stream`
+// diverge only in which AI-SDK call they make on top of this.
+function buildRunConfig({ serverRuntime, messages, locale, topic }: CompassInterviewAgentOptions & { topic: CompassInterviewTopic }) {
+    return async () => {
+        const context = await compassInterviewContextGet(serverRuntime);
+        const system = buildSystemPrompt({
+            summary: context.summary,
+            psychology: context.psychology,
+            recentObservations: context.recentObservations,
+            locale,
+            topic,
+        });
+
+        // When the transcript is empty this is the opening turn — feed the
+        // model a single user-role "begin the interview" nudge so it
+        // produces the first question instead of refusing for lack of a
+        // user message.
+        const modelMessages: ModelMessage[] =
+            messages.length === 0
+                ? [
+                      {
+                          role: 'user',
+                          content:
+                              locale === 'de'
+                                  ? 'Beginne das Interview mit deiner ersten Frage.'
+                                  : 'Begin the interview with your first question.',
+                      },
+                  ]
+                : messages.map((m) => ({ role: m.role, content: m.content }));
+
+        const model = serverRuntime.ai.compassInterviewerModel();
+        // The runtime binds this factory to `gemini-2.5-pro`. Resolve the
+        // same id locally so `googleAgentProviderOptionsFor` picks the Pro
+        // branch (structured outputs on, no `thinkingBudget: 0` — Pro
+        // rejects it). If the runtime swaps tier later, this line is the
+        // single place to update.
+        const modelIdForProviderOptions = 'gemini-2.5-pro';
+        return {
+            model,
+            system,
+            messages: modelMessages,
+            providerOptions: googleAgentProviderOptionsFor(modelIdForProviderOptions),
+            tools: { concludeInterview: concludeInterviewTool },
+        } as const;
+    };
+}
+
+// Non-streaming entry — used by tests (which never touch a real LLM
+// endpoint) and as a fallback path when no `generationId` was allocated for
+// the turn.
+export async function agentCompassInterviewerGenerate({
     serverRuntime,
     messages,
     locale,
     topic = 'general',
 }: CompassInterviewAgentOptions): Promise<CompassInterviewAgentResult> {
-    const context = await compassInterviewContextGet(serverRuntime);
-    const system = buildSystemPrompt({
-        summary: context.summary,
-        psychology: context.psychology,
-        recentObservations: context.recentObservations,
-        locale,
-        topic,
-    });
-
-    // When the transcript is empty this is the opening turn — feed the model
-    // a single user-role "begin the interview" nudge so it produces the first
-    // question instead of refusing for lack of a user message.
-    const modelMessages: ModelMessage[] =
-        messages.length === 0
-            ? [
-                  {
-                      role: 'user',
-                      content:
-                          locale === 'de'
-                              ? 'Beginne das Interview mit deiner ersten Frage.'
-                              : 'Begin the interview with your first question.',
-                  },
-              ]
-            : messages.map((m) => ({ role: m.role, content: m.content }));
-
-    const model = serverRuntime.ai.compassInterviewerModel();
-    // The runtime binds this factory to `gemini-2.5-pro`. Resolve the same
-    // id locally so `googleAgentProviderOptionsFor` picks the Pro branch
-    // (structured outputs on, no `thinkingBudget: 0` — Pro rejects it). If
-    // the runtime swaps tier later, this line is the single place to update.
-    const modelIdForProviderOptions = 'gemini-2.5-pro';
+    const configLoad = buildRunConfig({ serverRuntime, messages, locale, topic });
+    const config = await configLoad();
     const result = await generateText({
-        model,
-        system,
-        messages: modelMessages,
-        providerOptions: googleAgentProviderOptionsFor(modelIdForProviderOptions),
-        tools: { concludeInterview: concludeInterviewTool },
-        // Single-step turn. The model writes its question (or its conclude
-        // tool call) and stops; we do NOT loop here because the next "step"
-        // is Cem typing his reply, which arrives on a separate command call.
+        model: config.model,
+        system: config.system,
+        messages: config.messages,
+        providerOptions: config.providerOptions,
+        tools: config.tools,
     });
 
     const modelId = result.response.modelId;
     const concludeCall = result.toolCalls.find((c) => c.toolName === 'concludeInterview');
     const text = result.text.trim();
+
+    if (concludeCall) {
+        const note = (concludeCall.input as { note?: string }).note ?? '';
+        return { kind: 'concluded', content: text, endNote: note, modelId };
+    }
+
+    return { kind: 'question', content: text, modelId };
+}
+
+// Streaming entry — used by the live UI path. Yields text deltas via
+// `onDelta` (called once per `text-delta` chunk) so the turn-run helper can
+// forward them onto `publish.compassInterviewUpdates`, and resolves to the
+// same `CompassInterviewAgentResult` shape as the non-streaming path once
+// the stream completes. The final `content` is the accumulated text,
+// trimmed, mirroring `agentCompassInterviewerGenerate`.
+export async function agentCompassInterviewerStream({
+    serverRuntime,
+    messages,
+    locale,
+    topic = 'general',
+    onDelta,
+}: CompassInterviewAgentOptions & { onDelta: (delta: string) => void | Promise<void> }): Promise<CompassInterviewAgentResult> {
+    const configLoad = buildRunConfig({ serverRuntime, messages, locale, topic });
+    const config = await configLoad();
+    const result = streamText({
+        model: config.model,
+        system: config.system,
+        messages: config.messages,
+        providerOptions: config.providerOptions,
+        tools: config.tools,
+    });
+
+    let accumulated = '';
+    for await (const part of result.fullStream) {
+        if (part.type === 'text-delta') {
+            // AI SDK v5: text-delta parts carry the incremental text on
+            // `.text`. Accumulate for the final content and forward each
+            // delta to the caller so it can publish on the wire.
+            accumulated += part.text;
+            await onDelta(part.text);
+        }
+    }
+
+    // AI SDK's `streamText` result exposes the final response, tool calls,
+    // and text as promises that resolve once the stream has drained. Await
+    // them here so the semantics match `generateText`.
+    const [finalResponse, finalToolCalls] = await Promise.all([result.response, result.toolCalls]);
+    const modelId = finalResponse.modelId;
+    const concludeCall = finalToolCalls.find((c) => c.toolName === 'concludeInterview');
+    const text = accumulated.trim();
 
     if (concludeCall) {
         const note = (concludeCall.input as { note?: string }).note ?? '';

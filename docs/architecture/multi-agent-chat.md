@@ -243,15 +243,19 @@ of three artifacts produced by an out-of-loop profiler that watches admin chat m
 ## Compass psychological-interview agent
 
 A third agent — `agentCompassInterviewer` — lives alongside the visitor and personal-assistant agents but **deliberately does NOT ride the
-`Chats` table**. It owns its own persistence (`CompassInterviews` + `CompassInterviewMessages`) and runs out-of-band from the chat runner,
-one turn per `compassInterviewMessageSend` command call.
+`Chats` table**. It owns its own persistence (`CompassInterviews` + `CompassInterviewMessages`) and runs out-of-band from the chat runner
+through `compassInterviewTurnRunDetached` (a compass-shaped analogue of `chatAssistantTurnRunDetached`), one turn per
+`compassInterviewMessageSend` / `compassInterviewStart` command call.
 
 - **Why a separate table**: the `chats.scope` discriminator stays a strict `'public' | 'admin'` binary (the access-path-driven dispatch is
-  the whole point of this doc). Interview turns also don't need approval, tool-call streaming, generations, or input collection — a flat
-  user/assistant log is enough. Splitting keeps both schemas clean.
+  the whole point of this doc). Interview turns also don't need approval, tool-call persistence, generations, or input collection — a flat
+  user/assistant log is enough. Splitting keeps both schemas clean. Turns still stream token-by-token, but through a parallel
+  `compassInterviewUpdates` subscription (keyed on `interviewMessageId`) rather than `chatUpdates`.
 - **Why a separate agent factory**: same shape category as the other two (system prompt + tools + model binding) but a different read
   surface — the interviewer is the only place that intentionally widens the firewall to see `summary` + `psychology` + recent observations,
-  via the single `compassInterviewContextGet` query. The personal-assistant agent's `compassSummaryGet` read is unchanged.
+  via the single `compassInterviewContextGet` query. The personal-assistant agent's `compassSummaryGet` read is unchanged. The factory
+  exposes both `agentCompassInterviewerStream` (used by the detached turn-run when a `generationId` is present) and
+  `agentCompassInterviewerGenerate` (fallback for tests and any future scheduled-job caller with no live UI).
 - **Trigger**: a recurring `compassInterviewScheduledDue` pg-boss job creates a `pending` interview row on the cadence set by
   `COMPASS_INTERVIEW_CRON`. Cem starts it from `/workspace/compass`'s Interviews tab; replies feed the same `compassAnalyze` job (now
   interview-aware) the admin chat does, so observations land in the same stream.

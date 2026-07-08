@@ -262,6 +262,7 @@ export type GqlSAdminMutationCompassInterviewEndArgs = {
 
 export type GqlSAdminMutationCompassInterviewMessageSendArgs = {
     content: Scalars['String']['input'];
+    generationId?: InputMaybe<Scalars['ID']['input']>;
     interviewId: Scalars['ID']['input'];
 };
 
@@ -270,6 +271,7 @@ export type GqlSAdminMutationCompassInterviewSkipArgs = {
 };
 
 export type GqlSAdminMutationCompassInterviewStartArgs = {
+    generationId?: InputMaybe<Scalars['ID']['input']>;
     interviewId: Scalars['ID']['input'];
 };
 
@@ -788,6 +790,26 @@ export type GqlSCompassInterviewStatus = 'completed' | 'in_progress' | 'pending'
 export type GqlSCompassInterviewTopic = 'career' | 'fitness' | 'general' | 'health' | 'relationships' | 'stress';
 
 export type GqlSCompassInterviewTriggerReason = 'manual' | 'scheduled';
+
+export type GqlSCompassInterviewUpdate =
+    GqlSCompassInterviewUpdateAssistantTextChunk | GqlSCompassInterviewUpdateMessageAppended | GqlSCompassInterviewUpdateTurnEnded;
+
+export interface GqlSCompassInterviewUpdateAssistantTextChunk {
+    __typename?: 'CompassInterviewUpdateAssistantTextChunk';
+    delta: Scalars['String']['output'];
+    interviewMessageId: Scalars['ID']['output'];
+}
+
+export interface GqlSCompassInterviewUpdateMessageAppended {
+    __typename?: 'CompassInterviewUpdateMessageAppended';
+    message: GqlSCompassInterviewMessage;
+}
+
+export interface GqlSCompassInterviewUpdateTurnEnded {
+    __typename?: 'CompassInterviewUpdateTurnEnded';
+    concluded: Scalars['Boolean']['output'];
+    generationId: Scalars['ID']['output'];
+}
 
 export interface GqlSCompassObservation {
     __typename?: 'CompassObservation';
@@ -1431,10 +1453,15 @@ export type GqlSSessionVisitorChatArgs = {
 export interface GqlSSubscription {
     __typename?: 'Subscription';
     chatUpdates: GqlSChatUpdate;
+    compassInterviewUpdates: GqlSCompassInterviewUpdate;
     userUpdates: GqlSUser;
 }
 
 export type GqlSSubscriptionChatUpdatesArgs = {
+    generationId: Scalars['ID']['input'];
+};
+
+export type GqlSSubscriptionCompassInterviewUpdatesArgs = {
     generationId: Scalars['ID']['input'];
 };
 
@@ -1650,6 +1677,8 @@ export type GqlSResolversUnionTypes<_RefType extends Record<string, unknown>> = 
         | GqlSChatUpdateAssistantTextChunk
         | (Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: _RefType['ChatMessage'] })
         | GqlSChatUpdateTurnEnded;
+    CompassInterviewUpdate:
+        GqlSCompassInterviewUpdateAssistantTextChunk | GqlSCompassInterviewUpdateMessageAppended | GqlSCompassInterviewUpdateTurnEnded;
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -1725,6 +1754,10 @@ export type GqlSResolversTypes = ResolversObject<{
     CompassInterviewStatus: GqlSCompassInterviewStatus;
     CompassInterviewTopic: GqlSCompassInterviewTopic;
     CompassInterviewTriggerReason: GqlSCompassInterviewTriggerReason;
+    CompassInterviewUpdate: ResolverTypeWrapper<GqlSResolversUnionTypes<GqlSResolversTypes>['CompassInterviewUpdate']>;
+    CompassInterviewUpdateAssistantTextChunk: ResolverTypeWrapper<GqlSCompassInterviewUpdateAssistantTextChunk>;
+    CompassInterviewUpdateMessageAppended: ResolverTypeWrapper<GqlSCompassInterviewUpdateMessageAppended>;
+    CompassInterviewUpdateTurnEnded: ResolverTypeWrapper<GqlSCompassInterviewUpdateTurnEnded>;
     CompassObservation: ResolverTypeWrapper<GqlSCompassObservation>;
     CompassObservationCategory: GqlSCompassObservationCategory;
     CvEducation: ResolverTypeWrapper<GqlSCvEducation>;
@@ -1879,6 +1912,10 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ChatUpdateTurnEnded: GqlSChatUpdateTurnEnded;
     CompassInterview: GqlSCompassInterview;
     CompassInterviewMessage: GqlSCompassInterviewMessage;
+    CompassInterviewUpdate: GqlSResolversUnionTypes<GqlSResolversParentTypes>['CompassInterviewUpdate'];
+    CompassInterviewUpdateAssistantTextChunk: GqlSCompassInterviewUpdateAssistantTextChunk;
+    CompassInterviewUpdateMessageAppended: GqlSCompassInterviewUpdateMessageAppended;
+    CompassInterviewUpdateTurnEnded: GqlSCompassInterviewUpdateTurnEnded;
     CompassObservation: GqlSCompassObservation;
     CvEducation: GqlSCvEducation;
     CvEducationInput: GqlSCvEducationInput;
@@ -2827,6 +2864,46 @@ export type GqlSCompassInterviewMessageResolvers<
     role?: Resolver<GqlSResolversTypes['CompassInterviewMessageRole'], ParentType, ContextType>;
 }>;
 
+export type GqlSCompassInterviewUpdateResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CompassInterviewUpdate'] = GqlSResolversParentTypes['CompassInterviewUpdate'],
+> = ResolversObject<{
+    __resolveType: TypeResolveFn<
+        'CompassInterviewUpdateAssistantTextChunk' | 'CompassInterviewUpdateMessageAppended' | 'CompassInterviewUpdateTurnEnded',
+        ParentType,
+        ContextType
+    >;
+}>;
+
+export type GqlSCompassInterviewUpdateAssistantTextChunkResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CompassInterviewUpdateAssistantTextChunk'] =
+        GqlSResolversParentTypes['CompassInterviewUpdateAssistantTextChunk'],
+> = ResolversObject<{
+    delta?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    interviewMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSCompassInterviewUpdateMessageAppendedResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CompassInterviewUpdateMessageAppended'] =
+        GqlSResolversParentTypes['CompassInterviewUpdateMessageAppended'],
+> = ResolversObject<{
+    message?: Resolver<GqlSResolversTypes['CompassInterviewMessage'], ParentType, ContextType>;
+    __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSCompassInterviewUpdateTurnEndedResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['CompassInterviewUpdateTurnEnded'] =
+        GqlSResolversParentTypes['CompassInterviewUpdateTurnEnded'],
+> = ResolversObject<{
+    concluded?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    generationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlSCompassObservationResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['CompassObservation'] = GqlSResolversParentTypes['CompassObservation'],
@@ -3273,6 +3350,13 @@ export type GqlSSubscriptionResolvers<
         ContextType,
         RequireFields<GqlSSubscriptionChatUpdatesArgs, 'generationId'>
     >;
+    compassInterviewUpdates?: SubscriptionResolver<
+        GqlSResolversTypes['CompassInterviewUpdate'],
+        'compassInterviewUpdates',
+        ParentType,
+        ContextType,
+        RequireFields<GqlSSubscriptionCompassInterviewUpdatesArgs, 'generationId'>
+    >;
     userUpdates?: SubscriptionResolver<GqlSResolversTypes['User'], 'userUpdates', ParentType, ContextType>;
 }>;
 
@@ -3399,6 +3483,10 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ChatUpdateTurnEnded?: GqlSChatUpdateTurnEndedResolvers<ContextType>;
     CompassInterview?: GqlSCompassInterviewResolvers<ContextType>;
     CompassInterviewMessage?: GqlSCompassInterviewMessageResolvers<ContextType>;
+    CompassInterviewUpdate?: GqlSCompassInterviewUpdateResolvers<ContextType>;
+    CompassInterviewUpdateAssistantTextChunk?: GqlSCompassInterviewUpdateAssistantTextChunkResolvers<ContextType>;
+    CompassInterviewUpdateMessageAppended?: GqlSCompassInterviewUpdateMessageAppendedResolvers<ContextType>;
+    CompassInterviewUpdateTurnEnded?: GqlSCompassInterviewUpdateTurnEndedResolvers<ContextType>;
     CompassObservation?: GqlSCompassObservationResolvers<ContextType>;
     CvEducation?: GqlSCvEducationResolvers<ContextType>;
     CvExperience?: GqlSCvExperienceResolvers<ContextType>;

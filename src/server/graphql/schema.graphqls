@@ -705,9 +705,39 @@ type ChatUpdateTurnEnded {
 
 union ChatUpdate = ChatUpdateMessageAppended | ChatUpdateAssistantTextChunk | ChatUpdateTurnEnded
 
+# --- Compass interview live updates -----------------------------------------
+#
+# Parallel to `chatUpdates`, but keyed on interview-message ids instead of chat
+# ones because the interviewer writes to its own `CompassInterviewMessages`
+# table (see `docs/features/workspace-compass.md`). Same three-variant shape:
+# a newly-persisted row, a streaming delta on the pre-allocated assistant row
+# id, and a terminal `turnEnded` (with `concluded: true` when the agent called
+# `concludeInterview`, so the client can flip the row's status without waiting
+# for the next `userUpdates` push).
+
+type CompassInterviewUpdateMessageAppended {
+    message: CompassInterviewMessage!
+}
+
+type CompassInterviewUpdateAssistantTextChunk {
+    interviewMessageId: ID!
+    delta: String!
+}
+
+type CompassInterviewUpdateTurnEnded {
+    generationId: ID!
+    concluded: Boolean!
+}
+
+union CompassInterviewUpdate =
+    | CompassInterviewUpdateMessageAppended
+    | CompassInterviewUpdateAssistantTextChunk
+    | CompassInterviewUpdateTurnEnded
+
 type Subscription {
     userUpdates: User!
     chatUpdates(generationId: ID!): ChatUpdate!
+    compassInterviewUpdates(generationId: ID!): CompassInterviewUpdate!
 }
 
 # --- CV ----------------------------------------------------------------------
@@ -1275,13 +1305,13 @@ extend type AdminMutation {
     # `in_progress` and runs the agent's opening turn. Idempotent: a repeat
     # call on an already-started interview is a no-op rather than a second
     # opener. See `docs/features/compass.md`.
-    compassInterviewStart(interviewId: ID!): MutationResult!
+    compassInterviewStart(interviewId: ID!, generationId: ID): MutationResult!
     # Append Cem's reply to an in-progress interview, run the next agent
     # turn, and persist the assistant's reply. Enqueues `compassAnalyze`
     # fire-and-forget for the user message. When the agent calls
     # `concludeInterview`, the interview row transitions to `completed`
     # automatically in the same call.
-    compassInterviewMessageSend(interviewId: ID!, content: String!): MutationResult!
+    compassInterviewMessageSend(interviewId: ID!, content: String!, generationId: ID): MutationResult!
     # User-initiated early end — moves an `in_progress` interview to
     # `completed` with `endReason='user_ended'`. Already-analyzed user
     # turns keep their observations; no new agent turn fires.

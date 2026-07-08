@@ -48,6 +48,10 @@ export function serverRuntimeCreate(): ServerRuntime {
             // subscription resolver re-loads the row and maps to the full
             // `GqlSChatUpdate` before handing it to subscribers.
             chatUpdates: ({ generationId, payload }) => publish(`chat-updates:${generationId}`, payload),
+            // Parallel channel for the compass interviewer. Same namespaced
+            // key shape as `chatUpdates` — the generationId is client-allocated
+            // and unguessable, and the prefix keeps its own routing space.
+            compassInterviewUpdates: ({ generationId, payload }) => publish(`compass-interview-updates:${generationId}`, payload),
         },
         jobs: {
             enqueue: jobEnqueue,

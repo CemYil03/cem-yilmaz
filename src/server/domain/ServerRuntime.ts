@@ -1,6 +1,7 @@
 import type { LanguageModel, Tool } from 'ai';
 import type { Database, DatabaseTransaction } from '../db';
 import type { ChatUpdateWirePayload } from '../graphql/chatUpdateWirePayload';
+import type { CompassInterviewUpdateWirePayload } from '../graphql/compassInterviewUpdateWirePayload';
 import type { QueuedJobDefinition } from '../jobs/types';
 import type { EmailService } from '../services/emailServiceCreate';
 import type { TmdbClient } from '../services/tmdbClientCreate';
@@ -23,6 +24,13 @@ export interface ServerRuntime {
         // and maps to `GqlSChatUpdate` before delivery. See
         // `src/server/graphql/chatUpdateWirePayload.ts`.
         chatUpdates: (args: { generationId: string; payload: ChatUpdateWirePayload }) => Promise<void>;
+        // Parallel channel for the compass psychological-interview agent
+        // (`docs/features/workspace-compass.md`). Keyed on the same ephemeral
+        // client-allocated `generationId`, but carries interview-message ids
+        // instead of chat-message ids because the interviewer writes to
+        // `CompassInterviewMessages` rather than `ChatMessages`. See
+        // `src/server/graphql/compassInterviewUpdateWirePayload.ts`.
+        compassInterviewUpdates: (args: { generationId: string; payload: CompassInterviewUpdateWirePayload }) => Promise<void>;
     };
     jobs: {
         enqueue: <TData>(

@@ -66,6 +66,7 @@ function serverRuntimeStubCreate(): ServerRuntime {
         publish: {
             userUpdates: vi.fn<ServerRuntime['publish']['userUpdates']>(async () => {}),
             chatUpdates: vi.fn<ServerRuntime['publish']['chatUpdates']>(async () => {}),
+            compassInterviewUpdates: vi.fn<ServerRuntime['publish']['compassInterviewUpdates']>(async () => {}),
         },
         jobs: {
             // `enqueue` is generic over `TData`; vitest's `Mock<T>` doesn't

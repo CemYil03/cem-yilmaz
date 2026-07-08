@@ -82,6 +82,17 @@ declare module './generated' {
         gqlTypeName: 'ChatUpdateTurnEnded';
     }
 
+    // --- CompassInterviewUpdate union ---------------------------------------
+    export interface GqlSCompassInterviewUpdateMessageAppended {
+        gqlTypeName: 'CompassInterviewUpdateMessageAppended';
+    }
+    export interface GqlSCompassInterviewUpdateAssistantTextChunk {
+        gqlTypeName: 'CompassInterviewUpdateAssistantTextChunk';
+    }
+    export interface GqlSCompassInterviewUpdateTurnEnded {
+        gqlTypeName: 'CompassInterviewUpdateTurnEnded';
+    }
+
     // --- ChatAssistantInputValue union --------------------------------------
     export interface GqlSChatAssistantInputValueDate {
         gqlTypeName: 'ChatAssistantInputValueDate';

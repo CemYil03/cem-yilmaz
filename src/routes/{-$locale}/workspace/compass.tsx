@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import {
+    AlertTriangleIcon,
     BrainIcon,
     BriefcaseIcon,
     DumbbellIcon,
@@ -9,7 +10,6 @@ import {
     MessageCircleQuestionIcon,
     MessageSquareTextIcon,
     RefreshCwIcon,
-    SendIcon,
     ShieldCheckIcon,
     StethoscopeIcon,
     UserRoundIcon,
@@ -18,7 +18,7 @@ import {
     ZapIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
@@ -26,6 +26,9 @@ import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
 import { SpeakButton } from '../../../web/components/chat-message/shared';
+import { CompassInterviewComposer } from '../../../web/chat/CompassInterviewComposer';
+import { CompassInterviewTranscript } from '../../../web/chat/CompassInterviewTranscript';
+import { useCompassInterviewLiveUpdates } from '../../../web/chat/useCompassInterviewLiveUpdates';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -39,7 +42,6 @@ import type {
 } from '../../../web/graphql/generated';
 import {
     WorkspaceCompassInterviewEndDocument,
-    WorkspaceCompassInterviewMessageSendDocument,
     WorkspaceCompassInterviewSkipDocument,
     WorkspaceCompassInterviewStartDocument,
     WorkspaceCompassInterviewStartNowDocument,
@@ -746,7 +748,7 @@ function InterviewsSection({
             </div>
 
             {focusedInterview ? (
-                <InterviewView interview={focusedInterview} locale={locale} />
+                <InterviewView interview={focusedInterview} observations={compass.observations} locale={locale} />
             ) : pending ? (
                 <PendingInterviewCard interview={pending} locale={locale} />
             ) : (
@@ -944,37 +946,84 @@ function PendingInterviewCard({ interview, locale }: { interview: InterviewWithM
     );
 }
 
-function InterviewView({ interview, locale }: { interview: InterviewWithMessages; locale: Locale }) {
+// Target upper bound the interviewer is prompted to hit — kept in sync with
+// `COMPASS_INTERVIEW_MAX_QUESTIONS` in `src/server/agents/compassInterviewConfig.ts`.
+// Surfaces as "Q3 / ~8" in the header so the user knows roughly how many
+// questions are left. Approximate — the agent may conclude early, or push
+// slightly past the ceiling; the header uses "~" to reflect that.
+const COMPASS_INTERVIEW_MAX_QUESTIONS = 8;
+
+function InterviewView({
+    interview,
+    observations,
+    locale,
+}: {
+    interview: InterviewWithMessages;
+    observations: ReadonlyArray<ObservationRow>;
+    locale: Locale;
+}) {
     const navigate = useNavigate();
-    const [{ fetching: sending }, sendMutation] = useMutation(WorkspaceCompassInterviewMessageSendDocument);
-    const [, startMutation] = useMutation(WorkspaceCompassInterviewStartDocument);
-    const [, endMutation] = useMutation(WorkspaceCompassInterviewEndDocument);
-    const [draft, setDraft] = useState('');
-    const transcriptRef = useRef<HTMLDivElement | null>(null);
+    const [{ fetching: starting, error: startError }, startMutation] = useMutation(WorkspaceCompassInterviewStartDocument);
+    const [{ fetching: ending }, endMutation] = useMutation(WorkspaceCompassInterviewEndDocument);
+
+    // Per-turn live-update state — mints the `generationId`, holds streaming
+    // deltas keyed by the pre-allocated assistant `interviewMessageId`, and
+    // clears itself on the server's `turnEnded`. See
+    // `docs/architecture/chat-transcript.md`.
+    const live = useCompassInterviewLiveUpdates(interview.interviewId);
+
+    // Merge persisted messages from the loader/subscription with any rows
+    // that arrived via `messageAppended` since the last hydration. Dedup by
+    // id — under a slightly-stale subscription frame the same row can arrive
+    // through both paths.
+    const messages = useMemo(() => {
+        const persisted = interview.messages;
+        if (live.appendedMessages.length === 0) return persisted;
+        const seen = new Set(persisted.map((m) => m.interviewMessageId));
+        const extras = live.appendedMessages.filter((m) => !seen.has(m.interviewMessageId));
+        return extras.length ? [...persisted, ...extras] : persisted;
+    }, [interview.messages, live.appendedMessages]);
 
     const isActive = interview.status === 'pending' || interview.status === 'in_progress';
-    const messageCount = interview.messages.length;
+    const assistantQuestionCount = messages.filter((m) => m.role === 'assistant').length;
+    const [startAttemptFailed, setStartAttemptFailed] = useState(false);
 
-    // The page subscription replaces `interview.messages` on every server
-    // push. Scroll the transcript when the count grows.
-    useEffect(() => {
-        const el = transcriptRef.current;
-        if (el) el.scrollTop = el.scrollHeight;
-    }, [messageCount]);
+    const kickOffStart = useCallback(() => {
+        setStartAttemptFailed(false);
+        const generationId = live.beginTurn();
+        void startMutation({ interviewId: interview.interviewId, generationId }).then((result) => {
+            const ok = result.data?.admin.compassInterviewStart.success;
+            if (result.error || !ok) {
+                // Tear down the per-turn state — no turn is actually
+                // running server-side — and surface a retry-able error card
+                // in the transcript.
+                live.endTurn();
+                setStartAttemptFailed(true);
+            }
+        });
+    }, [interview.interviewId, live, startMutation]);
 
     // If the interview is still `pending` (the user navigated in via a deep
     // link before clicking Start), transition it on mount so the agent's
-    // opener lands automatically.
+    // opener lands automatically. Fires exactly once per interviewId — the
+    // effect body checks `startAttemptFailed` so a retry-user click drives
+    // the second attempt rather than the effect.
+    const startedRef = useRef(false);
     useEffect(() => {
-        if (interview.status === 'pending') {
-            void startMutation({ interviewId: interview.interviewId });
-        }
-    }, [interview.interviewId, interview.status, startMutation]);
+        startedRef.current = false;
+    }, [interview.interviewId]);
+    useEffect(() => {
+        if (interview.status !== 'pending') return;
+        if (startedRef.current) return;
+        startedRef.current = true;
+        kickOffStart();
+    }, [interview.status, kickOffStart]);
 
     return (
-        <GlassCard className="mt-6 px-6 py-6 md:px-8 md:py-7">
+        <GlassCard className="mt-6 flex flex-col gap-4 px-6 py-6 md:px-8 md:py-7">
+            {live.listener}
             <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border/40 pb-4">
-                <div>
+                <div className="flex flex-col gap-1">
                     <h3 className="text-base font-semibold tracking-tight flex items-center gap-2 flex-wrap">
                         <span>
                             {{ de: 'Interview', en: 'Interview' }[locale]} ·{' '}
@@ -987,18 +1036,22 @@ function InterviewView({ interview, locale }: { interview: InterviewWithMessages
                         </span>
                         <InterviewTopicBadge topic={interview.topic} locale={locale} />
                     </h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                         <InterviewStatusBadge status={interview.status} locale={locale} />
+                        {isActive && assistantQuestionCount > 0 ? (
+                            <span className="tabular-nums">
+                                · {{ de: 'Frage', en: 'Question' }[locale]} {assistantQuestionCount} / ~{COMPASS_INTERVIEW_MAX_QUESTIONS}
+                            </span>
+                        ) : null}
                         {interview.observationCount > 0 ? (
-                            <>
-                                {' · '}
-                                {interview.observationCount}{' '}
+                            <span>
+                                · {interview.observationCount}{' '}
                                 {interview.observationCount === 1
                                     ? { de: 'Beobachtung', en: 'observation' }[locale]
                                     : { de: 'Beobachtungen', en: 'observations' }[locale]}
-                            </>
+                            </span>
                         ) : null}
-                    </p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Link
@@ -1010,86 +1063,72 @@ function InterviewView({ interview, locale }: { interview: InterviewWithMessages
                     >
                         {{ de: '← Zurück zur Liste', en: '← Back to list' }[locale]}
                     </Link>
-                    {isActive ? (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                                await endMutation({ interviewId: interview.interviewId });
-                            }}
-                        >
-                            {{ de: 'Interview beenden', en: 'End interview' }[locale]}
-                        </Button>
-                    ) : null}
                 </div>
             </header>
 
-            <div
-                ref={transcriptRef}
-                className="mt-4 flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2"
-                aria-label={{ de: 'Transkript', en: 'Transcript' }[locale]}
-            >
-                {messageCount === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">
-                        {
-                            {
-                                de: 'Warte einen Moment — der Interviewer formuliert die erste Frage.',
-                                en: 'Hold on — the interviewer is composing the first question.',
-                            }[locale]
-                        }
-                    </p>
-                ) : (
-                    interview.messages.map((m) => (
-                        <div
-                            key={m.interviewMessageId}
-                            className={cn(
-                                'rounded-lg px-4 py-3 text-sm leading-relaxed',
-                                m.role === 'user' ? 'bg-primary/10 self-end max-w-[80%]' : 'bg-muted/60 self-start max-w-[80%]',
-                            )}
-                        >
-                            <AssistantMarkdown text={m.content} />
-                            {m.role === 'assistant' && (
-                                <div className="flex items-center gap-1 mt-2">
-                                    <SpeakButton text={m.content} />
-                                </div>
-                            )}
+            {startAttemptFailed && messages.length === 0 ? (
+                <div className="flex flex-col items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
+                    <div className="flex items-start gap-2">
+                        <AlertTriangleIcon className="size-4 text-destructive shrink-0 mt-0.5" />
+                        <div>
+                            <p className="font-medium text-foreground">
+                                {
+                                    {
+                                        de: 'Interview konnte nicht gestartet werden.',
+                                        en: "Couldn't start the interview.",
+                                    }[locale]
+                                }
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {startError?.message ??
+                                    {
+                                        de: 'Der Interviewer hat nicht geantwortet. Bitte erneut versuchen.',
+                                        en: "The interviewer didn't respond. Please try again.",
+                                    }[locale]}
+                            </p>
                         </div>
-                    ))
-                )}
-            </div>
+                    </div>
+                    <Button variant="outline" size="sm" disabled={starting} onClick={kickOffStart}>
+                        {{ de: 'Erneut versuchen', en: 'Retry' }[locale]}
+                    </Button>
+                </div>
+            ) : (
+                <CompassInterviewTranscript
+                    messages={messages}
+                    streamingTexts={live.streamingTexts}
+                    observations={observations}
+                    jumpToLatestLabel={{ de: 'Zur neuesten Nachricht', en: 'Jump to latest' }[locale]}
+                    locale={locale}
+                    className="max-h-[60vh]"
+                />
+            )}
 
             {isActive ? (
-                <form
-                    className="mt-4 flex items-end gap-2 border-t border-border/40 pt-4"
-                    onSubmit={async (event) => {
-                        event.preventDefault();
-                        const trimmed = draft.trim();
-                        if (!trimmed || sending) return;
-                        setDraft('');
-                        await sendMutation({ interviewId: interview.interviewId, content: trimmed });
-                    }}
-                >
-                    <textarea
-                        value={draft}
-                        onChange={(event) => setDraft(event.target.value)}
-                        rows={2}
-                        placeholder={{ de: 'Deine Antwort…', en: 'Your reply…' }[locale]}
-                        className="flex-1 resize-none rounded-md border border-border/60 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        onKeyDown={(event) => {
-                            // Submit on plain Enter, leave Shift+Enter for newlines.
-                            if (event.key === 'Enter' && !event.shiftKey) {
-                                event.preventDefault();
-                                event.currentTarget.form?.requestSubmit();
-                            }
-                        }}
+                <div className="flex flex-col gap-2 border-t border-border/40 pt-4">
+                    <CompassInterviewComposer
+                        interviewId={interview.interviewId}
+                        locale={locale}
+                        isLocked={live.isGenerating}
+                        beginTurn={live.beginTurn}
+                        endTurn={live.endTurn}
+                        autoFocus
                     />
-                    <Button type="submit" size="sm" disabled={sending || !draft.trim()}>
-                        <SendIcon className="size-3.5" />
-                        {{ de: 'Senden', en: 'Send' }[locale]}
-                    </Button>
-                </form>
+                    <div className="flex items-center justify-end">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={ending}
+                            onClick={async () => {
+                                await endMutation({ interviewId: interview.interviewId });
+                            }}
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            {{ de: 'Interview beenden', en: 'End interview' }[locale]}
+                        </Button>
+                    </div>
+                </div>
             ) : (
-                <div className="mt-4 border-t border-border/40 pt-4 text-xs text-muted-foreground italic flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 border-t border-border/40 pt-4 text-xs text-muted-foreground italic">
                     <span>
                         {interview.status === 'completed'
                             ? { de: 'Dieses Interview ist abgeschlossen.', en: 'This interview is complete.' }[locale]

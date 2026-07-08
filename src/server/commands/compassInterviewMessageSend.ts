@@ -1,20 +1,17 @@
-import { asc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { compassInterviewMessages, compassInterviews } from '../db/schema';
 import type { CompassInterviewMessageCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationCompassInterviewMessageSendArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
-import { agentCompassInterviewer } from '../agents/agentCompassInterviewer';
-import { compassAnalyze } from '../jobs/handlers/compassAnalyze';
+import { compassInterviewAnalyzerEnqueue, compassInterviewTurnRunDetached } from './compassInterviewTurnRun';
 
-// Append a user message to an in-progress interview, run the agent for one
-// turn, persist the assistant reply, and — if the agent called
-// `concludeInterview` — transition the interview row to `completed`.
-//
-// Order matters: the user message is persisted FIRST so the analyzer (which
-// we enqueue against the new message id) and the agent both see it. The
-// analyzer enqueue happens fire-and-forget after the assistant turn lands,
-// mirroring the admin-chat path in `chatMessageCreate.ts` so an analyzer
-// failure never blocks the conversation.
+// Append a user reply to an in-progress interview, kick off the next agent
+// turn detached, and return to the caller as soon as the user row is
+// durable. The agent's reply lands on the `compassInterviewUpdates`
+// subscription (streamed deltas + a final `messageAppended`) and — if the
+// agent calls `concludeInterview` — flips the interview row to `completed`
+// on the same detached path. Mirrors `chatMessageCreate`'s "commit user row
+// → return; detached assistant turn" split.
 export async function compassInterviewMessageSend(
     userId: string,
     args: GqlSAdminMutationCompassInterviewMessageSendArgs,
@@ -50,63 +47,33 @@ export async function compassInterviewMessageSend(
         };
         await serverRuntime.db.insert(compassInterviewMessages).values(userInsert);
 
-        // 2) Load full transcript (now including the just-persisted user msg)
-        //    and run the agent for one turn.
-        const transcript = await serverRuntime.db
-            .select({ role: compassInterviewMessages.role, content: compassInterviewMessages.content })
-            .from(compassInterviewMessages)
-            .where(eq(compassInterviewMessages.interviewId, interview.interviewId))
-            .orderBy(asc(compassInterviewMessages.createdAt), asc(compassInterviewMessages.interviewMessageId));
+        // 2) Publish the user row so the transcript hydrates it before the
+        //    agent turn lands. Only fires when the client allocated a
+        //    generationId (missing it means "no live UI" — bare API caller).
+        const generationId = args.generationId ?? null;
+        if (generationId) {
+            await serverRuntime.publish.compassInterviewUpdates({
+                generationId,
+                payload: { kind: 'messageAppended', interviewMessageId: userMessageId },
+            });
+        }
 
-        const result = await agentCompassInterviewer({
-            serverRuntime,
-            messages: transcript.map((row) => ({ role: row.role, content: row.content })),
+        // 3) Fire-and-forget analyzer for the user message. Same pattern
+        //    as `chatMessageCreate.ts` — log on enqueue failure but never
+        //    block the turn.
+        await compassInterviewAnalyzerEnqueue(userMessageId, requestingSession, serverRuntime);
+
+        // 4) Detached agent turn. Returns synchronously; deltas + final row
+        //    + `turnEnded` all ride the subscription.
+        compassInterviewTurnRunDetached({
+            interviewId: interview.interviewId,
+            userId,
+            generationId,
             locale,
-            topic: interview.topic,
+            requestingSession,
+            serverRuntime,
         });
 
-        // 3) Persist the assistant turn — even when concluded, if the agent
-        //    wrote a closing line, keep it.
-        if (result.content) {
-            const assistantInsert: CompassInterviewMessageCreate = {
-                interviewMessageId: crypto.randomUUID(),
-                interviewId: interview.interviewId,
-                role: 'assistant',
-                content: result.content,
-                modelId: result.modelId,
-            };
-            await serverRuntime.db.insert(compassInterviewMessages).values(assistantInsert);
-        }
-
-        // 4) If the agent concluded, transition the row. `endNote` is logged
-        //    rather than persisted on the row — the row's audit fields are
-        //    enough; the note lives only in the agent's prompt for that turn
-        //    and the surrounding log.
-        if (result.kind === 'concluded') {
-            await serverRuntime.db
-                .update(compassInterviews)
-                .set({
-                    status: 'completed',
-                    endReason: 'agent_satisfied',
-                    completedAt: new Date(),
-                    updatedAt: new Date(),
-                })
-                .where(eq(compassInterviews.interviewId, interview.interviewId));
-            if (result.endNote) {
-                serverRuntime.log.info(`compassInterviewMessageSend: concluded ${interview.interviewId} — ${result.endNote}`);
-            }
-        }
-
-        // 5) Fire-and-forget analyzer enqueue for the user message. Same
-        //    pattern as `chatMessageCreate.ts` for admin chats — log on
-        //    enqueue failure but never block the turn.
-        try {
-            await serverRuntime.jobs.enqueue(compassAnalyze, { interviewMessageId: userMessageId });
-        } catch (enqueueError) {
-            serverRuntime.log.error(enqueueError, requestingSession);
-        }
-
-        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: interview.interviewId };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

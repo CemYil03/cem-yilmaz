@@ -1,19 +1,16 @@
 import { eq } from 'drizzle-orm';
 import { compassInterviewMessages, compassInterviews } from '../db/schema';
-import type { CompassInterviewMessageCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationCompassInterviewStartArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
-import { agentCompassInterviewer } from '../agents/agentCompassInterviewer';
+import { compassInterviewTurnRunDetached } from './compassInterviewTurnRun';
 
-// Transitions a `pending` interview to `in_progress` and runs the first
-// agent turn (no prior user messages — the agent opens with its question).
-// Idempotent guard: if the interview is already in_progress, re-run the
-// first turn only if no assistant message exists yet; otherwise no-op.
+// Transition a `pending` interview to `in_progress` and kick off the first
+// agent turn detached. Returns as soon as the state transition commits;
+// the opener's tokens ride the `compassInterviewUpdates` subscription.
 //
-// The locale is taken from the requesting session so the agent's opening
-// question lands in Cem's preferred UI language without needing him to type
-// first. After the first user reply, the agent matches whatever language he
-// wrote in.
+// Idempotent: a repeated `compassInterviewStart` (page reload, race) becomes
+// a no-op rather than producing a second opening question — the detached
+// turn only fires when the transcript is empty.
 export async function compassInterviewStart(
     userId: string,
     args: GqlSAdminMutationCompassInterviewStartArgs,
@@ -33,9 +30,6 @@ export async function compassInterviewStart(
             return { success: false, referenceId: null };
         }
 
-        // Only run the opening turn when the transcript is empty. A repeated
-        // `compassInterviewStart` (page reload, race) becomes a no-op rather
-        // than producing a second opening question.
         const [existingMessage] = await serverRuntime.db
             .select({ id: compassInterviewMessages.interviewMessageId })
             .from(compassInterviewMessages)
@@ -49,40 +43,23 @@ export async function compassInterviewStart(
                 .where(eq(compassInterviews.interviewId, interview.interviewId));
         }
 
+        // Push the state transition so the client's seed-and-subscribe hook
+        // sees `status: 'in_progress'` before the streaming opener begins.
+        await serverRuntime.publish.userUpdates({ userId });
+
+        // Fire the opener detached only when the transcript is empty. A
+        // repeated start (page reload, race) becomes a no-op.
         if (!existingMessage) {
-            const result = await agentCompassInterviewer({
-                serverRuntime,
-                messages: [],
+            compassInterviewTurnRunDetached({
+                interviewId: interview.interviewId,
+                userId,
+                generationId: args.generationId ?? null,
                 locale,
-                topic: interview.topic,
+                requestingSession,
+                serverRuntime,
             });
-            if (result.content) {
-                const insert: CompassInterviewMessageCreate = {
-                    interviewMessageId: crypto.randomUUID(),
-                    interviewId: interview.interviewId,
-                    role: 'assistant',
-                    content: result.content,
-                    modelId: result.modelId,
-                };
-                await serverRuntime.db.insert(compassInterviewMessages).values(insert);
-            }
-            if (result.kind === 'concluded') {
-                // Extremely unlikely on the opening turn — the prompt tells
-                // the agent not to conclude before any user reply — but if
-                // it happens, honor it rather than getting stuck.
-                await serverRuntime.db
-                    .update(compassInterviews)
-                    .set({
-                        status: 'completed',
-                        endReason: 'agent_satisfied',
-                        completedAt: new Date(),
-                        updatedAt: new Date(),
-                    })
-                    .where(eq(compassInterviews.interviewId, interview.interviewId));
-            }
         }
 
-        await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: interview.interviewId };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -119,18 +119,18 @@ mutation WorkspaceCompassSynthesizeRequest {
     }
 }
 
-mutation WorkspaceCompassInterviewStart($interviewId: ID!) {
+mutation WorkspaceCompassInterviewStart($interviewId: ID!, $generationId: ID) {
     admin {
-        compassInterviewStart(interviewId: $interviewId) {
+        compassInterviewStart(interviewId: $interviewId, generationId: $generationId) {
             success
             referenceId
         }
     }
 }
 
-mutation WorkspaceCompassInterviewMessageSend($interviewId: ID!, $content: String!) {
+mutation WorkspaceCompassInterviewMessageSend($interviewId: ID!, $content: String!, $generationId: ID) {
     admin {
-        compassInterviewMessageSend(interviewId: $interviewId, content: $content) {
+        compassInterviewMessageSend(interviewId: $interviewId, content: $content, generationId: $generationId) {
             success
             referenceId
         }
@@ -166,6 +166,32 @@ mutation WorkspaceCompassScheduledInterviewDismiss {
     admin {
         compassScheduledInterviewDismiss {
             success
+        }
+    }
+}
+
+# Per-turn subscription for the compass interview transcript. Delivers
+# streamed assistant-text deltas (keyed by the pre-allocated
+# `interviewMessageId`), newly-persisted rows on both sides of the turn,
+# and a terminal `turnEnded` when the detached agent run finishes. The
+# `WorkspaceCompassInterviewMessage` fragment is shared with the loader
+# query so a streaming-preview → persisted-row swap has the exact same
+# shape on both sides.
+subscription WorkspaceCompassInterviewUpdates($generationId: ID!) {
+    compassInterviewUpdates(generationId: $generationId) {
+        __typename
+        ... on CompassInterviewUpdateMessageAppended {
+            message {
+                ...WorkspaceCompassInterviewMessage
+            }
+        }
+        ... on CompassInterviewUpdateAssistantTextChunk {
+            interviewMessageId
+            delta
+        }
+        ... on CompassInterviewUpdateTurnEnded {
+            generationId
+            concluded
         }
     }
 }

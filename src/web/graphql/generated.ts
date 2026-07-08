@@ -265,6 +265,7 @@ export type GqlCAdminMutationCompassInterviewEndArgs = {
 
 export type GqlCAdminMutationCompassInterviewMessageSendArgs = {
     content: Scalars['String']['input'];
+    generationId?: InputMaybe<Scalars['ID']['input']>;
     interviewId: Scalars['ID']['input'];
 };
 
@@ -273,6 +274,7 @@ export type GqlCAdminMutationCompassInterviewSkipArgs = {
 };
 
 export type GqlCAdminMutationCompassInterviewStartArgs = {
+    generationId?: InputMaybe<Scalars['ID']['input']>;
     interviewId: Scalars['ID']['input'];
 };
 
@@ -791,6 +793,26 @@ export type GqlCCompassInterviewStatus = 'completed' | 'in_progress' | 'pending'
 export type GqlCCompassInterviewTopic = 'career' | 'fitness' | 'general' | 'health' | 'relationships' | 'stress';
 
 export type GqlCCompassInterviewTriggerReason = 'manual' | 'scheduled';
+
+export type GqlCCompassInterviewUpdate =
+    GqlCCompassInterviewUpdateAssistantTextChunk | GqlCCompassInterviewUpdateMessageAppended | GqlCCompassInterviewUpdateTurnEnded;
+
+export interface GqlCCompassInterviewUpdateAssistantTextChunk {
+    __typename?: 'CompassInterviewUpdateAssistantTextChunk';
+    delta: Scalars['String']['output'];
+    interviewMessageId: Scalars['ID']['output'];
+}
+
+export interface GqlCCompassInterviewUpdateMessageAppended {
+    __typename?: 'CompassInterviewUpdateMessageAppended';
+    message: GqlCCompassInterviewMessage;
+}
+
+export interface GqlCCompassInterviewUpdateTurnEnded {
+    __typename?: 'CompassInterviewUpdateTurnEnded';
+    concluded: Scalars['Boolean']['output'];
+    generationId: Scalars['ID']['output'];
+}
 
 export interface GqlCCompassObservation {
     __typename?: 'CompassObservation';
@@ -1434,10 +1456,15 @@ export type GqlCSessionVisitorChatArgs = {
 export interface GqlCSubscription {
     __typename?: 'Subscription';
     chatUpdates: GqlCChatUpdate;
+    compassInterviewUpdates: GqlCCompassInterviewUpdate;
     userUpdates: GqlCUser;
 }
 
 export type GqlCSubscriptionChatUpdatesArgs = {
+    generationId: Scalars['ID']['input'];
+};
+
+export type GqlCSubscriptionCompassInterviewUpdatesArgs = {
     generationId: Scalars['ID']['input'];
 };
 
@@ -2367,6 +2394,7 @@ export type GqlCWorkspaceCompassSynthesizeRequestMutation = {
 
 export type GqlCWorkspaceCompassInterviewStartMutationVariables = Exact<{
     interviewId: string;
+    generationId?: string | null | undefined;
 }>;
 
 export type GqlCWorkspaceCompassInterviewStartMutation = {
@@ -2376,6 +2404,7 @@ export type GqlCWorkspaceCompassInterviewStartMutation = {
 export type GqlCWorkspaceCompassInterviewMessageSendMutationVariables = Exact<{
     interviewId: string;
     content: string;
+    generationId?: string | null | undefined;
 }>;
 
 export type GqlCWorkspaceCompassInterviewMessageSendMutation = {
@@ -2405,6 +2434,20 @@ export type GqlCWorkspaceCompassInterviewStartNowMutation = {
 export type GqlCWorkspaceCompassScheduledInterviewDismissMutationVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceCompassScheduledInterviewDismissMutation = { admin: { compassScheduledInterviewDismiss: { success: boolean } } };
+
+export type GqlCWorkspaceCompassInterviewUpdatesSubscriptionVariables = Exact<{
+    generationId: string;
+}>;
+
+export type GqlCWorkspaceCompassInterviewUpdatesSubscription = {
+    compassInterviewUpdates:
+        | { __typename: 'CompassInterviewUpdateAssistantTextChunk'; interviewMessageId: string; delta: string }
+        | {
+              __typename: 'CompassInterviewUpdateMessageAppended';
+              message: { interviewMessageId: string; role: Schema.GqlCCompassInterviewMessageRole; content: string; createdAt: string };
+          }
+        | { __typename: 'CompassInterviewUpdateTurnEnded'; generationId: string; concluded: boolean };
+};
 
 export type GqlCWorkspaceCvPageUserFragment = {
     admin: {
@@ -9903,6 +9946,11 @@ export const WorkspaceCompassInterviewStartDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'generationId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -9921,6 +9969,11 @@ export const WorkspaceCompassInterviewStartDocument = {
                                             kind: 'Argument',
                                             name: { kind: 'Name', value: 'interviewId' },
                                             value: { kind: 'Variable', name: { kind: 'Name', value: 'interviewId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'generationId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'generationId' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -9957,6 +10010,11 @@ export const WorkspaceCompassInterviewMessageSendDocument = {
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'content' } },
                     type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
                 },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'generationId' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
+                },
             ],
             selectionSet: {
                 kind: 'SelectionSet',
@@ -9980,6 +10038,11 @@ export const WorkspaceCompassInterviewMessageSendDocument = {
                                             kind: 'Argument',
                                             name: { kind: 'Name', value: 'content' },
                                             value: { kind: 'Variable', name: { kind: 'Name', value: 'content' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'generationId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'generationId' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -10174,6 +10237,109 @@ export const WorkspaceCompassScheduledInterviewDismissDocument = {
     GqlCWorkspaceCompassScheduledInterviewDismissMutation,
     GqlCWorkspaceCompassScheduledInterviewDismissMutationVariables
 >;
+export const WorkspaceCompassInterviewUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewUpdates' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'generationId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'compassInterviewUpdates' },
+                        arguments: [
+                            {
+                                kind: 'Argument',
+                                name: { kind: 'Name', value: 'generationId' },
+                                value: { kind: 'Variable', name: { kind: 'Name', value: 'generationId' } },
+                            },
+                        ],
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
+                                {
+                                    kind: 'InlineFragment',
+                                    typeCondition: {
+                                        kind: 'NamedType',
+                                        name: { kind: 'Name', value: 'CompassInterviewUpdateMessageAppended' },
+                                    },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'message' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'InlineFragment',
+                                    typeCondition: {
+                                        kind: 'NamedType',
+                                        name: { kind: 'Name', value: 'CompassInterviewUpdateAssistantTextChunk' },
+                                    },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'delta' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'InlineFragment',
+                                    typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewUpdateTurnEnded' } },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'generationId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'concluded' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceCompassInterviewMessage' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'CompassInterviewMessage' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'interviewMessageId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'role' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceCompassInterviewUpdatesSubscription, GqlCWorkspaceCompassInterviewUpdatesSubscriptionVariables>;
 export const WorkspaceCvPageDocument = {
     kind: 'Document',
     definitions: [

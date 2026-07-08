@@ -78,10 +78,12 @@ import { guardUserSubscription } from '../guards/guardUserSubscription';
 import { toGqlCompass } from '../mappers/toGqlCompass';
 import { toGqlCompassInterview } from '../mappers/toGqlCompassInterview';
 import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
+import { toGqlCompassInterviewMessage } from '../mappers/toGqlCompassInterviewMessage';
 import { chatFindByScope } from '../queries/chatFindByScope';
 import { chatListByScope } from '../queries/chatListByScope';
 import { adminChats, adminChatsCount } from '../queries/adminChats';
 import { chatMessageRowLoad } from '../queries/chatMessageRowLoad';
+import { compassInterviewMessageRowLoad } from '../queries/compassInterviewMessageRowLoad';
 import { chatsFindBySession } from '../queries/chatsFindBySession';
 import { visitorChatFindOne } from '../queries/visitorChatFindOne';
 import { cvEducationList } from '../queries/cvEducationList';
@@ -204,6 +206,7 @@ import type {
     GqlSChatAssistantInputValue,
     GqlSChatMessage,
     GqlSChatUpdate,
+    GqlSCompassInterviewUpdate,
     GqlSCvQuery,
     GqlSMutationChatInputCollectionRespondArgs,
     GqlSMutationChatMessageCreateArgs,
@@ -212,12 +215,14 @@ import type {
     GqlSSession,
     GqlSSessionVisitorChatArgs,
     GqlSSubscriptionChatUpdatesArgs,
+    GqlSSubscriptionCompassInterviewUpdatesArgs,
     GqlSUser,
     GqlSUserMutation,
     GqlSUserMutationTerminateSessionsArgs,
     GqlSUserMutationUserUpdateArgs,
 } from './generated';
 import type { ChatUpdateWirePayload } from './chatUpdateWirePayload';
+import type { CompassInterviewUpdateWirePayload } from './compassInterviewUpdateWirePayload';
 
 // Visitor / admin namespaces share the same chat command bodies — only the
 // scope and the agent factory change. Pinning these once keeps the resolver
@@ -248,6 +253,11 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
         },
         ChatUpdate: {
             __resolveType(obj: GqlSChatUpdate) {
+                return obj.gqlTypeName;
+            },
+        },
+        CompassInterviewUpdate: {
+            __resolveType(obj: GqlSCompassInterviewUpdate) {
                 return obj.gqlTypeName;
             },
         },
@@ -892,6 +902,41 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                             };
                         case 'turnEnded':
                             return { gqlTypeName: 'ChatUpdateTurnEnded', generationId: payload.generationId };
+                    }
+                },
+            },
+            compassInterviewUpdates: {
+                // Same "generationId is the capability" model as `chatUpdates`.
+                // The interview lifecycle is admin-only, but the resolver
+                // itself doesn't need to re-check that — the mutation that
+                // allocated the id is what verified admin scope. Whoever holds
+                // the (client-minted, unguessable) UUID has already sent it
+                // through the mutation layer.
+                subscribe(_: any, { generationId }: GqlSSubscriptionCompassInterviewUpdatesArgs) {
+                    return serverRuntime.subscribe.to(`compass-interview-updates:${generationId}`);
+                },
+                async resolve(payload: CompassInterviewUpdateWirePayload): Promise<GqlSCompassInterviewUpdate> {
+                    switch (payload.kind) {
+                        case 'messageAppended': {
+                            const row = await compassInterviewMessageRowLoad(serverRuntime.db, payload.interviewMessageId);
+                            if (!row) throw new Error(`compassInterviewUpdates: row ${payload.interviewMessageId} not found on re-load`);
+                            return {
+                                gqlTypeName: 'CompassInterviewUpdateMessageAppended',
+                                message: toGqlCompassInterviewMessage(row),
+                            };
+                        }
+                        case 'assistantTextChunk':
+                            return {
+                                gqlTypeName: 'CompassInterviewUpdateAssistantTextChunk',
+                                interviewMessageId: payload.interviewMessageId,
+                                delta: payload.delta,
+                            };
+                        case 'turnEnded':
+                            return {
+                                gqlTypeName: 'CompassInterviewUpdateTurnEnded',
+                                generationId: payload.generationId,
+                                concluded: payload.concluded,
+                            };
                     }
                 },
             },

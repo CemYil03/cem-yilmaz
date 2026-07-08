@@ -2,11 +2,16 @@
 
 ## Context
 
-Three surfaces render an admin or visitor chat transcript today:
+Four surfaces render an admin, visitor, or interviewer transcript today:
 
 - **Workspace assistant sidebar** — `src/web/chat/WorkspaceAssistantChatBody.tsx`, mounted in the shadcn Sidebar and in a mobile Sheet.
 - **Workspace assistant deep-link route** — `/workspace/assistant/<chatId>` at `src/routes/{-$locale}/workspace/assistant.$chatId.tsx`.
 - **Visitor "Ask me anything" sheet** — `src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`, mounted once at the root layout.
+- **Workspace compass interview** — `src/routes/{-$locale}/workspace/compass.tsx` (`InterviewView`), which uses the `MessageScroller`
+  primitives directly (`src/web/chat/CompassInterviewTranscript.tsx`) rather than `ChatTranscript`, because a `CompassInterviewMessage`
+  isn't part of the `ChatMessage` union and doesn't need the tool-call / approval / input-collection dispatch. Streaming rides a parallel
+  `compassInterviewUpdates` subscription with a dedicated `useCompassInterviewLiveUpdates` hook — see
+  [`docs/features/workspace-compass.md`](../features/workspace-compass.md).
 
 Before this component existed each surface hand-rolled the same 40-line block: a scroll ref, a `useLayoutEffect` that pinned the container
 to `scrollHeight` when a signature over `messages.length + streaming buffer lengths` changed, an `onScroll` handler that flipped an

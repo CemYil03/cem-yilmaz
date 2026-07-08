@@ -240,8 +240,8 @@ Beneath all three states sits a quiet "Past interviews" rail with status, due-da
 - **Dedicated tables (chosen).** `CompassInterviews` + `CompassInterviewMessages` + `CompassInterviewMessageAnalysis`. Keeps `chats.scope`
   strictly `'public' | 'admin'` (which is what the multi-agent-chat dispatch rests on — see
   [`docs/architecture/multi-agent-chat.md`](../architecture/multi-agent-chat.md)), and gives the interview row its own status / dueAt /
-  endReason fields. Interview turns don't need approval, tool-call streaming, generations, or input collection — a flat user/assistant log
-  is enough.
+  endReason fields. Interview turns don't need approval, tool-call persistence, generations, or input collection — a flat user/assistant log
+  is enough. Turns _do_ stream (see below), but through a parallel `compassInterviewUpdates` subscription rather than the chat one.
 - **Reusing `Chats` with a new scope.** Rejected. Adding a third value contradicts the binary access-path dispatch and would force scope
   checks at every chat command call site.
 
@@ -386,10 +386,16 @@ The **Interviews** tab `NoInterviewCard` now shows a 2×3 grid of topic cards (i
 
 Topic badges appear on the pending/active card header, the transcript view header, and each row in the past-interviews rail.
 
-`agentCompassInterviewer` uses `generateText` (not `ToolLoopAgent`) because each "step" is Cem typing his reply, which arrives on a separate
-command call. Single sentinel tool `concludeInterview({ note })` that the command branches on — its `note` is logged for audit, not
-persisted on the row. System prompt is anchored to the soft 4–8 question target, asks for one question per turn, matches Cem's reply
-language, and explicitly tells the agent NOT to summarize answers back (the analyzer does that).
+`agentCompassInterviewer` exposes both a streaming (`agentCompassInterviewerStream`) and non-streaming (`agentCompassInterviewerGenerate`)
+entry rather than a `ToolLoopAgent`, because each "step" is Cem typing his reply, which arrives on a separate command call. The message-send
+and start commands drive the streaming entry through `compassInterviewTurnRunDetached` (modelled on `chatAssistantTurnRunDetached`) — the
+mutation returns as soon as the user-side row is durable; the agent turn runs detached and publishes token-by-token deltas on
+`serverRuntime.publish.compassInterviewUpdates` under a client-allocated `generationId`. The transcript view subscribes via
+`useCompassInterviewLiveUpdates` and renders in-flight buffers through the shared `MessageScroller` primitives — see
+[`docs/architecture/chat-transcript.md`](../architecture/chat-transcript.md). Non-streaming path stays available for tests and any future
+scheduled-job caller that doesn't have a live UI. Single sentinel tool `concludeInterview({ note })` that the turn-run helper branches on —
+its `note` is logged for audit, not persisted on the row. System prompt is anchored to the soft 4–8 question target, asks for one question
+per turn, matches Cem's reply language, and explicitly tells the agent NOT to summarize answers back (the analyzer does that).
 
 Model: `serverRuntime.ai.compassInterviewerModel()` — Gemini 2.5 Pro by default. The interviewer runs on a low-frequency cadence and the
 question-quality bar is high (probe gaps, don't repeat), so the higher tier is worth it.
