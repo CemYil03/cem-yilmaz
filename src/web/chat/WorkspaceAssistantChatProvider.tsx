@@ -125,6 +125,19 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
         // The hub composer already mounted the live-updates listener via
         // `beginTurn()` before firing its own mutation, so all the provider
         // needs to do is adopt the freshly-allocated chatId for future sends.
+        //
+        // If the adopted id differs from what the provider was already
+        // holding, the caller is handing over a *different* chat than the
+        // one currently rendered (canonical case: the sidebar had a
+        // resumed chat open, the user typed into the hub composer, the
+        // server allocated a fresh chat). Drop `loadedMessages` so the
+        // sidebar transcript doesn't stitch the previous chat's persisted
+        // rows onto the new turn's live-streamed messages. Sibling-composer
+        // follow-up sends land here with `id === chatIdRef.current`, so
+        // this is a no-op for them.
+        if (chatIdRef.current !== id) {
+            setLoadedMessages([]);
+        }
         chatIdRef.current = id;
         setChatId(id);
     }, []);
