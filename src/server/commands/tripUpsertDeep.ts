@@ -31,13 +31,13 @@ import { tripGet } from '../queries/tripGet';
 // Nested day payload: same shape as `TripDayInput` minus `tripId` (inferred
 // from the outer trip after the root upsert lands) plus an optional
 // `activities` list.
-export type TripDayUpsertDeepInput = Omit<GqlSTripDayInput, 'tripId'> & {
+type TripDayUpsertDeepInput = Omit<GqlSTripDayInput, 'tripId'> & {
     activities?: Array<Omit<GqlSTripActivityInput, 'tripDayId'>> | null;
 };
 
 // Nested packing payload: same shape as `TripPackingItemInput` minus
 // `tripId`.
-export type TripPackingItemUpsertDeepInput = Omit<GqlSTripPackingItemInput, 'tripId'>;
+type TripPackingItemUpsertDeepInput = Omit<GqlSTripPackingItemInput, 'tripId'>;
 
 export interface TripUpsertDeepInput {
     trip: GqlSTripInput;
