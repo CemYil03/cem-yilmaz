@@ -174,6 +174,22 @@ Reference implementations: `src/routes/{-$locale}/workspace/projects.tsx` (canon
 - When a workspace page renders prose (long descriptions, markdown), constrain the prose itself with `max-w-prose` (~65ch) inside the wider
   outer container. The width should serve the content type, not the page type.
 
+### Chat surfaces
+
+Every chat surface on the site — the visitor "Ask me anything" sheet, the workspace assistant, the compass interview, and any future one —
+follows the presentation rules in [`docs/styles/chat.md`](./styles/chat.md). The short version:
+
+- Every composer wraps `MessageComposer` (`src/web/components/MessageComposer.tsx`). A raw `<textarea>` inside a chat surface is a
+  review-time reject.
+- Every transcript wraps `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`), which pins the scroll config
+  (`defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`, the jump-to-latest pill) in one place. Do not hand-roll
+  `MessageScrollerProvider`.
+- Assistant text streams, unbubbled, with a timestamp + TTS + copy row underneath — always visible, never hover-only.
+- Layout tokens (`--chat-viewport-px-mobile`, `--chat-column-max`, `--chat-row-gap`, etc.) live in `src/styles.css`. Change values there,
+  not in surface files.
+
+See the style doc for the hard-numbers tables, the rationale for each rule, and the per-surface audit.
+
 ## GraphQL
 
 - The schema is defined SDL-first in `src/server/graphql/schema.graphqls`.

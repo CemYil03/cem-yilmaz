@@ -2,15 +2,9 @@ import { format, parseISO } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { useCallback } from 'react';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
+import { ChatStreamingRegion, ChatTranscriptShell } from '../components/base/chat-transcript-shell';
 import { Marker, MarkerContent, MarkerIcon } from '../components/base/marker';
-import {
-    MessageScroller,
-    MessageScrollerButton,
-    MessageScrollerContent,
-    MessageScrollerItem,
-    MessageScrollerProvider,
-    MessageScrollerViewport,
-} from '../components/base/message-scroller';
+import { MessageScrollerItem } from '../components/base/message-scroller';
 import { Spinner } from '../components/base/spinner';
 import { ChatMessage } from '../components/chat-message';
 import type { GqlCChatAssistantInputValue } from '../graphql/generated';
@@ -25,14 +19,13 @@ import {
 
 // Shared transcript renderer for every chat surface — the workspace assistant
 // (both the sidebar body and the deep-link `/workspace/assistant/$chatId`
-// route) and the visitor "Ask me anything" sheet. Before this component
-// existed the three surfaces each hand-rolled stick-to-bottom + jump-to-latest
-// with the exact same 40-line snippet; the shape is delegated to shadcn's
-// `MessageScroller` primitive which handles the harder chat-scroll behaviours
-// (anchor new turns near the top of the viewport, follow only while the reader
-// is at the live edge, preserve position on prepended history) for free. See
+// route) and the visitor "Ask me anything" sheet. Sits on top of
+// `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`),
+// which pins the shadcn `MessageScroller` config in exactly one place —
+// `defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`, and the
+// jump-to-latest pill at the tail. See `docs/styles/chat.md` for the rules and
 // `docs/architecture/chat-transcript.md` for the "great streaming chat"
-// checklist we're now honouring.
+// checklist we're honouring.
 
 export interface ChatTranscriptProps {
     /** Every message that should render as a row in the transcript, in
@@ -100,79 +93,60 @@ export function ChatTranscript({
     const messageIdFor = useCallback((message: TranscriptMessage) => message.chatMessageId, []);
 
     return (
-        <MessageScrollerProvider
-            // `last-anchor` opens saved conversations at the last meaningful
-            // turn (usually the last user message) instead of the absolute
-            // bottom — matches the "reopen where the reader left off" rule
-            // from the shadcn docs.
-            defaultScrollPosition="last-anchor"
-            scrollEdgeThreshold={64}
-        >
-            <MessageScroller className={className}>
-                <MessageScrollerViewport className={viewportClassName}>
-                    <MessageScrollerContent>
-                        {initialFetching && messages.length === 0 ? (
-                            <div className="grid place-items-center py-8">
-                                <Spinner className="size-4 text-muted-foreground" />
-                            </div>
-                        ) : null}
-                        {groupedMessages.map((group) => (
-                            <section key={group.date} className="flex min-w-0 flex-col gap-4">
-                                <Marker variant="separator" className="text-[11px] uppercase tracking-wide">
-                                    <MarkerIcon>
-                                        <CalendarIcon />
-                                    </MarkerIcon>
-                                    <MarkerContent>
-                                        <time dateTime={group.date}>{format(parseISO(group.date), 'PP')}</time>
-                                    </MarkerContent>
-                                </Marker>
-                                {group.messages.map((message) => {
-                                    const approvalRespondHandler =
-                                        message.__typename === 'ChatMessageToolApprovalRequest' &&
-                                        pendingApprovalIds.has(message.approvalId)
-                                            ? onApprovalRespond
-                                            : undefined;
-                                    const collectionUserInput =
-                                        message.__typename === 'ChatMessageAssistantInputCollection'
-                                            ? userInputByCollection.get(message.chatMessageId)
-                                            : undefined;
-                                    const children =
-                                        message.__typename === 'ChatMessageToolCall'
-                                            ? childrenByParentId.get(message.chatMessageId)
-                                            : undefined;
-                                    return (
-                                        <MessageScrollerItem key={message.chatMessageId} messageId={messageIdFor(message)} scrollAnchor>
-                                            <ChatMessage
-                                                message={message}
-                                                isInteractiveCollection={
-                                                    message.__typename === 'ChatMessageAssistantInputCollection' &&
-                                                    message.chatMessageId === latestCollectionId
-                                                }
-                                                collectionUserInput={collectionUserInput}
-                                                onCollectionSubmit={onCollectionSubmit}
-                                                onApprovalRespond={approvalRespondHandler}
-                                                children={children}
-                                            />
-                                        </MessageScrollerItem>
-                                    );
-                                })}
-                            </section>
-                        ))}
-                        {streamingEntries.length > 0 ? (
-                            <section className="flex min-w-0 flex-col gap-4">
-                                {streamingEntries.map(([streamingId, text]) => (
-                                    <MessageScrollerItem key={streamingId} messageId={streamingId} scrollAnchor>
-                                        <AssistantMarkdown text={text} streaming />
-                                    </MessageScrollerItem>
-                                ))}
-                            </section>
-                        ) : null}
-                    </MessageScrollerContent>
-                </MessageScrollerViewport>
-                <MessageScrollerButton direction="end" variant="secondary" size="sm" className="gap-1.5 rounded-full px-3 text-xs">
-                    {jumpToLatestLabel}
-                </MessageScrollerButton>
-            </MessageScroller>
-        </MessageScrollerProvider>
+        <ChatTranscriptShell jumpToLatestLabel={jumpToLatestLabel} className={className} viewportClassName={viewportClassName}>
+            {initialFetching && messages.length === 0 ? (
+                <div className="grid place-items-center py-8">
+                    <Spinner className="size-4 text-muted-foreground" />
+                </div>
+            ) : null}
+            {groupedMessages.map((group) => (
+                <section key={group.date} className="flex min-w-0 flex-col gap-4">
+                    <Marker variant="separator" className="text-[11px] uppercase tracking-wide">
+                        <MarkerIcon>
+                            <CalendarIcon />
+                        </MarkerIcon>
+                        <MarkerContent>
+                            <time dateTime={group.date}>{format(parseISO(group.date), 'PP')}</time>
+                        </MarkerContent>
+                    </Marker>
+                    {group.messages.map((message) => {
+                        const approvalRespondHandler =
+                            message.__typename === 'ChatMessageToolApprovalRequest' && pendingApprovalIds.has(message.approvalId)
+                                ? onApprovalRespond
+                                : undefined;
+                        const collectionUserInput =
+                            message.__typename === 'ChatMessageAssistantInputCollection'
+                                ? userInputByCollection.get(message.chatMessageId)
+                                : undefined;
+                        const children =
+                            message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
+                        return (
+                            <MessageScrollerItem key={message.chatMessageId} messageId={messageIdFor(message)} scrollAnchor>
+                                <ChatMessage
+                                    message={message}
+                                    isInteractiveCollection={
+                                        message.__typename === 'ChatMessageAssistantInputCollection' &&
+                                        message.chatMessageId === latestCollectionId
+                                    }
+                                    collectionUserInput={collectionUserInput}
+                                    onCollectionSubmit={onCollectionSubmit}
+                                    onApprovalRespond={approvalRespondHandler}
+                                    children={children}
+                                />
+                            </MessageScrollerItem>
+                        );
+                    })}
+                </section>
+            ))}
+            {streamingEntries.length > 0 ? (
+                <ChatStreamingRegion className="flex min-w-0 flex-col gap-4">
+                    {streamingEntries.map(([streamingId, text]) => (
+                        <MessageScrollerItem key={streamingId} messageId={streamingId} scrollAnchor>
+                            <AssistantMarkdown text={text} streaming />
+                        </MessageScrollerItem>
+                    ))}
+                </ChatStreamingRegion>
+            ) : null}
+        </ChatTranscriptShell>
     );
 }

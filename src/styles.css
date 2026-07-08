@@ -87,6 +87,17 @@
     --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
     --sidebar-border: oklch(0.92 0.004 286.32);
     --sidebar-ring: oklch(0.871 0.006 286.286);
+
+    /* Chat surface tokens — one source of truth for every chat transcript's
+       padding, column width, and gap. Every surface (visitor sheet, workspace
+       assistant, compass interview) reads these via the shared shell so a
+       change here re-flows all three at once. See docs/styles/chat.md. */
+    --chat-viewport-px-mobile: 1rem;
+    --chat-viewport-px-desktop: 1.5rem;
+    --chat-column-max: 48rem;
+    --chat-row-gap: 1rem;
+    --chat-group-gap: 2rem;
+    --chat-edge-threshold: 64px;
 }
 
 .dark {

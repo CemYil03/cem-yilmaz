@@ -2,26 +2,21 @@ import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { LinkIcon } from 'lucide-react';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
-import {
-    MessageScroller,
-    MessageScrollerButton,
-    MessageScrollerContent,
-    MessageScrollerItem,
-    MessageScrollerProvider,
-    MessageScrollerViewport,
-} from '../components/base/message-scroller';
+import { ChatStreamingRegion, ChatTranscriptShell } from '../components/base/chat-transcript-shell';
+import { MessageScrollerItem } from '../components/base/message-scroller';
 import { Bubble, CopyButton, MessageRow, SpeakButton, Timestamp } from '../components/chat-message/shared';
 import type { GqlCWorkspaceCompassInterviewMessageFragment, GqlCWorkspaceCompassObservationFragment } from '../graphql/generated';
 import type { Locale } from '../utils/locale';
 import { cn } from '../utils/cn';
 
-// Transcript for the compass psychological-interview view. Uses the same
-// `MessageScroller` primitives and shared chat-message atoms
-// (`Bubble` / `Timestamp` / `CopyButton` / `SpeakButton` / `AssistantMarkdown`)
-// that `ChatTranscript` (`src/web/chat/ChatTranscriptShared.tsx`) uses, but
-// dispatches to interview-shaped rows because `CompassInterviewMessage`
-// isn't part of the `ChatMessage` union. See
-// `docs/architecture/chat-transcript.md`.
+// Transcript for the compass psychological-interview view. Sits on top of the
+// shared `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`)
+// so it inherits the same scroll config (`last-anchor`, 64 px edge threshold,
+// jump-to-latest pill) as every other chat transcript on the site — see
+// `docs/styles/chat.md`. Dispatches to interview-shaped rows because
+// `CompassInterviewMessage` isn't part of the `ChatMessage` union; the
+// row-level atoms (`Bubble`, `Timestamp`, `CopyButton`, `SpeakButton`,
+// `AssistantMarkdown`) are the same ones `ChatTranscriptShared` uses.
 
 type InterviewMessage = GqlCWorkspaceCompassInterviewMessageFragment;
 type Observation = GqlCWorkspaceCompassObservationFragment;
@@ -78,43 +73,34 @@ export function CompassInterviewTranscript({
     const streamingEntries = Object.entries(streamingTexts);
 
     return (
-        <MessageScrollerProvider defaultScrollPosition="last-anchor" scrollEdgeThreshold={64}>
-            <MessageScroller className={className}>
-                <MessageScrollerViewport className={viewportClassName}>
-                    <MessageScrollerContent>
-                        {messages.map((message) => (
-                            <MessageScrollerItem key={message.interviewMessageId} messageId={message.interviewMessageId} scrollAnchor>
-                                {message.role === 'user' ? (
-                                    <InterviewUserRow
-                                        message={message}
-                                        observations={observationsByInterviewMessageId.get(message.interviewMessageId) ?? []}
-                                        locale={locale}
-                                    />
-                                ) : (
-                                    <InterviewAssistantRow message={message} />
-                                )}
-                            </MessageScrollerItem>
-                        ))}
-                        {streamingEntries.length > 0 ? (
-                            <section className="flex min-w-0 flex-col gap-4">
-                                {streamingEntries.map(([interviewMessageId, text]) => (
-                                    <MessageScrollerItem key={interviewMessageId} messageId={interviewMessageId} scrollAnchor>
-                                        <MessageRow side="assistant">
-                                            <div className="flex min-w-0 flex-1 flex-col gap-1">
-                                                <AssistantMarkdown text={text} streaming />
-                                            </div>
-                                        </MessageRow>
-                                    </MessageScrollerItem>
-                                ))}
-                            </section>
-                        ) : null}
-                    </MessageScrollerContent>
-                </MessageScrollerViewport>
-                <MessageScrollerButton direction="end" variant="secondary" size="sm" className="gap-1.5 rounded-full px-3 text-xs">
-                    {jumpToLatestLabel}
-                </MessageScrollerButton>
-            </MessageScroller>
-        </MessageScrollerProvider>
+        <ChatTranscriptShell jumpToLatestLabel={jumpToLatestLabel} className={className} viewportClassName={viewportClassName}>
+            {messages.map((message) => (
+                <MessageScrollerItem key={message.interviewMessageId} messageId={message.interviewMessageId} scrollAnchor>
+                    {message.role === 'user' ? (
+                        <InterviewUserRow
+                            message={message}
+                            observations={observationsByInterviewMessageId.get(message.interviewMessageId) ?? []}
+                            locale={locale}
+                        />
+                    ) : (
+                        <InterviewAssistantRow message={message} />
+                    )}
+                </MessageScrollerItem>
+            ))}
+            {streamingEntries.length > 0 ? (
+                <ChatStreamingRegion className="flex min-w-0 flex-col gap-4">
+                    {streamingEntries.map(([interviewMessageId, text]) => (
+                        <MessageScrollerItem key={interviewMessageId} messageId={interviewMessageId} scrollAnchor>
+                            <MessageRow side="assistant">
+                                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                    <AssistantMarkdown text={text} streaming />
+                                </div>
+                            </MessageRow>
+                        </MessageScrollerItem>
+                    ))}
+                </ChatStreamingRegion>
+            ) : null}
+        </ChatTranscriptShell>
     );
 }
 

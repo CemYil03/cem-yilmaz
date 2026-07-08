@@ -1,5 +1,9 @@
 # Minimal AI Chat
 
+> **Presentation rules that apply to every chat surface on the site** — composer states, streaming shimmer, stick-to-bottom threshold,
+> copy/TTS row placement, paddings, max-widths — live in [`docs/styles/chat.md`](../styles/chat.md). This doc is the visitor chat's
+> specifics: entry points, opening flow, attachments, read-aloud, tool-call approvals.
+
 > **Project note:** on cem-yilmaz.de this is the **public visitor chat** — "Ask me anything about Cem." It is **not** a standalone route; it
 > lives inside a right-side `Sheet` mounted at the root layout and opened from the landing page's Assistant section, the suggestion chips,
 > or the chat icon in the site header. The workspace personal assistant gets its own feature doc — see [Workspace Hub](./workspace-hub.md)

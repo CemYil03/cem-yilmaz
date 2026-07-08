@@ -1,5 +1,8 @@
 # Chat transcript
 
+> **Presentation rules for every chat surface** — paddings, max-widths, scroll behaviour, copy/TTS row, composer states — live in
+> [`docs/styles/chat.md`](../styles/chat.md). This doc is about the scroll primitive itself and how the surfaces plug into it.
+
 ## Context
 
 Four surfaces render an admin, visitor, or interviewer transcript today:
