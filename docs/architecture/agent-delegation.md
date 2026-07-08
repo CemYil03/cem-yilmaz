@@ -161,16 +161,22 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 - **Tools are thin wrappers around existing `commands/`+`queries/`.** CQRS already gave us single-purpose units. A tool file is mostly the
   Zod input schema, the closure-bound dependencies (`serverRuntime`, `session`, optional `mutations`), and 5–10 lines of `execute` that maps
   to the command's args shape and pushes onto the mutation log on success.
-- **The input schema is hand-built per tool, not derived from `GqlS<X>Schema()`.** Mutation tools whose underlying command has a GraphQL
-  input type — `toolProjectUpsert`, `toolTaskUpsert`, `toolProjectActivityUpsert`, `toolProjectLinkUpsert` — declare an explicit `z.object`
-  in their tool file. The earlier approach (start from `GqlS<X>Schema()`, `.extend()` every field) is **out**: the generated schema declares
-  timestamp scalars as `z.date()`, and under `structuredOutputs: true` the AI SDK converts the tool schema to JSON Schema for Gemini's
-  constrained decoding — `z.date()` has no clean JSON-Schema representation, so an extended schema occasionally produces a
-  `MALFORMED_FUNCTION_CALL` from Gemini on plain inputs ("create project peopleeat"). The hand-built shape uses `z.string()` for every
-  ISO-8601 timestamp and `execute` converts with `new Date(...)`. Enum schemas (`GqlS<X>EnumSchema`) are still reused so a future enum
-  addition surfaces as a TS error rather than a runtime mismatch; do not redeclare enum tuples by hand. Field-name drift between the SDL
-  input and the tool input is caught by the resolver call: every mutation tool's `execute` constructs the resolver `input` object
-  explicitly, so a missing or renamed field is a TS error at the tool file.
+- **The input schema is hand-built per tool, EXCEPT when the generated `GqlS<X>InputSchema()` is Gemini-safe.** Mutation tools whose
+  underlying command has a GraphQL input type — `toolProjectUpsert`, `toolTaskUpsert`, `toolProjectActivityUpsert`, `toolProjectLinkUpsert`
+  — declare an explicit `z.object` in their tool file when the generated schema is unsafe. "Unsafe" here means the underlying GraphQL input
+  declares timestamp scalars as `DateTime`: `typescript-validation-schema` emits those as `z.date()`, and under `structuredOutputs: true`
+  the AI SDK converts the tool schema to JSON Schema for Gemini's constrained decoding — `z.date()` has no clean JSON-Schema representation,
+  so an extended schema occasionally produces a `MALFORMED_FUNCTION_CALL` from Gemini on plain inputs ("create project peopleeat"). The
+  hand-built shape uses `z.string()` for every ISO-8601 timestamp and `execute` converts with `new Date(...)`. When every scalar on the
+  input is Gemini-safe — no `DateTime` fields; `Date` (the ISO-string scalar) emits as `z.string()`, IDs as `z.string()`, enums via the
+  shared `GqlS<X>EnumSchema()` — using the generated schema directly is preferred. The travel tools (`toolTripUpsert`, `toolTripDayUpsert`,
+  `toolTripActivityUpsert`, `toolTripPackingItemUpsert`) reference this path: their input schemas ARE `GqlSTripInputSchema()` /
+  `GqlSTripDayInputSchema()` / etc., with no hand-built duplicate to drift out of sync. `toolTripUpsertDeep` composes those with `.omit()` /
+  `.extend()` to build the nested shape. Enum schemas (`GqlS<X>EnumSchema`) are still reused so a future enum addition surfaces as a TS
+  error rather than a runtime mismatch; do not redeclare enum tuples by hand. Field-name drift between the SDL input and the tool input is
+  caught by the resolver call: every mutation tool's `execute` constructs the resolver `input` object explicitly (or passes the validated
+  input verbatim when the command signature accepts the domain input directly), so a missing or renamed field is a TS error at the tool
+  file.
 - **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
   `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via
   `serverRuntime.log.error` and returned as `{ status: 'failed', summary, mutations }`. The orchestrator's system prompt tells it to narrate

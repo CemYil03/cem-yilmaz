@@ -14,6 +14,7 @@ import { toolTripPackingItemDelete } from './toolTripPackingItemDelete';
 import { toolTripPackingItemToggle } from './toolTripPackingItemToggle';
 import { toolTripPackingItemUpsert } from './toolTripPackingItemUpsert';
 import { toolTripUpsert } from './toolTripUpsert';
+import { toolTripUpsertDeep } from './toolTripUpsertDeep';
 import { toolTripsList } from './toolTripsList';
 import { travelSnapshotForAgent } from './travelSnapshotForAgent';
 
@@ -71,13 +72,18 @@ function buildSystemPrompt(snapshot: string): string {
         '',
         'You have these tools:',
         '- `tripsList`, `tripGet` — read full rows when the snapshot below is not enough.',
-        '- `tripUpsert` — create-or-edit a trip (title, destination, dates, status, transport, accommodation, notes).',
+        '- `tripUpsertDeep` — **preferred for whole-trip planning**: create or edit a trip together with its days,',
+        '  activities, and packing items in ONE call. Merge-only nested payloads (omitting a day never deletes it);',
+        '  use `removeDayIds` / `removeActivityIds` / `removePackingItemIds` to remove existing rows in the same call.',
+        '  Prefer this over chaining `tripUpsert` + several `tripDay*` / `tripActivity*` / `tripPackingItem*` writes.',
+        '- `tripUpsert` — create-or-edit ONLY the trip root (title, destination, dates, status, transport, accommodation, notes).',
+        '  Use for pure metadata edits with no nested changes.',
         '- `tripDelete` — permanent delete of a trip and its days / activities / packing.',
-        '- `tripDayUpsert` — create-or-edit one day inside a trip (dayNumber, date, title, summary).',
+        '- `tripDayUpsert` — surgical create-or-edit of one day (dayNumber, date, title, summary).',
         '- `tripDayDelete` — remove one day (and its activities via cascade).',
-        '- `tripActivityUpsert` — create-or-edit one activity on a day (position, wall-clock times, title, location, url, notes).',
+        '- `tripActivityUpsert` — surgical create-or-edit of one activity on a day.',
         '- `tripActivityDelete` — remove one activity.',
-        '- `tripPackingItemUpsert` — create-or-edit one packing item on a trip (category, label, quantity, packed, notes).',
+        '- `tripPackingItemUpsert` — surgical create-or-edit of one packing item.',
         '- `tripPackingItemDelete` — remove one packing item.',
         '- `tripPackingItemToggle` — flip `packed` on one packing item; use this for "mark X as packed / unpacked".',
         '',
@@ -86,9 +92,10 @@ function buildSystemPrompt(snapshot: string): string {
         '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences summarizing',
         '  what you did.',
         '- Never invent an id. Use ids from the snapshot below or from a tool result earlier in this turn.',
-        '- Planning a new trip from dates: call `tripUpsert` first, then create one `tripDay` per calendar day',
-        '  (dayNumber 1..N with the matching `date`), then attach activities. Do this in the same turn — the whole',
-        '  point is that the plan lives in the DB when the turn ends.',
+        '- Planning a new trip from dates: use ONE `tripUpsertDeep` call carrying the trip root, one nested `day` per',
+        '  calendar day (dayNumber 1..N with the matching `date`) and their activities inline, plus any packing items.',
+        '  The whole plan lands in a single transaction — the point is that the plan lives in the DB when the turn ends.',
+        '  Reserve the granular `tripDay*` / `tripActivity*` / `tripPackingItem*` tools for one-off surgical edits.',
         '- When Cem gives vague scope ("a couple of things per day"), pick 2–3 well-known highlights per day for the',
         '  destination and add them as activities. Do NOT block on asking for every detail — a draft plan is more',
         '  useful than no plan.',
@@ -126,6 +133,7 @@ export async function agentPersonalAssistantTravel({ session, serverRuntime, mut
         tools: {
             tripsList: toolTripsList(readContext),
             tripGet: toolTripGet(readContext),
+            tripUpsertDeep: toolTripUpsertDeep(mutationContext),
             tripUpsert: toolTripUpsert(mutationContext),
             tripDelete: toolTripDelete(mutationContext),
             tripDayUpsert: toolTripDayUpsert(mutationContext),

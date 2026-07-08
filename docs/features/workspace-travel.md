@@ -34,10 +34,11 @@ past holds the rest. A "New trip" button opens the base-facts dialog (title, des
 ## The AI use-case (the whole reason this feature exists)
 
 The workspace assistant at `/workspace/assistant` gains a `delegateToTravel` tool that hands trip briefs to `agentPersonalAssistantTravel`.
-Cem says _"plan me a 3-day trip to Rome from Aug 5–7 with one main activity per day"_, and the sub-agent runs a chain of `tripUpsert` →
-three `tripDayUpsert` → three `tripActivityUpsert` writes in a single turn. The trip surfaces on `/workspace/travel` immediately over
-`userUpdates`; a fresh chat later reads the plan from the DB via the same `travelSnapshotForAgent` call that primes the sub-agent's system
-prompt.
+Cem says _"plan me a 3-day trip to Rome from Aug 5–7 with one main activity per day"_, and the sub-agent lands the whole plan in a single
+`tripUpsertDeep` tool call — root trip + 3 nested days + 3 nested activities + any packing items, one transaction. The trip surfaces on
+`/workspace/travel` immediately over `userUpdates`; a fresh chat later reads the plan from the DB via the same `travelSnapshotForAgent` call
+that primes the sub-agent's system prompt. The granular tools remain available for one-off surgical edits ("rename day 2's activity",
+"delete the flight home").
 
 The sub-agent's rules:
 
@@ -80,8 +81,28 @@ Standard `commands/` (`tripUpsert`, `tripDelete`, `tripDayUpsert`, `tripDayDelet
 `toGqlTripDay`, `toGqlTripActivity`, `toGqlTripPackingItem`). Every command ends with `serverRuntime.publish.userUpdates({ userId })` so the
 seeded-and-subscribed pages replace state on write.
 
+Command signatures are `(userId, input, requestingSession, serverRuntime)` — `input` is the domain payload the command actually cares about
+(`GqlSTripInput`, `GqlSTripDayInput`, …), not the resolver's `args` wrapper. Each `resolversCreate.ts` handler unwraps `args.input` /
+`args.tripId` before calling. This lets the agent tool wrappers call each command with the tool's already-validated input verbatim, no
+reshape.
+
 Resolver wiring lives in `src/server/graphql/resolversCreate.ts`: `Admin.travel` shell, `AdminTravelQuery.trips` / `AdminTravelQuery.trip`,
 and mutation handlers on `AdminMutation`. `guardAdminMutation` at the parent field authorizes once.
+
+#### Deep command (`tripUpsertDeep`)
+
+`src/server/commands/tripUpsertDeep.ts` collapses a whole-trip write into one call: root trip + nested `days` (each with inline
+`activities`) + `packingItems`, plus explicit `removeDayIds` / `removeActivityIds` / `removePackingItemIds` for deletions. Everything runs
+inside a single `serverRuntime.db.transaction(...)`; a failure anywhere rolls the whole plan back. One `userUpdates` publish at the end so
+the UI replaces state once, not per nested write. Returns the fully-hydrated trip via `tripGet` — same shape as `tripUpsert`.
+
+Not exposed as a GraphQL mutation; the UI uses the granular commands directly. The deep command exists so the travel sub-agent can plan a
+full trip in a single tool call rather than fanning out ten or more granular writes (`tripUpsert` + N `tripDayUpsert` + M
+`tripActivityUpsert` + K `tripPackingItemUpsert`) against `isStepCount(10)`.
+
+Merge-only nested semantics — omitting a day / activity / packing item never deletes it. Removals require explicit ids in the `remove*Ids`
+arrays. Scoping guards: every child upsert / remove `WHERE`s on the parent (`tripId` for days and packing, `tripDayId` for activities)
+inside the transaction, so a hallucinated id from a different trip fails the transaction rather than mutating someone else's row.
 
 ### Sub-agent
 
@@ -90,11 +111,14 @@ and mutation handlers on `AdminMutation`. `guardAdminMutation` at the parent fie
 - Snapshot: `src/server/agents/travelSnapshotForAgent.ts` — compact markdown listing every trip with day count, per-day activities, and
   packing progress. Each row keeps its id inline so the agent can address it in mutation tools without a `tripsList` call.
 - Read tools: `toolTripsList`, `toolTripGet`.
-- Mutation tools: `toolTripUpsert`, `toolTripDelete`, `toolTripDayUpsert`, `toolTripDayDelete`, `toolTripActivityUpsert`,
-  `toolTripActivityDelete`, `toolTripPackingItemUpsert`, `toolTripPackingItemDelete`, `toolTripPackingItemToggle`. Each is a thin wrapper
-  around the matching command; input schemas are hand-built `z.object`s (ISO strings, not `z.date()`) per the agent-delegation convention.
+- Mutation tools: `toolTripUpsertDeep` (preferred for whole-plan writes), `toolTripUpsert`, `toolTripDelete`, `toolTripDayUpsert`,
+  `toolTripDayDelete`, `toolTripActivityUpsert`, `toolTripActivityDelete`, `toolTripPackingItemUpsert`, `toolTripPackingItemDelete`,
+  `toolTripPackingItemToggle`. Each granular tool uses the generated `GqlS<X>InputSchema()` directly as its input schema (Gemini-safe
+  because the travel inputs use `Date` scalars, not `DateTime`); the deep tool composes those with `.omit()` / `.extend()` for the nested
+  structure. See `docs/architecture/agent-delegation.md` for when generated vs. hand-built is appropriate.
 - Mutation-log `TravelAgentMutationKind` union covers add / update / delete for each entity plus the packing-item toggle. Every tool pushes
-  `{ kind, id, title }` on success — the orchestrator uses these to narrate what changed.
+  `{ kind, id, title }` on success — the orchestrator uses these to narrate what changed. `toolTripUpsertDeep` fans out one push per touched
+  row so a single deep call still narrates as "created trip X, added days 1–3, added six activities, added four packing items".
 - Delegate: `src/server/agents/toolDelegateToTravel.ts` — structural copy of `toolDelegateToMedia.ts`. Pre-writes its parent
   `chatMessagesToolCall` row, spawns the sub-agent with a `childOnStepContext` that persists nested calls under the delegate row, wraps
   `agent.generate` in try/catch → `status: 'failed'`.

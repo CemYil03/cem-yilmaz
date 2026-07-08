@@ -2,7 +2,7 @@ import { desc, eq } from 'drizzle-orm';
 import { tripActivities, tripDays } from '../db/schema';
 import type { TripActivityCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSAdminMutationTripActivityUpsertArgs, GqlSSession, GqlSTripActivity } from '../graphql/generated';
+import type { GqlSSession, GqlSTripActivity, GqlSTripActivityInput } from '../graphql/generated';
 import { toGqlTripActivity } from '../mappers/toGqlTripActivity';
 
 // Upsert one activity on a `TripDay`. Verifies the parent day exists.
@@ -10,11 +10,10 @@ import { toGqlTripActivity } from '../mappers/toGqlTripActivity';
 // unspecified insert lands at the end.
 export async function tripActivityUpsert(
     userId: string,
-    args: GqlSAdminMutationTripActivityUpsertArgs,
+    input: GqlSTripActivityInput,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSTripActivity> {
-    const { input } = args;
     const tripActivityId = input.tripActivityId ?? crypto.randomUUID();
     const now = new Date();
 

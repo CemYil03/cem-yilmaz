@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { trips } from '../db/schema';
 import type { TripCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSAdminMutationTripUpsertArgs, GqlSSession, GqlSTrip } from '../graphql/generated';
+import type { GqlSSession, GqlSTrip, GqlSTripInput } from '../graphql/generated';
 import { tripGet } from '../queries/tripGet';
 
 // Two-phase upsert of a trip. `tripId` set → update; absent → insert. The
@@ -11,11 +11,10 @@ import { tripGet } from '../queries/tripGet';
 // activities, packing) so the UI's optimistic replacement is complete.
 export async function tripUpsert(
     userId: string,
-    args: GqlSAdminMutationTripUpsertArgs,
+    input: GqlSTripInput,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSTrip> {
-    const { input } = args;
     const tripId = input.tripId ?? crypto.randomUUID();
     const now = new Date();
 

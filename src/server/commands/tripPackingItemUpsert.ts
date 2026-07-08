@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { tripPackingItems, trips } from '../db/schema';
 import type { TripPackingItemCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSAdminMutationTripPackingItemUpsertArgs, GqlSSession, GqlSTripPackingItem } from '../graphql/generated';
+import type { GqlSSession, GqlSTripPackingItem, GqlSTripPackingItemInput } from '../graphql/generated';
 import { toGqlTripPackingItem } from '../mappers/toGqlTripPackingItem';
 
 // Upsert a packing item. Verifies the parent trip exists. `position`
@@ -10,11 +10,10 @@ import { toGqlTripPackingItem } from '../mappers/toGqlTripPackingItem';
 // new item lands at the end of its category bucket.
 export async function tripPackingItemUpsert(
     userId: string,
-    args: GqlSAdminMutationTripPackingItemUpsertArgs,
+    input: GqlSTripPackingItemInput,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSTripPackingItem> {
-    const { input } = args;
     const tripPackingItemId = input.tripPackingItemId ?? crypto.randomUUID();
     const now = new Date();
 

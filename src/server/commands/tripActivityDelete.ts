@@ -1,20 +1,24 @@
 import { eq } from 'drizzle-orm';
 import { tripActivities } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSAdminMutationTripActivityDeleteArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
+import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
+
+export interface TripActivityDeleteInput {
+    tripActivityId: string;
+}
 
 export async function tripActivityDelete(
     userId: string,
-    args: GqlSAdminMutationTripActivityDeleteArgs,
+    input: TripActivityDeleteInput,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSMutationResult> {
     try {
         const deleted = await serverRuntime.db
             .delete(tripActivities)
-            .where(eq(tripActivities.tripActivityId, args.tripActivityId))
+            .where(eq(tripActivities.tripActivityId, input.tripActivityId))
             .returning({ tripActivityId: tripActivities.tripActivityId });
-        if (deleted.length === 0) throw new Error(`tripActivityDelete: row ${args.tripActivityId} not found`);
+        if (deleted.length === 0) throw new Error(`tripActivityDelete: row ${input.tripActivityId} not found`);
         await serverRuntime.publish.userUpdates({ userId });
         return { success: true };
     } catch (error) {

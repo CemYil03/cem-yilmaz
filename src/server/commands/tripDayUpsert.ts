@@ -2,7 +2,7 @@ import { asc, eq, inArray } from 'drizzle-orm';
 import { tripActivities, tripDays, trips } from '../db/schema';
 import type { TripDayCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSAdminMutationTripDayUpsertArgs, GqlSSession, GqlSTripDay } from '../graphql/generated';
+import type { GqlSSession, GqlSTripDay, GqlSTripDayInput } from '../graphql/generated';
 import { toGqlTripActivity } from '../mappers/toGqlTripActivity';
 import { toGqlTripDay } from '../mappers/toGqlTripDay';
 
@@ -12,11 +12,10 @@ import { toGqlTripDay } from '../mappers/toGqlTripDay';
 // index violation on `TripDays_tripId_dayNumber_uniq`.
 export async function tripDayUpsert(
     userId: string,
-    args: GqlSAdminMutationTripDayUpsertArgs,
+    input: GqlSTripDayInput,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSTripDay> {
-    const { input } = args;
     const tripDayId = input.tripDayId ?? crypto.randomUUID();
     const now = new Date();
 

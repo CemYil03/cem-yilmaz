@@ -863,51 +863,51 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 return itemFileTogglePin(userId, args, requestingSession, serverRuntime);
             },
             tripUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripUpsertArgs, requestingSession: GqlSSession) {
-                return tripUpsert(userId, args, requestingSession, serverRuntime);
+                return tripUpsert(userId, args.input, requestingSession, serverRuntime);
             },
             tripDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDeleteArgs, requestingSession: GqlSSession) {
-                return tripDelete(userId, args, requestingSession, serverRuntime);
+                return tripDelete(userId, { tripId: args.tripId }, requestingSession, serverRuntime);
             },
             tripDayUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDayUpsertArgs, requestingSession: GqlSSession) {
-                return tripDayUpsert(userId, args, requestingSession, serverRuntime);
+                return tripDayUpsert(userId, args.input, requestingSession, serverRuntime);
             },
             tripDayDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDayDeleteArgs, requestingSession: GqlSSession) {
-                return tripDayDelete(userId, args, requestingSession, serverRuntime);
+                return tripDayDelete(userId, { tripDayId: args.tripDayId }, requestingSession, serverRuntime);
             },
             tripActivityUpsert(
                 { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationTripActivityUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripActivityUpsert(userId, args, requestingSession, serverRuntime);
+                return tripActivityUpsert(userId, args.input, requestingSession, serverRuntime);
             },
             tripActivityDelete(
                 { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationTripActivityDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripActivityDelete(userId, args, requestingSession, serverRuntime);
+                return tripActivityDelete(userId, { tripActivityId: args.tripActivityId }, requestingSession, serverRuntime);
             },
             tripPackingItemUpsert(
                 { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationTripPackingItemUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripPackingItemUpsert(userId, args, requestingSession, serverRuntime);
+                return tripPackingItemUpsert(userId, args.input, requestingSession, serverRuntime);
             },
             tripPackingItemDelete(
                 { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationTripPackingItemDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripPackingItemDelete(userId, args, requestingSession, serverRuntime);
+                return tripPackingItemDelete(userId, { tripPackingItemId: args.tripPackingItemId }, requestingSession, serverRuntime);
             },
             tripPackingItemToggle(
                 { userId }: GqlSAdminMutation,
                 args: GqlSAdminMutationTripPackingItemToggleArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripPackingItemToggle(userId, args, requestingSession, serverRuntime);
+                return tripPackingItemToggle(userId, { tripPackingItemId: args.tripPackingItemId }, requestingSession, serverRuntime);
             },
         },
         Query: {

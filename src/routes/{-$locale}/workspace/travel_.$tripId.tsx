@@ -1,7 +1,6 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
-    ArrowLeftIcon,
     CalendarDaysIcon,
     ClockIcon,
     ExternalLinkIcon,
@@ -116,7 +115,6 @@ function WorkspaceTravelDetail() {
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full py-8 leading-relaxed">
-            <BackLink locale={locale} />
             <TripHeader trip={trip} locale={locale} />
             <div className="mt-8 grid grid-cols-1 xl:grid-cols-5 gap-8">
                 <section className="xl:col-span-3 space-y-6">
@@ -130,23 +128,9 @@ function WorkspaceTravelDetail() {
     );
 }
 
-function BackLink({ locale }: { locale: Locale }) {
-    return (
-        <Link
-            to="/{-$locale}/workspace/travel"
-            params={{ locale: locale === 'de' ? undefined : locale }}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-        >
-            <ArrowLeftIcon className="size-3" />
-            {{ de: 'Alle Reisen', en: 'All trips' }[locale]}
-        </Link>
-    );
-}
-
 function TripNotFound({ locale }: { locale: Locale }) {
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-3xl mx-auto w-full py-12">
-            <BackLink locale={locale} />
             <GlassCard className="mt-6 px-6 py-10 text-center text-sm text-muted-foreground">
                 {{ de: 'Diese Reise existiert nicht (mehr).', en: 'This trip does not exist (any more).' }[locale]}
             </GlassCard>
@@ -158,7 +142,7 @@ function TripNotFound({ locale }: { locale: Locale }) {
 
 function TripHeader({ trip, locale }: { trip: TripDetail; locale: Locale }) {
     return (
-        <header className="mt-4">
+        <header>
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h1 className="text-3xl font-semibold truncate">{trip.title}</h1>

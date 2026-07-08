@@ -178,6 +178,15 @@ const TRAILING_LABEL_SELECTORS: ReadonlyArray<{
             return title.length > 0 ? title : 'Untitled';
         },
     },
+    {
+        routeId: '/{-$locale}/workspace/travel_/$tripId',
+        select: (loaderData) => {
+            const trip = (
+                loaderData as { currentSession?: { user?: { admin?: { travel?: { trip?: { title?: string } | null } } } } } | undefined
+            )?.currentSession?.user?.admin?.travel?.trip;
+            return typeof trip?.title === 'string' ? trip.title : undefined;
+        },
+    },
 ];
 
 // `hasSelector: true` means the active route owns the trailing crumb's
