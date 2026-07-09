@@ -1367,6 +1367,7 @@ export const mediaTopics = [
     'comedy',
     'science',
     'business',
+    'finance',
     'news',
     'music',
     'sports',

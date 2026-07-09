@@ -36,13 +36,21 @@ matching card into view and highlights it for a moment — the assistant's deep-
 - **Channels** — **filterable avatar card grid** (1 / 2 / 3 columns). Toolbar: text filter + "New channel" button; chip rows for platform
   and topic (AND-composed). Each card shows avatar, name, handle, platform, topic chips, first-line notes preview, an external-link
   affordance, and an edit action. **Drag-reorder** (via the shared `useReorderableList` hook) is available when no filters are active —
-  filtered views hide the grip so priorities aren't rewritten from a partial list. "New channel" opens the empty edit dialog; with
-  `platform: youtube` (the default), a **YouTube search bar** auto-fills `name` / `url` / `handle` / `avatarUrl` / `description` — same
-  shape as the TMDB flow on the movies / series tabs. Topics and notes stay manual.
+  filtered views hide the grip so priorities aren't rewritten from a partial list. "New channel" opens a **YouTube-search-only** dialog:
+  the admin searches the YouTube Data API and picks a match, which fills `name` / `url` / `handle` / `avatarUrl` / `description` and pins
+  `platform: youtube`; a compact preview card confirms the pick, and only topics + notes stay manual (Save is disabled until a result is
+  picked). There is **no manual identity entry when adding** — Cem never hand-adds a channel. Editing an existing channel still shows the
+  full manual form (name / platform / url / handle / avatar / description / topics / notes), so legacy Twitch / podcast / other rows stay
+  editable.
 
 Topics on all three entities are a **chip input**: known topics (the `MediaTopic` enum) come as suggested chips; free-form values work too
 (the column is a plain `text[]`, so ad-hoc topics can be added without a migration). Removing a chip removes it from the array. The known
-vocabulary drives the UI autocomplete and the `MediaTopic` GraphQL enum surface.
+vocabulary drives the UI autocomplete and the `MediaTopic` GraphQL enum surface. Current known topics: `tech`, `ai`, `software`, `gaming`,
+`movieCritic`, `entertainment`, `comedy`, `science`, `business`, `finance`, `news`, `music`, `sports`, `lifestyle`, `education`.
+
+All search / filter fields across the three tabs (TMDB movie search, TMDB TV search, the channels text filter, and the YouTube channel
+search) are built from the shadcn **`InputGroup`** primitives (`InputGroupAddon` for the leading search icon + trailing spinner/clear
+button, `InputGroupInput` for the field) rather than a hand-positioned icon over a bare `Input`.
 
 Filter chips below the movies / series search bars narrow the visible grid by topic (`?topic=tech`). Multi-select AND-composes them. The
 chips are auto-populated from the union of topics across the visible rows. Channels keep topic / platform filters in local state (not URL)
@@ -179,8 +187,9 @@ resolved to `image.tmdb.org` fully-qualified URLs at the boundary — the fronte
 
 Same posture as the TMDB client: `YOUTUBE_API_KEY` is capability-lazy, missing key → empty results (never a throw), 5-second per-request
 timeout. One user search costs two API calls (search 100 units + channels.list 2 units); free-tier quota is 10k units/day which is generous
-for a personal library. The channels tab's "New channel" flow uses this to auto-fill name, url, handle, avatarUrl, and description when the
-admin picks a match — the rest of the form (topics, notes) stays manual.
+for a personal library. The channels tab's "New channel" flow is **built entirely around this search** — adding a channel means picking a
+YouTube result, which auto-fills name, url, handle, avatarUrl, and description; the rest of the form (topics, notes) stays manual. There is
+no manual identity entry on the add path.
 
 ### Assistant integration
 

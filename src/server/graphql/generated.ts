@@ -1196,6 +1196,7 @@ export type GqlSMediaTopic =
     | 'comedy'
     | 'education'
     | 'entertainment'
+    | 'finance'
     | 'gaming'
     | 'lifestyle'
     | 'movieCritic'
@@ -4204,6 +4205,7 @@ export const GqlSMediaTopicSchema: z.ZodType<
     | 'comedy'
     | 'education'
     | 'entertainment'
+    | 'finance'
     | 'gaming'
     | 'lifestyle'
     | 'movieCritic'
@@ -4218,6 +4220,7 @@ export const GqlSMediaTopicSchema: z.ZodType<
     | 'comedy'
     | 'education'
     | 'entertainment'
+    | 'finance'
     | 'gaming'
     | 'lifestyle'
     | 'movieCritic'
@@ -4233,6 +4236,7 @@ export const GqlSMediaTopicSchema: z.ZodType<
     'comedy',
     'education',
     'entertainment',
+    'finance',
     'gaming',
     'lifestyle',
     'movieCritic',

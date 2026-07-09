@@ -1521,6 +1521,7 @@ enum MediaTopic {
     comedy
     science
     business
+    finance
     news
     music
     sports

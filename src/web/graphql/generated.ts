@@ -1199,6 +1199,7 @@ export type GqlCMediaTopic =
     | 'comedy'
     | 'education'
     | 'entertainment'
+    | 'finance'
     | 'gaming'
     | 'lifestyle'
     | 'movieCritic'

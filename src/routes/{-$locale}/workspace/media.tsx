@@ -49,6 +49,7 @@ import {
     DropdownMenuTrigger,
 } from '../../../web/components/base/dropdown-menu';
 import { Input } from '../../../web/components/base/input';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '../../../web/components/base/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Slider } from '../../../web/components/base/slider';
 import { Switch } from '../../../web/components/base/switch';
@@ -138,6 +139,7 @@ const KNOWN_TOPICS: ReadonlyArray<GqlCMediaTopic> = [
     'comedy',
     'science',
     'business',
+    'finance',
     'news',
     'music',
     'sports',
@@ -154,6 +156,7 @@ const TOPIC_LABELS: Record<GqlCMediaTopic, { de: string; en: string }> = {
     comedy: { de: 'Comedy', en: 'Comedy' },
     science: { de: 'Wissenschaft', en: 'Science' },
     business: { de: 'Business', en: 'Business' },
+    finance: { de: 'Finanzen', en: 'Finance' },
     news: { de: 'News', en: 'News' },
     music: { de: 'Musik', en: 'Music' },
     sports: { de: 'Sport', en: 'Sports' },
@@ -723,9 +726,11 @@ function MovieSearchBar({
 
     return (
         <div ref={containerRef} className="relative">
-            <div className="relative">
-                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+            <InputGroup className="bg-background/70 backdrop-blur-sm">
+                <InputGroupAddon>
+                    <SearchIcon className="text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
                     ref={inputRef}
                     value={query}
                     onChange={(e) => {
@@ -753,30 +758,32 @@ function MovieSearchBar({
                         }
                     }}
                     placeholder={{ de: 'Film suchen…', en: 'Search a movie…' }[locale]}
-                    className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
                     aria-label={{ de: 'Film-Suche', en: 'Movie search' }[locale]}
                     role="combobox"
                     aria-expanded={open}
                     aria-controls="tmdb-suggestions"
                 />
                 {fetching && debounced ? (
-                    <Loader2Icon className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    <InputGroupAddon align="inline-end">
+                        <Loader2Icon className="animate-spin text-muted-foreground" />
+                    </InputGroupAddon>
                 ) : query ? (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setQuery('');
-                            setDebounced('');
-                            setOpen(false);
-                            inputRef.current?.focus();
-                        }}
-                        aria-label={{ de: 'Suche leeren', en: 'Clear search' }[locale]}
-                        className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        <XIcon className="size-4" />
-                    </button>
+                    <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                            size="icon-xs"
+                            onClick={() => {
+                                setQuery('');
+                                setDebounced('');
+                                setOpen(false);
+                                inputRef.current?.focus();
+                            }}
+                            aria-label={{ de: 'Suche leeren', en: 'Clear search' }[locale]}
+                        >
+                            <XIcon />
+                        </InputGroupButton>
+                    </InputGroupAddon>
                 ) : null}
-            </div>
+            </InputGroup>
 
             {open && debounced ? (
                 <div
@@ -1504,9 +1511,11 @@ function ShowSearchBar({
 
     return (
         <div ref={containerRef} className="relative">
-            <div className="relative">
-                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+            <InputGroup className="bg-background/70 backdrop-blur-sm">
+                <InputGroupAddon>
+                    <SearchIcon className="text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
                     ref={inputRef}
                     value={query}
                     onChange={(e) => {
@@ -1534,30 +1543,32 @@ function ShowSearchBar({
                         }
                     }}
                     placeholder={{ de: 'Serie suchen…', en: 'Search a series…' }[locale]}
-                    className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
                     aria-label={{ de: 'Serien-Suche', en: 'Series search' }[locale]}
                     role="combobox"
                     aria-expanded={open}
                     aria-controls="tmdb-tv-suggestions"
                 />
                 {fetching && debounced ? (
-                    <Loader2Icon className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    <InputGroupAddon align="inline-end">
+                        <Loader2Icon className="animate-spin text-muted-foreground" />
+                    </InputGroupAddon>
                 ) : query ? (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setQuery('');
-                            setDebounced('');
-                            setOpen(false);
-                            inputRef.current?.focus();
-                        }}
-                        aria-label={{ de: 'Suche leeren', en: 'Clear search' }[locale]}
-                        className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        <XIcon className="size-4" />
-                    </button>
+                    <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                            size="icon-xs"
+                            onClick={() => {
+                                setQuery('');
+                                setDebounced('');
+                                setOpen(false);
+                                inputRef.current?.focus();
+                            }}
+                            aria-label={{ de: 'Suche leeren', en: 'Clear search' }[locale]}
+                        >
+                            <XIcon />
+                        </InputGroupButton>
+                    </InputGroupAddon>
                 ) : null}
-            </div>
+            </InputGroup>
 
             {open && debounced ? (
                 <div
@@ -1975,26 +1986,28 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
         <section>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
-                    <div className="relative">
-                        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
+                    <InputGroup className="bg-background/70 backdrop-blur-sm">
+                        <InputGroupAddon>
+                            <SearchIcon className="text-muted-foreground" />
+                        </InputGroupAddon>
+                        <InputGroupInput
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder={{ de: 'Kanäle filtern…', en: 'Filter channels…' }[locale]}
-                            className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
                             aria-label={{ de: 'Kanäle filtern', en: 'Filter channels' }[locale]}
                         />
                         {query ? (
-                            <button
-                                type="button"
-                                onClick={() => setQuery('')}
-                                aria-label={{ de: 'Filter leeren', en: 'Clear filter' }[locale]}
-                                className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                                <XIcon className="size-4" />
-                            </button>
+                            <InputGroupAddon align="inline-end">
+                                <InputGroupButton
+                                    size="icon-xs"
+                                    onClick={() => setQuery('')}
+                                    aria-label={{ de: 'Filter leeren', en: 'Clear filter' }[locale]}
+                                >
+                                    <XIcon />
+                                </InputGroupButton>
+                            </InputGroupAddon>
                         ) : null}
-                    </div>
+                    </InputGroup>
                     <p className="mt-2 text-sm text-muted-foreground">
                         {
                             {
@@ -2221,9 +2234,12 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
         topics: channel?.topics ?? [],
     });
 
-    // Only offered when creating a new YouTube channel — editing a saved
-    // row or picking a non-YouTube platform is intentional manual entry.
-    const showYoutubeSearch = channel === null && form.platform === 'youtube';
+    // Adding a channel is YouTube-search-only: pick a suggestion and the
+    // identity fields (name / url / handle / avatar / description) fill from
+    // the API — there is no manual identity entry. Editing a saved row keeps
+    // the full form so legacy Twitch / podcast / other channels stay editable.
+    const isNew = channel === null;
+    const hasPicked = form.name.trim().length > 0 && form.url.trim().length > 0;
 
     return (
         <>
@@ -2240,6 +2256,7 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
                     <form
                         onSubmit={async (event) => {
                             event.preventDefault();
+                            if (isNew && !hasPicked) return;
                             setBusy(true);
                             await upsert({
                                 mediaChannels: [
@@ -2261,71 +2278,134 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
                         }}
                         className="flex flex-col gap-3"
                     >
-                        {showYoutubeSearch ? (
-                            <YoutubeChannelSearchBar
-                                locale={locale}
-                                onSelect={(hit) => {
-                                    setForm((prev) => ({
-                                        ...prev,
-                                        name: hit.title,
-                                        url: hit.canonicalUrl,
-                                        handle: hit.handle ?? '',
-                                        avatarUrl: hit.avatarUrl ?? '',
-                                        description: hit.description ?? '',
-                                    }));
-                                }}
-                            />
-                        ) : null}
-                        <Field label={{ de: 'Name', en: 'Name' }[locale]}>
-                            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required autoFocus />
-                        </Field>
-                        <div className="grid grid-cols-2 gap-3">
-                            <Field label={{ de: 'Plattform', en: 'Platform' }[locale]}>
-                                <Select
-                                    value={form.platform}
-                                    onValueChange={(value) => setForm({ ...form, platform: value as GqlCMediaPlatform })}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(Object.keys(PLATFORM_LABELS) as GqlCMediaPlatform[]).map((p) => (
-                                            <SelectItem key={p} value={p}>
-                                                {PLATFORM_LABELS[p][locale]}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field label={{ de: 'Handle (optional)', en: 'Handle (optional)' }[locale]}>
-                                <Input value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} />
-                            </Field>
-                        </div>
-                        <Field label={{ de: 'URL', en: 'URL' }[locale]}>
-                            <Input
-                                type="url"
-                                inputMode="url"
-                                value={form.url}
-                                onChange={(e) => setForm({ ...form, url: e.target.value })}
-                                required
-                            />
-                        </Field>
-                        <Field label={{ de: 'Avatar-URL (optional)', en: 'Avatar URL (optional)' }[locale]}>
-                            <Input value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} />
-                        </Field>
-                        <Field label={{ de: 'Beschreibung', en: 'Description' }[locale]}>
-                            <Textarea
-                                rows={2}
-                                value={form.description}
-                                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                            />
-                        </Field>
-                        <Field label={{ de: 'Notizen', en: 'Notes' }[locale]}>
-                            <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                        </Field>
-                        <Field label={{ de: 'Themen', en: 'Topics' }[locale]}>
-                            <TopicChipInput value={form.topics} onChange={(next) => setForm({ ...form, topics: next })} locale={locale} />
-                        </Field>
+                        {isNew ? (
+                            <>
+                                <YoutubeChannelSearchBar
+                                    locale={locale}
+                                    onSelect={(hit) => {
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            platform: 'youtube',
+                                            name: hit.title,
+                                            url: hit.canonicalUrl,
+                                            handle: hit.handle ?? '',
+                                            avatarUrl: hit.avatarUrl ?? '',
+                                            description: hit.description ?? '',
+                                        }));
+                                    }}
+                                />
+                                {hasPicked ? (
+                                    <>
+                                        <div className="flex items-start gap-3 rounded-md border border-border/60 bg-background/40 p-3">
+                                            <Avatar size="lg" className="shrink-0">
+                                                {form.avatarUrl ? <AvatarImage src={form.avatarUrl} alt={form.name} /> : null}
+                                                <AvatarFallback>{form.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-sm font-medium leading-snug">{form.name}</div>
+                                                {form.handle ? (
+                                                    <div className="mt-0.5 truncate text-xs text-muted-foreground">{form.handle}</div>
+                                                ) : null}
+                                                <a
+                                                    href={form.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="mt-1 inline-flex items-center gap-1 truncate text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                                                >
+                                                    <LinkIcon className="size-3 shrink-0" />
+                                                    <span className="truncate">{form.url}</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <Field label={{ de: 'Notizen', en: 'Notes' }[locale]}>
+                                            <Textarea
+                                                rows={2}
+                                                value={form.notes}
+                                                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                                            />
+                                        </Field>
+                                        <Field label={{ de: 'Themen', en: 'Topics' }[locale]}>
+                                            <TopicChipInput
+                                                value={form.topics}
+                                                onChange={(next) => setForm({ ...form, topics: next })}
+                                                locale={locale}
+                                            />
+                                        </Field>
+                                    </>
+                                ) : (
+                                    <p className="px-1 text-sm text-muted-foreground">
+                                        {
+                                            {
+                                                de: 'Suche oben nach einem YouTube-Kanal und wähle einen Treffer aus.',
+                                                en: 'Search for a YouTube channel above and pick a result.',
+                                            }[locale]
+                                        }
+                                    </p>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <Field label={{ de: 'Name', en: 'Name' }[locale]}>
+                                    <Input
+                                        value={form.name}
+                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                        required
+                                        autoFocus
+                                    />
+                                </Field>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Field label={{ de: 'Plattform', en: 'Platform' }[locale]}>
+                                        <Select
+                                            value={form.platform}
+                                            onValueChange={(value) => setForm({ ...form, platform: value as GqlCMediaPlatform })}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {(Object.keys(PLATFORM_LABELS) as GqlCMediaPlatform[]).map((p) => (
+                                                    <SelectItem key={p} value={p}>
+                                                        {PLATFORM_LABELS[p][locale]}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </Field>
+                                    <Field label={{ de: 'Handle (optional)', en: 'Handle (optional)' }[locale]}>
+                                        <Input value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} />
+                                    </Field>
+                                </div>
+                                <Field label={{ de: 'URL', en: 'URL' }[locale]}>
+                                    <Input
+                                        type="url"
+                                        inputMode="url"
+                                        value={form.url}
+                                        onChange={(e) => setForm({ ...form, url: e.target.value })}
+                                        required
+                                    />
+                                </Field>
+                                <Field label={{ de: 'Avatar-URL (optional)', en: 'Avatar URL (optional)' }[locale]}>
+                                    <Input value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} />
+                                </Field>
+                                <Field label={{ de: 'Beschreibung', en: 'Description' }[locale]}>
+                                    <Textarea
+                                        rows={2}
+                                        value={form.description}
+                                        onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                    />
+                                </Field>
+                                <Field label={{ de: 'Notizen', en: 'Notes' }[locale]}>
+                                    <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                                </Field>
+                                <Field label={{ de: 'Themen', en: 'Topics' }[locale]}>
+                                    <TopicChipInput
+                                        value={form.topics}
+                                        onChange={(next) => setForm({ ...form, topics: next })}
+                                        locale={locale}
+                                    />
+                                </Field>
+                            </>
+                        )}
 
                         <DialogFooter>
                             {channel ? (
@@ -2343,7 +2423,7 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
                             <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
                                 {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
                             </Button>
-                            <Button type="submit" disabled={busy}>
+                            <Button type="submit" disabled={busy || (isNew && !hasPicked)}>
                                 {{ de: 'Speichern', en: 'Save' }[locale]}
                             </Button>
                         </DialogFooter>
@@ -2454,9 +2534,11 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
 
     return (
         <div ref={containerRef} className="relative">
-            <div className="relative">
-                <PlayCircleIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+            <InputGroup className="bg-background/70 backdrop-blur-sm">
+                <InputGroupAddon>
+                    <PlayCircleIcon className="text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
                     ref={inputRef}
                     value={query}
                     onChange={(e) => {
@@ -2484,30 +2566,32 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
                         }
                     }}
                     placeholder={{ de: 'YouTube-Kanal suchen…', en: 'Search YouTube channel…' }[locale]}
-                    className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
                     aria-label={{ de: 'YouTube-Suche', en: 'YouTube search' }[locale]}
                     role="combobox"
                     aria-expanded={open}
                     aria-controls="youtube-suggestions"
                 />
                 {fetching && debounced ? (
-                    <Loader2Icon className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    <InputGroupAddon align="inline-end">
+                        <Loader2Icon className="animate-spin text-muted-foreground" />
+                    </InputGroupAddon>
                 ) : query ? (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setQuery('');
-                            setDebounced('');
-                            setOpen(false);
-                            inputRef.current?.focus();
-                        }}
-                        aria-label={{ de: 'Suche leeren', en: 'Clear search' }[locale]}
-                        className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        <XIcon className="size-4" />
-                    </button>
+                    <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                            size="icon-xs"
+                            onClick={() => {
+                                setQuery('');
+                                setDebounced('');
+                                setOpen(false);
+                                inputRef.current?.focus();
+                            }}
+                            aria-label={{ de: 'Suche leeren', en: 'Clear search' }[locale]}
+                        >
+                            <XIcon />
+                        </InputGroupButton>
+                    </InputGroupAddon>
                 ) : null}
-            </div>
+            </InputGroup>
 
             {open && debounced ? (
                 <div
