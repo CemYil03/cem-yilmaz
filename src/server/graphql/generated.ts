@@ -24,6 +24,7 @@ export interface GqlSAdmin {
     adminChatFindOne: GqlSChat;
     adminCompassFindOne: GqlSAdminCompass;
     adminCvFindOne: GqlSCvQuery;
+    adminFinancesFindOne: GqlSAdminFinancesQuery;
     adminInventoryFindOne: GqlSAdminInventoryQuery;
     adminLogFindMany: Array<GqlSLog>;
     adminMediaFindOne: GqlSAdminMediaQuery;
@@ -116,6 +117,14 @@ export type GqlSAdminCompassAdminCompassObservationFindManyArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export interface GqlSAdminFinancesQuery {
+    __typename?: 'AdminFinancesQuery';
+    adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
+    adminFinancesMonthlyNetIncomeCentsFindOne?: Maybe<Scalars['Int']['output']>;
+    adminFinancesRecurringCostFindMany: Array<GqlSFinanceRecurringCost>;
+    adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
+}
+
 export interface GqlSAdminInventoryQuery {
     __typename?: 'AdminInventoryQuery';
     adminInventoryItemFindMany: Array<GqlSItem>;
@@ -194,6 +203,9 @@ export interface GqlSAdminMutation {
     cvSkillDelete: GqlSMutationResult;
     cvSkillReorder: GqlSMutationResult;
     cvSkillUpsert: GqlSCvSkill;
+    financeMonthlyNetIncomeSet: GqlSAdminFinancesQuery;
+    financeRecurringCostDelete: GqlSMutationResult;
+    financeRecurringCostUpsert: GqlSFinanceRecurringCost;
     itemDelete: GqlSMutationResult;
     itemDispose: GqlSItem;
     itemFileAttach: GqlSItemFile;
@@ -342,6 +354,18 @@ export type GqlSAdminMutationCvSkillReorderArgs = {
 
 export type GqlSAdminMutationCvSkillUpsertArgs = {
     input: GqlSCvSkillInput;
+};
+
+export type GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs = {
+    amountCents?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type GqlSAdminMutationFinanceRecurringCostDeleteArgs = {
+    costId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationFinanceRecurringCostUpsertArgs = {
+    input: GqlSFinanceRecurringCostInput;
 };
 
 export type GqlSAdminMutationItemDeleteArgs = {
@@ -1006,6 +1030,40 @@ export interface GqlSFileUpload {
     size: Scalars['Int']['output'];
     url: Scalars['String']['output'];
 }
+
+export type GqlSFinanceCadence = 'monthly' | 'yearly';
+
+export interface GqlSFinanceRecurringCost {
+    __typename?: 'FinanceRecurringCost';
+    active: Scalars['Boolean']['output'];
+    amountCents: Scalars['Int']['output'];
+    cadence: GqlSFinanceCadence;
+    categoryKey: GqlSFinanceRecurringCostCategory;
+    costId: Scalars['ID']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    currency: Scalars['String']['output'];
+    endsOn?: Maybe<Scalars['Date']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    startsOn?: Maybe<Scalars['Date']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSFinanceRecurringCostCategory =
+    'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities';
+
+export type GqlSFinanceRecurringCostInput = {
+    active?: InputMaybe<Scalars['Boolean']['input']>;
+    amountCents: Scalars['Int']['input'];
+    cadence: GqlSFinanceCadence;
+    categoryKey: GqlSFinanceRecurringCostCategory;
+    costId?: InputMaybe<Scalars['ID']['input']>;
+    currency?: InputMaybe<Scalars['String']['input']>;
+    endsOn?: InputMaybe<Scalars['Date']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    startsOn?: InputMaybe<Scalars['Date']['input']>;
+};
 
 export interface GqlSItem {
     __typename?: 'Item';
@@ -1919,6 +1977,7 @@ export type GqlSResolversTypes = ResolversObject<{
     AdminChatConfig: ResolverTypeWrapper<GqlSAdminChatConfig>;
     AdminChatModel: ResolverTypeWrapper<GqlSAdminChatModel>;
     AdminCompass: ResolverTypeWrapper<GqlSAdminCompass>;
+    AdminFinancesQuery: ResolverTypeWrapper<GqlSAdminFinancesQuery>;
     AdminInventoryQuery: ResolverTypeWrapper<GqlSAdminInventoryQuery>;
     AdminMediaQuery: ResolverTypeWrapper<GqlSAdminMediaQuery>;
     AdminMedicalQuery: ResolverTypeWrapper<GqlSAdminMedicalQuery>;
@@ -1999,6 +2058,10 @@ export type GqlSResolversTypes = ResolversObject<{
     Date: ResolverTypeWrapper<Scalars['Date']['output']>;
     DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
     FileUpload: ResolverTypeWrapper<GqlSFileUpload>;
+    FinanceCadence: GqlSFinanceCadence;
+    FinanceRecurringCost: ResolverTypeWrapper<GqlSFinanceRecurringCost>;
+    FinanceRecurringCostCategory: GqlSFinanceRecurringCostCategory;
+    FinanceRecurringCostInput: GqlSFinanceRecurringCostInput;
     ID: ResolverTypeWrapper<Scalars['ID']['output']>;
     Int: ResolverTypeWrapper<Scalars['Int']['output']>;
     Item: ResolverTypeWrapper<GqlSItem>;
@@ -2101,6 +2164,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     AdminChatConfig: GqlSAdminChatConfig;
     AdminChatModel: GqlSAdminChatModel;
     AdminCompass: GqlSAdminCompass;
+    AdminFinancesQuery: GqlSAdminFinancesQuery;
     AdminInventoryQuery: GqlSAdminInventoryQuery;
     AdminMediaQuery: GqlSAdminMediaQuery;
     AdminMedicalQuery: GqlSAdminMedicalQuery;
@@ -2169,6 +2233,8 @@ export type GqlSResolversParentTypes = ResolversObject<{
     Date: Scalars['Date']['output'];
     DateTime: Scalars['DateTime']['output'];
     FileUpload: GqlSFileUpload;
+    FinanceRecurringCost: GqlSFinanceRecurringCost;
+    FinanceRecurringCostInput: GqlSFinanceRecurringCostInput;
     ID: Scalars['ID']['output'];
     Int: Scalars['Int']['output'];
     Item: GqlSItem;
@@ -2247,6 +2313,7 @@ export type GqlSAdminResolvers<
     >;
     adminCompassFindOne?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
     adminCvFindOne?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
+    adminFinancesFindOne?: Resolver<GqlSResolversTypes['AdminFinancesQuery'], ParentType, ContextType>;
     adminInventoryFindOne?: Resolver<GqlSResolversTypes['AdminInventoryQuery'], ParentType, ContextType>;
     adminLogFindMany?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminAdminLogFindManyArgs>>;
     adminMediaFindOne?: Resolver<GqlSResolversTypes['AdminMediaQuery'], ParentType, ContextType>;
@@ -2328,6 +2395,16 @@ export type GqlSAdminCompassResolvers<
     synthesisInProgress?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
     synthesisModelId?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     synthesizedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+}>;
+
+export type GqlSAdminFinancesQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminFinancesQuery'] = GqlSResolversParentTypes['AdminFinancesQuery'],
+> = ResolversObject<{
+    adminFinancesMonthlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminFinancesMonthlyNetIncomeCentsFindOne?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    adminFinancesRecurringCostFindMany?: Resolver<Array<GqlSResolversTypes['FinanceRecurringCost']>, ParentType, ContextType>;
+    adminFinancesYearlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type GqlSAdminInventoryQueryResolvers<
@@ -2527,6 +2604,24 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationCvSkillUpsertArgs, 'input'>
+    >;
+    financeMonthlyNetIncomeSet?: Resolver<
+        GqlSResolversTypes['AdminFinancesQuery'],
+        ParentType,
+        ContextType,
+        Partial<GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs>
+    >;
+    financeRecurringCostDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationFinanceRecurringCostDeleteArgs, 'costId'>
+    >;
+    financeRecurringCostUpsert?: Resolver<
+        GqlSResolversTypes['FinanceRecurringCost'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationFinanceRecurringCostUpsertArgs, 'input'>
     >;
     itemDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -3366,6 +3461,24 @@ export type GqlSFileUploadResolvers<
     url?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
 }>;
 
+export type GqlSFinanceRecurringCostResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['FinanceRecurringCost'] = GqlSResolversParentTypes['FinanceRecurringCost'],
+> = ResolversObject<{
+    active?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    amountCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    cadence?: Resolver<GqlSResolversTypes['FinanceCadence'], ParentType, ContextType>;
+    categoryKey?: Resolver<GqlSResolversTypes['FinanceRecurringCostCategory'], ParentType, ContextType>;
+    costId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    currency?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    endsOn?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    startsOn?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export type GqlSItemResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Item'] = GqlSResolversParentTypes['Item'],
@@ -3910,6 +4023,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     AdminChatConfig?: GqlSAdminChatConfigResolvers<ContextType>;
     AdminChatModel?: GqlSAdminChatModelResolvers<ContextType>;
     AdminCompass?: GqlSAdminCompassResolvers<ContextType>;
+    AdminFinancesQuery?: GqlSAdminFinancesQueryResolvers<ContextType>;
     AdminInventoryQuery?: GqlSAdminInventoryQueryResolvers<ContextType>;
     AdminMediaQuery?: GqlSAdminMediaQueryResolvers<ContextType>;
     AdminMedicalQuery?: GqlSAdminMedicalQueryResolvers<ContextType>;
@@ -3964,6 +4078,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Date?: GraphQLScalarType;
     DateTime?: GraphQLScalarType;
     FileUpload?: GqlSFileUploadResolvers<ContextType>;
+    FinanceRecurringCost?: GqlSFinanceRecurringCostResolvers<ContextType>;
     Item?: GqlSItemResolvers<ContextType>;
     ItemFile?: GqlSItemFileResolvers<ContextType>;
     ItemServiceEntry?: GqlSItemServiceEntryResolvers<ContextType>;
@@ -4046,6 +4161,13 @@ export const GqlSCvSkillCategorySchema: z.ZodType<
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools',
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools'
 > = z.enum(['capabilities', 'frameworks', 'languages', 'services', 'tools']);
+
+export const GqlSFinanceCadenceSchema: z.ZodType<'monthly' | 'yearly', 'monthly' | 'yearly'> = z.enum(['monthly', 'yearly']);
+
+export const GqlSFinanceRecurringCostCategorySchema: z.ZodType<
+    'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities',
+    'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities'
+> = z.enum(['finance', 'health', 'housing', 'insurance', 'other', 'subscriptions', 'transport', 'utilities']);
 
 export const GqlSItemCategorySchema: z.ZodType<
     'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle',
@@ -4280,6 +4402,21 @@ export function GqlSCvSkillInputSchema(): z.ZodObject<Properties<GqlSCvSkillInpu
         cvSkillId: z.string().nullish(),
         label: z.string(),
         position: z.number(),
+    });
+}
+
+export function GqlSFinanceRecurringCostInputSchema(): z.ZodObject<Properties<GqlSFinanceRecurringCostInput>> {
+    return z.object({
+        active: z.boolean().nullish(),
+        amountCents: z.number(),
+        cadence: GqlSFinanceCadenceSchema,
+        categoryKey: GqlSFinanceRecurringCostCategorySchema,
+        costId: z.string().nullish(),
+        currency: z.string().nullish(),
+        endsOn: z.string().nullish(),
+        name: z.string(),
+        notes: z.string().nullish(),
+        startsOn: z.string().nullish(),
     });
 }
 

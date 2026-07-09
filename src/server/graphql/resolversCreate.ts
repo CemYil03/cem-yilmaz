@@ -27,6 +27,9 @@ import { itemReprice } from '../commands/itemReprice';
 import { itemServiceEntryDelete } from '../commands/itemServiceEntryDelete';
 import { itemServiceEntryUpsert } from '../commands/itemServiceEntryUpsert';
 import { itemUpsert } from '../commands/itemUpsert';
+import { financeMonthlyNetIncomeSet } from '../commands/financeMonthlyNetIncomeSet';
+import { financeRecurringCostDelete } from '../commands/financeRecurringCostDelete';
+import { financeRecurringCostUpsert } from '../commands/financeRecurringCostUpsert';
 import { mediaChannelDelete } from '../commands/mediaChannelDelete';
 import { mediaChannelReorder } from '../commands/mediaChannelReorder';
 import { mediaChannelUpsert } from '../commands/mediaChannelUpsert';
@@ -112,6 +115,9 @@ import { adminInventoryItemFindOne } from '../queries/adminInventoryItemFindOne'
 import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
 import { adminInventoryMaterialNetWorthCentsFindOne } from '../queries/adminInventoryMaterialNetWorthCentsFindOne';
 import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
+import { adminFinancesExpensesCentsFindOne } from '../queries/adminFinancesExpensesCentsFindOne';
+import { adminFinancesMonthlyNetIncomeCentsFindOne } from '../queries/adminFinancesMonthlyNetIncomeCentsFindOne';
+import { adminFinancesRecurringCostFindMany } from '../queries/adminFinancesRecurringCostFindMany';
 import { adminMediaMovieFindMany } from '../queries/adminMediaMovieFindMany';
 import { adminMediaShowFindMany } from '../queries/adminMediaShowFindMany';
 import { adminCompassFindOne } from '../queries/adminCompassFindOne';
@@ -191,6 +197,10 @@ import type {
     GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs,
     GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
     GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
+    GqlSAdminFinancesQuery,
+    GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs,
+    GqlSAdminMutationFinanceRecurringCostDeleteArgs,
+    GqlSAdminMutationFinanceRecurringCostUpsertArgs,
     GqlSAdminMediaQuery,
     GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
     GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
@@ -427,6 +437,13 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             adminTravelFindOne(): GqlSAdminTravelQuery {
                 return {} as GqlSAdminTravelQuery;
             },
+            // Finances namespace — same shell pattern. Per-field resolvers on
+            // `AdminFinancesQuery` fan out to the recurring-cost list and the
+            // computed monthly / yearly totals. See
+            // `docs/features/workspace-finances.md`.
+            adminFinancesFindOne(): GqlSAdminFinancesQuery {
+                return {} as GqlSAdminFinancesQuery;
+            },
             async adminChatConfigFindOne(_parent: GqlSAdmin) {
                 // Catalog is server-static — same array on every read. The
                 // saved default is the only DB-bound part; we resolve it here
@@ -584,6 +601,22 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return adminTravelTripFindOne(args.tripId, requestingSession, serverRuntime);
+            },
+        },
+        AdminFinancesQuery: {
+            adminFinancesRecurringCostFindMany(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                return adminFinancesRecurringCostFindMany(requestingSession, serverRuntime);
+            },
+            adminFinancesMonthlyNetIncomeCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                return adminFinancesMonthlyNetIncomeCentsFindOne(requestingSession, serverRuntime);
+            },
+            async adminFinancesMonthlyExpensesCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                const totals = await adminFinancesExpensesCentsFindOne(requestingSession, serverRuntime);
+                return totals.monthlyCents;
+            },
+            async adminFinancesYearlyExpensesCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                const totals = await adminFinancesExpensesCentsFindOne(requestingSession, serverRuntime);
+                return totals.yearlyCents;
             },
         },
         AdminMutation: {
@@ -947,6 +980,27 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return tripPackingItemsDelete(userId, args.tripPackingItemIds, requestingSession, serverRuntime);
+            },
+            financeRecurringCostUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationFinanceRecurringCostUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return financeRecurringCostUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            financeRecurringCostDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationFinanceRecurringCostDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return financeRecurringCostDelete(userId, args, requestingSession, serverRuntime);
+            },
+            financeMonthlyNetIncomeSet(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return financeMonthlyNetIncomeSet(userId, args, requestingSession, serverRuntime);
             },
         },
         Query: {

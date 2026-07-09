@@ -27,6 +27,7 @@ export interface GqlCAdmin {
     adminChatFindOne: GqlCChat;
     adminCompassFindOne: GqlCAdminCompass;
     adminCvFindOne: GqlCCvQuery;
+    adminFinancesFindOne: GqlCAdminFinancesQuery;
     adminInventoryFindOne: GqlCAdminInventoryQuery;
     adminLogFindMany: Array<GqlCLog>;
     adminMediaFindOne: GqlCAdminMediaQuery;
@@ -119,6 +120,14 @@ export type GqlCAdminCompassAdminCompassObservationFindManyArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export interface GqlCAdminFinancesQuery {
+    __typename?: 'AdminFinancesQuery';
+    adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
+    adminFinancesMonthlyNetIncomeCentsFindOne?: Maybe<Scalars['Int']['output']>;
+    adminFinancesRecurringCostFindMany: Array<GqlCFinanceRecurringCost>;
+    adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
+}
+
 export interface GqlCAdminInventoryQuery {
     __typename?: 'AdminInventoryQuery';
     adminInventoryItemFindMany: Array<GqlCItem>;
@@ -197,6 +206,9 @@ export interface GqlCAdminMutation {
     cvSkillDelete: GqlCMutationResult;
     cvSkillReorder: GqlCMutationResult;
     cvSkillUpsert: GqlCCvSkill;
+    financeMonthlyNetIncomeSet: GqlCAdminFinancesQuery;
+    financeRecurringCostDelete: GqlCMutationResult;
+    financeRecurringCostUpsert: GqlCFinanceRecurringCost;
     itemDelete: GqlCMutationResult;
     itemDispose: GqlCItem;
     itemFileAttach: GqlCItemFile;
@@ -345,6 +357,18 @@ export type GqlCAdminMutationCvSkillReorderArgs = {
 
 export type GqlCAdminMutationCvSkillUpsertArgs = {
     input: GqlCCvSkillInput;
+};
+
+export type GqlCAdminMutationFinanceMonthlyNetIncomeSetArgs = {
+    amountCents?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type GqlCAdminMutationFinanceRecurringCostDeleteArgs = {
+    costId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationFinanceRecurringCostUpsertArgs = {
+    input: GqlCFinanceRecurringCostInput;
 };
 
 export type GqlCAdminMutationItemDeleteArgs = {
@@ -1009,6 +1033,40 @@ export interface GqlCFileUpload {
     size: Scalars['Int']['output'];
     url: Scalars['String']['output'];
 }
+
+export type GqlCFinanceCadence = 'monthly' | 'yearly';
+
+export interface GqlCFinanceRecurringCost {
+    __typename?: 'FinanceRecurringCost';
+    active: Scalars['Boolean']['output'];
+    amountCents: Scalars['Int']['output'];
+    cadence: GqlCFinanceCadence;
+    categoryKey: GqlCFinanceRecurringCostCategory;
+    costId: Scalars['ID']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    currency: Scalars['String']['output'];
+    endsOn?: Maybe<Scalars['Date']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    startsOn?: Maybe<Scalars['Date']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCFinanceRecurringCostCategory =
+    'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities';
+
+export type GqlCFinanceRecurringCostInput = {
+    active?: InputMaybe<Scalars['Boolean']['input']>;
+    amountCents: Scalars['Int']['input'];
+    cadence: GqlCFinanceCadence;
+    categoryKey: GqlCFinanceRecurringCostCategory;
+    costId?: InputMaybe<Scalars['ID']['input']>;
+    currency?: InputMaybe<Scalars['String']['input']>;
+    endsOn?: InputMaybe<Scalars['Date']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    startsOn?: InputMaybe<Scalars['Date']['input']>;
+};
 
 export interface GqlCItem {
     __typename?: 'Item';
@@ -2890,6 +2948,108 @@ export type GqlCWorkspaceCvHobbyReorderMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceCvHobbyReorderMutation = { admin: { cvHobbyReorder: { success: boolean } } };
+
+export type GqlCWorkspaceFinancesPageUserFragment = {
+    admin: {
+        adminFinancesFindOne: {
+            adminFinancesMonthlyNetIncomeCentsFindOne: number | null;
+            adminFinancesMonthlyExpensesCentsFindOne: number;
+            adminFinancesYearlyExpensesCentsFindOne: number;
+            adminFinancesRecurringCostFindMany: Array<{
+                costId: string;
+                name: string;
+                categoryKey: Schema.GqlCFinanceRecurringCostCategory;
+                amountCents: number;
+                cadence: Schema.GqlCFinanceCadence;
+                currency: string;
+                notes: string | null;
+                active: boolean;
+                startsOn: string | null;
+                endsOn: string | null;
+                createdAt: string;
+                updatedAt: string;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceFinancesPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceFinancesPageQuery = {
+    sessionFindOne: {
+        user: {
+            admin: {
+                adminFinancesFindOne: {
+                    adminFinancesMonthlyNetIncomeCentsFindOne: number | null;
+                    adminFinancesMonthlyExpensesCentsFindOne: number;
+                    adminFinancesYearlyExpensesCentsFindOne: number;
+                    adminFinancesRecurringCostFindMany: Array<{
+                        costId: string;
+                        name: string;
+                        categoryKey: Schema.GqlCFinanceRecurringCostCategory;
+                        amountCents: number;
+                        cadence: Schema.GqlCFinanceCadence;
+                        currency: string;
+                        notes: string | null;
+                        active: boolean;
+                        startsOn: string | null;
+                        endsOn: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceFinancesPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            adminFinancesFindOne: {
+                adminFinancesMonthlyNetIncomeCentsFindOne: number | null;
+                adminFinancesMonthlyExpensesCentsFindOne: number;
+                adminFinancesYearlyExpensesCentsFindOne: number;
+                adminFinancesRecurringCostFindMany: Array<{
+                    costId: string;
+                    name: string;
+                    categoryKey: Schema.GqlCFinanceRecurringCostCategory;
+                    amountCents: number;
+                    cadence: Schema.GqlCFinanceCadence;
+                    currency: string;
+                    notes: string | null;
+                    active: boolean;
+                    startsOn: string | null;
+                    endsOn: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceFinanceRecurringCostUpsertMutationVariables = Exact<{
+    input: Schema.GqlCFinanceRecurringCostInput;
+}>;
+
+export type GqlCWorkspaceFinanceRecurringCostUpsertMutation = { admin: { financeRecurringCostUpsert: { costId: string } } };
+
+export type GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables = Exact<{
+    costId: string;
+}>;
+
+export type GqlCWorkspaceFinanceRecurringCostDeleteMutation = { admin: { financeRecurringCostDelete: { success: boolean } } };
+
+export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables = Exact<{
+    amountCents?: number | null | undefined;
+}>;
+
+export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation = {
+    admin: { financeMonthlyNetIncomeSet: { adminFinancesMonthlyNetIncomeCentsFindOne: number | null } };
+};
 
 export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -6355,6 +6515,63 @@ export const WorkspaceCvPageUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCvPageUserFragment, unknown>;
+export const WorkspaceFinancesPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFinancesPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFinancesFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesRecurringCostFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'costId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cadence' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinancesPageUserFragment, unknown>;
 export const WorkspaceInventoryPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -12253,6 +12470,307 @@ export const WorkspaceCvHobbyReorderDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceCvHobbyReorderMutation, GqlCWorkspaceCvHobbyReorderMutationVariables>;
+export const WorkspaceFinancesPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceFinancesPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'sessionFindOne' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceFinancesPageUser' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFinancesPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFinancesFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesRecurringCostFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'costId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cadence' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinancesPageQuery, GqlCWorkspaceFinancesPageQueryVariables>;
+export const WorkspaceFinancesPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceFinancesPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceFinancesPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFinancesPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFinancesFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesRecurringCostFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'costId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cadence' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinancesPageUpdatesSubscription, GqlCWorkspaceFinancesPageUpdatesSubscriptionVariables>;
+export const WorkspaceFinanceRecurringCostUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFinanceRecurringCostUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'FinanceRecurringCostInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'financeRecurringCostUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'costId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinanceRecurringCostUpsertMutation, GqlCWorkspaceFinanceRecurringCostUpsertMutationVariables>;
+export const WorkspaceFinanceRecurringCostDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFinanceRecurringCostDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'costId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'financeRecurringCostDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'costId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'costId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinanceRecurringCostDeleteMutation, GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables>;
+export const WorkspaceFinanceMonthlyNetIncomeSetDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFinanceMonthlyNetIncomeSet' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'amountCents' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'financeMonthlyNetIncomeSet' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'amountCents' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'amountCents' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation, GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables>;
 export const WorkspaceHubDocument = {
     kind: 'Document',
     definitions: [

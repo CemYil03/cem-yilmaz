@@ -1,0 +1,68 @@
+# Workspace Finances editor operations. Co-located with `/workspace/finances`.
+# Seed-and-subscribe posture: the loader query and the live `userUpdates`
+# subscription spread `WorkspaceFinancesPageUser`, so every mutation publishes
+# on the user channel and the page picks up the new payload over SSE without a
+# re-fetch. See `docs/architecture/state-synchronization.md` and
+# `docs/features/workspace-finances.md`.
+
+fragment WorkspaceFinancesPageUser on User {
+    admin {
+        adminFinancesFindOne {
+            adminFinancesMonthlyNetIncomeCentsFindOne
+            adminFinancesMonthlyExpensesCentsFindOne
+            adminFinancesYearlyExpensesCentsFindOne
+            adminFinancesRecurringCostFindMany {
+                costId
+                name
+                categoryKey
+                amountCents
+                cadence
+                currency
+                notes
+                active
+                startsOn
+                endsOn
+                createdAt
+                updatedAt
+            }
+        }
+    }
+}
+
+query WorkspaceFinancesPage {
+    sessionFindOne {
+        user {
+            ...WorkspaceFinancesPageUser
+        }
+    }
+}
+
+subscription WorkspaceFinancesPageUpdates {
+    userUpdates {
+        ...WorkspaceFinancesPageUser
+    }
+}
+
+mutation WorkspaceFinanceRecurringCostUpsert($input: FinanceRecurringCostInput!) {
+    admin {
+        financeRecurringCostUpsert(input: $input) {
+            costId
+        }
+    }
+}
+
+mutation WorkspaceFinanceRecurringCostDelete($costId: ID!) {
+    admin {
+        financeRecurringCostDelete(costId: $costId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceFinanceMonthlyNetIncomeSet($amountCents: Int) {
+    admin {
+        financeMonthlyNetIncomeSet(amountCents: $amountCents) {
+            adminFinancesMonthlyNetIncomeCentsFindOne
+        }
+    }
+}

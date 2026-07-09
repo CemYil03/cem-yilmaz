@@ -1959,3 +1959,78 @@ export const tripPackingItems = pgTable(
 
 export type TripPackingItem = typeof tripPackingItems.$inferSelect;
 export type TripPackingItemCreate = typeof tripPackingItems.$inferInsert;
+
+// --- Finances ---------------------------------------------------------------
+//
+// `FinanceRecurringCosts` backs `/workspace/finances`. Admin-only, `noindex`
+// — no `*De`/`*En` pairs, no per-row `userId` (the `User.admin` /
+// `Mutation.admin` gate authorizes). One row per repeating charge (rent,
+// insurance, subscription, …). `amountCents` is the amount **per `cadence`**,
+// so the page-level Monthly / Yearly toggle is deterministic projection over
+// the same rows — no dated transactions in v1. See
+// `docs/features/workspace-finances.md`.
+//
+// `AdminFinancesSettings` is per-admin config (net monthly income baseline
+// used as the left node in the Sankey), keyed by `userId`. This one *is*
+// scoped by user because "my income" is meaningful only per user; the
+// domain rows above are not.
+
+export const financeRecurringCostCategories = [
+    'housing',
+    'utilities',
+    'insurance',
+    'transport',
+    'subscriptions',
+    'health',
+    'finance',
+    'other',
+] as const;
+export type FinanceRecurringCostCategory = (typeof financeRecurringCostCategories)[number];
+
+export const financeCadences = ['monthly', 'yearly'] as const;
+export type FinanceCadence = (typeof financeCadences)[number];
+
+export const financeRecurringCosts = pgTable(
+    'FinanceRecurringCosts',
+    {
+        costId: uuid().primaryKey(),
+        name: varchar().notNull(),
+        categoryKey: varchar().$type<FinanceRecurringCostCategory>().notNull().default('other'),
+        amountCents: integer().notNull(),
+        cadence: varchar().$type<FinanceCadence>().notNull().default('monthly'),
+        currency: varchar({ length: 3 }).notNull().default('EUR'),
+        notes: text(),
+        active: boolean().notNull().default(true),
+        startsOn: date(),
+        endsOn: date(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        index('FinanceRecurringCosts_categoryKey_idx').on(table.categoryKey),
+        index('FinanceRecurringCosts_active_idx').on(table.active),
+    ],
+);
+
+export type FinanceRecurringCost = typeof financeRecurringCosts.$inferSelect;
+export type FinanceRecurringCostCreate = typeof financeRecurringCosts.$inferInsert;
+
+export const adminFinancesSettings = pgTable(
+    'AdminFinancesSettings',
+    {
+        userId: uuid().primaryKey(),
+        monthlyNetIncomeCents: integer(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.userId],
+            foreignColumns: [users.userId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+    ],
+);
+
+export type AdminFinancesSettings = typeof adminFinancesSettings.$inferSelect;
+export type AdminFinancesSettingsCreate = typeof adminFinancesSettings.$inferInsert;

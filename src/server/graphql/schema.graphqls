@@ -2276,3 +2276,82 @@ extend type AdminMutation {
     tripPackingItemsUpsert(tripPackingItems: [TripPackingItemInput!]!): MutationResult!
     tripPackingItemsDelete(tripPackingItemIds: [ID!]!): MutationResult!
 }
+
+# --- Finances ---------------------------------------------------------------
+#
+# `/workspace/finances` — Cem's recurring costs (rent, insurance,
+# subscriptions, transport, …) plus a Sankey visualisation. Admin-only,
+# `noindex`; no `*De`/`*En`. `amountCents` is per-`cadence`, so the Monthly /
+# Yearly toggle on the page is a deterministic projection over the same rows
+# (no dated transactions in v1). See `docs/features/workspace-finances.md`.
+
+enum FinanceRecurringCostCategory {
+    housing
+    utilities
+    insurance
+    transport
+    subscriptions
+    health
+    finance
+    other
+}
+
+enum FinanceCadence {
+    monthly
+    yearly
+}
+
+# One recurring charge. `active = false` hides the row from the Sankey and
+# the totals without deleting the history (paused subscription, sold car).
+# `startsOn` / `endsOn` are informational for v1 and do not participate in
+# any projection.
+type FinanceRecurringCost {
+    costId: ID!
+    name: String!
+    categoryKey: FinanceRecurringCostCategory!
+    amountCents: Int!
+    cadence: FinanceCadence!
+    currency: String!
+    notes: String
+    active: Boolean!
+    startsOn: Date
+    endsOn: Date
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# Read namespace mounted under `Admin`. Gated once at the `Query.admin`
+# boundary by the resolver chain on `User.admin`. The two `Cents`
+# aggregates are computed in the resolver from the active recurring costs
+# — the Sankey and the overview strip both read them directly.
+type AdminFinancesQuery {
+    adminFinancesRecurringCostFindMany: [FinanceRecurringCost!]!
+    adminFinancesMonthlyNetIncomeCentsFindOne: Int
+    adminFinancesMonthlyExpensesCentsFindOne: Int!
+    adminFinancesYearlyExpensesCentsFindOne: Int!
+}
+
+extend type Admin {
+    adminFinancesFindOne: AdminFinancesQuery!
+}
+
+input FinanceRecurringCostInput {
+    costId: ID
+    name: String!
+    categoryKey: FinanceRecurringCostCategory!
+    amountCents: Int!
+    cadence: FinanceCadence!
+    currency: String
+    notes: String
+    active: Boolean
+    startsOn: Date
+    endsOn: Date
+}
+
+extend type AdminMutation {
+    financeRecurringCostUpsert(input: FinanceRecurringCostInput!): FinanceRecurringCost!
+    financeRecurringCostDelete(costId: ID!): MutationResult!
+    # Pass `amountCents: null` to clear the baseline. Returns the updated
+    # settings namespace so the client can atomically re-render the totals.
+    financeMonthlyNetIncomeSet(amountCents: Int): AdminFinancesQuery!
+}
