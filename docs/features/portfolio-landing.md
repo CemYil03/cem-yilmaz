@@ -84,8 +84,8 @@ The visual treatment is a single `GlassCard` containing:
   visually intentional and matches the starter-prompt pattern used by Claude/ChatGPT/Gemini.
 - a small disclaimer line beneath the card.
 
-Submit semantics (Enter to send, Shift+Enter for newline, send gating on non-empty input) come from `MessageComposer` itself — `Hero` only
-supplies the value and the submit callback.
+Submit semantics (desktop: Enter to send / Shift+Enter for newline; mobile: Enter inserts a newline, only Send submits; send gating on
+non-empty input) come from `MessageComposer` itself — `Hero` only supplies the value and the submit callback.
 
 Submitting the composer, or clicking any suggestion card, calls the `onOpenChat` callback owned by `HomePage` which sets `submittedQuestion`
 and opens `<WebsiteVisitorAssistantChatSheet />` (`src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`). The sheet is the live visitor chat —

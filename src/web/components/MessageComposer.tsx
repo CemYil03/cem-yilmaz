@@ -14,6 +14,7 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from './base/input-group';
 import { Spinner } from './base/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
+import { useIsMobile } from '../hooks/use-mobile';
 import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
 
@@ -66,8 +67,9 @@ export interface MessageComposerProps {
     value: string;
     /** Called on every keystroke with the next draft text. */
     onValueChange: (value: string) => void;
-    /** Called when the user presses Enter or clicks Send. The parent decides
-     *  what "submit" means (e.g. fire a mutation, validate, navigate). */
+    /** Called when the user clicks Send (or presses Enter on desktop). The
+     *  parent decides what "submit" means (e.g. fire a mutation, validate,
+     *  navigate). On mobile, Enter inserts a newline and only Send submits. */
     onSubmit: () => void;
     /** Locks the textarea, the Send button, and any `addonStart` children
      *  (the latter only if those children read `disabled` themselves). */
@@ -131,6 +133,7 @@ export function MessageComposer({
     autoFocus = false,
 }: MessageComposerProps) {
     const locale = useLocale();
+    const isMobile = useIsMobile();
     const sendLabel = { de: 'Senden', en: 'Send' }[locale];
     const attachmentsEnabled = onAttachmentsAdd !== undefined && onAttachmentRemove !== undefined;
     const currentAttachments = attachments ?? [];
@@ -280,13 +283,23 @@ export function MessageComposer({
                     value={value}
                     onChange={(event) => onValueChange(event.target.value)}
                     onKeyDown={(event) => {
-                        // Enter sends, shift+enter inserts a newline — the
-                        // expected chat shortcut on every comparable surface.
+                        // Desktop: Enter sends, Shift+Enter inserts a
+                        // newline — the expected chat shortcut on every
+                        // comparable surface. Mobile soft keyboards: Enter
+                        // must insert a newline; only the Send button
+                        // submits. Intercepting Enter on mobile made the
+                        // return key fire form submit with no way to
+                        // multi-line.
+                        if (isMobile) return;
                         if (event.key === 'Enter' && !event.shiftKey) {
                             event.preventDefault();
                             submit();
                         }
                     }}
+                    // Soft keyboards label the return key from this hint.
+                    // `enter` keeps the newline glyph on mobile; `send`
+                    // is fine on desktop where Enter already submits.
+                    enterKeyHint={isMobile ? 'enter' : 'send'}
                     placeholder={placeholder}
                     disabled={inputsLocked}
                     rows={rows}
