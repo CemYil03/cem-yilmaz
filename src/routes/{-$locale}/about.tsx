@@ -126,6 +126,10 @@ export const Route = createFileRoute('/{-$locale}/about')({
 function AboutPage() {
     const locale = useLocale();
     const data = Route.useLoaderData();
+    const portraitAlt = {
+        de: 'Porträt von Cem Yilmaz',
+        en: 'Portrait of Cem Yilmaz',
+    }[locale];
     // Admin-only "Workspace" entry in the header — non-admins (including
     // anonymous visitors) get `user.admin = null` and never see it. Same
     // probe as the landing page. See `docs/architecture/workspace-access.md`.
@@ -136,11 +140,16 @@ function AboutPage() {
             <Header subtitle={`/ ${title[locale].toLowerCase()}`} showWorkspaceLink={isAdmin} />
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
                 <header className="py-12 md:py-16">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{title[locale]}</h1>
-                    <p className="mt-4 text-lg md:text-xl text-muted-foreground">
-                        {personalInfo.tagline[locale]} {personalInfo.subtitle[locale]}
-                    </p>
-                    <p className="mt-6 max-w-2xl text-base md:text-lg leading-relaxed">{personalInfo.bio[locale]}</p>
+                    <div className="grid items-start gap-10 md:grid-cols-[minmax(0,1fr)_auto] md:gap-12">
+                        <div>
+                            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{title[locale]}</h1>
+                            <p className="mt-4 text-lg md:text-xl text-muted-foreground">
+                                {personalInfo.tagline[locale]} {personalInfo.subtitle[locale]}
+                            </p>
+                            <p className="mt-6 max-w-2xl text-base md:text-lg leading-relaxed">{personalInfo.bio[locale]}</p>
+                        </div>
+                        <AboutPortrait alt={portraitAlt} />
+                    </div>
                 </header>
 
                 <Reveal as="section" className="mt-4">
@@ -181,6 +190,29 @@ function AboutPage() {
                 </Reveal>
             </main>
             <Footer />
+        </div>
+    );
+}
+
+function AboutPortrait({ alt }: { alt: string }) {
+    return (
+        <div className="relative mx-auto md:mx-0">
+            <div
+                aria-hidden
+                className="absolute -inset-3 rounded-full bg-gradient-to-tr from-primary/30 via-primary/10 to-transparent blur-2xl animate-portrait-halo"
+            />
+            <div className="relative size-40 overflow-hidden rounded-full border border-white/60 bg-white/40 shadow-xl backdrop-blur-md sm:size-44 md:size-52 lg:size-60 dark:border-white/10 dark:bg-white/4">
+                <img
+                    src="/profile-picture.png"
+                    alt={alt}
+                    width={640}
+                    height={640}
+                    className="size-full object-cover"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                />
+            </div>
         </div>
     );
 }
