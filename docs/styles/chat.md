@@ -170,15 +170,16 @@ override, don't reach past the primitive.
 
 ## Accessibility
 
-| Rule                                                                             | Where                                                      |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Streaming assistant text renders inside `aria-live="polite" aria-atomic="false"` | Transcript viewport (streaming section)                    |
-| Composer textarea has an explicit `name`                                         | `MessageComposer` (defaults to `'message'`)                |
-| Send button has an `aria-label` matching the localised "Send" tooltip            | `MessageComposer`                                          |
-| Jump-to-latest pill has an SR-only label                                         | `MessageScrollerButton`                                    |
-| `prefers-reduced-motion` suppresses the Send-button lift                         | `motion-reduce:enabled:translate-y-0` in `MessageComposer` |
-| Focus lands on the composer when a surface opens as the primary affordance       | `autoFocus` prop on `MessageComposer`                      |
-| Escape closes sheet / dialog surfaces                                            | Radix defaults — do not override                           |
+| Rule                                                                              | Where                                                      |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Streaming assistant text renders inside `aria-live="polite" aria-atomic="false"`  | Transcript viewport (streaming section)                    |
+| Composer textarea has an explicit `name`                                          | `MessageComposer` (defaults to `'message'`)                |
+| Send button has an `aria-label` matching the localised "Send" tooltip             | `MessageComposer`                                          |
+| Assistant TTS / copy icon buttons expose localised tooltips matching `aria-label` | `SpeakButton` / `CopyButton` in `chat-message/shared.tsx`  |
+| Jump-to-latest pill has an SR-only label                                          | `MessageScrollerButton`                                    |
+| `prefers-reduced-motion` suppresses the Send-button lift                          | `motion-reduce:enabled:translate-y-0` in `MessageComposer` |
+| Focus lands on the composer when a surface opens as the primary affordance        | `autoFocus` prop on `MessageComposer`                      |
+| Escape closes sheet / dialog surfaces                                             | Radix defaults — do not override                           |
 
 **Why `polite` not `assertive`.** `assertive` interrupts whatever the screen reader is currently reading, which is hostile on mobile where
 the reader may be part-way through the previous message. `polite` queues the announcement so the reader hears it at the next natural break.

@@ -55,6 +55,7 @@ export function CopyButton({ text }: { text: string }) {
     const locale = useLocale();
     const [copied, setCopied] = React.useState(false);
     const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const label = copied ? { de: 'Kopiert', en: 'Copied' }[locale] : { de: 'Nachricht kopieren', en: 'Copy message' }[locale];
     React.useEffect(() => {
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
@@ -75,16 +76,21 @@ export function CopyButton({ text }: { text: string }) {
         timerRef.current = setTimeout(() => setCopied(false), 1500);
     }, [text, locale]);
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={copied ? { de: 'Kopiert', en: 'Copied' }[locale] : { de: 'Nachricht kopieren', en: 'Copy message' }[locale]}
-            onClick={onCopy}
-            className="opacity-70 hover:opacity-100"
-        >
-            {copied ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
-        </Button>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={label}
+                    onClick={onCopy}
+                    className="opacity-70 hover:opacity-100"
+                >
+                    {copied ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -150,32 +156,43 @@ export function SpeakButton({ text }: { text: string }) {
                 ? { de: 'Fortsetzen', en: 'Resume' }[locale]
                 : { de: 'Nachricht vorlesen', en: 'Read message aloud' }[locale];
     const showStop = state === 'playing' || state === 'paused';
+    const stopLabel = { de: 'Vorlesen stoppen', en: 'Stop reading' }[locale];
     return (
         <>
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                aria-label={primaryLabel}
-                aria-pressed={state !== 'idle'}
-                onClick={onPrimaryClick}
-                onMouseEnter={onPrefetch}
-                onFocus={onPrefetch}
-                className="opacity-70 hover:opacity-100"
-            >
-                {primaryIcon}
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label={primaryLabel}
+                        aria-pressed={state !== 'idle'}
+                        onClick={onPrimaryClick}
+                        onMouseEnter={onPrefetch}
+                        onFocus={onPrefetch}
+                        className="opacity-70 hover:opacity-100"
+                    >
+                        {primaryIcon}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>{primaryLabel}</TooltipContent>
+            </Tooltip>
             {showStop && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={{ de: 'Vorlesen stoppen', en: 'Stop reading' }[locale]}
-                    onClick={stop}
-                    className="opacity-70 hover:opacity-100"
-                >
-                    <SquareIcon aria-hidden />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={stopLabel}
+                            onClick={stop}
+                            className="opacity-70 hover:opacity-100"
+                        >
+                            <SquareIcon aria-hidden />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{stopLabel}</TooltipContent>
+                </Tooltip>
             )}
         </>
     );
