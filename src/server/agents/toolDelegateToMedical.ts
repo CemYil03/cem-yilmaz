@@ -76,10 +76,14 @@ export function toolDelegateToMedical({ serverRuntime, session, chatId, generati
     return tool({
         description: [
             "Hand a health / appointment instruction to the medical sub-agent. Use for ANY ask that touches Cem's",
-            'health journal (symptoms, records, "log this rash") or his medical appointments (scheduling, marking',
-            'a visit completed, "when is my next dentist visit"). Pass the brief in natural language. If the user',
-            'attached photos or documents to their message this turn AND the conversation is health-related, pass',
-            'the `fileUploadIds` through — the sub-agent will attach them to the record it files.',
+            'health journal (symptoms, records, "log this rash", "what should I do about X") or his medical',
+            'appointments (scheduling, marking a visit completed, "when is my next dentist visit"). The sub-agent is',
+            'a documentarian with gentle triage — do NOT try to answer medical questions yourself even for small',
+            'asks; routing every health-adjacent turn through this delegate keeps the disclaimer and the red-flag',
+            'rules in one place. Pass the brief in natural language. If the user attached photos or documents to',
+            'their message this turn AND the conversation is health-related, pass the `fileUploadIds` through — the',
+            'sub-agent will attach them to the record it files. You MAY briefly describe what the photo shows in',
+            '`brief` (the sub-agent does not see the bytes; you do).',
             "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',

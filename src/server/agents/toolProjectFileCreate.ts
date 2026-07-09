@@ -47,7 +47,8 @@ export function toolProjectFileCreate({ serverRuntime, session, mutations }: Pro
             'Create a markdown (`.md`) file on a project and link it to the project Files tab.',
             'Use this when the user asks you to draft an offer, contract, note, or any other document for a',
             'project. The file is created in one step — bytes are written directly. No HTTP upload needed.',
-            'Markdown only; for other formats the user has to upload manually.',
+            'The full markdown body is the `markdown` field; pick a `kind` (`offer | invoice | contract | screenshot |',
+            'other`) and a filename ending in `.md`. Markdown only — for other formats the user has to upload manually.',
         ].join(' '),
         inputSchema: projectFileCreateInputSchema,
         execute: async (input) => {

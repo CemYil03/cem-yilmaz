@@ -1,27 +1,17 @@
 import { tool } from 'ai';
-import { z } from 'zod';
 import { mediaChannelUpsert } from '../commands/mediaChannelUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMediaPlatformSchema } from '../graphql/generated';
-import type { GqlSSession } from '../graphql/generated';
+import { GqlSMediaChannelInputSchema } from '../graphql/generated';
+import type { GqlSMediaChannelInput, GqlSSession } from '../graphql/generated';
 import type { MediaAgentMutationLog } from './agentPersonalAssistantMedia';
 import { requireAdminUserId } from './requireAdminUserId';
 
-const mediaChannelUpsertInputSchema = z.object({
-    channelId: z.uuid().nullish().describe('Omit to create; pass an existing id to edit.'),
-    name: z.string().min(1).max(200).describe('Channel display name.'),
-    platform: GqlSMediaPlatformSchema.describe('youtube | twitch | podcast | other'),
-    url: z.url().describe("Canonical URL to the channel's home page."),
-    handle: z.string().max(80).nullish().describe('Public handle, e.g. `@fireship`.'),
-    avatarUrl: z.url().nullish(),
-    description: z.string().max(1000).nullish(),
-    topics: z
-        .array(z.string())
-        .describe(
-            'Cluster tags: `tech`, `ai`, `movieCritic`, `entertainment`, etc. A channel can carry multiple; e.g. a tech YouTuber who also reviews films.',
-        ),
-    notes: z.string().max(2000).nullish(),
-});
+// Create or edit a favourite YouTube / Twitch / podcast / other channel. The
+// input schema is the generated `GqlSMediaChannelInputSchema()` — same shape
+// the GraphQL resolver validates. Gemini-safe: no `DateTime` fields. See
+// `docs/architecture/agent-delegation.md`. The `rawInput as GqlSMediaChannelInput`
+// cast is the standard workaround for the codegen's `Properties<T>` phantom
+// (see `toolTripUpsert.ts` for the same pattern).
 
 interface MediaAgentMutationContext {
     serverRuntime: ServerRuntime;
@@ -35,29 +25,15 @@ export function toolMediaChannelUpsert({ serverRuntime, session, mutations }: Me
             'Create or edit a favourite YouTube / Twitch / podcast / other channel.',
             'For NEW channels, omit `channelId` — the server allocates one and appends the row to the bottom of',
             'every topic section. For an EDIT, pass the id from the snapshot or a prior `mediaChannelsList` call.',
-            '`topics` is the clustering axis — `/workspace/software` reads channels tagged `tech`, so keep the',
-            'vocabulary consistent (see the snapshot).',
+            '`topics` is the clustering axis — cluster tags like `tech`, `ai`, `movieCritic`, `entertainment`. A',
+            'channel can carry multiple tags; e.g. a tech YouTuber who also reviews films. `/workspace/software` reads',
+            'channels tagged `tech`, so keep the vocabulary consistent (see the snapshot). `platform` is one of',
+            '`youtube | twitch | podcast | other`.',
         ].join(' '),
-        inputSchema: mediaChannelUpsertInputSchema,
-        execute: async (input) => {
-            const result = await mediaChannelUpsert(
-                requireAdminUserId(session),
-                {
-                    input: {
-                        channelId: input.channelId ?? null,
-                        name: input.name,
-                        platform: input.platform,
-                        url: input.url,
-                        handle: input.handle ?? null,
-                        avatarUrl: input.avatarUrl ?? null,
-                        description: input.description ?? null,
-                        topics: input.topics,
-                        notes: input.notes ?? null,
-                    },
-                },
-                session,
-                serverRuntime,
-            );
+        inputSchema: GqlSMediaChannelInputSchema(),
+        execute: async (rawInput) => {
+            const input = rawInput as GqlSMediaChannelInput;
+            const result = await mediaChannelUpsert(requireAdminUserId(session), { input }, session, serverRuntime);
             mutations.push({
                 kind: input.channelId ? 'mediaChannelUpdate' : 'mediaChannelAdd',
                 id: result.channelId,

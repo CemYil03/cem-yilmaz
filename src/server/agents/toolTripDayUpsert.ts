@@ -17,7 +17,11 @@ interface TravelAgentMutationContext {
 // explainer. The runtime schema still validates against the type.
 export function toolTripDayUpsert({ serverRuntime, session, mutations }: TravelAgentMutationContext) {
     return tool({
-        description: 'Create or edit one day within a trip. Days are the buckets activities live under.',
+        description: [
+            'Surgical create-or-edit of ONE day within a trip. Days are the buckets activities live under.',
+            'For a fresh multi-day plan prefer `tripUpsertDeep` — reserve this tool for one-off edits to an already',
+            'planned trip.',
+        ].join(' '),
         inputSchema: GqlSTripDayInputSchema(),
         execute: async (rawInput) => {
             const input = rawInput as GqlSTripDayInput;

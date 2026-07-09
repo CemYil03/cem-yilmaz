@@ -161,22 +161,45 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 - **Tools are thin wrappers around existing `commands/`+`queries/`.** CQRS already gave us single-purpose units. A tool file is mostly the
   Zod input schema, the closure-bound dependencies (`serverRuntime`, `session`, optional `mutations`), and 5–10 lines of `execute` that maps
   to the command's args shape and pushes onto the mutation log on success.
-- **The input schema is hand-built per tool, EXCEPT when the generated `GqlS<X>InputSchema()` is Gemini-safe.** Mutation tools whose
-  underlying command has a GraphQL input type — `toolProjectUpsert`, `toolTaskUpsert`, `toolProjectActivityUpsert`, `toolProjectLinkUpsert`
-  — declare an explicit `z.object` in their tool file when the generated schema is unsafe. "Unsafe" here means the underlying GraphQL input
-  declares timestamp scalars as `DateTime`: `typescript-validation-schema` emits those as `z.date()`, and under `structuredOutputs: true`
-  the AI SDK converts the tool schema to JSON Schema for Gemini's constrained decoding — `z.date()` has no clean JSON-Schema representation,
-  so an extended schema occasionally produces a `MALFORMED_FUNCTION_CALL` from Gemini on plain inputs ("create project peopleeat"). The
-  hand-built shape uses `z.string()` for every ISO-8601 timestamp and `execute` converts with `new Date(...)`. When every scalar on the
-  input is Gemini-safe — no `DateTime` fields; `Date` (the ISO-string scalar) emits as `z.string()`, IDs as `z.string()`, enums via the
-  shared `GqlS<X>EnumSchema()` — using the generated schema directly is preferred. The travel tools (`toolTripUpsert`, `toolTripDayUpsert`,
-  `toolTripActivityUpsert`, `toolTripPackingItemUpsert`) reference this path: their input schemas ARE `GqlSTripInputSchema()` /
-  `GqlSTripDayInputSchema()` / etc., with no hand-built duplicate to drift out of sync. `toolTripUpsertDeep` composes those with `.omit()` /
-  `.extend()` to build the nested shape. Enum schemas (`GqlS<X>EnumSchema`) are still reused so a future enum addition surfaces as a TS
-  error rather than a runtime mismatch; do not redeclare enum tuples by hand. Field-name drift between the SDL input and the tool input is
-  caught by the resolver call: every mutation tool's `execute` constructs the resolver `input` object explicitly (or passes the validated
-  input verbatim when the command signature accepts the domain input directly), so a missing or renamed field is a TS error at the tool
-  file.
+- <a id="tool-input-schemas"></a>**The default input schema is the generated `GqlS<X>InputSchema()` from
+  `src/server/graphql/generated.ts`.** Same shape the resolver validates, no hand-built duplicate to drift out of sync as the SDL evolves.
+  `typescript-validation-schema` (see [`codegen.ts`](../../codegen.ts) and [api-layer.md](./api-layer.md#code-generation)) emits both the
+  object-schema factories (`GqlS<Input>Schema()`) and the enum schemas (`GqlS<Enum>Schema`) exactly for this consumer. Every mutation tool
+  whose underlying command has a GraphQL input type — `toolProjectLinkUpsert`, `toolMediaChannelUpsert`, `toolMedicalRecordFileAttach`, the
+  four travel tools, `toolTripUpsertDeep` — imports its generated schema and uses it verbatim (with a `rawInput as GqlS<X>` cast to recover
+  TS inference from the codegen's `Properties<T>` phantom; the runtime schema still validates against the type). Field-level explanations
+  travel via the SDL's own field descriptions — `withDescriptions: true` on the codegen plumbs them into the generated Zod schemas — so the
+  SDL stays the single source of truth for both the wire format and the field-level teaching the LLM sees.
+- **Exception: `DateTime` fields.** When the underlying SDL input carries a `DateTime` scalar, the tool falls back to a hand-built
+  `z.object` that uses `z.string()` for those fields and calls `new Date(...)` in `execute`. `typescript-validation-schema` emits `DateTime`
+  as `z.date()`, which has no clean JSON-Schema representation under Gemini's constrained decoding (`structuredOutputs: true`) and produces
+  `MALFORMED_FUNCTION_CALL` on plain inputs. Tools currently in this state: `toolProjectUpsert`, `toolTaskUpsert`,
+  `toolProjectActivityUpsert`, `toolMovieUpsert`, `toolMovieAddFromTmdb`, `toolMedicalAppointmentUpsert`, `toolMedicalRecordUpsert`. Each
+  keeps a short header comment pointing back to this bullet. **Enum schemas** (`GqlS<X>EnumSchema`) are still reused in the hand-built shape
+  so a future enum addition surfaces as a TS error rather than a runtime mismatch; do not redeclare enum tuples by hand. Field-name drift
+  between the SDL input and the tool input is caught by the resolver call: every mutation tool's `execute` constructs the resolver `input`
+  object explicitly (or passes the validated input verbatim when the command signature accepts the domain input directly), so a missing or
+  renamed field is a TS error at the tool file.
+- **Follow-up (not yet done):** DateTime-safety is the open thread — either the codegen emits `z.iso.datetime()` for `DateTime` behind a
+  separate agent-facing output, or a runtime helper walks `z.date()` → string on the object schemas. Either would let the DateTime-carrying
+  tools drop their hand-built duplicates too.
+- <a id="tool-self-description"></a>**Tool self-description is authoritative.** A tool's `description` string plus its per-field
+  `.describe(...)` calls are the ONLY place a tool is explained. System prompts NEVER list tools — no "You have N tools: - foo does X"
+  catalog, no orchestrator-side "Capabilities" bullets that restate what each delegate is for, no "When to search" block that duplicates
+  what `toolDelegateToWebSearch` already carries. The information belongs on one surface so a change to one doesn't silently diverge from
+  the other; the LLM sees the tool description on every call anyway, so the duplication buys nothing but drift risk.
+
+  What DOES stay in a system prompt: persona ("you are Cem's medical sub-agent"), style rules (concision, language matching), cross-tool
+  workflow rules that span multiple tools (`agentPersonalAssistantMedia`'s "for 'I watched X' → `movieMarkWatched`; if not in library →
+  `movieAddFromTmdb` first" workflow), agent-role behavior rules (the medical sub-agent's RED FLAGS block — that's a _don't-call-any-tool_
+  rule), the `{ status: 'needsMoreInfo' | 'noOp' }` JSON sentinel contract (this is the sub-agent → orchestrator wire, not a tool behavior),
+  delegate-result-envelope narration policy on the orchestrator (how to react to `needsMoreInfo` / `failed`), deep-link templates (narration
+  policy for the ids delegates return), and inlined data snapshots.
+
+  The canonical exemplar of a self-describing tool is `toolProjectActivityUpsert.ts`: a multi-sentence description that names when to reach
+  for it, the cross-tool guidance ("work timer rows are NOT created here"), and per-field `.describe(...)` for every input. The anti-pattern
+  is a `buildSystemPrompt` with a "You have nine tools: - `projectsList` — ... - `projectUpsert` — ..." block.
+
 - **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
   `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via
   `serverRuntime.log.error` and returned as `{ status: 'failed', summary, mutations }`. The orchestrator's system prompt tells it to narrate

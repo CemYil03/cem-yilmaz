@@ -43,7 +43,9 @@ URQL is configured in `src/web/graphql/client.ts` with:
 | `src/server/graphql/generated.ts` | `GqlS`\* | `typescript`, `typescript-resolvers`, `typescript-validation-schema` (Zod) |
 | `src/web/graphql/generated.ts`    | `GqlC*`  | `typescript`, `typescript-operations`, `typed-document-node`               |
 
-Server types include resolver type definitions and Zod validation schemas. Client types include operation types and `TypedDocumentNode` for
+Server types include resolver type definitions and Zod validation schemas — the `GqlS<Input>Schema()` factories (for object inputs) and
+`GqlS<Enum>Schema` values (for enums) that agent tools consume directly as their `inputSchema`, so the tool wire format stays locked to the
+SDL. See [Agent Delegation](./agent-delegation.md#tool-input-schemas). Client types include operation types and `TypedDocumentNode` for
 type-safe URQL hooks.
 
 The client output uses one extra config flag, `importSchemaTypesFrom: 'src/web/graphql/generated'`, that is load-bearing. Without it, the

@@ -17,8 +17,12 @@ interface TravelAgentMutationContext {
 // runtime schema still validates against the type.
 export function toolTripActivityUpsert({ serverRuntime, session, mutations }: TravelAgentMutationContext) {
     return tool({
-        description:
-            'Create or edit one activity on a trip day (booking, sightseeing, meal, transfer …). Times are wall-clock strings `HH:MM` / `HH:MM:SS`.',
+        description: [
+            'Surgical create-or-edit of ONE activity on a trip day (booking, sightseeing, meal, transfer …).',
+            'For a fresh whole-trip plan prefer `tripUpsertDeep` — reserve this tool for one-off edits to an',
+            'already planned trip. Times are wall-clock strings `HH:MM` / `HH:MM:SS` in the local time at the',
+            'destination — never a timezone offset.',
+        ].join(' '),
         inputSchema: GqlSTripActivityInputSchema(),
         execute: async (rawInput) => {
             const input = rawInput as GqlSTripActivityInput;

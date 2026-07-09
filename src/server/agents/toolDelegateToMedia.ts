@@ -57,8 +57,9 @@ export function toolDelegateToMedia({ serverRuntime, session, chatId, generation
     return tool({
         description: [
             'Hand a media instruction to the media sub-agent. Use for ANY ask that touches the movie watchlist or',
-            'the favourite-channels list — searching TMDB, adding, editing, marking watched, rating, deleting,',
-            'listing channels by topic. Pass the brief in natural language.',
+            'the favourite-channels list — searching TMDB or YouTube, adding, editing, marking watched, rating,',
+            'deleting, listing channels by topic. Pass the brief in natural language. TMDB search lives inside this',
+            'sub-agent — do NOT reach for `delegateToWebSearch` for film metadata.',
             "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',

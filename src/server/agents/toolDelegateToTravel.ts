@@ -58,7 +58,9 @@ export function toolDelegateToTravel({ serverRuntime, session, chatId, generatio
         description: [
             'Hand a travel instruction to the travel sub-agent. Use for ANY ask that touches trip planning — creating',
             'trips, drafting day-by-day itineraries, adding or editing activities, managing the per-trip packing',
-            'checklist, marking items packed. Pass the brief in natural language.',
+            'checklist, marking items packed. Pass the brief in natural language. This is the durable-plan path: the',
+            'sub-agent writes the itinerary to Postgres so a future chat can read it back without replaying this',
+            'conversation. Do NOT try to draft an itinerary in plain chat and expect it to persist — always delegate.',
             "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',

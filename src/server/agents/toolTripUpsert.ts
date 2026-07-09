@@ -26,7 +26,12 @@ interface TravelAgentMutationContext {
 
 export function toolTripUpsert({ serverRuntime, session, mutations }: TravelAgentMutationContext) {
     return tool({
-        description: 'Create a new trip or edit an existing one. Set `tripId` to edit; omit it to create.',
+        description: [
+            'Create a new trip or edit an existing one — trip root only (title, destination, dates, status,',
+            'transport, accommodation, notes). Set `tripId` to edit; omit it to create. Use this for pure metadata',
+            'edits with no nested changes. For a whole-trip plan (days, activities, packing items in one call),',
+            'prefer `tripUpsertDeep` instead.',
+        ].join(' '),
         inputSchema: GqlSTripInputSchema(),
         execute: async (rawInput) => {
             const input = rawInput as GqlSTripInput;
