@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
+    CalendarClockIcon,
     CheckIcon,
+    CircleCheckIcon,
+    ClapperboardIcon,
     EyeIcon,
     FilmIcon,
     GripVerticalIcon,
@@ -48,6 +51,7 @@ import {
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Slider } from '../../../web/components/base/slider';
+import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
@@ -67,11 +71,15 @@ import {
     WorkspaceMediaPageDocument,
     WorkspaceMediaPageUpdatesDocument,
     WorkspaceMediaTmdbSearchDocument,
+    WorkspaceMediaTmdbTvSearchDocument,
     WorkspaceMediaYoutubeSearchDocument,
     WorkspaceMovieAddFromTmdbDocument,
     WorkspaceMovieDeleteDocument,
     WorkspaceMovieMarkWatchedDocument,
     WorkspaceMovieUpsertDocument,
+    WorkspaceShowAddFromTmdbDocument,
+    WorkspaceShowDeleteDocument,
+    WorkspaceShowUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -82,20 +90,18 @@ import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
-// Admin editor for Cem's movie watchlist + favourite YouTube/podcast
-// channels. Admin-only, noindex; nothing on this page has a public surface.
-// The full read shape (movies + channels) lives in the
-// `WorkspaceMediaPageUser` fragment, so the route loader and the
+// Admin editor for Cem's movie watchlist, TV series library, and favourite
+// YouTube/podcast channels. Admin-only, noindex; nothing on this page has a
+// public surface. The full read shape (movies + shows + channels) lives in
+// the `WorkspaceMediaPageUser` fragment, so the route loader and the
 // `userUpdates` subscription deliver the same payload — mutations rely
 // entirely on the subscription round-trip to reconcile UI. See
 // `docs/architecture/state-synchronization.md` and
 // `docs/features/workspace-media.md`.
 //
-// One page, two tabs. Movies is a poster-first portrait grid grouped by
-// status. Add flow: a sticky TMDB search input at the top of the grid;
-// suggestions call `movieAddFromTmdb`. Channels is a rows-by-topic layout
-// with drag-reorder inside each topic bucket. Both surfaces share one
-// edit modal shape (poster on the movie one, avatar on the channel one).
+// One page, three tabs. Movies / Series are poster-first grids grouped by
+// status; add flow is a sticky TMDB search (movie vs TV endpoints). Channels
+// is a filterable avatar card grid with drag-reorder by priority.
 // Deep-linkable via `?tab=…&focus=<id>` from the personal assistant.
 
 const pageTitle = { de: 'Filme & Serien', en: 'Movies & TV shows' };
@@ -160,23 +166,25 @@ function topicLabel(topic: string, locale: Locale): string {
     return topic in TOPIC_LABELS ? TOPIC_LABELS[topic as GqlCMediaTopic][locale] : topic;
 }
 
-type Tab = 'movies' | 'channels';
-const TABS = ['movies', 'channels'] as const satisfies ReadonlyArray<Tab>;
+type Tab = 'movies' | 'series' | 'channels';
+const TABS = ['movies', 'series', 'channels'] as const satisfies ReadonlyArray<Tab>;
 const TAB_LABELS: Record<Tab, { de: string; en: string }> = {
     movies: { de: 'Filme', en: 'Movies' },
+    series: { de: 'Serien', en: 'Series' },
     channels: { de: 'Kanäle', en: 'Channels' },
 };
 const TAB_ICONS: Record<Tab, typeof FilmIcon> = {
     movies: FilmIcon,
+    series: ClapperboardIcon,
     channels: TvIcon,
 };
 
 // URL state. `tab` selects the section; absent = movies (the default landing
-// view). `topic` filters the movies grid to titles that carry all listed
-// topics (comma-joined). `focus` deep-links a specific card/row across
-// tabs — the page scrolls it into view and flashes it briefly on land,
-// then drops the param so refresh doesn't re-flash. Assistant links point
-// here (see `agentPersonalAssistant` "Deep links").
+// view). `topic` filters the movies / series grids to titles that carry all
+// listed topics (comma-joined). `focus` deep-links a specific card/row
+// across tabs — the page scrolls it into view and flashes it briefly on
+// land, then drops the param so refresh doesn't re-flash. Assistant links
+// point here (see `agentPersonalAssistant` "Deep links").
 const mediaSearchSchema = z.object({
     tab: z.enum(TABS).optional(),
     topic: z.string().optional(),
@@ -188,6 +196,7 @@ type MediaSearch = z.infer<typeof mediaSearchSchema>;
 type WorkspaceMediaAdmin = NonNullable<GqlCWorkspaceMediaPageUserFragment['admin']>;
 type MediaData = WorkspaceMediaAdmin['adminMediaFindOne'];
 type MovieRow = MediaData['adminMediaMovieFindMany'][number];
+type ShowRow = MediaData['adminMediaShowFindMany'][number];
 type ChannelRow = MediaData['adminMediaChannelFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/media')({
@@ -299,6 +308,8 @@ function WorkspaceMedia() {
             <div className="mt-8">
                 {tab === 'movies' ? (
                     <MoviesTab movies={media.adminMediaMovieFindMany} search={search} navigate={navigate} locale={locale} />
+                ) : tab === 'series' ? (
+                    <SeriesTab shows={media.adminMediaShowFindMany} search={search} navigate={navigate} locale={locale} />
                 ) : (
                     <ChannelsTab channels={media.adminMediaChannelFindMany} locale={locale} />
                 )}
@@ -384,7 +395,7 @@ function MoviesTab({
 
     return (
         <section>
-            <div className="sticky top-0 z-10 -mx-6 md:-mx-10 lg:-mx-16 px-6 md:px-10 lg:px-16 pt-1 pb-3 bg-background/85 backdrop-blur-md border-b border-border/40">
+            <div className="sticky top-0 z-10 pt-1 pb-3">
                 <MovieSearchBar inputRef={searchInputRef} onManualAdd={() => setEditing('new')} locale={locale} />
                 {topicChips.length > 0 ? (
                     <div className="mt-3 flex flex-wrap gap-1.5">
@@ -745,9 +756,9 @@ function MovieSearchBar({
                             setOpen(false);
                         }
                     }}
-                    placeholder={{ de: 'Film oder Serie suchen…', en: 'Search a movie or show…' }[locale]}
-                    className="pl-9 pr-9"
-                    aria-label={{ de: 'TMDB-Suche', en: 'TMDB search' }[locale]}
+                    placeholder={{ de: 'Film suchen…', en: 'Search a movie…' }[locale]}
+                    className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
+                    aria-label={{ de: 'Film-Suche', en: 'Movie search' }[locale]}
                     role="combobox"
                     aria-expanded={open}
                     aria-controls="tmdb-suggestions"
@@ -1088,56 +1099,989 @@ function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; l
     );
 }
 
-// --- Channels tab -----------------------------------------------------------
+// --- Series tab -------------------------------------------------------------
 
-function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>; locale: Locale }) {
-    const [editing, setEditing] = useState<ChannelRow | 'new' | null>(null);
-    const [, reorderMutation] = useMutation(WorkspaceMediaChannelReorderDocument);
+function SeriesTab({
+    shows,
+    search,
+    navigate,
+    locale,
+}: {
+    shows: ReadonlyArray<ShowRow>;
+    search: MediaSearch;
+    navigate: ReturnType<typeof Route.useNavigate>;
+    locale: Locale;
+}) {
+    const [editing, setEditing] = useState<ShowRow | 'new' | null>(null);
 
-    // Group by topic. Channels with multiple topics appear under each of
-    // them, matching the server's `channelsByTopic` shape and the brief.
-    // Untagged channels get a synthetic "no topic" bucket at the end.
+    const activeTopics = useMemo(() => {
+        if (!search.topic) return [] as string[];
+        return search.topic
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean);
+    }, [search.topic]);
+
+    const setActiveTopics = (next: string[]) => {
+        void navigate({
+            search: (prev) => ({ ...prev, topic: next.length === 0 ? undefined : next.join(',') }),
+            replace: true,
+        });
+    };
+
+    const toggleTopic = (topic: string) => {
+        setActiveTopics(activeTopics.includes(topic) ? activeTopics.filter((t) => t !== topic) : [...activeTopics, topic]);
+    };
+
+    const topicChips = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const show of shows) {
+            for (const topic of show.topics) counts.set(topic, (counts.get(topic) ?? 0) + 1);
+        }
+        return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }, [shows]);
+
+    const filtered = useMemo(() => {
+        if (activeTopics.length === 0) return shows;
+        return shows.filter((show) => activeTopics.every((topic) => show.topics.includes(topic)));
+    }, [shows, activeTopics]);
+
     const grouped = useMemo(() => {
-        const byTopic = new Map<string, ChannelRow[]>();
-        const untagged: ChannelRow[] = [];
-        for (const channel of channels) {
-            if (channel.topics.length === 0) {
-                untagged.push(channel);
-                continue;
-            }
-            for (const topic of channel.topics) {
-                const bucket = byTopic.get(topic);
-                if (bucket) bucket.push(channel);
-                else byTopic.set(topic, [channel]);
-            }
-        }
-        // Sort each bucket by priority ascending, then by name for stable ties.
-        for (const [, bucket] of byTopic) {
-            bucket.sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
-        }
-        untagged.sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
-        // Sort topic keys by count desc — matches the movie chip sort so the
-        // two tabs feel consistent.
-        const sortedTopics = [...byTopic.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-        return { sortedTopics, untagged };
-    }, [channels]);
+        const buckets: Record<GqlCMovieStatus, ShowRow[]> = {
+            watchlist: [],
+            watching: [],
+            watched: [],
+            dropped: [],
+        };
+        for (const show of filtered) buckets[show.status].push(show);
+        return buckets;
+    }, [filtered]);
+
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
+    const focusSearch = () => searchInputRef.current?.focus();
 
     return (
         <section>
-            <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                    {
+            <div className="sticky top-0 z-10 pt-1 pb-3">
+                <ShowSearchBar inputRef={searchInputRef} onManualAdd={() => setEditing('new')} locale={locale} />
+                {topicChips.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                        {topicChips.map(([topic, count]) => {
+                            const active = activeTopics.includes(topic);
+                            return (
+                                <button
+                                    key={topic}
+                                    type="button"
+                                    onClick={() => toggleTopic(topic)}
+                                    className={cn(
+                                        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        active
+                                            ? 'border-primary bg-primary/15 text-primary'
+                                            : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
+                                    )}
+                                    aria-pressed={active}
+                                >
+                                    <span>{topicLabel(topic, locale)}</span>
+                                    <span
+                                        className={cn('text-[10px] tabular-nums', active ? 'text-primary/80' : 'text-muted-foreground/70')}
+                                    >
+                                        {count}
+                                    </span>
+                                    {active ? <XIcon className="size-3" /> : null}
+                                </button>
+                            );
+                        })}
+                        {activeTopics.length > 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => setActiveTopics([])}
+                                className="ml-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                            >
+                                {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
+                            </button>
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
+
+            {shows.length === 0 ? (
+                <GlassCard className="mt-6 px-6 py-10 text-center">
+                    <ClapperboardIcon className="mx-auto size-6 text-muted-foreground" />
+                    <p className="mt-3 text-sm text-muted-foreground">
+                        {{ de: 'Noch keine Serien. Suche oben nach einem Titel.', en: 'No series yet. Search above to add one.' }[locale]}
+                    </p>
+                    <Button className="mt-4" size="sm" variant="outline" onClick={focusSearch}>
+                        <SearchIcon />
+                        {{ de: 'Suche fokussieren', en: 'Focus search' }[locale]}
+                    </Button>
+                </GlassCard>
+            ) : filtered.length === 0 ? (
+                <GlassCard className="mt-6 px-6 py-10 text-center">
+                    <p className="text-sm text-muted-foreground">
+                        {{ de: 'Keine Serien passen zu diesem Filter.', en: 'No series match this filter.' }[locale]}
+                    </p>
+                    <Button className="mt-4" size="sm" variant="outline" onClick={() => setActiveTopics([])}>
+                        {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
+                    </Button>
+                </GlassCard>
+            ) : (
+                <div className="mt-6 flex flex-col gap-10">
+                    {MOVIE_STATUS_ORDER.map((status) =>
+                        grouped[status].length === 0 ? null : (
+                            <ShowStatusGroup
+                                key={status}
+                                status={status}
+                                shows={grouped[status]}
+                                onEdit={(row) => setEditing(row)}
+                                locale={locale}
+                            />
+                        ),
+                    )}
+                </div>
+            )}
+
+            {editing ? <ShowEditDialog show={editing === 'new' ? null : editing} locale={locale} onClose={() => setEditing(null)} /> : null}
+        </section>
+    );
+}
+
+function ShowStatusGroup({
+    status,
+    shows,
+    onEdit,
+    locale,
+}: {
+    status: GqlCMovieStatus;
+    shows: ReadonlyArray<ShowRow>;
+    onEdit: (row: ShowRow) => void;
+    locale: Locale;
+}) {
+    return (
+        <div>
+            <div className="flex items-baseline justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {MOVIE_STATUS_LABELS[status][locale]}
+                </h2>
+                <span className="text-xs tabular-nums text-muted-foreground/70">{shows.length}</span>
+            </div>
+            <ul className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {shows.map((show, index) => (
+                    <Reveal key={show.showId} as="li" index={index}>
+                        <ShowCard show={show} onEdit={() => onEdit(show)} locale={locale} />
+                    </Reveal>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+function showNextSeasonLabel(show: ShowRow, locale: Locale): string | null {
+    if (show.isCompleted) return { de: 'Abgeschlossen', en: 'Completed' }[locale];
+    if (show.nextSeasonReleaseDate) {
+        try {
+            return format(parseISO(show.nextSeasonReleaseDate), 'MMM yyyy', { locale: DATE_FNS_LOCALE[locale] });
+        } catch {
+            return show.nextSeasonReleaseDate;
+        }
+    }
+    if (show.nextSeasonReleaseRough) return show.nextSeasonReleaseRough;
+    return null;
+}
+
+function ShowCard({ show, onEdit, locale }: { show: ShowRow; onEdit: () => void; locale: Locale }) {
+    const [, upsert] = useMutation(WorkspaceShowUpsertDocument);
+    const [, del] = useMutation(WorkspaceShowDeleteDocument);
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+    const changeStatus = async (next: GqlCMovieStatus) => {
+        await upsert({
+            input: {
+                showId: show.showId,
+                title: show.title,
+                tmdbId: show.tmdbId ?? null,
+                posterUrl: show.posterUrl ?? null,
+                backdropUrl: show.backdropUrl ?? null,
+                firstAirDate: show.firstAirDate ?? null,
+                overview: show.overview ?? null,
+                status: next,
+                rating: show.rating ?? null,
+                notes: show.notes ?? null,
+                topics: [...show.topics],
+                isCompleted: show.isCompleted,
+                nextSeasonReleaseDate: show.nextSeasonReleaseDate ?? null,
+                nextSeasonReleaseRough: show.nextSeasonReleaseRough ?? null,
+            },
+        });
+    };
+
+    const airYear = show.firstAirDate ? show.firstAirDate.slice(0, 4) : null;
+    const nextLabel = showNextSeasonLabel(show, locale);
+
+    return (
+        <>
+            <div
+                data-row-id={show.showId}
+                className="group/show relative overflow-hidden rounded-lg border border-border/50 bg-card/40 shadow-sm transition-shadow hover:shadow-md"
+            >
+                <button
+                    type="button"
+                    onClick={onEdit}
+                    aria-label={{ de: 'Details bearbeiten', en: 'Edit details' }[locale]}
+                    className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-lg"
+                >
+                    <AspectRatio ratio={2 / 3} className="bg-muted">
+                        {show.posterUrl ? (
+                            <img src={show.posterUrl} alt={show.title} loading="lazy" className="h-full w-full object-cover" />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center text-muted-foreground/70">
+                                <ClapperboardIcon className="size-8" />
+                            </div>
+                        )}
+                    </AspectRatio>
+                </button>
+
+                {typeof show.rating === 'number' ? (
+                    <div className="pointer-events-none absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white shadow">
+                        <StarIcon className="size-3" />
+                        <span className="tabular-nums">{show.rating}</span>
+                    </div>
+                ) : null}
+
+                {nextLabel ? (
+                    <div
+                        className={cn(
+                            'pointer-events-none absolute bottom-14 left-2 right-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-white shadow',
+                            show.isCompleted ? 'bg-emerald-700/85' : 'bg-black/70',
+                        )}
+                    >
+                        {show.isCompleted ? (
+                            <CircleCheckIcon className="size-3 shrink-0" />
+                        ) : (
+                            <CalendarClockIcon className="size-3 shrink-0" />
+                        )}
+                        <span className="truncate">{nextLabel}</span>
+                    </div>
+                ) : null}
+
+                <div className="absolute top-2 left-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                size="icon-xs"
+                                variant="ghost"
+                                className="bg-black/60 text-white hover:bg-black/80 hover:text-white"
+                                aria-label={{ de: 'Aktionen', en: 'Actions' }[locale]}
+                            >
+                                <MoreVerticalIcon />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            {show.status !== 'watching' ? (
+                                <DropdownMenuItem onSelect={() => void changeStatus('watching')}>
+                                    <PlayCircleIcon />
+                                    {{ de: 'Schaue gerade', en: 'Mark watching' }[locale]}
+                                </DropdownMenuItem>
+                            ) : null}
+                            {show.status !== 'watchlist' ? (
+                                <DropdownMenuItem onSelect={() => void changeStatus('watchlist')}>
+                                    <EyeIcon />
+                                    {{ de: 'Zur Watchlist', en: 'Move to watchlist' }[locale]}
+                                </DropdownMenuItem>
+                            ) : null}
+                            {show.status !== 'watched' ? (
+                                <DropdownMenuItem onSelect={() => void changeStatus('watched')}>
+                                    <CheckIcon />
+                                    {{ de: 'Als gesehen', en: 'Mark watched' }[locale]}
+                                </DropdownMenuItem>
+                            ) : null}
+                            {show.status !== 'dropped' ? (
+                                <DropdownMenuItem onSelect={() => void changeStatus('dropped')}>
+                                    <XIcon />
+                                    {{ de: 'Abgebrochen', en: 'Move to dropped' }[locale]}
+                                </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={onEdit}>
+                                <PencilIcon />
+                                {{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onSelect={() => setConfirmingDelete(true)}>
+                                <Trash2Icon />
+                                {{ de: 'Löschen', en: 'Delete' }[locale]}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
+                <button type="button" onClick={onEdit} className="block w-full px-2.5 py-2 text-left">
+                    <div className="truncate text-sm font-medium leading-snug">{show.title}</div>
+                    {airYear ? <div className="mt-0.5 text-xs text-muted-foreground">{airYear}</div> : null}
+                </button>
+            </div>
+
+            <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{{ de: 'Serie löschen?', en: 'Delete series?' }[locale]}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {
+                                {
+                                    de: `„${show.title}" wird dauerhaft entfernt.`,
+                                    en: `"${show.title}" will be permanently removed.`,
+                                }[locale]
+                            }
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => void del({ showId: show.showId })}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {{ de: 'Löschen', en: 'Delete' }[locale]}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+}
+
+function ShowSearchBar({
+    inputRef,
+    onManualAdd,
+    locale,
+}: {
+    inputRef: React.RefObject<HTMLInputElement | null>;
+    onManualAdd: () => void;
+    locale: Locale;
+}) {
+    const [query, setQuery] = useState('');
+    const [debounced, setDebounced] = useState('');
+    const [highlighted, setHighlighted] = useState(0);
+    const [open, setOpen] = useState(false);
+    const [, addFromTmdb] = useMutation(WorkspaceShowAddFromTmdbDocument);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const trimmed = query.trim();
+        if (trimmed.length === 0) {
+            setDebounced('');
+            return;
+        }
+        const id = window.setTimeout(() => setDebounced(trimmed), 300);
+        return () => window.clearTimeout(id);
+    }, [query]);
+
+    const [{ data, fetching }] = useQuery({
+        query: WorkspaceMediaTmdbTvSearchDocument,
+        variables: { query: debounced },
+        pause: !debounced,
+        requestPolicy: 'network-only',
+    });
+    const results = data?.sessionFindOne.user?.admin?.adminMediaFindOne.adminMediaTmdbTvFindMany ?? [];
+
+    useEffect(() => {
+        if (!open) return;
+        const onDown = (event: MouseEvent) => {
+            if (!containerRef.current) return;
+            if (!containerRef.current.contains(event.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', onDown);
+        return () => document.removeEventListener('mousedown', onDown);
+    }, [open]);
+
+    useEffect(() => {
+        setHighlighted(0);
+    }, [debounced, results.length]);
+
+    const addResult = async (tmdbId: number) => {
+        await addFromTmdb({ tmdbId, status: 'watchlist' });
+        setQuery('');
+        setDebounced('');
+        setOpen(false);
+    };
+
+    return (
+        <div ref={containerRef} className="relative">
+            <div className="relative">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                    ref={inputRef}
+                    value={query}
+                    onChange={(e) => {
+                        setQuery(e.target.value);
+                        setOpen(true);
+                    }}
+                    onFocus={() => setOpen(true)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setHighlighted((h) => Math.min(h + 1, Math.max(results.length - 1, 0)));
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setHighlighted((h) => Math.max(h - 1, 0));
+                        } else if (e.key === 'Enter') {
+                            const hit = results[highlighted];
+                            if (hit) {
+                                e.preventDefault();
+                                void addResult(hit.tmdbId);
+                            }
+                        } else if (e.key === 'Escape') {
+                            setQuery('');
+                            setDebounced('');
+                            setOpen(false);
+                        }
+                    }}
+                    placeholder={{ de: 'Serie suchen…', en: 'Search a series…' }[locale]}
+                    className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
+                    aria-label={{ de: 'Serien-Suche', en: 'Series search' }[locale]}
+                    role="combobox"
+                    aria-expanded={open}
+                    aria-controls="tmdb-tv-suggestions"
+                />
+                {fetching && debounced ? (
+                    <Loader2Icon className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                ) : query ? (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setQuery('');
+                            setDebounced('');
+                            setOpen(false);
+                            inputRef.current?.focus();
+                        }}
+                        aria-label={{ de: 'Suche leeren', en: 'Clear search' }[locale]}
+                        className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <XIcon className="size-4" />
+                    </button>
+                ) : null}
+            </div>
+
+            {open && debounced ? (
+                <div
+                    id="tmdb-tv-suggestions"
+                    role="listbox"
+                    className="absolute left-0 right-0 z-20 mt-1 max-h-96 overflow-auto rounded-md border border-border/60 bg-popover shadow-lg"
+                >
+                    {fetching && results.length === 0 ? (
+                        <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
+                            <Loader2Icon className="size-4 animate-spin" />
+                            {{ de: 'Suche läuft…', en: 'Searching…' }[locale]}
+                        </div>
+                    ) : results.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-muted-foreground">{{ de: 'Keine Treffer.', en: 'No results.' }[locale]}</div>
+                    ) : (
+                        <ul>
+                            {results.map((hit, index) => {
+                                const year = hit.firstAirDate ? hit.firstAirDate.slice(0, 4) : null;
+                                const active = index === highlighted;
+                                return (
+                                    <li key={hit.tmdbId}>
+                                        <button
+                                            type="button"
+                                            role="option"
+                                            aria-selected={active}
+                                            onMouseEnter={() => setHighlighted(index)}
+                                            onClick={() => void addResult(hit.tmdbId)}
+                                            className={cn(
+                                                'flex w-full items-start gap-3 px-3 py-2 text-left text-sm transition-colors',
+                                                active ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
+                                            )}
+                                        >
+                                            <div className="w-10 shrink-0 overflow-hidden rounded bg-muted">
+                                                <AspectRatio ratio={2 / 3}>
+                                                    {hit.posterUrl ? (
+                                                        <img
+                                                            src={hit.posterUrl}
+                                                            alt=""
+                                                            loading="lazy"
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full w-full items-center justify-center text-muted-foreground/70">
+                                                            <ClapperboardIcon className="size-4" />
+                                                        </div>
+                                                    )}
+                                                </AspectRatio>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate font-medium">{hit.title}</div>
+                                                {year ? <div className="text-xs text-muted-foreground">{year}</div> : null}
+                                                {hit.overview ? (
+                                                    <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground/80">
+                                                        {hit.overview}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                    <div className="border-t border-border/50 px-3 py-2 text-xs">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setOpen(false);
+                                onManualAdd();
+                            }}
+                            className="text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                        >
+                            {{ de: 'Manuell hinzufügen', en: 'Add manually' }[locale]}
+                        </button>
+                    </div>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; locale: Locale; onClose: () => void }) {
+    const [, upsert] = useMutation(WorkspaceShowUpsertDocument);
+    const [, del] = useMutation(WorkspaceShowDeleteDocument);
+    const [busy, setBusy] = useState(false);
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [form, setForm] = useState({
+        title: show?.title ?? '',
+        posterUrl: show?.posterUrl ?? '',
+        backdropUrl: show?.backdropUrl ?? '',
+        firstAirDate: show?.firstAirDate ?? '',
+        overview: show?.overview ?? '',
+        status: show?.status ?? ('watchlist' as GqlCMovieStatus),
+        rating: show?.rating ?? 0,
+        notes: show?.notes ?? '',
+        topics: show?.topics ?? [],
+        isCompleted: show?.isCompleted ?? false,
+        nextSeasonReleaseDate: show?.nextSeasonReleaseDate ?? '',
+        nextSeasonReleaseRough: show?.nextSeasonReleaseRough ?? '',
+    });
+
+    return (
+        <>
+            <Dialog open onOpenChange={(next) => (!next ? onClose() : null)}>
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {show
+                                ? { de: 'Serie bearbeiten', en: 'Edit series' }[locale]
+                                : { de: 'Serie manuell hinzufügen', en: 'Add series manually' }[locale]}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {show?.tmdbId
+                                ? { de: `TMDB-ID: ${show.tmdbId}`, en: `TMDB ID: ${show.tmdbId}` }[locale]
+                                : { de: 'Alle Felder sind editierbar.', en: 'Every field is editable.' }[locale]}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form
+                        onSubmit={async (event) => {
+                            event.preventDefault();
+                            setBusy(true);
+                            await upsert({
+                                input: {
+                                    showId: show?.showId ?? null,
+                                    title: form.title,
+                                    tmdbId: show?.tmdbId ?? null,
+                                    posterUrl: form.posterUrl || null,
+                                    backdropUrl: form.backdropUrl || null,
+                                    firstAirDate: form.firstAirDate || null,
+                                    overview: form.overview || null,
+                                    status: form.status,
+                                    rating: form.rating > 0 ? form.rating : null,
+                                    notes: form.notes || null,
+                                    topics: [...form.topics],
+                                    isCompleted: form.isCompleted,
+                                    nextSeasonReleaseDate: form.isCompleted ? null : form.nextSeasonReleaseDate || null,
+                                    nextSeasonReleaseRough: form.isCompleted ? null : form.nextSeasonReleaseRough || null,
+                                },
+                            });
+                            setBusy(false);
+                            onClose();
+                        }}
+                        className="grid gap-4 sm:grid-cols-[auto_1fr]"
+                    >
+                        <div className="w-32 shrink-0">
+                            <AspectRatio ratio={2 / 3} className="overflow-hidden rounded-md bg-muted">
+                                {form.posterUrl ? (
+                                    <img src={form.posterUrl} alt={form.title} className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-muted-foreground/70">
+                                        <ClapperboardIcon className="size-6" />
+                                    </div>
+                                )}
+                            </AspectRatio>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <Field label={{ de: 'Titel', en: 'Title' }[locale]}>
+                                <Input
+                                    value={form.title}
+                                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                                    required
+                                    autoFocus
+                                />
+                            </Field>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label={{ de: 'Status', en: 'Status' }[locale]}>
+                                    <Select
+                                        value={form.status}
+                                        onValueChange={(value) => setForm({ ...form, status: value as GqlCMovieStatus })}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {MOVIE_STATUS_ORDER.map((s) => (
+                                                <SelectItem key={s} value={s}>
+                                                    {MOVIE_STATUS_LABELS[s][locale]}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field label={{ de: 'Erstausstrahlung', en: 'First aired' }[locale]}>
+                                    <DateField
+                                        value={form.firstAirDate}
+                                        onChange={(next) => setForm({ ...form, firstAirDate: next })}
+                                        locale={locale}
+                                    />
+                                </Field>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
+                                <div className="min-w-0">
+                                    <div className="text-sm font-medium">
+                                        {{ de: 'Serie abgeschlossen', en: 'Series completed' }[locale]}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {
+                                            {
+                                                de: 'Keine weiteren Staffeln erwartet.',
+                                                en: 'No further seasons expected.',
+                                            }[locale]
+                                        }
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={form.isCompleted}
+                                    onCheckedChange={(checked) =>
+                                        setForm({
+                                            ...form,
+                                            isCompleted: checked,
+                                            ...(checked ? { nextSeasonReleaseDate: '', nextSeasonReleaseRough: '' } : {}),
+                                        })
+                                    }
+                                    aria-label={{ de: 'Serie abgeschlossen', en: 'Series completed' }[locale]}
+                                />
+                            </div>
+
+                            {!form.isCompleted ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Field label={{ de: 'Nächste Staffel (Datum)', en: 'Next season (date)' }[locale]}>
+                                        <DateField
+                                            value={form.nextSeasonReleaseDate}
+                                            onChange={(next) => setForm({ ...form, nextSeasonReleaseDate: next })}
+                                            locale={locale}
+                                        />
+                                    </Field>
+                                    <Field label={{ de: 'Nächste Staffel (ungefähr)', en: 'Next season (rough)' }[locale]}>
+                                        <Input
+                                            value={form.nextSeasonReleaseRough}
+                                            onChange={(e) => setForm({ ...form, nextSeasonReleaseRough: e.target.value })}
+                                            placeholder={{ de: 'z. B. Herbst 2026', en: 'e.g. Fall 2026' }[locale]}
+                                        />
+                                    </Field>
+                                </div>
+                            ) : null}
+
+                            <Field
+                                label={{ de: `Bewertung (${form.rating || '–'} / 10)`, en: `Rating (${form.rating || '–'} / 10)` }[locale]}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Slider
+                                        min={0}
+                                        max={10}
+                                        step={1}
+                                        value={[form.rating]}
+                                        onValueChange={(values) => setForm({ ...form, rating: values[0] ?? 0 })}
+                                        className="flex-1"
+                                    />
+                                    {form.rating > 0 ? (
+                                        <Button
+                                            type="button"
+                                            size="icon-xs"
+                                            variant="ghost"
+                                            aria-label={{ de: 'Bewertung entfernen', en: 'Clear rating' }[locale]}
+                                            onClick={() => setForm({ ...form, rating: 0 })}
+                                        >
+                                            <XIcon />
+                                        </Button>
+                                    ) : null}
+                                </div>
+                            </Field>
+                            <Field label={{ de: 'Kurzbeschreibung', en: 'Overview' }[locale]}>
+                                <Textarea rows={3} value={form.overview} onChange={(e) => setForm({ ...form, overview: e.target.value })} />
+                            </Field>
+                            <Field label={{ de: 'Notizen', en: 'Notes' }[locale]}>
+                                <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                            </Field>
+                            <Field label={{ de: 'Themen', en: 'Topics' }[locale]}>
+                                <TopicChipInput
+                                    value={form.topics}
+                                    onChange={(next) => setForm({ ...form, topics: next })}
+                                    locale={locale}
+                                />
+                            </Field>
+                            <Field label={{ de: 'Poster-URL', en: 'Poster URL' }[locale]}>
+                                <Input
+                                    value={form.posterUrl}
+                                    onChange={(e) => setForm({ ...form, posterUrl: e.target.value })}
+                                    type="url"
+                                    inputMode="url"
+                                />
+                            </Field>
+                        </div>
+
+                        <DialogFooter className="sm:col-span-2">
+                            {show ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => setConfirmingDelete(true)}
+                                    disabled={busy}
+                                    className="mr-auto text-destructive hover:text-destructive"
+                                >
+                                    <Trash2Icon />
+                                    {{ de: 'Löschen', en: 'Delete' }[locale]}
+                                </Button>
+                            ) : null}
+                            <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
+                                {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
+                            </Button>
+                            <Button type="submit" disabled={busy}>
+                                {{ de: 'Speichern', en: 'Save' }[locale]}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {show ? (
+                <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{{ de: 'Serie löschen?', en: 'Delete series?' }[locale]}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {
+                                    {
+                                        de: `„${show.title}" wird dauerhaft entfernt.`,
+                                        en: `"${show.title}" will be permanently removed.`,
+                                    }[locale]
+                                }
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={async () => {
+                                    await del({ showId: show.showId });
+                                    onClose();
+                                }}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                                {{ de: 'Löschen', en: 'Delete' }[locale]}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            ) : null}
+        </>
+    );
+}
+
+// --- Channels tab -----------------------------------------------------------
+
+const PLATFORM_ICON: Record<GqlCMediaPlatform, typeof PlayIcon> = {
+    youtube: PlayIcon,
+    twitch: PlayIcon,
+    podcast: PodcastIcon,
+    other: LinkIcon,
+};
+
+function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>; locale: Locale }) {
+    const [editing, setEditing] = useState<ChannelRow | 'new' | null>(null);
+    const [query, setQuery] = useState('');
+    const [activeTopics, setActiveTopics] = useState<string[]>([]);
+    const [activePlatforms, setActivePlatforms] = useState<GqlCMediaPlatform[]>([]);
+    const [, reorderMutation] = useMutation(WorkspaceMediaChannelReorderDocument);
+
+    const topicChips = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const channel of channels) {
+            for (const topic of channel.topics) counts.set(topic, (counts.get(topic) ?? 0) + 1);
+        }
+        return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }, [channels]);
+
+    const platformChips = useMemo(() => {
+        const counts = new Map<GqlCMediaPlatform, number>();
+        for (const channel of channels) counts.set(channel.platform, (counts.get(channel.platform) ?? 0) + 1);
+        return (Object.keys(PLATFORM_LABELS) as GqlCMediaPlatform[]).filter((p) => (counts.get(p) ?? 0) > 0);
+    }, [channels]);
+
+    const filtered = useMemo(() => {
+        const needle = query.trim().toLowerCase();
+        return channels
+            .filter((channel) => {
+                if (activePlatforms.length > 0 && !activePlatforms.includes(channel.platform)) return false;
+                if (activeTopics.length > 0 && !activeTopics.every((topic) => channel.topics.includes(topic))) return false;
+                if (!needle) return true;
+                const haystack = [channel.name, channel.handle ?? '', channel.notes ?? '', channel.description ?? '']
+                    .join(' ')
+                    .toLowerCase();
+                return haystack.includes(needle);
+            })
+            .slice()
+            .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
+    }, [channels, query, activeTopics, activePlatforms]);
+
+    const filtersActive = activeTopics.length > 0 || activePlatforms.length > 0 || query.trim().length > 0;
+
+    const ordered = useReorderableList(
+        filtered,
+        (c) => c.channelId,
+        async (orderedIds) => {
+            await reorderMutation({ orderedIds });
+        },
+    );
+
+    // Drag-reorder only when the full library is visible — rewriting
+    // priorities from a filtered subset would scramble the global order.
+    const canReorder = !filtersActive;
+
+    const toggleTopic = (topic: string) => {
+        setActiveTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
+    };
+    const togglePlatform = (platform: GqlCMediaPlatform) => {
+        setActivePlatforms((prev) => (prev.includes(platform) ? prev.filter((p) => p !== platform) : [...prev, platform]));
+    };
+
+    return (
+        <section>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
+                    <div className="relative">
+                        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder={{ de: 'Kanäle filtern…', en: 'Filter channels…' }[locale]}
+                            className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
+                            aria-label={{ de: 'Kanäle filtern', en: 'Filter channels' }[locale]}
+                        />
+                        {query ? (
+                            <button
+                                type="button"
+                                onClick={() => setQuery('')}
+                                aria-label={{ de: 'Filter leeren', en: 'Clear filter' }[locale]}
+                                className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <XIcon className="size-4" />
+                            </button>
+                        ) : null}
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
                         {
-                            de: 'Lieblingskanäle und Podcasts, gruppiert nach Thema.',
-                            en: 'Favourite channels and podcasts, grouped by topic.',
-                        }[locale]
-                    }
-                </p>
-                <Button size="sm" onClick={() => setEditing('new')}>
+                            {
+                                de: 'Lieblingskanäle und Podcasts — filtern, sortieren, öffnen.',
+                                en: 'Favourite channels and podcasts — filter, reorder, open.',
+                            }[locale]
+                        }
+                    </p>
+                </div>
+                <Button size="sm" className="shrink-0 self-start" onClick={() => setEditing('new')}>
                     <PlusIcon />
                     {{ de: 'Kanal hinzufügen', en: 'New channel' }[locale]}
                 </Button>
             </div>
+
+            {platformChips.length > 0 || topicChips.length > 0 ? (
+                <div className="mt-4 flex flex-col gap-2">
+                    {platformChips.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                            {platformChips.map((platform) => {
+                                const active = activePlatforms.includes(platform);
+                                const Icon = PLATFORM_ICON[platform];
+                                return (
+                                    <button
+                                        key={platform}
+                                        type="button"
+                                        onClick={() => togglePlatform(platform)}
+                                        className={cn(
+                                            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                            active
+                                                ? 'border-primary bg-primary/15 text-primary'
+                                                : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
+                                        )}
+                                        aria-pressed={active}
+                                    >
+                                        <Icon className="size-3" />
+                                        <span>{PLATFORM_LABELS[platform][locale]}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : null}
+                    {topicChips.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                            {topicChips.map(([topic, count]) => {
+                                const active = activeTopics.includes(topic);
+                                return (
+                                    <button
+                                        key={topic}
+                                        type="button"
+                                        onClick={() => toggleTopic(topic)}
+                                        className={cn(
+                                            'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                            active
+                                                ? 'border-primary bg-primary/15 text-primary'
+                                                : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
+                                        )}
+                                        aria-pressed={active}
+                                    >
+                                        <span>{topicLabel(topic, locale)}</span>
+                                        <span
+                                            className={cn(
+                                                'text-[10px] tabular-nums',
+                                                active ? 'text-primary/80' : 'text-muted-foreground/70',
+                                            )}
+                                        >
+                                            {count}
+                                        </span>
+                                        {active ? <XIcon className="size-3" /> : null}
+                                    </button>
+                                );
+                            })}
+                            {filtersActive ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setQuery('');
+                                        setActiveTopics([]);
+                                        setActivePlatforms([]);
+                                    }}
+                                    className="ml-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                                >
+                                    {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
+                                </button>
+                            ) : null}
+                        </div>
+                    ) : null}
+                </div>
+            ) : null}
 
             {channels.length === 0 ? (
                 <GlassCard className="mt-6 px-6 py-10 text-center">
@@ -1150,32 +2094,38 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
                         {{ de: 'Kanal hinzufügen', en: 'New channel' }[locale]}
                     </Button>
                 </GlassCard>
+            ) : filtered.length === 0 ? (
+                <GlassCard className="mt-6 px-6 py-10 text-center">
+                    <p className="text-sm text-muted-foreground">
+                        {{ de: 'Keine Kanäle passen zu diesem Filter.', en: 'No channels match this filter.' }[locale]}
+                    </p>
+                    <Button
+                        className="mt-4"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                            setQuery('');
+                            setActiveTopics([]);
+                            setActivePlatforms([]);
+                        }}
+                    >
+                        {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
+                    </Button>
+                </GlassCard>
             ) : (
-                <div className="mt-6 flex flex-col gap-8">
-                    {grouped.sortedTopics.map(([topic, bucket]) => (
-                        <ChannelTopicGroup
-                            key={topic}
-                            heading={topicLabel(topic, locale)}
-                            channels={bucket}
-                            onEdit={(row) => setEditing(row)}
-                            onReorder={async (orderedIds) => {
-                                await reorderMutation({ orderedIds });
-                            }}
-                            locale={locale}
-                        />
-                    ))}
-                    {grouped.untagged.length > 0 ? (
-                        <ChannelTopicGroup
-                            heading={{ de: 'Ohne Thema', en: 'No topic' }[locale]}
-                            channels={grouped.untagged}
-                            onEdit={(row) => setEditing(row)}
-                            onReorder={async (orderedIds) => {
-                                await reorderMutation({ orderedIds });
-                            }}
-                            locale={locale}
-                        />
-                    ) : null}
-                </div>
+                <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {ordered.items.map((channel, index) =>
+                        canReorder ? (
+                            <DraggableItem key={channel.channelId} id={channel.channelId} index={index} state={ordered} locale={locale}>
+                                <ChannelCard channel={channel} onEdit={() => setEditing(channel)} locale={locale} />
+                            </DraggableItem>
+                        ) : (
+                            <li key={channel.channelId}>
+                                <ChannelCard channel={channel} onEdit={() => setEditing(channel)} locale={locale} />
+                            </li>
+                        ),
+                    )}
+                </ul>
             )}
 
             {editing ? (
@@ -1185,80 +2135,71 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
     );
 }
 
-function ChannelTopicGroup({
-    heading,
-    channels,
-    onEdit,
-    onReorder,
-    locale,
-}: {
-    heading: string;
-    channels: ReadonlyArray<ChannelRow>;
-    onEdit: (row: ChannelRow) => void;
-    onReorder: (orderedIds: string[]) => Promise<void>;
-    locale: Locale;
-}) {
-    const ordered = useReorderableList(channels, (c) => c.channelId, onReorder);
-
-    return (
-        <div>
-            <div className="flex items-baseline justify-between">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{heading}</h2>
-                <span className="text-xs tabular-nums text-muted-foreground/70">{channels.length}</span>
-            </div>
-            <ul className="mt-3 flex flex-col gap-1.5">
-                {ordered.items.map((channel, index) => (
-                    <DraggableItem key={channel.channelId} id={channel.channelId} index={index} state={ordered} locale={locale}>
-                        <ChannelRowCard channel={channel} onEdit={() => onEdit(channel)} locale={locale} />
-                    </DraggableItem>
-                ))}
-            </ul>
-        </div>
-    );
-}
-
-const PLATFORM_ICON: Record<GqlCMediaPlatform, typeof PlayIcon> = {
-    youtube: PlayIcon,
-    twitch: PlayIcon,
-    podcast: PodcastIcon,
-    other: LinkIcon,
-};
-
-function ChannelRowCard({ channel, onEdit, locale }: { channel: ChannelRow; onEdit: () => void; locale: Locale }) {
+function ChannelCard({ channel, onEdit, locale }: { channel: ChannelRow; onEdit: () => void; locale: Locale }) {
     const PlatformIcon = PLATFORM_ICON[channel.platform];
     const firstNoteLine = channel.notes?.split('\n')[0]?.trim() ?? '';
 
     return (
-        <button type="button" onClick={onEdit} data-row-id={channel.channelId} className="w-full text-left">
-            <GlassCard className="px-4 py-2.5 transition-colors hover:bg-accent/30 focus-within:ring-2 focus-within:ring-ring">
-                <div className="flex items-center gap-3">
+        <div
+            data-row-id={channel.channelId}
+            className="group/channel relative flex h-full flex-col gap-3 rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm transition-shadow hover:shadow-md"
+        >
+            <div className="flex items-start gap-3">
+                <button
+                    type="button"
+                    onClick={onEdit}
+                    className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                >
                     <Avatar size="lg" className="shrink-0">
                         {channel.avatarUrl ? <AvatarImage src={channel.avatarUrl} alt={channel.name} /> : null}
                         <AvatarFallback>{channel.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                            <span className="truncate text-sm font-medium">{channel.name}</span>
-                            {channel.handle ? <span className="truncate text-xs text-muted-foreground">{channel.handle}</span> : null}
-                        </div>
-                        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="truncate text-sm font-medium leading-snug">{channel.name}</div>
+                        {channel.handle ? <div className="mt-0.5 truncate text-xs text-muted-foreground">{channel.handle}</div> : null}
+                        <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                             <PlatformIcon className="size-3 shrink-0" />
                             <span>{PLATFORM_LABELS[channel.platform][locale]}</span>
-                            {firstNoteLine ? (
-                                <>
-                                    <span>·</span>
-                                    <span className="truncate">{firstNoteLine}</span>
-                                </>
-                            ) : null}
                         </div>
                     </div>
-                    <PencilIcon
-                        className="size-4 shrink-0 text-muted-foreground/60"
-                        aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
-                    />
+                </button>
+                <a
+                    href={channel.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={{ de: 'Kanal öffnen', en: 'Open channel' }[locale]}
+                    title={{ de: 'Kanal öffnen', en: 'Open channel' }[locale]}
+                >
+                    <LinkIcon className="size-4" />
+                </a>
+            </div>
+
+            {channel.topics.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                    {channel.topics.map((topic) => (
+                        <span
+                            key={topic}
+                            className="inline-flex items-center rounded-full border border-border/50 bg-background/50 px-2 py-0.5 text-[10px] text-muted-foreground"
+                        >
+                            {topicLabel(topic, locale)}
+                        </span>
+                    ))}
                 </div>
-            </GlassCard>
-        </button>
+            ) : null}
+
+            {firstNoteLine ? <p className="line-clamp-2 text-xs text-muted-foreground/90">{firstNoteLine}</p> : null}
+
+            <button
+                type="button"
+                onClick={onEdit}
+                className="mt-auto inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+            >
+                <PencilIcon className="size-3" />
+                {{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+            </button>
+        </div>
     );
 }
 
@@ -1539,7 +2480,7 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
                         }
                     }}
                     placeholder={{ de: 'YouTube-Kanal suchen…', en: 'Search YouTube channel…' }[locale]}
-                    className="pl-9 pr-9"
+                    className="pl-9 pr-9 bg-background/70 backdrop-blur-sm"
                     aria-label={{ de: 'YouTube-Suche', en: 'YouTube search' }[locale]}
                     role="combobox"
                     aria-expanded={open}

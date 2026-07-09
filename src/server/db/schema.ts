@@ -1338,16 +1338,16 @@ export type ProjectFileCreate = typeof projectFiles.$inferInsert;
 
 // --- Media -------------------------------------------------------------------
 //
-// `Movies` and `MediaChannels` back `/workspace/media`. Admin-only, `noindex`
-// surface — no `*De`/`*En` pairs, following the `Projects` / `Tasks`
+// `Movies`, `Shows`, and `MediaChannels` back `/workspace/media`. Admin-only,
+// `noindex` surface — no `*De`/`*En` pairs, following the `Projects` / `Tasks`
 // convention (see `docs/architecture/content-model.md`).
 //
-// `topics` is a Postgres `text[]` on both tables — the clustering axis for
-// channels ("tech", "movieCritic", "entertainment") and free-form genre tags
-// on movies. Mirrors `cvExperience.technologies`: display chips + `ANY(topics)`
-// filter for cross-view reads (e.g. `/workspace/software` pulling
-// `mediaChannelsByTopic("tech")`). The `mediaTopics` const array below is the
-// *known* vocabulary the UI autocomplete and `MediaTopic` GraphQL enum
+// `topics` is a Postgres `text[]` on movies / shows / channels — the clustering
+// axis for channels ("tech", "movieCritic", "entertainment") and free-form
+// genre tags on titles. Mirrors `cvExperience.technologies`: display chips +
+// `ANY(topics)` filter for cross-view reads (e.g. `/workspace/software`
+// pulling `mediaChannelsByTopic("tech")`). The `mediaTopics` const array below
+// is the *known* vocabulary the UI autocomplete and `MediaTopic` GraphQL enum
 // surface; the column itself accepts any string so the enum can grow without a
 // migration.
 
@@ -1404,6 +1404,38 @@ export const movies = pgTable(
 
 export type Movie = typeof movies.$inferSelect;
 export type MovieCreate = typeof movies.$inferInsert;
+
+// TV series tracked on `/workspace/media` (Serien tab). Same watch-status
+// vocabulary as `Movies`, plus series-specific tracking: whether the show has
+// ended (`isCompleted`) and when the next season lands — either an exact
+// `nextSeasonReleaseDate` or a free-form `nextSeasonReleaseRough` ("Fall 2026",
+// "Q3 2027"). Both date fields can coexist (exact when known, rough as a
+// fallback label). See `docs/features/workspace-media.md`.
+export const shows = pgTable(
+    'Shows',
+    {
+        showId: uuid().primaryKey(),
+        title: varchar().notNull(),
+        tmdbId: integer(),
+        posterUrl: varchar(),
+        backdropUrl: varchar(),
+        firstAirDate: date(),
+        overview: text(),
+        status: varchar().$type<MovieStatus>().notNull().default('watchlist'),
+        rating: integer(),
+        notes: text(),
+        topics: text().array().notNull().default([]),
+        isCompleted: boolean().notNull().default(false),
+        nextSeasonReleaseDate: date(),
+        nextSeasonReleaseRough: varchar(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [uniqueIndex('Shows_tmdbId_key').on(table.tmdbId), index('Shows_status_idx').on(table.status)],
+);
+
+export type Show = typeof shows.$inferSelect;
+export type ShowCreate = typeof shows.$inferInsert;
 
 // `priority` orders channels within a topic section on the editor (drag-reorder
 // via `useReorderableList`). Reorder is not delta-based — the command rewrites

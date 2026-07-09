@@ -69,6 +69,7 @@ const BASE_SYSTEM_PROMPT = [
     '- Inbox row            → `[<title>](/workspace/projects?tab=inbox&focus=<projectRequestId>)`',
     '- Standalone task      → `[<title>](/workspace/todos?focus=<taskId>)`',
     '- Movie                → `[<title>](/workspace/media?tab=movies&focus=<movieId>)`',
+    '- Series               → `[<title>](/workspace/media?tab=series&focus=<showId>)`',
     '- Channel              → `[<name>](/workspace/media?tab=channels&focus=<channelId>)`',
     '- Medical record       → `[<title>](/workspace/medical?tab=records&focus=<recordId>)`',
     '- Medical appointment  → `[<title>](/workspace/medical?tab=appointments&focus=<appointmentId>)`',

@@ -6,10 +6,11 @@
 # and the page picks up the new payload over SSE. See
 # `docs/architecture/state-synchronization.md`.
 #
-# `tmdbSearch` is intentionally NOT part of the page fragment: it's a live
-# per-keystroke read fired only while the movie tab's search box has text.
-# The page uses `useQuery` with `pause: !debouncedQuery` and
-# `requestPolicy: 'network-only'` so TMDB responses aren't cached.
+# `adminMediaTmdbFindMany` / `adminMediaTmdbTvFindMany` are intentionally NOT
+# part of the page fragment: they're live per-keystroke reads fired only while
+# the movies / series tab search box has text. The page uses `useQuery` with
+# `pause: !debouncedQuery` and `requestPolicy: 'network-only'` so TMDB
+# responses aren't cached.
 
 fragment WorkspaceMediaPageUser on User {
     admin {
@@ -28,6 +29,23 @@ fragment WorkspaceMediaPageUser on User {
                 watchedAt
                 notes
                 topics
+                updatedAt
+            }
+            adminMediaShowFindMany {
+                showId
+                title
+                tmdbId
+                posterUrl
+                backdropUrl
+                firstAirDate
+                overview
+                status
+                rating
+                notes
+                topics
+                isCompleted
+                nextSeasonReleaseDate
+                nextSeasonReleaseRough
                 updatedAt
             }
             adminMediaChannelFindMany {
@@ -70,6 +88,24 @@ query WorkspaceMediaTmdbSearch($query: String!) {
                         tmdbId
                         title
                         releaseDate
+                        posterUrl
+                        overview
+                    }
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceMediaTmdbTvSearch($query: String!) {
+    sessionFindOne {
+        user {
+            admin {
+                adminMediaFindOne {
+                    adminMediaTmdbTvFindMany(query: $query) {
+                        tmdbId
+                        title
+                        firstAirDate
                         posterUrl
                         overview
                     }
@@ -127,6 +163,30 @@ mutation WorkspaceMovieAddFromTmdb($tmdbId: Int!, $status: MovieStatus) {
     admin {
         movieAddFromTmdb(tmdbId: $tmdbId, status: $status) {
             movieId
+        }
+    }
+}
+
+mutation WorkspaceShowUpsert($input: ShowInput!) {
+    admin {
+        showUpsert(input: $input) {
+            showId
+        }
+    }
+}
+
+mutation WorkspaceShowDelete($showId: ID!) {
+    admin {
+        showDelete(showId: $showId) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceShowAddFromTmdb($tmdbId: Int!, $status: MovieStatus) {
+    admin {
+        showAddFromTmdb(tmdbId: $tmdbId, status: $status) {
+            showId
         }
     }
 }

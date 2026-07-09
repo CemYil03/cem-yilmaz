@@ -13,7 +13,12 @@ import { toolMovieDelete } from './toolMovieDelete';
 import { toolMovieMarkWatched } from './toolMovieMarkWatched';
 import { toolMovieUpsert } from './toolMovieUpsert';
 import { toolMoviesList } from './toolMoviesList';
+import { toolShowAddFromTmdb } from './toolShowAddFromTmdb';
+import { toolShowDelete } from './toolShowDelete';
+import { toolShowUpsert } from './toolShowUpsert';
+import { toolShowsList } from './toolShowsList';
 import { toolTmdbSearch } from './toolTmdbSearch';
+import { toolTmdbTvSearch } from './toolTmdbTvSearch';
 import { toolYoutubeSearch } from './toolYoutubeSearch';
 
 // Media domain sub-agent under the orchestrator pattern documented in
@@ -27,11 +32,20 @@ import { toolYoutubeSearch } from './toolYoutubeSearch';
 // mutation log stays closure-shared with the delegate tool.
 
 type MediaAgentMutationKind =
-    'movieAdd' | 'movieUpdate' | 'movieMarkWatched' | 'movieDelete' | 'mediaChannelAdd' | 'mediaChannelUpdate' | 'mediaChannelDelete';
+    | 'movieAdd'
+    | 'movieUpdate'
+    | 'movieMarkWatched'
+    | 'movieDelete'
+    | 'showAdd'
+    | 'showUpdate'
+    | 'showDelete'
+    | 'mediaChannelAdd'
+    | 'mediaChannelUpdate'
+    | 'mediaChannelDelete';
 
 export interface MediaAgentMutation {
     kind: MediaAgentMutationKind;
-    // Movie id or channel id depending on `kind`.
+    // Movie / show / channel id depending on `kind`.
     id: string;
     // Best-effort label for the orchestrator's user-facing narration.
     title?: string;
@@ -49,10 +63,10 @@ export interface MediaAgentOptions {
 function buildSystemPrompt(snapshot: string): string {
     return [
         "You are the media sub-agent inside Cem's personal workspace. You handle every ask that touches his movie",
-        'watchlist and his favourite YouTube / podcast / Twitch channels. Your tools mutate the workspace DB —',
-        'only use them when the user has unambiguously asked you to change something. Each tool carries its own',
-        'description of when to reach for it and how its inputs are shaped; the cross-tool workflow rules below',
-        'are the only tool guidance you need beyond those descriptions.',
+        'watchlist, his TV series library, and his favourite YouTube / podcast / Twitch channels. Your tools mutate',
+        'the workspace DB — only use them when the user has unambiguously asked you to change something. Each tool',
+        'carries its own description of when to reach for it and how its inputs are shaped; the cross-tool workflow',
+        'rules below are the only tool guidance you need beyond those descriptions.',
         '',
         currentDateForAgent(),
         '',
@@ -60,19 +74,24 @@ function buildSystemPrompt(snapshot: string): string {
         '- Reply in the language the user wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences.',
         '- Never invent an id. Use ids from the snapshot below, from a tool result earlier in this turn, or a',
-        '  TMDB id returned by `tmdbSearch`.',
-        '- For "I want to watch X": call `tmdbSearch` first, pick the best match by title + year, then',
+        '  TMDB id returned by `tmdbSearch` / `tmdbTvSearch`.',
+        '- For "I want to watch movie X": call `tmdbSearch` first, pick the best match by title + year, then',
         '  `movieAddFromTmdb`. If TMDB returns nothing, fall back to `movieUpsert` with a manual title.',
-        '- For "I watched X": if X is already in the library, call `movieMarkWatched`. If not, add it first with',
-        '  `movieAddFromTmdb` (status: `watched`) and then `movieMarkWatched` in the same turn.',
+        '- For "I watched movie X": if X is already in the library, call `movieMarkWatched`. If not, add it first',
+        '  with `movieAddFromTmdb` (status: `watched`) and then `movieMarkWatched` in the same turn.',
+        '- For "I want to watch / track series X": call `tmdbTvSearch` first, pick the best match, then',
+        '  `showAddFromTmdb`. If TMDB returns nothing, fall back to `showUpsert` with a manual title.',
+        '- For series edits (completed flag, next-season exact/rough date, rating, notes): use `showUpsert` with',
+        '  the existing `showId`. When marking a series completed, set `isCompleted: true` (next-season fields',
+        '  clear automatically).',
         '- For "add YouTube channel X" / "favourite X": call `youtubeSearch` first, pick the best match, then',
         '  `mediaChannelUpsert` with `platform: youtube` and the returned fields (`canonicalUrl` → `url`,',
         '  `handle`, `avatarUrl`, and the title → `name`). Ask Cem for topics if he did not name any.',
         '- If the request is missing information you genuinely need, do NOT guess. Return EXACTLY this JSON as your',
         '  final text, nothing else:',
         '  {"status":"needsMoreInfo","missingFields":["..."],"summary":"..."}',
-        "- If the request asks for something outside the movies / channels surface (e.g. 'add a task', 'log a workout'),",
-        '  return the same JSON with status `noOp` and an empty `missingFields` array.',
+        "- If the request asks for something outside the movies / series / channels surface (e.g. 'add a task',",
+        "  'log a workout'), return the same JSON with status `noOp` and an empty `missingFields` array.",
         '',
         'Current media snapshot (refreshed at the start of this turn):',
         '',
@@ -96,13 +115,18 @@ export async function agentPersonalAssistantMedia({ session, serverRuntime, muta
         instructions: buildSystemPrompt(snapshot),
         tools: {
             moviesList: toolMoviesList(readContext),
+            showsList: toolShowsList(readContext),
             mediaChannelsList: toolMediaChannelsList(readContext),
             tmdbSearch: toolTmdbSearch(readContext),
+            tmdbTvSearch: toolTmdbTvSearch(readContext),
             youtubeSearch: toolYoutubeSearch(readContext),
             movieAddFromTmdb: toolMovieAddFromTmdb(mutationContext),
             movieUpsert: toolMovieUpsert(mutationContext),
             movieMarkWatched: toolMovieMarkWatched(mutationContext),
             movieDelete: toolMovieDelete(mutationContext),
+            showAddFromTmdb: toolShowAddFromTmdb(mutationContext),
+            showUpsert: toolShowUpsert(mutationContext),
+            showDelete: toolShowDelete(mutationContext),
             mediaChannelUpsert: toolMediaChannelUpsert(mutationContext),
             mediaChannelDelete: toolMediaChannelDelete(mutationContext),
         },

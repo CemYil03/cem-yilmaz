@@ -182,12 +182,12 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
   `z.object` that uses `z.string()` for those fields and calls `new Date(...)` in `execute`. `typescript-validation-schema` emits `DateTime`
   as `z.date()`, which has no clean JSON-Schema representation under Gemini's constrained decoding (`structuredOutputs: true`) and produces
   `MALFORMED_FUNCTION_CALL` on plain inputs. Tools currently in this state: `toolProjectUpsert`, `toolTaskUpsert`,
-  `toolProjectActivityUpsert`, `toolMovieUpsert`, `toolMovieAddFromTmdb`, `toolMedicalAppointmentUpsert`, `toolMedicalRecordUpsert`. Each
-  keeps a short header comment pointing back to this bullet. **Enum schemas** (`GqlS<X>EnumSchema`) are still reused in the hand-built shape
-  so a future enum addition surfaces as a TS error rather than a runtime mismatch; do not redeclare enum tuples by hand. Field-name drift
-  between the SDL input and the tool input is caught by the resolver call: every mutation tool's `execute` constructs the resolver `input`
-  object explicitly (or passes the validated input verbatim when the command signature accepts the domain input directly), so a missing or
-  renamed field is a TS error at the tool file.
+  `toolProjectActivityUpsert`, `toolMovieUpsert`, `toolMovieAddFromTmdb`, `toolShowUpsert`, `toolShowAddFromTmdb`,
+  `toolMedicalAppointmentUpsert`, `toolMedicalRecordUpsert`. Each keeps a short header comment pointing back to this bullet. **Enum
+  schemas** (`GqlS<X>EnumSchema`) are still reused in the hand-built shape so a future enum addition surfaces as a TS error rather than a
+  runtime mismatch; do not redeclare enum tuples by hand. Field-name drift between the SDL input and the tool input is caught by the
+  resolver call: every mutation tool's `execute` constructs the resolver `input` object explicitly (or passes the validated input verbatim
+  when the command signature accepts the domain input directly), so a missing or renamed field is a TS error at the tool file.
 - **Follow-up (not yet done):** DateTime-safety is the open thread — either the codegen emits `z.iso.datetime()` for `DateTime` behind a
   separate agent-facing output, or a runtime helper walks `z.date()` → string on the object schemas. Either would let the DateTime-carrying
   tools drop their hand-built duplicates too.

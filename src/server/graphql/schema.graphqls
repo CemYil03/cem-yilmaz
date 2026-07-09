@@ -1534,6 +1534,29 @@ type Movie {
     updatedAt: DateTime!
 }
 
+# A TV series Cem tracks. Same watch-status vocabulary as `Movie`, plus
+# series-specific fields: `isCompleted` (show has ended) and next-season
+# timing — exact `nextSeasonReleaseDate` and/or free-form
+# `nextSeasonReleaseRough` ("Fall 2026"). `tmdbId` is unique-nullable like
+# movies. See `docs/features/workspace-media.md`.
+type Show {
+    showId: ID!
+    title: String!
+    tmdbId: Int
+    posterUrl: String
+    backdropUrl: String
+    firstAirDate: Date
+    overview: String
+    status: MovieStatus!
+    rating: Int
+    notes: String
+    topics: [String!]!
+    isCompleted: Boolean!
+    nextSeasonReleaseDate: Date
+    nextSeasonReleaseRough: String
+    updatedAt: DateTime!
+}
+
 # A favourite YouTube channel / podcast / stream. `topics` clusters channels
 # for the media page (grouped rows) and for cross-view reads
 # (`Admin.media.channelsByTopic`). `priority` orders channels within a topic
@@ -1553,13 +1576,23 @@ type MediaChannel {
     updatedAt: DateTime!
 }
 
-# One TMDB search hit. `posterUrl` is already a fully-qualified
+# One TMDB movie search hit. `posterUrl` is already a fully-qualified
 # `image.tmdb.org` URL (the TMDB client resolves the CDN prefix so the
 # client doesn't need TMDB configuration details).
 type TmdbMovieResult {
     tmdbId: Int!
     title: String!
     releaseDate: Date
+    posterUrl: String
+    overview: String
+}
+
+# One TMDB TV search hit. Same shape as `TmdbMovieResult` but uses
+# `firstAirDate` (TMDB's TV field) instead of `releaseDate`.
+type TmdbTvResult {
+    tmdbId: Int!
+    title: String!
+    firstAirDate: Date
     posterUrl: String
     overview: String
 }
@@ -1583,16 +1616,20 @@ type YoutubeChannelResult {
 # `User.admin`. Nothing here is public.
 type AdminMediaQuery {
     adminMediaMovieFindMany: [Movie!]!
+    adminMediaShowFindMany: [Show!]!
     # `topic` filters to channels whose `topics` array contains it
     # (case-sensitive). Omit or pass `null` to return every channel.
     # `/workspace/software` reads this with `topic: "tech"` to render its
     # "favourite tech YouTubers" section without duplicating channel data.
     adminMediaChannelFindMany(topic: String): [MediaChannel!]!
-    # Live TMDB search — returns at most 10 results. Empty list when
+    # Live TMDB movie search — returns at most 10 results. Empty list when
     # `TMDB_API_KEY` is unset, when TMDB is unreachable, or when `query`
     # trims to empty; the media page treats "empty" as a cue to offer the
     # manual-entry dialog.
     adminMediaTmdbFindMany(query: String!): [TmdbMovieResult!]!
+    # Live TMDB TV search — same empty-fallback semantics as
+    # `adminMediaTmdbFindMany`.
+    adminMediaTmdbTvFindMany(query: String!): [TmdbTvResult!]!
     # Live YouTube channel search — returns at most 10 results, each
     # enriched with handle + subscriber count. Same empty-fallback
     # semantics as `adminMediaTmdbFindMany`.
@@ -1619,6 +1656,23 @@ input MovieInput {
     topics: [String!]!
 }
 
+input ShowInput {
+    showId: ID
+    title: String!
+    tmdbId: Int
+    posterUrl: String
+    backdropUrl: String
+    firstAirDate: Date
+    overview: String
+    status: MovieStatus!
+    rating: Int
+    notes: String
+    topics: [String!]!
+    isCompleted: Boolean!
+    nextSeasonReleaseDate: Date
+    nextSeasonReleaseRough: String
+}
+
 input MediaChannelInput {
     channelId: ID
     name: String!
@@ -1643,6 +1697,13 @@ extend type AdminMutation {
     # exists, updates that row instead of duplicating. Falls back to a
     # title-only insert when TMDB is unreachable.
     movieAddFromTmdb(tmdbId: Int!, status: MovieStatus): Movie!
+
+    showUpsert(input: ShowInput!): Show!
+    showDelete(showId: ID!): MutationResult!
+    # Fetches TMDB TV detail and inserts (or refreshes) a `Shows` row.
+    # Seeds `isCompleted` / `nextSeasonReleaseDate` from TMDB when available;
+    # `nextSeasonReleaseRough` stays admin-authored.
+    showAddFromTmdb(tmdbId: Int!, status: MovieStatus): Show!
 
     mediaChannelUpsert(input: MediaChannelInput!): MediaChannel!
     mediaChannelDelete(channelId: ID!): MutationResult!

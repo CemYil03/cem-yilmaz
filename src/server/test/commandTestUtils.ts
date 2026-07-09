@@ -103,6 +103,8 @@ function serverRuntimeStubCreate(): ServerRuntime {
         tmdb: {
             searchMovies: vi.fn(async () => []),
             getMovie: vi.fn(async () => null),
+            searchTv: vi.fn(async () => []),
+            getTv: vi.fn(async () => null),
         },
         // Same posture for the YouTube channel search.
         youtube: {
