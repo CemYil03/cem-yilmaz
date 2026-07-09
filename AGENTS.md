@@ -242,3 +242,27 @@ src/
 - **Build**: Vite 8
 - **CI**: GitHub Actions
 - **Deployment**: Docker via Coolify, single environment, `main` → prod
+
+## Cursor Cloud specific instructions
+
+Standard commands live in `README.md` (Quick Start / Common Commands) and `package.json` scripts. This section only records the
+non-obvious environment caveats for the Cursor Cloud VM. The update script already runs `npm install` on the pinned Node.
+
+- **Node/npm version (engine-strict).** `.npmrc` sets `engine-strict = true` and `package.json#engines` pins `node ^24.16.0` +
+  `npm ^11.17.0`, so npm *refuses* to run on the wrong version. Node 24.16.0 is installed via `nvm` and its global npm is upgraded to
+  `11.17.0`. A default (non-login) shell resolves `node` to `/exec-daemon/node` (v22), which fails engine-strict. Use a login shell or
+  select the version first: `source ~/.nvm/nvm.sh && nvm use 24.16.0` (login shells already pick it up via `~/.bashrc`). Do **not** touch
+  `/exec-daemon/node` — it is sandbox infrastructure.
+- **PostgreSQL is local and not auto-started.** A local PostgreSQL 16 cluster holds dev DB `mydb` and test DB `mydb_test`
+  (role `postgres` / password `postgres`). Start it each session with `sudo pg_ctlcluster 16 main start`. Apply schema with
+  `npm run db:push` (schema-only; no committed migration step needed for dev).
+- **`DATABASE_URL` override trap (important).** The app-facing secrets (`DATABASE_URL`, `GOOGLE_GENERATIVE_AI_API_KEY`, `WEB_PAGE_URL`,
+  `sessionCookieName`, `VISITOR_IP_HASH_SALT`, …) are injected into the process env, so `npm run dev` works out of the box against the
+  injected **remote** database. But `dotenv` (used by `drizzle.config.ts` and `src/server/test/commandTestUtils.ts`) does **not** override
+  an already-set `DATABASE_URL`, so `.env.test` is ignored when the secret is present. The command/integration tests write rows, so run
+  them against the local test DB by overriding inline:
+  `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/mydb_test" npm test`. Likewise pass a local URL to `npm run db:push` when
+  you mean the local DB. Never let `npm test` run with the injected remote `DATABASE_URL`.
+- **Run the dev server from the agent's own shell.** Injected secrets are present in the agent's shell but are **not** inherited by tmux
+  sessions spawned via the portal config — a dev server started there boots with an empty env and 500s on `GOOGLE_GENERATIVE_AI_API_KEY`.
+  Start `npm run dev` (port 3000) directly from the agent shell that has the secrets.
