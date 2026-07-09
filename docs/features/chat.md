@@ -43,7 +43,8 @@ The composer:
     mutation, pulls model selection from `useWorkspaceAssistantChat()`, and renders the model dropdown + the tool-call approval-mode
     selector (Auto / Manual) into the bottom-left addon. Both expose their own `addonStart` slot for surface-specific extras (e.g. the
     sheet's "New chat" button, the admin sheet's `resetChat` button).
-- Sends on `Enter`; `Shift+Enter` inserts a newline.
+- **Desktop:** sends on `Enter`; `Shift+Enter` inserts a newline. **Mobile:** `Enter` inserts a newline; only the Send button submits
+  (soft-keyboard Return must not fire form submit — otherwise multi-line drafts are impossible).
 - Disables itself while a response is streaming and shows an inline spinner.
 - Restores the draft if the mutation errors.
 - Returns focus to the textarea as soon as the per-turn lock lifts (`busy` flips back to `false`), so the user can keep typing without
