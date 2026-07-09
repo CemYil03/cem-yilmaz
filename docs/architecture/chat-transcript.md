@@ -55,7 +55,9 @@ Every persisted message row and every in-flight streaming buffer is wrapped in a
 ```
 MessageScrollerProvider (defaultScrollPosition="last-anchor", scrollEdgeThreshold=64)
 └── MessageScroller
-    ├── MessageScrollerViewport   (default: scroll-fade-b, scrollbar-thin, overflow-y-auto)
+    ├── MessageScrollerViewport   (default: scroll-fade-b, scrollbar-thin, overflow-y-auto,
+    │   │                         [scrollbar-gutter:stable] pr-2 — baked in so bubbles never
+    │   │                         sit under the scrollbar)
     │   └── MessageScrollerContent  (default: flex-col gap-8)
     │       ├── initial-fetching spinner (only if `initialFetching` and no messages)
     │       ├── date-grouped sections

@@ -78,6 +78,25 @@ buffer is empty.
 **Do not** hand-roll `scrollIntoView` or a home-grown `isAtBottom` toggle. Every surface routes through the `MessageScroller` primitive; the
 config lives in `ChatTranscriptShell` (see [The shared primitives](#the-shared-primitives)) so all surfaces inherit the same values.
 
+## Scrollbar gutter — reserved, never over the bubbles
+
+| Rule                                                               | Where it lives                                                                                      |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| The viewport reserves `scrollbar-gutter: stable`                   | `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`)                         |
+| The viewport ships `pr-2` breathing room to the right of bubbles   | `ChatTranscriptShell`                                                                               |
+| A surface **must not** turn the gutter off via `viewportClassName` | Review-time reject — the class merges on top of the shell's, so pass no override unless widening it |
+
+**Why the gutter is reserved.** Without `scrollbar-gutter: stable` the scrollbar draws _over_ the rightmost user bubbles on WebKit and
+legacy Firefox — the visitor sees a scrollbar track cut across a blue bubble as content grows past the viewport. Reserving the lane costs a
+few pixels of horizontal room but every browser paints the same layout in every state, empty to full.
+
+**Why `pr-2` on top.** Even with the gutter reserved, a right-aligned bubble still visually kisses the scrollbar track on WebKit — 8 px of
+padding to the right of the content lane keeps a hairline gap between bubble and track.
+
+**Why in the shell, not per-surface.** Bubbles under the scrollbar was the exact symptom that motivated centralizing this — every surface
+used to opt in with its own `viewportClassName="pr-3 [scrollbar-gutter:stable]"` and the deep-link route silently drifted by omitting it.
+The rule now lives in `ChatTranscriptShell` so a new surface inherits it automatically.
+
 ## Message rendering
 
 | Rule                                                                                                 | Where it lives                                                                                       |
@@ -225,6 +244,8 @@ The list below names things that are tempting but wrong here. They are not allow
 - **Avatars.** Not this site.
 - **A refetch on send.** The subscription is the live signal; a refetch races it and flashes.
 - **Composer that doesn't wrap `MessageComposer`.** Raw `<textarea>` inside a chat surface is always a review-time reject.
+- **Per-surface `viewportClassName` that redeclares `scrollbar-gutter:stable`.** The shell already reserves the lane. Redeclaring it in
+  every surface is how the deep-link route silently dropped the rule and painted the scrollbar over a bubble in the first place.
 
 ## How to add a new chat surface
 

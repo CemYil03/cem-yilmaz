@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { cn } from '../../utils/cn';
 import {
     MessageScroller,
     MessageScrollerButton,
@@ -40,7 +41,20 @@ export function ChatTranscriptShell({ jumpToLatestLabel, className, viewportClas
             scrollEdgeThreshold={64}
         >
             <MessageScroller className={className}>
-                <MessageScrollerViewport className={viewportClassName}>
+                {/*
+                 * `scrollbar-gutter: stable` reserves the scrollbar column in
+                 * its own lane so the vertical scrollbar never overlaps the
+                 * rightmost user bubbles when it appears. `pr-2` gives the
+                 * bubbles a couple of pixels of breathing room between content
+                 * and the reserved gutter — without it a right-aligned bubble
+                 * still visually touches the scrollbar track on WebKit. Baked
+                 * in here so every surface (visitor sheet, workspace sidebar,
+                 * deep-link route, compass interview) inherits the same
+                 * treatment; a surface can only widen the gutter via
+                 * `viewportClassName`, never turn it off. See
+                 * docs/styles/chat.md ("Scrollbar gutter").
+                 */}
+                <MessageScrollerViewport className={cn('[scrollbar-gutter:stable] pr-2', viewportClassName)}>
                     <MessageScrollerContent>{children}</MessageScrollerContent>
                 </MessageScrollerViewport>
                 <MessageScrollerButton direction="end" variant="secondary" size="sm" className="gap-1.5 rounded-full px-3 text-xs">

@@ -1,6 +1,14 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { ChevronLeftIcon, ExternalLinkIcon, MessageSquarePlusIcon, MessageSquareTextIcon, SearchIcon, XIcon } from 'lucide-react';
+import {
+    ArrowUpRightIcon,
+    ChevronLeftIcon,
+    ExternalLinkIcon,
+    MessageSquarePlusIcon,
+    MessageSquareTextIcon,
+    SearchIcon,
+    XIcon,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
@@ -208,18 +216,52 @@ function ChatBrowserRow({
         locale: DATE_FNS_LOCALE[locale],
     });
     const title = chat.title.trim() ? chat.title : untitledLabel[locale];
+    const openStandalone = useOpenChatStandalone();
+    // The row hosts two affordances that lead to different surfaces: the
+    // whole surface peeks the chat inline (default click), and a tiny
+    // hover-revealed action on the right hands off to the deep-link page
+    // directly — for users who want the chat in its own reading column
+    // without a first-peek stop. Nested `<button>` is invalid, so the outer
+    // wrapper is a `<div>` and both actions are siblings; the row reserves
+    // `pr-9` of right padding so the absolutely-positioned icon has its own
+    // lane on the right, separate from the date underneath the title. The
+    // group is named (`group/row`) because shadcn's `<Sidebar>` ancestor is
+    // itself `.group` — an unnamed `group-hover:` here would match the
+    // whole sidebar and light up every row's icon at once.
     return (
-        <button
-            type="button"
-            onClick={() => void onResume(chat.chatId)}
-            className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-input bg-white px-3 py-2 text-left text-sm hover:bg-accent dark:bg-black"
-        >
-            <MessageSquareTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-foreground">{title}</span>
-                <span className="text-xs text-muted-foreground">{relative}</span>
-            </span>
-        </button>
+        <div className="group/row relative">
+            <button
+                type="button"
+                onClick={() => void onResume(chat.chatId)}
+                className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-input bg-white px-3 py-2 pr-9 text-left text-sm group-hover/row:bg-accent dark:bg-black"
+            >
+                <MessageSquareTextIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-foreground">{title}</span>
+                    <span className="text-xs text-muted-foreground">{relative}</span>
+                </span>
+            </button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
+                        onClick={(event) => {
+                            // The outer peek button covers this cell; stop
+                            // the click so we don't fire `onResume` on the
+                            // way out — the standalone hand-off already
+                            // dismisses the sidebar itself.
+                            event.stopPropagation();
+                            openStandalone(chat.chatId);
+                        }}
+                        aria-label={openStandaloneLabel[locale]}
+                        className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
+                    >
+                        <ArrowUpRightIcon className="size-4" aria-hidden />
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">{openStandaloneLabel[locale]}</TooltipContent>
+            </Tooltip>
+        </div>
     );
 }
 
@@ -231,25 +273,38 @@ function ChatBrowserRow({
 // sidebar, and resets the provider so the same chat is not visible in two
 // places at once).
 
-export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale }) {
-    const { chatId, resetChat, live } = useWorkspaceAssistantChat();
+// Shared hand-off used by both the loaded-state header (chat already on
+// screen in the sidebar) and the hover action on each browser row (chat not
+// yet loaded). In either case the deep-link route is about to mount, so we
+// dismiss the sidebar (mobile Sheet or desktop dock) and drop whatever chat
+// the provider is holding — otherwise the URL and the docked column would
+// both render the same conversation, and a later workspace-page visit would
+// silently restore the just-handed-off chat in the sidebar. Row usage may
+// pass a chatId that isn't the currently-loaded one (or the provider may be
+// empty); calling `resetChat` in that case is a no-op either way.
+function useOpenChatStandalone() {
+    const { resetChat } = useWorkspaceAssistantChat();
     const { isMobile, setOpen, setOpenMobile } = useSidebar();
     const navigate = useNavigate();
+    return useCallback(
+        (chatId: string) => {
+            if (isMobile) setOpenMobile(false);
+            else setOpen(false);
+            resetChat();
+            void navigate({ to: '/{-$locale}/workspace/assistant/$chatId', params: { chatId } });
+        },
+        [isMobile, navigate, resetChat, setOpen, setOpenMobile],
+    );
+}
 
-    // Hand-off to the deep-link route. Without dismissing the sidebar the
-    // same conversation would render twice — once in the docked column,
-    // once inline in the newly-mounted route — and returning to a
-    // workspace page would silently restore the just-handed-off chat in
-    // the sidebar. Close the sidebar (mobile Sheet or desktop dock) and
-    // reset the provider so the URL is the sole source of truth from
-    // this click onward.
+export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale }) {
+    const { chatId, resetChat, live } = useWorkspaceAssistantChat();
+    const openStandalone = useOpenChatStandalone();
+
     const onOpenStandalone = useCallback(() => {
         if (!chatId) return;
-        if (isMobile) setOpenMobile(false);
-        else setOpen(false);
-        resetChat();
-        void navigate({ to: '/{-$locale}/workspace/assistant/$chatId', params: { chatId } });
-    }, [chatId, isMobile, navigate, resetChat, setOpen, setOpenMobile]);
+        openStandalone(chatId);
+    }, [chatId, openStandalone]);
 
     if (!chatId) return null;
     return (
@@ -387,18 +442,16 @@ export function WorkspaceAssistantChatTranscript({
 
     return (
         <div className="relative min-h-0 min-w-0 flex-1">
-            {/* `scrollbar-gutter: stable` reserves the scrollbar column at all
-             *  times so the vertical scrollbar sits in its own lane instead of
-             *  overlapping the rightmost message bubbles when it appears.
-             *  `pr-3` gives the bubbles breathing room between content and
-             *  gutter. */}
+            {/* Scrollbar gutter + rightmost-column breathing room live inside
+             *  the shared `ChatTranscriptShell` — every surface inherits them
+             *  so a new transcript can't accidentally paint the scrollbar over
+             *  the rightmost bubbles. See docs/styles/chat.md. */}
             <ChatTranscript
                 messages={messages}
                 streamingTexts={streamingTexts}
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
                 jumpToLatestLabel={jumpToLatestLabel[locale]}
-                viewportClassName="pr-3 [scrollbar-gutter:stable]"
             />
         </div>
     );

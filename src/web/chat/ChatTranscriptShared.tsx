@@ -57,12 +57,14 @@ export interface ChatTranscriptProps {
      *  so the visitor sheet's open transition doesn't flash empty. */
     initialFetching?: boolean;
     /** Extra className applied to the outer `MessageScroller`. Surfaces set
-     *  this to control padding and gutter (`pr-3 [scrollbar-gutter:stable]`
-     *  on desktop, tighter on the mobile sheet). */
+     *  this to control the outer scroll container's flex / min-height rails
+     *  where their layout differs. */
     className?: string;
-    /** Extra className for the inner viewport. Surfaces use it to override
-     *  the default `scroll-fade-b` (which is applied by
-     *  `MessageScrollerViewport`) when they want a different fade edge. */
+    /** Extra className for the inner viewport. Prefer leaving this unset —
+     *  the shell already reserves the scrollbar gutter (`scrollbar-gutter:
+     *  stable`) plus `pr-2` breathing room, so bubbles never sit under the
+     *  scrollbar. Override only when a surface needs a different scroll-fade
+     *  edge or a wider gutter. */
     viewportClassName?: string;
 }
 

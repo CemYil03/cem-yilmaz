@@ -400,7 +400,6 @@ function ChatTranscript({
                 onApprovalRespond={onApprovalRespond}
                 jumpToLatestLabel={jumpToLatestLabel}
                 initialFetching={fetching}
-                viewportClassName="pr-2"
             />
         </div>
     );
