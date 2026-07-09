@@ -84,6 +84,12 @@ const TRANSPORT_LABELS: Record<GqlCTransportMode, { de: string; en: string }> = 
     mixed: { de: 'Mehrere', en: 'Mixed' },
 };
 
+// Suggested packing categories for the create/edit dialog. Stored as free-text
+// on `TripPackingItems.category` — the list is a UI hint only; any string is
+// valid. Keep English labels to match the column default (`Other`) and the
+// values the travel sub-agent tends to write.
+const PACKING_CATEGORY_DEFAULTS = ['Documents', 'Electronics', 'Clothing', 'Toiletries', 'Health', 'Money', 'Misc', 'Other'] as const;
+
 export const Route = createFileRoute('/{-$locale}/workspace/travel_/$tripId')({
     loader: ({ params }) => routeLoaderGraphqlClient(WorkspaceTravelDetailDocument, { tripId: params.tripId })(),
     staleTime: 0,
@@ -487,6 +493,7 @@ function PackingPanel({ trip, locale }: { trip: TripDetail; locale: Locale }) {
                 <EditPackingItemDialog
                     tripId={trip.tripId}
                     initial={editing === 'new' ? null : editing}
+                    existingCategories={grouped.map(([category]) => category)}
                     locale={locale}
                     onClose={() => setEditing(null)}
                 />
@@ -818,11 +825,13 @@ function DeleteActivityAlert({ activity, locale, onClose }: { activity: Activity
 function EditPackingItemDialog({
     tripId,
     initial,
+    existingCategories,
     locale,
     onClose,
 }: {
     tripId: string;
     initial: PackingRow | null;
+    existingCategories: readonly string[];
     locale: Locale;
     onClose: () => void;
 }) {
@@ -833,6 +842,21 @@ function EditPackingItemDialog({
     const [notes, setNotes] = useState(initial?.notes ?? '');
     const [, upsert] = useMutation(WorkspaceTripPackingItemsUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
+    const categoryListId = 'packing-category-suggestions';
+
+    const categorySuggestions = useMemo(() => {
+        const seen = new Set<string>();
+        const out: string[] = [];
+        for (const value of [...PACKING_CATEGORY_DEFAULTS, ...existingCategories]) {
+            const trimmed = value.trim();
+            if (trimmed.length === 0) continue;
+            const key = trimmed.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(trimmed);
+        }
+        return out;
+    }, [existingCategories]);
 
     const submit = async () => {
         setSubmitting(true);
@@ -868,7 +892,18 @@ function EditPackingItemDialog({
                 </DialogHeader>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FieldWithLabel label={{ de: 'Kategorie', en: 'Category' }[locale]}>
-                        <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Documents / Electronics / …" />
+                        <Input
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            list={categoryListId}
+                            placeholder="Documents / Electronics / …"
+                            autoComplete="off"
+                        />
+                        <datalist id={categoryListId}>
+                            {categorySuggestions.map((suggestion) => (
+                                <option key={suggestion} value={suggestion} />
+                            ))}
+                        </datalist>
                     </FieldWithLabel>
                     <FieldWithLabel label={{ de: 'Anzahl', en: 'Quantity' }[locale]}>
                         <Input
