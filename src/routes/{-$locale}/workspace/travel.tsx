@@ -32,8 +32,8 @@ import type {
 import {
     WorkspaceTravelPageDocument,
     WorkspaceTravelPageUpdatesDocument,
-    WorkspaceTripDeleteDocument,
-    WorkspaceTripUpsertDocument,
+    WorkspaceTripsDeleteDocument,
+    WorkspaceTripsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -350,24 +350,26 @@ function EditTripDialog({ initial, locale, onClose }: { initial: TripRow | null;
         accommodation: initial?.accommodation ?? '',
         notes: initial?.notes ?? '',
     }));
-    const [, upsert] = useMutation(WorkspaceTripUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceTripsUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
 
     const submit = async () => {
         setSubmitting(true);
         try {
             const result = await upsert({
-                input: {
-                    tripId: state.tripId,
-                    title: state.title.trim(),
-                    destination: state.destination.trim(),
-                    startsOn: state.startsOn ? dateToIso(state.startsOn) : null,
-                    endsOn: state.endsOn ? dateToIso(state.endsOn) : null,
-                    status: state.status,
-                    transportMode: state.transportMode === 'none' ? null : state.transportMode,
-                    accommodation: state.accommodation.trim() || null,
-                    notes: state.notes.trim() || null,
-                },
+                trips: [
+                    {
+                        tripId: state.tripId,
+                        title: state.title.trim(),
+                        destination: state.destination.trim(),
+                        startsOn: state.startsOn ? dateToIso(state.startsOn) : null,
+                        endsOn: state.endsOn ? dateToIso(state.endsOn) : null,
+                        status: state.status,
+                        transportMode: state.transportMode === 'none' ? null : state.transportMode,
+                        accommodation: state.accommodation.trim() || null,
+                        notes: state.notes.trim() || null,
+                    },
+                ],
             });
             if (result.error) return;
             onClose();
@@ -499,12 +501,12 @@ function Field({
 // --- Delete confirmation ----------------------------------------------------
 
 function DeleteTripAlert({ trip, locale, onClose }: { trip: TripRow; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceTripDeleteDocument);
+    const [, del] = useMutation(WorkspaceTripsDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);
         try {
-            await del({ tripId: trip.tripId });
+            await del({ tripIds: [trip.tripId] });
             onClose();
         } finally {
             setSubmitting(false);

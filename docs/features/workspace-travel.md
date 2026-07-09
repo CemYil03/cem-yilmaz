@@ -29,23 +29,24 @@ past holds the rest. A "New trip" button opens the base-facts dialog (title, des
 - **Itinerary** — one collapsible block per `TripDay` (labeled "Day N · date · title"). Inside each day is an ordered list of
   `TripActivities` with time, title, location, url, notes. Add / edit / delete affordances at both levels.
 - **Packing list** — checkbox rows grouped by free-text `category` (Documents, Electronics, Clothing, Toiletries, …). Each row shows
-  quantity when > 1 and a notes preview. Checking the box calls `tripPackingItemToggle`.
+  quantity when > 1 and a notes preview. Checking the box calls `tripPackingItemsUpsert` with a one-element array flipping `packed`.
 
 ## The AI use-case (the whole reason this feature exists)
 
 The workspace assistant at `/workspace/assistant` gains a `delegateToTravel` tool that hands trip briefs to `agentPersonalAssistantTravel`.
-Cem says _"plan me a 3-day trip to Rome from Aug 5–7 with one main activity per day"_, and the sub-agent lands the whole plan in a single
-`tripUpsertDeep` tool call — root trip + 3 nested days + 3 nested activities + any packing items, one transaction. The trip surfaces on
-`/workspace/travel` immediately over `userUpdates`; a fresh chat later reads the plan from the DB via the same `travelSnapshotForAgent` call
-that primes the sub-agent's system prompt. The granular tools remain available for one-off surgical edits ("rename day 2's activity",
-"delete the flight home").
+Cem says _"plan me a 3-day trip to Rome from Aug 5–7 with one main activity per day"_, and the sub-agent lands the whole plan in **four tool
+calls** — `tripsUpsert` (one trip) → `tripDaysUpsert` (three days at once) → `tripActivitiesUpsert` (every activity across every day) →
+`tripPackingItemsUpsert` (the whole checklist). Each call is one transaction; each returns a `MutationResult` whose `referenceIds` array
+carries the ids of the rows it touched, in input order, so the next call can use those as parent ids without a follow-up read. The trip
+surfaces on `/workspace/travel` immediately over `userUpdates`; a fresh chat later reads the plan from the DB via the same
+`travelSnapshotForAgent` call that primes the sub-agent's system prompt.
 
 The sub-agent's rules:
 
 - **Bias toward drafting.** A vague scope ("a couple of things per day") is enough — pick well-known highlights for the destination and file
   them as activities. Ask for clarification only when a required field is genuinely missing (no destination, no dates for a new trip,
   ambiguity between multiple existing trips).
-- **Never invent ids.** Ids come from the snapshot or from a tool result earlier in the same turn.
+- **Never invent ids.** Ids come from the snapshot or from a prior tool result's `referenceIds` (in input order) earlier in the same turn.
 - **Reply in the user's language** (German or English).
 - **Times are wall-clock strings** (`HH:MM` / `HH:MM:SS`). The trip is location-scoped; a timezone offset would be a lie.
 - **`needsMoreInfo` / `noOp` sentinels** for the two escape hatches — same shape as every other domain sub-agent (`agent-delegation.md`).
@@ -76,33 +77,31 @@ Enum tuples exported as `TRIP_STATUSES` and `TRANSPORT_MODES`, mirrored in `sche
 
 ### CQRS wiring
 
-Standard `commands/` (`tripUpsert`, `tripDelete`, `tripDayUpsert`, `tripDayDelete`, `tripActivityUpsert`, `tripActivityDelete`,
-`tripPackingItemUpsert`, `tripPackingItemDelete`, `tripPackingItemToggle`), `queries/` (`tripList`, `tripGet`), `mappers/` (`toGqlTrip`,
-`toGqlTripDay`, `toGqlTripActivity`, `toGqlTripPackingItem`). Every command ends with `serverRuntime.publish.userUpdates({ userId })` so the
-seeded-and-subscribed pages replace state on write.
+Every mutation on the travel domain is a **batch** and returns `MutationResult { success, referenceIds }` — never a hydrated entity. The
+seed-and-subscribe posture over `userUpdates` already delivers the new state to every subscriber, so a mutation returning the row would
+create a second source of truth to keep aligned with the subscription payload. `referenceIds` echoes the ids of every row the batch touched,
+in input order — the sub-agent uses these to address newly-created days as the parent id when it calls `tripActivitiesUpsert` in the same
+turn.
 
-Command signatures are `(userId, input, requestingSession, serverRuntime)` — `input` is the domain payload the command actually cares about
-(`GqlSTripInput`, `GqlSTripDayInput`, …), not the resolver's `args` wrapper. Each `resolversCreate.ts` handler unwraps `args.input` /
-`args.tripId` before calling. This lets the agent tool wrappers call each command with the tool's already-validated input verbatim, no
-reshape.
+Standard `commands/` (`tripsUpsert`, `tripsDelete`, `tripDaysUpsert`, `tripDaysDelete`, `tripActivitiesUpsert`, `tripActivitiesDelete`,
+`tripPackingItemsUpsert`, `tripPackingItemsDelete`), `queries/` (`tripList`, `tripGet`), `mappers/` (`toGqlTrip`, `toGqlTripDay`,
+`toGqlTripActivity`, `toGqlTripPackingItem`). Every command ends with `serverRuntime.publish.userUpdates({ userId })` (one publish per
+batch, not per row) so the seeded-and-subscribed pages replace state on write.
+
+Command signatures are `(userId, rowsOrIds, requestingSession, serverRuntime)` — `rowsOrIds` is either a `readonly GqlS<X>Input[]` (upserts)
+or a `readonly string[]` (deletes). Each `resolversCreate.ts` handler unwraps `args.trips` / `args.tripDayIds` / … before calling. Upserts
+run inside a single `serverRuntime.db.transaction(...)`; a failure anywhere rolls the whole batch back. Parent-existence checks use
+`inArray(...)` so verification is one round-trip regardless of batch size — a hallucinated `tripId` fails the transaction rather than
+landing as an FK violation. Tail-position handling for `tripActivitiesUpsert` and `tripPackingItemsUpsert` reads the tail once per
+`tripDayId` / `(tripId, category)` and increments locally so a same-bucket batch lays out its new rows contiguously without per-row DB
+reads.
 
 Resolver wiring lives in `src/server/graphql/resolversCreate.ts`: `Admin.travel` shell, `AdminTravelQuery.trips` / `AdminTravelQuery.trip`,
 and mutation handlers on `AdminMutation`. `guardAdminMutation` at the parent field authorizes once.
 
-#### Deep command (`tripUpsertDeep`)
-
-`src/server/commands/tripUpsertDeep.ts` collapses a whole-trip write into one call: root trip + nested `days` (each with inline
-`activities`) + `packingItems`, plus explicit `removeDayIds` / `removeActivityIds` / `removePackingItemIds` for deletions. Everything runs
-inside a single `serverRuntime.db.transaction(...)`; a failure anywhere rolls the whole plan back. One `userUpdates` publish at the end so
-the UI replaces state once, not per nested write. Returns the fully-hydrated trip via `tripGet` — same shape as `tripUpsert`.
-
-Not exposed as a GraphQL mutation; the UI uses the granular commands directly. The deep command exists so the travel sub-agent can plan a
-full trip in a single tool call rather than fanning out ten or more granular writes (`tripUpsert` + N `tripDayUpsert` + M
-`tripActivityUpsert` + K `tripPackingItemUpsert`) against `isStepCount(10)`.
-
-Merge-only nested semantics — omitting a day / activity / packing item never deletes it. Removals require explicit ids in the `remove*Ids`
-arrays. Scoping guards: every child upsert / remove `WHERE`s on the parent (`tripId` for days and packing, `tripDayId` for activities)
-inside the transaction, so a hallucinated id from a different trip fails the transaction rather than mutating someone else's row.
+Passing a one-element array is fine — the UI does exactly that for every dialog: the "New trip" dialog calls `tripsUpsert(trips: [row])`,
+the packing checkbox calls `tripPackingItemsUpsert(tripPackingItems: [{ ...row, packed: !row.packed }])`, and every delete alert passes a
+one-element id array. There is no separate singular path.
 
 ### Sub-agent
 
@@ -111,14 +110,16 @@ inside the transaction, so a hallucinated id from a different trip fails the tra
 - Snapshot: `src/server/agents/travelSnapshotForAgent.ts` — compact markdown listing every trip with day count, per-day activities, and
   packing progress. Each row keeps its id inline so the agent can address it in mutation tools without a `tripsList` call.
 - Read tools: `toolTripsList`, `toolTripGet`.
-- Mutation tools: `toolTripUpsertDeep` (preferred for whole-plan writes), `toolTripUpsert`, `toolTripDelete`, `toolTripDayUpsert`,
-  `toolTripDayDelete`, `toolTripActivityUpsert`, `toolTripActivityDelete`, `toolTripPackingItemUpsert`, `toolTripPackingItemDelete`,
-  `toolTripPackingItemToggle`. Each granular tool uses the generated `GqlS<X>InputSchema()` directly as its input schema (Gemini-safe
-  because the travel inputs use `Date` scalars, not `DateTime`); the deep tool composes those with `.omit()` / `.extend()` for the nested
-  structure. See `docs/architecture/agent-delegation.md` for when generated vs. hand-built is appropriate.
-- Mutation-log `TravelAgentMutationKind` union covers add / update / delete for each entity plus the packing-item toggle. Every tool pushes
-  `{ kind, id, title }` on success — the orchestrator uses these to narrate what changed. `toolTripUpsertDeep` fans out one push per touched
-  row so a single deep call still narrates as "created trip X, added days 1–3, added six activities, added four packing items".
+- Mutation tools: `toolTripsUpsert`, `toolTripsDelete`, `toolTripDaysUpsert`, `toolTripDaysDelete`, `toolTripActivitiesUpsert`,
+  `toolTripActivitiesDelete`, `toolTripPackingItemsUpsert`, `toolTripPackingItemsDelete`. Each upsert tool wraps the generated
+  `GqlS<Row>InputSchema()` in a one-key `z.object({ <entities>: z.array(...) })` — Gemini-safe because the travel inputs use `Date` scalars,
+  not `DateTime`. See `docs/architecture/agent-delegation.md` for when generated vs. hand-built is appropriate.
+- **Whole-plan writes are FOUR tool calls.** A fresh plan is `tripsUpsert` (one trip) → `tripDaysUpsert` (every day at once) →
+  `tripActivitiesUpsert` (every activity across every day) → `tripPackingItemsUpsert` (the whole checklist). Well under `isStepCount(10)`,
+  no `tripUpsertDeep` needed — the batch tools ARE the composition primitive.
+- Mutation-log `TravelAgentMutationKind` union covers add / update / delete for each entity. Every tool pushes one entry per row it touched
+  (using `referenceIds` to attribute inserts back to their input row) — the orchestrator uses these to narrate what changed. A batch call
+  still narrates as "created trip X, added days 1–3, added six activities, added four packing items".
 - Delegate: `src/server/agents/toolDelegateToTravel.ts` — structural copy of `toolDelegateToMedia.ts`. Pre-writes its parent
   `chatMessagesToolCall` row, spawns the sub-agent with a `childOnStepContext` that persists nested calls under the delegate row, wraps
   `agent.generate` in try/catch → `status: 'failed'`.

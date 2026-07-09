@@ -48,17 +48,18 @@ subscription WorkspaceTravelPageUpdates {
     }
 }
 
-mutation WorkspaceTripUpsert($input: TripInput!) {
+mutation WorkspaceTripsUpsert($trips: [TripInput!]!) {
     admin {
-        tripUpsert(input: $input) {
-            tripId
+        tripsUpsert(trips: $trips) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceTripDelete($tripId: ID!) {
+mutation WorkspaceTripsDelete($tripIds: [ID!]!) {
     admin {
-        tripDelete(tripId: $tripId) {
+        tripsDelete(tripIds: $tripIds) {
             success
         }
     }

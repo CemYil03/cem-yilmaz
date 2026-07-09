@@ -165,11 +165,19 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
   `src/server/graphql/generated.ts`.** Same shape the resolver validates, no hand-built duplicate to drift out of sync as the SDL evolves.
   `typescript-validation-schema` (see [`codegen.ts`](../../codegen.ts) and [api-layer.md](./api-layer.md#code-generation)) emits both the
   object-schema factories (`GqlS<Input>Schema()`) and the enum schemas (`GqlS<Enum>Schema`) exactly for this consumer. Every mutation tool
-  whose underlying command has a GraphQL input type — `toolProjectLinkUpsert`, `toolMediaChannelUpsert`, `toolMedicalRecordFileAttach`, the
-  four travel tools, `toolTripUpsertDeep` — imports its generated schema and uses it verbatim (with a `rawInput as GqlS<X>` cast to recover
-  TS inference from the codegen's `Properties<T>` phantom; the runtime schema still validates against the type). Field-level explanations
-  travel via the SDL's own field descriptions — `withDescriptions: true` on the codegen plumbs them into the generated Zod schemas — so the
-  SDL stays the single source of truth for both the wire format and the field-level teaching the LLM sees.
+  whose underlying command has a GraphQL input type — `toolProjectLinkUpsert`, `toolMediaChannelUpsert`, `toolMedicalRecordFileAttach`, and
+  the four travel batch-upsert tools (which wrap the generated row schema in a single-key `z.object({ <entities>: z.array(...) })`) —
+  imports its generated schema and uses it verbatim (with a `rawInput as GqlS<X>` cast to recover TS inference from the codegen's
+  `Properties<T>` phantom; the runtime schema still validates against the type). Field-level explanations travel via the SDL's own field
+  descriptions — `withDescriptions: true` on the codegen plumbs them into the generated Zod schemas — so the SDL stays the single source of
+  truth for both the wire format and the field-level teaching the LLM sees.
+- **Prefer batch shapes (`entitiesAction`) over singulars.** One `tripDaysUpsert` (accepting `[TripDayInput!]!`) beats N `tripDayUpsert`
+  calls: fewer agent steps against `isStepCount(10)`, one transaction on the server, one `userUpdates` publish per batch. Every entity write
+  on the travel domain uses this shape (`tripsUpsert`, `tripDaysUpsert`, `tripActivitiesUpsert`, `tripPackingItemsUpsert`, plus the matching
+  deletes taking `[ID!]!`). Corresponding mutations return `MutationResult { success, referenceIds }` — never the hydrated entity — because
+  the seed-and-subscribe posture over `userUpdates` already delivers the new state; a second row-shape in the mutation result would just be
+  a second source of truth to keep aligned. `referenceIds` echoes the id per input row (in input order) so the sub-agent can use them as
+  parent ids for the next tool call without a follow-up read.
 - **Exception: `DateTime` fields.** When the underlying SDL input carries a `DateTime` scalar, the tool falls back to a hand-built
   `z.object` that uses `z.string()` for those fields and calls `new Date(...)` in `execute`. `typescript-validation-schema` emits `DateTime`
   as `z.date()`, which has no clean JSON-Schema representation under Gemini's constrained decoding (`structuredOutputs: true`) and produces

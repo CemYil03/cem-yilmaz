@@ -230,15 +230,14 @@ export interface GqlSAdminMutation {
     taskDelete: GqlSMutationResult;
     taskReorder: GqlSMutationResult;
     taskUpsert: GqlSTask;
-    tripActivityDelete: GqlSMutationResult;
-    tripActivityUpsert: GqlSTripActivity;
-    tripDayDelete: GqlSMutationResult;
-    tripDayUpsert: GqlSTripDay;
-    tripDelete: GqlSMutationResult;
-    tripPackingItemDelete: GqlSMutationResult;
-    tripPackingItemToggle: GqlSTripPackingItem;
-    tripPackingItemUpsert: GqlSTripPackingItem;
-    tripUpsert: GqlSTrip;
+    tripActivitiesDelete: GqlSMutationResult;
+    tripActivitiesUpsert: GqlSMutationResult;
+    tripDaysDelete: GqlSMutationResult;
+    tripDaysUpsert: GqlSMutationResult;
+    tripPackingItemsDelete: GqlSMutationResult;
+    tripPackingItemsUpsert: GqlSMutationResult;
+    tripsDelete: GqlSMutationResult;
+    tripsUpsert: GqlSMutationResult;
 }
 
 export type GqlSAdminMutationChatConfigDefaultModelSetArgs = {
@@ -512,40 +511,36 @@ export type GqlSAdminMutationTaskUpsertArgs = {
     input: GqlSTaskCreate;
 };
 
-export type GqlSAdminMutationTripActivityDeleteArgs = {
-    tripActivityId: Scalars['ID']['input'];
+export type GqlSAdminMutationTripActivitiesDeleteArgs = {
+    tripActivityIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationTripActivityUpsertArgs = {
-    input: GqlSTripActivityInput;
+export type GqlSAdminMutationTripActivitiesUpsertArgs = {
+    tripActivities: Array<GqlSTripActivityInput>;
 };
 
-export type GqlSAdminMutationTripDayDeleteArgs = {
-    tripDayId: Scalars['ID']['input'];
+export type GqlSAdminMutationTripDaysDeleteArgs = {
+    tripDayIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationTripDayUpsertArgs = {
-    input: GqlSTripDayInput;
+export type GqlSAdminMutationTripDaysUpsertArgs = {
+    tripDays: Array<GqlSTripDayInput>;
 };
 
-export type GqlSAdminMutationTripDeleteArgs = {
-    tripId: Scalars['ID']['input'];
+export type GqlSAdminMutationTripPackingItemsDeleteArgs = {
+    tripPackingItemIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationTripPackingItemDeleteArgs = {
-    tripPackingItemId: Scalars['ID']['input'];
+export type GqlSAdminMutationTripPackingItemsUpsertArgs = {
+    tripPackingItems: Array<GqlSTripPackingItemInput>;
 };
 
-export type GqlSAdminMutationTripPackingItemToggleArgs = {
-    tripPackingItemId: Scalars['ID']['input'];
+export type GqlSAdminMutationTripsDeleteArgs = {
+    tripIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationTripPackingItemUpsertArgs = {
-    input: GqlSTripPackingItemInput;
-};
-
-export type GqlSAdminMutationTripUpsertArgs = {
-    input: GqlSTripInput;
+export type GqlSAdminMutationTripsUpsertArgs = {
+    trips: Array<GqlSTripInput>;
 };
 
 export interface GqlSAdminTravelQuery {
@@ -1325,6 +1320,7 @@ export type GqlSMutationUserCreateArgs = {
 export interface GqlSMutationResult {
     __typename?: 'MutationResult';
     referenceId?: Maybe<Scalars['ID']['output']>;
+    referenceIds?: Maybe<Array<Scalars['ID']['output']>>;
     success: Scalars['Boolean']['output'];
 }
 
@@ -2655,55 +2651,54 @@ export type GqlSAdminMutationResolvers<
         RequireFields<GqlSAdminMutationTaskReorderArgs, 'orderedIds'>
     >;
     taskUpsert?: Resolver<GqlSResolversTypes['Task'], ParentType, ContextType, RequireFields<GqlSAdminMutationTaskUpsertArgs, 'input'>>;
-    tripActivityDelete?: Resolver<
+    tripActivitiesDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationTripActivityDeleteArgs, 'tripActivityId'>
+        RequireFields<GqlSAdminMutationTripActivitiesDeleteArgs, 'tripActivityIds'>
     >;
-    tripActivityUpsert?: Resolver<
-        GqlSResolversTypes['TripActivity'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationTripActivityUpsertArgs, 'input'>
-    >;
-    tripDayDelete?: Resolver<
+    tripActivitiesUpsert?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationTripDayDeleteArgs, 'tripDayId'>
+        RequireFields<GqlSAdminMutationTripActivitiesUpsertArgs, 'tripActivities'>
     >;
-    tripDayUpsert?: Resolver<
-        GqlSResolversTypes['TripDay'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationTripDayUpsertArgs, 'input'>
-    >;
-    tripDelete?: Resolver<
+    tripDaysDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationTripDeleteArgs, 'tripId'>
+        RequireFields<GqlSAdminMutationTripDaysDeleteArgs, 'tripDayIds'>
     >;
-    tripPackingItemDelete?: Resolver<
+    tripDaysUpsert?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationTripPackingItemDeleteArgs, 'tripPackingItemId'>
+        RequireFields<GqlSAdminMutationTripDaysUpsertArgs, 'tripDays'>
     >;
-    tripPackingItemToggle?: Resolver<
-        GqlSResolversTypes['TripPackingItem'],
+    tripPackingItemsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationTripPackingItemToggleArgs, 'tripPackingItemId'>
+        RequireFields<GqlSAdminMutationTripPackingItemsDeleteArgs, 'tripPackingItemIds'>
     >;
-    tripPackingItemUpsert?: Resolver<
-        GqlSResolversTypes['TripPackingItem'],
+    tripPackingItemsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationTripPackingItemUpsertArgs, 'input'>
+        RequireFields<GqlSAdminMutationTripPackingItemsUpsertArgs, 'tripPackingItems'>
     >;
-    tripUpsert?: Resolver<GqlSResolversTypes['Trip'], ParentType, ContextType, RequireFields<GqlSAdminMutationTripUpsertArgs, 'input'>>;
+    tripsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripsDeleteArgs, 'tripIds'>
+    >;
+    tripsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTripsUpsertArgs, 'trips'>
+    >;
 }>;
 
 export type GqlSAdminTravelQueryResolvers<
@@ -3462,6 +3457,7 @@ export type GqlSMutationResultResolvers<
     ParentType extends GqlSResolversParentTypes['MutationResult'] = GqlSResolversParentTypes['MutationResult'],
 > = ResolversObject<{
     referenceId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    referenceIds?: Resolver<Maybe<Array<GqlSResolversTypes['ID']>>, ParentType, ContextType>;
     success?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
 }>;
 

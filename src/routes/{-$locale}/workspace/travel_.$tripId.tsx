@@ -40,13 +40,12 @@ import type {
 import {
     WorkspaceTravelDetailDocument,
     WorkspaceTravelDetailUpdatesDocument,
-    WorkspaceTripActivityDeleteDocument,
-    WorkspaceTripActivityUpsertDocument,
-    WorkspaceTripDayDeleteDocument,
-    WorkspaceTripDayUpsertDocument,
-    WorkspaceTripPackingItemDeleteDocument,
-    WorkspaceTripPackingItemToggleDocument,
-    WorkspaceTripPackingItemUpsertDocument,
+    WorkspaceTripActivitiesDeleteDocument,
+    WorkspaceTripActivitiesUpsertDocument,
+    WorkspaceTripDaysDeleteDocument,
+    WorkspaceTripDaysUpsertDocument,
+    WorkspaceTripPackingItemsDeleteDocument,
+    WorkspaceTripPackingItemsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -508,9 +507,24 @@ function PackingItemView({
     onEdit: () => void;
     onDelete: () => void;
 }) {
-    const [, toggle] = useMutation(WorkspaceTripPackingItemToggleDocument);
+    const [, upsert] = useMutation(WorkspaceTripPackingItemsUpsertDocument);
     const onToggle = () => {
-        void toggle({ tripPackingItemId: item.tripPackingItemId });
+        // Same shape the edit dialog sends — flipping just `packed`. Server
+        // resolves position by id-present ⇒ update, leaves the rest alone.
+        void upsert({
+            tripPackingItems: [
+                {
+                    tripPackingItemId: item.tripPackingItemId,
+                    tripId: item.tripId,
+                    category: item.category,
+                    label: item.label,
+                    quantity: item.quantity,
+                    packed: !item.packed,
+                    position: item.position,
+                    notes: item.notes,
+                },
+            ],
+        });
     };
 
     return (
@@ -575,21 +589,23 @@ function EditDayDialog({
     const [date, setDate] = useState<Date | undefined>(initial?.date ? parseISO(initial.date) : undefined);
     const [title, setTitle] = useState(initial?.title ?? '');
     const [summary, setSummary] = useState(initial?.summary ?? '');
-    const [, upsert] = useMutation(WorkspaceTripDayUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceTripDaysUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
 
     const submit = async () => {
         setSubmitting(true);
         try {
             const result = await upsert({
-                input: {
-                    tripDayId: initial?.tripDayId ?? null,
-                    tripId,
-                    dayNumber,
-                    date: date ? dateToIso(date) : null,
-                    title: title.trim() || null,
-                    summary: summary.trim() || null,
-                },
+                tripDays: [
+                    {
+                        tripDayId: initial?.tripDayId ?? null,
+                        tripId,
+                        dayNumber,
+                        date: date ? dateToIso(date) : null,
+                        title: title.trim() || null,
+                        summary: summary.trim() || null,
+                    },
+                ],
             });
             if (result.error) return;
             onClose();
@@ -643,12 +659,12 @@ function EditDayDialog({
 }
 
 function DeleteDayAlert({ day, locale, onClose }: { day: DayRow; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceTripDayDeleteDocument);
+    const [, del] = useMutation(WorkspaceTripDaysDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);
         try {
-            await del({ tripDayId: day.tripDayId });
+            await del({ tripDayIds: [day.tripDayId] });
             onClose();
         } finally {
             setSubmitting(false);
@@ -697,24 +713,26 @@ function EditActivityDialog({
     const [location, setLocation] = useState(initial?.location ?? '');
     const [url, setUrl] = useState(initial?.url ?? '');
     const [notes, setNotes] = useState(initial?.notes ?? '');
-    const [, upsert] = useMutation(WorkspaceTripActivityUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceTripActivitiesUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
 
     const submit = async () => {
         setSubmitting(true);
         try {
             const result = await upsert({
-                input: {
-                    tripActivityId: initial?.tripActivityId ?? null,
-                    tripDayId: day.tripDayId,
-                    position: initial?.position ?? null,
-                    startsAt: normalizeTimeInput(startsAt),
-                    endsAt: normalizeTimeInput(endsAt),
-                    title: title.trim(),
-                    location: location.trim() || null,
-                    url: url.trim() || null,
-                    notes: notes.trim() || null,
-                },
+                tripActivities: [
+                    {
+                        tripActivityId: initial?.tripActivityId ?? null,
+                        tripDayId: day.tripDayId,
+                        position: initial?.position ?? null,
+                        startsAt: normalizeTimeInput(startsAt),
+                        endsAt: normalizeTimeInput(endsAt),
+                        title: title.trim(),
+                        location: location.trim() || null,
+                        url: url.trim() || null,
+                        notes: notes.trim() || null,
+                    },
+                ],
             });
             if (result.error) return;
             onClose();
@@ -768,12 +786,12 @@ function EditActivityDialog({
 }
 
 function DeleteActivityAlert({ activity, locale, onClose }: { activity: ActivityRow; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceTripActivityDeleteDocument);
+    const [, del] = useMutation(WorkspaceTripActivitiesDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);
         try {
-            await del({ tripActivityId: activity.tripActivityId });
+            await del({ tripActivityIds: [activity.tripActivityId] });
             onClose();
         } finally {
             setSubmitting(false);
@@ -813,23 +831,25 @@ function EditPackingItemDialog({
     const [label, setLabel] = useState(initial?.label ?? '');
     const [quantity, setQuantity] = useState(initial?.quantity ?? 1);
     const [notes, setNotes] = useState(initial?.notes ?? '');
-    const [, upsert] = useMutation(WorkspaceTripPackingItemUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceTripPackingItemsUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
 
     const submit = async () => {
         setSubmitting(true);
         try {
             const result = await upsert({
-                input: {
-                    tripPackingItemId: initial?.tripPackingItemId ?? null,
-                    tripId,
-                    category: category.trim() || 'Other',
-                    label: label.trim(),
-                    quantity,
-                    packed: initial?.packed ?? false,
-                    position: initial?.position ?? null,
-                    notes: notes.trim() || null,
-                },
+                tripPackingItems: [
+                    {
+                        tripPackingItemId: initial?.tripPackingItemId ?? null,
+                        tripId,
+                        category: category.trim() || 'Other',
+                        label: label.trim(),
+                        quantity,
+                        packed: initial?.packed ?? false,
+                        position: initial?.position ?? null,
+                        notes: notes.trim() || null,
+                    },
+                ],
             });
             if (result.error) return;
             onClose();
@@ -880,12 +900,12 @@ function EditPackingItemDialog({
 }
 
 function DeletePackingItemAlert({ item, locale, onClose }: { item: PackingRow; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceTripPackingItemDeleteDocument);
+    const [, del] = useMutation(WorkspaceTripPackingItemsDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);
         try {
-            await del({ tripPackingItemId: item.tripPackingItemId });
+            await del({ tripPackingItemIds: [item.tripPackingItemId] });
             onClose();
         } finally {
             setSubmitting(false);

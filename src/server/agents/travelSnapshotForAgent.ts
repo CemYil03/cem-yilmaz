@@ -14,7 +14,7 @@ export async function travelSnapshotForAgent(serverRuntime: ServerRuntime): Prom
 
     const lines: string[] = ['## Trips'];
     if (tripRows.length === 0) {
-        lines.push('- (no trips yet — create the first one with `tripUpsert`)');
+        lines.push('- (no trips yet — create the first one with `tripsUpsert`)');
         return lines.join('\n');
     }
 

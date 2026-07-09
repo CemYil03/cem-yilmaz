@@ -233,15 +233,14 @@ export interface GqlCAdminMutation {
     taskDelete: GqlCMutationResult;
     taskReorder: GqlCMutationResult;
     taskUpsert: GqlCTask;
-    tripActivityDelete: GqlCMutationResult;
-    tripActivityUpsert: GqlCTripActivity;
-    tripDayDelete: GqlCMutationResult;
-    tripDayUpsert: GqlCTripDay;
-    tripDelete: GqlCMutationResult;
-    tripPackingItemDelete: GqlCMutationResult;
-    tripPackingItemToggle: GqlCTripPackingItem;
-    tripPackingItemUpsert: GqlCTripPackingItem;
-    tripUpsert: GqlCTrip;
+    tripActivitiesDelete: GqlCMutationResult;
+    tripActivitiesUpsert: GqlCMutationResult;
+    tripDaysDelete: GqlCMutationResult;
+    tripDaysUpsert: GqlCMutationResult;
+    tripPackingItemsDelete: GqlCMutationResult;
+    tripPackingItemsUpsert: GqlCMutationResult;
+    tripsDelete: GqlCMutationResult;
+    tripsUpsert: GqlCMutationResult;
 }
 
 export type GqlCAdminMutationChatConfigDefaultModelSetArgs = {
@@ -515,40 +514,36 @@ export type GqlCAdminMutationTaskUpsertArgs = {
     input: GqlCTaskCreate;
 };
 
-export type GqlCAdminMutationTripActivityDeleteArgs = {
-    tripActivityId: Scalars['ID']['input'];
+export type GqlCAdminMutationTripActivitiesDeleteArgs = {
+    tripActivityIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminMutationTripActivityUpsertArgs = {
-    input: GqlCTripActivityInput;
+export type GqlCAdminMutationTripActivitiesUpsertArgs = {
+    tripActivities: Array<GqlCTripActivityInput>;
 };
 
-export type GqlCAdminMutationTripDayDeleteArgs = {
-    tripDayId: Scalars['ID']['input'];
+export type GqlCAdminMutationTripDaysDeleteArgs = {
+    tripDayIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminMutationTripDayUpsertArgs = {
-    input: GqlCTripDayInput;
+export type GqlCAdminMutationTripDaysUpsertArgs = {
+    tripDays: Array<GqlCTripDayInput>;
 };
 
-export type GqlCAdminMutationTripDeleteArgs = {
-    tripId: Scalars['ID']['input'];
+export type GqlCAdminMutationTripPackingItemsDeleteArgs = {
+    tripPackingItemIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminMutationTripPackingItemDeleteArgs = {
-    tripPackingItemId: Scalars['ID']['input'];
+export type GqlCAdminMutationTripPackingItemsUpsertArgs = {
+    tripPackingItems: Array<GqlCTripPackingItemInput>;
 };
 
-export type GqlCAdminMutationTripPackingItemToggleArgs = {
-    tripPackingItemId: Scalars['ID']['input'];
+export type GqlCAdminMutationTripsDeleteArgs = {
+    tripIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminMutationTripPackingItemUpsertArgs = {
-    input: GqlCTripPackingItemInput;
-};
-
-export type GqlCAdminMutationTripUpsertArgs = {
-    input: GqlCTripInput;
+export type GqlCAdminMutationTripsUpsertArgs = {
+    trips: Array<GqlCTripInput>;
 };
 
 export interface GqlCAdminTravelQuery {
@@ -1328,6 +1323,7 @@ export type GqlCMutationUserCreateArgs = {
 export interface GqlCMutationResult {
     __typename?: 'MutationResult';
     referenceId?: Maybe<Scalars['ID']['output']>;
+    referenceIds?: Maybe<Array<Scalars['ID']['output']>>;
     success: Scalars['Boolean']['output'];
 }
 
@@ -4681,17 +4677,17 @@ export type GqlCWorkspaceTravelPageUpdatesSubscription = {
     };
 };
 
-export type GqlCWorkspaceTripUpsertMutationVariables = Exact<{
-    input: Schema.GqlCTripInput;
+export type GqlCWorkspaceTripsUpsertMutationVariables = Exact<{
+    trips: Array<Schema.GqlCTripInput> | Schema.GqlCTripInput;
 }>;
 
-export type GqlCWorkspaceTripUpsertMutation = { admin: { tripUpsert: { tripId: string } } };
+export type GqlCWorkspaceTripsUpsertMutation = { admin: { tripsUpsert: { success: boolean; referenceIds: Array<string> | null } } };
 
-export type GqlCWorkspaceTripDeleteMutationVariables = Exact<{
-    tripId: string;
+export type GqlCWorkspaceTripsDeleteMutationVariables = Exact<{
+    tripIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripDeleteMutation = { admin: { tripDelete: { success: boolean } } };
+export type GqlCWorkspaceTripsDeleteMutation = { admin: { tripsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceTravelDetailUserFragment = {
     admin: {
@@ -4854,47 +4850,45 @@ export type GqlCWorkspaceTravelDetailUpdatesSubscription = {
     };
 };
 
-export type GqlCWorkspaceTripDayUpsertMutationVariables = Exact<{
-    input: Schema.GqlCTripDayInput;
+export type GqlCWorkspaceTripDaysUpsertMutationVariables = Exact<{
+    tripDays: Array<Schema.GqlCTripDayInput> | Schema.GqlCTripDayInput;
 }>;
 
-export type GqlCWorkspaceTripDayUpsertMutation = { admin: { tripDayUpsert: { tripDayId: string } } };
+export type GqlCWorkspaceTripDaysUpsertMutation = { admin: { tripDaysUpsert: { success: boolean; referenceIds: Array<string> | null } } };
 
-export type GqlCWorkspaceTripDayDeleteMutationVariables = Exact<{
-    tripDayId: string;
+export type GqlCWorkspaceTripDaysDeleteMutationVariables = Exact<{
+    tripDayIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripDayDeleteMutation = { admin: { tripDayDelete: { success: boolean } } };
+export type GqlCWorkspaceTripDaysDeleteMutation = { admin: { tripDaysDelete: { success: boolean } } };
 
-export type GqlCWorkspaceTripActivityUpsertMutationVariables = Exact<{
-    input: Schema.GqlCTripActivityInput;
+export type GqlCWorkspaceTripActivitiesUpsertMutationVariables = Exact<{
+    tripActivities: Array<Schema.GqlCTripActivityInput> | Schema.GqlCTripActivityInput;
 }>;
 
-export type GqlCWorkspaceTripActivityUpsertMutation = { admin: { tripActivityUpsert: { tripActivityId: string } } };
+export type GqlCWorkspaceTripActivitiesUpsertMutation = {
+    admin: { tripActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
-export type GqlCWorkspaceTripActivityDeleteMutationVariables = Exact<{
-    tripActivityId: string;
+export type GqlCWorkspaceTripActivitiesDeleteMutationVariables = Exact<{
+    tripActivityIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripActivityDeleteMutation = { admin: { tripActivityDelete: { success: boolean } } };
+export type GqlCWorkspaceTripActivitiesDeleteMutation = { admin: { tripActivitiesDelete: { success: boolean } } };
 
-export type GqlCWorkspaceTripPackingItemUpsertMutationVariables = Exact<{
-    input: Schema.GqlCTripPackingItemInput;
+export type GqlCWorkspaceTripPackingItemsUpsertMutationVariables = Exact<{
+    tripPackingItems: Array<Schema.GqlCTripPackingItemInput> | Schema.GqlCTripPackingItemInput;
 }>;
 
-export type GqlCWorkspaceTripPackingItemUpsertMutation = { admin: { tripPackingItemUpsert: { tripPackingItemId: string } } };
+export type GqlCWorkspaceTripPackingItemsUpsertMutation = {
+    admin: { tripPackingItemsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
-export type GqlCWorkspaceTripPackingItemDeleteMutationVariables = Exact<{
-    tripPackingItemId: string;
+export type GqlCWorkspaceTripPackingItemsDeleteMutationVariables = Exact<{
+    tripPackingItemIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripPackingItemDeleteMutation = { admin: { tripPackingItemDelete: { success: boolean } } };
-
-export type GqlCWorkspaceTripPackingItemToggleMutationVariables = Exact<{
-    tripPackingItemId: string;
-}>;
-
-export type GqlCWorkspaceTripPackingItemToggleMutation = { admin: { tripPackingItemToggle: { tripPackingItemId: string } } };
+export type GqlCWorkspaceTripPackingItemsDeleteMutation = { admin: { tripPackingItemsDelete: { success: boolean } } };
 
 export type GqlCChatMessageGenerationFragment = {
     modelId: string;
@@ -17814,18 +17808,24 @@ export const WorkspaceTravelPageUpdatesDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceTravelPageUpdatesSubscription, GqlCWorkspaceTravelPageUpdatesSubscriptionVariables>;
-export const WorkspaceTripUpsertDocument = {
+export const WorkspaceTripsUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceTripsUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripInput' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'trips' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripInput' } } },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -17839,17 +17839,20 @@ export const WorkspaceTripUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripUpsert' },
+                                    name: { kind: 'Name', value: 'tripsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'input' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                            name: { kind: 'Name', value: 'trips' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'trips' } },
                                         },
                                     ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripId' } }],
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
                                     },
                                 },
                             ],
@@ -17859,19 +17862,25 @@ export const WorkspaceTripUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTripUpsertMutation, GqlCWorkspaceTripUpsertMutationVariables>;
-export const WorkspaceTripDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceTripsUpsertMutation, GqlCWorkspaceTripsUpsertMutationVariables>;
+export const WorkspaceTripsDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripDelete' },
+            name: { kind: 'Name', value: 'WorkspaceTripsDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -17885,12 +17894,12 @@ export const WorkspaceTripDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripDelete' },
+                                    name: { kind: 'Name', value: 'tripsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'tripId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripId' } },
+                                            name: { kind: 'Name', value: 'tripIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripIds' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -17905,7 +17914,7 @@ export const WorkspaceTripDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTripDeleteMutation, GqlCWorkspaceTripDeleteMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceTripsDeleteMutation, GqlCWorkspaceTripsDeleteMutationVariables>;
 export const WorkspaceTravelDetailDocument = {
     kind: 'Document',
     definitions: [
@@ -18217,18 +18226,24 @@ export const WorkspaceTravelDetailUpdatesDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceTravelDetailUpdatesSubscription, GqlCWorkspaceTravelDetailUpdatesSubscriptionVariables>;
-export const WorkspaceTripDayUpsertDocument = {
+export const WorkspaceTripDaysUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripDayUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceTripDaysUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripDayInput' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripDays' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripDayInput' } } },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -18242,17 +18257,20 @@ export const WorkspaceTripDayUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripDayUpsert' },
+                                    name: { kind: 'Name', value: 'tripDaysUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'input' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                            name: { kind: 'Name', value: 'tripDays' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripDays' } },
                                         },
                                     ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripDayId' } }],
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
                                     },
                                 },
                             ],
@@ -18262,65 +18280,25 @@ export const WorkspaceTripDayUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTripDayUpsertMutation, GqlCWorkspaceTripDayUpsertMutationVariables>;
-export const WorkspaceTripDayDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceTripDaysUpsertMutation, GqlCWorkspaceTripDaysUpsertMutationVariables>;
+export const WorkspaceTripDaysDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripDayDelete' },
+            name: { kind: 'Name', value: 'WorkspaceTripDaysDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripDayId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-                },
-            ],
-            selectionSet: {
-                kind: 'SelectionSet',
-                selections: [
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripDayDelete' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'tripDayId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripDayId' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
-                                    },
-                                },
-                            ],
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripDayIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
                         },
                     },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<GqlCWorkspaceTripDayDeleteMutation, GqlCWorkspaceTripDayDeleteMutationVariables>;
-export const WorkspaceTripActivityUpsertDocument = {
-    kind: 'Document',
-    definitions: [
-        {
-            kind: 'OperationDefinition',
-            operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripActivityUpsert' },
-            variableDefinitions: [
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripActivityInput' } } },
                 },
             ],
             selectionSet: {
@@ -18334,58 +18312,12 @@ export const WorkspaceTripActivityUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripActivityUpsert' },
+                                    name: { kind: 'Name', value: 'tripDaysDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'input' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-                                        },
-                                    ],
-                                    selectionSet: {
-                                        kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripActivityId' } }],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<GqlCWorkspaceTripActivityUpsertMutation, GqlCWorkspaceTripActivityUpsertMutationVariables>;
-export const WorkspaceTripActivityDeleteDocument = {
-    kind: 'Document',
-    definitions: [
-        {
-            kind: 'OperationDefinition',
-            operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripActivityDelete' },
-            variableDefinitions: [
-                {
-                    kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivityId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-                },
-            ],
-            selectionSet: {
-                kind: 'SelectionSet',
-                selections: [
-                    {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'admin' },
-                        selectionSet: {
-                            kind: 'SelectionSet',
-                            selections: [
-                                {
-                                    kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripActivityDelete' },
-                                    arguments: [
-                                        {
-                                            kind: 'Argument',
-                                            name: { kind: 'Name', value: 'tripActivityId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivityId' } },
+                                            name: { kind: 'Name', value: 'tripDayIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripDayIds' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -18400,19 +18332,25 @@ export const WorkspaceTripActivityDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTripActivityDeleteMutation, GqlCWorkspaceTripActivityDeleteMutationVariables>;
-export const WorkspaceTripPackingItemUpsertDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceTripDaysDeleteMutation, GqlCWorkspaceTripDaysDeleteMutationVariables>;
+export const WorkspaceTripActivitiesUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripPackingItemUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceTripActivitiesUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripPackingItemInput' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivities' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripActivityInput' } } },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -18426,17 +18364,20 @@ export const WorkspaceTripPackingItemUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripPackingItemUpsert' },
+                                    name: { kind: 'Name', value: 'tripActivitiesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'input' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                            name: { kind: 'Name', value: 'tripActivities' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivities' } },
                                         },
                                     ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } }],
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
                                     },
                                 },
                             ],
@@ -18446,19 +18387,25 @@ export const WorkspaceTripPackingItemUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemUpsertMutation, GqlCWorkspaceTripPackingItemUpsertMutationVariables>;
-export const WorkspaceTripPackingItemDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceTripActivitiesUpsertMutation, GqlCWorkspaceTripActivitiesUpsertMutationVariables>;
+export const WorkspaceTripActivitiesDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripPackingItemDelete' },
+            name: { kind: 'Name', value: 'WorkspaceTripActivitiesDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivityIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -18472,12 +18419,12 @@ export const WorkspaceTripPackingItemDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripPackingItemDelete' },
+                                    name: { kind: 'Name', value: 'tripActivitiesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'tripPackingItemId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                            name: { kind: 'Name', value: 'tripActivityIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripActivityIds' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -18492,19 +18439,28 @@ export const WorkspaceTripPackingItemDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemDeleteMutation, GqlCWorkspaceTripPackingItemDeleteMutationVariables>;
-export const WorkspaceTripPackingItemToggleDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceTripActivitiesDeleteMutation, GqlCWorkspaceTripActivitiesDeleteMutationVariables>;
+export const WorkspaceTripPackingItemsUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTripPackingItemToggle' },
+            name: { kind: 'Name', value: 'WorkspaceTripPackingItemsUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItems' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripPackingItemInput' } },
+                            },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -18518,17 +18474,20 @@ export const WorkspaceTripPackingItemToggleDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripPackingItemToggle' },
+                                    name: { kind: 'Name', value: 'tripPackingItemsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'tripPackingItemId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemId' } },
+                                            name: { kind: 'Name', value: 'tripPackingItems' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItems' } },
                                         },
                                     ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'tripPackingItemId' } }],
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
                                     },
                                 },
                             ],
@@ -18538,7 +18497,59 @@ export const WorkspaceTripPackingItemToggleDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemToggleMutation, GqlCWorkspaceTripPackingItemToggleMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemsUpsertMutation, GqlCWorkspaceTripPackingItemsUpsertMutationVariables>;
+export const WorkspaceTripPackingItemsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTripPackingItemsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'tripPackingItemsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tripPackingItemIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tripPackingItemIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTripPackingItemsDeleteMutation, GqlCWorkspaceTripPackingItemsDeleteMutationVariables>;
 export const ChatPageDocument = {
     kind: 'Document',
     definitions: [

@@ -37,15 +37,14 @@ import { medicalRecordDelete } from '../commands/medicalRecordDelete';
 import { medicalRecordFileAttach } from '../commands/medicalRecordFileAttach';
 import { medicalRecordFileDelete } from '../commands/medicalRecordFileDelete';
 import { medicalRecordUpsert } from '../commands/medicalRecordUpsert';
-import { tripActivityDelete } from '../commands/tripActivityDelete';
-import { tripActivityUpsert } from '../commands/tripActivityUpsert';
-import { tripDayDelete } from '../commands/tripDayDelete';
-import { tripDayUpsert } from '../commands/tripDayUpsert';
-import { tripDelete } from '../commands/tripDelete';
-import { tripPackingItemDelete } from '../commands/tripPackingItemDelete';
-import { tripPackingItemToggle } from '../commands/tripPackingItemToggle';
-import { tripPackingItemUpsert } from '../commands/tripPackingItemUpsert';
-import { tripUpsert } from '../commands/tripUpsert';
+import { tripActivitiesDelete } from '../commands/tripActivitiesDelete';
+import { tripActivitiesUpsert } from '../commands/tripActivitiesUpsert';
+import { tripDaysDelete } from '../commands/tripDaysDelete';
+import { tripDaysUpsert } from '../commands/tripDaysUpsert';
+import { tripPackingItemsDelete } from '../commands/tripPackingItemsDelete';
+import { tripPackingItemsUpsert } from '../commands/tripPackingItemsUpsert';
+import { tripsDelete } from '../commands/tripsDelete';
+import { tripsUpsert } from '../commands/tripsUpsert';
 import { movieAddFromTmdb } from '../commands/movieAddFromTmdb';
 import { movieDelete } from '../commands/movieDelete';
 import { movieMarkWatched } from '../commands/movieMarkWatched';
@@ -169,15 +168,14 @@ import type {
     GqlSAdminMutationMedicalRecordFileAttachArgs,
     GqlSAdminMutationMedicalRecordFileDeleteArgs,
     GqlSAdminMutationMedicalRecordUpsertArgs,
-    GqlSAdminMutationTripActivityDeleteArgs,
-    GqlSAdminMutationTripActivityUpsertArgs,
-    GqlSAdminMutationTripDayDeleteArgs,
-    GqlSAdminMutationTripDayUpsertArgs,
-    GqlSAdminMutationTripDeleteArgs,
-    GqlSAdminMutationTripPackingItemDeleteArgs,
-    GqlSAdminMutationTripPackingItemToggleArgs,
-    GqlSAdminMutationTripPackingItemUpsertArgs,
-    GqlSAdminMutationTripUpsertArgs,
+    GqlSAdminMutationTripActivitiesDeleteArgs,
+    GqlSAdminMutationTripActivitiesUpsertArgs,
+    GqlSAdminMutationTripDaysDeleteArgs,
+    GqlSAdminMutationTripDaysUpsertArgs,
+    GqlSAdminMutationTripPackingItemsDeleteArgs,
+    GqlSAdminMutationTripPackingItemsUpsertArgs,
+    GqlSAdminMutationTripsDeleteArgs,
+    GqlSAdminMutationTripsUpsertArgs,
     GqlSAdminMutationMovieAddFromTmdbArgs,
     GqlSAdminMutationMovieDeleteArgs,
     GqlSAdminMutationMovieMarkWatchedArgs,
@@ -862,52 +860,45 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             itemFileTogglePin({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFileTogglePinArgs, requestingSession: GqlSSession) {
                 return itemFileTogglePin(userId, args, requestingSession, serverRuntime);
             },
-            tripUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripUpsertArgs, requestingSession: GqlSSession) {
-                return tripUpsert(userId, args.input, requestingSession, serverRuntime);
+            tripsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripsUpsertArgs, requestingSession: GqlSSession) {
+                return tripsUpsert(userId, args.trips, requestingSession, serverRuntime);
             },
-            tripDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDeleteArgs, requestingSession: GqlSSession) {
-                return tripDelete(userId, { tripId: args.tripId }, requestingSession, serverRuntime);
+            tripsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripsDeleteArgs, requestingSession: GqlSSession) {
+                return tripsDelete(userId, args.tripIds, requestingSession, serverRuntime);
             },
-            tripDayUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDayUpsertArgs, requestingSession: GqlSSession) {
-                return tripDayUpsert(userId, args.input, requestingSession, serverRuntime);
+            tripDaysUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDaysUpsertArgs, requestingSession: GqlSSession) {
+                return tripDaysUpsert(userId, args.tripDays, requestingSession, serverRuntime);
             },
-            tripDayDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDayDeleteArgs, requestingSession: GqlSSession) {
-                return tripDayDelete(userId, { tripDayId: args.tripDayId }, requestingSession, serverRuntime);
+            tripDaysDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDaysDeleteArgs, requestingSession: GqlSSession) {
+                return tripDaysDelete(userId, args.tripDayIds, requestingSession, serverRuntime);
             },
-            tripActivityUpsert(
+            tripActivitiesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripActivityUpsertArgs,
+                args: GqlSAdminMutationTripActivitiesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripActivityUpsert(userId, args.input, requestingSession, serverRuntime);
+                return tripActivitiesUpsert(userId, args.tripActivities, requestingSession, serverRuntime);
             },
-            tripActivityDelete(
+            tripActivitiesDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripActivityDeleteArgs,
+                args: GqlSAdminMutationTripActivitiesDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripActivityDelete(userId, { tripActivityId: args.tripActivityId }, requestingSession, serverRuntime);
+                return tripActivitiesDelete(userId, args.tripActivityIds, requestingSession, serverRuntime);
             },
-            tripPackingItemUpsert(
+            tripPackingItemsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripPackingItemUpsertArgs,
+                args: GqlSAdminMutationTripPackingItemsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripPackingItemUpsert(userId, args.input, requestingSession, serverRuntime);
+                return tripPackingItemsUpsert(userId, args.tripPackingItems, requestingSession, serverRuntime);
             },
-            tripPackingItemDelete(
+            tripPackingItemsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripPackingItemDeleteArgs,
+                args: GqlSAdminMutationTripPackingItemsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripPackingItemDelete(userId, { tripPackingItemId: args.tripPackingItemId }, requestingSession, serverRuntime);
-            },
-            tripPackingItemToggle(
-                { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripPackingItemToggleArgs,
-                requestingSession: GqlSSession,
-            ) {
-                return tripPackingItemToggle(userId, { tripPackingItemId: args.tripPackingItemId }, requestingSession, serverRuntime);
+                return tripPackingItemsDelete(userId, args.tripPackingItemIds, requestingSession, serverRuntime);
             },
         },
         Query: {

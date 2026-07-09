@@ -347,6 +347,9 @@ type VisitorChatQuota {
 type MutationResult {
     success: Boolean!
     referenceId: ID
+    # Ids of rows touched by a batch mutation, in input order. Empty for
+    # non-batch mutations and for callers that do not need the ids back.
+    referenceIds: [ID!]
 }
 
 type ChatMessageCreateResult {
@@ -2198,17 +2201,15 @@ input TripPackingItemInput {
 }
 
 extend type AdminMutation {
-    tripUpsert(input: TripInput!): Trip!
-    tripDelete(tripId: ID!): MutationResult!
+    tripsUpsert(trips: [TripInput!]!): MutationResult!
+    tripsDelete(tripIds: [ID!]!): MutationResult!
 
-    tripDayUpsert(input: TripDayInput!): TripDay!
-    tripDayDelete(tripDayId: ID!): MutationResult!
+    tripDaysUpsert(tripDays: [TripDayInput!]!): MutationResult!
+    tripDaysDelete(tripDayIds: [ID!]!): MutationResult!
 
-    tripActivityUpsert(input: TripActivityInput!): TripActivity!
-    tripActivityDelete(tripActivityId: ID!): MutationResult!
+    tripActivitiesUpsert(tripActivities: [TripActivityInput!]!): MutationResult!
+    tripActivitiesDelete(tripActivityIds: [ID!]!): MutationResult!
 
-    tripPackingItemUpsert(input: TripPackingItemInput!): TripPackingItem!
-    tripPackingItemDelete(tripPackingItemId: ID!): MutationResult!
-    # Shortcut: flip `packed` for one item. Returns the updated row.
-    tripPackingItemToggle(tripPackingItemId: ID!): TripPackingItem!
+    tripPackingItemsUpsert(tripPackingItems: [TripPackingItemInput!]!): MutationResult!
+    tripPackingItemsDelete(tripPackingItemIds: [ID!]!): MutationResult!
 }
