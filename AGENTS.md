@@ -172,7 +172,7 @@ src/
 │   │       ├── tax.tsx         Tax matters
 │   │       ├── fitness.tsx     Fitness & well-being
 │   │       ├── medical.tsx     Medical (appointments, results, health notes)
-│   │       ├── media.tsx       Movies & channels — watchlist, ratings, favourite YouTube/podcast channels clustered by topic
+│   │       ├── media.tsx       Movies, series & channels — watchlist, series next-season tracking, favourite YouTube/podcast channels
 │   │       ├── travel.tsx      Travel — trips list (upcoming / past) + new-trip dialog
 │   │       ├── travel_.$tripId.tsx  Per-trip detail (itinerary: day cards + activities; packing list grouped by category)
 │   │       └── logs.tsx        Server log viewer (read-only triage of the `Logs` table)

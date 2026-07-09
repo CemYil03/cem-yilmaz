@@ -4,10 +4,10 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 
 // Live YouTube channel search for the media sub-agent. Same underlying
-// client the GraphQL `Admin.media.youtubeSearch` resolver uses. Empty
-// result on missing key or YouTube outage — the sub-agent handles that
-// by falling back to `mediaChannelUpsert` with whatever fields the user
-// named directly.
+// client the GraphQL `Admin.adminMediaFindOne.adminMediaYoutubeFindMany`
+// resolver uses. Empty result on missing key or YouTube outage — the
+// sub-agent handles that by falling back to `mediaChannelUpsert` with
+// whatever fields the user named directly.
 
 const youtubeSearchInputSchema = z.object({
     query: z.string().min(1).max(200).describe('Free-form channel name or handle. YouTube matches loosely.'),

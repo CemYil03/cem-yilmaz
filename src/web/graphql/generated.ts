@@ -143,7 +143,9 @@ export interface GqlCAdminMediaQuery {
     __typename?: 'AdminMediaQuery';
     adminMediaChannelFindMany: Array<GqlCMediaChannel>;
     adminMediaMovieFindMany: Array<GqlCMovie>;
+    adminMediaShowFindMany: Array<GqlCShow>;
     adminMediaTmdbFindMany: Array<GqlCTmdbMovieResult>;
+    adminMediaTmdbTvFindMany: Array<GqlCTmdbTvResult>;
     adminMediaYoutubeFindMany: Array<GqlCYoutubeChannelResult>;
 }
 
@@ -152,6 +154,10 @@ export type GqlCAdminMediaQueryAdminMediaChannelFindManyArgs = {
 };
 
 export type GqlCAdminMediaQueryAdminMediaTmdbFindManyArgs = {
+    query: Scalars['String']['input'];
+};
+
+export type GqlCAdminMediaQueryAdminMediaTmdbTvFindManyArgs = {
     query: Scalars['String']['input'];
 };
 
@@ -229,6 +235,9 @@ export interface GqlCAdminMutation {
     projectTimerStart: GqlCProjectActivity;
     projectTimerStop: GqlCProjectActivity;
     projectUpsert: GqlCProject;
+    showAddFromTmdb: GqlCShow;
+    showDelete: GqlCMutationResult;
+    showUpsert: GqlCShow;
     taskDelete: GqlCMutationResult;
     taskReorder: GqlCMutationResult;
     taskUpsert: GqlCTask;
@@ -499,6 +508,19 @@ export type GqlCAdminMutationProjectTimerStopArgs = {
 
 export type GqlCAdminMutationProjectUpsertArgs = {
     input: GqlCProjectCreate;
+};
+
+export type GqlCAdminMutationShowAddFromTmdbArgs = {
+    status?: InputMaybe<GqlCMovieStatus>;
+    tmdbId: Scalars['Int']['input'];
+};
+
+export type GqlCAdminMutationShowDeleteArgs = {
+    showId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationShowUpsertArgs = {
+    input: GqlCShowInput;
 };
 
 export type GqlCAdminMutationTaskDeleteArgs = {
@@ -1504,6 +1526,42 @@ export type GqlCSessionVisitorChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
 };
 
+export interface GqlCShow {
+    __typename?: 'Show';
+    backdropUrl?: Maybe<Scalars['String']['output']>;
+    firstAirDate?: Maybe<Scalars['Date']['output']>;
+    isCompleted: Scalars['Boolean']['output'];
+    nextSeasonReleaseDate?: Maybe<Scalars['Date']['output']>;
+    nextSeasonReleaseRough?: Maybe<Scalars['String']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    showId: Scalars['ID']['output'];
+    status: GqlCMovieStatus;
+    title: Scalars['String']['output'];
+    tmdbId?: Maybe<Scalars['Int']['output']>;
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCShowInput = {
+    backdropUrl?: InputMaybe<Scalars['String']['input']>;
+    firstAirDate?: InputMaybe<Scalars['Date']['input']>;
+    isCompleted: Scalars['Boolean']['input'];
+    nextSeasonReleaseDate?: InputMaybe<Scalars['Date']['input']>;
+    nextSeasonReleaseRough?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    overview?: InputMaybe<Scalars['String']['input']>;
+    posterUrl?: InputMaybe<Scalars['String']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    showId?: InputMaybe<Scalars['ID']['input']>;
+    status: GqlCMovieStatus;
+    title: Scalars['String']['input'];
+    tmdbId?: InputMaybe<Scalars['Int']['input']>;
+    topics: Array<Scalars['String']['input']>;
+};
+
 export interface GqlCSubscription {
     __typename?: 'Subscription';
     chatUpdates: GqlCChatUpdate;
@@ -1559,6 +1617,15 @@ export interface GqlCTmdbMovieResult {
     overview?: Maybe<Scalars['String']['output']>;
     posterUrl?: Maybe<Scalars['String']['output']>;
     releaseDate?: Maybe<Scalars['Date']['output']>;
+    title: Scalars['String']['output'];
+    tmdbId: Scalars['Int']['output'];
+}
+
+export interface GqlCTmdbTvResult {
+    __typename?: 'TmdbTvResult';
+    firstAirDate?: Maybe<Scalars['Date']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
     title: Scalars['String']['output'];
     tmdbId: Scalars['Int']['output'];
 }
@@ -3196,6 +3263,23 @@ export type GqlCWorkspaceMediaPageUserFragment = {
                 topics: Array<string>;
                 updatedAt: string;
             }>;
+            adminMediaShowFindMany: Array<{
+                showId: string;
+                title: string;
+                tmdbId: number | null;
+                posterUrl: string | null;
+                backdropUrl: string | null;
+                firstAirDate: string | null;
+                overview: string | null;
+                status: Schema.GqlCMovieStatus;
+                rating: number | null;
+                notes: string | null;
+                topics: Array<string>;
+                isCompleted: boolean;
+                nextSeasonReleaseDate: string | null;
+                nextSeasonReleaseRough: string | null;
+                updatedAt: string;
+            }>;
             adminMediaChannelFindMany: Array<{
                 channelId: string;
                 name: string;
@@ -3234,6 +3318,23 @@ export type GqlCWorkspaceMediaPageQuery = {
                         watchedAt: string | null;
                         notes: string | null;
                         topics: Array<string>;
+                        updatedAt: string;
+                    }>;
+                    adminMediaShowFindMany: Array<{
+                        showId: string;
+                        title: string;
+                        tmdbId: number | null;
+                        posterUrl: string | null;
+                        backdropUrl: string | null;
+                        firstAirDate: string | null;
+                        overview: string | null;
+                        status: Schema.GqlCMovieStatus;
+                        rating: number | null;
+                        notes: string | null;
+                        topics: Array<string>;
+                        isCompleted: boolean;
+                        nextSeasonReleaseDate: string | null;
+                        nextSeasonReleaseRough: string | null;
                         updatedAt: string;
                     }>;
                     adminMediaChannelFindMany: Array<{
@@ -3277,6 +3378,23 @@ export type GqlCWorkspaceMediaPageUpdatesSubscription = {
                     topics: Array<string>;
                     updatedAt: string;
                 }>;
+                adminMediaShowFindMany: Array<{
+                    showId: string;
+                    title: string;
+                    tmdbId: number | null;
+                    posterUrl: string | null;
+                    backdropUrl: string | null;
+                    firstAirDate: string | null;
+                    overview: string | null;
+                    status: Schema.GqlCMovieStatus;
+                    rating: number | null;
+                    notes: string | null;
+                    topics: Array<string>;
+                    isCompleted: boolean;
+                    nextSeasonReleaseDate: string | null;
+                    nextSeasonReleaseRough: string | null;
+                    updatedAt: string;
+                }>;
                 adminMediaChannelFindMany: Array<{
                     channelId: string;
                     name: string;
@@ -3308,6 +3426,28 @@ export type GqlCWorkspaceMediaTmdbSearchQuery = {
                         tmdbId: number;
                         title: string;
                         releaseDate: string | null;
+                        posterUrl: string | null;
+                        overview: string | null;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceMediaTmdbTvSearchQueryVariables = Exact<{
+    query: string;
+}>;
+
+export type GqlCWorkspaceMediaTmdbTvSearchQuery = {
+    sessionFindOne: {
+        user: {
+            admin: {
+                adminMediaFindOne: {
+                    adminMediaTmdbTvFindMany: Array<{
+                        tmdbId: number;
+                        title: string;
+                        firstAirDate: string | null;
                         posterUrl: string | null;
                         overview: string | null;
                     }>;
@@ -3366,6 +3506,25 @@ export type GqlCWorkspaceMovieAddFromTmdbMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceMovieAddFromTmdbMutation = { admin: { movieAddFromTmdb: { movieId: string } } };
+
+export type GqlCWorkspaceShowUpsertMutationVariables = Exact<{
+    input: Schema.GqlCShowInput;
+}>;
+
+export type GqlCWorkspaceShowUpsertMutation = { admin: { showUpsert: { showId: string } } };
+
+export type GqlCWorkspaceShowDeleteMutationVariables = Exact<{
+    showId: string;
+}>;
+
+export type GqlCWorkspaceShowDeleteMutation = { admin: { showDelete: { success: boolean } } };
+
+export type GqlCWorkspaceShowAddFromTmdbMutationVariables = Exact<{
+    tmdbId: number;
+    status?: Schema.GqlCMovieStatus | null | undefined;
+}>;
+
+export type GqlCWorkspaceShowAddFromTmdbMutation = { admin: { showAddFromTmdb: { showId: string } } };
 
 export type GqlCWorkspaceMediaChannelUpsertMutationVariables = Exact<{
     input: Schema.GqlCMediaChannelInput;
@@ -6501,6 +6660,30 @@ export const WorkspaceMediaPageUserFragmentDoc = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'watchedAt' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminMediaShowFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'showId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'posterUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'backdropUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'firstAirDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'overview' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isCompleted' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextSeasonReleaseDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextSeasonReleaseRough' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                                                     ],
                                                 },
@@ -13288,6 +13471,30 @@ export const WorkspaceMediaPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminMediaShowFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'showId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'posterUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'backdropUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'firstAirDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'overview' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isCompleted' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextSeasonReleaseDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextSeasonReleaseRough' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
                                                 name: { kind: 'Name', value: 'adminMediaChannelFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
@@ -13376,6 +13583,30 @@ export const WorkspaceMediaPageUpdatesDocument = {
                                                         { kind: 'Field', name: { kind: 'Name', value: 'watchedAt' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminMediaShowFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'showId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'posterUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'backdropUrl' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'firstAirDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'overview' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'topics' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isCompleted' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextSeasonReleaseDate' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'nextSeasonReleaseRough' } },
                                                         { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                                                     ],
                                                 },
@@ -13502,6 +13733,97 @@ export const WorkspaceMediaTmdbSearchDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceMediaTmdbSearchQuery, GqlCWorkspaceMediaTmdbSearchQueryVariables>;
+export const WorkspaceMediaTmdbTvSearchDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceMediaTmdbTvSearch' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'query' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'sessionFindOne' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'adminMediaFindOne' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'adminMediaTmdbTvFindMany' },
+                                                                        arguments: [
+                                                                            {
+                                                                                kind: 'Argument',
+                                                                                name: { kind: 'Name', value: 'query' },
+                                                                                value: {
+                                                                                    kind: 'Variable',
+                                                                                    name: { kind: 'Name', value: 'query' },
+                                                                                },
+                                                                            },
+                                                                        ],
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'tmdbId' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'firstAirDate' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'posterUrl' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'overview' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMediaTmdbTvSearchQuery, GqlCWorkspaceMediaTmdbTvSearchQueryVariables>;
 export const WorkspaceMediaYoutubeSearchDocument = {
     kind: 'Document',
     definitions: [
@@ -13805,6 +14127,154 @@ export const WorkspaceMovieAddFromTmdbDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceMovieAddFromTmdbMutation, GqlCWorkspaceMovieAddFromTmdbMutationVariables>;
+export const WorkspaceShowUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceShowUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ShowInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'showUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'showId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceShowUpsertMutation, GqlCWorkspaceShowUpsertMutationVariables>;
+export const WorkspaceShowDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceShowDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'showId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'showDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'showId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'showId' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceShowDeleteMutation, GqlCWorkspaceShowDeleteMutationVariables>;
+export const WorkspaceShowAddFromTmdbDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceShowAddFromTmdb' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'tmdbId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'MovieStatus' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'showAddFromTmdb' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'tmdbId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'tmdbId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'status' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'showId' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceShowAddFromTmdbMutation, GqlCWorkspaceShowAddFromTmdbMutationVariables>;
 export const WorkspaceMediaChannelUpsertDocument = {
     kind: 'Document',
     definitions: [

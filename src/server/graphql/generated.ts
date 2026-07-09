@@ -140,7 +140,9 @@ export interface GqlSAdminMediaQuery {
     __typename?: 'AdminMediaQuery';
     adminMediaChannelFindMany: Array<GqlSMediaChannel>;
     adminMediaMovieFindMany: Array<GqlSMovie>;
+    adminMediaShowFindMany: Array<GqlSShow>;
     adminMediaTmdbFindMany: Array<GqlSTmdbMovieResult>;
+    adminMediaTmdbTvFindMany: Array<GqlSTmdbTvResult>;
     adminMediaYoutubeFindMany: Array<GqlSYoutubeChannelResult>;
 }
 
@@ -149,6 +151,10 @@ export type GqlSAdminMediaQueryAdminMediaChannelFindManyArgs = {
 };
 
 export type GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs = {
+    query: Scalars['String']['input'];
+};
+
+export type GqlSAdminMediaQueryAdminMediaTmdbTvFindManyArgs = {
     query: Scalars['String']['input'];
 };
 
@@ -226,6 +232,9 @@ export interface GqlSAdminMutation {
     projectTimerStart: GqlSProjectActivity;
     projectTimerStop: GqlSProjectActivity;
     projectUpsert: GqlSProject;
+    showAddFromTmdb: GqlSShow;
+    showDelete: GqlSMutationResult;
+    showUpsert: GqlSShow;
     taskDelete: GqlSMutationResult;
     taskReorder: GqlSMutationResult;
     taskUpsert: GqlSTask;
@@ -496,6 +505,19 @@ export type GqlSAdminMutationProjectTimerStopArgs = {
 
 export type GqlSAdminMutationProjectUpsertArgs = {
     input: GqlSProjectCreate;
+};
+
+export type GqlSAdminMutationShowAddFromTmdbArgs = {
+    status?: InputMaybe<GqlSMovieStatus>;
+    tmdbId: Scalars['Int']['input'];
+};
+
+export type GqlSAdminMutationShowDeleteArgs = {
+    showId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationShowUpsertArgs = {
+    input: GqlSShowInput;
 };
 
 export type GqlSAdminMutationTaskDeleteArgs = {
@@ -1501,6 +1523,42 @@ export type GqlSSessionVisitorChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
 };
 
+export interface GqlSShow {
+    __typename?: 'Show';
+    backdropUrl?: Maybe<Scalars['String']['output']>;
+    firstAirDate?: Maybe<Scalars['Date']['output']>;
+    isCompleted: Scalars['Boolean']['output'];
+    nextSeasonReleaseDate?: Maybe<Scalars['Date']['output']>;
+    nextSeasonReleaseRough?: Maybe<Scalars['String']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    showId: Scalars['ID']['output'];
+    status: GqlSMovieStatus;
+    title: Scalars['String']['output'];
+    tmdbId?: Maybe<Scalars['Int']['output']>;
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSShowInput = {
+    backdropUrl?: InputMaybe<Scalars['String']['input']>;
+    firstAirDate?: InputMaybe<Scalars['Date']['input']>;
+    isCompleted: Scalars['Boolean']['input'];
+    nextSeasonReleaseDate?: InputMaybe<Scalars['Date']['input']>;
+    nextSeasonReleaseRough?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    overview?: InputMaybe<Scalars['String']['input']>;
+    posterUrl?: InputMaybe<Scalars['String']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    showId?: InputMaybe<Scalars['ID']['input']>;
+    status: GqlSMovieStatus;
+    title: Scalars['String']['input'];
+    tmdbId?: InputMaybe<Scalars['Int']['input']>;
+    topics: Array<Scalars['String']['input']>;
+};
+
 export interface GqlSSubscription {
     __typename?: 'Subscription';
     chatUpdates: GqlSChatUpdate;
@@ -1556,6 +1614,15 @@ export interface GqlSTmdbMovieResult {
     overview?: Maybe<Scalars['String']['output']>;
     posterUrl?: Maybe<Scalars['String']['output']>;
     releaseDate?: Maybe<Scalars['Date']['output']>;
+    title: Scalars['String']['output'];
+    tmdbId: Scalars['Int']['output'];
+}
+
+export interface GqlSTmdbTvResult {
+    __typename?: 'TmdbTvResult';
+    firstAirDate?: Maybe<Scalars['Date']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
     title: Scalars['String']['output'];
     tmdbId: Scalars['Int']['output'];
 }
@@ -1994,6 +2061,8 @@ export type GqlSResolversTypes = ResolversObject<{
             visitorChatFindOne: GqlSResolversTypes['Chat'];
         }
     >;
+    Show: ResolverTypeWrapper<GqlSShow>;
+    ShowInput: GqlSShowInput;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Task: ResolverTypeWrapper<GqlSTask>;
@@ -2002,6 +2071,7 @@ export type GqlSResolversTypes = ResolversObject<{
     TaskStatus: GqlSTaskStatus;
     TaskWhenBucket: GqlSTaskWhenBucket;
     TmdbMovieResult: ResolverTypeWrapper<GqlSTmdbMovieResult>;
+    TmdbTvResult: ResolverTypeWrapper<GqlSTmdbTvResult>;
     TransportMode: GqlSTransportMode;
     Trip: ResolverTypeWrapper<GqlSTrip>;
     TripActivity: ResolverTypeWrapper<GqlSTripActivity>;
@@ -2138,11 +2208,14 @@ export type GqlSResolversParentTypes = ResolversObject<{
         visitorChatFindMany: Array<GqlSResolversParentTypes['Chat']>;
         visitorChatFindOne: GqlSResolversParentTypes['Chat'];
     };
+    Show: GqlSShow;
+    ShowInput: GqlSShowInput;
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
     Task: GqlSTask;
     TaskCreate: GqlSTaskCreate;
     TmdbMovieResult: GqlSTmdbMovieResult;
+    TmdbTvResult: GqlSTmdbTvResult;
     Trip: GqlSTrip;
     TripActivity: GqlSTripActivity;
     TripActivityInput: GqlSTripActivityInput;
@@ -2293,11 +2366,18 @@ export type GqlSAdminMediaQueryResolvers<
         Partial<GqlSAdminMediaQueryAdminMediaChannelFindManyArgs>
     >;
     adminMediaMovieFindMany?: Resolver<Array<GqlSResolversTypes['Movie']>, ParentType, ContextType>;
+    adminMediaShowFindMany?: Resolver<Array<GqlSResolversTypes['Show']>, ParentType, ContextType>;
     adminMediaTmdbFindMany?: Resolver<
         Array<GqlSResolversTypes['TmdbMovieResult']>,
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs, 'query'>
+    >;
+    adminMediaTmdbTvFindMany?: Resolver<
+        Array<GqlSResolversTypes['TmdbTvResult']>,
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMediaQueryAdminMediaTmdbTvFindManyArgs, 'query'>
     >;
     adminMediaYoutubeFindMany?: Resolver<
         Array<GqlSResolversTypes['YoutubeChannelResult']>,
@@ -2666,6 +2746,19 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationProjectUpsertArgs, 'input'>
     >;
+    showAddFromTmdb?: Resolver<
+        GqlSResolversTypes['Show'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationShowAddFromTmdbArgs, 'tmdbId'>
+    >;
+    showDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationShowDeleteArgs, 'showId'>
+    >;
+    showUpsert?: Resolver<GqlSResolversTypes['Show'], ParentType, ContextType, RequireFields<GqlSAdminMutationShowUpsertArgs, 'input'>>;
     taskDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -3614,6 +3707,27 @@ export type GqlSSessionResolvers<
     visitorChatQuotaFindOne?: Resolver<GqlSResolversTypes['VisitorChatQuota'], ParentType, ContextType>;
 }>;
 
+export type GqlSShowResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Show'] = GqlSResolversParentTypes['Show'],
+> = ResolversObject<{
+    backdropUrl?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    firstAirDate?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    isCompleted?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    nextSeasonReleaseDate?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    nextSeasonReleaseRough?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    overview?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    posterUrl?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    rating?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    showId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['MovieStatus'], ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    tmdbId?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    topics?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export type GqlSSubscriptionResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Subscription'] = GqlSResolversParentTypes['Subscription'],
@@ -3660,6 +3774,17 @@ export type GqlSTmdbMovieResultResolvers<
     overview?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     posterUrl?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     releaseDate?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    tmdbId?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
+export type GqlSTmdbTvResultResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['TmdbTvResult'] = GqlSResolversParentTypes['TmdbTvResult'],
+> = ResolversObject<{
+    firstAirDate?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    overview?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    posterUrl?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     tmdbId?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
@@ -3860,9 +3985,11 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ProjectRequest?: GqlSProjectRequestResolvers<ContextType>;
     Query?: GqlSQueryResolvers<ContextType>;
     Session?: GqlSSessionResolvers<ContextType>;
+    Show?: GqlSShowResolvers<ContextType>;
     Subscription?: GqlSSubscriptionResolvers<ContextType>;
     Task?: GqlSTaskResolvers<ContextType>;
     TmdbMovieResult?: GqlSTmdbMovieResultResolvers<ContextType>;
+    TmdbTvResult?: GqlSTmdbTvResultResolvers<ContextType>;
     Trip?: GqlSTripResolvers<ContextType>;
     TripActivity?: GqlSTripActivityResolvers<ContextType>;
     TripDay?: GqlSTripDayResolvers<ContextType>;
@@ -4331,6 +4458,25 @@ export function GqlSProjectLinkUpsertSchema(): z.ZodObject<Properties<GqlSProjec
         projectId: z.string(),
         projectLinkId: z.string().nullish(),
         url: z.string(),
+    });
+}
+
+export function GqlSShowInputSchema(): z.ZodObject<Properties<GqlSShowInput>> {
+    return z.object({
+        backdropUrl: z.string().nullish(),
+        firstAirDate: z.string().nullish(),
+        isCompleted: z.boolean(),
+        nextSeasonReleaseDate: z.string().nullish(),
+        nextSeasonReleaseRough: z.string().nullish(),
+        notes: z.string().nullish(),
+        overview: z.string().nullish(),
+        posterUrl: z.string().nullish(),
+        rating: z.number().nullish(),
+        showId: z.string().nullish(),
+        status: GqlSMovieStatusSchema,
+        title: z.string(),
+        tmdbId: z.number().nullish(),
+        topics: z.array(z.string()),
     });
 }
 

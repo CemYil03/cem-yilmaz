@@ -4,9 +4,9 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 
 // Live TMDB search for the media sub-agent. Same underlying client the
-// GraphQL `Admin.media.tmdbSearch` resolver uses. Empty result on missing
-// key or TMDB outage — the sub-agent handles that by falling back to
-// `movieUpsert` with a manual title.
+// GraphQL `Admin.adminMediaFindOne.adminMediaTmdbFindMany` resolver uses.
+// Empty result on missing key or TMDB outage — the sub-agent handles that by
+// falling back to `movieUpsert` with a manual title.
 
 const tmdbSearchInputSchema = z.object({
     query: z.string().min(1).max(200).describe('Free-form movie title. TMDB matches loosely, but a year in the query narrows results.'),

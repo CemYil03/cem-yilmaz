@@ -106,9 +106,9 @@ export function serverRuntimeCreate(): ServerRuntime {
         // it never reads `RESEND_API_KEY`. Tests stub this with a fake.
         emailService: emailServiceCreate(),
         // TMDB read-only client. `TMDB_API_KEY` is optional at the env
-        // layer; when it's missing, `searchMovies` returns `[]` and
-        // `getMovie` returns `null` so the media page's manual-entry
-        // path still works. See `docs/features/workspace-media.md`.
+        // layer; when it's missing, `searchMovies` / `searchTv` return `[]`
+        // and `getMovie` / `getTv` return `null` so the media page's
+        // manual-entry path still works. See `docs/features/workspace-media.md`.
         tmdb: tmdbClientCreate(),
         // YouTube Data API v3 client. Same posture as `tmdb` — missing
         // `YOUTUBE_API_KEY` yields empty search results and the manual

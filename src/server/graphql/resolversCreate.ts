@@ -49,6 +49,9 @@ import { movieAddFromTmdb } from '../commands/movieAddFromTmdb';
 import { movieDelete } from '../commands/movieDelete';
 import { movieMarkWatched } from '../commands/movieMarkWatched';
 import { movieUpsert } from '../commands/movieUpsert';
+import { showAddFromTmdb } from '../commands/showAddFromTmdb';
+import { showDelete } from '../commands/showDelete';
+import { showUpsert } from '../commands/showUpsert';
 import { compassObservationDismiss } from '../commands/compassObservationDismiss';
 import { compassSynthesizeRequest } from '../commands/compassSynthesizeRequest';
 import { compassInterviewStart } from '../commands/compassInterviewStart';
@@ -110,6 +113,7 @@ import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMan
 import { adminInventoryMaterialNetWorthCentsFindOne } from '../queries/adminInventoryMaterialNetWorthCentsFindOne';
 import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
 import { adminMediaMovieFindMany } from '../queries/adminMediaMovieFindMany';
+import { adminMediaShowFindMany } from '../queries/adminMediaShowFindMany';
 import { adminCompassFindOne } from '../queries/adminCompassFindOne';
 import { adminCompassInterviewPendingFindOne } from '../queries/adminCompassInterviewPendingFindOne';
 import { adminCompassInterviewFindOne } from '../queries/adminCompassInterviewFindOne';
@@ -180,6 +184,9 @@ import type {
     GqlSAdminMutationMovieDeleteArgs,
     GqlSAdminMutationMovieMarkWatchedArgs,
     GqlSAdminMutationMovieUpsertArgs,
+    GqlSAdminMutationShowAddFromTmdbArgs,
+    GqlSAdminMutationShowDeleteArgs,
+    GqlSAdminMutationShowUpsertArgs,
     GqlSAdminInventoryQuery,
     GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs,
     GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
@@ -187,6 +194,7 @@ import type {
     GqlSAdminMediaQuery,
     GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
     GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
+    GqlSAdminMediaQueryAdminMediaTmdbTvFindManyArgs,
     GqlSAdminMediaQueryAdminMediaYoutubeFindManyArgs,
     GqlSAdminMedicalQuery,
     GqlSAdminTravelQuery,
@@ -501,6 +509,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             adminMediaMovieFindMany(_parent: GqlSAdminMediaQuery, __: any, requestingSession: GqlSSession) {
                 return adminMediaMovieFindMany(requestingSession, serverRuntime);
             },
+            adminMediaShowFindMany(_parent: GqlSAdminMediaQuery, __: any, requestingSession: GqlSSession) {
+                return adminMediaShowFindMany(requestingSession, serverRuntime);
+            },
             adminMediaChannelFindMany(
                 _parent: GqlSAdminMediaQuery,
                 args: GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
@@ -515,6 +526,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             // missing API key, on TMDB error, or on empty query.
             adminMediaTmdbFindMany(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs) {
                 return serverRuntime.tmdb.searchMovies(args.query);
+            },
+            adminMediaTmdbTvFindMany(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryAdminMediaTmdbTvFindManyArgs) {
+                return serverRuntime.tmdb.searchTv(args.query);
             },
             // Same shape as `adminMediaTmdbFindMany` above — third-party read
             // used only by the channels-tab typeahead. Empty on missing API
@@ -779,6 +793,15 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             movieAddFromTmdb({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMovieAddFromTmdbArgs, requestingSession: GqlSSession) {
                 return movieAddFromTmdb(userId, args, requestingSession, serverRuntime);
+            },
+            showUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationShowUpsertArgs, requestingSession: GqlSSession) {
+                return showUpsert(userId, args, requestingSession, serverRuntime);
+            },
+            showDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationShowDeleteArgs, requestingSession: GqlSSession) {
+                return showDelete(userId, args, requestingSession, serverRuntime);
+            },
+            showAddFromTmdb({ userId }: GqlSAdminMutation, args: GqlSAdminMutationShowAddFromTmdbArgs, requestingSession: GqlSSession) {
+                return showAddFromTmdb(userId, args, requestingSession, serverRuntime);
             },
             mediaChannelUpsert(
                 { userId }: GqlSAdminMutation,
