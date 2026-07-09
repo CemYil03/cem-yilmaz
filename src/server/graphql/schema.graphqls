@@ -2405,9 +2405,15 @@ input FinanceRecurringCostInput {
 }
 
 extend type AdminMutation {
-    financeRecurringCostUpsert(input: FinanceRecurringCostInput!): FinanceRecurringCost!
-    financeRecurringCostDelete(costId: ID!): MutationResult!
-    # Pass `amountCents: null` to clear the baseline. Returns the updated
-    # settings namespace so the client can atomically re-render the totals.
-    financeMonthlyNetIncomeSet(amountCents: Int): AdminFinancesQuery!
+    # Batch create-or-edit of recurring costs. Every row with a `costId` is
+    # updated; every row without one is inserted. `referenceIds` echoes the
+    # id per input row in input order. Single-item edits (the dialog) pass a
+    # one-element array. Pausing a cost rides this same upsert — pass the row
+    # back with `active` flipped.
+    financeRecurringCostsUpsert(financeRecurringCosts: [FinanceRecurringCostInput!]!): MutationResult!
+    financeRecurringCostsDelete(costIds: [ID!]!): MutationResult!
+    # Singleton setter — one settings row per admin. Pass `amountCents: null`
+    # to clear the baseline. The `userUpdates` subscription re-renders the
+    # totals; there is nothing to batch here.
+    financeMonthlyNetIncomeSet(amountCents: Int): MutationResult!
 }

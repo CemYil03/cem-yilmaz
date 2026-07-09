@@ -1,17 +1,17 @@
 import { adminFinancesSettings } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSAdminFinancesQuery, GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
-// One row per admin, keyed by `userId`. `amountCents = null` clears the
-// baseline (the Sankey then falls back to expenses only). Returns the
-// `AdminFinancesQuery` shell so the client re-renders the totals in one
-// round-trip; per-field resolvers on that shell fill the numbers.
+// Singleton setter — one settings row per admin, keyed by `userId`.
+// `amountCents = null` clears the baseline (the Sankey then falls back to
+// expenses only). The `userUpdates` subscription pushes the new totals to the
+// page; `referenceId` echoes the settings row's `userId`.
 export async function financeMonthlyNetIncomeSet(
     userId: string,
     args: GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSAdminFinancesQuery> {
+): Promise<GqlSMutationResult> {
     const now = new Date();
     try {
         await serverRuntime.db
@@ -29,7 +29,7 @@ export async function financeMonthlyNetIncomeSet(
                 },
             });
         await serverRuntime.publish.userUpdates({ userId });
-        return {} as GqlSAdminFinancesQuery;
+        return { success: true, referenceId: userId };
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

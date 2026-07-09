@@ -72,18 +72,24 @@ Enum tuples exported as `financeRecurringCostCategories` and `financeCadences`, 
   rows, computed in one SQL pass (see `adminFinancesExpensesCentsFindOne`). Yearly rows contribute `amount / 12` to the monthly total and
   `amount` to the yearly total; monthly rows do the mirror.
 
-`AdminMutation` extensions: `financeRecurringCostUpsert(input: FinanceRecurringCostInput!)`, `financeRecurringCostDelete(costId: ID!)`,
-`financeMonthlyNetIncomeSet(amountCents: Int)` (nullable `amountCents` clears the baseline; returns the `AdminFinancesQuery` shell so the
-client re-renders the totals in one round-trip).
+`AdminMutation` extensions follow the repo-wide batch + `MutationResult` conventions:
+`financeRecurringCostsUpsert(financeRecurringCosts: [FinanceRecurringCostInput!]!)`, `financeRecurringCostsDelete(costIds: [ID!]!)` — both
+return `MutationResult!` (`referenceIds` echoes the row id per input in input order). Single-item edits (the dialog, the delete alert) pass
+a one-element array; pausing a cost rides the same upsert with `active` flipped. `financeMonthlyNetIncomeSet(amountCents: Int)` stays
+singular — it writes the one per-admin settings row, so there is nothing to batch; a nullable `amountCents` clears the baseline and it too
+returns `MutationResult!`. The `userUpdates` subscription re-renders the totals in all three cases.
 
 ### CQRS wiring
 
-- Commands: `financeRecurringCostUpsert` (two-phase, insert / update by `costId`), `financeRecurringCostDelete` (hard delete — inactive rows
-  are the soft option), `financeMonthlyNetIncomeSet` (`ON CONFLICT DO UPDATE` on the `userId` PK). Each publishes `userUpdates` on success.
+- Commands: `financeRecurringCostsUpsert` (two-phase batch — single pre-flight `inArray` existence check for update ids, per-row
+  insert/update in the loop, one transaction), `financeRecurringCostsDelete` (batch hard delete — inactive rows are the soft option),
+  `financeMonthlyNetIncomeSet` (`ON CONFLICT DO UPDATE` on the `userId` PK, singleton setter). Each publishes `userUpdates` on success.
 - Queries: `adminFinancesRecurringCostFindMany`, `adminFinancesMonthlyNetIncomeCentsFindOne`, `adminFinancesExpensesCentsFindOne` (returns
   `{ monthlyCents, yearlyCents }` — the two total resolvers both call it).
-- Mapper: `toGqlFinanceRecurringCost` — scalar 1:1.
-- Resolver wiring: `Admin.adminFinancesFindOne` shell, four `AdminFinancesQuery` field resolvers, three `AdminMutation` handlers — all in
+- Mapper: `toGqlFinanceRecurringCost` — scalar 1:1 (used by the `FindMany` query; the batch commands return `MutationResult` and no longer
+  hydrate rows).
+- Resolver wiring: `Admin.adminFinancesFindOne` shell, four `AdminFinancesQuery` field resolvers, three `AdminMutation` handlers (the two
+  batch handlers unwrap `args.financeRecurringCosts` / `args.costIds` before calling the command) — all in
   `src/server/graphql/resolversCreate.ts`.
 
 ### Client GraphQL

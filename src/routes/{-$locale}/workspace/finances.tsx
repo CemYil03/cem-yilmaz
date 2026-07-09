@@ -541,15 +541,17 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
         setSubmitting(true);
         try {
             const result = await upsert({
-                input: {
-                    costId: state.costId,
-                    name: state.name.trim(),
-                    categoryKey: state.categoryKey,
-                    amountCents: amountCents,
-                    cadence: state.cadence,
-                    notes: state.notes.trim() || null,
-                    active: state.active,
-                },
+                financeRecurringCosts: [
+                    {
+                        costId: state.costId,
+                        name: state.name.trim(),
+                        categoryKey: state.categoryKey,
+                        amountCents: amountCents,
+                        cadence: state.cadence,
+                        notes: state.notes.trim() || null,
+                        active: state.active,
+                    },
+                ],
             });
             if (result.error) return;
             onClose();
@@ -717,7 +719,7 @@ function DeleteCostAlert({ cost, locale, onClose }: { cost: CostRow; locale: Loc
     const doDelete = async () => {
         setSubmitting(true);
         try {
-            await del({ costId: cost.costId });
+            await del({ costIds: [cost.costId] });
             onClose();
         } finally {
             setSubmitting(false);

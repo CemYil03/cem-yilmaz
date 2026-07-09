@@ -27,8 +27,8 @@ import { itemServiceEntriesDelete } from '../commands/itemServiceEntriesDelete';
 import { itemServiceEntriesUpsert } from '../commands/itemServiceEntriesUpsert';
 import { itemsUpsert } from '../commands/itemsUpsert';
 import { financeMonthlyNetIncomeSet } from '../commands/financeMonthlyNetIncomeSet';
-import { financeRecurringCostDelete } from '../commands/financeRecurringCostDelete';
-import { financeRecurringCostUpsert } from '../commands/financeRecurringCostUpsert';
+import { financeRecurringCostsDelete } from '../commands/financeRecurringCostsDelete';
+import { financeRecurringCostsUpsert } from '../commands/financeRecurringCostsUpsert';
 import { mediaChannelsDelete } from '../commands/mediaChannelsDelete';
 import { mediaChannelReorder } from '../commands/mediaChannelReorder';
 import { mediaChannelsUpsert } from '../commands/mediaChannelsUpsert';
@@ -191,8 +191,8 @@ import type {
     GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
     GqlSAdminFinancesQuery,
     GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs,
-    GqlSAdminMutationFinanceRecurringCostDeleteArgs,
-    GqlSAdminMutationFinanceRecurringCostUpsertArgs,
+    GqlSAdminMutationFinanceRecurringCostsDeleteArgs,
+    GqlSAdminMutationFinanceRecurringCostsUpsertArgs,
     GqlSAdminMediaQuery,
     GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
     GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
@@ -972,19 +972,19 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             ) {
                 return tripPackingItemsDelete(userId, args.tripPackingItemIds, requestingSession, serverRuntime);
             },
-            financeRecurringCostUpsert(
+            financeRecurringCostsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationFinanceRecurringCostUpsertArgs,
+                args: GqlSAdminMutationFinanceRecurringCostsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return financeRecurringCostUpsert(userId, args, requestingSession, serverRuntime);
+                return financeRecurringCostsUpsert(userId, args.financeRecurringCosts, requestingSession, serverRuntime);
             },
-            financeRecurringCostDelete(
+            financeRecurringCostsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationFinanceRecurringCostDeleteArgs,
+                args: GqlSAdminMutationFinanceRecurringCostsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return financeRecurringCostDelete(userId, args, requestingSession, serverRuntime);
+                return financeRecurringCostsDelete(userId, args.costIds, requestingSession, serverRuntime);
             },
             financeMonthlyNetIncomeSet(
                 { userId }: GqlSAdminMutation,

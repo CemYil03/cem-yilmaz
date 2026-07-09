@@ -206,9 +206,9 @@ export interface GqlCAdminMutation {
     cvSkillReorder: GqlCMutationResult;
     cvSkillsDelete: GqlCMutationResult;
     cvSkillsUpsert: GqlCMutationResult;
-    financeMonthlyNetIncomeSet: GqlCAdminFinancesQuery;
-    financeRecurringCostDelete: GqlCMutationResult;
-    financeRecurringCostUpsert: GqlCFinanceRecurringCost;
+    financeMonthlyNetIncomeSet: GqlCMutationResult;
+    financeRecurringCostsDelete: GqlCMutationResult;
+    financeRecurringCostsUpsert: GqlCMutationResult;
     itemFilesAttach: GqlCMutationResult;
     itemFilesDelete: GqlCMutationResult;
     itemFilesUpsert: GqlCMutationResult;
@@ -358,12 +358,12 @@ export type GqlCAdminMutationFinanceMonthlyNetIncomeSetArgs = {
     amountCents?: InputMaybe<Scalars['Int']['input']>;
 };
 
-export type GqlCAdminMutationFinanceRecurringCostDeleteArgs = {
-    costId: Scalars['ID']['input'];
+export type GqlCAdminMutationFinanceRecurringCostsDeleteArgs = {
+    costIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminMutationFinanceRecurringCostUpsertArgs = {
-    input: GqlCFinanceRecurringCostInput;
+export type GqlCAdminMutationFinanceRecurringCostsUpsertArgs = {
+    financeRecurringCosts: Array<GqlCFinanceRecurringCostInput>;
 };
 
 export type GqlCAdminMutationItemFilesAttachArgs = {
@@ -3005,24 +3005,24 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceFinanceRecurringCostUpsertMutationVariables = Exact<{
-    input: Schema.GqlCFinanceRecurringCostInput;
+    financeRecurringCosts: Array<Schema.GqlCFinanceRecurringCostInput> | Schema.GqlCFinanceRecurringCostInput;
 }>;
 
-export type GqlCWorkspaceFinanceRecurringCostUpsertMutation = { admin: { financeRecurringCostUpsert: { costId: string } } };
+export type GqlCWorkspaceFinanceRecurringCostUpsertMutation = {
+    admin: { financeRecurringCostsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables = Exact<{
-    costId: string;
+    costIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceFinanceRecurringCostDeleteMutation = { admin: { financeRecurringCostDelete: { success: boolean } } };
+export type GqlCWorkspaceFinanceRecurringCostDeleteMutation = { admin: { financeRecurringCostsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables = Exact<{
     amountCents?: number | null | undefined;
 }>;
 
-export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation = {
-    admin: { financeMonthlyNetIncomeSet: { adminFinancesMonthlyNetIncomeCentsFindOne: number | null } };
-};
+export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation = { admin: { financeMonthlyNetIncomeSet: { success: boolean } } };
 
 export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -12356,8 +12356,17 @@ export const WorkspaceFinanceRecurringCostUpsertDocument = {
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'FinanceRecurringCostInput' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'financeRecurringCosts' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'FinanceRecurringCostInput' } },
+                            },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -12371,17 +12380,20 @@ export const WorkspaceFinanceRecurringCostUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'financeRecurringCostUpsert' },
+                                    name: { kind: 'Name', value: 'financeRecurringCostsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'input' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                            name: { kind: 'Name', value: 'financeRecurringCosts' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'financeRecurringCosts' } },
                                         },
                                     ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'costId' } }],
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
                                     },
                                 },
                             ],
@@ -12402,8 +12414,14 @@ export const WorkspaceFinanceRecurringCostDeleteDocument = {
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'costId' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'costIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -12417,12 +12435,12 @@ export const WorkspaceFinanceRecurringCostDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'financeRecurringCostDelete' },
+                                    name: { kind: 'Name', value: 'financeRecurringCostsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'costId' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'costId' } },
+                                            name: { kind: 'Name', value: 'costIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'costIds' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -12473,9 +12491,7 @@ export const WorkspaceFinanceMonthlyNetIncomeSetDocument = {
                                     ],
                                     selectionSet: {
                                         kind: 'SelectionSet',
-                                        selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
-                                        ],
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
                                     },
                                 },
                             ],

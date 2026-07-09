@@ -203,9 +203,9 @@ export interface GqlSAdminMutation {
     cvSkillReorder: GqlSMutationResult;
     cvSkillsDelete: GqlSMutationResult;
     cvSkillsUpsert: GqlSMutationResult;
-    financeMonthlyNetIncomeSet: GqlSAdminFinancesQuery;
-    financeRecurringCostDelete: GqlSMutationResult;
-    financeRecurringCostUpsert: GqlSFinanceRecurringCost;
+    financeMonthlyNetIncomeSet: GqlSMutationResult;
+    financeRecurringCostsDelete: GqlSMutationResult;
+    financeRecurringCostsUpsert: GqlSMutationResult;
     itemFilesAttach: GqlSMutationResult;
     itemFilesDelete: GqlSMutationResult;
     itemFilesUpsert: GqlSMutationResult;
@@ -355,12 +355,12 @@ export type GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs = {
     amountCents?: InputMaybe<Scalars['Int']['input']>;
 };
 
-export type GqlSAdminMutationFinanceRecurringCostDeleteArgs = {
-    costId: Scalars['ID']['input'];
+export type GqlSAdminMutationFinanceRecurringCostsDeleteArgs = {
+    costIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationFinanceRecurringCostUpsertArgs = {
-    input: GqlSFinanceRecurringCostInput;
+export type GqlSAdminMutationFinanceRecurringCostsUpsertArgs = {
+    financeRecurringCosts: Array<GqlSFinanceRecurringCostInput>;
 };
 
 export type GqlSAdminMutationItemFilesAttachArgs = {
@@ -2611,22 +2611,22 @@ export type GqlSAdminMutationResolvers<
         RequireFields<GqlSAdminMutationCvSkillsUpsertArgs, 'cvSkills'>
     >;
     financeMonthlyNetIncomeSet?: Resolver<
-        GqlSResolversTypes['AdminFinancesQuery'],
+        GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
         Partial<GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs>
     >;
-    financeRecurringCostDelete?: Resolver<
+    financeRecurringCostsDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationFinanceRecurringCostDeleteArgs, 'costId'>
+        RequireFields<GqlSAdminMutationFinanceRecurringCostsDeleteArgs, 'costIds'>
     >;
-    financeRecurringCostUpsert?: Resolver<
-        GqlSResolversTypes['FinanceRecurringCost'],
+    financeRecurringCostsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationFinanceRecurringCostUpsertArgs, 'input'>
+        RequireFields<GqlSAdminMutationFinanceRecurringCostsUpsertArgs, 'financeRecurringCosts'>
     >;
     itemFilesAttach?: Resolver<
         GqlSResolversTypes['MutationResult'],

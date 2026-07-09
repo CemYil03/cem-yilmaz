@@ -43,17 +43,18 @@ subscription WorkspaceFinancesPageUpdates {
     }
 }
 
-mutation WorkspaceFinanceRecurringCostUpsert($input: FinanceRecurringCostInput!) {
+mutation WorkspaceFinanceRecurringCostUpsert($financeRecurringCosts: [FinanceRecurringCostInput!]!) {
     admin {
-        financeRecurringCostUpsert(input: $input) {
-            costId
+        financeRecurringCostsUpsert(financeRecurringCosts: $financeRecurringCosts) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceFinanceRecurringCostDelete($costId: ID!) {
+mutation WorkspaceFinanceRecurringCostDelete($costIds: [ID!]!) {
     admin {
-        financeRecurringCostDelete(costId: $costId) {
+        financeRecurringCostsDelete(costIds: $costIds) {
             success
         }
     }
@@ -62,7 +63,7 @@ mutation WorkspaceFinanceRecurringCostDelete($costId: ID!) {
 mutation WorkspaceFinanceMonthlyNetIncomeSet($amountCents: Int) {
     admin {
         financeMonthlyNetIncomeSet(amountCents: $amountCents) {
-            adminFinancesMonthlyNetIncomeCentsFindOne
+            success
         }
     }
 }

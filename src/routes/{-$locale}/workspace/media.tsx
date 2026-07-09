@@ -1925,11 +1925,12 @@ const PLATFORM_ICON: Record<GqlCMediaPlatform, typeof PlayIcon> = {
 };
 
 function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>; locale: Locale }) {
-    const [editing, setEditing] = useState<ChannelRow | 'new' | null>(null);
-    const [query, setQuery] = useState('');
+    const [editing, setEditing] = useState<ChannelRow | null>(null);
     const [activeTopics, setActiveTopics] = useState<string[]>([]);
     const [activePlatforms, setActivePlatforms] = useState<GqlCMediaPlatform[]>([]);
     const [, reorderMutation] = useMutation(WorkspaceMediaChannelReorderDocument);
+    const searchInputRef = useRef<HTMLInputElement | null>(null);
+    const focusSearch = () => searchInputRef.current?.focus();
 
     const topicChips = useMemo(() => {
         const counts = new Map<string, number>();
@@ -1946,22 +1947,17 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
     }, [channels]);
 
     const filtered = useMemo(() => {
-        const needle = query.trim().toLowerCase();
         return channels
             .filter((channel) => {
                 if (activePlatforms.length > 0 && !activePlatforms.includes(channel.platform)) return false;
                 if (activeTopics.length > 0 && !activeTopics.every((topic) => channel.topics.includes(topic))) return false;
-                if (!needle) return true;
-                const haystack = [channel.name, channel.handle ?? '', channel.notes ?? '', channel.description ?? '']
-                    .join(' ')
-                    .toLowerCase();
-                return haystack.includes(needle);
+                return true;
             })
             .slice()
             .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
-    }, [channels, query, activeTopics, activePlatforms]);
+    }, [channels, activeTopics, activePlatforms]);
 
-    const filtersActive = activeTopics.length > 0 || activePlatforms.length > 0 || query.trim().length > 0;
+    const filtersActive = activeTopics.length > 0 || activePlatforms.length > 0;
 
     const ordered = useReorderableList(
         filtered,
@@ -1984,129 +1980,92 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
 
     return (
         <section>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0 flex-1">
-                    <InputGroup className="bg-background/70 backdrop-blur-sm">
-                        <InputGroupAddon>
-                            <SearchIcon className="text-muted-foreground" />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder={{ de: 'Kanäle filtern…', en: 'Filter channels…' }[locale]}
-                            aria-label={{ de: 'Kanäle filtern', en: 'Filter channels' }[locale]}
-                        />
-                        {query ? (
-                            <InputGroupAddon align="inline-end">
-                                <InputGroupButton
-                                    size="icon-xs"
-                                    onClick={() => setQuery('')}
-                                    aria-label={{ de: 'Filter leeren', en: 'Clear filter' }[locale]}
-                                >
-                                    <XIcon />
-                                </InputGroupButton>
-                            </InputGroupAddon>
-                        ) : null}
-                    </InputGroup>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        {
-                            {
-                                de: 'Lieblingskanäle und Podcasts — filtern, sortieren, öffnen.',
-                                en: 'Favourite channels and podcasts — filter, reorder, open.',
-                            }[locale]
-                        }
-                    </p>
-                </div>
-                <Button size="sm" className="shrink-0 self-start" onClick={() => setEditing('new')}>
-                    <PlusIcon />
-                    {{ de: 'Kanal hinzufügen', en: 'New channel' }[locale]}
-                </Button>
-            </div>
-
-            {platformChips.length > 0 || topicChips.length > 0 ? (
-                <div className="mt-4 flex flex-col gap-2">
-                    {platformChips.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                            {platformChips.map((platform) => {
-                                const active = activePlatforms.includes(platform);
-                                const Icon = PLATFORM_ICON[platform];
-                                return (
-                                    <button
-                                        key={platform}
-                                        type="button"
-                                        onClick={() => togglePlatform(platform)}
-                                        className={cn(
-                                            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                            active
-                                                ? 'border-primary bg-primary/15 text-primary'
-                                                : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
-                                        )}
-                                        aria-pressed={active}
-                                    >
-                                        <Icon className="size-3" />
-                                        <span>{PLATFORM_LABELS[platform][locale]}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ) : null}
-                    {topicChips.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                            {topicChips.map(([topic, count]) => {
-                                const active = activeTopics.includes(topic);
-                                return (
-                                    <button
-                                        key={topic}
-                                        type="button"
-                                        onClick={() => toggleTopic(topic)}
-                                        className={cn(
-                                            'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                            active
-                                                ? 'border-primary bg-primary/15 text-primary'
-                                                : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
-                                        )}
-                                        aria-pressed={active}
-                                    >
-                                        <span>{topicLabel(topic, locale)}</span>
-                                        <span
+            <div className="sticky top-0 z-10 pt-1 pb-3">
+                <ChannelSearchBar inputRef={searchInputRef} locale={locale} />
+                {platformChips.length > 0 || topicChips.length > 0 ? (
+                    <div className="mt-3 flex flex-col gap-2">
+                        {platformChips.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                                {platformChips.map((platform) => {
+                                    const active = activePlatforms.includes(platform);
+                                    const Icon = PLATFORM_ICON[platform];
+                                    return (
+                                        <button
+                                            key={platform}
+                                            type="button"
+                                            onClick={() => togglePlatform(platform)}
                                             className={cn(
-                                                'text-[10px] tabular-nums',
-                                                active ? 'text-primary/80' : 'text-muted-foreground/70',
+                                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                                active
+                                                    ? 'border-primary bg-primary/15 text-primary'
+                                                    : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
                                             )}
+                                            aria-pressed={active}
                                         >
-                                            {count}
-                                        </span>
-                                        {active ? <XIcon className="size-3" /> : null}
+                                            <Icon className="size-3" />
+                                            <span>{PLATFORM_LABELS[platform][locale]}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        ) : null}
+                        {topicChips.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                                {topicChips.map(([topic, count]) => {
+                                    const active = activeTopics.includes(topic);
+                                    return (
+                                        <button
+                                            key={topic}
+                                            type="button"
+                                            onClick={() => toggleTopic(topic)}
+                                            className={cn(
+                                                'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                                active
+                                                    ? 'border-primary bg-primary/15 text-primary'
+                                                    : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
+                                            )}
+                                            aria-pressed={active}
+                                        >
+                                            <span>{topicLabel(topic, locale)}</span>
+                                            <span
+                                                className={cn(
+                                                    'text-[10px] tabular-nums',
+                                                    active ? 'text-primary/80' : 'text-muted-foreground/70',
+                                                )}
+                                            >
+                                                {count}
+                                            </span>
+                                            {active ? <XIcon className="size-3" /> : null}
+                                        </button>
+                                    );
+                                })}
+                                {filtersActive ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveTopics([]);
+                                            setActivePlatforms([]);
+                                        }}
+                                        className="ml-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                                    >
+                                        {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
                                     </button>
-                                );
-                            })}
-                            {filtersActive ? (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setQuery('');
-                                        setActiveTopics([]);
-                                        setActivePlatforms([]);
-                                    }}
-                                    className="ml-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                                >
-                                    {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
-                                </button>
-                            ) : null}
-                        </div>
-                    ) : null}
-                </div>
-            ) : null}
+                                ) : null}
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
 
             {channels.length === 0 ? (
                 <GlassCard className="mt-6 px-6 py-10 text-center">
                     <TvIcon className="mx-auto size-6 text-muted-foreground" />
                     <p className="mt-3 text-sm text-muted-foreground">
-                        {{ de: 'Noch keine Kanäle. Füge deinen ersten hinzu.', en: 'No channels yet. Add your first one.' }[locale]}
+                        {{ de: 'Noch keine Kanäle. Suche oben nach einem Kanal.', en: 'No channels yet. Search above to add one.' }[locale]}
                     </p>
-                    <Button className="mt-4" size="sm" variant="outline" onClick={() => setEditing('new')}>
-                        <PlusIcon />
-                        {{ de: 'Kanal hinzufügen', en: 'New channel' }[locale]}
+                    <Button className="mt-4" size="sm" variant="outline" onClick={focusSearch}>
+                        <SearchIcon />
+                        {{ de: 'Suche fokussieren', en: 'Focus search' }[locale]}
                     </Button>
                 </GlassCard>
             ) : filtered.length === 0 ? (
@@ -2119,7 +2078,6 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                            setQuery('');
                             setActiveTopics([]);
                             setActivePlatforms([]);
                         }}
@@ -2143,9 +2101,7 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
                 </ul>
             )}
 
-            {editing ? (
-                <ChannelEditDialog channel={editing === 'new' ? null : editing} locale={locale} onClose={() => setEditing(null)} />
-            ) : null}
+            {editing ? <ChannelEditDialog channel={editing} locale={locale} onClose={() => setEditing(null)} /> : null}
         </section>
     );
 }
@@ -2205,63 +2161,47 @@ function ChannelCard({ channel, onEdit, locale }: { channel: ChannelRow; onEdit:
             ) : null}
 
             {firstNoteLine ? <p className="line-clamp-2 text-xs text-muted-foreground/90">{firstNoteLine}</p> : null}
-
-            <button
-                type="button"
-                onClick={onEdit}
-                className="mt-auto inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-            >
-                <PencilIcon className="size-3" />
-                {{ de: 'Bearbeiten', en: 'Edit' }[locale]}
-            </button>
         </div>
     );
 }
 
-function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow | null; locale: Locale; onClose: () => void }) {
+// Edit-only. Adding a channel happens inline via `ChannelSearchBar` (pick a
+// YouTube result → the channel is created directly), so this dialog always
+// opens on an existing row. The full manual form is kept so legacy Twitch /
+// podcast / other channels — and the YouTube fields the API can't infer —
+// stay editable.
+function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow; locale: Locale; onClose: () => void }) {
     const [, upsert] = useMutation(WorkspaceMediaChannelsUpsertDocument);
     const [, del] = useMutation(WorkspaceMediaChannelsDeleteDocument);
     const [busy, setBusy] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [form, setForm] = useState({
-        name: channel?.name ?? '',
-        platform: channel?.platform ?? ('youtube' as GqlCMediaPlatform),
-        url: channel?.url ?? '',
-        handle: channel?.handle ?? '',
-        avatarUrl: channel?.avatarUrl ?? '',
-        description: channel?.description ?? '',
-        notes: channel?.notes ?? '',
-        topics: channel?.topics ?? [],
+        name: channel.name,
+        platform: channel.platform,
+        url: channel.url,
+        handle: channel.handle ?? '',
+        avatarUrl: channel.avatarUrl ?? '',
+        description: channel.description ?? '',
+        notes: channel.notes ?? '',
+        topics: channel.topics,
     });
-
-    // Adding a channel is YouTube-search-only: pick a suggestion and the
-    // identity fields (name / url / handle / avatar / description) fill from
-    // the API — there is no manual identity entry. Editing a saved row keeps
-    // the full form so legacy Twitch / podcast / other channels stay editable.
-    const isNew = channel === null;
-    const hasPicked = form.name.trim().length > 0 && form.url.trim().length > 0;
 
     return (
         <>
             <Dialog open onOpenChange={(next) => (!next ? onClose() : null)}>
                 <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>
-                            {channel
-                                ? { de: 'Kanal bearbeiten', en: 'Edit channel' }[locale]
-                                : { de: 'Kanal hinzufügen', en: 'New channel' }[locale]}
-                        </DialogTitle>
+                        <DialogTitle>{{ de: 'Kanal bearbeiten', en: 'Edit channel' }[locale]}</DialogTitle>
                     </DialogHeader>
 
                     <form
                         onSubmit={async (event) => {
                             event.preventDefault();
-                            if (isNew && !hasPicked) return;
                             setBusy(true);
                             await upsert({
                                 mediaChannels: [
                                     {
-                                        channelId: channel?.channelId ?? null,
+                                        channelId: channel.channelId,
                                         name: form.name,
                                         platform: form.platform,
                                         url: form.url,
@@ -2278,152 +2218,72 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
                         }}
                         className="flex flex-col gap-3"
                     >
-                        {isNew ? (
-                            <>
-                                <YoutubeChannelSearchBar
-                                    locale={locale}
-                                    onSelect={(hit) => {
-                                        setForm((prev) => ({
-                                            ...prev,
-                                            platform: 'youtube',
-                                            name: hit.title,
-                                            url: hit.canonicalUrl,
-                                            handle: hit.handle ?? '',
-                                            avatarUrl: hit.avatarUrl ?? '',
-                                            description: hit.description ?? '',
-                                        }));
-                                    }}
-                                />
-                                {hasPicked ? (
-                                    <>
-                                        <div className="flex items-start gap-3 rounded-md border border-border/60 bg-background/40 p-3">
-                                            <Avatar size="lg" className="shrink-0">
-                                                {form.avatarUrl ? <AvatarImage src={form.avatarUrl} alt={form.name} /> : null}
-                                                <AvatarFallback>{form.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="truncate text-sm font-medium leading-snug">{form.name}</div>
-                                                {form.handle ? (
-                                                    <div className="mt-0.5 truncate text-xs text-muted-foreground">{form.handle}</div>
-                                                ) : null}
-                                                <a
-                                                    href={form.url}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="mt-1 inline-flex items-center gap-1 truncate text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                                                >
-                                                    <LinkIcon className="size-3 shrink-0" />
-                                                    <span className="truncate">{form.url}</span>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <Field label={{ de: 'Notizen', en: 'Notes' }[locale]}>
-                                            <Textarea
-                                                rows={2}
-                                                value={form.notes}
-                                                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                                            />
-                                        </Field>
-                                        <Field label={{ de: 'Themen', en: 'Topics' }[locale]}>
-                                            <TopicChipInput
-                                                value={form.topics}
-                                                onChange={(next) => setForm({ ...form, topics: next })}
-                                                locale={locale}
-                                            />
-                                        </Field>
-                                    </>
-                                ) : (
-                                    <p className="px-1 text-sm text-muted-foreground">
-                                        {
-                                            {
-                                                de: 'Suche oben nach einem YouTube-Kanal und wähle einen Treffer aus.',
-                                                en: 'Search for a YouTube channel above and pick a result.',
-                                            }[locale]
-                                        }
-                                    </p>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <Field label={{ de: 'Name', en: 'Name' }[locale]}>
-                                    <Input
-                                        value={form.name}
-                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                        required
-                                        autoFocus
-                                    />
-                                </Field>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Field label={{ de: 'Plattform', en: 'Platform' }[locale]}>
-                                        <Select
-                                            value={form.platform}
-                                            onValueChange={(value) => setForm({ ...form, platform: value as GqlCMediaPlatform })}
-                                        >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {(Object.keys(PLATFORM_LABELS) as GqlCMediaPlatform[]).map((p) => (
-                                                    <SelectItem key={p} value={p}>
-                                                        {PLATFORM_LABELS[p][locale]}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-                                    <Field label={{ de: 'Handle (optional)', en: 'Handle (optional)' }[locale]}>
-                                        <Input value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} />
-                                    </Field>
-                                </div>
-                                <Field label={{ de: 'URL', en: 'URL' }[locale]}>
-                                    <Input
-                                        type="url"
-                                        inputMode="url"
-                                        value={form.url}
-                                        onChange={(e) => setForm({ ...form, url: e.target.value })}
-                                        required
-                                    />
-                                </Field>
-                                <Field label={{ de: 'Avatar-URL (optional)', en: 'Avatar URL (optional)' }[locale]}>
-                                    <Input value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} />
-                                </Field>
-                                <Field label={{ de: 'Beschreibung', en: 'Description' }[locale]}>
-                                    <Textarea
-                                        rows={2}
-                                        value={form.description}
-                                        onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                    />
-                                </Field>
-                                <Field label={{ de: 'Notizen', en: 'Notes' }[locale]}>
-                                    <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                                </Field>
-                                <Field label={{ de: 'Themen', en: 'Topics' }[locale]}>
-                                    <TopicChipInput
-                                        value={form.topics}
-                                        onChange={(next) => setForm({ ...form, topics: next })}
-                                        locale={locale}
-                                    />
-                                </Field>
-                            </>
-                        )}
+                        <Field label={{ de: 'Name', en: 'Name' }[locale]}>
+                            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required autoFocus />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label={{ de: 'Plattform', en: 'Platform' }[locale]}>
+                                <Select
+                                    value={form.platform}
+                                    onValueChange={(value) => setForm({ ...form, platform: value as GqlCMediaPlatform })}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {(Object.keys(PLATFORM_LABELS) as GqlCMediaPlatform[]).map((p) => (
+                                            <SelectItem key={p} value={p}>
+                                                {PLATFORM_LABELS[p][locale]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label={{ de: 'Handle (optional)', en: 'Handle (optional)' }[locale]}>
+                                <Input value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} />
+                            </Field>
+                        </div>
+                        <Field label={{ de: 'URL', en: 'URL' }[locale]}>
+                            <Input
+                                type="url"
+                                inputMode="url"
+                                value={form.url}
+                                onChange={(e) => setForm({ ...form, url: e.target.value })}
+                                required
+                            />
+                        </Field>
+                        <Field label={{ de: 'Avatar-URL (optional)', en: 'Avatar URL (optional)' }[locale]}>
+                            <Input value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} />
+                        </Field>
+                        <Field label={{ de: 'Beschreibung', en: 'Description' }[locale]}>
+                            <Textarea
+                                rows={2}
+                                value={form.description}
+                                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                            />
+                        </Field>
+                        <Field label={{ de: 'Notizen', en: 'Notes' }[locale]}>
+                            <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                        </Field>
+                        <Field label={{ de: 'Themen', en: 'Topics' }[locale]}>
+                            <TopicChipInput value={form.topics} onChange={(next) => setForm({ ...form, topics: next })} locale={locale} />
+                        </Field>
 
                         <DialogFooter>
-                            {channel ? (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={() => setConfirmingDelete(true)}
-                                    disabled={busy}
-                                    className="mr-auto text-destructive hover:text-destructive"
-                                >
-                                    <Trash2Icon />
-                                    {{ de: 'Löschen', en: 'Delete' }[locale]}
-                                </Button>
-                            ) : null}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setConfirmingDelete(true)}
+                                disabled={busy}
+                                className="mr-auto text-destructive hover:text-destructive"
+                            >
+                                <Trash2Icon />
+                                {{ de: 'Löschen', en: 'Delete' }[locale]}
+                            </Button>
                             <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
                                 {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
                             </Button>
-                            <Button type="submit" disabled={busy || (isNew && !hasPicked)}>
+                            <Button type="submit" disabled={busy}>
                                 {{ de: 'Speichern', en: 'Save' }[locale]}
                             </Button>
                         </DialogFooter>
@@ -2431,67 +2291,54 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
                 </DialogContent>
             </Dialog>
 
-            {channel ? (
-                <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>{{ de: 'Kanal löschen?', en: 'Delete channel?' }[locale]}</AlertDialogTitle>
-                            <AlertDialogDescription>
+            <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{{ de: 'Kanal löschen?', en: 'Delete channel?' }[locale]}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {
                                 {
-                                    {
-                                        de: `„${channel.name}" wird dauerhaft entfernt.`,
-                                        en: `"${channel.name}" will be permanently removed.`,
-                                    }[locale]
-                                }
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
-                            <AlertDialogAction
-                                variant="destructive"
-                                onClick={async () => {
-                                    await del({ channelIds: [channel.channelId] });
-                                    setConfirmingDelete(false);
-                                    onClose();
-                                }}
-                            >
-                                {{ de: 'Löschen', en: 'Delete' }[locale]}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            ) : null}
+                                    de: `„${channel.name}" wird dauerhaft entfernt.`,
+                                    en: `"${channel.name}" will be permanently removed.`,
+                                }[locale]
+                            }
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={async () => {
+                                await del({ channelIds: [channel.channelId] });
+                                setConfirmingDelete(false);
+                                onClose();
+                            }}
+                        >
+                            {{ de: 'Löschen', en: 'Delete' }[locale]}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
 
-// --- YouTube channel search -------------------------------------------------
+// --- Channel search (inline add) --------------------------------------------
 
-// Formats a raw subscriber count into the human-friendly `12.3M` / `1.2K`
-// shape shown next to each suggestion row. Nullish counts render as an
-// empty string so the caller can just concatenate.
-function formatSubscriberCount(count: number | null | undefined): string {
-    if (count === null || count === undefined) return '';
-    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-    if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
-    return String(count);
-}
-
-type YoutubeSearchHit = NonNullable<
-    NonNullable<GqlCWorkspaceMediaYoutubeSearchQuery['sessionFindOne']['user']>['admin']
->['adminMediaFindOne']['adminMediaYoutubeFindMany'][number];
-
-// Search-first entry for new YouTube channels. Mirrors the TMDB search
-// shape (300ms debounce, `pause` on empty, `network-only`, keyboard nav,
-// outside-click closes). Selecting a hit auto-fills the channel form
-// fields the API can populate; the user still fills topics/notes.
-function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelect: (hit: YoutubeSearchHit) => void }) {
+// Sticky search-to-add bar for the channels tab. Mirrors the movies / series
+// TMDB search shape (300ms debounce, `pause` on empty, `network-only`,
+// keyboard nav, outside-click closes) but hits the YouTube Data API. Picking
+// a suggestion creates the channel directly via `mediaChannelsUpsert` — the
+// identity fields (name / url / handle / avatar / description) come from the
+// API; topics / notes are edited afterwards on the card. There is no manual
+// identity entry on the add path.
+function ChannelSearchBar({ inputRef, locale }: { inputRef: React.RefObject<HTMLInputElement | null>; locale: Locale }) {
     const [query, setQuery] = useState('');
     const [debounced, setDebounced] = useState('');
     const [highlighted, setHighlighted] = useState(0);
     const [open, setOpen] = useState(false);
+    const [, upsert] = useMutation(WorkspaceMediaChannelsUpsertDocument);
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const inputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
         const trimmed = query.trim();
@@ -2525,8 +2372,22 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
         setHighlighted(0);
     }, [debounced, results.length]);
 
-    const pickResult = (hit: YoutubeSearchHit) => {
-        onSelect(hit);
+    const addResult = async (hit: YoutubeSearchHit) => {
+        await upsert({
+            mediaChannels: [
+                {
+                    channelId: null,
+                    name: hit.title,
+                    platform: 'youtube',
+                    url: hit.canonicalUrl,
+                    handle: hit.handle ?? null,
+                    avatarUrl: hit.avatarUrl ?? null,
+                    description: hit.description ?? null,
+                    notes: null,
+                    topics: [],
+                },
+            ],
+        });
         setQuery('');
         setDebounced('');
         setOpen(false);
@@ -2534,9 +2395,9 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
 
     return (
         <div ref={containerRef} className="relative">
-            <InputGroup className="bg-background/70 backdrop-blur-sm">
+            <InputGroup>
                 <InputGroupAddon>
-                    <PlayCircleIcon className="text-muted-foreground" />
+                    <SearchIcon className="text-muted-foreground" />
                 </InputGroupAddon>
                 <InputGroupInput
                     ref={inputRef}
@@ -2557,7 +2418,7 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
                             const hit = results[highlighted];
                             if (hit) {
                                 e.preventDefault();
-                                pickResult(hit);
+                                void addResult(hit);
                             }
                         } else if (e.key === 'Escape') {
                             setQuery('');
@@ -2565,8 +2426,8 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
                             setOpen(false);
                         }
                     }}
-                    placeholder={{ de: 'YouTube-Kanal suchen…', en: 'Search YouTube channel…' }[locale]}
-                    aria-label={{ de: 'YouTube-Suche', en: 'YouTube search' }[locale]}
+                    placeholder={{ de: 'YouTube-Kanal suchen…', en: 'Search a YouTube channel…' }[locale]}
+                    aria-label={{ de: 'Kanal-Suche', en: 'Channel search' }[locale]}
                     role="combobox"
                     aria-expanded={open}
                     aria-controls="youtube-suggestions"
@@ -2605,9 +2466,7 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
                             {{ de: 'Suche läuft…', en: 'Searching…' }[locale]}
                         </div>
                     ) : results.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-muted-foreground">
-                            {{ de: 'Keine Treffer — manuell ausfüllen', en: 'No results — fill in manually' }[locale]}
-                        </div>
+                        <div className="px-4 py-3 text-sm text-muted-foreground">{{ de: 'Keine Treffer.', en: 'No results.' }[locale]}</div>
                     ) : (
                         <ul>
                             {results.map((hit, index) => {
@@ -2620,7 +2479,7 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
                                             role="option"
                                             aria-selected={active}
                                             onMouseEnter={() => setHighlighted(index)}
-                                            onClick={() => pickResult(hit)}
+                                            onClick={() => void addResult(hit)}
                                             className={cn(
                                                 'flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors',
                                                 active ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
@@ -2658,6 +2517,22 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
         </div>
     );
 }
+
+// --- YouTube channel search -------------------------------------------------
+
+// Formats a raw subscriber count into the human-friendly `12.3M` / `1.2K`
+// shape shown next to each suggestion row. Nullish counts render as an
+// empty string so the caller can just concatenate.
+function formatSubscriberCount(count: number | null | undefined): string {
+    if (count === null || count === undefined) return '';
+    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
+    if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
+    return String(count);
+}
+
+type YoutubeSearchHit = NonNullable<
+    NonNullable<GqlCWorkspaceMediaYoutubeSearchQuery['sessionFindOne']['user']>['admin']
+>['adminMediaFindOne']['adminMediaYoutubeFindMany'][number];
 
 // --- Topic chip input -------------------------------------------------------
 
