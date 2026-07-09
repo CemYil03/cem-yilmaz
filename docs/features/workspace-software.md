@@ -10,7 +10,7 @@ See also:
 
 ## User behavior
 
-The page starts with "Technology quick links" / "Technologie-Quicklinks": a responsive card grid of languages, frameworks, libraries,
+The page starts with "Technology quick links" / "Technologie-Schnellzugriffe": a responsive card grid of languages, frameworks, libraries,
 platforms, and tools used by the site. Each card shows:
 
 - the technology logo loaded from Simple Icons' CDN,

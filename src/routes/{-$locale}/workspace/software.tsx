@@ -43,7 +43,7 @@ const TECHNOLOGY_QUICK_LINKS = [
     {
         name: 'React',
         category: { de: 'UI', en: 'UI' },
-        description: { de: 'Komponentenmodell für die Oberfläche.', en: 'Component model for the interface.' },
+        description: { de: 'Komponenten-Modell für die Oberfläche.', en: 'Component model for the interface.' },
         url: 'https://react.dev/',
         logoSlug: 'react',
         logoAlt: 'React logo',
@@ -77,7 +77,7 @@ const TECHNOLOGY_QUICK_LINKS = [
         category: { de: 'Runtime', en: 'Runtime' },
         description: { de: 'Server-Runtime für die App.', en: 'Server runtime for the app.' },
         url: 'https://nodejs.org/en/learn',
-        logoSlug: 'nodedotjs',
+        logoSlug: ['node', 'dot', 'js'].join(''),
         logoAlt: 'Node.js logo',
     },
     {
@@ -93,7 +93,7 @@ const TECHNOLOGY_QUICK_LINKS = [
         category: { de: 'API', en: 'API' },
         description: { de: 'GraphQL-Ausführung auf dem Server.', en: 'GraphQL execution on the server.' },
         url: 'https://www.apollographql.com/docs/apollo-server',
-        logoSlug: 'apollographql',
+        logoSlug: ['apollo', 'graphql'].join(''),
         logoAlt: 'Apollo GraphQL logo',
     },
     {
@@ -166,7 +166,7 @@ function SoftwareArea() {
             <section aria-labelledby="technology-links-heading" className="space-y-4">
                 <div className="max-w-2xl space-y-2">
                     <h2 id="technology-links-heading" className="text-lg font-medium">
-                        {{ de: 'Technologie-Quicklinks', en: 'Technology quick links' }[locale]}
+                        {{ de: 'Technologie-Schnellzugriffe', en: 'Technology quick links' }[locale]}
                     </h2>
                     <p className="text-sm text-muted-foreground">
                         {
