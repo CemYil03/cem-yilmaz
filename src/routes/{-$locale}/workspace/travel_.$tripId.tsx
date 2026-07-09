@@ -86,9 +86,18 @@ const TRANSPORT_LABELS: Record<GqlCTransportMode, { de: string; en: string }> = 
 
 // Suggested packing categories for the create/edit dialog. Stored as free-text
 // on `TripPackingItems.category` — the list is a UI hint only; any string is
-// valid. Keep English labels to match the column default (`Other`) and the
-// values the travel sub-agent tends to write.
-const PACKING_CATEGORY_DEFAULTS = ['Documents', 'Electronics', 'Clothing', 'Toiletries', 'Health', 'Money', 'Misc', 'Other'] as const;
+// valid. Labels follow the active locale so picking a suggestion writes the
+// DE or EN string into the column.
+const PACKING_CATEGORY_DEFAULTS: readonly { de: string; en: string }[] = [
+    { de: 'Dokumente', en: 'Documents' },
+    { de: 'Elektronik', en: 'Electronics' },
+    { de: 'Kleidung', en: 'Clothing' },
+    { de: 'Hygiene', en: 'Toiletries' },
+    { de: 'Gesundheit', en: 'Health' },
+    { de: 'Geld', en: 'Money' },
+    { de: 'Sonstiges', en: 'Misc' },
+    { de: 'Andere', en: 'Other' },
+];
 
 export const Route = createFileRoute('/{-$locale}/workspace/travel_/$tripId')({
     loader: ({ params }) => routeLoaderGraphqlClient(WorkspaceTravelDetailDocument, { tripId: params.tripId })(),
@@ -836,7 +845,8 @@ function EditPackingItemDialog({
     onClose: () => void;
 }) {
     const isNew = initial === null;
-    const [category, setCategory] = useState(initial?.category ?? 'Other');
+    const otherCategory = { de: 'Andere', en: 'Other' }[locale];
+    const [category, setCategory] = useState(initial?.category ?? otherCategory);
     const [label, setLabel] = useState(initial?.label ?? '');
     const [quantity, setQuantity] = useState(initial?.quantity ?? 1);
     const [notes, setNotes] = useState(initial?.notes ?? '');
@@ -847,7 +857,8 @@ function EditPackingItemDialog({
     const categorySuggestions = useMemo(() => {
         const seen = new Set<string>();
         const out: string[] = [];
-        for (const value of [...PACKING_CATEGORY_DEFAULTS, ...existingCategories]) {
+        const defaults = PACKING_CATEGORY_DEFAULTS.map((entry) => entry[locale]);
+        for (const value of [...defaults, ...existingCategories]) {
             const trimmed = value.trim();
             if (trimmed.length === 0) continue;
             const key = trimmed.toLowerCase();
@@ -856,7 +867,7 @@ function EditPackingItemDialog({
             out.push(trimmed);
         }
         return out;
-    }, [existingCategories]);
+    }, [existingCategories, locale]);
 
     const submit = async () => {
         setSubmitting(true);
@@ -866,7 +877,7 @@ function EditPackingItemDialog({
                     {
                         tripPackingItemId: initial?.tripPackingItemId ?? null,
                         tripId,
-                        category: category.trim() || 'Other',
+                        category: category.trim() || otherCategory,
                         label: label.trim(),
                         quantity,
                         packed: initial?.packed ?? false,
@@ -896,7 +907,7 @@ function EditPackingItemDialog({
                             value={category}
                             onChange={(e) => setCategory(e.target.value)}
                             list={categoryListId}
-                            placeholder="Documents / Electronics / …"
+                            placeholder={{ de: 'Dokumente / Elektronik / …', en: 'Documents / Electronics / …' }[locale]}
                             autoComplete="off"
                         />
                         <datalist id={categoryListId}>

@@ -28,10 +28,11 @@ past holds the rest. A "New trip" button opens the base-facts dialog (title, des
 
 - **Itinerary** — one collapsible block per `TripDay` (labeled "Day N · date · title"). Inside each day is an ordered list of
   `TripActivities` with time, title, location, url, notes. Add / edit / delete affordances at both levels.
-- **Packing list** — checkbox rows grouped by free-text `category` (Documents, Electronics, Clothing, Toiletries, …). Each row shows
+- **Packing list** — checkbox rows grouped by free-text `category` (Documents / Dokumente, Electronics / Elektronik, …). Each row shows
   quantity when > 1 and a notes preview. Checking the box calls `tripPackingItemsUpsert` with a one-element array flipping `packed`. The
-  add/edit dialog suggests defaults via a native `<datalist>` (Documents, Electronics, Clothing, Toiletries, Health, Money, Misc, Other)
-  merged with any categories already on the trip; typing a custom string is always allowed — the column stays free-text.
+  add/edit dialog suggests locale-matched defaults via a native `<datalist>` (Documents, Electronics, Clothing, Toiletries, Health, Money,
+  Misc, Other — and their DE counterparts) merged with any categories already on the trip; typing a custom string is always allowed — the
+  column stays free-text, and picking a suggestion writes the active-locale label.
 
 ## The AI use-case (the whole reason this feature exists)
 
