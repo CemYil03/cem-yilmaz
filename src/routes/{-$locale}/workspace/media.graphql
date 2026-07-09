@@ -135,73 +135,70 @@ query WorkspaceMediaYoutubeSearch($query: String!) {
     }
 }
 
-mutation WorkspaceMovieUpsert($input: MovieInput!) {
+mutation WorkspaceMoviesUpsert($movies: [MovieInput!]!) {
     admin {
-        movieUpsert(input: $input) {
-            movieId
+        moviesUpsert(movies: $movies) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceMovieDelete($movieId: ID!) {
+mutation WorkspaceMoviesDelete($movieIds: [ID!]!) {
     admin {
-        movieDelete(movieId: $movieId) {
+        moviesDelete(movieIds: $movieIds) {
             success
         }
     }
 }
 
-mutation WorkspaceMovieMarkWatched($movieId: ID!, $rating: Int) {
+mutation WorkspaceMoviesAddFromTmdb($inputs: [MovieAddFromTmdbInput!]!) {
     admin {
-        movieMarkWatched(movieId: $movieId, rating: $rating) {
-            movieId
+        moviesAddFromTmdb(inputs: $inputs) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceMovieAddFromTmdb($tmdbId: Int!, $status: MovieStatus) {
+mutation WorkspaceShowsUpsert($shows: [ShowInput!]!) {
     admin {
-        movieAddFromTmdb(tmdbId: $tmdbId, status: $status) {
-            movieId
+        showsUpsert(shows: $shows) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceShowUpsert($input: ShowInput!) {
+mutation WorkspaceShowsDelete($showIds: [ID!]!) {
     admin {
-        showUpsert(input: $input) {
-            showId
-        }
-    }
-}
-
-mutation WorkspaceShowDelete($showId: ID!) {
-    admin {
-        showDelete(showId: $showId) {
+        showsDelete(showIds: $showIds) {
             success
         }
     }
 }
 
-mutation WorkspaceShowAddFromTmdb($tmdbId: Int!, $status: MovieStatus) {
+mutation WorkspaceShowsAddFromTmdb($inputs: [ShowAddFromTmdbInput!]!) {
     admin {
-        showAddFromTmdb(tmdbId: $tmdbId, status: $status) {
-            showId
+        showsAddFromTmdb(inputs: $inputs) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceMediaChannelUpsert($input: MediaChannelInput!) {
+mutation WorkspaceMediaChannelsUpsert($mediaChannels: [MediaChannelInput!]!) {
     admin {
-        mediaChannelUpsert(input: $input) {
-            channelId
+        mediaChannelsUpsert(mediaChannels: $mediaChannels) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceMediaChannelDelete($channelId: ID!) {
+mutation WorkspaceMediaChannelsDelete($channelIds: [ID!]!) {
     admin {
-        mediaChannelDelete(channelId: $channelId) {
+        mediaChannelsDelete(channelIds: $channelIds) {
             success
         }
     }

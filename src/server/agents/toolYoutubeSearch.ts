@@ -6,7 +6,7 @@ import type { GqlSSession } from '../graphql/generated';
 // Live YouTube channel search for the media sub-agent. Same underlying
 // client the GraphQL `Admin.adminMediaFindOne.adminMediaYoutubeFindMany`
 // resolver uses. Empty result on missing key or YouTube outage — the
-// sub-agent handles that by falling back to `mediaChannelUpsert` with
+// sub-agent handles that by falling back to `mediaChannelsUpsert` with
 // whatever fields the user named directly.
 
 const youtubeSearchInputSchema = z.object({
@@ -26,10 +26,10 @@ export function toolYoutubeSearch({ serverRuntime }: MediaAgentReadContext) {
         description: [
             'Search YouTube for channels by name or handle. Returns up to 10 results with `channelId`, `title`,',
             '`handle`, `avatarUrl`, `description`, `subscriberCount`, and a pre-composed `canonicalUrl`. Use this',
-            'BEFORE `mediaChannelUpsert` when Cem names a YouTube channel he does not have yet — feed the chosen',
+            'BEFORE `mediaChannelsUpsert` when Cem names a YouTube channel he does not have yet — feed the chosen',
             '`canonicalUrl` into `url`, `title` into `name`, `handle` into `handle`, and `avatarUrl` into',
             '`avatarUrl`. Empty results mean no match / no YouTube key / YouTube unreachable; in all three cases',
-            'fall back to `mediaChannelUpsert` with whatever the user typed.',
+            'fall back to `mediaChannelsUpsert` with whatever the user typed.',
         ].join(' '),
         inputSchema: youtubeSearchInputSchema,
         execute: async (input) => {

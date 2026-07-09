@@ -44,11 +44,13 @@ bar when he needs it.
     touching the cache.
   - **Service history**: repair / service / replacement / other events with date, vendor, cost, notes, and an optional `nextDueAt` that
     surfaces as a "next service due" line on the entry.
-  - **Files**: receipts, warranty PDFs, invoices, photos, manuals. Upload via the existing `POST /api/file-uploads` → `itemFileAttach`
-    two-step; each file carries a `kind` and can be pinned. Files can be attached at the item level or to a specific service entry
-    (invoices, typically) — the entry card shows the invoice inline, and the item-level Files section shows the same file too.
+  - **Files**: receipts, warranty PDFs, invoices, photos, manuals. Upload via the existing `POST /api/file-uploads` → `itemFilesAttach`
+    two-step; each file carries a `kind` and can be pinned (the pin toggle goes through `itemFilesUpsert`). Files can be attached at the
+    item level or to a specific service entry (invoices, typically) — the entry card shows the invoice inline, and the item-level Files
+    section shows the same file too.
 - **Disposal**: setting an item to sold / gifted / lost / disposed keeps the row (so material net worth is reconcilable and the history
-  survives), stamps `disposedAt` (defaults to now), and drops the row from the default list. Reverting to `owned` clears the stamp.
+  survives), stamps `disposedAt` (defaults to now), and drops the row from the default list. Reverting to `owned` clears the stamp. This is
+  a field-set on `itemsUpsert` — the "Change status" action carries the existing row with the disposal fields overridden.
 
 ## Cross-references
 
@@ -77,14 +79,19 @@ sets the join's `serviceEntryId` to null so the invoice stays visible on the ite
 
 Every list read and the material-net-worth aggregate could compute the "latest by valuedAt" from `ItemValuations` — but at the cost of a
 correlated subquery per row. Caching the latest valuation on the item lets the list surface hit one indexed table and read the cached column
-directly. The `itemReprice` command is the single writer: it inserts the journal row and updates the cache in one transaction, so they can't
-drift.
+directly. The `itemsReprice` command is the single writer: it inserts the journal row and updates the cache in one transaction, so they
+can't drift.
 
-### Why `itemReprice` and `itemDispose` are not part of `itemUpsert`
+### Why `itemsReprice` is a separate mutation (and disposal is not)
 
-Both mutations have coupled side-effects (`itemReprice` writes the valuation journal; `itemDispose` conditionally clears `disposedAt`) and
-the wrong pattern would let a naive `itemUpsert` call silently overwrite the cache without a matching journal row. Splitting them makes the
-semantics obvious at the call site: "the composer edits facts; repricing and disposal are their own actions."
+Repricing has a coupled side-effect: it appends an `ItemValuations` journal row **and** updates the cached `currentValueCents` in one
+transaction. Folding it into `itemsUpsert` would let a naive edit silently overwrite the cache without a matching journal row, so it stays a
+separate batch mutation (`itemsReprice`) that owns `currentValueCents`.
+
+Disposal, by contrast, is a pure field-set (`disposalState` + `disposedAt`), so it **collapsed into `itemsUpsert`** — there is no separate
+`itemDispose` mutation. The upsert applies the rule `disposedAt = 'owned' ? null : (disposedAt ?? now)`, so entering a disposal state stamps
+the date and reverting to `owned` clears it. The edit dialog and the "Change status" action both go through `itemsUpsert` carrying the
+existing row (from the subscription payload) with the disposal fields set, so a plain field edit preserves the current state.
 
 ## Implementation Details
 
@@ -121,13 +128,24 @@ the tables, mirrored as GraphQL enums.
 
 - Read: `AdminInventoryQuery` mounted on `extend type Admin`. Fields: `items(includeDisposed)`, `item(itemId)`, `materialNetWorthCents`,
   `upcomingWarrantyExpirations(withinDays)`.
-- Write: 9 mutations under `extend type AdminMutation` — `itemUpsert`, `itemDelete`, `itemDispose`, `itemReprice`, `itemServiceEntryUpsert`,
-  `itemServiceEntryDelete`, `itemFileAttach`, `itemFileDelete`, `itemFileTogglePin`.
+- Write: 8 batch mutations under `extend type AdminMutation`, all returning `MutationResult { success, referenceId, referenceIds }` — the
+  hydrated entity is never returned; the `userUpdates` subscription is the single source of truth. Every entity mutation is a batch (single
+  edits pass a one-element array): `itemsUpsert`, `itemsDelete`, `itemsReprice`, `itemServiceEntriesUpsert`, `itemServiceEntriesDelete`,
+  `itemFilesAttach`, `itemFilesDelete`, `itemFilesUpsert`. `referenceIds` echoes the row id per input in input order.
+  - **Disposal collapsed into `itemsUpsert`.** `ItemInput` carries optional `disposalState` + `disposedAt`; there is no `itemDispose`
+    mutation.
+  - **Pin toggle collapsed into `itemFilesUpsert`.** `itemFilesUpsert` is edit-only (`ItemFileUpsert { itemFileId, label, pinned }`, every
+    input requires `itemFileId` — it never creates rows); the UI toggles a pin by passing the existing row's id with the flipped `pinned`.
+    There is no `itemFileTogglePin` mutation. Creating a file join is still `itemFilesAttach`.
+  - **`itemsReprice` stays separate** because it appends a valuation journal row and updates the cached `currentValueCents` in one
+    transaction (a side-effect beyond a field-set).
 - Gated once at `Mutation.admin → guardAdminMutation`; child resolvers assume they're guarded (same posture as Media / Projects).
 
 ### CQRS wiring
 
-- `src/server/commands/item*.ts` — one file per mutation.
+- `src/server/commands/item*.ts` — one file per batch mutation (`itemsUpsert`, `itemsDelete`, `itemsReprice`, `itemServiceEntriesUpsert`,
+  `itemServiceEntriesDelete`, `itemFilesAttach`, `itemFilesDelete`, `itemFilesUpsert`), each following the `moviesUpsert` / `tripsUpsert`
+  batch template.
 - `src/server/queries/{adminInventoryItemFindMany,adminInventoryItemFindOne,adminInventoryMaterialNetWorthCentsFindOne,adminInventoryItemUpcomingWarrantyFindMany}.ts`.
 - `src/server/mappers/{toGqlItem,toGqlItemValuation,toGqlItemServiceEntry,toGqlItemFile}.ts`.
 - Wired in `src/server/graphql/resolversCreate.ts` — the single entry point.

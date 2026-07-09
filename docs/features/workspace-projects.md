@@ -20,9 +20,9 @@ assistant message still resolves.
   type, submission date, and (on expand) the full brief plus budget/timeline. Two actions: **Archive** flips the request to `archived`
   without creating a project; **Convert to project** opens the project editor inline, prefilled with a title of
   `<project-type-label>: <company-or-name>`, description copied from the brief, and Budget / Timeline / Contact lines pre-pasted into
-  `notes`. The admin reviews, edits anything they want, and on save the editor's normal `projectUpsert` mutation creates the project in the
-  chosen status and archives the source request in the same transaction. A toggle reveals archived rows. Rows already converted are filtered
-  out of the default view (they're visible on the linked Project as a "Source request" backlink instead).
+  `notes`. The admin reviews, edits anything they want, and on save the editor's normal `projectsUpsert` mutation (a one-element array)
+  creates the project in the chosen status and archives the source request in the same transaction. A toggle reveals archived rows. Rows
+  already converted are filtered out of the default view (they're visible on the linked Project as a "Source request" backlink instead).
 - **Projects** — responsive **tile grid** (1 column on mobile, 2 on `md`, 3 on `lg+`) grouped by project status
   (`idea | planning | active | paused | done | archived`). Each tile carries title, short description (clamped to 2 lines), source-request
   backlink when applicable, a tasks-done counter (`3/7`), and a total-work label. The **whole tile is a link** to the project detail route —
@@ -51,9 +51,9 @@ opening the page.
 
 Dedicated `Projects` and `Tasks` tables. `Tasks.projectId` is nullable — `IS NULL` rows are standalone todos surfaced on the separate
 `/workspace/todos` page (see [features/workspace-todos.md](./workspace-todos.md)); this page never lists them so the two mental spaces stay
-disjoint. Convert flow runs through `projectUpsert` with `sourceRequestId` set; a single drizzle transaction inserts the project, stamps
-`Projects.sourceRequestId`, and archives the request. Single-language (English only) — the page is admin-only and never surfaced publicly,
-so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
+disjoint. Convert flow runs through `projectsUpsert` with `sourceRequestId` set on the row; a single drizzle transaction inserts the
+project, stamps `Projects.sourceRequestId`, and archives the request. Single-language (English only) — the page is admin-only and never
+surfaced publicly, so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
 
 ## Implementation details
 
@@ -98,33 +98,37 @@ Read namespace under `Admin` (reached via `sessionFindOne.user.admin`):
   this page.
 - `admin.adminStandaloneTaskOpenCount: Int!` — hub-badge count of standalone todos in `todo` or `doing`.
 
-Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
+Write namespace under `AdminMutation` (gated by `guardAdminMutation`). Every entity mutation is a **batch** returning
+`MutationResult { success, referenceId, referenceIds }` — never the hydrated entity. The `userUpdates` subscription is the single source of
+truth; `referenceIds` echoes the row id per input in input order so a caller can address a newly-created row without a follow-up read. A
+single-item edit passes a one-element array — there is no parallel singular path.
 
-- `projectRequestArchive(projectRequestId)`, `projectRequestDelete(projectRequestId)`
-- `projectUpsert(input)` — single entry point for both hand-authored projects and conversions from an inbox request. When `input.projectId`
-  is absent it creates; when present it updates. When `input.sourceRequestId` is also set on a create the resolver loads the source request
-  inside the same transaction, requires it to be `emailVerified`, links the new project back via `sourceRequestId`, and flips the request to
-  `archived`. The visitor's brief lives in `input.description` / `input.notes` because the inbox UI prefills the editor from the request
-  before the admin submits; no synthesis happens server-side. `input.position` is optional on create — when omitted the row lands at the end
-  of the `planning` column (max position + 1).
-- `projectDelete(projectId)`, `projectReorder(orderedIds)`
-- `taskUpsert(input)`, `taskDelete(taskId)`, `taskReorder(orderedIds)` — reorder is bucket-scoped at the call site (caller passes a single
-  status column's worth of ids).
+- `projectRequestArchive(projectRequestId)`, `projectRequestDelete(projectRequestId)` — admin-queue singulars, intentionally not batched.
+- `projectsUpsert(projects: [ProjectCreate!]!)` — single entry point for both hand-authored projects and conversions from an inbox request,
+  processed per input row. When a row's `projectId` is absent it creates; when present it updates. When `sourceRequestId` is also set on a
+  create the command loads the source request inside the same transaction, requires it to be `emailVerified`, links the new project back via
+  `sourceRequestId`, and flips the request to `archived`. The visitor's brief lives in `description` / `notes` because the inbox UI prefills
+  the editor from the request before submit; no synthesis happens server-side. `position` is optional on create — when omitted the row lands
+  at the end of the `planning` column. The planning tail is read once before the loop and incremented locally so a batch of creates lays out
+  contiguously.
+- `projectsDelete(projectIds: [ID!]!)`, `projectReorder(orderedIds)`
+- `tasksUpsert(tasks: [TaskCreate!]!)`, `tasksDelete(taskIds: [ID!]!)`, `taskReorder(orderedIds)` — reorder is bucket-scoped at the call
+  site (caller passes a single status column's worth of ids).
 
 ### Where things live
 
-| Concern         | File                                                                                                                                                 |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                   |
-| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                  |
-| Mappers         | `src/server/mappers/toGqlProjectRequest.ts`, `toGqlProject.ts`, `toGqlTask.ts`                                                                       |
-| Queries         | `src/server/queries/adminProjectRequestFindMany.ts`, `adminProjectRequestInboxCount.ts`, `adminProjectFindMany.ts`, `adminStandaloneTaskFindMany.ts` |
-| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `project{Upsert,Delete,Reorder}.ts`, `task{Upsert,Delete,Reorder}.ts`                       |
-| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                              |
-| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                       |
-| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                   |
-| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                        |
-| Tests           | `src/server/commands/projectUpsert.test.ts`, `taskReorder.test.ts`                                                                                   |
+| Concern         | File                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                      |
+| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                     |
+| Mappers         | `src/server/mappers/toGqlProjectRequest.ts`, `toGqlProject.ts`, `toGqlTask.ts`                                                                          |
+| Queries         | `src/server/queries/adminProjectRequestFindMany.ts`, `adminProjectRequestInboxCount.ts`, `adminProjectFindMany.ts`, `adminStandaloneTaskFindMany.ts`    |
+| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `projects{Upsert,Delete}.ts`, `projectReorder.ts`, `tasks{Upsert,Delete}.ts`, `taskReorder.ts` |
+| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                                 |
+| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                          |
+| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                      |
+| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                           |
+| Tests           | `src/server/commands/projectsUpsert.test.ts`, `taskReorder.test.ts`                                                                                     |
 
 ## Out of scope (v1)
 
@@ -145,7 +149,7 @@ The detail route has its own search-param schema (`?tab=overview|tasks|activity|
 (`WorkspaceProjectDetail`) co-located in `projects_.$projectId.graphql`. The query mirrors the board's nested shape but adds `links` /
 `files` per project and per activity, the new offer columns (`amountCents`, `offerStatus`), and is fetched by
 `admin.project(projectId: ID!)` — a new single-entity counterpart to `admin.projects`. The board page's own GraphQL file no longer needs to
-ship the per-project activity-edit mutations (the detail page owns those); only `projectTimerStart` / `projectTimerStop` and the
+ship the per-project activity-edit mutations (the detail page owns those); only `projectTimersStart` / `projectTimersStop` and the
 project-level CRUD stayed.
 
 ### Layout
@@ -176,8 +180,8 @@ The **right column** is a sticky rail (`lg:sticky lg:top-24`) wrapped in `GlassC
 ### Status pill
 
 The pill is a `DropdownMenu` trigger styled per status — six color classes covering both themes (idea → muted, planning → amber, active →
-emerald, paused → secondary, done → primary, archived → muted/strikethrough). The menu items call the same `projectUpsert` mutation the
-former `Select` did. Source of truth lives in `PROJECT_STATUS_TINTS` at the top of the route file.
+emerald, paused → secondary, done → primary, archived → muted/strikethrough). The menu items call the same `projectsUpsert` mutation the
+former `Select` did (a one-element array). Source of truth lives in `PROJECT_STATUS_TINTS` at the top of the route file.
 
 ### Overview tab
 
@@ -223,8 +227,8 @@ The schema:
   `milestone`) is `internal`.
 - Enum: `projectActivityDirections = ['outgoing', 'incoming', 'internal']` in `src/server/db/schema.ts`.
 - GraphQL: `enum ProjectActivityDirection` + `direction: ProjectActivityDirection!` on the type + optional `direction` on
-  `ProjectActivityCreate`. The `projectActivityUpsert` command normalizes `work` / `note` / `milestone` to `internal` regardless of what the
-  client sent.
+  `ProjectActivityCreate`. The `projectActivitiesUpsert` command normalizes `work` / `note` / `milestone` to `internal` regardless of what
+  the client sent.
 
 ### Breadcrumb / chrome
 
@@ -251,25 +255,25 @@ survives, it just detaches from the timeline. Adding a link directly on the Link
 Database: `ProjectLinks` table — `projectLinkId`, `projectId` (FK, cascade), `activityId` (FK, set-null), `url`, `label`, `kind`, `pinned`,
 `createdAt`, `updatedAt`. Indexes `(projectId, pinned)` and `(activityId)`.
 
-GraphQL: `type ProjectLink`, `enum ProjectLinkKind`, mutations `projectLinkUpsert`, `projectLinkDelete`, `projectLinkTogglePin`.
-`Project.links` and `ProjectActivity.links` are eagerly loaded by `adminProjectFindMany` / `adminProjectFindOne` in the same in-memory
-normalization pass.
+GraphQL: `type ProjectLink`, `enum ProjectLinkKind`, batch mutations `projectLinksUpsert` (pin toggles ride this — pass the existing row
+with `pinned` flipped), `projectLinksDelete`. `Project.links` and `ProjectActivity.links` are eagerly loaded by `adminProjectFindMany` /
+`adminProjectFindOne` in the same in-memory normalization pass.
 
 ## Files
 
 Project files reuse the shared `FileUploads` store (see [architecture/file-storage.md](../architecture/file-storage.md)). The client uploads
-the bytes via `POST /api/file-uploads` first (same flow the chat composer uses), then calls `projectFileUpsert` with the returned
+the bytes via `POST /api/file-uploads` first (same flow the chat composer uses), then calls `projectFilesUpsert` with the returned
 `fileUploadId`. The detail page's Files tab and the inline "+ file" affordance on the activity composer share the same upload helper
 (`src/web/chat/fileUpload.ts`).
 
 A `ProjectFiles` row carries `projectId`, `activityId` (nullable, set-null on activity delete — same semantics as links), `fileUploadId` (FK
 to `fileUploads`, cascade), `label`, `kind` (`offer | invoice | contract | screenshot | other`), and `pinned`. On project delete the join
 rows cascade away; the underlying `FileUploads` row is preserved (it may still be reachable from a chat message), and the user-row cascade
-reclaims storage when the owner goes. If we later want eager cleanup of orphan uploads, do it in `projectFileDelete` after confirming no
+reclaims storage when the owner goes. If we later want eager cleanup of orphan uploads, do it in `projectFilesDelete` after confirming no
 other reference exists.
 
-GraphQL: `type ProjectFile { fileUpload: FileUpload! ... }`, `enum ProjectFileKind`, mutations `projectFileUpsert`, `projectFileDelete`,
-`projectFileTogglePin`.
+GraphQL: `type ProjectFile { fileUpload: FileUpload! ... }`, `enum ProjectFileKind`, batch mutations `projectFilesUpsert` (pin toggles ride
+this — pass the existing row with `pinned` flipped), `projectFilesDelete`.
 
 ### Drop zone
 
@@ -293,14 +297,14 @@ dialog is hoisted on `FilesSection`, so arrow keys walk the full list of files i
 The projects sub-agent has a `projectFileCreate` tool (`src/server/agents/toolProjectFileCreate.ts`) that produces a markdown document
 directly from the chat — no upload step. The agent supplies `markdown`, `filename` (`.md`), `kind`, optional `label` / `pinned`, and the
 server command (`src/server/commands/projectFileCreateFromMarkdown.ts`) writes the bytes to `FileUploads` with `mediaType = 'text/markdown'`
-and links the row through `projectFileUpsert`. Scope is intentionally narrow: markdown only and create-only. PDFs, edits, and re-uploads
-still go through the browser path so the call sites stay auditable.
+and links the row directly (an inline insert + mapper). Scope is intentionally narrow: markdown only and create-only. PDFs, edits, and
+re-uploads still go through the browser path so the call sites stay auditable.
 
 ## Atomic attach on activity create
 
-`projectActivityUpsert` accepts optional `attachLinkUrl` / `attachFileUploadId` (with companion `attachLinkKind` / `attachFileKind` / labels
-/ pin flags). When set on a create, the server runs the activity insert plus the matching `projectLinks` / `projectFiles` insert in one
-transaction. Lets the UI offer a single "+ link" / "+ file" toggle on the activity composer without forcing the client to chain two
+`projectActivitiesUpsert` accepts optional `attachLinkUrl` / `attachFileUploadId` (with companion `attachLinkKind` / `attachFileKind` /
+labels / pin flags). When set on a create, the server runs the activity insert plus the matching `projectLinks` / `projectFiles` insert in
+one transaction. Lets the UI offer a single "+ link" / "+ file" toggle on the activity composer without forcing the client to chain two
 round-trips. The fields are ignored on update — edit the resource rows through their own mutations.
 
 ## Offer tracking
@@ -325,10 +329,12 @@ history.
 ## Assistant control
 
 The personal assistant at `/workspace/assistant` can read and mutate this board on Cem's instruction. It delegates project/task work to a
-dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `projectUpsert` / `projectDelete` / `taskUpsert` /
-`taskDelete` / `projectActivityUpsert` / `projectLinkUpsert` commands the page uses, plus `projectFileCreate` for agent-authored markdown
-files (see the **Files → Agent-authored markdown** section above). See
-[architecture/agent-delegation.md](../architecture/agent-delegation.md).
+dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `projectsUpsert` / `projectsDelete` / `tasksUpsert` /
+`tasksDelete` / `projectActivitiesUpsert` / `projectLinksUpsert` batch commands the page uses, plus `projectFileCreate` for agent-authored
+markdown files (see the **Files → Agent-authored markdown** section above). The sub-agent's tools are plural batch tools: it is instructed
+to batch every same-shape write into one call — one `tasksUpsert` for all of them, not N calls — and to source ids from the board snapshot
+in its system prompt or from a prior tool result's `referenceIds` (in input order) earlier in the same turn. There are no timer tools; the
+sub-agent does not run timers. See [architecture/agent-delegation.md](../architecture/agent-delegation.md).
 
 ### Deep linking from the assistant
 
@@ -365,7 +371,7 @@ minutes of offer writing); only the columns that are populated differ.
 | `taskId`      | optional link to a specific `Task` for finer-grained reporting later                                              |
 
 A partial unique index `(kind) WHERE endedAt IS NULL AND kind = 'work'` enforces the **one global active timer** invariant at the DB level —
-even if two tabs race a Start, only one row can exist. The `projectTimerStart` command runs inside a transaction that first stops the open
+even if two tabs race a Start, only one row can exist. The `projectTimersStart` command runs inside a transaction that first stops the open
 row then inserts the new one, so the invariant holds without ever surfacing a unique-violation to the user.
 
 ### Unified stream vs. two tables
@@ -386,11 +392,15 @@ Read additions on `Admin`:
 
 Mutations on `AdminMutation`:
 
-- `projectActivityUpsert(input)` — for event-style rows. Rejects `kind = 'work'` so the timer mutations stay the only path into a work row.
-- `projectActivityDelete(activityId)`.
-- `projectTimerStart(projectId, taskId, title)` — atomically stops any running timer, then inserts the new one. Default title is
-  `Work session`.
-- `projectTimerStop(activityId)` — stamps `endedAt = now`, computes `durationSec`. Idempotent on an already-stopped row.
+- `projectActivitiesUpsert(projectActivities)` — for event-style rows. Rejects `kind = 'work'` so the timer mutations stay the only path
+  into a work row. One-shot `attachLink*` / `attachFile*` extensions are honoured per create row.
+- `projectActivitiesDelete(activityIds)`.
+- `projectTimersStart(inputs: [ProjectTimerStartInput!]!)` — kept separate from the activity upsert because the clock semantics
+  (stop-open-timer + `startedAt: now`) are distinct. Each input atomically stops any running timer, then inserts the new one; a
+  multi-element batch ends with only the last row open, respecting the single-active-timer index. `referenceIds` carries the new
+  `activityId` per input. Default title is `Work session`.
+- `projectTimersStop(activityIds)` — stamps `endedAt = now`, computes `durationSec` per id. Idempotent on an already-stopped row (left
+  untouched); throws if an id does not exist.
 
 ### UI
 
@@ -421,13 +431,13 @@ Files:
   `toGqlProject.ts`
 - Queries: `src/server/queries/adminProjectActiveTimerFindOne.ts`, `adminProjectFindOne.ts`; lists + totals + links + files are loaded by
   `adminProjectFindMany.ts`
-- Commands: `src/server/commands/projectActivityUpsert.ts` (with atomic attach), `projectActivityDelete.ts`, `projectTimerStart.ts`,
-  `projectTimerStop.ts`, `projectLink{Upsert,Delete,TogglePin}.ts`, `projectFile{Upsert,Delete,TogglePin}.ts`,
-  `projectFileCreateFromMarkdown.ts`
-- Agent tools: `src/server/agents/toolProject{sList,Upsert,Delete,LinkUpsert,ActivityUpsert,FileCreate}.ts`, `toolTask{Upsert,Delete}.ts`,
-  `toolStandaloneTasksList.ts`
-- Tests: `src/server/commands/projectTimerStart.test.ts`, `projectLinkUpsert.test.ts`, `projectFileUpsert.test.ts`,
-  `projectFileCreateFromMarkdown.test.ts`, `projectActivityUpsert.test.ts`
+- Commands: `src/server/commands/projectActivitiesUpsert.ts` (with atomic attach), `projectActivitiesDelete.ts`, `projectTimersStart.ts`,
+  `projectTimersStop.ts`, `projectLinks{Upsert,Delete}.ts`, `projectFiles{Upsert,Delete}.ts`, `projectFileCreateFromMarkdown.ts` (the one
+  intentional non-batch survivor — returns a hydrated entity for the sub-agent tool's mutation log), `projectFileCreateFromMarkdown.ts`
+- Agent tools: `src/server/agents/toolProject{sList,sUpsert,sDelete,LinksUpsert,ActivitiesUpsert,FileCreate}.ts`,
+  `toolTasks{Upsert,Delete}.ts`, `toolStandaloneTasksList.ts`
+- Tests: `src/server/commands/projectTimersStart.test.ts`, `projectLinksUpsert.test.ts`, `projectFilesUpsert.test.ts`,
+  `projectFileCreateFromMarkdown.test.ts`, `projectActivitiesUpsert.test.ts`, `projectsUpsert.test.ts`
 - Resolver wiring: `src/server/graphql/resolversCreate.ts`
 - UI: board card in `src/routes/{-$locale}/workspace/projects.tsx`; detail route + tabs + pinned rail in
   `src/routes/{-$locale}/workspace/projects_.$projectId.tsx`; operations in `projects.graphql` (board) and `projects_.$projectId.graphql`

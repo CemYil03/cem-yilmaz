@@ -21,12 +21,13 @@ matching card / row into view and highlights it for a moment — the assistant's
   the last completed visit's date, the next-due date, and a red **Overdue** badge when the next-due is in the past. Cards also preview
   upcoming visits (up to 3) and recent records (up to 3, deep-linkable to the Records tab).
 - **Appointments** — list grouped by category. Each row shows title, status chip, scheduled-at, provider, and (when set) `nextDueAt`. Past
-  `scheduled` rows get a one-click **Complete** button that calls `medicalAppointmentComplete`. The edit dialog opens from the kebab menu —
-  title / category / provider / when / next-due / status / notes.
+  `scheduled` rows get a one-click **Complete** button that calls `medicalAppointmentsUpsert` with a one-element array carrying the existing
+  row plus `status: completed` and `completedAt`. The edit dialog opens from the kebab menu — title / category / provider / when / next-due
+  / status / notes.
 - **Records** — flat list ordered by `occurredAt DESC`. Each card shows title, category chip, severity chip, date, the free-text summary,
   symptom and body-area chips, and an inline thumbnail grid for attached photos (or a filename chip for other files). The record editor
   supports drag-drop / picker file upload; on **create**, files are staged as pending `fileUploadIds` and attached inline via
-  `medicalRecordUpsert`; on **edit**, files go straight to `medicalRecordFileAttach` so the record stays consistent between saves.
+  `medicalRecordsUpsert`; on **edit**, files go straight to `medicalRecordFilesAttach` so the record stays consistent between saves.
 
 The medical sub-agent authors most records from the workspace assistant chat. This page is the manual editor and read view — you can still
 create records or appointments by hand if you prefer.
@@ -43,7 +44,7 @@ create records or appointments by hand if you prefer.
 | **Documentarian sub-agent (records only, no advice)**                               | Safest starting point but reads as unhelpful ("noted, please see a doctor" to everything).                                                                                                                                                                                                                                                                                                                                                             |
 | **Documentarian + gentle triage** (chosen)                                          | The sub-agent captures what Cem tells it into a structured record and offers low-risk practical suggestions ("if it doesn't improve in two weeks, worth showing a dermatologist"), but does NOT diagnose or prescribe. Its system prompt carries an explicit **red-flag refusal list** (chest pain, stroke signs, breathing difficulty, anaphylaxis, suicidal ideation) — on trigger it refuses to file a record and tells Cem to seek emergency care. |
 | **Domain-specific `MedicalAttachments` blob table**                                 | Duplicates every consumer of `FileUploads`. Adds an upload endpoint, encoding rules, and its own cascade posture. Zero win — the existing primitive already handles chat, projects, and inventory receipts.                                                                                                                                                                                                                                            |
-| **Attachments piggyback on `FileUploads` via a `MedicalRecordFiles` join** (chosen) | Same wire as inventory receipts. When Cem drops a photo into the workspace chat, it already persists as a `FileUpload` and the orchestrator sees it as a `FilePart` — the medical delegate just forwards the `fileUploadIds` so the sub-agent can attach them to the record it files, atomically, via `medicalRecordUpsert.fileUploadIds`.                                                                                                             |
+| **Attachments piggyback on `FileUploads` via a `MedicalRecordFiles` join** (chosen) | Same wire as inventory receipts. When Cem drops a photo into the workspace chat, it already persists as a `FileUpload` and the orchestrator sees it as a `FilePart` — the medical delegate just forwards the `fileUploadIds` so the sub-agent can attach them to the record it files, atomically, via `medicalRecordsUpsert.fileUploadIds`.                                                                                                            |
 | **Medications table in v1**                                                         | Its own surface — name/dose/frequency/started/ended + tools + UI. Meaningful scope; deferred until the core is proven.                                                                                                                                                                                                                                                                                                                                 |
 
 ## Option chosen
@@ -108,17 +109,23 @@ Read namespace under `Admin.adminMedicalFindOne` (reached via `sessionFindOne.us
   `lastCompletedAt`, `nextDueAt`, `isOverdue`, `upcoming: [MedicalAppointment!]!`, `recentRecords: [MedicalRecord!]!`. Cadence math lives in
   `adminMedicalCategoryOverviewFindMany.ts`; categories with no data still surface so the overview grid never has holes.
 
-Write mutations on `AdminMutation`:
+Write mutations on `AdminMutation`. Every mutation is a **batch** and returns `MutationResult { success, referenceId, referenceIds }` —
+never the hydrated entity. The page reconciles over the `userUpdates` subscription, not the mutation response; `referenceIds` echoes the row
+id per input in input order so a caller can address a freshly-created row without a follow-up read. Single-item edits pass a one-element
+array — there is no parallel singular path.
 
-- `medicalAppointmentUpsert(input: MedicalAppointmentInput!): MedicalAppointment!` — create or edit an appointment
-- `medicalAppointmentDelete(appointmentId: ID!): MutationResult!`
-- `medicalAppointmentComplete(appointmentId: ID!, completedAt: DateTime, nextDueAt: DateTime): MedicalAppointment!` — shortcut for "I just
-  went to the dentist"; flips status, stamps `completedAt`, optionally writes the follow-up
-- `medicalRecordUpsert(input: MedicalRecordInput!): MedicalRecord!` — the primary write. Accepts optional `fileUploadIds: [ID!]` that get
-  attached inline in the same transaction (validated against user ownership up-front, same shape as `chatMessageCreate`)
-- `medicalRecordDelete(recordId: ID!): MutationResult!` — cascade removes join rows; `FileUploads` bytes stay put
-- `medicalRecordFileAttach(input: MedicalRecordFileAttachInput!): MedicalRecordFile!` — attach a file to an existing record
-- `medicalRecordFileDelete(recordFileId: ID!): MutationResult!`
+- `medicalAppointmentsUpsert(medicalAppointments: [MedicalAppointmentInput!]!): MutationResult!` — batch create-or-edit. Each row with an
+  `appointmentId` is updated; each without one is inserted. **Completing an appointment** is a one-element upsert carrying the existing row
+  (from the subscription payload) plus `status: completed` and `completedAt` set (optionally `nextDueAt`) — the UI "Mark completed" button
+  and the sub-agent both do this. There is no separate `medicalAppointmentComplete` mutation.
+- `medicalAppointmentsDelete(appointmentIds: [ID!]!): MutationResult!` — linked `MedicalRecords.appointmentId` are nulled via the FK
+- `medicalRecordsUpsert(medicalRecords: [MedicalRecordInput!]!): MutationResult!` — the primary write. Each row accepts optional
+  `fileUploadIds: [ID!]` that get attached inline per row in the same transaction (ownership validated across all rows up-front, same shape
+  as `chatMessageCreate`)
+- `medicalRecordsDelete(recordIds: [ID!]!): MutationResult!` — cascade removes join rows; `FileUploads` bytes stay put
+- `medicalRecordFilesAttach(inputs: [MedicalRecordFileAttachInput!]!): MutationResult!` — attach files to existing records; each
+  `fileUploadId` is ownership-checked up-front; `referenceIds` echoes the new `recordFileId` per input
+- `medicalRecordFilesDelete(recordFileIds: [ID!]!): MutationResult!`
 
 No per-resolver guards. Gating happens once at `Mutation.admin` via `guardAdminMutation`, matching the media / inventory pattern.
 
@@ -164,13 +171,14 @@ convention for enum labels.
   and recent records so the agent sees "next due: 2026-01-15 ⚠️ OVERDUE" inline instead of computing it itself.
 - **`toolDelegateToMedical.ts`** — orchestrator-side delegate. Persists the parent `chatMessagesToolCall` row, closes over a
   `MedicalAgentMutation[]` log, forwards `onStepEnd`. Optional `fileUploadIds` input; when present, the ids are appended to the sub-agent's
-  brief so it can pass them straight through on `medicalRecordUpsert.fileUploadIds`.
-- **Per-tool wrappers** (nine total):
+  brief so it can pass them straight through on `medicalRecordsUpsert.fileUploadIds`.
+- **Per-tool wrappers** (eight total):
   - Reads: `toolMedicalOverview`, `toolMedicalAppointmentsList`, `toolMedicalRecordsList`
-  - Writes: `toolMedicalAppointmentUpsert`, `toolMedicalAppointmentComplete`, `toolMedicalAppointmentDelete`, `toolMedicalRecordUpsert`
-    (accepts `fileUploadIds`), `toolMedicalRecordDelete`, `toolMedicalRecordFileAttach`
-  - Every write tool pushes a `MedicalAgentMutation` (`{ kind, id, title? }`) into the shared array; the delegate returns them as part of
-    the tool result so the orchestrator can render deep-links via its templates.
+  - Writes (all batch): `toolMedicalAppointmentsUpsert` (also completes a visit — one-element array with `status: completed`),
+    `toolMedicalAppointmentsDelete`, `toolMedicalRecordsUpsert` (accepts per-row `fileUploadIds`), `toolMedicalRecordsDelete`,
+    `toolMedicalRecordFilesAttach`
+  - Every write tool pushes a `MedicalAgentMutation` (`{ kind, id, title? }`) per input into the shared array; the delegate returns them as
+    part of the tool result so the orchestrator can render deep-links via its templates.
 
 ### Attachments — the chat → record wire
 
@@ -183,8 +191,9 @@ The end-to-end flow when Cem pastes a photo of a rash into the workspace chat an
 3. **Orchestrator turn**: `agentPersonalAssistant` sees the message + `FilePart`, identifies the health topic, and calls
    `delegateToMedical({ brief: '…', fileUploadIds: [<id>] })`. The `brief` can include a brief description of what the photo shows.
 4. **`toolDelegateToMedical`**: appends the `fileUploadIds` to the sub-agent's brief text and hands off.
-5. **Sub-agent**: asks clarifying questions if needed (via the `needsMoreInfo` sentinel), then calls `medicalRecordUpsert` with
-   `fileUploadIds: [<id>]`. The command validates ownership, inserts the record, and inserts the `MedicalRecordFiles` join row atomically.
+5. **Sub-agent**: asks clarifying questions if needed (via the `needsMoreInfo` sentinel), then calls `medicalRecordsUpsert` with a
+   one-element array carrying `fileUploadIds: [<id>]`. The command validates ownership, inserts the record, and inserts the
+   `MedicalRecordFiles` join row atomically.
 6. **UI**: the medical page's `userUpdates` subscription pushes the new record; the Records tab renders the photo thumbnail on the card.
 
 ## Deferred / follow-ups

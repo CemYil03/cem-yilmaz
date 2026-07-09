@@ -80,10 +80,8 @@ import {
     WorkspaceProjectDetailUpsertProjectDocument,
     WorkspaceProjectDetailUpsertTaskDocument,
     WorkspaceProjectFileDeleteDocument,
-    WorkspaceProjectFileTogglePinDocument,
     WorkspaceProjectFileUpsertDocument,
     WorkspaceProjectLinkDeleteDocument,
-    WorkspaceProjectLinkTogglePinDocument,
     WorkspaceProjectLinkUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
@@ -1115,7 +1113,7 @@ function TotalWorkLabel({ totalWorkSec, activeTimer }: { totalWorkSec: number; a
 }
 
 function LinkChip({ link, locale }: { link: LinkRow; locale: Locale }) {
-    const [, togglePin] = useMutation(WorkspaceProjectLinkTogglePinDocument);
+    const [, upsert] = useMutation(WorkspaceProjectLinkUpsertDocument);
     const label = link.label || link.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
     return (
         <span
@@ -1133,7 +1131,15 @@ function LinkChip({ link, locale }: { link: LinkRow; locale: Locale }) {
                 aria-label={{ de: 'Lösen', en: 'Unpin' }[locale]}
                 className="opacity-60 group-hover:opacity-100"
                 onClick={async () => {
-                    await togglePin({ projectLinkId: link.projectLinkId });
+                    await upsert({
+                        projectLinkId: link.projectLinkId,
+                        projectId: link.projectId,
+                        activityId: link.activityId ?? null,
+                        url: link.url,
+                        label: link.label ?? null,
+                        kind: link.kind,
+                        pinned: !link.pinned,
+                    });
                 }}
             >
                 <PinOffIcon />
@@ -1143,7 +1149,7 @@ function LinkChip({ link, locale }: { link: LinkRow; locale: Locale }) {
 }
 
 function FileChip({ file, locale }: { file: FileRow; locale: Locale }) {
-    const [, togglePin] = useMutation(WorkspaceProjectFileTogglePinDocument);
+    const [, upsert] = useMutation(WorkspaceProjectFileUpsertDocument);
     const label = file.label || file.fileUpload.filename;
     return (
         <span
@@ -1161,7 +1167,15 @@ function FileChip({ file, locale }: { file: FileRow; locale: Locale }) {
                 aria-label={{ de: 'Lösen', en: 'Unpin' }[locale]}
                 className="opacity-60 group-hover:opacity-100"
                 onClick={async () => {
-                    await togglePin({ projectFileId: file.projectFileId });
+                    await upsert({
+                        projectFileId: file.projectFileId,
+                        projectId: file.projectId,
+                        activityId: file.activityId ?? null,
+                        fileUploadId: file.fileUpload.fileUploadId,
+                        label: file.label ?? null,
+                        kind: file.kind,
+                        pinned: !file.pinned,
+                    });
                 }}
             >
                 <PinOffIcon />
@@ -2181,7 +2195,7 @@ function LinksSection({ links, projectId, locale }: { links: ReadonlyArray<LinkR
 }
 
 function LinkCard({ link, projectId, locale }: { link: LinkRow; projectId: string; locale: Locale }) {
-    const [, togglePin] = useMutation(WorkspaceProjectLinkTogglePinDocument);
+    const [, upsert] = useMutation(WorkspaceProjectLinkUpsertDocument);
     const [, del] = useMutation(WorkspaceProjectLinkDeleteDocument);
     const [editing, setEditing] = useState(false);
     if (editing) {
@@ -2216,7 +2230,15 @@ function LinkCard({ link, projectId, locale }: { link: LinkRow; projectId: strin
                     variant="ghost"
                     aria-label={link.pinned ? { de: 'Lösen', en: 'Unpin' }[locale] : { de: 'Anpinnen', en: 'Pin' }[locale]}
                     onClick={async () => {
-                        await togglePin({ projectLinkId: link.projectLinkId });
+                        await upsert({
+                            projectLinkId: link.projectLinkId,
+                            projectId: link.projectId,
+                            activityId: link.activityId ?? null,
+                            url: link.url,
+                            label: link.label ?? null,
+                            kind: link.kind,
+                            pinned: !link.pinned,
+                        });
                     }}
                 >
                     {link.pinned ? <PinOffIcon /> : <PinIcon />}
@@ -2395,7 +2417,7 @@ function FilesSection({ files, projectId, locale }: { files: ReadonlyArray<FileR
 }
 
 function FileCard({ file, locale, onOpenPreview }: { file: FileRow; locale: Locale; onOpenPreview: () => void }) {
-    const [, togglePin] = useMutation(WorkspaceProjectFileTogglePinDocument);
+    const [, upsert] = useMutation(WorkspaceProjectFileUpsertDocument);
     const [, del] = useMutation(WorkspaceProjectFileDeleteDocument);
     // Image / markdown / text formats get an inline preview (same dialog the
     // chat surface uses). PDFs and archives fall back to a plain link that
@@ -2428,7 +2450,15 @@ function FileCard({ file, locale, onOpenPreview }: { file: FileRow; locale: Loca
                     variant="ghost"
                     aria-label={file.pinned ? { de: 'Lösen', en: 'Unpin' }[locale] : { de: 'Anpinnen', en: 'Pin' }[locale]}
                     onClick={async () => {
-                        await togglePin({ projectFileId: file.projectFileId });
+                        await upsert({
+                            projectFileId: file.projectFileId,
+                            projectId: file.projectId,
+                            activityId: file.activityId ?? null,
+                            fileUploadId: file.fileUpload.fileUploadId,
+                            label: file.label ?? null,
+                            kind: file.kind,
+                            pinned: !file.pinned,
+                        });
                     }}
                 >
                     {file.pinned ? <PinOffIcon /> : <PinIcon />}

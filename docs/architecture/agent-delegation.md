@@ -109,9 +109,9 @@ the parent's `<ChatMessageToolCall>` view, which renders them in an indented blo
 
 What this means concretely:
 
-- The user sees `Called delegateToProjects` followed by `Called adminProjectFindMany`, `Called projectUpsert`, `Called taskUpsert`,
-  `Called projectActivityUpsert`, `Called projectLinkUpsert`, `Called projectFileCreate` … indented under the parent — an honest record of
-  which DB writes happened, not a single opaque pill.
+- The user sees `Called delegateToProjects` followed by `Called adminProjectFindMany`, `Called projectsUpsert`, `Called tasksUpsert`,
+  `Called projectActivitiesUpsert`, `Called projectLinksUpsert`, `Called projectFileCreate` … indented under the parent — an honest record
+  of which DB writes happened, not a single opaque pill.
 - The `delegateToProjects` row's `toolResult` still carries the structured `{ status, summary, mutations }` payload the orchestrator uses
   for its narration. That payload is what the LLM sees on replay; the indented child rows are user-facing additional context.
 - `toModelMessages` does NOT look at `parentChatMessageId`. Each child is replayed as an ordinary `tool-call`/`tool-result` pair, so the
@@ -165,12 +165,12 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
   `src/server/graphql/generated.ts`.** Same shape the resolver validates, no hand-built duplicate to drift out of sync as the SDL evolves.
   `typescript-validation-schema` (see [`codegen.ts`](../../codegen.ts) and [api-layer.md](./api-layer.md#code-generation)) emits both the
   object-schema factories (`GqlS<Input>Schema()`) and the enum schemas (`GqlS<Enum>Schema`) exactly for this consumer. Every mutation tool
-  whose underlying command has a GraphQL input type — `toolProjectLinkUpsert`, `toolMediaChannelUpsert`, `toolMedicalRecordFileAttach`, and
-  the four travel batch-upsert tools (which wrap the generated row schema in a single-key `z.object({ <entities>: z.array(...) })`) —
-  imports its generated schema and uses it verbatim (with a `rawInput as GqlS<X>` cast to recover TS inference from the codegen's
-  `Properties<T>` phantom; the runtime schema still validates against the type). Field-level explanations travel via the SDL's own field
-  descriptions — `withDescriptions: true` on the codegen plumbs them into the generated Zod schemas — so the SDL stays the single source of
-  truth for both the wire format and the field-level teaching the LLM sees.
+  whose underlying command has a GraphQL input type — `toolProjectLinksUpsert`, `toolMediaChannelsUpsert`, `toolShowsUpsert`,
+  `toolMedicalRecordFileAttach`, and the four travel batch-upsert tools (which wrap the generated row schema in a single-key
+  `z.object({ <entities>: z.array(...) })`) — imports its generated schema and uses it verbatim (with a `rawInput as GqlS<X>` cast to
+  recover TS inference from the codegen's `Properties<T>` phantom; the runtime schema still validates against the type). Field-level
+  explanations travel via the SDL's own field descriptions — `withDescriptions: true` on the codegen plumbs them into the generated Zod
+  schemas — so the SDL stays the single source of truth for both the wire format and the field-level teaching the LLM sees.
 - **Prefer batch shapes (`entitiesAction`) over singulars.** One `tripDaysUpsert` (accepting `[TripDayInput!]!`) beats N `tripDayUpsert`
   calls: fewer agent steps against `isStepCount(10)`, one transaction on the server, one `userUpdates` publish per batch. Every entity write
   on the travel domain uses this shape (`tripsUpsert`, `tripDaysUpsert`, `tripActivitiesUpsert`, `tripPackingItemsUpsert`, plus the matching
@@ -181,13 +181,13 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 - **Exception: `DateTime` fields.** When the underlying SDL input carries a `DateTime` scalar, the tool falls back to a hand-built
   `z.object` that uses `z.string()` for those fields and calls `new Date(...)` in `execute`. `typescript-validation-schema` emits `DateTime`
   as `z.date()`, which has no clean JSON-Schema representation under Gemini's constrained decoding (`structuredOutputs: true`) and produces
-  `MALFORMED_FUNCTION_CALL` on plain inputs. Tools currently in this state: `toolProjectUpsert`, `toolTaskUpsert`,
-  `toolProjectActivityUpsert`, `toolMovieUpsert`, `toolMovieAddFromTmdb`, `toolShowUpsert`, `toolShowAddFromTmdb`,
-  `toolMedicalAppointmentUpsert`, `toolMedicalRecordUpsert`. Each keeps a short header comment pointing back to this bullet. **Enum
-  schemas** (`GqlS<X>EnumSchema`) are still reused in the hand-built shape so a future enum addition surfaces as a TS error rather than a
-  runtime mismatch; do not redeclare enum tuples by hand. Field-name drift between the SDL input and the tool input is caught by the
-  resolver call: every mutation tool's `execute` constructs the resolver `input` object explicitly (or passes the validated input verbatim
-  when the command signature accepts the domain input directly), so a missing or renamed field is a TS error at the tool file.
+  `MALFORMED_FUNCTION_CALL` on plain inputs. Tools currently in this state: `toolProjectsUpsert`, `toolTasksUpsert`,
+  `toolProjectActivitiesUpsert`, `toolMoviesUpsert`, `toolMedicalAppointmentsUpsert`, `toolMedicalRecordsUpsert`. Each keeps a short header
+  comment pointing back to this bullet. **Enum schemas** (`GqlS<X>EnumSchema`) are still reused in the hand-built shape so a future enum
+  addition surfaces as a TS error rather than a runtime mismatch; do not redeclare enum tuples by hand. Field-name drift between the SDL
+  input and the tool input is caught by the resolver call: every mutation tool's `execute` constructs the resolver `input` object explicitly
+  (or passes the validated input verbatim when the command signature accepts the domain input directly), so a missing or renamed field is a
+  TS error at the tool file.
 - **Follow-up (not yet done):** DateTime-safety is the open thread — either the codegen emits `z.iso.datetime()` for `DateTime` behind a
   separate agent-facing output, or a runtime helper walks `z.date()` → string on the object schemas. Either would let the DateTime-carrying
   tools drop their hand-built duplicates too.
@@ -198,15 +198,15 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
   the other; the LLM sees the tool description on every call anyway, so the duplication buys nothing but drift risk.
 
   What DOES stay in a system prompt: persona ("you are Cem's medical sub-agent"), style rules (concision, language matching), cross-tool
-  workflow rules that span multiple tools (`agentPersonalAssistantMedia`'s "for 'I watched X' → `movieMarkWatched`; if not in library →
-  `movieAddFromTmdb` first" workflow), agent-role behavior rules (the medical sub-agent's RED FLAGS block — that's a _don't-call-any-tool_
-  rule), the `{ status: 'needsMoreInfo' | 'noOp' }` JSON sentinel contract (this is the sub-agent → orchestrator wire, not a tool behavior),
-  delegate-result-envelope narration policy on the orchestrator (how to react to `needsMoreInfo` / `failed`), deep-link templates (narration
-  policy for the ids delegates return), and inlined data snapshots.
+  workflow rules that span multiple tools (`agentPersonalAssistantMedia`'s "for 'I watched X' → `moviesUpsert` with `status: watched`; if
+  not in library → `moviesAddFromTmdb` first" workflow), agent-role behavior rules (the medical sub-agent's RED FLAGS block — that's a
+  _don't-call-any-tool_ rule), the `{ status: 'needsMoreInfo' | 'noOp' }` JSON sentinel contract (this is the sub-agent → orchestrator wire,
+  not a tool behavior), delegate-result-envelope narration policy on the orchestrator (how to react to `needsMoreInfo` / `failed`),
+  deep-link templates (narration policy for the ids delegates return), and inlined data snapshots.
 
-  The canonical exemplar of a self-describing tool is `toolProjectActivityUpsert.ts`: a multi-sentence description that names when to reach
-  for it, the cross-tool guidance ("work timer rows are NOT created here"), and per-field `.describe(...)` for every input. The anti-pattern
-  is a `buildSystemPrompt` with a "You have nine tools: - `adminProjectFindMany` — ... - `projectUpsert` — ..." block.
+  The canonical exemplar of a self-describing tool is `toolProjectActivitiesUpsert.ts`: a multi-sentence description that names when to
+  reach for it, the cross-tool guidance ("work timer rows are NOT created here"), and per-field `.describe(...)` for every input. The
+  anti-pattern is a `buildSystemPrompt` with a "You have nine tools: - `adminProjectFindMany` — ... - `projectsUpsert` — ..." block.
 
 - **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
   `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via
@@ -239,15 +239,15 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 
 ## Where things live
 
-| Concern                                           | File                                                                                                                                                                   |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shared provider options                           | `src/server/agents/agentScaffolding.ts`                                                                                                                                |
-| Projects sub-agent factory                        | `src/server/agents/agentPersonalAssistantProjects.ts`                                                                                                                  |
-| Inline board snapshot for the projects sub-agent  | `src/server/agents/projectsSnapshotForAgent.ts`                                                                                                                        |
-| Projects read tools                               | `src/server/agents/toolProjectsList.ts`, `toolStandaloneTasksList.ts`                                                                                                  |
-| Projects mutation tools                           | `src/server/agents/toolProjectUpsert.ts`, `toolProjectDelete.ts`, `toolTaskUpsert.ts`, `toolTaskDelete.ts`, `toolProjectActivityUpsert.ts`, `toolProjectLinkUpsert.ts` |
-| Projects delegate tool (orchestrator-side)        | `src/server/agents/toolDelegateToProjects.ts`                                                                                                                          |
-| Web-search sub-agent factory                      | `src/server/agents/agentPersonalAssistantWebSearch.ts`                                                                                                                 |
-| Web-search provider tool wrapper (sub-agent-only) | `src/server/agents/toolWebSearch.ts`                                                                                                                                   |
-| Web-search delegate tool (orchestrator-side)      | `src/server/agents/toolDelegateToWebSearch.ts`                                                                                                                         |
-| Orchestrator                                      | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToProjects` and `delegateToWebSearch`)                                                               |
+| Concern                                           | File                                                                                                                                                                          |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared provider options                           | `src/server/agents/agentScaffolding.ts`                                                                                                                                       |
+| Projects sub-agent factory                        | `src/server/agents/agentPersonalAssistantProjects.ts`                                                                                                                         |
+| Inline board snapshot for the projects sub-agent  | `src/server/agents/projectsSnapshotForAgent.ts`                                                                                                                               |
+| Projects read tools                               | `src/server/agents/toolProjectsList.ts`, `toolStandaloneTasksList.ts`                                                                                                         |
+| Projects mutation tools                           | `src/server/agents/toolProjectsUpsert.ts`, `toolProjectsDelete.ts`, `toolTasksUpsert.ts`, `toolTasksDelete.ts`, `toolProjectActivitiesUpsert.ts`, `toolProjectLinksUpsert.ts` |
+| Projects delegate tool (orchestrator-side)        | `src/server/agents/toolDelegateToProjects.ts`                                                                                                                                 |
+| Web-search sub-agent factory                      | `src/server/agents/agentPersonalAssistantWebSearch.ts`                                                                                                                        |
+| Web-search provider tool wrapper (sub-agent-only) | `src/server/agents/toolWebSearch.ts`                                                                                                                                          |
+| Web-search delegate tool (orchestrator-side)      | `src/server/agents/toolDelegateToWebSearch.ts`                                                                                                                                |
+| Orchestrator                                      | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToProjects` and `delegateToWebSearch`)                                                                      |

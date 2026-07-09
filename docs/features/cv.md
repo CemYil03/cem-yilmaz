@@ -60,9 +60,60 @@ is the exception — see its bullet below. Specifics:
 Read namespace: `Query.publicCvFindOne: CvQuery!` with four lists (`publicCvExperienceFindMany`, `publicCvEducationFindMany`,
 `publicCvSkillFindMany`, `publicCvHobbyFindMany`). Reads are public — visitors hit them on `/cv` and `/about` directly.
 
-Write namespace: 11 mutations on `AdminMutation` (`cv*Upsert`, `cv*Delete`, `cv{Education,Skill,Hobby}Reorder` — experience has no reorder
-mutation; it's sorted by date). The whole `Mutation.admin` is gated by `guardAdminMutation`, so each entity inherits the gate without a
-parallel guard.
+Write namespace: 11 mutations on `AdminMutation`. Every entity mutation is a **batch** returning `MutationResult` — no hydrated entity comes
+back from a write. The `userUpdates` subscription is the single source of truth for the new state (see
+[docs/architecture/state-synchronization.md](../architecture/state-synchronization.md) — Seed-and-Subscribe):
+
+- `cvExperiencesUpsert(cvExperiences: [CvExperienceInput!]!): MutationResult!` /
+  `cvExperiencesDelete(cvExperienceIds: [ID!]!): MutationResult!`
+- `cvEducationsUpsert(cvEducations: [CvEducationInput!]!): MutationResult!` / `cvEducationsDelete(cvEducationIds: [ID!]!): MutationResult!`
+- `cvSkillsUpsert(cvSkills: [CvSkillInput!]!): MutationResult!` / `cvSkillsDelete(cvSkillIds: [ID!]!): MutationResult!`
+- `cvHobbiesUpsert(cvHobbies: [CvHobbyInput!]!): MutationResult!` / `cvHobbiesDelete(cvHobbyIds: [ID!]!): MutationResult!`
+- `cv{Education,Skill,Hobby}Reorder(orderedIds: [ID!]!): MutationResult!` — experience has no reorder mutation; it's sorted by date.
+
+The list argument is a **flat SDL list** (`cvExperiences: [CvExperienceInput!]!`), not a wrapper input type carrying the array. Wrapper
+inputs trip a `Properties<T>` codegen bug in typescript-validation-schema (`z.array(z.lazy(...))` widens the item fields to `unknown`); the
+flat list keeps the generated types honest.
+
+`MutationResult` carries `success: Boolean!`, `referenceId: ID` (unused for CV — batches populate `referenceIds` instead), and
+`referenceIds: [ID!]` — the id per input row, in input order, so the caller can address newly-created rows without a follow-up read. The
+whole `Mutation.admin` is gated by `guardAdminMutation`, so each entity inherits the gate without a parallel guard.
+
+Sample calls:
+
+```graphql
+mutation {
+  admin {
+    cvExperiencesUpsert(
+      cvExperiences: [
+        {
+          cvExperienceId: null
+          roleDe: "…"
+          roleEn: "…"
+          company: "…"
+          startDate: "2024-01-01"
+          endDate: null
+          descriptionDe: "…"
+          descriptionEn: "…"
+          technologies: []
+          managerName: null
+        }
+      ]
+    ) {
+      success
+      referenceIds
+    }
+  }
+}
+
+mutation {
+  admin {
+    cvSkillsDelete(cvSkillIds: ["…"]) {
+      success
+    }
+  }
+}
+```
 
 The bilingual columns surface as paired `*De` / `*En` GraphQL fields. The client picks per-locale at render time — same model as the inline
 `{ de, en }[locale]` copy pattern in `docs/architecture/i18n.md`. A single locale-aware `text` field would lock the schema to one locale per
@@ -74,12 +125,16 @@ Mirroring the existing `chat*` files exactly:
 
 - `src/server/queries/publicCv{Experience,Education,Skill,Hobby}FindMany.ts` — `SELECT … ORDER BY position ASC`, except
   `publicCvExperienceFindMany`, which sorts by `endDate DESC NULLS FIRST, startDate DESC`.
-- `src/server/commands/cv{Experience,Education,Skill,Hobby}Upsert.ts` — two-phase per `docs/conventions.md` "Commands". Null `cv*Id` →
-  insert; populated id → update.
-- `src/server/commands/cv{Experience,Education,Skill,Hobby}Delete.ts` — single-statement delete, throws on miss.
+- `src/server/commands/cv{Experiences,Educations,Skills,Hobbies}Upsert.ts` — batch upserts, two-phase per `docs/conventions.md` "Commands":
+  Phase 1 builds every row's insert/update payload, Phase 2 runs the whole batch inside a single `db.transaction(...)`. Null `cv*Id` on a
+  row → insert (freshly-minted UUID); populated id → update (with a pre-flight `inArray` existence check that throws before any write
+  fires). Returns `{ success: true, referenceId: null, referenceIds: [...] }` with per-row ids in input order after a single
+  `publish.userUpdates`.
+- `src/server/commands/cv{Experiences,Educations,Skills,Hobbies}Delete.ts` — batch delete via `DELETE … WHERE id = ANY(...) RETURNING`;
+  throws if any caller-supplied id is missing.
 - `src/server/commands/cv{Education,Skill,Hobby}Reorder.ts` — bulk position-rewrite over `orderedIds[]`, wrapped in a transaction so a
   partial write can't leave the list with duplicate positions. Experience has no reorder command.
-- `src/server/mappers/toGqlCv{Experience,Education,Skill,Hobby}.ts` — straight passthrough (no field renaming).
+- No entity mapper is needed — batch mutations return `MutationResult`, not the hydrated row.
 
 All wired in `src/server/graphql/resolversCreate.ts` alongside the existing chat resolvers.
 
@@ -105,8 +160,10 @@ doesn't leave a hollow header.
 ### Admin editor
 
 `/workspace/cv` is a single React component split by section. Each section has its own list and a single inline form (one editor open at a
-time). On save the page issues the matching `cv*Upsert` mutation through URQL and re-fetches the read query with
-`requestPolicy: 'network-only'`.
+time). On save the page issues the matching `cv*sUpsert` mutation through URQL and does **not** re-fetch — every CV mutation publishes
+`userUpdates` server-side, and the page's `useWorkspaceCvPageLiveUser` hook subscribes to that stream and replaces the local `user` state on
+every push. Single-row edits wrap the row in an array (`{ cvExperiences: [oneRow] }` / `{ cvExperienceIds: [oneId] }`) because every entity
+mutation is a batch, even when the UI only touches one row at a time.
 
 Date fields use the shared `DatePicker` (`src/web/components/base/date-picker.tsx`) with `captionLayout="dropdown"` so the year and month
 become selectors rather than one-step arrows — CV entries routinely sit decades back, and one click per month is not navigation. The form
@@ -116,11 +173,11 @@ keeps the GraphQL wire shape (ISO `YYYY-MM-DD` strings) as its storage type and 
 
 Reordering uses a vertical drag-and-drop gesture on education, skills, and hobbies: every row carries a `GripVertical` handle on its leading
 edge, the user drags the row into its new slot, and on drop the editor commits the new order via the matching `cv*Reorder` mutation (which
-rewrites every row's `position` from a single id list). The on-screen list updates optimistically the instant the drop fires; the admin read
-query then re-fetches with `network-only` so `/cv` and `/about` see the new order on their next request. Drag is implemented with the
-platform's native HTML5 drag-and-drop API (no library); a `useReorderableList` hook owns the optimistic state and is reused across those
-three sections. Reordering is scoped per list — for skills, drag is scoped within a single category (cross-category moves are done by
-editing the row's category field).
+rewrites every row's `position` from a single id list). The on-screen list updates optimistically the instant the drop fires; the server
+publishes `userUpdates` after commit so `/cv` and `/about` see the new order on their next request. Drag is implemented with the platform's
+native HTML5 drag-and-drop API (no library); a `useReorderableList` hook owns the optimistic state and is reused across those three
+sections. Reordering is scoped per list — for skills, drag is scoped within a single category (cross-category moves are done by editing the
+row's category field).
 
 The experience section has no drag handles — rows are sorted by `endDate` (ongoing first), then `startDate`, both descending. Editing a
 row's `endDate` and saving moves it to its new slot automatically via the `userUpdates` subscription push.

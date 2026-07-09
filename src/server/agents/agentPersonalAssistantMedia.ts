@@ -5,17 +5,16 @@ import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
 import { mediaSnapshotForAgent } from './mediaSnapshotForAgent';
-import { toolMediaChannelDelete } from './toolMediaChannelDelete';
-import { toolMediaChannelUpsert } from './toolMediaChannelUpsert';
+import { toolMediaChannelsDelete } from './toolMediaChannelsDelete';
+import { toolMediaChannelsUpsert } from './toolMediaChannelsUpsert';
 import { toolMediaChannelsList } from './toolMediaChannelsList';
-import { toolMovieAddFromTmdb } from './toolMovieAddFromTmdb';
-import { toolMovieDelete } from './toolMovieDelete';
-import { toolMovieMarkWatched } from './toolMovieMarkWatched';
-import { toolMovieUpsert } from './toolMovieUpsert';
+import { toolMoviesAddFromTmdb } from './toolMoviesAddFromTmdb';
+import { toolMoviesDelete } from './toolMoviesDelete';
+import { toolMoviesUpsert } from './toolMoviesUpsert';
 import { toolMoviesList } from './toolMoviesList';
-import { toolShowAddFromTmdb } from './toolShowAddFromTmdb';
-import { toolShowDelete } from './toolShowDelete';
-import { toolShowUpsert } from './toolShowUpsert';
+import { toolShowsAddFromTmdb } from './toolShowsAddFromTmdb';
+import { toolShowsDelete } from './toolShowsDelete';
+import { toolShowsUpsert } from './toolShowsUpsert';
 import { toolShowsList } from './toolShowsList';
 import { toolTmdbSearch } from './toolTmdbSearch';
 import { toolTmdbTvSearch } from './toolTmdbTvSearch';
@@ -34,7 +33,6 @@ import { toolYoutubeSearch } from './toolYoutubeSearch';
 type MediaAgentMutationKind =
     | 'movieAdd'
     | 'movieUpdate'
-    | 'movieMarkWatched'
     | 'movieDelete'
     | 'showAdd'
     | 'showUpdate'
@@ -73,19 +71,26 @@ function buildSystemPrompt(snapshot: string): string {
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences.',
-        '- Never invent an id. Use ids from the snapshot below, from a tool result earlier in this turn, or a',
-        '  TMDB id returned by `tmdbSearch` / `tmdbTvSearch`.',
+        '- Never invent an id. Use ids from the snapshot below, from a prior tool result’s `referenceIds` (in',
+        '  input order) earlier in this turn, or a TMDB id returned by `tmdbSearch` / `tmdbTvSearch`.',
+        '- Batch every same-shape write together — one `moviesUpsert` for all of them, not N calls. Same for',
+        '  `showsUpsert`, `mediaChannelsUpsert`, and the TMDB adders (one `moviesAddFromTmdb` covers a whole set',
+        '  of adds).',
         '- For "I want to watch movie X": call `tmdbSearch` first, pick the best match by title + year, then',
-        '  `movieAddFromTmdb`. If TMDB returns nothing, fall back to `movieUpsert` with a manual title.',
-        '- For "I watched movie X": if X is already in the library, call `movieMarkWatched`. If not, add it first',
-        '  with `movieAddFromTmdb` (status: `watched`) and then `movieMarkWatched` in the same turn.',
+        '  `moviesAddFromTmdb` with a one-element array. If TMDB returns nothing, fall back to `moviesUpsert` with',
+        '  a manual title.',
+        '- To mark a movie as watched, use `moviesUpsert` with a one-element array carrying the existing row plus',
+        '  `status: "watched"`, `watchedAt: <now>`, and any rating. If the movie is not yet in the library, add it',
+        '  first with `moviesAddFromTmdb` and then upsert it watched in the same turn (use the `referenceIds` from',
+        '  the add).',
         '- For "I want to watch / track series X": call `tmdbTvSearch` first, pick the best match, then',
-        '  `showAddFromTmdb`. If TMDB returns nothing, fall back to `showUpsert` with a manual title.',
-        '- For series edits (completed flag, next-season exact/rough date, rating, notes): use `showUpsert` with',
+        '  `showsAddFromTmdb` with a one-element array. If TMDB returns nothing, fall back to `showsUpsert` with a',
+        '  manual title.',
+        '- For series edits (completed flag, next-season exact/rough date, rating, notes): use `showsUpsert` with',
         '  the existing `showId`. When marking a series completed, set `isCompleted: true` (next-season fields',
         '  clear automatically).',
         '- For "add YouTube channel X" / "favourite X": call `youtubeSearch` first, pick the best match, then',
-        '  `mediaChannelUpsert` with `platform: youtube` and the returned fields (`canonicalUrl` → `url`,',
+        '  `mediaChannelsUpsert` with `platform: youtube` and the returned fields (`canonicalUrl` → `url`,',
         '  `handle`, `avatarUrl`, and the title → `name`). Ask Cem for topics if he did not name any.',
         '- If the request is missing information you genuinely need, do NOT guess. Return EXACTLY this JSON as your',
         '  final text, nothing else:',
@@ -109,7 +114,7 @@ export async function agentPersonalAssistantMedia({ session, serverRuntime, muta
         onStepEnd,
         providerOptions: googleAgentProviderOptionsFor(modelId),
         // Same tight ceiling as the projects sub-agent. A single delegation
-        // is usually: `tmdbSearch` + `movieAddFromTmdb` + final text = 3
+        // is usually: `tmdbSearch` + `moviesAddFromTmdb` + final text = 3
         // steps; the ceiling absorbs a fallback + one extra probe.
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
@@ -120,15 +125,14 @@ export async function agentPersonalAssistantMedia({ session, serverRuntime, muta
             tmdbSearch: toolTmdbSearch(readContext),
             tmdbTvSearch: toolTmdbTvSearch(readContext),
             youtubeSearch: toolYoutubeSearch(readContext),
-            movieAddFromTmdb: toolMovieAddFromTmdb(mutationContext),
-            movieUpsert: toolMovieUpsert(mutationContext),
-            movieMarkWatched: toolMovieMarkWatched(mutationContext),
-            movieDelete: toolMovieDelete(mutationContext),
-            showAddFromTmdb: toolShowAddFromTmdb(mutationContext),
-            showUpsert: toolShowUpsert(mutationContext),
-            showDelete: toolShowDelete(mutationContext),
-            mediaChannelUpsert: toolMediaChannelUpsert(mutationContext),
-            mediaChannelDelete: toolMediaChannelDelete(mutationContext),
+            moviesAddFromTmdb: toolMoviesAddFromTmdb(mutationContext),
+            moviesUpsert: toolMoviesUpsert(mutationContext),
+            moviesDelete: toolMoviesDelete(mutationContext),
+            showsAddFromTmdb: toolShowsAddFromTmdb(mutationContext),
+            showsUpsert: toolShowsUpsert(mutationContext),
+            showsDelete: toolShowsDelete(mutationContext),
+            mediaChannelsUpsert: toolMediaChannelsUpsert(mutationContext),
+            mediaChannelsDelete: toolMediaChannelsDelete(mutationContext),
         },
     });
 }

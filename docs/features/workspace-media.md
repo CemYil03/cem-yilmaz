@@ -20,14 +20,14 @@ matching card into view and highlights it for a moment — the assistant's deep-
 
 - **Movies** — sticky **search bar at the top** hits TMDB movie search live (300 ms debounce). Placeholder says "Film suchen…" / "Search a
   movie…" (movies only — series live on their own tab). Suggestions appear as a dropdown with poster thumbnails; clicking one calls
-  `movieAddFromTmdb`, which fetches full detail server-side and inserts the row into Watchlist. A subtle "Add manually" link at the bottom
+  `moviesAddFromTmdb`, which fetches full detail server-side and inserts the row into Watchlist. A subtle "Add manually" link at the bottom
   of the dropdown opens the empty edit dialog for films TMDB has never heard of. Cards sit in a responsive **poster-first grid**
   (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`), grouped into four sections in this order: Watchlist → Watching → Watched →
   Dropped. Card = poster (2:3 `AspectRatio`) + title + release year, with a rating badge in the top-right corner on watched rows. Kebab menu
   on each card carries the quick actions (Mark watching / Mark watched → rating popover / Move to dropped / Edit / Delete). Clicking a card
   opens a **centered modal dialog** with the full edit form (title, release date via `DatePicker` with `captionLayout="dropdown"` for
   far-past years, runtime, overview, status select, rating, watchedAt, notes textarea, topics multi-select).
-- **Series** — same poster-grid + status grouping as Movies, but the search hits TMDB TV (`tmdbTvSearch` → `showAddFromTmdb`). Each card
+- **Series** — same poster-grid + status grouping as Movies, but the search hits TMDB TV (`tmdbTvSearch` → `showsAddFromTmdb`). Each card
   surfaces a completed badge or next-season hint (exact date formatted as `MMM yyyy`, or the rough label). The edit dialog adds:
   - **Series completed** toggle (`isCompleted`) — when on, next-season fields clear and hide.
   - **Next season (date)** — exact `DatePicker` value (`nextSeasonReleaseDate`).
@@ -77,7 +77,7 @@ path for movies and series; the client falls through to manual entry when TMDB h
 
 - `movieId uuid PK`
 - `title varchar` required
-- `tmdbId int` — **unique nullable**, so a re-add of the same TMDB movie updates in place (`movieAddFromTmdb` looks up before inserting),
+- `tmdbId int` — **unique nullable**, so a re-add of the same TMDB movie updates in place (`moviesAddFromTmdb` looks up before inserting),
   while multiple manually-entered rows coexist
 - `posterUrl`, `backdropUrl varchar` — cached TMDB CDN URLs; no local blob storage
 - `releaseDate date`, `runtimeMinutes int`, `overview text`
@@ -131,17 +131,27 @@ Read namespace under `Admin.adminMediaFindOne` (reached via `sessionFindOne.user
 - `adminMediaYoutubeFindMany(query: String!): [YoutubeChannelResult!]!` — live per-keystroke channel search, same empty-fallback semantics
   as `adminMediaTmdbFindMany`
 
-Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
+Write namespace under `AdminMutation` (gated by `guardAdminMutation`). Every entity mutation is a **batch** that returns
+`MutationResult { success, referenceId, referenceIds }` — never the hydrated entity. The `userUpdates` subscription is the single source of
+truth for the new state; `referenceIds` echoes the affected row ids in input order so a caller can address a freshly-created row without a
+follow-up read. A single-item edit passes a one-element array (UI dialogs, agent tools, and status toggles all do this — there is no
+parallel singular path). This matches the travel and CV batch conventions.
 
-- `movieUpsert(input)`, `movieDelete(movieId)`
-- `movieMarkWatched(movieId, rating)` — shortcut: flips status, stamps `watchedAt`, optional rating
-- `movieAddFromTmdb(tmdbId, status)` — fetches TMDB movie detail server-side, dedupes by `tmdbId`, inserts (or refreshes metadata)
-- `showUpsert(input)`, `showDelete(showId)`
-- `showAddFromTmdb(tmdbId, status)` — fetches TMDB TV detail, seeds `isCompleted` / `nextSeasonReleaseDate` when available
-- `mediaChannelUpsert(input)`, `mediaChannelDelete(channelId)`
-- `mediaChannelReorder(orderedIds)` — full-array rewrite (same shape as `cvEducationReorder`)
+- `moviesUpsert(movies: [MovieInput!]!)`, `moviesDelete(movieIds: [ID!]!)` — every input with a `movieId` is updated, every input without
+  one is inserted; the whole batch runs in one transaction. **Marking a movie watched is a `moviesUpsert`** with a one-element array
+  carrying the existing row plus `status: watched` and `watchedAt` set (there is no separate `movieMarkWatched` mutation).
+- `moviesAddFromTmdb(inputs: [MovieAddFromTmdbInput!]!)` — kept separate from `moviesUpsert` because it hits TMDB and has distinct control
+  flow. TMDB fetches happen in parallel outside the transaction; only the DB writes are inside. Dedupes by `tmdbId` (refreshes metadata in
+  place rather than inserting a duplicate). `referenceIds` echoes the resolved `movieId` per input in input order.
+- `showsUpsert(shows: [ShowInput!]!)`, `showsDelete(showIds: [ID!]!)` — parallel to movies.
+- `showsAddFromTmdb(inputs: [ShowAddFromTmdbInput!]!)` — fetches TMDB TV detail, seeds `isCompleted` / `nextSeasonReleaseDate` when
+  available; `nextSeasonReleaseRough` stays admin-authored. Same batch + dedupe posture as `moviesAddFromTmdb`.
+- `mediaChannelsUpsert(mediaChannels: [MediaChannelInput!]!)`, `mediaChannelsDelete(channelIds: [ID!]!)` — new channels append at the bottom
+  of every topic section (`priority = max + 1`, resolved inside the transaction so a batch of new rows lands contiguously);
+  `mediaChannelReorder` is the sole writer of `priority` on update.
+- `mediaChannelReorder(orderedIds)` — full-array rewrite (same shape as `cvEducationReorder`); already batch + `MutationResult`.
 
-Every command publishes on `userUpdates` after commit, so the media page's `WorkspaceMediaPageUpdates` subscription picks up new state
+Every command publishes on `userUpdates` once after commit, so the media page's `WorkspaceMediaPageUpdates` subscription picks up new state
 without a client-side re-fetch.
 
 ### TMDB client
@@ -180,14 +190,22 @@ list / delete, plus series and channel management) delegates a natural-language 
 sub-agent has:
 
 - **Reads**: `moviesList`, `showsList`, `mediaChannelsList`, `tmdbSearch`, `tmdbTvSearch`, `youtubeSearch`
-- **Writes**: `movieAddFromTmdb`, `movieUpsert`, `movieMarkWatched`, `movieDelete`, `showAddFromTmdb`, `showUpsert`, `showDelete`,
-  `mediaChannelUpsert`, `mediaChannelDelete`
+- **Writes** (all batch tools taking arrays): `moviesAddFromTmdb`, `moviesUpsert`, `moviesDelete`, `showsAddFromTmdb`, `showsUpsert`,
+  `showsDelete`, `mediaChannelsUpsert`, `mediaChannelsDelete`. There is no `moviesMarkWatched` tool — marking watched is a `moviesUpsert`
+  with `status: watched` and `watchedAt` set. `toolMoviesUpsert` hand-builds its Zod item schema (Gemini's structured decoding rejects
+  `z.date()`, so `watchedAt` rides the wire as an ISO string and `execute` converts with `new Date(...)`); `toolShowsUpsert` and
+  `toolMediaChannelsUpsert` reuse the generated `GqlS*InputSchema()` (no DateTime fields).
 - **Snapshot**: `mediaSnapshotForAgent()` renders a compact markdown list of every movie + series + channel with ids inline, embedded in the
   sub-agent's system prompt so the LLM can lift ids without a list call for common asks
 
-Mutation-log entries flow back to the orchestrator as `MediaAgentMutation` (kinds: `movieAdd`, `movieUpdate`, `movieMarkWatched`,
-`movieDelete`, `showAdd`, `showUpdate`, `showDelete`, `mediaChannelAdd`, `mediaChannelUpdate`, `mediaChannelDelete`), each with `id` and
-`title` so the orchestrator can narrate specific rows and produce deep-links.
+Because every write is a batch, the sub-agent batches same-shape work into a single call — one `moviesUpsert` for N edits, one
+`moviesAddFromTmdb` for a whole set of adds (each TMDB fetch runs in parallel). A common "add three films I saw" ask is **two tool calls,
+not six**: one `tmdbSearch` per title to resolve ids (or a single batched intent) followed by one `moviesAddFromTmdb` carrying all three.
+Ids for follow-up edits come from the add result's `referenceIds` (input order) earlier in the same turn.
+
+Mutation-log entries flow back to the orchestrator as `MediaAgentMutation` (kinds: `movieAdd`, `movieUpdate`, `movieDelete`, `showAdd`,
+`showUpdate`, `showDelete`, `mediaChannelAdd`, `mediaChannelUpdate`, `mediaChannelDelete`), each populated per-input from a batch, with `id`
+and `title` so the orchestrator can narrate specific rows and produce deep-links.
 
 ### Deep linking from the assistant
 
@@ -208,21 +226,21 @@ any other workspace area (e.g. a future `/workspace/movies-inbox` for film criti
 
 ### Where things live
 
-| Concern                     | File                                                                                                                                                                                                                         |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tables + types              | `src/server/db/schema.ts` (`movies`, `shows`, `mediaChannels`, `movieStatuses`, `mediaPlatforms`, `mediaTopics`)                                                                                                             |
-| Migrations                  | `drizzle/0017_violet_giant_man.sql`, `drizzle/0023_uneven_johnny_blaze.sql`                                                                                                                                                  |
-| Mappers                     | `src/server/mappers/toGqlMovie.ts`, `toGqlShow.ts`, `toGqlMediaChannel.ts`                                                                                                                                                   |
-| Queries                     | `src/server/queries/adminMediaMovieFindMany.ts`, `adminMediaShowFindMany.ts`, `adminMediaChannelFindMany.ts`                                                                                                                 |
-| Commands                    | `src/server/commands/movie{Upsert,Delete,MarkWatched,AddFromTmdb}.ts`, `show{Upsert,Delete,AddFromTmdb}.ts`, `mediaChannel{Upsert,Delete,Reorder}.ts`                                                                        |
-| TMDB client                 | `src/server/services/tmdbClientCreate.ts` (wired into `ServerRuntime.tmdb`)                                                                                                                                                  |
-| YouTube client              | `src/server/services/youtubeClientCreate.ts` (wired into `ServerRuntime.youtube`)                                                                                                                                            |
-| Resolver wiring             | `src/server/graphql/resolversCreate.ts` (`Admin.adminMediaFindOne`, `AdminMediaQuery`, and the media `AdminMutation` handlers)                                                                                               |
-| Page (UI)                   | `src/routes/{-$locale}/workspace/media.tsx`                                                                                                                                                                                  |
-| Client ops                  | `src/routes/{-$locale}/workspace/media.graphql`                                                                                                                                                                              |
-| Cross-view (software)       | `src/routes/{-$locale}/workspace/software.tsx` + `software.graphql`                                                                                                                                                          |
-| Assistant sub-agent + tools | `src/server/agents/agentPersonalAssistantMedia.ts`, `mediaSnapshotForAgent.ts`, `toolDelegateToMedia.ts`, `toolMovie*`, `toolShow*`, `toolMediaChannel*`, `toolTmdbSearch.ts`, `toolTmdbTvSearch.ts`, `toolYoutubeSearch.ts` |
-| Orchestrator wiring         | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToMedia` + adds deep-link templates for movies / series / channels)                                                                                        |
+| Concern                     | File                                                                                                                                                                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tables + types              | `src/server/db/schema.ts` (`movies`, `shows`, `mediaChannels`, `movieStatuses`, `mediaPlatforms`, `mediaTopics`)                                                                                                                                                                                     |
+| Migrations                  | `drizzle/0017_violet_giant_man.sql`, `drizzle/0023_uneven_johnny_blaze.sql`                                                                                                                                                                                                                          |
+| Mappers                     | `src/server/mappers/toGqlMovie.ts`, `toGqlShow.ts`, `toGqlMediaChannel.ts`                                                                                                                                                                                                                           |
+| Queries                     | `src/server/queries/adminMediaMovieFindMany.ts`, `adminMediaShowFindMany.ts`, `adminMediaChannelFindMany.ts`                                                                                                                                                                                         |
+| Commands                    | `src/server/commands/movies{Upsert,Delete,AddFromTmdb}.ts`, `shows{Upsert,Delete,AddFromTmdb}.ts`, `mediaChannels{Upsert,Delete}.ts`, `mediaChannelReorder.ts`                                                                                                                                       |
+| TMDB client                 | `src/server/services/tmdbClientCreate.ts` (wired into `ServerRuntime.tmdb`)                                                                                                                                                                                                                          |
+| YouTube client              | `src/server/services/youtubeClientCreate.ts` (wired into `ServerRuntime.youtube`)                                                                                                                                                                                                                    |
+| Resolver wiring             | `src/server/graphql/resolversCreate.ts` (`Admin.adminMediaFindOne`, `AdminMediaQuery`, and the media `AdminMutation` handlers)                                                                                                                                                                       |
+| Page (UI)                   | `src/routes/{-$locale}/workspace/media.tsx`                                                                                                                                                                                                                                                          |
+| Client ops                  | `src/routes/{-$locale}/workspace/media.graphql`                                                                                                                                                                                                                                                      |
+| Cross-view (software)       | `src/routes/{-$locale}/workspace/software.tsx` + `software.graphql`                                                                                                                                                                                                                                  |
+| Assistant sub-agent + tools | `src/server/agents/agentPersonalAssistantMedia.ts`, `mediaSnapshotForAgent.ts`, `toolDelegateToMedia.ts`, `toolMovies*`, `toolShows*`, `toolMediaChannels*`, `toolMoviesList.ts`, `toolShowsList.ts`, `toolMediaChannelsList.ts`, `toolTmdbSearch.ts`, `toolTmdbTvSearch.ts`, `toolYoutubeSearch.ts` |
+| Orchestrator wiring         | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToMedia` + adds deep-link templates for movies / series / channels)                                                                                                                                                                |
 
 ## Out of scope
 

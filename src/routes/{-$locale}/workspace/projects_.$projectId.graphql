@@ -147,27 +147,30 @@ mutation WorkspaceProjectDetailUpsertProject(
     $completedAt: DateTime
 ) {
     admin {
-        projectUpsert(
-            input: {
-                projectId: $projectId
-                title: $title
-                description: $description
-                notes: $notes
-                status: $status
-                position: $position
-                sourceRequestId: null
-                startedAt: $startedAt
-                completedAt: $completedAt
-            }
+        projectsUpsert(
+            projects: [
+                {
+                    projectId: $projectId
+                    title: $title
+                    description: $description
+                    notes: $notes
+                    status: $status
+                    position: $position
+                    sourceRequestId: null
+                    startedAt: $startedAt
+                    completedAt: $completedAt
+                }
+            ]
         ) {
-            projectId
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceProjectDetailDeleteProject($projectId: ID!) {
     admin {
-        projectDelete(projectId: $projectId) {
+        projectsDelete(projectIds: [$projectId]) {
             success
         }
     }
@@ -186,28 +189,31 @@ mutation WorkspaceProjectDetailUpsertTask(
     $whenBucket: TaskWhenBucket
 ) {
     admin {
-        taskUpsert(
-            input: {
-                taskId: $taskId
-                projectId: $projectId
-                title: $title
-                notes: $notes
-                status: $status
-                position: $position
-                dueAt: $dueAt
-                completedAt: $completedAt
-                effort: $effort
-                whenBucket: $whenBucket
-            }
+        tasksUpsert(
+            tasks: [
+                {
+                    taskId: $taskId
+                    projectId: $projectId
+                    title: $title
+                    notes: $notes
+                    status: $status
+                    position: $position
+                    dueAt: $dueAt
+                    completedAt: $completedAt
+                    effort: $effort
+                    whenBucket: $whenBucket
+                }
+            ]
         ) {
-            taskId
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceProjectDetailDeleteTask($taskId: ID!) {
     admin {
-        taskDelete(taskId: $taskId) {
+        tasksDelete(taskIds: [$taskId]) {
             success
         }
     }
@@ -236,38 +242,41 @@ mutation WorkspaceProjectDetailUpsertActivity(
     $attachFilePinned: Boolean
 ) {
     admin {
-        projectActivityUpsert(
-            input: {
-                activityId: $activityId
-                projectId: $projectId
-                taskId: $taskId
-                kind: $kind
-                channel: $channel
-                direction: $direction
-                title: $title
-                notes: $notes
-                occurredAt: $occurredAt
-                durationSec: $durationSec
-                amountCents: $amountCents
-                offerStatus: $offerStatus
-                attachLinkUrl: $attachLinkUrl
-                attachLinkKind: $attachLinkKind
-                attachLinkLabel: $attachLinkLabel
-                attachLinkPinned: $attachLinkPinned
-                attachFileUploadId: $attachFileUploadId
-                attachFileKind: $attachFileKind
-                attachFileLabel: $attachFileLabel
-                attachFilePinned: $attachFilePinned
-            }
+        projectActivitiesUpsert(
+            projectActivities: [
+                {
+                    activityId: $activityId
+                    projectId: $projectId
+                    taskId: $taskId
+                    kind: $kind
+                    channel: $channel
+                    direction: $direction
+                    title: $title
+                    notes: $notes
+                    occurredAt: $occurredAt
+                    durationSec: $durationSec
+                    amountCents: $amountCents
+                    offerStatus: $offerStatus
+                    attachLinkUrl: $attachLinkUrl
+                    attachLinkKind: $attachLinkKind
+                    attachLinkLabel: $attachLinkLabel
+                    attachLinkPinned: $attachLinkPinned
+                    attachFileUploadId: $attachFileUploadId
+                    attachFileKind: $attachFileKind
+                    attachFileLabel: $attachFileLabel
+                    attachFilePinned: $attachFilePinned
+                }
+            ]
         ) {
-            activityId
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceProjectDetailDeleteActivity($activityId: ID!) {
     admin {
-        projectActivityDelete(activityId: $activityId) {
+        projectActivitiesDelete(activityIds: [$activityId]) {
             success
         }
     }
@@ -275,20 +284,17 @@ mutation WorkspaceProjectDetailDeleteActivity($activityId: ID!) {
 
 mutation WorkspaceProjectDetailTimerStart($projectId: ID!, $taskId: ID, $title: String) {
     admin {
-        projectTimerStart(projectId: $projectId, taskId: $taskId, title: $title) {
-            activityId
-            projectId
-            startedAt
+        projectTimersStart(inputs: [{ projectId: $projectId, taskId: $taskId, title: $title }]) {
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceProjectDetailTimerStop($activityId: ID!) {
     admin {
-        projectTimerStop(activityId: $activityId) {
-            activityId
-            endedAt
-            durationSec
+        projectTimersStop(activityIds: [$activityId]) {
+            success
         }
     }
 }
@@ -303,35 +309,29 @@ mutation WorkspaceProjectLinkUpsert(
     $pinned: Boolean
 ) {
     admin {
-        projectLinkUpsert(
-            input: {
-                projectLinkId: $projectLinkId
-                projectId: $projectId
-                activityId: $activityId
-                url: $url
-                label: $label
-                kind: $kind
-                pinned: $pinned
-            }
+        projectLinksUpsert(
+            projectLinks: [
+                {
+                    projectLinkId: $projectLinkId
+                    projectId: $projectId
+                    activityId: $activityId
+                    url: $url
+                    label: $label
+                    kind: $kind
+                    pinned: $pinned
+                }
+            ]
         ) {
-            projectLinkId
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceProjectLinkDelete($projectLinkId: ID!) {
     admin {
-        projectLinkDelete(projectLinkId: $projectLinkId) {
+        projectLinksDelete(projectLinkIds: [$projectLinkId]) {
             success
-        }
-    }
-}
-
-mutation WorkspaceProjectLinkTogglePin($projectLinkId: ID!) {
-    admin {
-        projectLinkTogglePin(projectLinkId: $projectLinkId) {
-            projectLinkId
-            pinned
         }
     }
 }
@@ -346,35 +346,29 @@ mutation WorkspaceProjectFileUpsert(
     $pinned: Boolean
 ) {
     admin {
-        projectFileUpsert(
-            input: {
-                projectFileId: $projectFileId
-                projectId: $projectId
-                activityId: $activityId
-                fileUploadId: $fileUploadId
-                label: $label
-                kind: $kind
-                pinned: $pinned
-            }
+        projectFilesUpsert(
+            projectFiles: [
+                {
+                    projectFileId: $projectFileId
+                    projectId: $projectId
+                    activityId: $activityId
+                    fileUploadId: $fileUploadId
+                    label: $label
+                    kind: $kind
+                    pinned: $pinned
+                }
+            ]
         ) {
-            projectFileId
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceProjectFileDelete($projectFileId: ID!) {
     admin {
-        projectFileDelete(projectFileId: $projectFileId) {
+        projectFilesDelete(projectFileIds: [$projectFileId]) {
             success
-        }
-    }
-}
-
-mutation WorkspaceProjectFileTogglePin($projectFileId: ID!) {
-    admin {
-        projectFileTogglePin(projectFileId: $projectFileId) {
-            projectFileId
-            pinned
         }
     }
 }

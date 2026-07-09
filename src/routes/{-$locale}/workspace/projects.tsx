@@ -44,7 +44,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // Workspace projects hub — two tabs glued to one read query: Inbox
 // triages incoming visitor `ProjectRequest`s, Projects is a status-grouped
 // board of ongoing personal work. Convert from inbox → project opens the
-// project editor prefilled from the request; on submit `projectUpsert`
+// project editor prefilled from the request; on submit `projectsUpsert`
 // inserts the project and archives the source request in one transaction.
 // Standalone todos (tasks with no project attached) live on
 // `/workspace/todos` — the two surfaces stay disjoint.
@@ -440,7 +440,7 @@ function InboxRow({ row, locale }: { row: RequestRow; locale: Locale }) {
 // editor when converting a request: the admin reviews and tweaks before
 // the project lands on the board, rather than committing the auto-built
 // title/notes blindly. The server-side merge keeps the description and
-// notes intact when `projectUpsert` archives the source request.
+// notes intact when `projectsUpsert` archives the source request.
 function projectDraftFromRequest(
     row: RequestRow,
     locale: Locale,

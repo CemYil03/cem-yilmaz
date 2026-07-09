@@ -58,7 +58,7 @@ export interface TmdbClient {
     /**
      * Fetch full detail for a TMDB movie id. Returns `null` if the key is
      * missing or the fetch fails — the media command falls back to
-     * `movieUpsert` with whatever the client already knows.
+     * `moviesUpsert` with whatever the client already knows.
      */
     getMovie: (tmdbId: number) => Promise<TmdbMovieDetail | null>;
     /**

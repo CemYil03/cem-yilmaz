@@ -54,34 +54,28 @@ subscription WorkspaceInventoryPageUpdates {
     }
 }
 
-mutation WorkspaceItemUpsert($input: ItemInput!) {
+mutation WorkspaceItemsUpsert($items: [ItemInput!]!) {
     admin {
-        itemUpsert(input: $input) {
-            itemId
+        itemsUpsert(items: $items) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceItemDelete($itemId: ID!) {
+mutation WorkspaceItemsDelete($itemIds: [ID!]!) {
     admin {
-        itemDelete(itemId: $itemId) {
+        itemsDelete(itemIds: $itemIds) {
             success
         }
     }
 }
 
-mutation WorkspaceItemDispose($itemId: ID!, $state: ItemDisposalState!, $disposedAt: DateTime) {
+mutation WorkspaceItemsReprice($inputs: [ItemRepriceInput!]!) {
     admin {
-        itemDispose(itemId: $itemId, state: $state, disposedAt: $disposedAt) {
-            itemId
-        }
-    }
-}
-
-mutation WorkspaceItemReprice($itemId: ID!, $valueCents: Int!, $valuedAt: DateTime, $note: String) {
-    admin {
-        itemReprice(itemId: $itemId, valueCents: $valueCents, valuedAt: $valuedAt, note: $note) {
-            itemId
+        itemsReprice(inputs: $inputs) {
+            success
+            referenceIds
         }
     }
 }

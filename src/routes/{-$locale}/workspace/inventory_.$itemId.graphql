@@ -87,42 +87,45 @@ subscription WorkspaceInventoryDetailUpdates($itemId: ID!) {
     }
 }
 
-mutation WorkspaceItemServiceEntryUpsert($input: ItemServiceEntryInput!) {
+mutation WorkspaceItemServiceEntriesUpsert($itemServiceEntries: [ItemServiceEntryInput!]!) {
     admin {
-        itemServiceEntryUpsert(input: $input) {
-            serviceEntryId
+        itemServiceEntriesUpsert(itemServiceEntries: $itemServiceEntries) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceItemServiceEntryDelete($serviceEntryId: ID!) {
+mutation WorkspaceItemServiceEntriesDelete($serviceEntryIds: [ID!]!) {
     admin {
-        itemServiceEntryDelete(serviceEntryId: $serviceEntryId) {
+        itemServiceEntriesDelete(serviceEntryIds: $serviceEntryIds) {
             success
         }
     }
 }
 
-mutation WorkspaceItemFileAttach($input: ItemFileAttachInput!) {
+mutation WorkspaceItemFilesAttach($inputs: [ItemFileAttachInput!]!) {
     admin {
-        itemFileAttach(input: $input) {
-            itemFileId
+        itemFilesAttach(inputs: $inputs) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceItemFileDelete($itemFileId: ID!) {
+mutation WorkspaceItemFilesDelete($itemFileIds: [ID!]!) {
     admin {
-        itemFileDelete(itemFileId: $itemFileId) {
+        itemFilesDelete(itemFileIds: $itemFileIds) {
             success
         }
     }
 }
 
-mutation WorkspaceItemFileTogglePin($itemFileId: ID!) {
+mutation WorkspaceItemFilesUpsert($itemFiles: [ItemFileUpsert!]!) {
     admin {
-        itemFileTogglePin(itemFileId: $itemFileId) {
-            itemFileId
+        itemFilesUpsert(itemFiles: $itemFiles) {
+            success
+            referenceIds
         }
     }
 }

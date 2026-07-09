@@ -192,64 +192,59 @@ export interface GqlSAdminMutation {
     compassObservationDismiss: GqlSMutationResult;
     compassScheduledInterviewDismiss: GqlSMutationResult;
     compassSynthesizeRequest: GqlSMutationResult;
-    cvEducationDelete: GqlSMutationResult;
     cvEducationReorder: GqlSMutationResult;
-    cvEducationUpsert: GqlSCvEducation;
-    cvExperienceDelete: GqlSMutationResult;
-    cvExperienceUpsert: GqlSCvExperience;
-    cvHobbyDelete: GqlSMutationResult;
+    cvEducationsDelete: GqlSMutationResult;
+    cvEducationsUpsert: GqlSMutationResult;
+    cvExperiencesDelete: GqlSMutationResult;
+    cvExperiencesUpsert: GqlSMutationResult;
+    cvHobbiesDelete: GqlSMutationResult;
+    cvHobbiesUpsert: GqlSMutationResult;
     cvHobbyReorder: GqlSMutationResult;
-    cvHobbyUpsert: GqlSCvHobby;
-    cvSkillDelete: GqlSMutationResult;
     cvSkillReorder: GqlSMutationResult;
-    cvSkillUpsert: GqlSCvSkill;
+    cvSkillsDelete: GqlSMutationResult;
+    cvSkillsUpsert: GqlSMutationResult;
     financeMonthlyNetIncomeSet: GqlSAdminFinancesQuery;
     financeRecurringCostDelete: GqlSMutationResult;
     financeRecurringCostUpsert: GqlSFinanceRecurringCost;
-    itemDelete: GqlSMutationResult;
-    itemDispose: GqlSItem;
-    itemFileAttach: GqlSItemFile;
-    itemFileDelete: GqlSMutationResult;
-    itemFileTogglePin: GqlSItemFile;
-    itemReprice: GqlSItem;
-    itemServiceEntryDelete: GqlSMutationResult;
-    itemServiceEntryUpsert: GqlSItemServiceEntry;
-    itemUpsert: GqlSItem;
-    mediaChannelDelete: GqlSMutationResult;
+    itemFilesAttach: GqlSMutationResult;
+    itemFilesDelete: GqlSMutationResult;
+    itemFilesUpsert: GqlSMutationResult;
+    itemServiceEntriesDelete: GqlSMutationResult;
+    itemServiceEntriesUpsert: GqlSMutationResult;
+    itemsDelete: GqlSMutationResult;
+    itemsReprice: GqlSMutationResult;
+    itemsUpsert: GqlSMutationResult;
     mediaChannelReorder: GqlSMutationResult;
-    mediaChannelUpsert: GqlSMediaChannel;
-    medicalAppointmentComplete: GqlSMedicalAppointment;
-    medicalAppointmentDelete: GqlSMutationResult;
-    medicalAppointmentUpsert: GqlSMedicalAppointment;
-    medicalRecordDelete: GqlSMutationResult;
-    medicalRecordFileAttach: GqlSMedicalRecordFile;
-    medicalRecordFileDelete: GqlSMutationResult;
-    medicalRecordUpsert: GqlSMedicalRecord;
-    movieAddFromTmdb: GqlSMovie;
-    movieDelete: GqlSMutationResult;
-    movieMarkWatched: GqlSMovie;
-    movieUpsert: GqlSMovie;
-    projectActivityDelete: GqlSMutationResult;
-    projectActivityUpsert: GqlSProjectActivity;
-    projectDelete: GqlSMutationResult;
-    projectFileDelete: GqlSMutationResult;
-    projectFileTogglePin: GqlSProjectFile;
-    projectFileUpsert: GqlSProjectFile;
-    projectLinkDelete: GqlSMutationResult;
-    projectLinkTogglePin: GqlSProjectLink;
-    projectLinkUpsert: GqlSProjectLink;
+    mediaChannelsDelete: GqlSMutationResult;
+    mediaChannelsUpsert: GqlSMutationResult;
+    medicalAppointmentsDelete: GqlSMutationResult;
+    medicalAppointmentsUpsert: GqlSMutationResult;
+    medicalRecordFilesAttach: GqlSMutationResult;
+    medicalRecordFilesDelete: GqlSMutationResult;
+    medicalRecordsDelete: GqlSMutationResult;
+    medicalRecordsUpsert: GqlSMutationResult;
+    moviesAddFromTmdb: GqlSMutationResult;
+    moviesDelete: GqlSMutationResult;
+    moviesUpsert: GqlSMutationResult;
+    projectActivitiesDelete: GqlSMutationResult;
+    projectActivitiesUpsert: GqlSMutationResult;
+    projectFilesDelete: GqlSMutationResult;
+    projectFilesUpsert: GqlSMutationResult;
+    projectLinksDelete: GqlSMutationResult;
+    projectLinksUpsert: GqlSMutationResult;
     projectReorder: GqlSMutationResult;
     projectRequestArchive: GqlSMutationResult;
     projectRequestDelete: GqlSMutationResult;
-    projectTimerStart: GqlSProjectActivity;
-    projectTimerStop: GqlSProjectActivity;
-    projectUpsert: GqlSProject;
-    showAddFromTmdb: GqlSShow;
-    showDelete: GqlSMutationResult;
-    showUpsert: GqlSShow;
-    taskDelete: GqlSMutationResult;
+    projectTimersStart: GqlSMutationResult;
+    projectTimersStop: GqlSMutationResult;
+    projectsDelete: GqlSMutationResult;
+    projectsUpsert: GqlSMutationResult;
+    showsAddFromTmdb: GqlSMutationResult;
+    showsDelete: GqlSMutationResult;
+    showsUpsert: GqlSMutationResult;
     taskReorder: GqlSMutationResult;
-    taskUpsert: GqlSTask;
+    tasksDelete: GqlSMutationResult;
+    tasksUpsert: GqlSMutationResult;
     tripActivitiesDelete: GqlSMutationResult;
     tripActivitiesUpsert: GqlSMutationResult;
     tripDaysDelete: GqlSMutationResult;
@@ -312,48 +307,48 @@ export type GqlSAdminMutationCompassObservationDismissArgs = {
     observationId: Scalars['ID']['input'];
 };
 
-export type GqlSAdminMutationCvEducationDeleteArgs = {
-    cvEducationId: Scalars['ID']['input'];
-};
-
 export type GqlSAdminMutationCvEducationReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationCvEducationUpsertArgs = {
-    input: GqlSCvEducationInput;
+export type GqlSAdminMutationCvEducationsDeleteArgs = {
+    cvEducationIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationCvExperienceDeleteArgs = {
-    cvExperienceId: Scalars['ID']['input'];
+export type GqlSAdminMutationCvEducationsUpsertArgs = {
+    cvEducations: Array<GqlSCvEducationInput>;
 };
 
-export type GqlSAdminMutationCvExperienceUpsertArgs = {
-    input: GqlSCvExperienceInput;
+export type GqlSAdminMutationCvExperiencesDeleteArgs = {
+    cvExperienceIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationCvHobbyDeleteArgs = {
-    cvHobbyId: Scalars['ID']['input'];
+export type GqlSAdminMutationCvExperiencesUpsertArgs = {
+    cvExperiences: Array<GqlSCvExperienceInput>;
+};
+
+export type GqlSAdminMutationCvHobbiesDeleteArgs = {
+    cvHobbyIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationCvHobbiesUpsertArgs = {
+    cvHobbies: Array<GqlSCvHobbyInput>;
 };
 
 export type GqlSAdminMutationCvHobbyReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationCvHobbyUpsertArgs = {
-    input: GqlSCvHobbyInput;
-};
-
-export type GqlSAdminMutationCvSkillDeleteArgs = {
-    cvSkillId: Scalars['ID']['input'];
-};
-
 export type GqlSAdminMutationCvSkillReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationCvSkillUpsertArgs = {
-    input: GqlSCvSkillInput;
+export type GqlSAdminMutationCvSkillsDeleteArgs = {
+    cvSkillIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationCvSkillsUpsertArgs = {
+    cvSkills: Array<GqlSCvSkillInput>;
 };
 
 export type GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs = {
@@ -368,141 +363,108 @@ export type GqlSAdminMutationFinanceRecurringCostUpsertArgs = {
     input: GqlSFinanceRecurringCostInput;
 };
 
-export type GqlSAdminMutationItemDeleteArgs = {
-    itemId: Scalars['ID']['input'];
+export type GqlSAdminMutationItemFilesAttachArgs = {
+    inputs: Array<GqlSItemFileAttachInput>;
 };
 
-export type GqlSAdminMutationItemDisposeArgs = {
-    disposedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    itemId: Scalars['ID']['input'];
-    state: GqlSItemDisposalState;
+export type GqlSAdminMutationItemFilesDeleteArgs = {
+    itemFileIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationItemFileAttachArgs = {
-    input: GqlSItemFileAttachInput;
+export type GqlSAdminMutationItemFilesUpsertArgs = {
+    itemFiles: Array<GqlSItemFileUpsert>;
 };
 
-export type GqlSAdminMutationItemFileDeleteArgs = {
-    itemFileId: Scalars['ID']['input'];
+export type GqlSAdminMutationItemServiceEntriesDeleteArgs = {
+    serviceEntryIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationItemFileTogglePinArgs = {
-    itemFileId: Scalars['ID']['input'];
+export type GqlSAdminMutationItemServiceEntriesUpsertArgs = {
+    itemServiceEntries: Array<GqlSItemServiceEntryInput>;
 };
 
-export type GqlSAdminMutationItemRepriceArgs = {
-    itemId: Scalars['ID']['input'];
-    note?: InputMaybe<Scalars['String']['input']>;
-    valueCents: Scalars['Int']['input'];
-    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
+export type GqlSAdminMutationItemsDeleteArgs = {
+    itemIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationItemServiceEntryDeleteArgs = {
-    serviceEntryId: Scalars['ID']['input'];
+export type GqlSAdminMutationItemsRepriceArgs = {
+    inputs: Array<GqlSItemRepriceInput>;
 };
 
-export type GqlSAdminMutationItemServiceEntryUpsertArgs = {
-    input: GqlSItemServiceEntryInput;
-};
-
-export type GqlSAdminMutationItemUpsertArgs = {
-    input: GqlSItemInput;
-};
-
-export type GqlSAdminMutationMediaChannelDeleteArgs = {
-    channelId: Scalars['ID']['input'];
+export type GqlSAdminMutationItemsUpsertArgs = {
+    items: Array<GqlSItemInput>;
 };
 
 export type GqlSAdminMutationMediaChannelReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationMediaChannelUpsertArgs = {
-    input: GqlSMediaChannelInput;
+export type GqlSAdminMutationMediaChannelsDeleteArgs = {
+    channelIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationMedicalAppointmentCompleteArgs = {
-    appointmentId: Scalars['ID']['input'];
-    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    nextDueAt?: InputMaybe<Scalars['DateTime']['input']>;
+export type GqlSAdminMutationMediaChannelsUpsertArgs = {
+    mediaChannels: Array<GqlSMediaChannelInput>;
 };
 
-export type GqlSAdminMutationMedicalAppointmentDeleteArgs = {
-    appointmentId: Scalars['ID']['input'];
+export type GqlSAdminMutationMedicalAppointmentsDeleteArgs = {
+    appointmentIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationMedicalAppointmentUpsertArgs = {
-    input: GqlSMedicalAppointmentInput;
+export type GqlSAdminMutationMedicalAppointmentsUpsertArgs = {
+    medicalAppointments: Array<GqlSMedicalAppointmentInput>;
 };
 
-export type GqlSAdminMutationMedicalRecordDeleteArgs = {
-    recordId: Scalars['ID']['input'];
+export type GqlSAdminMutationMedicalRecordFilesAttachArgs = {
+    inputs: Array<GqlSMedicalRecordFileAttachInput>;
 };
 
-export type GqlSAdminMutationMedicalRecordFileAttachArgs = {
-    input: GqlSMedicalRecordFileAttachInput;
+export type GqlSAdminMutationMedicalRecordFilesDeleteArgs = {
+    recordFileIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationMedicalRecordFileDeleteArgs = {
-    recordFileId: Scalars['ID']['input'];
+export type GqlSAdminMutationMedicalRecordsDeleteArgs = {
+    recordIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationMedicalRecordUpsertArgs = {
-    input: GqlSMedicalRecordInput;
+export type GqlSAdminMutationMedicalRecordsUpsertArgs = {
+    medicalRecords: Array<GqlSMedicalRecordInput>;
 };
 
-export type GqlSAdminMutationMovieAddFromTmdbArgs = {
-    status?: InputMaybe<GqlSMovieStatus>;
-    tmdbId: Scalars['Int']['input'];
+export type GqlSAdminMutationMoviesAddFromTmdbArgs = {
+    inputs: Array<GqlSMovieAddFromTmdbInput>;
 };
 
-export type GqlSAdminMutationMovieDeleteArgs = {
-    movieId: Scalars['ID']['input'];
+export type GqlSAdminMutationMoviesDeleteArgs = {
+    movieIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationMovieMarkWatchedArgs = {
-    movieId: Scalars['ID']['input'];
-    rating?: InputMaybe<Scalars['Int']['input']>;
+export type GqlSAdminMutationMoviesUpsertArgs = {
+    movies: Array<GqlSMovieInput>;
 };
 
-export type GqlSAdminMutationMovieUpsertArgs = {
-    input: GqlSMovieInput;
+export type GqlSAdminMutationProjectActivitiesDeleteArgs = {
+    activityIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationProjectActivityDeleteArgs = {
-    activityId: Scalars['ID']['input'];
+export type GqlSAdminMutationProjectActivitiesUpsertArgs = {
+    projectActivities: Array<GqlSProjectActivityCreate>;
 };
 
-export type GqlSAdminMutationProjectActivityUpsertArgs = {
-    input: GqlSProjectActivityCreate;
+export type GqlSAdminMutationProjectFilesDeleteArgs = {
+    projectFileIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationProjectDeleteArgs = {
-    projectId: Scalars['ID']['input'];
+export type GqlSAdminMutationProjectFilesUpsertArgs = {
+    projectFiles: Array<GqlSProjectFileUpsert>;
 };
 
-export type GqlSAdminMutationProjectFileDeleteArgs = {
-    projectFileId: Scalars['ID']['input'];
+export type GqlSAdminMutationProjectLinksDeleteArgs = {
+    projectLinkIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationProjectFileTogglePinArgs = {
-    projectFileId: Scalars['ID']['input'];
-};
-
-export type GqlSAdminMutationProjectFileUpsertArgs = {
-    input: GqlSProjectFileUpsert;
-};
-
-export type GqlSAdminMutationProjectLinkDeleteArgs = {
-    projectLinkId: Scalars['ID']['input'];
-};
-
-export type GqlSAdminMutationProjectLinkTogglePinArgs = {
-    projectLinkId: Scalars['ID']['input'];
-};
-
-export type GqlSAdminMutationProjectLinkUpsertArgs = {
-    input: GqlSProjectLinkUpsert;
+export type GqlSAdminMutationProjectLinksUpsertArgs = {
+    projectLinks: Array<GqlSProjectLinkUpsert>;
 };
 
 export type GqlSAdminMutationProjectReorderArgs = {
@@ -517,43 +479,44 @@ export type GqlSAdminMutationProjectRequestDeleteArgs = {
     projectRequestId: Scalars['ID']['input'];
 };
 
-export type GqlSAdminMutationProjectTimerStartArgs = {
-    projectId: Scalars['ID']['input'];
-    taskId?: InputMaybe<Scalars['ID']['input']>;
-    title?: InputMaybe<Scalars['String']['input']>;
+export type GqlSAdminMutationProjectTimersStartArgs = {
+    inputs: Array<GqlSProjectTimerStartInput>;
 };
 
-export type GqlSAdminMutationProjectTimerStopArgs = {
-    activityId: Scalars['ID']['input'];
+export type GqlSAdminMutationProjectTimersStopArgs = {
+    activityIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationProjectUpsertArgs = {
-    input: GqlSProjectCreate;
+export type GqlSAdminMutationProjectsDeleteArgs = {
+    projectIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationShowAddFromTmdbArgs = {
-    status?: InputMaybe<GqlSMovieStatus>;
-    tmdbId: Scalars['Int']['input'];
+export type GqlSAdminMutationProjectsUpsertArgs = {
+    projects: Array<GqlSProjectCreate>;
 };
 
-export type GqlSAdminMutationShowDeleteArgs = {
-    showId: Scalars['ID']['input'];
+export type GqlSAdminMutationShowsAddFromTmdbArgs = {
+    inputs: Array<GqlSShowAddFromTmdbInput>;
 };
 
-export type GqlSAdminMutationShowUpsertArgs = {
-    input: GqlSShowInput;
+export type GqlSAdminMutationShowsDeleteArgs = {
+    showIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationTaskDeleteArgs = {
-    taskId: Scalars['ID']['input'];
+export type GqlSAdminMutationShowsUpsertArgs = {
+    shows: Array<GqlSShowInput>;
 };
 
 export type GqlSAdminMutationTaskReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminMutationTaskUpsertArgs = {
-    input: GqlSTaskCreate;
+export type GqlSAdminMutationTasksDeleteArgs = {
+    taskIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationTasksUpsertArgs = {
+    tasks: Array<GqlSTaskCreate>;
 };
 
 export type GqlSAdminMutationTripActivitiesDeleteArgs = {
@@ -1120,10 +1083,18 @@ export type GqlSItemFileAttachInput = {
 
 export type GqlSItemFileKind = 'invoice' | 'manual' | 'other' | 'photo' | 'receipt' | 'warranty';
 
+export type GqlSItemFileUpsert = {
+    itemFileId: Scalars['ID']['input'];
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
 export type GqlSItemInput = {
     brand?: InputMaybe<Scalars['String']['input']>;
     categoryKey: GqlSItemCategory;
     condition?: InputMaybe<GqlSItemCondition>;
+    disposalState?: InputMaybe<GqlSItemDisposalState>;
+    disposedAt?: InputMaybe<Scalars['DateTime']['input']>;
     itemId?: InputMaybe<Scalars['ID']['input']>;
     model?: InputMaybe<Scalars['String']['input']>;
     name: Scalars['String']['input'];
@@ -1134,6 +1105,13 @@ export type GqlSItemInput = {
     warrantyEndsAt?: InputMaybe<Scalars['Date']['input']>;
     warrantyNotes?: InputMaybe<Scalars['String']['input']>;
     warrantyProvider?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSItemRepriceInput = {
+    itemId: Scalars['ID']['input'];
+    note?: InputMaybe<Scalars['String']['input']>;
+    valueCents: Scalars['Int']['input'];
+    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 export interface GqlSItemServiceEntry {
@@ -1342,6 +1320,11 @@ export interface GqlSMovie {
     updatedAt: Scalars['DateTime']['output'];
     watchedAt?: Maybe<Scalars['DateTime']['output']>;
 }
+
+export type GqlSMovieAddFromTmdbInput = {
+    status?: InputMaybe<GqlSMovieStatus>;
+    tmdbId: Scalars['Int']['input'];
+};
 
 export type GqlSMovieInput = {
     backdropUrl?: InputMaybe<Scalars['String']['input']>;
@@ -1562,6 +1545,12 @@ export type GqlSProjectRequestType = 'aiIntegration' | 'consulting' | 'mobile' |
 
 export type GqlSProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'paused' | 'planning';
 
+export type GqlSProjectTimerStartInput = {
+    projectId: Scalars['ID']['input'];
+    taskId?: InputMaybe<Scalars['ID']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
+};
+
 export interface GqlSQuery {
     __typename?: 'Query';
     publicCvFindOne: GqlSCvQuery;
@@ -1599,6 +1588,11 @@ export interface GqlSShow {
     topics: Array<Scalars['String']['output']>;
     updatedAt: Scalars['DateTime']['output'];
 }
+
+export type GqlSShowAddFromTmdbInput = {
+    status?: InputMaybe<GqlSMovieStatus>;
+    tmdbId: Scalars['Int']['input'];
+};
 
 export type GqlSShowInput = {
     backdropUrl?: InputMaybe<Scalars['String']['input']>;
@@ -2071,7 +2065,9 @@ export type GqlSResolversTypes = ResolversObject<{
     ItemFile: ResolverTypeWrapper<GqlSItemFile>;
     ItemFileAttachInput: GqlSItemFileAttachInput;
     ItemFileKind: GqlSItemFileKind;
+    ItemFileUpsert: GqlSItemFileUpsert;
     ItemInput: GqlSItemInput;
+    ItemRepriceInput: GqlSItemRepriceInput;
     ItemServiceEntry: ResolverTypeWrapper<GqlSItemServiceEntry>;
     ItemServiceEntryInput: GqlSItemServiceEntryInput;
     ItemServiceKind: GqlSItemServiceKind;
@@ -2094,6 +2090,7 @@ export type GqlSResolversTypes = ResolversObject<{
     MedicalRecordInput: GqlSMedicalRecordInput;
     MedicalRecordSeverity: GqlSMedicalRecordSeverity;
     Movie: ResolverTypeWrapper<GqlSMovie>;
+    MovieAddFromTmdbInput: GqlSMovieAddFromTmdbInput;
     MovieInput: GqlSMovieInput;
     MovieStatus: GqlSMovieStatus;
     Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
@@ -2116,6 +2113,7 @@ export type GqlSResolversTypes = ResolversObject<{
     ProjectRequestStatus: GqlSProjectRequestStatus;
     ProjectRequestType: GqlSProjectRequestType;
     ProjectStatus: GqlSProjectStatus;
+    ProjectTimerStartInput: GqlSProjectTimerStartInput;
     Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Session: ResolverTypeWrapper<
         Omit<GqlSSession, 'user' | 'visitorChatFindMany' | 'visitorChatFindOne'> & {
@@ -2125,6 +2123,7 @@ export type GqlSResolversTypes = ResolversObject<{
         }
     >;
     Show: ResolverTypeWrapper<GqlSShow>;
+    ShowAddFromTmdbInput: GqlSShowAddFromTmdbInput;
     ShowInput: GqlSShowInput;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
@@ -2240,7 +2239,9 @@ export type GqlSResolversParentTypes = ResolversObject<{
     Item: GqlSItem;
     ItemFile: GqlSItemFile;
     ItemFileAttachInput: GqlSItemFileAttachInput;
+    ItemFileUpsert: GqlSItemFileUpsert;
     ItemInput: GqlSItemInput;
+    ItemRepriceInput: GqlSItemRepriceInput;
     ItemServiceEntry: GqlSItemServiceEntry;
     ItemServiceEntryInput: GqlSItemServiceEntryInput;
     ItemValuation: GqlSItemValuation;
@@ -2256,6 +2257,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     MedicalRecordFileAttachInput: GqlSMedicalRecordFileAttachInput;
     MedicalRecordInput: GqlSMedicalRecordInput;
     Movie: GqlSMovie;
+    MovieAddFromTmdbInput: GqlSMovieAddFromTmdbInput;
     MovieInput: GqlSMovieInput;
     Mutation: Record<PropertyKey, never>;
     MutationResult: GqlSMutationResult;
@@ -2268,6 +2270,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ProjectLink: GqlSProjectLink;
     ProjectLinkUpsert: GqlSProjectLinkUpsert;
     ProjectRequest: GqlSProjectRequest;
+    ProjectTimerStartInput: GqlSProjectTimerStartInput;
     Query: Record<PropertyKey, never>;
     Session: Omit<GqlSSession, 'user' | 'visitorChatFindMany' | 'visitorChatFindOne'> & {
         user?: Maybe<GqlSResolversParentTypes['User']>;
@@ -2275,6 +2278,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
         visitorChatFindOne: GqlSResolversParentTypes['Chat'];
     };
     Show: GqlSShow;
+    ShowAddFromTmdbInput: GqlSShowAddFromTmdbInput;
     ShowInput: GqlSShowInput;
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
@@ -2539,41 +2543,47 @@ export type GqlSAdminMutationResolvers<
     >;
     compassScheduledInterviewDismiss?: Resolver<GqlSResolversTypes['MutationResult'], ParentType, ContextType>;
     compassSynthesizeRequest?: Resolver<GqlSResolversTypes['MutationResult'], ParentType, ContextType>;
-    cvEducationDelete?: Resolver<
-        GqlSResolversTypes['MutationResult'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationCvEducationDeleteArgs, 'cvEducationId'>
-    >;
     cvEducationReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationCvEducationReorderArgs, 'orderedIds'>
     >;
-    cvEducationUpsert?: Resolver<
-        GqlSResolversTypes['CvEducation'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationCvEducationUpsertArgs, 'input'>
-    >;
-    cvExperienceDelete?: Resolver<
+    cvEducationsDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationCvExperienceDeleteArgs, 'cvExperienceId'>
+        RequireFields<GqlSAdminMutationCvEducationsDeleteArgs, 'cvEducationIds'>
     >;
-    cvExperienceUpsert?: Resolver<
-        GqlSResolversTypes['CvExperience'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationCvExperienceUpsertArgs, 'input'>
-    >;
-    cvHobbyDelete?: Resolver<
+    cvEducationsUpsert?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationCvHobbyDeleteArgs, 'cvHobbyId'>
+        RequireFields<GqlSAdminMutationCvEducationsUpsertArgs, 'cvEducations'>
+    >;
+    cvExperiencesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvExperiencesDeleteArgs, 'cvExperienceIds'>
+    >;
+    cvExperiencesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvExperiencesUpsertArgs, 'cvExperiences'>
+    >;
+    cvHobbiesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvHobbiesDeleteArgs, 'cvHobbyIds'>
+    >;
+    cvHobbiesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvHobbiesUpsertArgs, 'cvHobbies'>
     >;
     cvHobbyReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -2581,29 +2591,23 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationCvHobbyReorderArgs, 'orderedIds'>
     >;
-    cvHobbyUpsert?: Resolver<
-        GqlSResolversTypes['CvHobby'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationCvHobbyUpsertArgs, 'input'>
-    >;
-    cvSkillDelete?: Resolver<
-        GqlSResolversTypes['MutationResult'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationCvSkillDeleteArgs, 'cvSkillId'>
-    >;
     cvSkillReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationCvSkillReorderArgs, 'orderedIds'>
     >;
-    cvSkillUpsert?: Resolver<
-        GqlSResolversTypes['CvSkill'],
+    cvSkillsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationCvSkillUpsertArgs, 'input'>
+        RequireFields<GqlSAdminMutationCvSkillsDeleteArgs, 'cvSkillIds'>
+    >;
+    cvSkillsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationCvSkillsUpsertArgs, 'cvSkills'>
     >;
     financeMonthlyNetIncomeSet?: Resolver<
         GqlSResolversTypes['AdminFinancesQuery'],
@@ -2623,60 +2627,53 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationFinanceRecurringCostUpsertArgs, 'input'>
     >;
-    itemDelete?: Resolver<
+    itemFilesAttach?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationItemDeleteArgs, 'itemId'>
+        RequireFields<GqlSAdminMutationItemFilesAttachArgs, 'inputs'>
     >;
-    itemDispose?: Resolver<
-        GqlSResolversTypes['Item'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationItemDisposeArgs, 'itemId' | 'state'>
-    >;
-    itemFileAttach?: Resolver<
-        GqlSResolversTypes['ItemFile'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationItemFileAttachArgs, 'input'>
-    >;
-    itemFileDelete?: Resolver<
+    itemFilesDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationItemFileDeleteArgs, 'itemFileId'>
+        RequireFields<GqlSAdminMutationItemFilesDeleteArgs, 'itemFileIds'>
     >;
-    itemFileTogglePin?: Resolver<
-        GqlSResolversTypes['ItemFile'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationItemFileTogglePinArgs, 'itemFileId'>
-    >;
-    itemReprice?: Resolver<
-        GqlSResolversTypes['Item'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationItemRepriceArgs, 'itemId' | 'valueCents'>
-    >;
-    itemServiceEntryDelete?: Resolver<
+    itemFilesUpsert?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationItemServiceEntryDeleteArgs, 'serviceEntryId'>
+        RequireFields<GqlSAdminMutationItemFilesUpsertArgs, 'itemFiles'>
     >;
-    itemServiceEntryUpsert?: Resolver<
-        GqlSResolversTypes['ItemServiceEntry'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationItemServiceEntryUpsertArgs, 'input'>
-    >;
-    itemUpsert?: Resolver<GqlSResolversTypes['Item'], ParentType, ContextType, RequireFields<GqlSAdminMutationItemUpsertArgs, 'input'>>;
-    mediaChannelDelete?: Resolver<
+    itemServiceEntriesDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationMediaChannelDeleteArgs, 'channelId'>
+        RequireFields<GqlSAdminMutationItemServiceEntriesDeleteArgs, 'serviceEntryIds'>
+    >;
+    itemServiceEntriesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemServiceEntriesUpsertArgs, 'itemServiceEntries'>
+    >;
+    itemsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemsDeleteArgs, 'itemIds'>
+    >;
+    itemsReprice?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemsRepriceArgs, 'inputs'>
+    >;
+    itemsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationItemsUpsertArgs, 'items'>
     >;
     mediaChannelReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -2684,126 +2681,107 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationMediaChannelReorderArgs, 'orderedIds'>
     >;
-    mediaChannelUpsert?: Resolver<
-        GqlSResolversTypes['MediaChannel'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationMediaChannelUpsertArgs, 'input'>
-    >;
-    medicalAppointmentComplete?: Resolver<
-        GqlSResolversTypes['MedicalAppointment'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationMedicalAppointmentCompleteArgs, 'appointmentId'>
-    >;
-    medicalAppointmentDelete?: Resolver<
+    mediaChannelsDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationMedicalAppointmentDeleteArgs, 'appointmentId'>
+        RequireFields<GqlSAdminMutationMediaChannelsDeleteArgs, 'channelIds'>
     >;
-    medicalAppointmentUpsert?: Resolver<
-        GqlSResolversTypes['MedicalAppointment'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationMedicalAppointmentUpsertArgs, 'input'>
-    >;
-    medicalRecordDelete?: Resolver<
+    mediaChannelsUpsert?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationMedicalRecordDeleteArgs, 'recordId'>
+        RequireFields<GqlSAdminMutationMediaChannelsUpsertArgs, 'mediaChannels'>
     >;
-    medicalRecordFileAttach?: Resolver<
-        GqlSResolversTypes['MedicalRecordFile'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationMedicalRecordFileAttachArgs, 'input'>
-    >;
-    medicalRecordFileDelete?: Resolver<
+    medicalAppointmentsDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationMedicalRecordFileDeleteArgs, 'recordFileId'>
+        RequireFields<GqlSAdminMutationMedicalAppointmentsDeleteArgs, 'appointmentIds'>
     >;
-    medicalRecordUpsert?: Resolver<
-        GqlSResolversTypes['MedicalRecord'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationMedicalRecordUpsertArgs, 'input'>
-    >;
-    movieAddFromTmdb?: Resolver<
-        GqlSResolversTypes['Movie'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationMovieAddFromTmdbArgs, 'tmdbId'>
-    >;
-    movieDelete?: Resolver<
+    medicalAppointmentsUpsert?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationMovieDeleteArgs, 'movieId'>
+        RequireFields<GqlSAdminMutationMedicalAppointmentsUpsertArgs, 'medicalAppointments'>
     >;
-    movieMarkWatched?: Resolver<
-        GqlSResolversTypes['Movie'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationMovieMarkWatchedArgs, 'movieId'>
-    >;
-    movieUpsert?: Resolver<GqlSResolversTypes['Movie'], ParentType, ContextType, RequireFields<GqlSAdminMutationMovieUpsertArgs, 'input'>>;
-    projectActivityDelete?: Resolver<
+    medicalRecordFilesAttach?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationProjectActivityDeleteArgs, 'activityId'>
+        RequireFields<GqlSAdminMutationMedicalRecordFilesAttachArgs, 'inputs'>
     >;
-    projectActivityUpsert?: Resolver<
-        GqlSResolversTypes['ProjectActivity'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProjectActivityUpsertArgs, 'input'>
-    >;
-    projectDelete?: Resolver<
+    medicalRecordFilesDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationProjectDeleteArgs, 'projectId'>
+        RequireFields<GqlSAdminMutationMedicalRecordFilesDeleteArgs, 'recordFileIds'>
     >;
-    projectFileDelete?: Resolver<
+    medicalRecordsDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationProjectFileDeleteArgs, 'projectFileId'>
+        RequireFields<GqlSAdminMutationMedicalRecordsDeleteArgs, 'recordIds'>
     >;
-    projectFileTogglePin?: Resolver<
-        GqlSResolversTypes['ProjectFile'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProjectFileTogglePinArgs, 'projectFileId'>
-    >;
-    projectFileUpsert?: Resolver<
-        GqlSResolversTypes['ProjectFile'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProjectFileUpsertArgs, 'input'>
-    >;
-    projectLinkDelete?: Resolver<
+    medicalRecordsUpsert?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationProjectLinkDeleteArgs, 'projectLinkId'>
+        RequireFields<GqlSAdminMutationMedicalRecordsUpsertArgs, 'medicalRecords'>
     >;
-    projectLinkTogglePin?: Resolver<
-        GqlSResolversTypes['ProjectLink'],
+    moviesAddFromTmdb?: Resolver<
+        GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationProjectLinkTogglePinArgs, 'projectLinkId'>
+        RequireFields<GqlSAdminMutationMoviesAddFromTmdbArgs, 'inputs'>
     >;
-    projectLinkUpsert?: Resolver<
-        GqlSResolversTypes['ProjectLink'],
+    moviesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationProjectLinkUpsertArgs, 'input'>
+        RequireFields<GqlSAdminMutationMoviesDeleteArgs, 'movieIds'>
+    >;
+    moviesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMoviesUpsertArgs, 'movies'>
+    >;
+    projectActivitiesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectActivitiesDeleteArgs, 'activityIds'>
+    >;
+    projectActivitiesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectActivitiesUpsertArgs, 'projectActivities'>
+    >;
+    projectFilesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectFilesDeleteArgs, 'projectFileIds'>
+    >;
+    projectFilesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectFilesUpsertArgs, 'projectFiles'>
+    >;
+    projectLinksDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectLinksDeleteArgs, 'projectLinkIds'>
+    >;
+    projectLinksUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectLinksUpsertArgs, 'projectLinks'>
     >;
     projectReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -2823,42 +2801,47 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationProjectRequestDeleteArgs, 'projectRequestId'>
     >;
-    projectTimerStart?: Resolver<
-        GqlSResolversTypes['ProjectActivity'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProjectTimerStartArgs, 'projectId'>
-    >;
-    projectTimerStop?: Resolver<
-        GqlSResolversTypes['ProjectActivity'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProjectTimerStopArgs, 'activityId'>
-    >;
-    projectUpsert?: Resolver<
-        GqlSResolversTypes['Project'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationProjectUpsertArgs, 'input'>
-    >;
-    showAddFromTmdb?: Resolver<
-        GqlSResolversTypes['Show'],
-        ParentType,
-        ContextType,
-        RequireFields<GqlSAdminMutationShowAddFromTmdbArgs, 'tmdbId'>
-    >;
-    showDelete?: Resolver<
+    projectTimersStart?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationShowDeleteArgs, 'showId'>
+        RequireFields<GqlSAdminMutationProjectTimersStartArgs, 'inputs'>
     >;
-    showUpsert?: Resolver<GqlSResolversTypes['Show'], ParentType, ContextType, RequireFields<GqlSAdminMutationShowUpsertArgs, 'input'>>;
-    taskDelete?: Resolver<
+    projectTimersStop?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMutationTaskDeleteArgs, 'taskId'>
+        RequireFields<GqlSAdminMutationProjectTimersStopArgs, 'activityIds'>
+    >;
+    projectsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectsDeleteArgs, 'projectIds'>
+    >;
+    projectsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationProjectsUpsertArgs, 'projects'>
+    >;
+    showsAddFromTmdb?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationShowsAddFromTmdbArgs, 'inputs'>
+    >;
+    showsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationShowsDeleteArgs, 'showIds'>
+    >;
+    showsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationShowsUpsertArgs, 'shows'>
     >;
     taskReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -2866,7 +2849,18 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationTaskReorderArgs, 'orderedIds'>
     >;
-    taskUpsert?: Resolver<GqlSResolversTypes['Task'], ParentType, ContextType, RequireFields<GqlSAdminMutationTaskUpsertArgs, 'input'>>;
+    tasksDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTasksDeleteArgs, 'taskIds'>
+    >;
+    tasksUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationTasksUpsertArgs, 'tasks'>
+    >;
     tripActivitiesDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -4431,11 +4425,21 @@ export function GqlSItemFileAttachInputSchema(): z.ZodObject<Properties<GqlSItem
     });
 }
 
+export function GqlSItemFileUpsertSchema(): z.ZodObject<Properties<GqlSItemFileUpsert>> {
+    return z.object({
+        itemFileId: z.string(),
+        label: z.string().nullish(),
+        pinned: z.boolean().nullish(),
+    });
+}
+
 export function GqlSItemInputSchema(): z.ZodObject<Properties<GqlSItemInput>> {
     return z.object({
         brand: z.string().nullish(),
         categoryKey: GqlSItemCategorySchema,
         condition: GqlSItemConditionSchema.nullish(),
+        disposalState: GqlSItemDisposalStateSchema.nullish(),
+        disposedAt: z.date().nullish(),
         itemId: z.string().nullish(),
         model: z.string().nullish(),
         name: z.string(),
@@ -4446,6 +4450,15 @@ export function GqlSItemInputSchema(): z.ZodObject<Properties<GqlSItemInput>> {
         warrantyEndsAt: z.string().nullish(),
         warrantyNotes: z.string().nullish(),
         warrantyProvider: z.string().nullish(),
+    });
+}
+
+export function GqlSItemRepriceInputSchema(): z.ZodObject<Properties<GqlSItemRepriceInput>> {
+    return z.object({
+        itemId: z.string(),
+        note: z.string().nullish(),
+        valueCents: z.number(),
+        valuedAt: z.date().nullish(),
     });
 }
 
@@ -4514,6 +4527,13 @@ export function GqlSMedicalRecordInputSchema(): z.ZodObject<Properties<GqlSMedic
         symptoms: z.array(z.string()),
         title: z.string(),
         topics: z.array(z.string()),
+    });
+}
+
+export function GqlSMovieAddFromTmdbInputSchema(): z.ZodObject<Properties<GqlSMovieAddFromTmdbInput>> {
+    return z.object({
+        status: GqlSMovieStatusSchema.nullish(),
+        tmdbId: z.number(),
     });
 }
 
@@ -4595,6 +4615,21 @@ export function GqlSProjectLinkUpsertSchema(): z.ZodObject<Properties<GqlSProjec
         projectId: z.string(),
         projectLinkId: z.string().nullish(),
         url: z.string(),
+    });
+}
+
+export function GqlSProjectTimerStartInputSchema(): z.ZodObject<Properties<GqlSProjectTimerStartInput>> {
+    return z.object({
+        projectId: z.string(),
+        taskId: z.string().nullish(),
+        title: z.string().nullish(),
+    });
+}
+
+export function GqlSShowAddFromTmdbInputSchema(): z.ZodObject<Properties<GqlSShowAddFromTmdbInput>> {
+    return z.object({
+        status: GqlSMovieStatusSchema.nullish(),
+        tmdbId: z.number(),
     });
 }
 

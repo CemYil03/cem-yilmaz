@@ -96,57 +96,52 @@ subscription WorkspaceMedicalPageUpdates {
     }
 }
 
-mutation WorkspaceMedicalAppointmentUpsert($input: MedicalAppointmentInput!) {
+mutation WorkspaceMedicalAppointmentsUpsert($medicalAppointments: [MedicalAppointmentInput!]!) {
     admin {
-        medicalAppointmentUpsert(input: $input) {
-            appointmentId
+        medicalAppointmentsUpsert(medicalAppointments: $medicalAppointments) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceMedicalAppointmentDelete($appointmentId: ID!) {
+mutation WorkspaceMedicalAppointmentsDelete($appointmentIds: [ID!]!) {
     admin {
-        medicalAppointmentDelete(appointmentId: $appointmentId) {
+        medicalAppointmentsDelete(appointmentIds: $appointmentIds) {
             success
         }
     }
 }
 
-mutation WorkspaceMedicalAppointmentComplete($appointmentId: ID!, $completedAt: DateTime, $nextDueAt: DateTime) {
+mutation WorkspaceMedicalRecordsUpsert($medicalRecords: [MedicalRecordInput!]!) {
     admin {
-        medicalAppointmentComplete(appointmentId: $appointmentId, completedAt: $completedAt, nextDueAt: $nextDueAt) {
-            appointmentId
+        medicalRecordsUpsert(medicalRecords: $medicalRecords) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceMedicalRecordUpsert($input: MedicalRecordInput!) {
+mutation WorkspaceMedicalRecordsDelete($recordIds: [ID!]!) {
     admin {
-        medicalRecordUpsert(input: $input) {
-            recordId
-        }
-    }
-}
-
-mutation WorkspaceMedicalRecordDelete($recordId: ID!) {
-    admin {
-        medicalRecordDelete(recordId: $recordId) {
+        medicalRecordsDelete(recordIds: $recordIds) {
             success
         }
     }
 }
 
-mutation WorkspaceMedicalRecordFileAttach($input: MedicalRecordFileAttachInput!) {
+mutation WorkspaceMedicalRecordFilesAttach($inputs: [MedicalRecordFileAttachInput!]!) {
     admin {
-        medicalRecordFileAttach(input: $input) {
-            recordFileId
+        medicalRecordFilesAttach(inputs: $inputs) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceMedicalRecordFileDelete($recordFileId: ID!) {
+mutation WorkspaceMedicalRecordFilesDelete($recordFileIds: [ID!]!) {
     admin {
-        medicalRecordFileDelete(recordFileId: $recordFileId) {
+        medicalRecordFilesDelete(recordFileIds: $recordFileIds) {
             success
         }
     }

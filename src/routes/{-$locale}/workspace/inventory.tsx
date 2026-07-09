@@ -40,14 +40,15 @@ import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthor
 import type {
     GqlCItemCategory,
     GqlCItemCondition,
+    GqlCItemDisposalState,
     GqlCWorkspaceInventoryPageUpdatesSubscription,
     GqlCWorkspaceInventoryPageUserFragment,
 } from '../../../web/graphql/generated';
 import {
     WorkspaceInventoryPageDocument,
     WorkspaceInventoryPageUpdatesDocument,
-    WorkspaceItemDeleteDocument,
-    WorkspaceItemUpsertDocument,
+    WorkspaceItemsDeleteDocument,
+    WorkspaceItemsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -482,6 +483,10 @@ type FormState = {
     warrantyProvider: string;
     warrantyNotes: string;
     notes: string;
+    // Carried through untouched so a plain field edit preserves the row's
+    // disposal state — disposal is a field-set on the same upsert now.
+    disposalState: GqlCItemDisposalState;
+    disposedAt: string | null;
 };
 
 function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null; locale: Locale; onClose: () => void }) {
@@ -500,8 +505,10 @@ function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null;
         warrantyProvider: initial?.warrantyProvider ?? '',
         warrantyNotes: initial?.warrantyNotes ?? '',
         notes: initial?.notes ?? '',
+        disposalState: initial?.disposalState ?? 'owned',
+        disposedAt: initial?.disposedAt ?? null,
     }));
-    const [, upsert] = useMutation(WorkspaceItemUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceItemsUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
 
     const submit = async () => {
@@ -509,21 +516,25 @@ function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null;
         setSubmitting(true);
         try {
             const result = await upsert({
-                input: {
-                    itemId: state.itemId,
-                    categoryKey: state.categoryKey,
-                    name: state.name.trim(),
-                    brand: state.brand.trim() || null,
-                    model: state.model.trim() || null,
-                    serialNumber: state.serialNumber.trim() || null,
-                    purchasedAt: state.purchasedAt ? dateToIso(state.purchasedAt) : null,
-                    purchasePriceCents: priceCents,
-                    condition: state.condition === 'none' ? null : state.condition,
-                    warrantyEndsAt: state.warrantyEndsAt ? dateToIso(state.warrantyEndsAt) : null,
-                    warrantyProvider: state.warrantyProvider.trim() || null,
-                    warrantyNotes: state.warrantyNotes.trim() || null,
-                    notes: state.notes.trim() || null,
-                },
+                items: [
+                    {
+                        itemId: state.itemId,
+                        categoryKey: state.categoryKey,
+                        name: state.name.trim(),
+                        brand: state.brand.trim() || null,
+                        model: state.model.trim() || null,
+                        serialNumber: state.serialNumber.trim() || null,
+                        purchasedAt: state.purchasedAt ? dateToIso(state.purchasedAt) : null,
+                        purchasePriceCents: priceCents,
+                        condition: state.condition === 'none' ? null : state.condition,
+                        warrantyEndsAt: state.warrantyEndsAt ? dateToIso(state.warrantyEndsAt) : null,
+                        warrantyProvider: state.warrantyProvider.trim() || null,
+                        warrantyNotes: state.warrantyNotes.trim() || null,
+                        notes: state.notes.trim() || null,
+                        disposalState: state.disposalState,
+                        disposedAt: state.disposedAt,
+                    },
+                ],
             });
             if (result.error) return;
             onClose();
@@ -675,12 +686,12 @@ function Field({
 // --- Delete confirmation ----------------------------------------------------
 
 function DeleteItemAlert({ item, locale, onClose }: { item: ItemRow; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceItemDeleteDocument);
+    const [, del] = useMutation(WorkspaceItemsDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);
         try {
-            await del({ itemId: item.itemId });
+            await del({ itemIds: [item.itemId] });
             onClose();
         } finally {
             setSubmitting(false);

@@ -130,20 +130,23 @@ mutation WorkspaceProjectUpsert(
     $completedAt: DateTime
 ) {
     admin {
-        projectUpsert(
-            input: {
-                projectId: $projectId
-                title: $title
-                description: $description
-                notes: $notes
-                status: $status
-                position: $position
-                sourceRequestId: $sourceRequestId
-                startedAt: $startedAt
-                completedAt: $completedAt
-            }
+        projectsUpsert(
+            projects: [
+                {
+                    projectId: $projectId
+                    title: $title
+                    description: $description
+                    notes: $notes
+                    status: $status
+                    position: $position
+                    sourceRequestId: $sourceRequestId
+                    startedAt: $startedAt
+                    completedAt: $completedAt
+                }
+            ]
         ) {
-            projectId
+            success
+            referenceIds
         }
     }
 }
@@ -168,27 +171,30 @@ mutation WorkspaceProjectActivityUpsert(
     $durationSec: Int
 ) {
     admin {
-        projectActivityUpsert(
-            input: {
-                activityId: $activityId
-                projectId: $projectId
-                taskId: $taskId
-                kind: $kind
-                channel: $channel
-                title: $title
-                notes: $notes
-                occurredAt: $occurredAt
-                durationSec: $durationSec
-            }
+        projectActivitiesUpsert(
+            projectActivities: [
+                {
+                    activityId: $activityId
+                    projectId: $projectId
+                    taskId: $taskId
+                    kind: $kind
+                    channel: $channel
+                    title: $title
+                    notes: $notes
+                    occurredAt: $occurredAt
+                    durationSec: $durationSec
+                }
+            ]
         ) {
-            activityId
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceProjectActivityDelete($activityId: ID!) {
     admin {
-        projectActivityDelete(activityId: $activityId) {
+        projectActivitiesDelete(activityIds: [$activityId]) {
             success
         }
     }

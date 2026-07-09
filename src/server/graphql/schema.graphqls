@@ -910,7 +910,7 @@ type ProjectRequest {
     createdAt: DateTime!
     updatedAt: DateTime!
     # Project this request was converted into, if any. Lets the Inbox row
-    # render a "Converted →" backlink. Set when `projectUpsert` creates a
+    # render a "Converted →" backlink. Set when `projectsUpsert` creates a
     # project with `sourceRequestId` pointing at this row; null otherwise.
     convertedProject: Project
 }
@@ -1191,7 +1191,7 @@ input ProjectCreate {
     # update; the editor always knows the board state and passes it back.
     position: Int
     # When set on a create, the new project is the conversion of an
-    # `emailVerified` `ProjectRequest`. `projectUpsert` validates the
+    # `emailVerified` `ProjectRequest`. `projectsUpsert` validates the
     # request is in that state and archives it in the same transaction
     # as the project insert. Ignored on update.
     sourceRequestId: ID
@@ -1279,22 +1279,32 @@ input ProjectFileUpsert {
     pinned: Boolean
 }
 
+# One work-timer start. `projectTimersStart` processes a batch of these
+# sequentially inside one transaction — each element stops any open timer
+# then inserts its own running row, so a multi-element batch ends with only
+# the last row open. In practice the UI passes a one-element array.
+input ProjectTimerStartInput {
+    projectId: ID!
+    taskId: ID
+    title: String
+}
+
 # CV admin namespace — mounted under `AdminMutation.cv` so the existing
 # `guardAdminMutation` gate covers it without a parallel Mutation entry.
 extend type AdminMutation {
-    cvExperienceUpsert(input: CvExperienceInput!): CvExperience!
-    cvExperienceDelete(cvExperienceId: ID!): MutationResult!
+    cvExperiencesUpsert(cvExperiences: [CvExperienceInput!]!): MutationResult!
+    cvExperiencesDelete(cvExperienceIds: [ID!]!): MutationResult!
 
-    cvEducationUpsert(input: CvEducationInput!): CvEducation!
-    cvEducationDelete(cvEducationId: ID!): MutationResult!
+    cvEducationsUpsert(cvEducations: [CvEducationInput!]!): MutationResult!
+    cvEducationsDelete(cvEducationIds: [ID!]!): MutationResult!
     cvEducationReorder(orderedIds: [ID!]!): MutationResult!
 
-    cvSkillUpsert(input: CvSkillInput!): CvSkill!
-    cvSkillDelete(cvSkillId: ID!): MutationResult!
+    cvSkillsUpsert(cvSkills: [CvSkillInput!]!): MutationResult!
+    cvSkillsDelete(cvSkillIds: [ID!]!): MutationResult!
     cvSkillReorder(orderedIds: [ID!]!): MutationResult!
 
-    cvHobbyUpsert(input: CvHobbyInput!): CvHobby!
-    cvHobbyDelete(cvHobbyId: ID!): MutationResult!
+    cvHobbiesUpsert(cvHobbies: [CvHobbyInput!]!): MutationResult!
+    cvHobbiesDelete(cvHobbyIds: [ID!]!): MutationResult!
     cvHobbyReorder(orderedIds: [ID!]!): MutationResult!
 
     # Soft-dismiss an observation. The row stays in the DB but is excluded
@@ -1342,55 +1352,60 @@ extend type AdminMutation {
     projectRequestArchive(projectRequestId: ID!): MutationResult!
     # Permanent delete. Use for spam that survived OTP verification.
     projectRequestDelete(projectRequestId: ID!): MutationResult!
-    # Create or update a project. Conversion of a verified `ProjectRequest`
-    # is the same call with `sourceRequestId` set on a create — the server
-    # validates the request is `emailVerified`, links the new project to
-    # it, and archives the request in the same transaction.
-    projectUpsert(input: ProjectCreate!): Project!
-    projectDelete(projectId: ID!): MutationResult!
+    # Batch create-or-update of projects. Every row with a `projectId` is
+    # updated; every row without one is inserted. Conversion of a verified
+    # `ProjectRequest` is the same call with `sourceRequestId` set on a
+    # create — the server validates the request is `emailVerified`, links
+    # the new project to it, and archives the request in the same
+    # transaction. `referenceIds` echoes the row id per input in input order.
+    projectsUpsert(projects: [ProjectCreate!]!): MutationResult!
+    projectsDelete(projectIds: [ID!]!): MutationResult!
     projectReorder(orderedIds: [ID!]!): MutationResult!
 
-    taskUpsert(input: TaskCreate!): Task!
-    taskDelete(taskId: ID!): MutationResult!
+    tasksUpsert(tasks: [TaskCreate!]!): MutationResult!
+    tasksDelete(taskIds: [ID!]!): MutationResult!
     # Rewrite `position` on the given task ids in array order. Caller scopes
     # the list to a single `(projectId, status)` bucket — the server does
     # not enforce membership in one bucket, but mixing buckets in one call
     # is meaningless.
     taskReorder(orderedIds: [ID!]!): MutationResult!
     # --- Project activities & timer ----------------------------------------
-    # Create or update an activity row (call logged, email sent, offer
-    # drafted, freeform note). `kind = work` rows are reserved for the
-    # timer mutations and rejected here.
+    # Batch create-or-update of activity rows (call logged, email sent,
+    # offer drafted, freeform note). `kind = work` rows are reserved for the
+    # timer mutations and rejected here. `referenceIds` echoes the row id
+    # per input in input order.
 
-    projectActivityUpsert(input: ProjectActivityCreate!): ProjectActivity!
-    projectActivityDelete(activityId: ID!): MutationResult!
+    projectActivitiesUpsert(projectActivities: [ProjectActivityCreate!]!): MutationResult!
+    projectActivitiesDelete(activityIds: [ID!]!): MutationResult!
 
-    # Start a work timer on the given project. Atomically stops the
-    # currently-running timer (if any) before inserting the new row, so
-    # the one-active-timer invariant holds even across rapid taps.
-    # `title` defaults to "Work session" when omitted.
-    projectTimerStart(projectId: ID!, taskId: ID, title: String): ProjectActivity!
-    # Stamp `endedAt = now` and write `durationSec` on the running timer.
-    # Idempotent on an already-stopped row — returns the row untouched.
-    projectTimerStop(activityId: ID!): ProjectActivity!
+    # Start work timers. Each input atomically stops the currently-running
+    # timer (if any) before inserting its new row, so the one-active-timer
+    # invariant holds even across a multi-element batch (each start closes
+    # the prior). `title` defaults to "Work session" when omitted.
+    # `referenceIds` carries the new `activityId` per input in input order.
+    projectTimersStart(inputs: [ProjectTimerStartInput!]!): MutationResult!
+    # Stamp `endedAt = now` and write `durationSec` on the running timers.
+    # Idempotent per id on an already-stopped row (left untouched); throws
+    # if an id does not exist. `referenceIds` echoes the input `activityIds`.
+    projectTimersStop(activityIds: [ID!]!): MutationResult!
 
     # --- Project links & files ---------------------------------------------
-    # Create or update an external link associated with the project.
+    # Batch create-or-update of external links associated with a project.
     # `activityId` may only be set on create; once linked, the resource
-    # survives activity deletion (FK cascade-set-null).
-    projectLinkUpsert(input: ProjectLinkUpsert!): ProjectLink!
-    projectLinkDelete(projectLinkId: ID!): MutationResult!
-    # Flip `pinned`. Returns the row in its new state so the cache update
-    # is a straight write.
-    projectLinkTogglePin(projectLinkId: ID!): ProjectLink!
+    # survives activity deletion (FK cascade-set-null). Pin toggles ride
+    # this same mutation — pass the existing row with `pinned` flipped.
+    # `referenceIds` echoes the row id per input in input order.
+    projectLinksUpsert(projectLinks: [ProjectLinkUpsert!]!): MutationResult!
+    projectLinksDelete(projectLinkIds: [ID!]!): MutationResult!
 
-    # Create or update a file resource. The caller uploads the file first
-    # via `POST /api/file-uploads` and passes the returned `fileUploadId`.
-    # On delete the project-file row goes; the underlying upload blob stays
-    # (cleaned up by the user-row cascade later).
-    projectFileUpsert(input: ProjectFileUpsert!): ProjectFile!
-    projectFileDelete(projectFileId: ID!): MutationResult!
-    projectFileTogglePin(projectFileId: ID!): ProjectFile!
+    # Batch create-or-update of file resources. The caller uploads each file
+    # first via `POST /api/file-uploads` and passes the returned
+    # `fileUploadId`. On delete the project-file row goes; the underlying
+    # upload blob stays (cleaned up by the user-row cascade later). Pin
+    # toggles ride this same mutation — pass the existing row with `pinned`
+    # flipped. `referenceIds` echoes the row id per input in input order.
+    projectFilesUpsert(projectFiles: [ProjectFileUpsert!]!): MutationResult!
+    projectFilesDelete(projectFileIds: [ID!]!): MutationResult!
 }
 
 # --- Admin chat config -------------------------------------------------------
@@ -1685,28 +1700,44 @@ input MediaChannelInput {
     notes: String
 }
 
+# One TMDB add request — resolves to a new (or deduped) `Movies` row.
+input MovieAddFromTmdbInput {
+    tmdbId: Int!
+    status: MovieStatus
+}
+
+# One TMDB add request — resolves to a new (or deduped) `Shows` row.
+input ShowAddFromTmdbInput {
+    tmdbId: Int!
+    status: MovieStatus
+}
+
 extend type AdminMutation {
-    movieUpsert(input: MovieInput!): Movie!
-    movieDelete(movieId: ID!): MutationResult!
-    # Shortcut: sets `status = watched`, stamps `watchedAt = now`, optionally
-    # writes `rating` (1..10). No-op fields untouched.
-    movieMarkWatched(movieId: ID!, rating: Int): Movie!
-    # Convenience wrapper around `movieUpsert` that fetches full detail from
-    # TMDB by `tmdbId` and inserts a new `Movies` row at the given status
-    # (defaults to `watchlist`). If a row with the same `tmdbId` already
-    # exists, updates that row instead of duplicating. Falls back to a
-    # title-only insert when TMDB is unreachable.
-    movieAddFromTmdb(tmdbId: Int!, status: MovieStatus): Movie!
+    # Batch create-or-edit of movies. Every row with a `movieId` is updated;
+    # every row without one is inserted. `referenceIds` echoes the id per
+    # input row (in input order). To mark a movie watched, upsert the row with
+    # `status: watched` and `watchedAt` set.
+    moviesUpsert(movies: [MovieInput!]!): MutationResult!
+    moviesDelete(movieIds: [ID!]!): MutationResult!
+    # Batch add movies by TMDB id (poster / release / runtime / overview
+    # auto-filled). Rows with a matching `tmdbId` are refreshed rather than
+    # duplicated. `referenceIds` echoes the resolved `movieId` per input in
+    # input order. Falls back to a title-only insert when TMDB is unreachable.
+    moviesAddFromTmdb(inputs: [MovieAddFromTmdbInput!]!): MutationResult!
 
-    showUpsert(input: ShowInput!): Show!
-    showDelete(showId: ID!): MutationResult!
-    # Fetches TMDB TV detail and inserts (or refreshes) a `Shows` row.
-    # Seeds `isCompleted` / `nextSeasonReleaseDate` from TMDB when available;
-    # `nextSeasonReleaseRough` stays admin-authored.
-    showAddFromTmdb(tmdbId: Int!, status: MovieStatus): Show!
+    # Batch create-or-edit of TV series. Same shape as `moviesUpsert`.
+    showsUpsert(shows: [ShowInput!]!): MutationResult!
+    showsDelete(showIds: [ID!]!): MutationResult!
+    # Batch add series by TMDB id. Seeds `isCompleted` /
+    # `nextSeasonReleaseDate` from TMDB when available; `nextSeasonReleaseRough`
+    # stays admin-authored. `referenceIds` echoes the resolved `showId` per
+    # input in input order.
+    showsAddFromTmdb(inputs: [ShowAddFromTmdbInput!]!): MutationResult!
 
-    mediaChannelUpsert(input: MediaChannelInput!): MediaChannel!
-    mediaChannelDelete(channelId: ID!): MutationResult!
+    # Batch create-or-edit of favourite channels. `referenceIds` echoes the
+    # id per input row in input order.
+    mediaChannelsUpsert(mediaChannels: [MediaChannelInput!]!): MutationResult!
+    mediaChannelsDelete(channelIds: [ID!]!): MutationResult!
     # Rewrite `priority` on the given channel ids in array order. Callers
     # scope the list to a single topic bucket — the server does not enforce
     # single-topic membership (a channel with multiple topics is reorderable
@@ -1872,7 +1903,7 @@ input MedicalRecordInput {
 }
 
 # `medicalRecordFileAttach` payload. Same two-step upload contract as
-# `itemFileAttach`: client uploads bytes → gets `fileUploadId` → calls this.
+# `itemFilesAttach`: client uploads bytes → gets `fileUploadId` → calls this.
 input MedicalRecordFileAttachInput {
     recordId: ID!
     fileUploadId: ID!
@@ -1881,18 +1912,14 @@ input MedicalRecordFileAttachInput {
 }
 
 extend type AdminMutation {
-    medicalAppointmentUpsert(input: MedicalAppointmentInput!): MedicalAppointment!
-    medicalAppointmentDelete(appointmentId: ID!): MutationResult!
-    # Shortcut: sets `status = completed`, stamps `completedAt` (defaults to
-    # now), optionally writes `nextDueAt` for the "book me in six months"
-    # follow-up. Untouched fields stay as-is.
-    medicalAppointmentComplete(appointmentId: ID!, completedAt: DateTime, nextDueAt: DateTime): MedicalAppointment!
+    medicalAppointmentsUpsert(medicalAppointments: [MedicalAppointmentInput!]!): MutationResult!
+    medicalAppointmentsDelete(appointmentIds: [ID!]!): MutationResult!
 
-    medicalRecordUpsert(input: MedicalRecordInput!): MedicalRecord!
-    medicalRecordDelete(recordId: ID!): MutationResult!
+    medicalRecordsUpsert(medicalRecords: [MedicalRecordInput!]!): MutationResult!
+    medicalRecordsDelete(recordIds: [ID!]!): MutationResult!
 
-    medicalRecordFileAttach(input: MedicalRecordFileAttachInput!): MedicalRecordFile!
-    medicalRecordFileDelete(recordFileId: ID!): MutationResult!
+    medicalRecordFilesAttach(inputs: [MedicalRecordFileAttachInput!]!): MutationResult!
+    medicalRecordFilesDelete(recordFileIds: [ID!]!): MutationResult!
 }
 
 # --- Inventory ---------------------------------------------------------------
@@ -1951,7 +1978,7 @@ enum ItemFileKind {
 }
 
 # One tracked possession. `currentValueCents` is the cached snapshot of the
-# most recent `ItemValuation` — the `itemReprice` mutation writes the journal
+# most recent `ItemValuation` — the `itemsReprice` mutation writes the journal
 # row and this cached column in one transaction, so the list surface and
 # `materialNetWorthCents` never need to `MAX(valuedAt)` at read time.
 #
@@ -2066,6 +2093,14 @@ input ItemInput {
     warrantyProvider: String
     warrantyNotes: String
     notes: String
+    # Disposal is a plain field-set carried on the upsert — there is no
+    # separate `itemDispose` mutation. Omitted on create defaults to `owned`
+    # with a null stamp. `disposedAt` is forced null whenever `disposalState`
+    # is `owned`, so reverting a disposed item clears its stamp. A plain
+    # field edit preserves the current state because the caller spreads the
+    # existing row (which carries `disposalState` + `disposedAt`).
+    disposalState: ItemDisposalState
+    disposedAt: DateTime
 }
 
 input ItemServiceEntryInput {
@@ -2079,9 +2114,20 @@ input ItemServiceEntryInput {
     nextDueAt: Date
 }
 
-# `itemFileAttach` payload. The client first uploads bytes via
+# One repricing instruction for `itemsReprice`. Kept separate from
+# `ItemInput` because a reprice is more than a field-set — it appends an
+# `ItemValuations` journal row and updates the cached `currentValueCents` in
+# one transaction. `valuedAt` defaults to now when omitted.
+input ItemRepriceInput {
+    itemId: ID!
+    valueCents: Int!
+    valuedAt: DateTime
+    note: String
+}
+
+# `itemFilesAttach` payload. The client first uploads bytes via
 # `POST /api/file-uploads`, then calls this mutation with the returned
-# `fileUploadId` — same two-step shape as `projectFileUpsert`.
+# `fileUploadId` — same two-step shape as `projectFilesUpsert`.
 input ItemFileAttachInput {
     itemId: ID!
     serviceEntryId: ID
@@ -2091,22 +2137,31 @@ input ItemFileAttachInput {
     pinned: Boolean
 }
 
+# Edit-only payload for `itemFilesUpsert`. Every input targets an existing
+# item-file row by `itemFileId` — this mutation never creates rows (use
+# `itemFilesAttach` for that). The pin toggle in the UI collapses into this:
+# pass the existing row's id with the flipped `pinned`.
+input ItemFileUpsert {
+    itemFileId: ID!
+    label: String
+    pinned: Boolean
+}
+
 extend type AdminMutation {
-    itemUpsert(input: ItemInput!): Item!
-    itemDelete(itemId: ID!): MutationResult!
-    # Set the disposal state (sold / gifted / lost / disposed). `disposedAt`
-    # defaults to now when omitted. Reverting to `owned` clears `disposedAt`.
-    itemDispose(itemId: ID!, state: ItemDisposalState!, disposedAt: DateTime): Item!
-    # Journal a new valuation and update the cached `currentValueCents` in
-    # one transaction. `valuedAt` defaults to now.
-    itemReprice(itemId: ID!, valueCents: Int!, valuedAt: DateTime, note: String): Item!
+    itemsUpsert(items: [ItemInput!]!): MutationResult!
+    itemsDelete(itemIds: [ID!]!): MutationResult!
+    # Journal a new valuation and update the cached `currentValueCents` per
+    # input, all in one transaction. `referenceIds` echoes the `itemId` per
+    # input in input order.
+    itemsReprice(inputs: [ItemRepriceInput!]!): MutationResult!
 
-    itemServiceEntryUpsert(input: ItemServiceEntryInput!): ItemServiceEntry!
-    itemServiceEntryDelete(serviceEntryId: ID!): MutationResult!
+    itemServiceEntriesUpsert(itemServiceEntries: [ItemServiceEntryInput!]!): MutationResult!
+    itemServiceEntriesDelete(serviceEntryIds: [ID!]!): MutationResult!
 
-    itemFileAttach(input: ItemFileAttachInput!): ItemFile!
-    itemFileDelete(itemFileId: ID!): MutationResult!
-    itemFileTogglePin(itemFileId: ID!): ItemFile!
+    itemFilesAttach(inputs: [ItemFileAttachInput!]!): MutationResult!
+    itemFilesDelete(itemFileIds: [ID!]!): MutationResult!
+    # Edit existing item-file rows (label / pin state). Never creates.
+    itemFilesUpsert(itemFiles: [ItemFileUpsert!]!): MutationResult!
 }
 
 # --- Travel -----------------------------------------------------------------

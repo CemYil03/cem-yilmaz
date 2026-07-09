@@ -65,21 +65,20 @@ import type {
     GqlCWorkspaceMediaYoutubeSearchQuery,
 } from '../../../web/graphql/generated';
 import {
-    WorkspaceMediaChannelDeleteDocument,
+    WorkspaceMediaChannelsDeleteDocument,
     WorkspaceMediaChannelReorderDocument,
-    WorkspaceMediaChannelUpsertDocument,
+    WorkspaceMediaChannelsUpsertDocument,
     WorkspaceMediaPageDocument,
     WorkspaceMediaPageUpdatesDocument,
     WorkspaceMediaTmdbSearchDocument,
     WorkspaceMediaTmdbTvSearchDocument,
     WorkspaceMediaYoutubeSearchDocument,
-    WorkspaceMovieAddFromTmdbDocument,
-    WorkspaceMovieDeleteDocument,
-    WorkspaceMovieMarkWatchedDocument,
-    WorkspaceMovieUpsertDocument,
-    WorkspaceShowAddFromTmdbDocument,
-    WorkspaceShowDeleteDocument,
-    WorkspaceShowUpsertDocument,
+    WorkspaceMoviesAddFromTmdbDocument,
+    WorkspaceMoviesDeleteDocument,
+    WorkspaceMoviesUpsertDocument,
+    WorkspaceShowsAddFromTmdbDocument,
+    WorkspaceShowsDeleteDocument,
+    WorkspaceShowsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -511,32 +510,29 @@ function MovieStatusGroup({
 }
 
 function MovieCard({ movie, onEdit, locale }: { movie: MovieRow; onEdit: () => void; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceMovieUpsertDocument);
-    const [, markWatched] = useMutation(WorkspaceMovieMarkWatchedDocument);
-    const [, del] = useMutation(WorkspaceMovieDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceMoviesUpsertDocument);
+    const [, del] = useMutation(WorkspaceMoviesDeleteDocument);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
 
     const changeStatus = async (next: GqlCMovieStatus) => {
-        if (next === 'watched') {
-            await markWatched({ movieId: movie.movieId, rating: movie.rating ?? null });
-            return;
-        }
         await upsert({
-            input: {
-                movieId: movie.movieId,
-                title: movie.title,
-                tmdbId: movie.tmdbId ?? null,
-                posterUrl: movie.posterUrl ?? null,
-                backdropUrl: movie.backdropUrl ?? null,
-                releaseDate: movie.releaseDate ?? null,
-                runtimeMinutes: movie.runtimeMinutes ?? null,
-                overview: movie.overview ?? null,
-                status: next,
-                rating: movie.rating ?? null,
-                watchedAt: movie.watchedAt ?? null,
-                notes: movie.notes ?? null,
-                topics: [...movie.topics],
-            },
+            movies: [
+                {
+                    movieId: movie.movieId,
+                    title: movie.title,
+                    tmdbId: movie.tmdbId ?? null,
+                    posterUrl: movie.posterUrl ?? null,
+                    backdropUrl: movie.backdropUrl ?? null,
+                    releaseDate: movie.releaseDate ?? null,
+                    runtimeMinutes: movie.runtimeMinutes ?? null,
+                    overview: movie.overview ?? null,
+                    status: next,
+                    rating: movie.rating ?? null,
+                    watchedAt: next === 'watched' ? (movie.watchedAt ?? new Date().toISOString()) : (movie.watchedAt ?? null),
+                    notes: movie.notes ?? null,
+                    topics: [...movie.topics],
+                },
+            ],
         });
     };
 
@@ -646,7 +642,7 @@ function MovieCard({ movie, onEdit, locale }: { movie: MovieRow; onEdit: () => v
                         <AlertDialogAction
                             variant="destructive"
                             onClick={async () => {
-                                await del({ movieId: movie.movieId });
+                                await del({ movieIds: [movie.movieId] });
                                 setConfirmingDelete(false);
                             }}
                         >
@@ -663,7 +659,7 @@ function MovieCard({ movie, onEdit, locale }: { movie: MovieRow; onEdit: () => v
 // query stabilises. Suggestions dropdown mirrors a Radix popover but is a
 // plain absolutely-positioned panel below the input so keyboard arrow-key
 // navigation stays inside the input's focus. Enter on a highlighted result
-// adds via `movieAddFromTmdb`; Escape clears the query. A subtle "Add
+// adds via `moviesAddFromTmdb`; Escape clears the query. A subtle "Add
 // manually" link at the foot opens the empty edit dialog.
 function MovieSearchBar({
     inputRef,
@@ -678,7 +674,7 @@ function MovieSearchBar({
     const [debounced, setDebounced] = useState('');
     const [highlighted, setHighlighted] = useState(0);
     const [open, setOpen] = useState(false);
-    const [, addFromTmdb] = useMutation(WorkspaceMovieAddFromTmdbDocument);
+    const [, addFromTmdb] = useMutation(WorkspaceMoviesAddFromTmdbDocument);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     // 300ms debounce. Trimmed-empty pauses the query entirely so we never
@@ -719,7 +715,7 @@ function MovieSearchBar({
     }, [debounced, results.length]);
 
     const addResult = async (tmdbId: number) => {
-        await addFromTmdb({ tmdbId, status: 'watchlist' });
+        await addFromTmdb({ inputs: [{ tmdbId, status: 'watchlist' }] });
         setQuery('');
         setDebounced('');
         setOpen(false);
@@ -864,12 +860,12 @@ function MovieSearchBar({
 
 // Movie edit dialog: single centered modal used for both "new" (movie=null)
 // and "edit existing" states. Every field maps 1:1 to `MovieInput` — the
-// server hydrates from TMDB on `movieAddFromTmdb`, so the poster/backdrop
+// server hydrates from TMDB on `moviesAddFromTmdb`, so the poster/backdrop
 // URL fields land here already populated and stay editable but rarely
 // touched.
 function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; locale: Locale; onClose: () => void }) {
-    const [, upsert] = useMutation(WorkspaceMovieUpsertDocument);
-    const [, del] = useMutation(WorkspaceMovieDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceMoviesUpsertDocument);
+    const [, del] = useMutation(WorkspaceMoviesDeleteDocument);
     const [busy, setBusy] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [form, setForm] = useState({
@@ -908,21 +904,23 @@ function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; l
                             event.preventDefault();
                             setBusy(true);
                             await upsert({
-                                input: {
-                                    movieId: movie?.movieId ?? null,
-                                    title: form.title,
-                                    tmdbId: movie?.tmdbId ?? null,
-                                    posterUrl: form.posterUrl || null,
-                                    backdropUrl: form.backdropUrl || null,
-                                    releaseDate: form.releaseDate || null,
-                                    runtimeMinutes: form.runtimeMinutes ? parseInt(form.runtimeMinutes, 10) : null,
-                                    overview: form.overview || null,
-                                    status: form.status,
-                                    rating: form.rating > 0 ? form.rating : null,
-                                    watchedAt: form.watchedAt || null,
-                                    notes: form.notes || null,
-                                    topics: [...form.topics],
-                                },
+                                movies: [
+                                    {
+                                        movieId: movie?.movieId ?? null,
+                                        title: form.title,
+                                        tmdbId: movie?.tmdbId ?? null,
+                                        posterUrl: form.posterUrl || null,
+                                        backdropUrl: form.backdropUrl || null,
+                                        releaseDate: form.releaseDate || null,
+                                        runtimeMinutes: form.runtimeMinutes ? parseInt(form.runtimeMinutes, 10) : null,
+                                        overview: form.overview || null,
+                                        status: form.status,
+                                        rating: form.rating > 0 ? form.rating : null,
+                                        watchedAt: form.watchedAt || null,
+                                        notes: form.notes || null,
+                                        topics: [...form.topics],
+                                    },
+                                ],
                             });
                             setBusy(false);
                             onClose();
@@ -1084,7 +1082,7 @@ function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; l
                             <AlertDialogAction
                                 variant="destructive"
                                 onClick={async () => {
-                                    await del({ movieId: movie.movieId });
+                                    await del({ movieIds: [movie.movieId] });
                                     setConfirmingDelete(false);
                                     onClose();
                                 }}
@@ -1289,28 +1287,30 @@ function showNextSeasonLabel(show: ShowRow, locale: Locale): string | null {
 }
 
 function ShowCard({ show, onEdit, locale }: { show: ShowRow; onEdit: () => void; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceShowUpsertDocument);
-    const [, del] = useMutation(WorkspaceShowDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceShowsUpsertDocument);
+    const [, del] = useMutation(WorkspaceShowsDeleteDocument);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
 
     const changeStatus = async (next: GqlCMovieStatus) => {
         await upsert({
-            input: {
-                showId: show.showId,
-                title: show.title,
-                tmdbId: show.tmdbId ?? null,
-                posterUrl: show.posterUrl ?? null,
-                backdropUrl: show.backdropUrl ?? null,
-                firstAirDate: show.firstAirDate ?? null,
-                overview: show.overview ?? null,
-                status: next,
-                rating: show.rating ?? null,
-                notes: show.notes ?? null,
-                topics: [...show.topics],
-                isCompleted: show.isCompleted,
-                nextSeasonReleaseDate: show.nextSeasonReleaseDate ?? null,
-                nextSeasonReleaseRough: show.nextSeasonReleaseRough ?? null,
-            },
+            shows: [
+                {
+                    showId: show.showId,
+                    title: show.title,
+                    tmdbId: show.tmdbId ?? null,
+                    posterUrl: show.posterUrl ?? null,
+                    backdropUrl: show.backdropUrl ?? null,
+                    firstAirDate: show.firstAirDate ?? null,
+                    overview: show.overview ?? null,
+                    status: next,
+                    rating: show.rating ?? null,
+                    notes: show.notes ?? null,
+                    topics: [...show.topics],
+                    isCompleted: show.isCompleted,
+                    nextSeasonReleaseDate: show.nextSeasonReleaseDate ?? null,
+                    nextSeasonReleaseRough: show.nextSeasonReleaseRough ?? null,
+                },
+            ],
         });
     };
 
@@ -1435,7 +1435,7 @@ function ShowCard({ show, onEdit, locale }: { show: ShowRow; onEdit: () => void;
                     <AlertDialogFooter>
                         <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
                         <AlertDialogAction
-                            onClick={() => void del({ showId: show.showId })}
+                            onClick={() => void del({ showIds: [show.showId] })}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
                             {{ de: 'Löschen', en: 'Delete' }[locale]}
@@ -1460,7 +1460,7 @@ function ShowSearchBar({
     const [debounced, setDebounced] = useState('');
     const [highlighted, setHighlighted] = useState(0);
     const [open, setOpen] = useState(false);
-    const [, addFromTmdb] = useMutation(WorkspaceShowAddFromTmdbDocument);
+    const [, addFromTmdb] = useMutation(WorkspaceShowsAddFromTmdbDocument);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -1496,7 +1496,7 @@ function ShowSearchBar({
     }, [debounced, results.length]);
 
     const addResult = async (tmdbId: number) => {
-        await addFromTmdb({ tmdbId, status: 'watchlist' });
+        await addFromTmdb({ inputs: [{ tmdbId, status: 'watchlist' }] });
         setQuery('');
         setDebounced('');
         setOpen(false);
@@ -1640,8 +1640,8 @@ function ShowSearchBar({
 }
 
 function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; locale: Locale; onClose: () => void }) {
-    const [, upsert] = useMutation(WorkspaceShowUpsertDocument);
-    const [, del] = useMutation(WorkspaceShowDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceShowsUpsertDocument);
+    const [, del] = useMutation(WorkspaceShowsDeleteDocument);
     const [busy, setBusy] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [form, setForm] = useState({
@@ -1681,22 +1681,24 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
                             event.preventDefault();
                             setBusy(true);
                             await upsert({
-                                input: {
-                                    showId: show?.showId ?? null,
-                                    title: form.title,
-                                    tmdbId: show?.tmdbId ?? null,
-                                    posterUrl: form.posterUrl || null,
-                                    backdropUrl: form.backdropUrl || null,
-                                    firstAirDate: form.firstAirDate || null,
-                                    overview: form.overview || null,
-                                    status: form.status,
-                                    rating: form.rating > 0 ? form.rating : null,
-                                    notes: form.notes || null,
-                                    topics: [...form.topics],
-                                    isCompleted: form.isCompleted,
-                                    nextSeasonReleaseDate: form.isCompleted ? null : form.nextSeasonReleaseDate || null,
-                                    nextSeasonReleaseRough: form.isCompleted ? null : form.nextSeasonReleaseRough || null,
-                                },
+                                shows: [
+                                    {
+                                        showId: show?.showId ?? null,
+                                        title: form.title,
+                                        tmdbId: show?.tmdbId ?? null,
+                                        posterUrl: form.posterUrl || null,
+                                        backdropUrl: form.backdropUrl || null,
+                                        firstAirDate: form.firstAirDate || null,
+                                        overview: form.overview || null,
+                                        status: form.status,
+                                        rating: form.rating > 0 ? form.rating : null,
+                                        notes: form.notes || null,
+                                        topics: [...form.topics],
+                                        isCompleted: form.isCompleted,
+                                        nextSeasonReleaseDate: form.isCompleted ? null : form.nextSeasonReleaseDate || null,
+                                        nextSeasonReleaseRough: form.isCompleted ? null : form.nextSeasonReleaseRough || null,
+                                    },
+                                ],
                             });
                             setBusy(false);
                             onClose();
@@ -1887,7 +1889,7 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
                             <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={async () => {
-                                    await del({ showId: show.showId });
+                                    await del({ showIds: [show.showId] });
                                     onClose();
                                 }}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -2204,8 +2206,8 @@ function ChannelCard({ channel, onEdit, locale }: { channel: ChannelRow; onEdit:
 }
 
 function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow | null; locale: Locale; onClose: () => void }) {
-    const [, upsert] = useMutation(WorkspaceMediaChannelUpsertDocument);
-    const [, del] = useMutation(WorkspaceMediaChannelDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceMediaChannelsUpsertDocument);
+    const [, del] = useMutation(WorkspaceMediaChannelsDeleteDocument);
     const [busy, setBusy] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [form, setForm] = useState({
@@ -2240,17 +2242,19 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
                             event.preventDefault();
                             setBusy(true);
                             await upsert({
-                                input: {
-                                    channelId: channel?.channelId ?? null,
-                                    name: form.name,
-                                    platform: form.platform,
-                                    url: form.url,
-                                    handle: form.handle || null,
-                                    avatarUrl: form.avatarUrl || null,
-                                    description: form.description || null,
-                                    notes: form.notes || null,
-                                    topics: [...form.topics],
-                                },
+                                mediaChannels: [
+                                    {
+                                        channelId: channel?.channelId ?? null,
+                                        name: form.name,
+                                        platform: form.platform,
+                                        url: form.url,
+                                        handle: form.handle || null,
+                                        avatarUrl: form.avatarUrl || null,
+                                        description: form.description || null,
+                                        notes: form.notes || null,
+                                        topics: [...form.topics],
+                                    },
+                                ],
                             });
                             setBusy(false);
                             onClose();
@@ -2366,7 +2370,7 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow |
                             <AlertDialogAction
                                 variant="destructive"
                                 onClick={async () => {
-                                    await del({ channelId: channel.channelId });
+                                    await del({ channelIds: [channel.channelId] });
                                     setConfirmingDelete(false);
                                     onClose();
                                 }}

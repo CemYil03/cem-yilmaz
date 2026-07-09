@@ -1024,7 +1024,7 @@ export const projects = pgTable(
         // through the editor, not a drag.
         position: integer().notNull().default(0),
         // Source request this project was created from, when applicable.
-        // `projectUpsert` stamps this in the same transaction that
+        // `projectsUpsert` stamps this in the same transaction that
         // archives the request, so the board can render a "Source request"
         // backlink. Null for hand-created projects.
         sourceRequestId: uuid(),
@@ -1125,7 +1125,7 @@ export type TaskCreate = typeof tasks.$inferInsert;
 //
 // The partial unique index `(endedAt IS NULL) WHERE kind = 'work'` enforces
 // the one-global-active-timer invariant at the DB level — even with two tabs
-// open, the second `projectTimerStart` raises a unique-violation that the
+// open, the second `projectTimersStart` raises a unique-violation that the
 // command handler catches and retries after stopping the existing timer.
 //
 // See `docs/features/projects-workspace.md`.
@@ -1179,7 +1179,7 @@ export const projectActivities = pgTable(
         occurredAt: timestamp({ withTimezone: true }).notNull(),
         // Set on work-timer rows; null on event rows.
         startedAt: timestamp({ withTimezone: true }),
-        // Null while a timer is running; stamped by `projectTimerStop`.
+        // Null while a timer is running; stamped by `projectTimersStop`.
         endedAt: timestamp({ withTimezone: true }),
         // Cached `endedAt - startedAt` in seconds, written on stop. Also
         // settable directly on event rows when Cem logs a known duration
@@ -1653,7 +1653,7 @@ export type ItemFileKind = (typeof itemFileKinds)[number];
 
 // `currentValueCents` is a cached snapshot of the latest `ItemValuations` row
 // so the list surface and finances tile never need to `MAX(valuedAt)` at
-// query time. The `itemReprice` command is the single writer: journal insert
+// query time. The `itemsReprice` command is the single writer: journal insert
 // + this cache update in one transaction.
 export const items = pgTable(
     'Items',
@@ -1687,7 +1687,7 @@ export const items = pgTable(
 export type Item = typeof items.$inferSelect;
 export type ItemCreate = typeof items.$inferInsert;
 
-// Repricing journal. `itemReprice` writes one row here and updates the cached
+// Repricing journal. `itemsReprice` writes one row here and updates the cached
 // `items.currentValueCents` in the same transaction. `valuedAt` defaults to
 // now but is settable — an appraisal from last month can be back-dated.
 export const itemValuations = pgTable(

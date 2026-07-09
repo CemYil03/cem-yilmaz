@@ -5,15 +5,14 @@ import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { medicalSnapshotForAgent } from './medicalSnapshotForAgent';
-import { toolMedicalAppointmentComplete } from './toolMedicalAppointmentComplete';
-import { toolMedicalAppointmentDelete } from './toolMedicalAppointmentDelete';
-import { toolMedicalAppointmentUpsert } from './toolMedicalAppointmentUpsert';
+import { toolMedicalAppointmentsDelete } from './toolMedicalAppointmentsDelete';
 import { toolMedicalAppointmentsList } from './toolMedicalAppointmentsList';
+import { toolMedicalAppointmentsUpsert } from './toolMedicalAppointmentsUpsert';
 import { toolMedicalOverview } from './toolMedicalOverview';
-import { toolMedicalRecordDelete } from './toolMedicalRecordDelete';
-import { toolMedicalRecordFileAttach } from './toolMedicalRecordFileAttach';
-import { toolMedicalRecordUpsert } from './toolMedicalRecordUpsert';
+import { toolMedicalRecordFilesAttach } from './toolMedicalRecordFilesAttach';
+import { toolMedicalRecordsDelete } from './toolMedicalRecordsDelete';
 import { toolMedicalRecordsList } from './toolMedicalRecordsList';
+import { toolMedicalRecordsUpsert } from './toolMedicalRecordsUpsert';
 
 // Medical domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
@@ -27,14 +26,7 @@ import { toolMedicalRecordsList } from './toolMedicalRecordsList';
 // refuses to file a record and tells the user to seek emergency care.
 
 type MedicalAgentMutationKind =
-    | 'recordAdd'
-    | 'recordUpdate'
-    | 'recordDelete'
-    | 'appointmentBook'
-    | 'appointmentUpdate'
-    | 'appointmentComplete'
-    | 'appointmentDelete'
-    | 'fileAttach';
+    'recordAdd' | 'recordUpdate' | 'recordDelete' | 'appointmentBook' | 'appointmentUpdate' | 'appointmentDelete' | 'fileAttach';
 
 export interface MedicalAgentMutation {
     kind: MedicalAgentMutationKind;
@@ -85,18 +77,18 @@ function buildSystemPrompt(snapshot: string): string {
         'Rules:',
         '- Reply in the language Cem wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences.',
-        '- Never invent an id. Use ids from the snapshot below, from a tool result earlier in this turn, or from',
+        "- Never invent an id. Use ids from the snapshot below, from a prior tool result's `referenceIds`, or from",
         '  the delegate brief.',
+        '- Batch every same-shape write into one call — one `medicalRecordsUpsert` for all of them, not N calls.',
         '- For "I noticed X" / "I have a rash on my Y for Z days": ask up to TWO short clarifiers if genuinely',
         '  needed (duration, spread, triggers, prior history) via the `needsMoreInfo` sentinel — the orchestrator',
         '  will surface them to Cem and call you back. If the request already has enough, just file the record.',
-        '- For "I just went to the dentist": if the appointment already exists in the snapshot, use',
-        '  `medicalAppointmentComplete`. If not, use `medicalAppointmentUpsert` with `status: completed` and a',
-        '  `completedAt` matching what Cem told you (may be earlier than now).',
+        '- To complete an appointment, call `medicalAppointmentsUpsert` with a one-element array carrying the',
+        '  existing row (from the snapshot) plus `status: completed` and `completedAt` set (may be earlier than now).',
         '- Cadence math is done for you in the snapshot and in `medicalOverview` — do NOT recompute due dates,',
         '  just narrate them.',
         "- If Cem sent photos in the current turn, the orchestrator's brief will list `fileUploadIds`. Pass them",
-        '  through on `medicalRecordUpsert.fileUploadIds` so they attach to the record atomically.',
+        '  through on `medicalRecordsUpsert.fileUploadIds` so they attach to the record atomically.',
         '- If the request is missing information you genuinely need, do NOT guess. Return EXACTLY this JSON as your',
         '  final text, nothing else:',
         '  {"status":"needsMoreInfo","missingFields":["..."],"summary":"..."}',
@@ -119,7 +111,7 @@ export async function agentPersonalAssistantMedical({ session, serverRuntime, mu
         onStepEnd,
         providerOptions: googleAgentProviderOptionsFor(modelId),
         // Same tight ceiling as the other sub-agents. A typical delegation is
-        // one clarifying round + `medicalRecordUpsert` + final text = ~4
+        // one clarifying round + `medicalRecordsUpsert` + final text = ~4
         // steps; the ceiling absorbs an overview read and a file-attach.
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
@@ -127,12 +119,11 @@ export async function agentPersonalAssistantMedical({ session, serverRuntime, mu
             medicalOverview: toolMedicalOverview(readContext),
             medicalAppointmentsList: toolMedicalAppointmentsList(readContext),
             medicalRecordsList: toolMedicalRecordsList(readContext),
-            medicalRecordUpsert: toolMedicalRecordUpsert(mutationContext),
-            medicalRecordDelete: toolMedicalRecordDelete(mutationContext),
-            medicalAppointmentUpsert: toolMedicalAppointmentUpsert(mutationContext),
-            medicalAppointmentComplete: toolMedicalAppointmentComplete(mutationContext),
-            medicalAppointmentDelete: toolMedicalAppointmentDelete(mutationContext),
-            medicalRecordFileAttach: toolMedicalRecordFileAttach(mutationContext),
+            medicalRecordsUpsert: toolMedicalRecordsUpsert(mutationContext),
+            medicalRecordsDelete: toolMedicalRecordsDelete(mutationContext),
+            medicalAppointmentsUpsert: toolMedicalAppointmentsUpsert(mutationContext),
+            medicalAppointmentsDelete: toolMedicalAppointmentsDelete(mutationContext),
+            medicalRecordFilesAttach: toolMedicalRecordFilesAttach(mutationContext),
         },
     });
 }

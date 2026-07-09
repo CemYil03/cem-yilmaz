@@ -5,15 +5,15 @@ import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
-import { toolProjectActivityUpsert } from './toolProjectActivityUpsert';
-import { toolProjectDelete } from './toolProjectDelete';
+import { toolProjectActivitiesUpsert } from './toolProjectActivitiesUpsert';
 import { toolProjectFileCreate } from './toolProjectFileCreate';
-import { toolProjectLinkUpsert } from './toolProjectLinkUpsert';
+import { toolProjectLinksUpsert } from './toolProjectLinksUpsert';
+import { toolProjectsDelete } from './toolProjectsDelete';
 import { toolProjectsList } from './toolProjectsList';
-import { toolProjectUpsert } from './toolProjectUpsert';
+import { toolProjectsUpsert } from './toolProjectsUpsert';
 import { toolStandaloneTasksList } from './toolStandaloneTasksList';
-import { toolTaskDelete } from './toolTaskDelete';
-import { toolTaskUpsert } from './toolTaskUpsert';
+import { toolTasksDelete } from './toolTasksDelete';
+import { toolTasksUpsert } from './toolTasksUpsert';
 
 // First domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside the
@@ -88,7 +88,10 @@ function buildSystemPrompt(snapshot: string): string {
         '- Reply in the language the user wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to the user. One or two sentences naming',
         '  what you did. No prose preamble.',
-        '- Never invent an id. Use ids from the snapshot below or from a tool result earlier in this turn.',
+        '- Batch every same-shape write into one call — one `tasksUpsert` for all of them, not N calls. Same for',
+        '  `projectsUpsert`, `projectActivitiesUpsert`, and `projectLinksUpsert`.',
+        '- Never invent an id. Use ids from the snapshot below or from a prior tool result’s `referenceIds` (in',
+        '  input order) earlier in this turn.',
         "- If the request is missing information you genuinely need (e.g. 'add a task' with no target project and",
         '  no title), do NOT guess. Stop calling tools and return EXACTLY this JSON as your final text, nothing',
         '  else (no code fence, no prose):',
@@ -125,12 +128,12 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, m
         tools: {
             projectsList: toolProjectsList(readContext),
             standaloneTasksList: toolStandaloneTasksList(readContext),
-            projectUpsert: toolProjectUpsert(mutationContext),
-            projectDelete: toolProjectDelete(mutationContext),
-            taskUpsert: toolTaskUpsert(mutationContext),
-            taskDelete: toolTaskDelete(mutationContext),
-            projectActivityUpsert: toolProjectActivityUpsert(mutationContext),
-            projectLinkUpsert: toolProjectLinkUpsert(mutationContext),
+            projectsUpsert: toolProjectsUpsert(mutationContext),
+            projectsDelete: toolProjectsDelete(mutationContext),
+            tasksUpsert: toolTasksUpsert(mutationContext),
+            tasksDelete: toolTasksDelete(mutationContext),
+            projectActivitiesUpsert: toolProjectActivitiesUpsert(mutationContext),
+            projectLinksUpsert: toolProjectLinksUpsert(mutationContext),
             projectFileCreate: toolProjectFileCreate(mutationContext),
         },
     });

@@ -56,15 +56,14 @@ import type {
     GqlCWorkspaceMedicalPageUserFragment,
 } from '../../../web/graphql/generated';
 import {
-    WorkspaceMedicalAppointmentCompleteDocument,
-    WorkspaceMedicalAppointmentDeleteDocument,
-    WorkspaceMedicalAppointmentUpsertDocument,
+    WorkspaceMedicalAppointmentsDeleteDocument,
+    WorkspaceMedicalAppointmentsUpsertDocument,
     WorkspaceMedicalPageDocument,
     WorkspaceMedicalPageUpdatesDocument,
-    WorkspaceMedicalRecordDeleteDocument,
-    WorkspaceMedicalRecordFileAttachDocument,
-    WorkspaceMedicalRecordFileDeleteDocument,
-    WorkspaceMedicalRecordUpsertDocument,
+    WorkspaceMedicalRecordFilesAttachDocument,
+    WorkspaceMedicalRecordFilesDeleteDocument,
+    WorkspaceMedicalRecordsDeleteDocument,
+    WorkspaceMedicalRecordsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -356,8 +355,8 @@ function AppointmentsTab({ appointments, locale }: { appointments: ReadonlyArray
     const [editing, setEditing] = useState<AppointmentRow | null>(null);
     const [creating, setCreating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [, deleteAppointment] = useMutation(WorkspaceMedicalAppointmentDeleteDocument);
-    const [, completeAppointment] = useMutation(WorkspaceMedicalAppointmentCompleteDocument);
+    const [, deleteAppointment] = useMutation(WorkspaceMedicalAppointmentsDeleteDocument);
+    const [, completeAppointment] = useMutation(WorkspaceMedicalAppointmentsUpsertDocument);
 
     const grouped = useMemo(() => {
         const map = new Map<GqlCMedicalCategory, AppointmentRow[]>();
@@ -399,8 +398,20 @@ function AppointmentsTab({ appointments, locale }: { appointments: ReadonlyArray
                                         onDelete={() => setDeletingId(a.appointmentId)}
                                         onComplete={() =>
                                             void completeAppointment({
-                                                appointmentId: a.appointmentId,
-                                                completedAt: new Date().toISOString(),
+                                                medicalAppointments: [
+                                                    {
+                                                        appointmentId: a.appointmentId,
+                                                        category: a.category,
+                                                        providerName: a.providerName ?? null,
+                                                        title: a.title,
+                                                        notes: a.notes ?? null,
+                                                        scheduledAt: a.scheduledAt,
+                                                        completedAt: new Date().toISOString(),
+                                                        nextDueAt: a.nextDueAt ?? null,
+                                                        status: 'completed',
+                                                        topics: a.topics,
+                                                    },
+                                                ],
                                             })
                                         }
                                     />
@@ -439,7 +450,7 @@ function AppointmentsTab({ appointments, locale }: { appointments: ReadonlyArray
                         <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
-                                if (deletingId) void deleteAppointment({ appointmentId: deletingId });
+                                if (deletingId) void deleteAppointment({ appointmentIds: [deletingId] });
                                 setDeletingId(null);
                             }}
                         >
@@ -529,7 +540,7 @@ function AppointmentRowCard({
 }
 
 function AppointmentEditor({ appointment, onClose, locale }: { appointment: AppointmentRow | null; onClose: () => void; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceMedicalAppointmentUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceMedicalAppointmentsUpsertDocument);
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
         title: appointment?.title ?? '',
@@ -545,18 +556,20 @@ function AppointmentEditor({ appointment, onClose, locale }: { appointment: Appo
         if (!form.title.trim()) return;
         setSaving(true);
         const result = await upsert({
-            input: {
-                appointmentId: appointment?.appointmentId ?? null,
-                category: form.category,
-                providerName: form.providerName.trim() || null,
-                title: form.title.trim(),
-                notes: form.notes.trim() || null,
-                scheduledAt: form.scheduledAt.toISOString(),
-                completedAt: appointment?.completedAt ?? null,
-                nextDueAt: form.nextDueAt ? form.nextDueAt.toISOString() : null,
-                status: form.status,
-                topics: appointment?.topics ?? [],
-            },
+            medicalAppointments: [
+                {
+                    appointmentId: appointment?.appointmentId ?? null,
+                    category: form.category,
+                    providerName: form.providerName.trim() || null,
+                    title: form.title.trim(),
+                    notes: form.notes.trim() || null,
+                    scheduledAt: form.scheduledAt.toISOString(),
+                    completedAt: appointment?.completedAt ?? null,
+                    nextDueAt: form.nextDueAt ? form.nextDueAt.toISOString() : null,
+                    status: form.status,
+                    topics: appointment?.topics ?? [],
+                },
+            ],
         });
         setSaving(false);
         if (!result.error) onClose();
@@ -683,7 +696,7 @@ function RecordsTab({
     const [editing, setEditing] = useState<RecordRow | null>(null);
     const [creating, setCreating] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [, deleteRecord] = useMutation(WorkspaceMedicalRecordDeleteDocument);
+    const [, deleteRecord] = useMutation(WorkspaceMedicalRecordsDeleteDocument);
 
     return (
         <div>
@@ -746,7 +759,7 @@ function RecordsTab({
                         <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
-                                if (deletingId) void deleteRecord({ recordId: deletingId });
+                                if (deletingId) void deleteRecord({ recordIds: [deletingId] });
                                 setDeletingId(null);
                             }}
                         >
@@ -760,7 +773,7 @@ function RecordsTab({
 }
 
 function RecordCard({ record, locale, onEdit, onDelete }: { record: RecordRow; locale: Locale; onEdit: () => void; onDelete: () => void }) {
-    const [, deleteFile] = useMutation(WorkspaceMedicalRecordFileDeleteDocument);
+    const [, deleteFile] = useMutation(WorkspaceMedicalRecordFilesDeleteDocument);
     const dateLabel = record.occurredAt
         ? format(new Date(record.occurredAt), 'PP', { locale: DATE_FNS_LOCALE[locale] })
         : format(new Date(record.createdAt), 'PP', { locale: DATE_FNS_LOCALE[locale] });
@@ -840,7 +853,7 @@ function RecordCard({ record, locale, onEdit, onDelete }: { record: RecordRow; l
                                         )}
                                         <button
                                             type="button"
-                                            onClick={() => void deleteFile({ recordFileId: f.recordFileId })}
+                                            onClick={() => void deleteFile({ recordFileIds: [f.recordFileId] })}
                                             className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition"
                                             aria-label={{ de: 'Datei entfernen', en: 'Remove file' }[locale]}
                                         >
@@ -886,8 +899,8 @@ function RecordEditor({
     onClose: () => void;
     locale: Locale;
 }) {
-    const [, upsert] = useMutation(WorkspaceMedicalRecordUpsertDocument);
-    const [, attachFile] = useMutation(WorkspaceMedicalRecordFileAttachDocument);
+    const [, upsert] = useMutation(WorkspaceMedicalRecordsUpsertDocument);
+    const [, attachFile] = useMutation(WorkspaceMedicalRecordFilesAttachDocument);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -917,7 +930,7 @@ function RecordEditor({
                 const upload = await uploadFile(file);
                 if (record) {
                     await attachFile({
-                        input: { recordId: record.recordId, fileUploadId: upload.fileUploadId, label: null, pinned: false },
+                        inputs: [{ recordId: record.recordId, fileUploadId: upload.fileUploadId, label: null, pinned: false }],
                     });
                 } else {
                     setPendingFileIds((prev) => [...prev, upload.fileUploadId]);
@@ -942,20 +955,22 @@ function RecordEditor({
             .map((s) => s.trim())
             .filter(Boolean);
         const result = await upsert({
-            input: {
-                recordId: record?.recordId ?? null,
-                category: form.category,
-                title: form.title.trim(),
-                summary: form.summary.trim(),
-                severity: form.severity,
-                symptoms,
-                bodyAreas,
-                occurredAt: form.occurredAt.toISOString(),
-                resolvedAt: record?.resolvedAt ?? null,
-                appointmentId: form.appointmentId,
-                topics: record?.topics ?? [],
-                fileUploadIds: pendingFileIds.length > 0 ? pendingFileIds : null,
-            },
+            medicalRecords: [
+                {
+                    recordId: record?.recordId ?? null,
+                    category: form.category,
+                    title: form.title.trim(),
+                    summary: form.summary.trim(),
+                    severity: form.severity,
+                    symptoms,
+                    bodyAreas,
+                    occurredAt: form.occurredAt.toISOString(),
+                    resolvedAt: record?.resolvedAt ?? null,
+                    appointmentId: form.appointmentId,
+                    topics: record?.topics ?? [],
+                    fileUploadIds: pendingFileIds.length > 0 ? pendingFileIds : null,
+                },
+            ],
         });
         setSaving(false);
         if (!result.error) onClose();

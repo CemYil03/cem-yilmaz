@@ -50,13 +50,13 @@ import type {
 import {
     WorkspaceInventoryDetailDocument,
     WorkspaceInventoryDetailUpdatesDocument,
-    WorkspaceItemDisposeDocument,
-    WorkspaceItemFileAttachDocument,
-    WorkspaceItemFileDeleteDocument,
-    WorkspaceItemFileTogglePinDocument,
-    WorkspaceItemRepriceDocument,
-    WorkspaceItemServiceEntryDeleteDocument,
-    WorkspaceItemServiceEntryUpsertDocument,
+    WorkspaceItemFilesAttachDocument,
+    WorkspaceItemFilesDeleteDocument,
+    WorkspaceItemFilesUpsertDocument,
+    WorkspaceItemsRepriceDocument,
+    WorkspaceItemsUpsertDocument,
+    WorkspaceItemServiceEntriesDeleteDocument,
+    WorkspaceItemServiceEntriesUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -443,9 +443,9 @@ function FilesSection({ item, locale }: { item: ItemDetail; locale: Locale }) {
     const [uploading, setUploading] = useState(false);
     const [attachKind, setAttachKind] = useState<GqlCItemFileKind>('receipt');
     const [error, setError] = useState<string | null>(null);
-    const [, attach] = useMutation(WorkspaceItemFileAttachDocument);
-    const [, togglePin] = useMutation(WorkspaceItemFileTogglePinDocument);
-    const [, del] = useMutation(WorkspaceItemFileDeleteDocument);
+    const [, attach] = useMutation(WorkspaceItemFilesAttachDocument);
+    const [, togglePin] = useMutation(WorkspaceItemFilesUpsertDocument);
+    const [, del] = useMutation(WorkspaceItemFilesDeleteDocument);
 
     const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -456,13 +456,15 @@ function FilesSection({ item, locale }: { item: ItemDetail; locale: Locale }) {
         try {
             const uploaded = await uploadFile(file);
             await attach({
-                input: {
-                    itemId: item.itemId,
-                    fileUploadId: uploaded.fileUploadId,
-                    kind: attachKind,
-                    label: uploaded.filename,
-                    pinned: false,
-                },
+                inputs: [
+                    {
+                        itemId: item.itemId,
+                        fileUploadId: uploaded.fileUploadId,
+                        kind: attachKind,
+                        label: uploaded.filename,
+                        pinned: false,
+                    },
+                ],
             });
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -524,8 +526,8 @@ function FilesSection({ item, locale }: { item: ItemDetail; locale: Locale }) {
                             key={f.itemFileId}
                             file={f}
                             locale={locale}
-                            onTogglePin={() => togglePin({ itemFileId: f.itemFileId })}
-                            onDelete={() => del({ itemFileId: f.itemFileId })}
+                            onTogglePin={() => togglePin({ itemFiles: [{ itemFileId: f.itemFileId, pinned: !f.pinned }] })}
+                            onDelete={() => del({ itemFileIds: [f.itemFileId] })}
                         />
                     ))}
                 </ul>
@@ -605,13 +607,13 @@ function RepriceDialog({ item, locale, onClose }: { item: ItemDetail; locale: Lo
     const [value, setValue] = useState(item.currentValueCents != null ? (item.currentValueCents / 100).toFixed(2) : '');
     const [note, setNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [, reprice] = useMutation(WorkspaceItemRepriceDocument);
+    const [, reprice] = useMutation(WorkspaceItemsRepriceDocument);
     const submit = async () => {
         const cents = eurosToCents(value);
         if (cents == null) return;
         setSubmitting(true);
         try {
-            const result = await reprice({ itemId: item.itemId, valueCents: cents, note: note.trim() || null });
+            const result = await reprice({ inputs: [{ itemId: item.itemId, valueCents: cents, note: note.trim() || null }] });
             if (!result.error) onClose();
         } finally {
             setSubmitting(false);
@@ -650,11 +652,35 @@ function RepriceDialog({ item, locale, onClose }: { item: ItemDetail; locale: Lo
 function DisposeDialog({ item, locale, onClose }: { item: ItemDetail; locale: Locale; onClose: () => void }) {
     const [state, setState] = useState<GqlCItemDisposalState>(item.disposalState);
     const [submitting, setSubmitting] = useState(false);
-    const [, dispose] = useMutation(WorkspaceItemDisposeDocument);
+    const [, upsert] = useMutation(WorkspaceItemsUpsertDocument);
     const submit = async () => {
         setSubmitting(true);
         try {
-            const result = await dispose({ itemId: item.itemId, state, disposedAt: null });
+            // Disposal is a field-set on the upsert now — carry the existing
+            // row through so only the disposal state changes. The server
+            // clears `disposedAt` when the state is `owned` and defaults it to
+            // now when transitioning into a disposal state.
+            const result = await upsert({
+                items: [
+                    {
+                        itemId: item.itemId,
+                        categoryKey: item.categoryKey,
+                        name: item.name,
+                        brand: item.brand,
+                        model: item.model,
+                        serialNumber: item.serialNumber,
+                        purchasedAt: item.purchasedAt,
+                        purchasePriceCents: item.purchasePriceCents,
+                        condition: item.condition,
+                        warrantyEndsAt: item.warrantyEndsAt,
+                        warrantyProvider: item.warrantyProvider,
+                        warrantyNotes: item.warrantyNotes,
+                        notes: item.notes,
+                        disposalState: state,
+                        disposedAt: state === 'owned' ? null : item.disposedAt,
+                    },
+                ],
+            });
             if (!result.error) onClose();
         } finally {
             setSubmitting(false);
@@ -709,23 +735,25 @@ function ServiceEntryDialog({
     const [notes, setNotes] = useState(initial?.notes ?? '');
     const [nextDueAt, setNextDueAt] = useState<Date | undefined>(initial?.nextDueAt ? parseISO(initial.nextDueAt) : undefined);
     const [submitting, setSubmitting] = useState(false);
-    const [, upsert] = useMutation(WorkspaceItemServiceEntryUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceItemServiceEntriesUpsertDocument);
 
     const submit = async () => {
         if (!performedAt) return;
         setSubmitting(true);
         try {
             const result = await upsert({
-                input: {
-                    serviceEntryId: initial?.serviceEntryId ?? null,
-                    itemId,
-                    kind,
-                    performedAt: dateToIso(performedAt),
-                    vendor: vendor.trim() || null,
-                    costCents: eurosToCents(cost),
-                    notes: notes.trim() || null,
-                    nextDueAt: nextDueAt ? dateToIso(nextDueAt) : null,
-                },
+                itemServiceEntries: [
+                    {
+                        serviceEntryId: initial?.serviceEntryId ?? null,
+                        itemId,
+                        kind,
+                        performedAt: dateToIso(performedAt),
+                        vendor: vendor.trim() || null,
+                        costCents: eurosToCents(cost),
+                        notes: notes.trim() || null,
+                        nextDueAt: nextDueAt ? dateToIso(nextDueAt) : null,
+                    },
+                ],
             });
             if (!result.error) onClose();
         } finally {
@@ -810,12 +838,12 @@ function ServiceEntryDialog({
 }
 
 function DeleteServiceEntryAlert({ entry, locale, onClose }: { entry: ServiceEntry; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceItemServiceEntryDeleteDocument);
+    const [, del] = useMutation(WorkspaceItemServiceEntriesDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);
         try {
-            await del({ serviceEntryId: entry.serviceEntryId });
+            await del({ serviceEntryIds: [entry.serviceEntryId] });
             onClose();
         } finally {
             setSubmitting(false);

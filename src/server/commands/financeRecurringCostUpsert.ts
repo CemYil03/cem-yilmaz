@@ -5,7 +5,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationFinanceRecurringCostUpsertArgs, GqlSFinanceRecurringCost, GqlSSession } from '../graphql/generated';
 import { toGqlFinanceRecurringCost } from '../mappers/toGqlFinanceRecurringCost';
 
-// Two-phase upsert — same shape as `itemUpsert`. `costId` set → update;
+// Two-phase upsert. `costId` set → update;
 // absent → insert. Optional-in-GraphQL fields (`currency`, `active`,
 // `notes`, `startsOn`, `endsOn`) coalesce to their column defaults or null
 // so a partial payload from the "New cost" dialog produces a sensible row.

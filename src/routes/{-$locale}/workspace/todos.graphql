@@ -49,28 +49,31 @@ mutation WorkspaceTodoUpsert(
     $whenBucket: TaskWhenBucket
 ) {
     admin {
-        taskUpsert(
-            input: {
-                taskId: $taskId
-                projectId: null
-                title: $title
-                notes: $notes
-                status: $status
-                position: $position
-                dueAt: $dueAt
-                completedAt: $completedAt
-                effort: $effort
-                whenBucket: $whenBucket
-            }
+        tasksUpsert(
+            tasks: [
+                {
+                    taskId: $taskId
+                    projectId: null
+                    title: $title
+                    notes: $notes
+                    status: $status
+                    position: $position
+                    dueAt: $dueAt
+                    completedAt: $completedAt
+                    effort: $effort
+                    whenBucket: $whenBucket
+                }
+            ]
         ) {
-            taskId
+            success
+            referenceIds
         }
     }
 }
 
 mutation WorkspaceTodoDelete($taskId: ID!) {
     admin {
-        taskDelete(taskId: $taskId) {
+        tasksDelete(taskIds: [$taskId]) {
             success
         }
     }

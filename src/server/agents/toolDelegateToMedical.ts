@@ -21,7 +21,7 @@ import { agentPersonalAssistantMedical } from './agentPersonalAssistantMedical';
 // the orchestrator sees it as a `FilePart` on the user message (via
 // `toModelMessages`), and forwards the corresponding upload ids here so
 // the sub-agent can attach them atomically via
-// `medicalRecordUpsert.fileUploadIds`.
+// `medicalRecordsUpsert.fileUploadIds`.
 
 const delegateToMedicalInputSchema = z.object({
     brief: z
@@ -142,7 +142,7 @@ export function toolDelegateToMedical({ serverRuntime, session, chatId, generati
             // The sub-agent sees the brief and, if any, an inline list of
             // file-upload ids the orchestrator forwarded. The bytes stay on
             // the orchestrator's user message; the sub-agent only needs the
-            // ids to write the join row via `medicalRecordUpsert.fileUploadIds`.
+            // ids to write the join row via `medicalRecordsUpsert.fileUploadIds`.
             const enrichedBrief =
                 (input.fileUploadIds ?? []).length > 0
                     ? `${input.brief}\n\nAttached files (fileUploadIds): ${(input.fileUploadIds ?? []).join(', ')}`

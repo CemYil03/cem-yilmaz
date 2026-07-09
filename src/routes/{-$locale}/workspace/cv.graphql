@@ -64,115 +64,69 @@ subscription WorkspaceCvPageUpdates {
     }
 }
 
-mutation WorkspaceCvExperienceUpsert(
-    $cvExperienceId: ID
-    $roleDe: String!
-    $roleEn: String!
-    $company: String!
-    $startDate: Date!
-    $endDate: Date
-    $descriptionDe: String!
-    $descriptionEn: String!
-    $technologies: [String!]!
-    $managerName: String
-) {
+mutation WorkspaceCvExperiencesUpsert($cvExperiences: [CvExperienceInput!]!) {
     admin {
-        cvExperienceUpsert(
-            input: {
-                cvExperienceId: $cvExperienceId
-                roleDe: $roleDe
-                roleEn: $roleEn
-                company: $company
-                startDate: $startDate
-                endDate: $endDate
-                descriptionDe: $descriptionDe
-                descriptionEn: $descriptionEn
-                technologies: $technologies
-                managerName: $managerName
-            }
-        ) {
-            cvExperienceId
+        cvExperiencesUpsert(cvExperiences: $cvExperiences) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceCvExperienceDelete($cvExperienceId: ID!) {
+mutation WorkspaceCvExperiencesDelete($cvExperienceIds: [ID!]!) {
     admin {
-        cvExperienceDelete(cvExperienceId: $cvExperienceId) {
+        cvExperiencesDelete(cvExperienceIds: $cvExperienceIds) {
             success
         }
     }
 }
 
-mutation WorkspaceCvEducationUpsert(
-    $cvEducationId: ID
-    $degreeDe: String!
-    $degreeEn: String!
-    $institution: String!
-    $subjectDe: String!
-    $subjectEn: String!
-    $startDate: Date
-    $endDate: Date!
-    $notesDe: String!
-    $notesEn: String!
-    $position: Int!
-) {
+mutation WorkspaceCvEducationsUpsert($cvEducations: [CvEducationInput!]!) {
     admin {
-        cvEducationUpsert(
-            input: {
-                cvEducationId: $cvEducationId
-                degreeDe: $degreeDe
-                degreeEn: $degreeEn
-                institution: $institution
-                subjectDe: $subjectDe
-                subjectEn: $subjectEn
-                startDate: $startDate
-                endDate: $endDate
-                notesDe: $notesDe
-                notesEn: $notesEn
-                position: $position
-            }
-        ) {
-            cvEducationId
+        cvEducationsUpsert(cvEducations: $cvEducations) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceCvEducationDelete($cvEducationId: ID!) {
+mutation WorkspaceCvEducationsDelete($cvEducationIds: [ID!]!) {
     admin {
-        cvEducationDelete(cvEducationId: $cvEducationId) {
+        cvEducationsDelete(cvEducationIds: $cvEducationIds) {
             success
         }
     }
 }
 
-mutation WorkspaceCvSkillUpsert($cvSkillId: ID, $category: CvSkillCategory!, $label: String!, $position: Int!) {
+mutation WorkspaceCvSkillsUpsert($cvSkills: [CvSkillInput!]!) {
     admin {
-        cvSkillUpsert(input: { cvSkillId: $cvSkillId, category: $category, label: $label, position: $position }) {
-            cvSkillId
+        cvSkillsUpsert(cvSkills: $cvSkills) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceCvSkillDelete($cvSkillId: ID!) {
+mutation WorkspaceCvSkillsDelete($cvSkillIds: [ID!]!) {
     admin {
-        cvSkillDelete(cvSkillId: $cvSkillId) {
+        cvSkillsDelete(cvSkillIds: $cvSkillIds) {
             success
         }
     }
 }
 
-mutation WorkspaceCvHobbyUpsert($cvHobbyId: ID, $textDe: String!, $textEn: String!, $since: Int, $position: Int!) {
+mutation WorkspaceCvHobbiesUpsert($cvHobbies: [CvHobbyInput!]!) {
     admin {
-        cvHobbyUpsert(input: { cvHobbyId: $cvHobbyId, textDe: $textDe, textEn: $textEn, since: $since, position: $position }) {
-            cvHobbyId
+        cvHobbiesUpsert(cvHobbies: $cvHobbies) {
+            success
+            referenceIds
         }
     }
 }
 
-mutation WorkspaceCvHobbyDelete($cvHobbyId: ID!) {
+mutation WorkspaceCvHobbiesDelete($cvHobbyIds: [ID!]!) {
     admin {
-        cvHobbyDelete(cvHobbyId: $cvHobbyId) {
+        cvHobbiesDelete(cvHobbyIds: $cvHobbyIds) {
             success
         }
     }

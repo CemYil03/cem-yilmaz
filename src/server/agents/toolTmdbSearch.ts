@@ -6,7 +6,7 @@ import type { GqlSSession } from '../graphql/generated';
 // Live TMDB search for the media sub-agent. Same underlying client the
 // GraphQL `Admin.adminMediaFindOne.adminMediaTmdbFindMany` resolver uses.
 // Empty result on missing key or TMDB outage — the sub-agent handles that by
-// falling back to `movieUpsert` with a manual title.
+// falling back to `moviesUpsert` with a manual title.
 
 const tmdbSearchInputSchema = z.object({
     query: z.string().min(1).max(200).describe('Free-form movie title. TMDB matches loosely, but a year in the query narrows results.'),
@@ -24,9 +24,9 @@ export function toolTmdbSearch({ serverRuntime }: MediaAgentReadContext) {
     return tool({
         description: [
             'Search The Movie Database (TMDB) for a movie by title. Returns up to 10 results with `tmdbId`, title,',
-            'release date, poster URL, and short overview. Use this BEFORE `movieAddFromTmdb` when Cem names a',
+            'release date, poster URL, and short overview. Use this BEFORE `moviesAddFromTmdb` when Cem names a',
             'film he has not tracked yet — feed the chosen `tmdbId` into that tool. Empty results mean no match,',
-            'no TMDB key, or TMDB is unreachable; in all three cases fall back to `movieUpsert` with a manual',
+            'no TMDB key, or TMDB is unreachable; in all three cases fall back to `moviesUpsert` with a manual',
             'title.',
         ].join(' '),
         inputSchema: tmdbSearchInputSchema,

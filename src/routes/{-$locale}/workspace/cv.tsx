@@ -12,19 +12,19 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import type { GqlCWorkspaceCvPageUpdatesSubscription, GqlCWorkspaceCvPageUserFragment } from '../../../web/graphql/generated';
 import {
-    WorkspaceCvEducationDeleteDocument,
     WorkspaceCvEducationReorderDocument,
-    WorkspaceCvEducationUpsertDocument,
-    WorkspaceCvExperienceDeleteDocument,
-    WorkspaceCvExperienceUpsertDocument,
-    WorkspaceCvHobbyDeleteDocument,
+    WorkspaceCvEducationsDeleteDocument,
+    WorkspaceCvEducationsUpsertDocument,
+    WorkspaceCvExperiencesDeleteDocument,
+    WorkspaceCvExperiencesUpsertDocument,
+    WorkspaceCvHobbiesDeleteDocument,
+    WorkspaceCvHobbiesUpsertDocument,
     WorkspaceCvHobbyReorderDocument,
-    WorkspaceCvHobbyUpsertDocument,
     WorkspaceCvPageDocument,
     WorkspaceCvPageUpdatesDocument,
-    WorkspaceCvSkillDeleteDocument,
     WorkspaceCvSkillReorderDocument,
-    WorkspaceCvSkillUpsertDocument,
+    WorkspaceCvSkillsDeleteDocument,
+    WorkspaceCvSkillsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -122,7 +122,7 @@ type ExperienceRow = CvData['publicCvExperienceFindMany'][number];
 
 function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow>; locale: Locale }) {
     const [editing, setEditing] = useState<ExperienceRow | 'new' | null>(null);
-    const [, deleteMutation] = useMutation(WorkspaceCvExperienceDeleteDocument);
+    const [, deleteMutation] = useMutation(WorkspaceCvExperiencesDeleteDocument);
 
     // The server already returns experience in chronological order, but a
     // local sort guards against optimistic-write reorderings between
@@ -160,7 +160,7 @@ function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow
                                 subtitle={`${row.startDate} → ${row.endDate ?? 'heute'}`}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
-                                    await deleteMutation({ cvExperienceId: row.cvExperienceId });
+                                    await deleteMutation({ cvExperienceIds: [row.cvExperienceId] });
                                 }}
                                 editLabel={rowEditLabel[locale]}
                                 deleteLabel={rowDeleteLabel[locale]}
@@ -174,7 +174,7 @@ function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow
 }
 
 function ExperienceForm({ row, locale, onClose }: { row: ExperienceRow | null; locale: Locale; onClose: () => void }) {
-    const [, upsert] = useMutation(WorkspaceCvExperienceUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceCvExperiencesUpsertDocument);
     const [form, setForm] = useState({
         roleDe: row?.roleDe ?? '',
         roleEn: row?.roleEn ?? '',
@@ -194,19 +194,23 @@ function ExperienceForm({ row, locale, onClose }: { row: ExperienceRow | null; l
                 event.preventDefault();
                 setBusy(true);
                 await upsert({
-                    cvExperienceId: row?.cvExperienceId ?? null,
-                    roleDe: form.roleDe,
-                    roleEn: form.roleEn,
-                    company: form.company,
-                    startDate: form.startDate,
-                    endDate: form.endDate || null,
-                    descriptionDe: form.descriptionDe,
-                    descriptionEn: form.descriptionEn,
-                    technologies: form.technologies
-                        .split(',')
-                        .map((t) => t.trim())
-                        .filter(Boolean),
-                    managerName: form.managerName || null,
+                    cvExperiences: [
+                        {
+                            cvExperienceId: row?.cvExperienceId ?? null,
+                            roleDe: form.roleDe,
+                            roleEn: form.roleEn,
+                            company: form.company,
+                            startDate: form.startDate,
+                            endDate: form.endDate || null,
+                            descriptionDe: form.descriptionDe,
+                            descriptionEn: form.descriptionEn,
+                            technologies: form.technologies
+                                .split(',')
+                                .map((t) => t.trim())
+                                .filter(Boolean),
+                            managerName: form.managerName || null,
+                        },
+                    ],
                 });
                 setBusy(false);
                 onClose();
@@ -254,7 +258,7 @@ type EducationRow = CvData['publicCvEducationFindMany'][number];
 
 function EducationSection({ rows, locale }: { rows: ReadonlyArray<EducationRow>; locale: Locale }) {
     const [editing, setEditing] = useState<EducationRow | 'new' | null>(null);
-    const [, deleteMutation] = useMutation(WorkspaceCvEducationDeleteDocument);
+    const [, deleteMutation] = useMutation(WorkspaceCvEducationsDeleteDocument);
     const [, reorderMutation] = useMutation(WorkspaceCvEducationReorderDocument);
     const ordered = useReorderableList(
         rows,
@@ -288,7 +292,7 @@ function EducationSection({ rows, locale }: { rows: ReadonlyArray<EducationRow>;
                                 subtitle={`${row.startDate ?? '?'} → ${row.endDate}`}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
-                                    await deleteMutation({ cvEducationId: row.cvEducationId });
+                                    await deleteMutation({ cvEducationIds: [row.cvEducationId] });
                                 }}
                                 editLabel={rowEditLabel[locale]}
                                 deleteLabel={rowDeleteLabel[locale]}
@@ -312,7 +316,7 @@ function EducationForm({
     locale: Locale;
     onClose: () => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceCvEducationUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceCvEducationsUpsertDocument);
     const [form, setForm] = useState({
         degreeDe: row?.degreeDe ?? '',
         degreeEn: row?.degreeEn ?? '',
@@ -331,17 +335,21 @@ function EducationForm({
                 event.preventDefault();
                 setBusy(true);
                 await upsert({
-                    cvEducationId: row?.cvEducationId ?? null,
-                    degreeDe: form.degreeDe,
-                    degreeEn: form.degreeEn,
-                    institution: form.institution,
-                    subjectDe: form.subjectDe,
-                    subjectEn: form.subjectEn,
-                    startDate: form.startDate || null,
-                    endDate: form.endDate,
-                    notesDe: form.notesDe,
-                    notesEn: form.notesEn,
-                    position: row?.position ?? position,
+                    cvEducations: [
+                        {
+                            cvEducationId: row?.cvEducationId ?? null,
+                            degreeDe: form.degreeDe,
+                            degreeEn: form.degreeEn,
+                            institution: form.institution,
+                            subjectDe: form.subjectDe,
+                            subjectEn: form.subjectEn,
+                            startDate: form.startDate || null,
+                            endDate: form.endDate,
+                            notesDe: form.notesDe,
+                            notesEn: form.notesEn,
+                            position: row?.position ?? position,
+                        },
+                    ],
                 });
                 setBusy(false);
                 onClose();
@@ -399,7 +407,7 @@ const SKILL_CATEGORY_LABELS: Record<SkillCategory, { de: string; en: string }> =
 
 function SkillSection({ rows, locale }: { rows: ReadonlyArray<SkillRow>; locale: Locale }) {
     const [editing, setEditing] = useState<SkillRow | 'new' | null>(null);
-    const [, deleteMutation] = useMutation(WorkspaceCvSkillDeleteDocument);
+    const [, deleteMutation] = useMutation(WorkspaceCvSkillsDeleteDocument);
     const [, reorderMutation] = useMutation(WorkspaceCvSkillReorderDocument);
 
     // The reorder mutation rewrites every row's position from a single id list,
@@ -438,7 +446,7 @@ function SkillSection({ rows, locale }: { rows: ReadonlyArray<SkillRow>; locale:
                         onEdit={(row) => setEditing(row)}
                         onCancel={() => setEditing(null)}
                         onDelete={async (cvSkillId) => {
-                            await deleteMutation({ cvSkillId });
+                            await deleteMutation({ cvSkillIds: [cvSkillId] });
                         }}
                         onReorder={async (newOrderForCategory) => {
                             const orderedIds: string[] = [];
@@ -512,7 +520,7 @@ function SkillCategoryGroup({
 }
 
 function SkillForm({ row, position, locale, onClose }: { row: SkillRow | null; position: number; locale: Locale; onClose: () => void }) {
-    const [, upsert] = useMutation(WorkspaceCvSkillUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceCvSkillsUpsertDocument);
     const [form, setForm] = useState({
         category: row?.category ?? ('frameworks' as SkillCategory),
         label: row?.label ?? '',
@@ -524,10 +532,14 @@ function SkillForm({ row, position, locale, onClose }: { row: SkillRow | null; p
                 event.preventDefault();
                 setBusy(true);
                 await upsert({
-                    cvSkillId: row?.cvSkillId ?? null,
-                    category: form.category,
-                    label: form.label,
-                    position: row?.position ?? position,
+                    cvSkills: [
+                        {
+                            cvSkillId: row?.cvSkillId ?? null,
+                            category: form.category,
+                            label: form.label,
+                            position: row?.position ?? position,
+                        },
+                    ],
                 });
                 setBusy(false);
                 onClose();
@@ -565,7 +577,7 @@ type HobbyRow = CvData['publicCvHobbyFindMany'][number];
 
 function HobbySection({ rows, locale }: { rows: ReadonlyArray<HobbyRow>; locale: Locale }) {
     const [editing, setEditing] = useState<HobbyRow | 'new' | null>(null);
-    const [, deleteMutation] = useMutation(WorkspaceCvHobbyDeleteDocument);
+    const [, deleteMutation] = useMutation(WorkspaceCvHobbiesDeleteDocument);
     const [, reorderMutation] = useMutation(WorkspaceCvHobbyReorderDocument);
     const ordered = useReorderableList(
         rows,
@@ -597,7 +609,7 @@ function HobbySection({ rows, locale }: { rows: ReadonlyArray<HobbyRow>; locale:
                                 subtitle={row.since ? String(row.since) : '–'}
                                 onEdit={() => setEditing(row)}
                                 onDelete={async () => {
-                                    await deleteMutation({ cvHobbyId: row.cvHobbyId });
+                                    await deleteMutation({ cvHobbyIds: [row.cvHobbyId] });
                                 }}
                                 editLabel={rowEditLabel[locale]}
                                 deleteLabel={rowDeleteLabel[locale]}
@@ -611,7 +623,7 @@ function HobbySection({ rows, locale }: { rows: ReadonlyArray<HobbyRow>; locale:
 }
 
 function HobbyForm({ row, position, locale, onClose }: { row: HobbyRow | null; position: number; locale: Locale; onClose: () => void }) {
-    const [, upsert] = useMutation(WorkspaceCvHobbyUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceCvHobbiesUpsertDocument);
     const [form, setForm] = useState({
         textDe: row?.textDe ?? '',
         textEn: row?.textEn ?? '',
@@ -624,11 +636,15 @@ function HobbyForm({ row, position, locale, onClose }: { row: HobbyRow | null; p
                 event.preventDefault();
                 setBusy(true);
                 await upsert({
-                    cvHobbyId: row?.cvHobbyId ?? null,
-                    textDe: form.textDe,
-                    textEn: form.textEn,
-                    since: form.since ? parseInt(form.since, 10) : null,
-                    position: row?.position ?? position,
+                    cvHobbies: [
+                        {
+                            cvHobbyId: row?.cvHobbyId ?? null,
+                            textDe: form.textDe,
+                            textEn: form.textEn,
+                            since: form.since ? parseInt(form.since, 10) : null,
+                            position: row?.position ?? position,
+                        },
+                    ],
                 });
                 setBusy(false);
                 onClose();
