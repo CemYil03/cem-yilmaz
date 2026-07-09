@@ -40,13 +40,13 @@ export const Route = createFileRoute('/{-$locale}/cv')({
 function CvPage() {
     const locale = useLocale();
     const data = Route.useLoaderData();
-    const experience = data.cv.experience;
-    const education = data.cv.education;
+    const experience = data.publicCvFindOne.publicCvExperienceFindMany;
+    const education = data.publicCvFindOne.publicCvEducationFindMany;
     const stats = computeStats(experience, locale);
     // Admin-only "Workspace" entry in the header — non-admins (including
     // anonymous visitors) get `user.admin = null` and never see it. Same
     // probe as the landing page. See `docs/architecture/workspace-access.md`.
-    const isAdmin = data.currentSession.user?.admin != null;
+    const isAdmin = data.sessionFindOne.user?.admin != null;
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
@@ -114,8 +114,8 @@ function CvPage() {
     );
 }
 
-type ExperienceRow = GqlCCvPageQuery['cv']['experience'][number];
-type EducationRow = GqlCCvPageQuery['cv']['education'][number];
+type ExperienceRow = GqlCCvPageQuery['publicCvFindOne']['publicCvExperienceFindMany'][number];
+type EducationRow = GqlCCvPageQuery['publicCvFindOne']['publicCvEducationFindMany'][number];
 
 function mapExperience(row: ExperienceRow, locale: Locale): CvTimelineEntry {
     const description = locale === 'de' ? row.descriptionDe : row.descriptionEn;

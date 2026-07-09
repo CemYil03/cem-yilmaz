@@ -129,9 +129,9 @@ const inventorySearchSchema = z.object({
 });
 
 type WorkspaceInventoryAdmin = NonNullable<GqlCWorkspaceInventoryPageUserFragment['admin']>;
-type InventoryData = WorkspaceInventoryAdmin['inventory'];
-type ItemRow = InventoryData['items'][number];
-type WarrantyRow = InventoryData['upcomingWarrantyExpirations'][number];
+type InventoryData = WorkspaceInventoryAdmin['adminInventoryFindOne'];
+type ItemRow = InventoryData['adminInventoryItemFindMany'][number];
+type WarrantyRow = InventoryData['adminInventoryItemUpcomingWarrantyFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/inventory')({
     validateSearch: inventorySearchSchema,
@@ -155,9 +155,9 @@ function InventoryArea() {
     const locale = useLocale();
     const data = Route.useLoaderData();
     const search = Route.useSearch();
-    const user = useWorkspaceInventoryLiveUser(data.currentSession.user);
+    const user = useWorkspaceInventoryLiveUser(data.sessionFindOne.user);
     const admin = user?.admin;
-    const inventory = admin?.inventory;
+    const inventory = admin?.adminInventoryFindOne;
 
     const filter: DisposalFilter = search.filter ?? 'owned';
     const [editing, setEditing] = useState<ItemRow | 'new' | null>(null);
@@ -166,16 +166,16 @@ function InventoryArea() {
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
     if (!inventory) return null;
 
-    const filtered = inventory.items.filter((row) => (filter === 'all' ? true : row.disposalState === filter));
+    const filtered = inventory.adminInventoryItemFindMany.filter((row) => (filter === 'all' ? true : row.disposalState === filter));
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <p className="text-sm text-muted-foreground">{description[locale]}</p>
 
             <OverviewStrip
-                items={inventory.items}
-                netWorthCents={inventory.materialNetWorthCents}
-                warrantySoon={inventory.upcomingWarrantyExpirations}
+                items={inventory.adminInventoryItemFindMany}
+                netWorthCents={inventory.adminInventoryMaterialNetWorthCentsFindOne}
+                warrantySoon={inventory.adminInventoryItemUpcomingWarrantyFindMany}
                 locale={locale}
             />
 

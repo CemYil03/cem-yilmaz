@@ -129,7 +129,7 @@ function AboutPage() {
     // Admin-only "Workspace" entry in the header — non-admins (including
     // anonymous visitors) get `user.admin = null` and never see it. Same
     // probe as the landing page. See `docs/architecture/workspace-access.md`.
-    const isAdmin = data.currentSession.user?.admin != null;
+    const isAdmin = data.sessionFindOne.user?.admin != null;
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">
@@ -151,14 +151,14 @@ function AboutPage() {
                     <h2 className="mb-4 text-2xl font-semibold tracking-tight">
                         {{ de: 'Skills & Werkzeuge', en: 'Skills & tools' }[locale]}
                     </h2>
-                    <CvSkillGroup skills={data.cv.skills} locale={locale} />
+                    <CvSkillGroup skills={data.publicCvFindOne.publicCvSkillFindMany} locale={locale} />
                 </Reveal>
 
                 <Reveal as="section" className="mt-12">
                     <h2 className="mb-4 text-2xl font-semibold tracking-tight">{{ de: 'Freizeit', en: 'Hobbies' }[locale]}</h2>
                     <GlassCard className="px-6 py-5">
                         <ul className="flex flex-col gap-2 text-sm leading-relaxed">
-                            {data.cv.hobbies.map((hobby) => {
+                            {data.publicCvFindOne.publicCvHobbyFindMany.map((hobby) => {
                                 const text = locale === 'de' ? hobby.textDe : hobby.textEn;
                                 const sincePrefix = hobby.since ? `${locale === 'de' ? 'Seit' : 'Since'} ${hobby.since}: ` : '';
                                 return <li key={hobby.cvHobbyId}>{sincePrefix + text}</li>;

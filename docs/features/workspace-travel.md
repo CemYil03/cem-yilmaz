@@ -87,9 +87,10 @@ in input order — the sub-agent uses these to address newly-created days as the
 turn.
 
 Standard `commands/` (`tripsUpsert`, `tripsDelete`, `tripDaysUpsert`, `tripDaysDelete`, `tripActivitiesUpsert`, `tripActivitiesDelete`,
-`tripPackingItemsUpsert`, `tripPackingItemsDelete`), `queries/` (`tripList`, `tripGet`), `mappers/` (`toGqlTrip`, `toGqlTripDay`,
-`toGqlTripActivity`, `toGqlTripPackingItem`). Every command ends with `serverRuntime.publish.userUpdates({ userId })` (one publish per
-batch, not per row) so the seeded-and-subscribed pages replace state on write.
+`tripPackingItemsUpsert`, `tripPackingItemsDelete`), `queries/` (`adminTravelTripFindMany`, `adminTravelTripFindOne`), `mappers/`
+(`toGqlTrip`, `toGqlTripDay`, `toGqlTripActivity`, `toGqlTripPackingItem`). Every command ends with
+`serverRuntime.publish.userUpdates({ userId })` (one publish per batch, not per row) so the seeded-and-subscribed pages replace state on
+write.
 
 Command signatures are `(userId, rowsOrIds, requestingSession, serverRuntime)` — `rowsOrIds` is either a `readonly GqlS<X>Input[]` (upserts)
 or a `readonly string[]` (deletes). Each `resolversCreate.ts` handler unwraps `args.trips` / `args.tripDayIds` / … before calling. Upserts
@@ -99,8 +100,9 @@ landing as an FK violation. Tail-position handling for `tripActivitiesUpsert` an
 `tripDayId` / `(tripId, category)` and increments locally so a same-bucket batch lays out its new rows contiguously without per-row DB
 reads.
 
-Resolver wiring lives in `src/server/graphql/resolversCreate.ts`: `Admin.travel` shell, `AdminTravelQuery.trips` / `AdminTravelQuery.trip`,
-and mutation handlers on `AdminMutation`. `guardAdminMutation` at the parent field authorizes once.
+Resolver wiring lives in `src/server/graphql/resolversCreate.ts`: `Admin.adminTravelFindOne` shell,
+`AdminTravelQuery.adminTravelTripFindMany` / `AdminTravelQuery.adminTravelTripFindOne`, and mutation handlers on `AdminMutation`.
+`guardAdminMutation` at the parent field authorizes once.
 
 Passing a one-element array is fine — the UI does exactly that for every dialog: the "New trip" dialog calls `tripsUpsert(trips: [row])`,
 the packing checkbox calls `tripPackingItemsUpsert(tripPackingItems: [{ ...row, packed: !row.packed }])`, and every delete alert passes a

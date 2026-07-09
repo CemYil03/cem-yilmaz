@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { fileUploadLoad } from '../../server/queries/fileUploadLoad';
+import { fileUploadFindOne } from '../../server/queries/fileUploadFindOne';
 import { db } from '../../server/db';
 import { environmentVariables } from '../../server/env/environmentVariablesCreate';
 import { sessionUpsert } from '../../server/utils/sessionUpsert';
@@ -40,7 +40,7 @@ export const Route = createFileRoute('/api/file-uploads_/$fileUploadId')({
                     });
                 }
 
-                const fileUpload = await fileUploadLoad(db, params.fileUploadId);
+                const fileUpload = await fileUploadFindOne(db, params.fileUploadId);
                 if (!fileUpload) {
                     return new Response('Not found', {
                         status: 404,

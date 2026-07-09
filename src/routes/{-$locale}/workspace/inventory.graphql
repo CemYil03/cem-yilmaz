@@ -7,9 +7,9 @@
 
 fragment WorkspaceInventoryPageUser on User {
     admin {
-        inventory {
-            materialNetWorthCents
-            items {
+        adminInventoryFindOne {
+            adminInventoryMaterialNetWorthCentsFindOne
+            adminInventoryItemFindMany {
                 itemId
                 categoryKey
                 name
@@ -29,7 +29,7 @@ fragment WorkspaceInventoryPageUser on User {
                 createdAt
                 updatedAt
             }
-            upcomingWarrantyExpirations(withinDays: 60) {
+            adminInventoryItemUpcomingWarrantyFindMany(withinDays: 60) {
                 itemId
                 name
                 brand
@@ -41,7 +41,7 @@ fragment WorkspaceInventoryPageUser on User {
 }
 
 query WorkspaceInventoryPage {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceInventoryPageUser
         }

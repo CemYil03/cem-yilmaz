@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { medicalAppointmentList } from '../queries/medicalAppointmentList';
+import { adminMedicalAppointmentFindMany } from '../queries/adminMedicalAppointmentFindMany';
 
 interface MedicalAgentReadContext {
     serverRuntime: ServerRuntime;
@@ -25,7 +25,7 @@ export function toolMedicalAppointmentsList({ serverRuntime, session }: MedicalA
         ].join(' '),
         inputSchema: medicalAppointmentsListInputSchema,
         execute: async (input) => {
-            const rows = await medicalAppointmentList(session, serverRuntime);
+            const rows = await adminMedicalAppointmentFindMany(session, serverRuntime);
             return input.category ? rows.filter((r) => r.category === input.category) : rows;
         },
     });

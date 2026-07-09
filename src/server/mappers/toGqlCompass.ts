@@ -8,7 +8,14 @@ import type { GqlSAdminCompass, GqlSCompassInterviewTopic } from '../graphql/gen
 // so they're all omitted from this shell mapper.
 export function toGqlCompass(
     row: Compass,
-): Omit<GqlSAdminCompass, 'observations' | 'synthesisInProgress' | 'interviews' | 'interview' | 'interviewPending'> {
+): Omit<
+    GqlSAdminCompass,
+    | 'adminCompassObservationFindMany'
+    | 'synthesisInProgress'
+    | 'adminCompassInterviewFindMany'
+    | 'adminCompassInterviewFindOne'
+    | 'adminCompassInterviewPendingFindOne'
+> {
     return {
         summary: row.summary,
         prose: row.prose,

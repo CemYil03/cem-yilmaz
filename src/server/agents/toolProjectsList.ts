@@ -2,10 +2,10 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { projectsList } from '../queries/projectsList';
+import { adminProjectFindMany } from '../queries/adminProjectFindMany';
 
 // Read tool for `agentPersonalAssistantProjects`. Thin wrapper around the
-// `projectsList` query — same data the `/workspace/projects` board renders.
+// `adminProjectFindMany` query — same data the `/workspace/projects` board renders.
 // The system prompt already embeds a compact snapshot (see
 // `projectsSnapshotForAgent.ts`), so the sub-agent only needs this when it
 // wants the full task list for a specific project. See
@@ -33,7 +33,7 @@ export function toolProjectsList({ serverRuntime, session }: ProjectsAgentReadCo
         ].join(' '),
         inputSchema: projectsListInputSchema,
         execute: async (input) => {
-            const result = await projectsList(input.status ?? null, session, serverRuntime);
+            const result = await adminProjectFindMany(input.status ?? null, session, serverRuntime);
             return result;
         },
     });

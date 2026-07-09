@@ -5,8 +5,8 @@
 
 fragment WorkspaceTravelDetailUser on User {
     admin {
-        travel {
-            trip(tripId: $tripId) {
+        adminTravelFindOne {
+            adminTravelTripFindOne(tripId: $tripId) {
                 tripId
                 title
                 destination
@@ -53,7 +53,7 @@ fragment WorkspaceTravelDetailUser on User {
 }
 
 query WorkspaceTravelDetail($tripId: ID!) {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceTravelDetailUser
         }

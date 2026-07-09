@@ -224,7 +224,7 @@ AI SDK types.
 
 Every command that kicks off an assistant turn — `chatMessageCreate`, `chatInputCollectionRespond`, `chatToolApprovalRespond` — needs the
 prior conversation as `ModelMessage[]` before the agent steps. They share one path: load the joined spine + variant rows for the chat via
-`chatMessageRowsLoad` (the same loader the read path uses), then run the rows through `toModelMessages`.
+`chatMessageFindMany` (the same loader the read path uses), then run the rows through `toModelMessages`.
 
 `chatAssistantTurnRunDetached` performs that load + replay itself, inside the detached IIFE — the three commands each call it as a one-line
 "user-side row is durable; now run the agent" handoff. Re-reading after the command's own writes is the point: command-side side-effects
@@ -260,9 +260,9 @@ Why a separate join row instead of a `chatMessageId FK` on `FileUploads`:
   transaction (`chatMessageAppend`'s `insertVariant` callback), so subscribers never see a half-attached message.
 
 Reads on the chat path bulk-load attachments via a single `IN` query keyed by the user-message ids in the result set
-(`attachUserAttachments` in `src/server/queries/chatMessageRowsLoad.ts`) — joining `ChatMessageUserAttachments` onto `FileUploads` and
-bucketing the results back onto `ChatMessageRowJoined.userAttachments`. Folding into the main LEFT JOIN would multiply user rows by their
-attachment count and force a `GROUP BY` / `array_agg` shuffle for an N-row table that's already small per chat.
+(`chatMessageUserAttachmentAttach` in `src/server/commands/chatMessageUserAttachmentAttach.ts`) — joining `ChatMessageUserAttachments` onto
+`FileUploads` and bucketing the results back onto `ChatMessageRowJoined.userAttachments`. Folding into the main LEFT JOIN would multiply
+user rows by their attachment count and force a `GROUP BY` / `array_agg` shuffle for an N-row table that's already small per chat.
 
 Reads for the LLM use the same payload — `toModelMessages` reads `row.userAttachments` straight off the joined row and inlines bytes into
 `FilePart` parts (`toModelMessagePartForFileUpload` keeps an image/non-image split for the filename field; in v7 both branches return

@@ -8,7 +8,7 @@
 
 fragment WorkspaceTodosPageUser on User {
     admin {
-        standaloneTasks {
+        adminStandaloneTaskFindMany {
             taskId
             projectId
             title
@@ -24,7 +24,7 @@ fragment WorkspaceTodosPageUser on User {
 }
 
 query WorkspaceTodosPage {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceTodosPageUser
         }

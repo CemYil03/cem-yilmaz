@@ -128,7 +128,7 @@ the tables, mirrored as GraphQL enums.
 ### CQRS wiring
 
 - `src/server/commands/item*.ts` — one file per mutation.
-- `src/server/queries/{itemsList,itemGet,materialNetWorthCentsGet,upcomingWarrantyExpirationsList}.ts`.
+- `src/server/queries/{adminInventoryItemFindMany,adminInventoryItemFindOne,adminInventoryMaterialNetWorthCentsFindOne,adminInventoryItemUpcomingWarrantyFindMany}.ts`.
 - `src/server/mappers/{toGqlItem,toGqlItemValuation,toGqlItemServiceEntry,toGqlItemFile}.ts`.
 - Wired in `src/server/graphql/resolversCreate.ts` — the single entry point.
 

@@ -271,7 +271,7 @@ Three rules fall out of this:
 
 The single primitive that implements "commit + publish" is `chatMessageAppend` in `src/server/commands/chatMessageAppend.ts`. Every chat
 command (`chatMessageCreate`, `chatInputCollectionRespond`, `chatToolApprovalRespond`) and the agent loop's `onStepEnd` use it; the publish
-carries only the new row's `chatMessageId`, and the subscription resolver re-loads the joined row via `chatMessageRowLoad` before delivery —
+carries only the new row's `chatMessageId`, and the subscription resolver re-loads the joined row via `chatMessageFindOne` before delivery —
 so subscribers receive a `ChatMessage` identical to what `chatFindOne` would have returned.
 
 ### Why the wire payload is the id, not the full message

@@ -98,14 +98,15 @@ Migration: `drizzle/0019_special_thor.sql`.
 
 ### GraphQL
 
-Read namespace under `Admin.medical` (reached via `currentSession.user.admin.medical`):
+Read namespace under `Admin.adminMedicalFindOne` (reached via `sessionFindOne.user.admin.adminMedicalFindOne`):
 
-- `appointments: [MedicalAppointment!]!` — every appointment; ordered `scheduled` first (soonest first), then everything else by
-  `scheduledAt DESC`
-- `records: [MedicalRecord!]!` — every record; ordered by `occurredAt DESC` (falling back to `createdAt`), files pre-joined
-- `overview: [MedicalCategoryOverview!]!` — one row per `MedicalCategory` with `defaultCadenceMonths`, `lastCompletedAt`, `nextDueAt`,
-  `isOverdue`, `upcoming: [MedicalAppointment!]!`, `recentRecords: [MedicalRecord!]!`. Cadence math lives in `medicalCategoryOverview.ts`;
-  categories with no data still surface so the overview grid never has holes.
+- `adminMedicalAppointmentFindMany: [MedicalAppointment!]!` — every appointment; ordered `scheduled` first (soonest first), then everything
+  else by `scheduledAt DESC`
+- `adminMedicalRecordFindMany: [MedicalRecord!]!` — every record; ordered by `occurredAt DESC` (falling back to `createdAt`), files
+  pre-joined
+- `adminMedicalCategoryOverviewFindMany: [MedicalCategoryOverview!]!` — one row per `MedicalCategory` with `defaultCadenceMonths`,
+  `lastCompletedAt`, `nextDueAt`, `isOverdue`, `upcoming: [MedicalAppointment!]!`, `recentRecords: [MedicalRecord!]!`. Cadence math lives in
+  `adminMedicalCategoryOverviewFindMany.ts`; categories with no data still surface so the overview grid never has holes.
 
 Write mutations on `AdminMutation`:
 
@@ -144,7 +145,7 @@ on the last completed visit surfaces a next-due date for those categories.
 ### Route
 
 `src/routes/{-$locale}/workspace/medical.tsx`. Three tabs (Overview / Appointments / Records) selected via `?tab=…`, deep-linkable per row
-via `?focus=<id>`. `useWorkspaceMedicalPageLiveUser` is the seed-and-subscribe hook — the route loader seeds `currentSession.user`, then the
+via `?focus=<id>`. `useWorkspaceMedicalPageLiveUser` is the seed-and-subscribe hook — the route loader seeds `sessionFindOne.user`, then the
 `WorkspaceMedicalPageUpdates` subscription replaces it on every server push. Every mutation publishes on the user channel, so mutations
 never re-fetch from the client.
 

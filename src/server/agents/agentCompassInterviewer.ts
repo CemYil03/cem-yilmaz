@@ -2,7 +2,7 @@ import { generateText, streamText, tool } from 'ai';
 import type { ModelMessage } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { compassInterviewContextGet } from '../queries/compassInterviewContextGet';
+import { compassInterviewContextFindOne } from '../queries/compassInterviewContextFindOne';
 import type { CompassInterviewTopic } from './compassInterviewConfig';
 import {
     COMPASS_INTERVIEW_MAX_QUESTIONS,
@@ -157,7 +157,7 @@ const concludeInterviewTool = tool({
 // diverge only in which AI-SDK call they make on top of this.
 function buildRunConfig({ serverRuntime, messages, locale, topic }: CompassInterviewAgentOptions & { topic: CompassInterviewTopic }) {
     return async () => {
-        const context = await compassInterviewContextGet(serverRuntime);
+        const context = await compassInterviewContextFindOne(serverRuntime);
         const system = buildSystemPrompt({
             summary: context.summary,
             psychology: context.psychology,

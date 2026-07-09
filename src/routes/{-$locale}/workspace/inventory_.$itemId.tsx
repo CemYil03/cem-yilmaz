@@ -74,7 +74,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // `docs/features/workspace-inventory.md`.
 
 type Admin = NonNullable<GqlCWorkspaceInventoryDetailUserFragment['admin']>;
-type ItemDetail = NonNullable<Admin['inventory']['item']>;
+type ItemDetail = NonNullable<Admin['adminInventoryFindOne']['adminInventoryItemFindOne']>;
 type Valuation = ItemDetail['valuations'][number];
 type ServiceEntry = ItemDetail['serviceEntries'][number];
 type ItemFileRow = ItemDetail['files'][number];
@@ -124,10 +124,10 @@ function WorkspaceInventoryDetail() {
     const locale = useLocale();
     const { itemId } = Route.useParams();
     const data = Route.useLoaderData();
-    const user = useDetailLiveUser(data.currentSession.user, itemId);
+    const user = useDetailLiveUser(data.sessionFindOne.user, itemId);
 
     const admin = user?.admin;
-    const item = admin?.inventory.item ?? null;
+    const item = admin?.adminInventoryFindOne.adminInventoryItemFindOne ?? null;
 
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
     if (!item) return <NotFound locale={locale} />;
@@ -901,9 +901,9 @@ function eurosToCents(input: string): number | null {
 }
 
 // Seed-and-subscribe. `itemId` scopes the subscription — the detail
-// fragment resolves `admin.inventory.item(itemId: $itemId)`, so we need to
-// pass the id in as a variable so URQL matches the same fragment shape as
-// the loader query. Mirrors `useWorkspaceMediaPageLiveUser`.
+// fragment resolves `admin.adminInventoryFindOne.adminInventoryItemFindOne(itemId: $itemId)`,
+// so we need to pass the id in as a variable so URQL matches the same
+// fragment shape as the loader query. Mirrors `useWorkspaceMediaPageLiveUser`.
 function useDetailLiveUser(
     seed: GqlCWorkspaceInventoryDetailUserFragment | null | undefined,
     itemId: string,

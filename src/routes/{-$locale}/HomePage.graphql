@@ -1,5 +1,5 @@
 query HomePage {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             name

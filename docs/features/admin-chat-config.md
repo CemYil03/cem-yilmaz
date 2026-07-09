@@ -59,9 +59,9 @@ CREATE TABLE "AdminChatConfig" (
 ```
 
 Fixed id (`00000000-0000-0000-0000-000000000002`) in `src/server/agents/adminChatConfig.ts`. The row is bootstrapped lazily on first
-`Admin.chatConfig` read (`src/server/queries/adminChatConfigGet.ts`) — until then, the runtime falls back to the catalog's first entry
-(`gemini-2.5-flash`). Phase 2 (per-user accounts) keeps this id for "the owner's config" and adds a per-user split as a column addition, not
-a schema move.
+`Admin.adminChatConfigFindOne` read (`src/server/queries/adminChatConfigFindOne.ts`) — until then, the runtime falls back to the catalog's
+first entry (`gemini-2.5-flash`). Phase 2 (per-user accounts) keeps this id for "the owner's config" and adds a per-user split as a column
+addition, not a schema move.
 
 ## Data flow
 
@@ -85,7 +85,7 @@ a schema move.
             │ forwards assistantOptions verbatim
             ▼
    chatAssistantTurnRunDetached → agentPersonalAssistant
-            │ resolved = assistantOptions.modelId ?? adminChatConfigGet().defaultModelId
+            │ resolved = assistantOptions.modelId ?? adminChatConfigFindOne().defaultModelId
             ▼
    serverRuntime.ai.userConversationModel(resolved)
             │ catalog-validates; throws on unknown id
@@ -121,7 +121,7 @@ zero effect; the field is admin-only by code, not just by schema.
 | Catalog (server-static)                 | `src/server/agents/adminChatModels.ts`                                                            |
 | Singleton key                           | `src/server/agents/adminChatConfig.ts`                                                            |
 | DB table                                | `src/server/db/schema.ts` (`adminChatConfig`)                                                     |
-| Singleton read + bootstrap              | `src/server/queries/adminChatConfigGet.ts`                                                        |
+| Singleton read + bootstrap              | `src/server/queries/adminChatConfigFindOne.ts`                                                    |
 | Default-model writer                    | `src/server/commands/adminChatConfigDefaultModelSet.ts`                                           |
 | Runtime model factory                   | `src/server/domain/serverRuntimeCreate.ts` (`ai.userConversationModel`)                           |
 | Agent wire-in                           | `src/server/agents/agentPersonalAssistant.ts`                                                     |

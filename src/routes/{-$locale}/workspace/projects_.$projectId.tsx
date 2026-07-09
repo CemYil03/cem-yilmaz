@@ -101,12 +101,12 @@ import { localeFromParam } from '../../../web/utils/locale';
 // noindex. See `docs/features/projects-workspace.md`.
 
 type WorkspaceProjectDetailAdmin = NonNullable<GqlCWorkspaceProjectDetailUserFragment['admin']>;
-type ProjectRow = WorkspaceProjectDetailAdmin['project'];
+type ProjectRow = WorkspaceProjectDetailAdmin['adminProjectFindOne'];
 type TaskRow = ProjectRow['tasks'][number];
 type ActivityRow = ProjectRow['activities'][number];
 type LinkRow = ProjectRow['links'][number];
 type FileRow = ProjectRow['files'][number];
-type ActiveTimer = WorkspaceProjectDetailAdmin['activeTimer'];
+type ActiveTimer = WorkspaceProjectDetailAdmin['adminProjectActiveTimerFindOne'];
 
 type DetailTab = 'overview' | 'tasks' | 'activity' | 'notes' | 'links' | 'files';
 const TABS = ['overview', 'tasks', 'activity', 'notes', 'links', 'files'] as const satisfies ReadonlyArray<DetailTab>;
@@ -332,10 +332,10 @@ function WorkspaceProjectDetail() {
     // mutation on this page already calls `serverRuntime.publish.userUpdates`
     // server-side, so we never need to re-fetch from the client.
     // See `docs/architecture/state-synchronization.md` — Seed-and-Subscribe.
-    const user = useWorkspaceProjectDetailLiveUser(projectId, data.currentSession.user);
+    const user = useWorkspaceProjectDetailLiveUser(projectId, data.sessionFindOne.user);
     const admin = user?.admin;
-    const project = admin?.project ?? null;
-    const activeTimer = admin?.activeTimer ?? null;
+    const project = admin?.adminProjectFindOne ?? null;
+    const activeTimer = admin?.adminProjectActiveTimerFindOne ?? null;
 
     // Deep-link focus on a child row, same mechanism as the board page.
     useEffect(() => {

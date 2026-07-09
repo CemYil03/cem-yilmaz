@@ -154,7 +154,7 @@ const todosSearchSchema = z.object({
 });
 
 type WorkspaceTodosAdmin = NonNullable<GqlCWorkspaceTodosPageUserFragment['admin']>;
-type TaskRow = WorkspaceTodosAdmin['standaloneTasks'][number];
+type TaskRow = WorkspaceTodosAdmin['adminStandaloneTaskFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/todos')({
     validateSearch: todosSearchSchema,
@@ -217,9 +217,9 @@ function WorkspaceTodos() {
     // Server-authoritative state — same seed-and-subscribe pattern the
     // rest of the workspace uses. See
     // `docs/architecture/state-synchronization.md`.
-    const user = useWorkspaceTodosPageLiveUser(data.currentSession.user);
+    const user = useWorkspaceTodosPageLiveUser(data.sessionFindOne.user);
     const admin = user?.admin;
-    const rows = admin?.standaloneTasks ?? [];
+    const rows = admin?.adminStandaloneTaskFindMany ?? [];
 
     // Deep-link focus: the chat assistant emits links like
     // `/workspace/todos?focus=<taskId>`. Same behavior as before —

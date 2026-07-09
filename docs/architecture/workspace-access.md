@@ -17,7 +17,7 @@ Add `isAdmin: boolean` to the `Users` table.
 
 - **Reads.** `User.admin: Admin` is nullable. The `User.admin` resolver returns the empty `Admin` shell only when the requesting session
   owns the parent user row AND that row has `isAdmin = true`; in every other case it returns `null`. Because the field is nullable a
-  non-admin caller gets `currentSession.user.admin = null` instead of an exception — every public page (landing, `/about`, `/cv`,
+  non-admin caller gets `sessionFindOne.user.admin = null` instead of an exception — every public page (landing, `/about`, `/cv`,
   `/projects`) composes this probe in its route loader and passes the boolean into `<Header showWorkspaceLink=… />`, so the "Workspace" icon
   button surfaces on every public surface Cem might arrive on. Workspace pages use the same field to render an inline "no access" surface
   when they encounter null.
@@ -86,7 +86,7 @@ mechanical migration: copy `userId` for every `isAdmin = true` row into the new 
 ### Anonymous sessions
 
 `GqlSSession.userId` is `string | null | undefined` — sessions don't always have an associated user, and most visitors never do. Anonymous
-sessions resolve `currentSession.user = null`, so `currentSession.user?.admin` short-circuits to `undefined` and never reaches the
+sessions resolve `sessionFindOne.user = null`, so `sessionFindOne.user?.admin` short-circuits to `undefined` and never reaches the
 `User.admin` resolver at all.
 
 ## Alternatives Considered

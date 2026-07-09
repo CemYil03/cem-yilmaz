@@ -3,7 +3,7 @@ import { chats } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChat, GqlSSession } from '../graphql/generated';
 import { toGqlChat } from '../mappers/toGqlChat';
-import { chatMessageRowsLoad } from './chatMessageRowsLoad';
+import { chatMessageFindMany } from './chatMessageFindMany';
 
 // Resolves a single visitor (`scope = 'public'`) chat by id and enforces
 // session ownership: the chat row's `sessionId` must equal the requester's
@@ -20,7 +20,7 @@ export async function visitorChatFindOne(chatId: string, requestingSession: GqlS
             throw new Error(`chat ${chatId} not found`);
         }
 
-        const rows = await chatMessageRowsLoad(serverRuntime.db, chatId);
+        const rows = await chatMessageFindMany(serverRuntime.db, chatId);
         return toGqlChat(chat, rows);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

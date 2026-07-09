@@ -58,14 +58,14 @@ fragment WorkspaceMedicalPageRecord on MedicalRecord {
 
 fragment WorkspaceMedicalPageUser on User {
     admin {
-        medical {
-            appointments {
+        adminMedicalFindOne {
+            adminMedicalAppointmentFindMany {
                 ...WorkspaceMedicalPageAppointment
             }
-            records {
+            adminMedicalRecordFindMany {
                 ...WorkspaceMedicalPageRecord
             }
-            overview {
+            adminMedicalCategoryOverviewFindMany {
                 category
                 defaultCadenceMonths
                 lastCompletedAt
@@ -83,7 +83,7 @@ fragment WorkspaceMedicalPageUser on User {
 }
 
 query WorkspaceMedicalPage {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceMedicalPageUser
         }

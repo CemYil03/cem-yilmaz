@@ -4,7 +4,7 @@
 # in `src/web/content/portfolioProjects.ts` until Phase 3 moves them to the DB.
 # See `docs/architecture/workspace-access.md` for the `User.admin` contract.
 query ProjectsPage {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             admin {

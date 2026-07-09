@@ -89,10 +89,10 @@ the route loader seeds initial state, and every server push **replaces** that st
 For any workspace page that displays admin-owned data:
 
 1. Define a `fragment <Page>User on User` in the page's `.graphql` file capturing the page's exact selection.
-2. The route's load query spreads that fragment under `currentSession.user`:
+2. The route's load query spreads that fragment under `sessionFindOne.user`:
    ```graphql
    query <Page>($projectId: ID!) {
-       currentSession { user { ...<Page>User } }
+       sessionFindOne { user { ...<Page>User } }
    }
    ```
 3. A sibling subscription on `userUpdates` spreads the same fragment — the payload type matches the seed type:
@@ -101,7 +101,7 @@ For any workspace page that displays admin-owned data:
        userUpdates { ...<Page>User }
    }
    ```
-4. The page seeds `useState<GqlC<Page>UserFragment>(loaderData.currentSession.user)` once on mount.
+4. The page seeds `useState<GqlC<Page>UserFragment>(loaderData.sessionFindOne.user)` once on mount.
 5. An imperative URQL subscription replaces that state on every push. Use `client.executeSubscription` + `pipe(subscribe(...))` from `wonka`
    — **never** `useSubscription`. URQL's declarative hook can deliver each event more than once under concurrent React (its reducer runs
    inside a state-updater callback that React may invoke multiple times); production-tested in `useChatLiveUpdates.tsx`.

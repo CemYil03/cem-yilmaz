@@ -18,8 +18,8 @@ them with category filters and dismiss, plus a "Re-synthesize now" button.
 below it. Clicking expands the captured lines; an "Open compass →" link deep-links to the page.
 
 **The firewall** — exactly one artifact crosses back into a prompt: `summary`. `prose` and `psychology` are read-only insight surfaces that
-the personal assistant never sees. The boundary is enforced by storage separation (only `compassSummaryGet` reads what the agent injects),
-not by hoping a prompt holds.
+the personal assistant never sees. The boundary is enforced by storage separation (only `compassSummaryFindOne` reads what the agent
+injects), not by hoping a prompt holds.
 
 ## Options considered
 
@@ -116,12 +116,12 @@ owner's compass" and derives a fresh id per registered user.
 ```text
 src/server/agents/
   compassConfig.ts                    COMPASS_SINGLETON_ID, COMPASS_SYNTHESIS_THRESHOLD
-  agentPersonalAssistant.ts           reads compassSummaryGet, prepends to instructions
+  agentPersonalAssistant.ts           reads compassSummaryFindOne, prepends to instructions
 
 src/server/queries/
-  compassGet.ts                       seed-or-load the singleton row
-  compassSummaryGet.ts                FIREWALL ANCHOR — the only path that exposes compass data into a prompt
-  compassObservationList.ts           list + per-message lookup
+  adminCompassFindOne.ts                      seed-or-load the singleton row
+  compassSummaryFindOne.ts                FIREWALL ANCHOR — the only path that exposes compass data into a prompt
+  adminCompassObservationFindMany.ts           list + per-message lookup
 
 src/server/commands/
   compassObservationCreate.ts         called only by the analyzer job
@@ -141,7 +141,7 @@ src/server/jobs/handlers/
 
 - `chatMessageCreate` (admin path) enqueues `compassAnalyze` after the assistant turn fires. Fire-and-forget — enqueue failures are logged
   but never block the chat.
-- `chatMessageRowsLoad` bulk-loads active observations for every user-message id in a chat, mirroring how `userAttachments` is loaded.
+- `chatMessageFindMany` bulk-loads active observations for every user-message id in a chat, mirroring how `userAttachments` is loaded.
   Visitor messages get an empty list (the analyzer never runs there).
 - `ChatMessageUser` GraphQL type carries `compassObservations: [CompassObservation!]!`. The `ChatPage.graphql` and
   `WorkspaceAssistantPage.graphql` fragments both select it; the inline pill component renders from it.
@@ -173,7 +173,7 @@ Failures are logged and swallowed — the chat path has already returned.
 ### Synthesis liveness
 
 The "Re-synthesize now" button on `/workspace/compass` reflects whether the job is actually running, not a hand-tuned timeout.
-`AdminCompass.synthesisInProgress` is a derived boolean resolved by `compassSynthesisInProgressGet`, which asks pg-boss (via
+`AdminCompass.synthesisInProgress` is a derived boolean resolved by `adminCompassSynthesisInProgressFindOne`, which asks pg-boss (via
 `serverRuntime.jobs.activeCount(compassSynthesize)`) whether a job for the `compass-synthesize` queue is currently in `created` | `retry` |
 `active`. Nothing on the `Compass` row tracks this — pg-boss is the single source of truth and auto-expires stuck `active` rows after each
 job's `expireInSeconds`, so a worker crash cannot leave the spinner stuck on. While the flag is `true`, the page polls the route loader
@@ -181,11 +181,11 @@ every ~1.5s and stops the moment pg-boss reports the queue is clear.
 
 ### Firewall
 
-The boundary is one query: `compassSummaryGet` in `src/server/queries/compassSummaryGet.ts`. It selects only `Compass.summary`. The agent
-factory calls it; nothing else does. `prose` and `psychology` are reachable only through `Admin.compass` on the read namespace, which is
-reached via `currentSession.user.admin` (non-null only for admin sessions) and never read by any agent.
+The boundary is one query: `compassSummaryFindOne` in `src/server/queries/compassSummaryFindOne.ts`. It selects only `Compass.summary`. The
+agent factory calls it; nothing else does. `prose` and `psychology` are reachable only through `Admin.adminCompassFindOne` on the read
+namespace, which is reached via `sessionFindOne.user.admin` (non-null only for admin sessions) and never read by any agent.
 
-If you ever feel the urge to widen `compassSummaryGet`, don't. Add a new query.
+If you ever feel the urge to widen `compassSummaryFindOne`, don't. Add a new query.
 
 ## Page surface
 
@@ -261,14 +261,14 @@ Beneath all three states sits a quiet "Past interviews" rail with status, due-da
 
 #### Firewall stance (the deliberate exception)
 
-The personal assistant still reads only `Compass.summary` (via `compassSummaryGet`). The interview agent — and **only** the interview agent
-— sees `summary` + `psychology` + recent non-dismissed observations, because its whole job is to probe gaps in the existing picture without
-repeating itself. Without `psychology` and recent observations it would ask redundant questions every cadence.
+The personal assistant still reads only `Compass.summary` (via `compassSummaryFindOne`). The interview agent — and **only** the interview
+agent — sees `summary` + `psychology` + recent non-dismissed observations, because its whole job is to probe gaps in the existing picture
+without repeating itself. Without `psychology` and recent observations it would ask redundant questions every cadence.
 
 The widening is anchored in exactly one query:
 
 ```text
-src/server/queries/compassInterviewContextGet.ts   ← FIREWALL EXCEPTION ANCHOR
+src/server/queries/compassInterviewContextFindOne.ts   ← FIREWALL EXCEPTION ANCHOR
                                                      called only by agentCompassInterviewer
 ```
 
@@ -311,13 +311,13 @@ Code:
 src/server/agents/
   compassInterviewConfig.ts          cron expression, min/max question counts, recent-obs cap
   agentCompassInterviewer.ts         the interview agent — one turn per call, single tool
-                                     `concludeInterview`. Reads compassInterviewContextGet.
+                                     `concludeInterview`. Reads compassInterviewContextFindOne.
 
 src/server/queries/
-  compassInterviewGet.ts             load one interview + its messages
-  compassInterviewList.ts            newest-first list for the past-interviews rail
-  compassInterviewActiveDueGet.ts    the single open interview (pending or in_progress)
-  compassInterviewContextGet.ts      FIREWALL EXCEPTION ANCHOR
+  adminCompassInterviewFindOne.ts             load one interview + its messages
+  adminCompassInterviewFindMany.ts            newest-first list for the past-interviews rail
+  adminCompassInterviewPendingFindOne.ts    the single open interview (pending or in_progress)
+  compassInterviewContextFindOne.ts      FIREWALL EXCEPTION ANCHOR
 
 src/server/commands/
   compassInterviewStart.ts           pending → in_progress; runs the agent's opening turn

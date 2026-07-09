@@ -2,11 +2,11 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 import { sessions } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMutationResult, GqlSSession, GqlSUserMutationTerminateSessionsArgs } from '../graphql/generated';
+import type { GqlSMutationResult, GqlSSession, GqlSUserMutationUserSessionTerminateManyArgs } from '../graphql/generated';
 
 export async function userSessionTerminateMany(
     userId: string,
-    { sessionIds }: GqlSUserMutationTerminateSessionsArgs,
+    { sessionIds }: GqlSUserMutationUserSessionTerminateManyArgs,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSMutationResult> {

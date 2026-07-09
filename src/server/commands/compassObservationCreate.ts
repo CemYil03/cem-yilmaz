@@ -2,7 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import { compass, compassInterviewMessages, compassInterviews, compassObservations } from '../db/schema';
 import type { CompassObservationCategory, CompassObservationCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { compassGet } from '../queries/compassGet';
+import { adminCompassFindOne } from '../queries/adminCompassFindOne';
 
 // Exactly one of `sourceChatMessageId` / `sourceInterviewMessageId` is set.
 // The analyzer branches on which kind of message it was enqueued for and
@@ -42,7 +42,7 @@ export async function compassObservationCreate(input: CompassObservationCreateIn
     await serverRuntime.db.transaction(async (transaction) => {
         // Make sure the compass row exists before we increment it — first
         // run on a fresh DB needs the seed insert.
-        const compassRow = await compassGet(transaction);
+        const compassRow = await adminCompassFindOne(transaction);
         await transaction.insert(compassObservations).values(insert);
         await transaction
             .update(compass)

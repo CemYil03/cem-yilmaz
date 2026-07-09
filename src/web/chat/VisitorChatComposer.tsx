@@ -78,7 +78,7 @@ export function VisitorChatComposer({
     // empty-state's previous-chats list runs a separate query; we don't
     // share one here because the loaded view doesn't need the chats list.
     const [{ data }] = useQuery({ query: VisitorChatQuotaDocument, requestPolicy: 'cache-and-network' });
-    const quota = data?.currentSession.visitorChatQuota ?? null;
+    const quota = data?.sessionFindOne.visitorChatQuotaFindOne ?? null;
     const isAtLimit = quota ? quota.used >= quota.limit : false;
 
     return (

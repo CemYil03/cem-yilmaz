@@ -43,13 +43,13 @@ const visitorChatsSearchSchema = z.object({
     chatId: z.string().optional(),
 });
 
-type VisitorChatsAdmin = NonNullable<NonNullable<GqlCWorkspaceVisitorChatsQuery['currentSession']['user']>['admin']>;
-type VisitorChatAdmin = NonNullable<NonNullable<GqlCWorkspaceVisitorChatQuery['currentSession']['user']>['admin']>;
+type VisitorChatsAdmin = NonNullable<NonNullable<GqlCWorkspaceVisitorChatsQuery['sessionFindOne']['user']>['admin']>;
+type VisitorChatAdmin = NonNullable<NonNullable<GqlCWorkspaceVisitorChatQuery['sessionFindOne']['user']>['admin']>;
 
 type LoaderData =
     | { kind: 'unauthorized' }
-    | { kind: 'list'; chats: VisitorChatsAdmin['publicChats'] }
-    | { kind: 'detail'; chat: VisitorChatAdmin['publicChat'] | null };
+    | { kind: 'list'; chats: VisitorChatsAdmin['adminPublicChatFindMany'] }
+    | { kind: 'detail'; chat: VisitorChatAdmin['adminPublicChatFindOne'] | null };
 
 export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     validateSearch: visitorChatsSearchSchema,
@@ -57,14 +57,14 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     loader: async ({ deps }): Promise<LoaderData> => {
         if (deps.chatId) {
             const data = await routeLoaderGraphqlClient(WorkspaceVisitorChatDocument, { chatId: deps.chatId })();
-            const admin = data.currentSession.user?.admin;
+            const admin = data.sessionFindOne.user?.admin;
             if (!admin) return { kind: 'unauthorized' };
-            return { kind: 'detail', chat: admin.publicChat };
+            return { kind: 'detail', chat: admin.adminPublicChatFindOne };
         }
         const data = await routeLoaderGraphqlClient(WorkspaceVisitorChatsDocument)();
-        const admin = data.currentSession.user?.admin;
+        const admin = data.sessionFindOne.user?.admin;
         if (!admin) return { kind: 'unauthorized' };
-        return { kind: 'list', chats: admin.publicChats };
+        return { kind: 'list', chats: admin.adminPublicChatFindMany };
     },
     staleTime: 0,
     head: ({ params }) => {
@@ -94,7 +94,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/visitor-chats')({
     },
 });
 
-function VisitorChatsList({ chats, locale }: { chats: VisitorChatsAdmin['publicChats']; locale: Locale }) {
+function VisitorChatsList({ chats, locale }: { chats: VisitorChatsAdmin['adminPublicChatFindMany']; locale: Locale }) {
     return (
         <section className="py-10">
             <p className="max-w-2xl text-base text-muted-foreground">{description[locale]}</p>
@@ -133,7 +133,7 @@ function VisitorChatsList({ chats, locale }: { chats: VisitorChatsAdmin['publicC
     );
 }
 
-function VisitorChatDetail({ chat, locale }: { chat: VisitorChatAdmin['publicChat'] | null; locale: Locale }) {
+function VisitorChatDetail({ chat, locale }: { chat: VisitorChatAdmin['adminPublicChatFindOne'] | null; locale: Locale }) {
     return (
         <section className="py-10">
             <Link
@@ -164,7 +164,7 @@ function VisitorChatDetail({ chat, locale }: { chat: VisitorChatAdmin['publicCha
 // so collection forms and approval requests render as static records. There
 // are no `appendedMessages` or `streamingTexts` — this view is a snapshot of
 // what's already persisted.
-function ReadOnlyTranscript({ chat }: { chat: NonNullable<VisitorChatAdmin['publicChat']> }) {
+function ReadOnlyTranscript({ chat }: { chat: NonNullable<VisitorChatAdmin['adminPublicChatFindOne']> }) {
     const allMessages = mergeTranscriptMessages(chat.messages, [] as ReadonlyArray<TranscriptMessage>);
     const groupedMessages = groupMessagesByDate(allMessages);
     return (

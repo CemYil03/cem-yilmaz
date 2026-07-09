@@ -11,7 +11,7 @@
 
 fragment WorkspaceProjectsPageUser on User {
     admin {
-        projectRequests {
+        adminProjectRequestFindMany {
             projectRequestId
             chatId
             name
@@ -30,7 +30,7 @@ fragment WorkspaceProjectsPageUser on User {
                 status
             }
         }
-        projects {
+        adminProjectFindMany {
             projectId
             title
             description
@@ -74,7 +74,7 @@ fragment WorkspaceProjectsPageUser on User {
                 createdAt
             }
         }
-        activeTimer {
+        adminProjectActiveTimerFindOne {
             activityId
             projectId
             taskId
@@ -89,7 +89,7 @@ fragment WorkspaceProjectsPageUser on User {
 }
 
 query WorkspaceProjectsPage {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceProjectsPageUser
         }

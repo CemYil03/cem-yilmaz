@@ -1,7 +1,7 @@
 import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { AgentChatOptions } from './agentVisitorAboutCem';
-import { adminChatConfigGet } from '../queries/adminChatConfigGet';
-import { compassSummaryGet } from '../queries/compassSummaryGet';
+import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
+import { compassSummaryFindOne } from '../queries/compassSummaryFindOne';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { toolDelegateToMedia } from './toolDelegateToMedia';
@@ -120,7 +120,7 @@ export async function agentPersonalAssistant({
     preWrittenToolCallIds,
     onStepEnd,
 }: AgentChatOptions) {
-    const compassSummary = await compassSummaryGet(serverRuntime);
+    const compassSummary = await compassSummaryFindOne(serverRuntime);
     // Per-turn model: the admin composer surfaces a dropdown bound to the
     // catalog (`adminChatModels.ts`); each chat send carries the picked
     // `modelId` on `assistantOptions`. When omitted (a non-composer code path,
@@ -147,7 +147,7 @@ export async function agentPersonalAssistant({
                 session,
             );
         }
-        const persisted = (await adminChatConfigGet(serverRuntime.db)).defaultModelId;
+        const persisted = (await adminChatConfigFindOne(serverRuntime.db)).defaultModelId;
         resolvedModelId = isAdminChatModelId(persisted) ? persisted : ADMIN_CHAT_MODEL_FALLBACK_ID;
     }
     return new ToolLoopAgent({

@@ -10,8 +10,8 @@ export function toGqlSession(session: Session): GqlSSession {
         // The mapper still has to satisfy the generated type, so the placeholder
         // values mirror the corresponding resolvers' return shapes.
         user: null,
-        visitorChats: [],
-        visitorChat: {} as never,
-        visitorChatQuota: { used: 0, limit: 0, resetsAt: null },
+        visitorChatFindMany: [],
+        visitorChatFindOne: {} as never,
+        visitorChatQuotaFindOne: { used: 0, limit: 0, resetsAt: null },
     };
 }

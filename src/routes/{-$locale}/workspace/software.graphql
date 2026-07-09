@@ -4,11 +4,11 @@
 # `MediaChannels` is the single source of truth (`docs/features/workspace-media.md`).
 
 query WorkspaceSoftwarePage {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                media {
-                    channelsByTopic(topic: "tech") {
+                adminMediaFindOne {
+                    adminMediaChannelFindMany(topic: "tech") {
                         channelId
                         name
                         platform

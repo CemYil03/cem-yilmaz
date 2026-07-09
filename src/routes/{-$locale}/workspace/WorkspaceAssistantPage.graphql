@@ -174,30 +174,30 @@ fragment WorkspaceChatListItem on Chat {
 # Paged + searchable admin-chat browser feed for the sidebar. All three
 # variables are optional at the schema level; the client always passes
 # `limit` + `offset`, and `query` when the search field is non-empty.
-# `chatsCount` (same optional `query`) drives the "Show more" gate on the
-# client side — subtract `offset + items.length` to know if more rows
+# `adminChatCount` (same optional `query`) drives the "Show more" gate on
+# the client side — subtract `offset + items.length` to know if more rows
 # exist for the same filter.
 query WorkspaceAssistantChatsPage($limit: Int!, $offset: Int!, $query: String) {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                chats(limit: $limit, offset: $offset, query: $query) {
+                adminChatFindMany(limit: $limit, offset: $offset, query: $query) {
                     ...WorkspaceChatListItem
                 }
-                chatsCount(query: $query)
+                adminChatCount(query: $query)
             }
         }
     }
 }
 
 query WorkspaceChatPage($chatId: ID!) {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             userId
             name
             admin {
-                chat(chatId: $chatId) {
+                adminChatFindOne(chatId: $chatId) {
                     chatId
                     title
                     lastModifiedAt
@@ -283,10 +283,10 @@ mutation WorkspaceChatToolApprovalRespond(
 # what the dropdown initializes to. Fetched alongside the chat list on every
 # `/workspace/assistant` route load. See `docs/features/admin-chat-config.md`.
 query WorkspaceChatConfig {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                chatConfig {
+                adminChatConfigFindOne {
                     availableModels {
                         modelId
                         label

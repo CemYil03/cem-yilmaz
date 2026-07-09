@@ -21,61 +21,61 @@ export type Scalars = {
 
 export interface GqlCAdmin {
     __typename?: 'Admin';
-    activeTimer?: Maybe<GqlCProjectActivity>;
-    chat: GqlCChat;
-    chatConfig: GqlCAdminChatConfig;
-    chats: Array<GqlCChat>;
-    chatsCount: Scalars['Int']['output'];
-    compass: GqlCAdminCompass;
-    cv: GqlCCvQuery;
-    inventory: GqlCAdminInventoryQuery;
-    logs: Array<GqlCLog>;
-    media: GqlCAdminMediaQuery;
-    medical: GqlCAdminMedicalQuery;
-    project: GqlCProject;
-    projectRequests: Array<GqlCProjectRequest>;
-    projectRequestsInboxCount: Scalars['Int']['output'];
-    projects: Array<GqlCProject>;
-    publicChat: GqlCChat;
-    publicChats: Array<GqlCChat>;
-    standaloneOpenTaskCount: Scalars['Int']['output'];
-    standaloneTasks: Array<GqlCTask>;
-    travel: GqlCAdminTravelQuery;
+    adminChatConfigFindOne: GqlCAdminChatConfig;
+    adminChatCount: Scalars['Int']['output'];
+    adminChatFindMany: Array<GqlCChat>;
+    adminChatFindOne: GqlCChat;
+    adminCompassFindOne: GqlCAdminCompass;
+    adminCvFindOne: GqlCCvQuery;
+    adminInventoryFindOne: GqlCAdminInventoryQuery;
+    adminLogFindMany: Array<GqlCLog>;
+    adminMediaFindOne: GqlCAdminMediaQuery;
+    adminMedicalFindOne: GqlCAdminMedicalQuery;
+    adminProjectActiveTimerFindOne?: Maybe<GqlCProjectActivity>;
+    adminProjectFindMany: Array<GqlCProject>;
+    adminProjectFindOne: GqlCProject;
+    adminProjectRequestFindMany: Array<GqlCProjectRequest>;
+    adminProjectRequestInboxCount: Scalars['Int']['output'];
+    adminPublicChatFindMany: Array<GqlCChat>;
+    adminPublicChatFindOne: GqlCChat;
+    adminStandaloneTaskFindMany: Array<GqlCTask>;
+    adminStandaloneTaskOpenCount: Scalars['Int']['output'];
+    adminTravelFindOne: GqlCAdminTravelQuery;
 }
 
-export type GqlCAdminChatArgs = {
-    chatId: Scalars['ID']['input'];
+export type GqlCAdminAdminChatCountArgs = {
+    query?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCAdminChatsArgs = {
+export type GqlCAdminAdminChatFindManyArgs = {
     limit?: InputMaybe<Scalars['Int']['input']>;
     offset?: InputMaybe<Scalars['Int']['input']>;
     query?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCAdminChatsCountArgs = {
-    query?: InputMaybe<Scalars['String']['input']>;
+export type GqlCAdminAdminChatFindOneArgs = {
+    chatId: Scalars['ID']['input'];
 };
 
-export type GqlCAdminLogsArgs = {
+export type GqlCAdminAdminLogFindManyArgs = {
     level?: InputMaybe<GqlCLogLevel>;
     limit?: InputMaybe<Scalars['Int']['input']>;
     search?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCAdminProjectArgs = {
-    projectId: Scalars['ID']['input'];
-};
-
-export type GqlCAdminProjectRequestsArgs = {
-    status?: InputMaybe<GqlCProjectRequestStatus>;
-};
-
-export type GqlCAdminProjectsArgs = {
+export type GqlCAdminAdminProjectFindManyArgs = {
     status?: InputMaybe<GqlCProjectStatus>;
 };
 
-export type GqlCAdminPublicChatArgs = {
+export type GqlCAdminAdminProjectFindOneArgs = {
+    projectId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminAdminProjectRequestFindManyArgs = {
+    status?: InputMaybe<GqlCProjectRequestStatus>;
+};
+
+export type GqlCAdminAdminPublicChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
 };
 
@@ -94,10 +94,10 @@ export interface GqlCAdminChatModel {
 
 export interface GqlCAdminCompass {
     __typename?: 'AdminCompass';
-    interview?: Maybe<GqlCCompassInterview>;
-    interviewPending?: Maybe<GqlCCompassInterview>;
-    interviews: Array<GqlCCompassInterview>;
-    observations: Array<GqlCCompassObservation>;
+    adminCompassInterviewFindMany: Array<GqlCCompassInterview>;
+    adminCompassInterviewFindOne?: Maybe<GqlCCompassInterview>;
+    adminCompassInterviewPendingFindOne?: Maybe<GqlCCompassInterview>;
+    adminCompassObservationFindMany: Array<GqlCCompassObservation>;
     observationsSinceSynthesis: Scalars['Int']['output'];
     prose: Scalars['String']['output'];
     psychology: Scalars['String']['output'];
@@ -110,61 +110,60 @@ export interface GqlCAdminCompass {
     synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
 }
 
-export type GqlCAdminCompassInterviewArgs = {
+export type GqlCAdminCompassAdminCompassInterviewFindOneArgs = {
     interviewId: Scalars['ID']['input'];
 };
 
-export type GqlCAdminCompassObservationsArgs = {
+export type GqlCAdminCompassAdminCompassObservationFindManyArgs = {
     category?: InputMaybe<GqlCCompassObservationCategory>;
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export interface GqlCAdminInventoryQuery {
     __typename?: 'AdminInventoryQuery';
-    item?: Maybe<GqlCItem>;
-    items: Array<GqlCItem>;
-    materialNetWorthCents: Scalars['Int']['output'];
-    upcomingWarrantyExpirations: Array<GqlCItem>;
+    adminInventoryItemFindMany: Array<GqlCItem>;
+    adminInventoryItemFindOne?: Maybe<GqlCItem>;
+    adminInventoryItemUpcomingWarrantyFindMany: Array<GqlCItem>;
+    adminInventoryMaterialNetWorthCentsFindOne: Scalars['Int']['output'];
 }
 
-export type GqlCAdminInventoryQueryItemArgs = {
-    itemId: Scalars['ID']['input'];
-};
-
-export type GqlCAdminInventoryQueryItemsArgs = {
+export type GqlCAdminInventoryQueryAdminInventoryItemFindManyArgs = {
     includeDisposed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export type GqlCAdminInventoryQueryUpcomingWarrantyExpirationsArgs = {
+export type GqlCAdminInventoryQueryAdminInventoryItemFindOneArgs = {
+    itemId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs = {
     withinDays?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export interface GqlCAdminMediaQuery {
     __typename?: 'AdminMediaQuery';
-    channels: Array<GqlCMediaChannel>;
-    channelsByTopic: Array<GqlCMediaChannel>;
-    movies: Array<GqlCMovie>;
-    tmdbSearch: Array<GqlCTmdbMovieResult>;
-    youtubeSearch: Array<GqlCYoutubeChannelResult>;
+    adminMediaChannelFindMany: Array<GqlCMediaChannel>;
+    adminMediaMovieFindMany: Array<GqlCMovie>;
+    adminMediaTmdbFindMany: Array<GqlCTmdbMovieResult>;
+    adminMediaYoutubeFindMany: Array<GqlCYoutubeChannelResult>;
 }
 
-export type GqlCAdminMediaQueryChannelsByTopicArgs = {
-    topic: Scalars['String']['input'];
+export type GqlCAdminMediaQueryAdminMediaChannelFindManyArgs = {
+    topic?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCAdminMediaQueryTmdbSearchArgs = {
+export type GqlCAdminMediaQueryAdminMediaTmdbFindManyArgs = {
     query: Scalars['String']['input'];
 };
 
-export type GqlCAdminMediaQueryYoutubeSearchArgs = {
+export type GqlCAdminMediaQueryAdminMediaYoutubeFindManyArgs = {
     query: Scalars['String']['input'];
 };
 
 export interface GqlCAdminMedicalQuery {
     __typename?: 'AdminMedicalQuery';
-    appointments: Array<GqlCMedicalAppointment>;
-    overview: Array<GqlCMedicalCategoryOverview>;
-    records: Array<GqlCMedicalRecord>;
+    adminMedicalAppointmentFindMany: Array<GqlCMedicalAppointment>;
+    adminMedicalCategoryOverviewFindMany: Array<GqlCMedicalCategoryOverview>;
+    adminMedicalRecordFindMany: Array<GqlCMedicalRecord>;
 }
 
 export interface GqlCAdminMutation {
@@ -548,11 +547,11 @@ export type GqlCAdminMutationTripsUpsertArgs = {
 
 export interface GqlCAdminTravelQuery {
     __typename?: 'AdminTravelQuery';
-    trip?: Maybe<GqlCTrip>;
-    trips: Array<GqlCTrip>;
+    adminTravelTripFindMany: Array<GqlCTrip>;
+    adminTravelTripFindOne?: Maybe<GqlCTrip>;
 }
 
-export type GqlCAdminTravelQueryTripArgs = {
+export type GqlCAdminTravelQueryAdminTravelTripFindOneArgs = {
     tripId: Scalars['ID']['input'];
 };
 
@@ -957,10 +956,10 @@ export type GqlCCvHobbyInput = {
 
 export interface GqlCCvQuery {
     __typename?: 'CvQuery';
-    education: Array<GqlCCvEducation>;
-    experience: Array<GqlCCvExperience>;
-    hobbies: Array<GqlCCvHobby>;
-    skills: Array<GqlCCvSkill>;
+    publicCvEducationFindMany: Array<GqlCCvEducation>;
+    publicCvExperienceFindMany: Array<GqlCCvExperience>;
+    publicCvHobbyFindMany: Array<GqlCCvHobby>;
+    publicCvSkillFindMany: Array<GqlCCvSkill>;
 }
 
 export interface GqlCCvSkill {
@@ -1488,20 +1487,20 @@ export type GqlCProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'pause
 
 export interface GqlCQuery {
     __typename?: 'Query';
-    currentSession: GqlCSession;
-    cv: GqlCCvQuery;
+    publicCvFindOne: GqlCCvQuery;
+    sessionFindOne: GqlCSession;
 }
 
 export interface GqlCSession {
     __typename?: 'Session';
     sessionId: Scalars['ID']['output'];
     user?: Maybe<GqlCUser>;
-    visitorChat: GqlCChat;
-    visitorChatQuota: GqlCVisitorChatQuota;
-    visitorChats: Array<GqlCChat>;
+    visitorChatFindMany: Array<GqlCChat>;
+    visitorChatFindOne: GqlCChat;
+    visitorChatQuotaFindOne: GqlCVisitorChatQuota;
 }
 
-export type GqlCSessionVisitorChatArgs = {
+export type GqlCSessionVisitorChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
 };
 
@@ -1684,11 +1683,11 @@ export type GqlCUserCreate = {
 
 export interface GqlCUserMutation {
     __typename?: 'UserMutation';
-    terminateSessions: GqlCMutationResult;
+    userSessionTerminateMany: GqlCMutationResult;
     userUpdate: GqlCMutationResult;
 }
 
-export type GqlCUserMutationTerminateSessionsArgs = {
+export type GqlCUserMutationUserSessionTerminateManyArgs = {
     sessionIds: Array<Scalars['ID']['input']>;
 };
 
@@ -1721,9 +1720,9 @@ export interface GqlCYoutubeChannelResult {
 export type GqlCCvPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCCvPageQuery = {
-    currentSession: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null };
-    cv: {
-        experience: Array<{
+    sessionFindOne: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null };
+    publicCvFindOne: {
+        publicCvExperienceFindMany: Array<{
             cvExperienceId: string;
             roleDe: string;
             roleEn: string;
@@ -1735,7 +1734,7 @@ export type GqlCCvPageQuery = {
             technologies: Array<string>;
             managerName: string | null;
         }>;
-        education: Array<{
+        publicCvEducationFindMany: Array<{
             cvEducationId: string;
             degreeDe: string;
             degreeEn: string;
@@ -1754,22 +1753,22 @@ export type GqlCCvPageQuery = {
 export type GqlCAboutPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCAboutPageQuery = {
-    currentSession: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null };
-    cv: {
-        skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
-        hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+    sessionFindOne: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null };
+    publicCvFindOne: {
+        publicCvSkillFindMany: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+        publicCvHobbyFindMany: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
     };
 };
 
 export type GqlCHomePageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCHomePageQuery = {
-    currentSession: { sessionId: string; user: { name: string; admin: { __typename: 'Admin' } | null } | null };
+    sessionFindOne: { sessionId: string; user: { name: string; admin: { __typename: 'Admin' } | null } | null };
 };
 
 export type GqlCProjectsPageQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GqlCProjectsPageQuery = { currentSession: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null } };
+export type GqlCProjectsPageQuery = { sessionFindOne: { sessionId: string; user: { admin: { __typename: 'Admin' } | null } | null } };
 
 export type GqlCWorkspaceLogsQueryVariables = Exact<{
     level?: Schema.GqlCLogLevel | null | undefined;
@@ -1778,10 +1777,10 @@ export type GqlCWorkspaceLogsQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceLogsQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                logs: Array<{
+                adminLogFindMany: Array<{
                     logId: string;
                     level: Schema.GqlCLogLevel;
                     message: string;
@@ -1797,9 +1796,9 @@ export type GqlCWorkspaceLogsQuery = {
 export type GqlCWorkspaceVisitorChatsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceVisitorChatsQuery = {
-    currentSession: {
+    sessionFindOne: {
         sessionId: string;
-        user: { admin: { publicChats: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null } | null;
+        user: { admin: { adminPublicChatFindMany: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null } | null;
     };
 };
 
@@ -1808,11 +1807,11 @@ export type GqlCWorkspaceVisitorChatQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceVisitorChatQuery = {
-    currentSession: {
+    sessionFindOne: {
         sessionId: string;
         user: {
             admin: {
-                publicChat: {
+                adminPublicChatFindOne: {
                     chatId: string;
                     title: string;
                     lastModifiedAt: string;
@@ -2073,8 +2072,10 @@ export type GqlCWorkspaceAssistantChatsPageQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceAssistantChatsPageQuery = {
-    currentSession: {
-        user: { admin: { chatsCount: number; chats: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null } | null;
+    sessionFindOne: {
+        user: {
+            admin: { adminChatCount: number; adminChatFindMany: Array<{ chatId: string; title: string; lastModifiedAt: string }> } | null;
+        } | null;
     };
 };
 
@@ -2083,13 +2084,13 @@ export type GqlCWorkspaceChatPageQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceChatPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         sessionId: string;
         user: {
             userId: string;
             name: string;
             admin: {
-                chat: {
+                adminChatFindOne: {
                     chatId: string;
                     title: string;
                     lastModifiedAt: string;
@@ -2251,10 +2252,10 @@ export type GqlCWorkspaceChatToolApprovalRespondMutation = {
 export type GqlCWorkspaceChatConfigQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceChatConfigQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                chatConfig: {
+                adminChatConfigFindOne: {
                     defaultModelId: string;
                     availableModels: Array<{ modelId: string; label: string; supportedMediaTypes: Array<string> }>;
                 };
@@ -2319,7 +2320,7 @@ export type GqlCWorkspaceCompassInterviewWithMessagesFragment = {
 
 export type GqlCWorkspaceCompassPageUserFragment = {
     admin: {
-        compass: {
+        adminCompassFindOne: {
             summary: string;
             prose: string;
             psychology: string;
@@ -2330,7 +2331,7 @@ export type GqlCWorkspaceCompassPageUserFragment = {
             scheduledInterviewTopic: Schema.GqlCCompassInterviewTopic | null;
             scheduledInterviewAt: string | null;
             scheduledInterviewReason: string | null;
-            observations: Array<{
+            adminCompassObservationFindMany: Array<{
                 observationId: string;
                 category: Schema.GqlCCompassObservationCategory;
                 content: string;
@@ -2343,7 +2344,7 @@ export type GqlCWorkspaceCompassPageUserFragment = {
                 dismissedAt: string | null;
                 createdAt: string;
             }>;
-            interviewPending: {
+            adminCompassInterviewPendingFindOne: {
                 interviewId: string;
                 status: Schema.GqlCCompassInterviewStatus;
                 dueAt: string;
@@ -2360,7 +2361,7 @@ export type GqlCWorkspaceCompassPageUserFragment = {
                     createdAt: string;
                 }>;
             } | null;
-            interviews: Array<{
+            adminCompassInterviewFindMany: Array<{
                 interviewId: string;
                 status: Schema.GqlCCompassInterviewStatus;
                 dueAt: string;
@@ -2381,10 +2382,10 @@ export type GqlCWorkspaceCompassPageQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceCompassPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                compass: {
+                adminCompassFindOne: {
                     summary: string;
                     prose: string;
                     psychology: string;
@@ -2395,7 +2396,7 @@ export type GqlCWorkspaceCompassPageQuery = {
                     scheduledInterviewTopic: Schema.GqlCCompassInterviewTopic | null;
                     scheduledInterviewAt: string | null;
                     scheduledInterviewReason: string | null;
-                    observations: Array<{
+                    adminCompassObservationFindMany: Array<{
                         observationId: string;
                         category: Schema.GqlCCompassObservationCategory;
                         content: string;
@@ -2408,7 +2409,7 @@ export type GqlCWorkspaceCompassPageQuery = {
                         dismissedAt: string | null;
                         createdAt: string;
                     }>;
-                    interviewPending: {
+                    adminCompassInterviewPendingFindOne: {
                         interviewId: string;
                         status: Schema.GqlCCompassInterviewStatus;
                         dueAt: string;
@@ -2425,7 +2426,7 @@ export type GqlCWorkspaceCompassPageQuery = {
                             createdAt: string;
                         }>;
                     } | null;
-                    interviews: Array<{
+                    adminCompassInterviewFindMany: Array<{
                         interviewId: string;
                         status: Schema.GqlCCompassInterviewStatus;
                         dueAt: string;
@@ -2450,7 +2451,7 @@ export type GqlCWorkspaceCompassPageUpdatesSubscriptionVariables = Exact<{
 export type GqlCWorkspaceCompassPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            compass: {
+            adminCompassFindOne: {
                 summary: string;
                 prose: string;
                 psychology: string;
@@ -2461,7 +2462,7 @@ export type GqlCWorkspaceCompassPageUpdatesSubscription = {
                 scheduledInterviewTopic: Schema.GqlCCompassInterviewTopic | null;
                 scheduledInterviewAt: string | null;
                 scheduledInterviewReason: string | null;
-                observations: Array<{
+                adminCompassObservationFindMany: Array<{
                     observationId: string;
                     category: Schema.GqlCCompassObservationCategory;
                     content: string;
@@ -2474,7 +2475,7 @@ export type GqlCWorkspaceCompassPageUpdatesSubscription = {
                     dismissedAt: string | null;
                     createdAt: string;
                 }>;
-                interviewPending: {
+                adminCompassInterviewPendingFindOne: {
                     interviewId: string;
                     status: Schema.GqlCCompassInterviewStatus;
                     dueAt: string;
@@ -2491,7 +2492,7 @@ export type GqlCWorkspaceCompassPageUpdatesSubscription = {
                         createdAt: string;
                     }>;
                 } | null;
-                interviews: Array<{
+                adminCompassInterviewFindMany: Array<{
                     interviewId: string;
                     status: Schema.GqlCCompassInterviewStatus;
                     dueAt: string;
@@ -2512,11 +2513,11 @@ export type GqlCWorkspaceCompassInterviewQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceCompassInterviewQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                compass: {
-                    interview: {
+                adminCompassFindOne: {
+                    adminCompassInterviewFindOne: {
                         interviewId: string;
                         status: Schema.GqlCCompassInterviewStatus;
                         dueAt: string;
@@ -2610,8 +2611,8 @@ export type GqlCWorkspaceCompassInterviewUpdatesSubscription = {
 
 export type GqlCWorkspaceCvPageUserFragment = {
     admin: {
-        cv: {
-            experience: Array<{
+        adminCvFindOne: {
+            publicCvExperienceFindMany: Array<{
                 cvExperienceId: string;
                 roleDe: string;
                 roleEn: string;
@@ -2623,7 +2624,7 @@ export type GqlCWorkspaceCvPageUserFragment = {
                 technologies: Array<string>;
                 managerName: string | null;
             }>;
-            education: Array<{
+            publicCvEducationFindMany: Array<{
                 cvEducationId: string;
                 degreeDe: string;
                 degreeEn: string;
@@ -2636,8 +2637,8 @@ export type GqlCWorkspaceCvPageUserFragment = {
                 notesEn: string;
                 position: number;
             }>;
-            skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
-            hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+            publicCvSkillFindMany: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+            publicCvHobbyFindMany: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
         };
     } | null;
 };
@@ -2645,11 +2646,11 @@ export type GqlCWorkspaceCvPageUserFragment = {
 export type GqlCWorkspaceCvPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceCvPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                cv: {
-                    experience: Array<{
+                adminCvFindOne: {
+                    publicCvExperienceFindMany: Array<{
                         cvExperienceId: string;
                         roleDe: string;
                         roleEn: string;
@@ -2661,7 +2662,7 @@ export type GqlCWorkspaceCvPageQuery = {
                         technologies: Array<string>;
                         managerName: string | null;
                     }>;
-                    education: Array<{
+                    publicCvEducationFindMany: Array<{
                         cvEducationId: string;
                         degreeDe: string;
                         degreeEn: string;
@@ -2674,8 +2675,19 @@ export type GqlCWorkspaceCvPageQuery = {
                         notesEn: string;
                         position: number;
                     }>;
-                    skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
-                    hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+                    publicCvSkillFindMany: Array<{
+                        cvSkillId: string;
+                        category: Schema.GqlCCvSkillCategory;
+                        label: string;
+                        position: number;
+                    }>;
+                    publicCvHobbyFindMany: Array<{
+                        cvHobbyId: string;
+                        textDe: string;
+                        textEn: string;
+                        since: number | null;
+                        position: number;
+                    }>;
                 };
             } | null;
         } | null;
@@ -2687,8 +2699,8 @@ export type GqlCWorkspaceCvPageUpdatesSubscriptionVariables = Exact<{ [key: stri
 export type GqlCWorkspaceCvPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            cv: {
-                experience: Array<{
+            adminCvFindOne: {
+                publicCvExperienceFindMany: Array<{
                     cvExperienceId: string;
                     roleDe: string;
                     roleEn: string;
@@ -2700,7 +2712,7 @@ export type GqlCWorkspaceCvPageUpdatesSubscription = {
                     technologies: Array<string>;
                     managerName: string | null;
                 }>;
-                education: Array<{
+                publicCvEducationFindMany: Array<{
                     cvEducationId: string;
                     degreeDe: string;
                     degreeEn: string;
@@ -2713,8 +2725,8 @@ export type GqlCWorkspaceCvPageUpdatesSubscription = {
                     notesEn: string;
                     position: number;
                 }>;
-                skills: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
-                hobbies: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
+                publicCvSkillFindMany: Array<{ cvSkillId: string; category: Schema.GqlCCvSkillCategory; label: string; position: number }>;
+                publicCvHobbyFindMany: Array<{ cvHobbyId: string; textDe: string; textEn: string; since: number | null; position: number }>;
             };
         } | null;
     };
@@ -2815,14 +2827,14 @@ export type GqlCWorkspaceCvHobbyReorderMutation = { admin: { cvHobbyReorder: { s
 export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceHubQuery = {
-    currentSession: { user: { admin: { projectRequestsInboxCount: number; standaloneOpenTaskCount: number } | null } | null };
+    sessionFindOne: { user: { admin: { adminProjectRequestInboxCount: number; adminStandaloneTaskOpenCount: number } | null } | null };
 };
 
 export type GqlCWorkspaceInventoryPageUserFragment = {
     admin: {
-        inventory: {
-            materialNetWorthCents: number;
-            items: Array<{
+        adminInventoryFindOne: {
+            adminInventoryMaterialNetWorthCentsFindOne: number;
+            adminInventoryItemFindMany: Array<{
                 itemId: string;
                 categoryKey: Schema.GqlCItemCategory;
                 name: string;
@@ -2842,7 +2854,7 @@ export type GqlCWorkspaceInventoryPageUserFragment = {
                 createdAt: string;
                 updatedAt: string;
             }>;
-            upcomingWarrantyExpirations: Array<{
+            adminInventoryItemUpcomingWarrantyFindMany: Array<{
                 itemId: string;
                 name: string;
                 brand: string | null;
@@ -2856,12 +2868,12 @@ export type GqlCWorkspaceInventoryPageUserFragment = {
 export type GqlCWorkspaceInventoryPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceInventoryPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                inventory: {
-                    materialNetWorthCents: number;
-                    items: Array<{
+                adminInventoryFindOne: {
+                    adminInventoryMaterialNetWorthCentsFindOne: number;
+                    adminInventoryItemFindMany: Array<{
                         itemId: string;
                         categoryKey: Schema.GqlCItemCategory;
                         name: string;
@@ -2881,7 +2893,7 @@ export type GqlCWorkspaceInventoryPageQuery = {
                         createdAt: string;
                         updatedAt: string;
                     }>;
-                    upcomingWarrantyExpirations: Array<{
+                    adminInventoryItemUpcomingWarrantyFindMany: Array<{
                         itemId: string;
                         name: string;
                         brand: string | null;
@@ -2899,9 +2911,9 @@ export type GqlCWorkspaceInventoryPageUpdatesSubscriptionVariables = Exact<{ [ke
 export type GqlCWorkspaceInventoryPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            inventory: {
-                materialNetWorthCents: number;
-                items: Array<{
+            adminInventoryFindOne: {
+                adminInventoryMaterialNetWorthCentsFindOne: number;
+                adminInventoryItemFindMany: Array<{
                     itemId: string;
                     categoryKey: Schema.GqlCItemCategory;
                     name: string;
@@ -2921,7 +2933,7 @@ export type GqlCWorkspaceInventoryPageUpdatesSubscription = {
                     createdAt: string;
                     updatedAt: string;
                 }>;
-                upcomingWarrantyExpirations: Array<{
+                adminInventoryItemUpcomingWarrantyFindMany: Array<{
                     itemId: string;
                     name: string;
                     brand: string | null;
@@ -2964,8 +2976,8 @@ export type GqlCWorkspaceItemRepriceMutation = { admin: { itemReprice: { itemId:
 
 export type GqlCWorkspaceInventoryDetailUserFragment = {
     admin: {
-        inventory: {
-            item: {
+        adminInventoryFindOne: {
+            adminInventoryItemFindOne: {
                 itemId: string;
                 categoryKey: Schema.GqlCItemCategory;
                 name: string;
@@ -3020,11 +3032,11 @@ export type GqlCWorkspaceInventoryDetailQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceInventoryDetailQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                inventory: {
-                    item: {
+                adminInventoryFindOne: {
+                    adminInventoryItemFindOne: {
                         itemId: string;
                         categoryKey: Schema.GqlCItemCategory;
                         name: string;
@@ -3083,8 +3095,8 @@ export type GqlCWorkspaceInventoryDetailUpdatesSubscriptionVariables = Exact<{
 export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
     userUpdates: {
         admin: {
-            inventory: {
-                item: {
+            adminInventoryFindOne: {
+                adminInventoryItemFindOne: {
                     itemId: string;
                     categoryKey: Schema.GqlCItemCategory;
                     name: string;
@@ -3167,8 +3179,8 @@ export type GqlCWorkspaceItemFileTogglePinMutation = { admin: { itemFileTogglePi
 
 export type GqlCWorkspaceMediaPageUserFragment = {
     admin: {
-        media: {
-            movies: Array<{
+        adminMediaFindOne: {
+            adminMediaMovieFindMany: Array<{
                 movieId: string;
                 title: string;
                 tmdbId: number | null;
@@ -3184,7 +3196,7 @@ export type GqlCWorkspaceMediaPageUserFragment = {
                 topics: Array<string>;
                 updatedAt: string;
             }>;
-            channels: Array<{
+            adminMediaChannelFindMany: Array<{
                 channelId: string;
                 name: string;
                 platform: Schema.GqlCMediaPlatform;
@@ -3204,11 +3216,11 @@ export type GqlCWorkspaceMediaPageUserFragment = {
 export type GqlCWorkspaceMediaPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceMediaPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                media: {
-                    movies: Array<{
+                adminMediaFindOne: {
+                    adminMediaMovieFindMany: Array<{
                         movieId: string;
                         title: string;
                         tmdbId: number | null;
@@ -3224,7 +3236,7 @@ export type GqlCWorkspaceMediaPageQuery = {
                         topics: Array<string>;
                         updatedAt: string;
                     }>;
-                    channels: Array<{
+                    adminMediaChannelFindMany: Array<{
                         channelId: string;
                         name: string;
                         platform: Schema.GqlCMediaPlatform;
@@ -3248,8 +3260,8 @@ export type GqlCWorkspaceMediaPageUpdatesSubscriptionVariables = Exact<{ [key: s
 export type GqlCWorkspaceMediaPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            media: {
-                movies: Array<{
+            adminMediaFindOne: {
+                adminMediaMovieFindMany: Array<{
                     movieId: string;
                     title: string;
                     tmdbId: number | null;
@@ -3265,7 +3277,7 @@ export type GqlCWorkspaceMediaPageUpdatesSubscription = {
                     topics: Array<string>;
                     updatedAt: string;
                 }>;
-                channels: Array<{
+                adminMediaChannelFindMany: Array<{
                     channelId: string;
                     name: string;
                     platform: Schema.GqlCMediaPlatform;
@@ -3288,11 +3300,11 @@ export type GqlCWorkspaceMediaTmdbSearchQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceMediaTmdbSearchQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                media: {
-                    tmdbSearch: Array<{
+                adminMediaFindOne: {
+                    adminMediaTmdbFindMany: Array<{
                         tmdbId: number;
                         title: string;
                         releaseDate: string | null;
@@ -3310,11 +3322,11 @@ export type GqlCWorkspaceMediaYoutubeSearchQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceMediaYoutubeSearchQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                media: {
-                    youtubeSearch: Array<{
+                adminMediaFindOne: {
+                    adminMediaYoutubeFindMany: Array<{
                         channelId: string;
                         title: string;
                         handle: string | null;
@@ -3425,8 +3437,8 @@ export type GqlCWorkspaceMedicalPageRecordFragment = {
 
 export type GqlCWorkspaceMedicalPageUserFragment = {
     admin: {
-        medical: {
-            appointments: Array<{
+        adminMedicalFindOne: {
+            adminMedicalAppointmentFindMany: Array<{
                 appointmentId: string;
                 category: Schema.GqlCMedicalCategory;
                 providerName: string | null;
@@ -3440,7 +3452,7 @@ export type GqlCWorkspaceMedicalPageUserFragment = {
                 createdAt: string;
                 updatedAt: string;
             }>;
-            records: Array<{
+            adminMedicalRecordFindMany: Array<{
                 recordId: string;
                 category: Schema.GqlCMedicalCategory;
                 title: string;
@@ -3464,7 +3476,7 @@ export type GqlCWorkspaceMedicalPageUserFragment = {
                     fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
                 }>;
             }>;
-            overview: Array<{
+            adminMedicalCategoryOverviewFindMany: Array<{
                 category: Schema.GqlCMedicalCategory;
                 defaultCadenceMonths: number | null;
                 lastCompletedAt: string | null;
@@ -3516,11 +3528,11 @@ export type GqlCWorkspaceMedicalPageUserFragment = {
 export type GqlCWorkspaceMedicalPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceMedicalPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                medical: {
-                    appointments: Array<{
+                adminMedicalFindOne: {
+                    adminMedicalAppointmentFindMany: Array<{
                         appointmentId: string;
                         category: Schema.GqlCMedicalCategory;
                         providerName: string | null;
@@ -3534,7 +3546,7 @@ export type GqlCWorkspaceMedicalPageQuery = {
                         createdAt: string;
                         updatedAt: string;
                     }>;
-                    records: Array<{
+                    adminMedicalRecordFindMany: Array<{
                         recordId: string;
                         category: Schema.GqlCMedicalCategory;
                         title: string;
@@ -3558,7 +3570,7 @@ export type GqlCWorkspaceMedicalPageQuery = {
                             fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
                         }>;
                     }>;
-                    overview: Array<{
+                    adminMedicalCategoryOverviewFindMany: Array<{
                         category: Schema.GqlCMedicalCategory;
                         defaultCadenceMonths: number | null;
                         lastCompletedAt: string | null;
@@ -3614,8 +3626,8 @@ export type GqlCWorkspaceMedicalPageUpdatesSubscriptionVariables = Exact<{ [key:
 export type GqlCWorkspaceMedicalPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            medical: {
-                appointments: Array<{
+            adminMedicalFindOne: {
+                adminMedicalAppointmentFindMany: Array<{
                     appointmentId: string;
                     category: Schema.GqlCMedicalCategory;
                     providerName: string | null;
@@ -3629,7 +3641,7 @@ export type GqlCWorkspaceMedicalPageUpdatesSubscription = {
                     createdAt: string;
                     updatedAt: string;
                 }>;
-                records: Array<{
+                adminMedicalRecordFindMany: Array<{
                     recordId: string;
                     category: Schema.GqlCMedicalCategory;
                     title: string;
@@ -3653,7 +3665,7 @@ export type GqlCWorkspaceMedicalPageUpdatesSubscription = {
                         fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
                     }>;
                 }>;
-                overview: Array<{
+                adminMedicalCategoryOverviewFindMany: Array<{
                     category: Schema.GqlCMedicalCategory;
                     defaultCadenceMonths: number | null;
                     lastCompletedAt: string | null;
@@ -3749,7 +3761,7 @@ export type GqlCWorkspaceMedicalRecordFileDeleteMutation = { admin: { medicalRec
 
 export type GqlCWorkspaceProjectsPageUserFragment = {
     admin: {
-        projectRequests: Array<{
+        adminProjectRequestFindMany: Array<{
             projectRequestId: string;
             chatId: string | null;
             name: string;
@@ -3764,7 +3776,7 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
             createdAt: string;
             convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
         }>;
-        projects: Array<{
+        adminProjectFindMany: Array<{
             projectId: string;
             title: string;
             description: string | null;
@@ -3808,7 +3820,7 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
                 createdAt: string;
             }>;
         }>;
-        activeTimer: {
+        adminProjectActiveTimerFindOne: {
             activityId: string;
             projectId: string;
             taskId: string | null;
@@ -3825,10 +3837,10 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
 export type GqlCWorkspaceProjectsPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceProjectsPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                projectRequests: Array<{
+                adminProjectRequestFindMany: Array<{
                     projectRequestId: string;
                     chatId: string | null;
                     name: string;
@@ -3843,7 +3855,7 @@ export type GqlCWorkspaceProjectsPageQuery = {
                     createdAt: string;
                     convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
                 }>;
-                projects: Array<{
+                adminProjectFindMany: Array<{
                     projectId: string;
                     title: string;
                     description: string | null;
@@ -3887,7 +3899,7 @@ export type GqlCWorkspaceProjectsPageQuery = {
                         createdAt: string;
                     }>;
                 }>;
-                activeTimer: {
+                adminProjectActiveTimerFindOne: {
                     activityId: string;
                     projectId: string;
                     taskId: string | null;
@@ -3908,7 +3920,7 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscriptionVariables = Exact<{ [key
 export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            projectRequests: Array<{
+            adminProjectRequestFindMany: Array<{
                 projectRequestId: string;
                 chatId: string | null;
                 name: string;
@@ -3923,7 +3935,7 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                 createdAt: string;
                 convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
             }>;
-            projects: Array<{
+            adminProjectFindMany: Array<{
                 projectId: string;
                 title: string;
                 description: string | null;
@@ -3967,7 +3979,7 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                     createdAt: string;
                 }>;
             }>;
-            activeTimer: {
+            adminProjectActiveTimerFindOne: {
                 activityId: string;
                 projectId: string;
                 taskId: string | null;
@@ -4036,7 +4048,7 @@ export type GqlCWorkspaceProjectActivityDeleteMutation = { admin: { projectActiv
 
 export type GqlCWorkspaceProjectDetailUserFragment = {
     admin: {
-        activeTimer: {
+        adminProjectActiveTimerFindOne: {
             activityId: string;
             projectId: string;
             taskId: string | null;
@@ -4047,7 +4059,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
             endedAt: string | null;
             durationSec: number | null;
         } | null;
-        project: {
+        adminProjectFindOne: {
             projectId: string;
             title: string;
             description: string | null;
@@ -4143,10 +4155,10 @@ export type GqlCWorkspaceProjectDetailQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProjectDetailQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                activeTimer: {
+                adminProjectActiveTimerFindOne: {
                     activityId: string;
                     projectId: string;
                     taskId: string | null;
@@ -4157,7 +4169,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                     endedAt: string | null;
                     durationSec: number | null;
                 } | null;
-                project: {
+                adminProjectFindOne: {
                     projectId: string;
                     title: string;
                     description: string | null;
@@ -4257,7 +4269,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscriptionVariables = Exact<{
 export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
     userUpdates: {
         admin: {
-            activeTimer: {
+            adminProjectActiveTimerFindOne: {
                 activityId: string;
                 projectId: string;
                 taskId: string | null;
@@ -4268,7 +4280,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                 endedAt: string | null;
                 durationSec: number | null;
             } | null;
-            project: {
+            adminProjectFindOne: {
                 projectId: string;
                 title: string;
                 description: string | null;
@@ -4500,11 +4512,11 @@ export type GqlCWorkspaceProjectFileTogglePinMutation = { admin: { projectFileTo
 export type GqlCWorkspaceSoftwarePageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceSoftwarePageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                media: {
-                    channelsByTopic: Array<{
+                adminMediaFindOne: {
+                    adminMediaChannelFindMany: Array<{
                         channelId: string;
                         name: string;
                         platform: Schema.GqlCMediaPlatform;
@@ -4522,7 +4534,7 @@ export type GqlCWorkspaceSoftwarePageQuery = {
 
 export type GqlCWorkspaceTodosPageUserFragment = {
     admin: {
-        standaloneTasks: Array<{
+        adminStandaloneTaskFindMany: Array<{
             taskId: string;
             projectId: string | null;
             title: string;
@@ -4540,10 +4552,10 @@ export type GqlCWorkspaceTodosPageUserFragment = {
 export type GqlCWorkspaceTodosPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceTodosPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                standaloneTasks: Array<{
+                adminStandaloneTaskFindMany: Array<{
                     taskId: string;
                     projectId: string | null;
                     title: string;
@@ -4565,7 +4577,7 @@ export type GqlCWorkspaceTodosPageUpdatesSubscriptionVariables = Exact<{ [key: s
 export type GqlCWorkspaceTodosPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            standaloneTasks: Array<{
+            adminStandaloneTaskFindMany: Array<{
                 taskId: string;
                 projectId: string | null;
                 title: string;
@@ -4603,8 +4615,8 @@ export type GqlCWorkspaceTodoDeleteMutation = { admin: { taskDelete: { success: 
 
 export type GqlCWorkspaceTravelPageUserFragment = {
     admin: {
-        travel: {
-            trips: Array<{
+        adminTravelFindOne: {
+            adminTravelTripFindMany: Array<{
                 tripId: string;
                 title: string;
                 destination: string;
@@ -4626,11 +4638,11 @@ export type GqlCWorkspaceTravelPageUserFragment = {
 export type GqlCWorkspaceTravelPageQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceTravelPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                travel: {
-                    trips: Array<{
+                adminTravelFindOne: {
+                    adminTravelTripFindMany: Array<{
                         tripId: string;
                         title: string;
                         destination: string;
@@ -4656,8 +4668,8 @@ export type GqlCWorkspaceTravelPageUpdatesSubscriptionVariables = Exact<{ [key: 
 export type GqlCWorkspaceTravelPageUpdatesSubscription = {
     userUpdates: {
         admin: {
-            travel: {
-                trips: Array<{
+            adminTravelFindOne: {
+                adminTravelTripFindMany: Array<{
                     tripId: string;
                     title: string;
                     destination: string;
@@ -4691,8 +4703,8 @@ export type GqlCWorkspaceTripsDeleteMutation = { admin: { tripsDelete: { success
 
 export type GqlCWorkspaceTravelDetailUserFragment = {
     admin: {
-        travel: {
-            trip: {
+        adminTravelFindOne: {
+            adminTravelTripFindOne: {
                 tripId: string;
                 title: string;
                 destination: string;
@@ -4743,11 +4755,11 @@ export type GqlCWorkspaceTravelDetailQueryVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceTravelDetailQuery = {
-    currentSession: {
+    sessionFindOne: {
         user: {
             admin: {
-                travel: {
-                    trip: {
+                adminTravelFindOne: {
+                    adminTravelTripFindOne: {
                         tripId: string;
                         title: string;
                         destination: string;
@@ -4802,8 +4814,8 @@ export type GqlCWorkspaceTravelDetailUpdatesSubscriptionVariables = Exact<{
 export type GqlCWorkspaceTravelDetailUpdatesSubscription = {
     userUpdates: {
         admin: {
-            travel: {
-                trip: {
+            adminTravelFindOne: {
+                adminTravelTripFindOne: {
                     tripId: string;
                     title: string;
                     destination: string;
@@ -5025,10 +5037,10 @@ export type GqlCChatPageQueryVariables = Exact<{
 }>;
 
 export type GqlCChatPageQuery = {
-    currentSession: {
+    sessionFindOne: {
         sessionId: string;
         user: { userId: string; name: string } | null;
-        visitorChat: {
+        visitorChatFindOne: {
             chatId: string;
             title: string;
             lastModifiedAt: string;
@@ -5299,17 +5311,17 @@ export type GqlCVisitorChatQuotaFieldsFragment = { used: number; limit: number; 
 export type GqlCVisitorPreviousChatsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCVisitorPreviousChatsQuery = {
-    currentSession: {
+    sessionFindOne: {
         sessionId: string;
-        visitorChats: Array<{ chatId: string; title: string; lastModifiedAt: string }>;
-        visitorChatQuota: { used: number; limit: number; resetsAt: string | null };
+        visitorChatFindMany: Array<{ chatId: string; title: string; lastModifiedAt: string }>;
+        visitorChatQuotaFindOne: { used: number; limit: number; resetsAt: string | null };
     };
 };
 
 export type GqlCVisitorChatQuotaQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCVisitorChatQuotaQuery = {
-    currentSession: { sessionId: string; visitorChatQuota: { used: number; limit: number; resetsAt: string | null } };
+    sessionFindOne: { sessionId: string; visitorChatQuotaFindOne: { used: number; limit: number; resetsAt: string | null } };
 };
 
 export const WorkspaceChatMessageGenerationFragmentDoc = {
@@ -5936,7 +5948,7 @@ export const WorkspaceCompassPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'compass' },
+                                    name: { kind: 'Name', value: 'adminCompassFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -5949,7 +5961,7 @@ export const WorkspaceCompassPageUserFragmentDoc = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'observations' },
+                                                name: { kind: 'Name', value: 'adminCompassObservationFindMany' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -5974,7 +5986,7 @@ export const WorkspaceCompassPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'interviewPending' },
+                                                name: { kind: 'Name', value: 'adminCompassInterviewPendingFindOne' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -5990,7 +6002,7 @@ export const WorkspaceCompassPageUserFragmentDoc = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewReason' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'interviews' },
+                                                name: { kind: 'Name', value: 'adminCompassInterviewFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6103,13 +6115,13 @@ export const WorkspaceCvPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'cv' },
+                                    name: { kind: 'Name', value: 'adminCvFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'experience' },
+                                                name: { kind: 'Name', value: 'publicCvExperienceFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6128,7 +6140,7 @@ export const WorkspaceCvPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'education' },
+                                                name: { kind: 'Name', value: 'publicCvEducationFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6148,7 +6160,7 @@ export const WorkspaceCvPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'skills' },
+                                                name: { kind: 'Name', value: 'publicCvSkillFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6161,7 +6173,7 @@ export const WorkspaceCvPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'hobbies' },
+                                                name: { kind: 'Name', value: 'publicCvHobbyFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6202,14 +6214,14 @@ export const WorkspaceInventoryPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'inventory' },
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'materialNetWorthCents' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminInventoryMaterialNetWorthCentsFindOne' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'items' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6236,7 +6248,7 @@ export const WorkspaceInventoryPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'upcomingWarrantyExpirations' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemUpcomingWarrantyFindMany' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -6284,13 +6296,13 @@ export const WorkspaceInventoryDetailUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'inventory' },
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'item' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemFindOne' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -6466,13 +6478,13 @@ export const WorkspaceMediaPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'media' },
+                                    name: { kind: 'Name', value: 'adminMediaFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'movies' },
+                                                name: { kind: 'Name', value: 'adminMediaMovieFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6495,7 +6507,7 @@ export const WorkspaceMediaPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'channels' },
+                                                name: { kind: 'Name', value: 'adminMediaChannelFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6670,13 +6682,13 @@ export const WorkspaceMedicalPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medical' },
+                                    name: { kind: 'Name', value: 'adminMedicalFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'appointments' },
+                                                name: { kind: 'Name', value: 'adminMedicalAppointmentFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6689,7 +6701,7 @@ export const WorkspaceMedicalPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'records' },
+                                                name: { kind: 'Name', value: 'adminMedicalRecordFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6702,7 +6714,7 @@ export const WorkspaceMedicalPageUserFragmentDoc = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'overview' },
+                                                name: { kind: 'Name', value: 'adminMedicalCategoryOverviewFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -6852,7 +6864,7 @@ export const WorkspaceProjectsPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectRequests' },
+                                    name: { kind: 'Name', value: 'adminProjectRequestFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -6885,7 +6897,7 @@ export const WorkspaceProjectsPageUserFragmentDoc = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projects' },
+                                    name: { kind: 'Name', value: 'adminProjectFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -6957,7 +6969,7 @@ export const WorkspaceProjectsPageUserFragmentDoc = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    name: { kind: 'Name', value: 'adminProjectActiveTimerFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -6999,7 +7011,7 @@ export const WorkspaceProjectDetailUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    name: { kind: 'Name', value: 'adminProjectActiveTimerFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -7017,7 +7029,7 @@ export const WorkspaceProjectDetailUserFragmentDoc = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'project' },
+                                    name: { kind: 'Name', value: 'adminProjectFindOne' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -7227,7 +7239,7 @@ export const WorkspaceTodosPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'standaloneTasks' },
+                                    name: { kind: 'Name', value: 'adminStandaloneTaskFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -7270,13 +7282,13 @@ export const WorkspaceTravelPageUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'travel' },
+                                    name: { kind: 'Name', value: 'adminTravelFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'trips' },
+                                                name: { kind: 'Name', value: 'adminTravelTripFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -7346,13 +7358,13 @@ export const WorkspaceTravelDetailUserFragmentDoc = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'travel' },
+                                    name: { kind: 'Name', value: 'adminTravelFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'trip' },
+                                                name: { kind: 'Name', value: 'adminTravelTripFindOne' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -7957,7 +7969,7 @@ export const CvPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -7984,13 +7996,13 @@ export const CvPageDocument = {
                     },
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'cv' },
+                        name: { kind: 'Name', value: 'publicCvFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'experience' },
+                                    name: { kind: 'Name', value: 'publicCvExperienceFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -8009,7 +8021,7 @@ export const CvPageDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'education' },
+                                    name: { kind: 'Name', value: 'publicCvEducationFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -8047,7 +8059,7 @@ export const AboutPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -8074,13 +8086,13 @@ export const AboutPageDocument = {
                     },
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'cv' },
+                        name: { kind: 'Name', value: 'publicCvFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'skills' },
+                                    name: { kind: 'Name', value: 'publicCvSkillFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -8093,7 +8105,7 @@ export const AboutPageDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'hobbies' },
+                                    name: { kind: 'Name', value: 'publicCvHobbyFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -8125,7 +8137,7 @@ export const HomePageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -8168,7 +8180,7 @@ export const ProjectsPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -8227,7 +8239,7 @@ export const WorkspaceLogsDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -8245,7 +8257,7 @@ export const WorkspaceLogsDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'logs' },
+                                                            name: { kind: 'Name', value: 'adminLogFindMany' },
                                                             arguments: [
                                                                 {
                                                                     kind: 'Argument',
@@ -8301,7 +8313,7 @@ export const WorkspaceVisitorChatsDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -8320,7 +8332,7 @@ export const WorkspaceVisitorChatsDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'publicChats' },
+                                                            name: { kind: 'Name', value: 'adminPublicChatFindMany' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
@@ -8363,7 +8375,7 @@ export const WorkspaceVisitorChatDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -8382,7 +8394,7 @@ export const WorkspaceVisitorChatDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'publicChat' },
+                                                            name: { kind: 'Name', value: 'adminPublicChatFindOne' },
                                                             arguments: [
                                                                 {
                                                                     kind: 'Argument',
@@ -8894,7 +8906,7 @@ export const WorkspaceAssistantChatsPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -8912,7 +8924,7 @@ export const WorkspaceAssistantChatsPageDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'chats' },
+                                                            name: { kind: 'Name', value: 'adminChatFindMany' },
                                                             arguments: [
                                                                 {
                                                                     kind: 'Argument',
@@ -8942,7 +8954,7 @@ export const WorkspaceAssistantChatsPageDocument = {
                                                         },
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'chatsCount' },
+                                                            name: { kind: 'Name', value: 'adminChatCount' },
                                                             arguments: [
                                                                 {
                                                                     kind: 'Argument',
@@ -8997,7 +9009,7 @@ export const WorkspaceChatPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -9018,7 +9030,7 @@ export const WorkspaceChatPageDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'chat' },
+                                                            name: { kind: 'Name', value: 'adminChatFindOne' },
                                                             arguments: [
                                                                 {
                                                                     kind: 'Argument',
@@ -9858,7 +9870,7 @@ export const WorkspaceChatConfigDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -9876,7 +9888,7 @@ export const WorkspaceChatConfigDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'chatConfig' },
+                                                            name: { kind: 'Name', value: 'adminChatConfigFindOne' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
@@ -9986,7 +9998,7 @@ export const WorkspaceCompassPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -10092,7 +10104,7 @@ export const WorkspaceCompassPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'compass' },
+                                    name: { kind: 'Name', value: 'adminCompassFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -10105,7 +10117,7 @@ export const WorkspaceCompassPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'observations' },
+                                                name: { kind: 'Name', value: 'adminCompassObservationFindMany' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -10130,7 +10142,7 @@ export const WorkspaceCompassPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'interviewPending' },
+                                                name: { kind: 'Name', value: 'adminCompassInterviewPendingFindOne' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -10146,7 +10158,7 @@ export const WorkspaceCompassPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewReason' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'interviews' },
+                                                name: { kind: 'Name', value: 'adminCompassInterviewFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -10289,7 +10301,7 @@ export const WorkspaceCompassPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'compass' },
+                                    name: { kind: 'Name', value: 'adminCompassFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -10302,7 +10314,7 @@ export const WorkspaceCompassPageUpdatesDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'synthesisInProgress' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'observations' },
+                                                name: { kind: 'Name', value: 'adminCompassObservationFindMany' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -10327,7 +10339,7 @@ export const WorkspaceCompassPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'interviewPending' },
+                                                name: { kind: 'Name', value: 'adminCompassInterviewPendingFindOne' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -10343,7 +10355,7 @@ export const WorkspaceCompassPageUpdatesDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'scheduledInterviewReason' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'interviews' },
+                                                name: { kind: 'Name', value: 'adminCompassInterviewFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -10384,7 +10396,7 @@ export const WorkspaceCompassInterviewDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -10402,13 +10414,13 @@ export const WorkspaceCompassInterviewDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'compass' },
+                                                            name: { kind: 'Name', value: 'adminCompassFindOne' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
                                                                     {
                                                                         kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'interview' },
+                                                                        name: { kind: 'Name', value: 'adminCompassInterviewFindOne' },
                                                                         arguments: [
                                                                             {
                                                                                 kind: 'Argument',
@@ -11001,7 +11013,7 @@ export const WorkspaceCvPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -11034,13 +11046,13 @@ export const WorkspaceCvPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'cv' },
+                                    name: { kind: 'Name', value: 'adminCvFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'experience' },
+                                                name: { kind: 'Name', value: 'publicCvExperienceFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -11059,7 +11071,7 @@ export const WorkspaceCvPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'education' },
+                                                name: { kind: 'Name', value: 'publicCvEducationFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -11079,7 +11091,7 @@ export const WorkspaceCvPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'skills' },
+                                                name: { kind: 'Name', value: 'publicCvSkillFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -11092,7 +11104,7 @@ export const WorkspaceCvPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'hobbies' },
+                                                name: { kind: 'Name', value: 'publicCvHobbyFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -11151,13 +11163,13 @@ export const WorkspaceCvPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'cv' },
+                                    name: { kind: 'Name', value: 'adminCvFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'experience' },
+                                                name: { kind: 'Name', value: 'publicCvExperienceFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -11176,7 +11188,7 @@ export const WorkspaceCvPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'education' },
+                                                name: { kind: 'Name', value: 'publicCvEducationFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -11196,7 +11208,7 @@ export const WorkspaceCvPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'skills' },
+                                                name: { kind: 'Name', value: 'publicCvSkillFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -11209,7 +11221,7 @@ export const WorkspaceCvPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'hobbies' },
+                                                name: { kind: 'Name', value: 'publicCvHobbyFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -12070,7 +12082,7 @@ export const WorkspaceHubDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -12086,8 +12098,8 @@ export const WorkspaceHubDocument = {
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'projectRequestsInboxCount' } },
-                                                        { kind: 'Field', name: { kind: 'Name', value: 'standaloneOpenTaskCount' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'adminProjectRequestInboxCount' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'adminStandaloneTaskOpenCount' } },
                                                     ],
                                                 },
                                             },
@@ -12114,7 +12126,7 @@ export const WorkspaceInventoryPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -12149,14 +12161,14 @@ export const WorkspaceInventoryPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'inventory' },
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'materialNetWorthCents' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminInventoryMaterialNetWorthCentsFindOne' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'items' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -12183,7 +12195,7 @@ export const WorkspaceInventoryPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'upcomingWarrantyExpirations' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemUpcomingWarrantyFindMany' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -12249,14 +12261,14 @@ export const WorkspaceInventoryPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'inventory' },
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'materialNetWorthCents' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminInventoryMaterialNetWorthCentsFindOne' } },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'items' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -12283,7 +12295,7 @@ export const WorkspaceInventoryPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'upcomingWarrantyExpirations' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemUpcomingWarrantyFindMany' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -12566,7 +12578,7 @@ export const WorkspaceInventoryDetailDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -12601,13 +12613,13 @@ export const WorkspaceInventoryDetailDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'inventory' },
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'item' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemFindOne' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -12808,13 +12820,13 @@ export const WorkspaceInventoryDetailUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'inventory' },
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'item' },
+                                                name: { kind: 'Name', value: 'adminInventoryItemFindOne' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -13214,7 +13226,7 @@ export const WorkspaceMediaPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -13247,13 +13259,13 @@ export const WorkspaceMediaPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'media' },
+                                    name: { kind: 'Name', value: 'adminMediaFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'movies' },
+                                                name: { kind: 'Name', value: 'adminMediaMovieFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -13276,7 +13288,7 @@ export const WorkspaceMediaPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'channels' },
+                                                name: { kind: 'Name', value: 'adminMediaChannelFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -13341,13 +13353,13 @@ export const WorkspaceMediaPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'media' },
+                                    name: { kind: 'Name', value: 'adminMediaFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'movies' },
+                                                name: { kind: 'Name', value: 'adminMediaMovieFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -13370,7 +13382,7 @@ export const WorkspaceMediaPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'channels' },
+                                                name: { kind: 'Name', value: 'adminMediaChannelFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -13418,7 +13430,7 @@ export const WorkspaceMediaTmdbSearchDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -13436,13 +13448,13 @@ export const WorkspaceMediaTmdbSearchDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'media' },
+                                                            name: { kind: 'Name', value: 'adminMediaFindOne' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
                                                                     {
                                                                         kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'tmdbSearch' },
+                                                                        name: { kind: 'Name', value: 'adminMediaTmdbFindMany' },
                                                                         arguments: [
                                                                             {
                                                                                 kind: 'Argument',
@@ -13509,7 +13521,7 @@ export const WorkspaceMediaYoutubeSearchDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -13527,13 +13539,13 @@ export const WorkspaceMediaYoutubeSearchDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'media' },
+                                                            name: { kind: 'Name', value: 'adminMediaFindOne' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
                                                                     {
                                                                         kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'youtubeSearch' },
+                                                                        name: { kind: 'Name', value: 'adminMediaYoutubeFindMany' },
                                                                         arguments: [
                                                                             {
                                                                                 kind: 'Argument',
@@ -13949,7 +13961,7 @@ export const WorkspaceMedicalPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -14065,13 +14077,13 @@ export const WorkspaceMedicalPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medical' },
+                                    name: { kind: 'Name', value: 'adminMedicalFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'appointments' },
+                                                name: { kind: 'Name', value: 'adminMedicalAppointmentFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -14084,7 +14096,7 @@ export const WorkspaceMedicalPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'records' },
+                                                name: { kind: 'Name', value: 'adminMedicalRecordFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -14097,7 +14109,7 @@ export const WorkspaceMedicalPageDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'overview' },
+                                                name: { kind: 'Name', value: 'adminMedicalCategoryOverviewFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -14265,13 +14277,13 @@ export const WorkspaceMedicalPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medical' },
+                                    name: { kind: 'Name', value: 'adminMedicalFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'appointments' },
+                                                name: { kind: 'Name', value: 'adminMedicalAppointmentFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -14284,7 +14296,7 @@ export const WorkspaceMedicalPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'records' },
+                                                name: { kind: 'Name', value: 'adminMedicalRecordFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -14297,7 +14309,7 @@ export const WorkspaceMedicalPageUpdatesDocument = {
                                             },
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'overview' },
+                                                name: { kind: 'Name', value: 'adminMedicalCategoryOverviewFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -14703,7 +14715,7 @@ export const WorkspaceProjectsPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -14738,7 +14750,7 @@ export const WorkspaceProjectsPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectRequests' },
+                                    name: { kind: 'Name', value: 'adminProjectRequestFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -14771,7 +14783,7 @@ export const WorkspaceProjectsPageDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projects' },
+                                    name: { kind: 'Name', value: 'adminProjectFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -14843,7 +14855,7 @@ export const WorkspaceProjectsPageDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    name: { kind: 'Name', value: 'adminProjectActiveTimerFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -14903,7 +14915,7 @@ export const WorkspaceProjectsPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectRequests' },
+                                    name: { kind: 'Name', value: 'adminProjectRequestFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -14936,7 +14948,7 @@ export const WorkspaceProjectsPageUpdatesDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projects' },
+                                    name: { kind: 'Name', value: 'adminProjectFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -15008,7 +15020,7 @@ export const WorkspaceProjectsPageUpdatesDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    name: { kind: 'Name', value: 'adminProjectActiveTimerFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -15511,7 +15523,7 @@ export const WorkspaceProjectDetailDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -15546,7 +15558,7 @@ export const WorkspaceProjectDetailDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    name: { kind: 'Name', value: 'adminProjectActiveTimerFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -15564,7 +15576,7 @@ export const WorkspaceProjectDetailDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'project' },
+                                    name: { kind: 'Name', value: 'adminProjectFindOne' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15799,7 +15811,7 @@ export const WorkspaceProjectDetailUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'activeTimer' },
+                                    name: { kind: 'Name', value: 'adminProjectActiveTimerFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -15817,7 +15829,7 @@ export const WorkspaceProjectDetailUpdatesDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'project' },
+                                    name: { kind: 'Name', value: 'adminProjectFindOne' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -17219,7 +17231,7 @@ export const WorkspaceSoftwarePageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -17237,13 +17249,13 @@ export const WorkspaceSoftwarePageDocument = {
                                                     selections: [
                                                         {
                                                             kind: 'Field',
-                                                            name: { kind: 'Name', value: 'media' },
+                                                            name: { kind: 'Name', value: 'adminMediaFindOne' },
                                                             selectionSet: {
                                                                 kind: 'SelectionSet',
                                                                 selections: [
                                                                     {
                                                                         kind: 'Field',
-                                                                        name: { kind: 'Name', value: 'channelsByTopic' },
+                                                                        name: { kind: 'Name', value: 'adminMediaChannelFindMany' },
                                                                         arguments: [
                                                                             {
                                                                                 kind: 'Argument',
@@ -17306,7 +17318,7 @@ export const WorkspaceTodosPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -17339,7 +17351,7 @@ export const WorkspaceTodosPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'standaloneTasks' },
+                                    name: { kind: 'Name', value: 'adminStandaloneTaskFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -17400,7 +17412,7 @@ export const WorkspaceTodosPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'standaloneTasks' },
+                                    name: { kind: 'Name', value: 'adminStandaloneTaskFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
@@ -17623,7 +17635,7 @@ export const WorkspaceTravelPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -17656,13 +17668,13 @@ export const WorkspaceTravelPageDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'travel' },
+                                    name: { kind: 'Name', value: 'adminTravelFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'trips' },
+                                                name: { kind: 'Name', value: 'adminTravelTripFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -17750,13 +17762,13 @@ export const WorkspaceTravelPageUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'travel' },
+                                    name: { kind: 'Name', value: 'adminTravelFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'trips' },
+                                                name: { kind: 'Name', value: 'adminTravelTripFindMany' },
                                                 selectionSet: {
                                                     kind: 'SelectionSet',
                                                     selections: [
@@ -17934,7 +17946,7 @@ export const WorkspaceTravelDetailDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -17969,13 +17981,13 @@ export const WorkspaceTravelDetailDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'travel' },
+                                    name: { kind: 'Name', value: 'adminTravelFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'trip' },
+                                                name: { kind: 'Name', value: 'adminTravelTripFindOne' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -18119,13 +18131,13 @@ export const WorkspaceTravelDetailUpdatesDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'travel' },
+                                    name: { kind: 'Name', value: 'adminTravelFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
                                             {
                                                 kind: 'Field',
-                                                name: { kind: 'Name', value: 'trip' },
+                                                name: { kind: 'Name', value: 'adminTravelTripFindOne' },
                                                 arguments: [
                                                     {
                                                         kind: 'Argument',
@@ -18569,7 +18581,7 @@ export const ChatPageDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
@@ -18587,7 +18599,7 @@ export const ChatPageDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'visitorChat' },
+                                    name: { kind: 'Name', value: 'visitorChatFindOne' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -19850,14 +19862,14 @@ export const VisitorPreviousChatsDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'visitorChats' },
+                                    name: { kind: 'Name', value: 'visitorChatFindMany' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'VisitorChatListItem' } }],
@@ -19865,7 +19877,7 @@ export const VisitorPreviousChatsDocument = {
                                 },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'visitorChatQuota' },
+                                    name: { kind: 'Name', value: 'visitorChatQuotaFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'VisitorChatQuotaFields' } }],
@@ -19917,14 +19929,14 @@ export const VisitorChatQuotaDocument = {
                 selections: [
                     {
                         kind: 'Field',
-                        name: { kind: 'Name', value: 'currentSession' },
+                        name: { kind: 'Name', value: 'sessionFindOne' },
                         selectionSet: {
                             kind: 'SelectionSet',
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'visitorChatQuota' },
+                                    name: { kind: 'Name', value: 'visitorChatQuotaFindOne' },
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'VisitorChatQuotaFields' } }],

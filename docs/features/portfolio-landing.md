@@ -52,7 +52,7 @@ Top-to-bottom structure:
 ### File
 
 `src/routes/{-$locale}/index.tsx` is the single source of truth. There is no companion `.graphql` file beyond the existing
-`HomePage.graphql` query (which keeps the route's session loader wired so `currentSession` is available if a future revision needs it).
+`HomePage.graphql` query (which keeps the route's session loader wired so `sessionFindOne` is available if a future revision needs it).
 
 ### Bilingual copy
 

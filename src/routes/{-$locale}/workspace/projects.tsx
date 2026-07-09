@@ -173,11 +173,11 @@ function WorkspaceProjects() {
     // mutation on this page already calls `serverRuntime.publish.userUpdates`
     // server-side, so we never need to re-fetch from the client.
     // See `docs/architecture/state-synchronization.md` — Seed-and-Subscribe.
-    const user = useWorkspaceProjectsPageLiveUser(data.currentSession.user);
+    const user = useWorkspaceProjectsPageLiveUser(data.sessionFindOne.user);
     const admin = user?.admin;
-    const projectRequests = admin?.projectRequests ?? [];
-    const projects = admin?.projects ?? [];
-    const activeTimer = admin?.activeTimer ?? null;
+    const projectRequests = admin?.adminProjectRequestFindMany ?? [];
+    const projects = admin?.adminProjectFindMany ?? [];
+    const activeTimer = admin?.adminProjectActiveTimerFindOne ?? null;
     const inboxCount = projectRequests.filter((r) => r.status === 'emailVerified').length;
 
     // Deep-link focus: the chat assistant emits links like
@@ -271,7 +271,7 @@ function WorkspaceProjects() {
 
 // --- Inbox ------------------------------------------------------------------
 
-type RequestRow = WorkspaceProjectsAdmin['projectRequests'][number];
+type RequestRow = WorkspaceProjectsAdmin['adminProjectRequestFindMany'][number];
 
 function InboxSection({ rows, showArchived, locale }: { rows: ReadonlyArray<RequestRow>; showArchived: boolean; locale: Locale }) {
     const visible = rows.filter((r) => (showArchived ? r.status === 'archived' : r.status === 'emailVerified' && !r.convertedProject));
@@ -470,8 +470,8 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 // --- Projects board ---------------------------------------------------------
 
-type ProjectRow = WorkspaceProjectsAdmin['projects'][number];
-type ActiveTimer = NonNullable<WorkspaceProjectsAdmin['activeTimer']>;
+type ProjectRow = WorkspaceProjectsAdmin['adminProjectFindMany'][number];
+type ActiveTimer = NonNullable<WorkspaceProjectsAdmin['adminProjectActiveTimerFindOne']>;
 
 function ProjectsBoard({
     rows,

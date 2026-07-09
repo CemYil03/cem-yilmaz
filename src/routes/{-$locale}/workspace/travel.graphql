@@ -7,8 +7,8 @@
 
 fragment WorkspaceTravelPageUser on User {
     admin {
-        travel {
-            trips {
+        adminTravelFindOne {
+            adminTravelTripFindMany {
                 tripId
                 title
                 destination
@@ -35,7 +35,7 @@ fragment WorkspaceTravelPageUser on User {
 }
 
 query WorkspaceTravelPage {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceTravelPageUser
         }

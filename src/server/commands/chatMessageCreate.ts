@@ -16,7 +16,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatMessageCreateResult, GqlSMutationChatMessageCreateArgs, GqlSSession } from '../graphql/generated';
 import { compassAnalyze } from '../jobs/handlers/compassAnalyze';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
-import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
+import { chatMessageFindMany } from '../queries/chatMessageFindMany';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 
 // Dispatch context the resolver passes in. The mutation namespace decides the
@@ -177,7 +177,7 @@ export async function chatMessageCreate(
         // on the next replay). We close the open collection with a synthetic
         // `skipped` row so the protocol stays well-formed. See "Pivoting away
         // from an open collection" in `docs/architecture/chat.md`.
-        const priorRows = isNewChat ? [] : await chatMessageRowsLoad(serverRuntime.db, chatId);
+        const priorRows = isNewChat ? [] : await chatMessageFindMany(serverRuntime.db, chatId);
         const openCollectionId = findOpenCollectionId(priorRows);
         if (openCollectionId) {
             const skipMessageId = crypto.randomUUID();

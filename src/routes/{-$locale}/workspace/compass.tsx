@@ -82,8 +82,8 @@ const pageDescription = {
 };
 
 type CompassQueryData = NonNullable<GqlCWorkspaceCompassPageUserFragment['admin']>;
-type CompassData = CompassQueryData['compass'];
-type ObservationRow = CompassData['observations'][number];
+type CompassData = CompassQueryData['adminCompassFindOne'];
+type ObservationRow = NonNullable<CompassData>['adminCompassObservationFindMany'][number];
 type InterviewSummary = GqlCWorkspaceCompassInterviewSummaryFragment;
 type InterviewWithMessages = GqlCWorkspaceCompassInterviewWithMessagesFragment;
 type CompassTab = 'summary' | 'prose' | 'psychology' | 'interviews';
@@ -144,8 +144,8 @@ function WorkspaceCompassPage() {
     // synthesis job publishes `userUpdates` on completion, so the page never
     // needs to poll. See `docs/architecture/state-synchronization.md` —
     // Seed-and-Subscribe.
-    const user = useWorkspaceCompassPageLiveUser({ category: search.category ?? null, includeDismissed }, data.currentSession.user);
-    const compass = user?.admin?.compass;
+    const user = useWorkspaceCompassPageLiveUser({ category: search.category ?? null, includeDismissed }, data.sessionFindOne.user);
+    const compass = user?.admin?.adminCompassFindOne;
     if (!compass) return <WorkspaceUnauthorized locale={locale} />;
 
     return (
@@ -160,7 +160,7 @@ function WorkspaceCompassPage() {
                 <InterviewsSection compass={compass} locale={locale} activeInterviewId={activeInterviewId} />
             ) : (
                 <ObservationsSection
-                    observations={compass.observations}
+                    observations={compass.adminCompassObservationFindMany}
                     filter={filter}
                     includeDismissed={includeDismissed}
                     locale={locale}
@@ -204,7 +204,7 @@ function SynthesisHero({ compass, locale, activeTab }: { compass: CompassData; l
 
     return (
         <section aria-label={{ de: 'Synthese', en: 'Synthesis' }[locale]}>
-            <TabStrip locale={locale} active={activeTab} hasPendingInterview={compass.interviewPending != null} />
+            <TabStrip locale={locale} active={activeTab} hasPendingInterview={compass.adminCompassInterviewPendingFindOne != null} />
             {!isInterviewsTab ? (
                 <div className="mt-3 flex flex-wrap justify-end gap-x-3 text-xs text-muted-foreground">
                     {synthesizedLabel ? (
@@ -717,8 +717,8 @@ function InterviewsSection({
     locale: Locale;
     activeInterviewId: string | null;
 }) {
-    const interviews = compass.interviews;
-    const pending = compass.interviewPending;
+    const interviews = compass.adminCompassInterviewFindMany;
+    const pending = compass.adminCompassInterviewPendingFindOne;
     // The URL pin overrides everything — when set, show that interview's view.
     // Otherwise prefer the open interview if there is one. The list rail
     // shows every past interview so the user can deep-link backwards.
@@ -751,7 +751,7 @@ function InterviewsSection({
             </div>
 
             {focusedInterview ? (
-                <InterviewView interview={focusedInterview} observations={compass.observations} locale={locale} />
+                <InterviewView interview={focusedInterview} observations={compass.adminCompassObservationFindMany} locale={locale} />
             ) : pending ? (
                 <PendingInterviewCard interview={pending} locale={locale} />
             ) : (

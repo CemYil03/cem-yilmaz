@@ -87,52 +87,52 @@ import { toGqlCompass } from '../mappers/toGqlCompass';
 import { toGqlCompassInterview } from '../mappers/toGqlCompassInterview';
 import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
 import { toGqlCompassInterviewMessage } from '../mappers/toGqlCompassInterviewMessage';
-import { chatFindByScope } from '../queries/chatFindByScope';
-import { chatListByScope } from '../queries/chatListByScope';
-import { adminChats, adminChatsCount } from '../queries/adminChats';
-import { chatMessageRowLoad } from '../queries/chatMessageRowLoad';
-import { compassInterviewMessageRowLoad } from '../queries/compassInterviewMessageRowLoad';
-import { chatsFindBySession } from '../queries/chatsFindBySession';
+import { chatFindOne } from '../queries/chatFindOne';
+import { chatFindMany } from '../queries/chatFindMany';
+import { adminChatFindMany } from '../queries/adminChatFindMany';
+import { adminChatCount } from '../queries/adminChatCount';
+import { chatMessageFindOne } from '../queries/chatMessageFindOne';
+import { compassInterviewMessageFindOne } from '../queries/compassInterviewMessageFindOne';
+import { visitorChatFindMany } from '../queries/visitorChatFindMany';
 import { visitorChatFindOne } from '../queries/visitorChatFindOne';
-import { cvEducationList } from '../queries/cvEducationList';
-import { cvExperienceList } from '../queries/cvExperienceList';
-import { cvHobbyList } from '../queries/cvHobbyList';
-import { cvSkillList } from '../queries/cvSkillList';
-import { mediaChannelList } from '../queries/mediaChannelList';
-import { mediaChannelsByTopic } from '../queries/mediaChannelsByTopic';
-import { medicalAppointmentList } from '../queries/medicalAppointmentList';
-import { medicalCategoryOverview } from '../queries/medicalCategoryOverview';
-import { medicalRecordList } from '../queries/medicalRecordList';
-import { tripGet } from '../queries/tripGet';
-import { tripList } from '../queries/tripList';
-import { itemGet } from '../queries/itemGet';
-import { itemsList } from '../queries/itemsList';
-import { materialNetWorthCentsGet } from '../queries/materialNetWorthCentsGet';
-import { upcomingWarrantyExpirationsList } from '../queries/upcomingWarrantyExpirationsList';
-import { movieList } from '../queries/movieList';
-import { compassGet } from '../queries/compassGet';
-import { compassInterviewActiveDueGet } from '../queries/compassInterviewActiveDueGet';
-import { compassInterviewGet } from '../queries/compassInterviewGet';
-import { compassInterviewList } from '../queries/compassInterviewList';
-import { logsList } from '../queries/logsList';
-import { compassObservationList } from '../queries/compassObservationList';
-import { compassSynthesisInProgressGet } from '../queries/compassSynthesisInProgressGet';
-import { projectRequestsList } from '../queries/projectRequestsList';
-import { projectRequestsInboxCount } from '../queries/projectRequestsInboxCount';
-import { projectsList } from '../queries/projectsList';
-import { projectGet } from '../queries/projectGet';
-import { activeTimerGet } from '../queries/activeTimerGet';
-import { adminChatConfigGet } from '../queries/adminChatConfigGet';
+import { publicCvEducationFindMany } from '../queries/publicCvEducationFindMany';
+import { publicCvExperienceFindMany } from '../queries/publicCvExperienceFindMany';
+import { publicCvHobbyFindMany } from '../queries/publicCvHobbyFindMany';
+import { publicCvSkillFindMany } from '../queries/publicCvSkillFindMany';
+import { adminMediaChannelFindMany } from '../queries/adminMediaChannelFindMany';
+import { adminMedicalAppointmentFindMany } from '../queries/adminMedicalAppointmentFindMany';
+import { adminMedicalCategoryOverviewFindMany } from '../queries/adminMedicalCategoryOverviewFindMany';
+import { adminMedicalRecordFindMany } from '../queries/adminMedicalRecordFindMany';
+import { adminTravelTripFindOne } from '../queries/adminTravelTripFindOne';
+import { adminTravelTripFindMany } from '../queries/adminTravelTripFindMany';
+import { adminInventoryItemFindOne } from '../queries/adminInventoryItemFindOne';
+import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
+import { adminInventoryMaterialNetWorthCentsFindOne } from '../queries/adminInventoryMaterialNetWorthCentsFindOne';
+import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
+import { adminMediaMovieFindMany } from '../queries/adminMediaMovieFindMany';
+import { adminCompassFindOne } from '../queries/adminCompassFindOne';
+import { adminCompassInterviewPendingFindOne } from '../queries/adminCompassInterviewPendingFindOne';
+import { adminCompassInterviewFindOne } from '../queries/adminCompassInterviewFindOne';
+import { adminCompassInterviewFindMany } from '../queries/adminCompassInterviewFindMany';
+import { adminLogFindMany } from '../queries/adminLogFindMany';
+import { adminCompassObservationFindMany } from '../queries/adminCompassObservationFindMany';
+import { adminCompassSynthesisInProgressFindOne } from '../queries/adminCompassSynthesisInProgressFindOne';
+import { adminProjectRequestFindMany } from '../queries/adminProjectRequestFindMany';
+import { adminProjectRequestInboxCount } from '../queries/adminProjectRequestInboxCount';
+import { adminProjectFindMany } from '../queries/adminProjectFindMany';
+import { adminProjectFindOne } from '../queries/adminProjectFindOne';
+import { adminProjectActiveTimerFindOne } from '../queries/adminProjectActiveTimerFindOne';
+import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
-import { standaloneTasksList } from '../queries/standaloneTasksList';
-import { standaloneOpenTaskCount } from '../queries/standaloneOpenTaskCount';
+import { adminStandaloneTaskFindMany } from '../queries/adminStandaloneTaskFindMany';
+import { adminStandaloneTaskOpenCount } from '../queries/adminStandaloneTaskOpenCount';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 import type {
     GqlSAdmin,
-    GqlSAdminChatArgs,
-    GqlSAdminChatsArgs,
-    GqlSAdminChatsCountArgs,
-    GqlSAdminLogsArgs,
+    GqlSAdminAdminChatCountArgs,
+    GqlSAdminAdminChatFindManyArgs,
+    GqlSAdminAdminChatFindOneArgs,
+    GqlSAdminAdminLogFindManyArgs,
     GqlSAdminMutation,
     GqlSAdminMutationChatConfigDefaultModelSetArgs,
     GqlSAdminMutationChatInputCollectionRespondArgs,
@@ -181,23 +181,23 @@ import type {
     GqlSAdminMutationMovieMarkWatchedArgs,
     GqlSAdminMutationMovieUpsertArgs,
     GqlSAdminInventoryQuery,
-    GqlSAdminInventoryQueryItemArgs,
-    GqlSAdminInventoryQueryItemsArgs,
-    GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs,
+    GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs,
+    GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
+    GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
     GqlSAdminMediaQuery,
-    GqlSAdminMediaQueryChannelsByTopicArgs,
-    GqlSAdminMediaQueryTmdbSearchArgs,
-    GqlSAdminMediaQueryYoutubeSearchArgs,
+    GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
+    GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
+    GqlSAdminMediaQueryAdminMediaYoutubeFindManyArgs,
     GqlSAdminMedicalQuery,
     GqlSAdminTravelQuery,
-    GqlSAdminTravelQueryTripArgs,
+    GqlSAdminTravelQueryAdminTravelTripFindOneArgs,
     GqlSAdminMutationCompassObservationDismissArgs,
     GqlSAdminMutationCompassInterviewStartArgs,
     GqlSAdminMutationCompassInterviewMessageSendArgs,
     GqlSAdminMutationCompassInterviewEndArgs,
     GqlSAdminMutationCompassInterviewSkipArgs,
     GqlSAdminMutationCompassInterviewStartNowArgs,
-    GqlSAdminCompassInterviewArgs,
+    GqlSAdminCompassAdminCompassInterviewFindOneArgs,
     GqlSAdminMutationProjectActivityDeleteArgs,
     GqlSAdminMutationProjectActivityUpsertArgs,
     GqlSAdminMutationProjectDeleteArgs,
@@ -217,11 +217,11 @@ import type {
     GqlSAdminMutationTaskReorderArgs,
     GqlSAdminMutationTaskUpsertArgs,
     GqlSAdminCompass,
-    GqlSAdminCompassObservationsArgs,
-    GqlSAdminProjectArgs,
-    GqlSAdminProjectRequestsArgs,
-    GqlSAdminProjectsArgs,
-    GqlSAdminPublicChatArgs,
+    GqlSAdminCompassAdminCompassObservationFindManyArgs,
+    GqlSAdminAdminProjectFindOneArgs,
+    GqlSAdminAdminProjectRequestFindManyArgs,
+    GqlSAdminAdminProjectFindManyArgs,
+    GqlSAdminAdminPublicChatFindOneArgs,
     GqlSChatAssistantInput,
     GqlSChatAssistantInputValue,
     GqlSChatMessage,
@@ -233,12 +233,12 @@ import type {
     GqlSMutationChatToolApprovalRespondArgs,
     GqlSResolvers,
     GqlSSession,
-    GqlSSessionVisitorChatArgs,
+    GqlSSessionVisitorChatFindOneArgs,
     GqlSSubscriptionChatUpdatesArgs,
     GqlSSubscriptionCompassInterviewUpdatesArgs,
     GqlSUser,
     GqlSUserMutation,
-    GqlSUserMutationTerminateSessionsArgs,
+    GqlSUserMutationUserSessionTerminateManyArgs,
     GqlSUserMutationUserUpdateArgs,
 } from './generated';
 import type { ChatUpdateWirePayload } from './chatUpdateWirePayload';
@@ -285,13 +285,13 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             user(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
                 return sessionUserFindOne(requestingSession, serverRuntime);
             },
-            visitorChats(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
-                return chatsFindBySession(requestingSession, serverRuntime);
+            visitorChatFindMany(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
+                return visitorChatFindMany(requestingSession, serverRuntime);
             },
-            visitorChat(_session: GqlSSession, args: GqlSSessionVisitorChatArgs, requestingSession: GqlSSession) {
+            visitorChatFindOne(_session: GqlSSession, args: GqlSSessionVisitorChatFindOneArgs, requestingSession: GqlSSession) {
                 return visitorChatFindOne(args.chatId, requestingSession, serverRuntime);
             },
-            visitorChatQuota(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
+            visitorChatQuotaFindOne(_session: GqlSSession, __: any, requestingSession: GqlSSession) {
                 return visitorChatQuotaFindOne(requestingSession, serverRuntime);
             },
         },
@@ -320,103 +320,111 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             userUpdate({ userId }: GqlSUserMutation, args: GqlSUserMutationUserUpdateArgs, requestingSession: GqlSSession) {
                 return userUpdate(userId, args, requestingSession, serverRuntime);
             },
-            terminateSessions({ userId }: GqlSUserMutation, args: GqlSUserMutationTerminateSessionsArgs, requestingSession: GqlSSession) {
+            userSessionTerminateMany(
+                { userId }: GqlSUserMutation,
+                args: GqlSUserMutationUserSessionTerminateManyArgs,
+                requestingSession: GqlSSession,
+            ) {
                 return userSessionTerminateMany(userId, args, requestingSession, serverRuntime);
             },
         },
         Admin: {
-            publicChats(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
-                return chatListByScope('public', requestingSession, serverRuntime);
+            adminPublicChatFindMany(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return chatFindMany('public', requestingSession, serverRuntime);
             },
-            publicChat(_parent: GqlSAdmin, args: GqlSAdminPublicChatArgs, requestingSession: GqlSSession) {
-                return chatFindByScope(args.chatId, 'public', requestingSession, serverRuntime);
+            adminPublicChatFindOne(_parent: GqlSAdmin, args: GqlSAdminAdminPublicChatFindOneArgs, requestingSession: GqlSSession) {
+                return chatFindOne(args.chatId, 'public', requestingSession, serverRuntime);
             },
-            chats(_parent: GqlSAdmin, args: GqlSAdminChatsArgs, requestingSession: GqlSSession) {
-                return adminChats(args, requestingSession, serverRuntime);
+            adminChatFindMany(_parent: GqlSAdmin, args: GqlSAdminAdminChatFindManyArgs, requestingSession: GqlSSession) {
+                return adminChatFindMany(args, requestingSession, serverRuntime);
             },
-            chatsCount(_parent: GqlSAdmin, args: GqlSAdminChatsCountArgs, requestingSession: GqlSSession) {
-                return adminChatsCount(args, requestingSession, serverRuntime);
+            adminChatCount(_parent: GqlSAdmin, args: GqlSAdminAdminChatCountArgs, requestingSession: GqlSSession) {
+                return adminChatCount(args, requestingSession, serverRuntime);
             },
-            chat(_parent: GqlSAdmin, args: GqlSAdminChatArgs, requestingSession: GqlSSession) {
-                return chatFindByScope(args.chatId, 'admin', requestingSession, serverRuntime);
+            adminChatFindOne(_parent: GqlSAdmin, args: GqlSAdminAdminChatFindOneArgs, requestingSession: GqlSSession) {
+                return chatFindOne(args.chatId, 'admin', requestingSession, serverRuntime);
             },
             // Compass shell — the scalar fields come straight off the row;
-            // `observations`, `interviews`, `interview`, and
-            // `interviewPending` resolve separately so they can take
-            // arguments and run their own queries, and `synthesisInProgress`
-            // is resolved separately because it reads pg-boss, not the
-            // `Compass` row. We pass placeholders here that the field
-            // resolvers below overwrite.
-            async compass(): Promise<GqlSAdminCompass> {
-                const row = await compassGet(serverRuntime.db);
+            // `adminCompassObservationFindMany`, `adminCompassInterviewFindMany`,
+            // `adminCompassInterviewFindOne`, and `adminCompassInterviewPendingFindOne`
+            // resolve separately so they can take arguments and run their own
+            // queries, and `synthesisInProgress` is resolved separately because
+            // it reads pg-boss, not the `Compass` row. We pass placeholders
+            // here that the field resolvers below overwrite.
+            async adminCompassFindOne(): Promise<GqlSAdminCompass> {
+                const row = await adminCompassFindOne(serverRuntime.db);
                 return {
                     ...toGqlCompass(row),
-                    observations: [],
+                    adminCompassObservationFindMany: [],
                     synthesisInProgress: false,
-                    interviews: [],
-                    interview: null,
-                    interviewPending: null,
+                    adminCompassInterviewFindMany: [],
+                    adminCompassInterviewFindOne: null,
+                    adminCompassInterviewPendingFindOne: null,
                 };
             },
-            projectRequests(_parent: GqlSAdmin, args: GqlSAdminProjectRequestsArgs, requestingSession: GqlSSession) {
-                return projectRequestsList(args.status ?? null, requestingSession, serverRuntime);
+            adminProjectRequestFindMany(
+                _parent: GqlSAdmin,
+                args: GqlSAdminAdminProjectRequestFindManyArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectRequestFindMany(args.status ?? null, requestingSession, serverRuntime);
             },
-            projectRequestsInboxCount(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
-                return projectRequestsInboxCount(requestingSession, serverRuntime);
+            adminProjectRequestInboxCount(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return adminProjectRequestInboxCount(requestingSession, serverRuntime);
             },
-            projects(_parent: GqlSAdmin, args: GqlSAdminProjectsArgs, requestingSession: GqlSSession) {
-                return projectsList(args.status ?? null, requestingSession, serverRuntime);
+            adminProjectFindMany(_parent: GqlSAdmin, args: GqlSAdminAdminProjectFindManyArgs, requestingSession: GqlSSession) {
+                return adminProjectFindMany(args.status ?? null, requestingSession, serverRuntime);
             },
-            project(_parent: GqlSAdmin, args: GqlSAdminProjectArgs, requestingSession: GqlSSession) {
-                return projectGet(args.projectId, requestingSession, serverRuntime);
+            adminProjectFindOne(_parent: GqlSAdmin, args: GqlSAdminAdminProjectFindOneArgs, requestingSession: GqlSSession) {
+                return adminProjectFindOne(args.projectId, requestingSession, serverRuntime);
             },
-            standaloneTasks(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
-                return standaloneTasksList(requestingSession, serverRuntime);
+            adminStandaloneTaskFindMany(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return adminStandaloneTaskFindMany(requestingSession, serverRuntime);
             },
-            standaloneOpenTaskCount(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
-                return standaloneOpenTaskCount(requestingSession, serverRuntime);
+            adminStandaloneTaskOpenCount(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return adminStandaloneTaskOpenCount(requestingSession, serverRuntime);
             },
-            activeTimer(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
-                return activeTimerGet(requestingSession, serverRuntime);
+            adminProjectActiveTimerFindOne(_parent: GqlSAdmin, __: any, requestingSession: GqlSSession) {
+                return adminProjectActiveTimerFindOne(requestingSession, serverRuntime);
             },
             // CV editor reads the same `CvQuery` the public surfaces use. The
             // resolver chain on `User.admin` already gated this with
             // `guardAdmin`, and `CvQuery` field resolvers run on every
             // request regardless of parent — the empty object is just a
-            // shell, identical to `Query.cv()` below.
-            cv(): GqlSCvQuery {
+            // shell, identical to `Query.publicCvFindOne()` below.
+            adminCvFindOne(): GqlSCvQuery {
                 return {} as GqlSCvQuery;
             },
-            // Media editor namespace — same shell pattern as `cv` above. The
-            // per-field resolvers on `AdminMediaQuery` fan out to the list
-            // queries. See `docs/features/workspace-media.md`.
-            media(): GqlSAdminMediaQuery {
+            // Media editor namespace — same shell pattern as `adminCvFindOne`
+            // above. The per-field resolvers on `AdminMediaQuery` fan out to
+            // the list queries. See `docs/features/workspace-media.md`.
+            adminMediaFindOne(): GqlSAdminMediaQuery {
                 return {} as GqlSAdminMediaQuery;
             },
             // Inventory namespace — same shell pattern. Per-field resolvers
             // on `AdminInventoryQuery` fan out to the item / valuation /
             // net-worth queries. See `docs/features/workspace-inventory.md`.
-            inventory(): GqlSAdminInventoryQuery {
+            adminInventoryFindOne(): GqlSAdminInventoryQuery {
                 return {} as GqlSAdminInventoryQuery;
             },
             // Medical namespace — same shell pattern. Per-field resolvers on
             // `AdminMedicalQuery` fan out to the appointment / record /
             // overview queries. See `docs/features/workspace-medical.md`.
-            medical(): GqlSAdminMedicalQuery {
+            adminMedicalFindOne(): GqlSAdminMedicalQuery {
                 return {} as GqlSAdminMedicalQuery;
             },
             // Travel namespace — same shell pattern. Per-field resolvers on
-            // `AdminTravelQuery` fan out to `tripList` / `tripGet`. See
-            // `docs/features/workspace-travel.md`.
-            travel(): GqlSAdminTravelQuery {
+            // `AdminTravelQuery` fan out to `adminTravelTripFindMany` /
+            // `adminTravelTripFindOne`. See `docs/features/workspace-travel.md`.
+            adminTravelFindOne(): GqlSAdminTravelQuery {
                 return {} as GqlSAdminTravelQuery;
             },
-            async chatConfig(_parent: GqlSAdmin) {
+            async adminChatConfigFindOne(_parent: GqlSAdmin) {
                 // Catalog is server-static — same array on every read. The
                 // saved default is the only DB-bound part; we resolve it here
                 // (and bootstrap the singleton row if it doesn't exist yet)
                 // so the composer always gets a concrete `defaultModelId`.
-                const row = await adminChatConfigGet(serverRuntime.db);
+                const row = await adminChatConfigFindOne(serverRuntime.db);
                 return {
                     availableModels: ADMIN_CHAT_MODELS.map((model) => ({
                         modelId: model.modelId,
@@ -426,13 +434,17 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                     defaultModelId: row.defaultModelId,
                 };
             },
-            logs(_parent: GqlSAdmin, args: GqlSAdminLogsArgs, requestingSession: GqlSSession) {
-                return logsList(args, requestingSession, serverRuntime);
+            adminLogFindMany(_parent: GqlSAdmin, args: GqlSAdminAdminLogFindManyArgs, requestingSession: GqlSSession) {
+                return adminLogFindMany(args, requestingSession, serverRuntime);
             },
         },
         AdminCompass: {
-            observations(_parent: GqlSAdminCompass, args: GqlSAdminCompassObservationsArgs, requestingSession: GqlSSession) {
-                return compassObservationList(
+            adminCompassObservationFindMany(
+                _parent: GqlSAdminCompass,
+                args: GqlSAdminCompassAdminCompassObservationFindManyArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminCompassObservationFindMany(
                     {
                         category: args.category ?? null,
                         includeDismissed: args.includeDismissed ?? false,
@@ -441,110 +453,123 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                     serverRuntime,
                 );
             },
-            // Derived from pg-boss — see `compassSynthesisInProgressGet`.
+            // Derived from pg-boss — see `adminCompassSynthesisInProgressFindOne`.
             synthesisInProgress() {
-                return compassSynthesisInProgressGet(serverRuntime);
+                return adminCompassSynthesisInProgressFindOne(serverRuntime);
             },
             // Psychological-interview rails. Each resolver returns one shape
             // of `CompassInterview`; the `messages` field is populated only
-            // by the `interview(interviewId)` lookup (the list/pending forms
-            // hand `[]`, and the `CompassInterview.messages` field resolver
-            // below lazily loads them on demand).
-            async interviews() {
-                const rows = await compassInterviewList(serverRuntime);
+            // by the `adminCompassInterviewFindOne(interviewId)` lookup (the
+            // list/pending forms hand `[]`, and the `CompassInterview.messages`
+            // field resolver below lazily loads them on demand).
+            async adminCompassInterviewFindMany() {
+                const rows = await adminCompassInterviewFindMany(serverRuntime);
                 return rows.map((row) => toGqlCompassInterview(row));
             },
-            async interview(_parent: GqlSAdminCompass, args: GqlSAdminCompassInterviewArgs) {
-                const loaded = await compassInterviewGet(args.interviewId, serverRuntime);
+            async adminCompassInterviewFindOne(_parent: GqlSAdminCompass, args: GqlSAdminCompassAdminCompassInterviewFindOneArgs) {
+                const loaded = await adminCompassInterviewFindOne(args.interviewId, serverRuntime);
                 if (!loaded) return null;
                 return toGqlCompassInterview(loaded.interview, loaded.messages);
             },
-            async interviewPending() {
-                const row = await compassInterviewActiveDueGet(serverRuntime);
+            async adminCompassInterviewPendingFindOne() {
+                const row = await adminCompassInterviewPendingFindOne(serverRuntime);
                 if (!row) return null;
                 // Caller almost always wants the messages to render the
                 // in-progress card's transcript inline; load them here so the
                 // page query doesn't need a second round-trip. For a freshly
                 // `pending` row this returns `[]`, which is correct.
-                const loaded = await compassInterviewGet(row.interviewId, serverRuntime);
+                const loaded = await adminCompassInterviewFindOne(row.interviewId, serverRuntime);
                 if (!loaded) return toGqlCompassInterview(row);
                 return toGqlCompassInterview(loaded.interview, loaded.messages);
             },
         },
         CvQuery: {
-            experience(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
-                return cvExperienceList(requestingSession, serverRuntime);
+            publicCvExperienceFindMany(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return publicCvExperienceFindMany(requestingSession, serverRuntime);
             },
-            education(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
-                return cvEducationList(requestingSession, serverRuntime);
+            publicCvEducationFindMany(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return publicCvEducationFindMany(requestingSession, serverRuntime);
             },
-            skills(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
-                return cvSkillList(requestingSession, serverRuntime);
+            publicCvSkillFindMany(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return publicCvSkillFindMany(requestingSession, serverRuntime);
             },
-            hobbies(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
-                return cvHobbyList(requestingSession, serverRuntime);
+            publicCvHobbyFindMany(_parent: GqlSCvQuery, __: any, requestingSession: GqlSSession) {
+                return publicCvHobbyFindMany(requestingSession, serverRuntime);
             },
         },
         AdminMediaQuery: {
-            movies(_parent: GqlSAdminMediaQuery, __: any, requestingSession: GqlSSession) {
-                return movieList(requestingSession, serverRuntime);
+            adminMediaMovieFindMany(_parent: GqlSAdminMediaQuery, __: any, requestingSession: GqlSSession) {
+                return adminMediaMovieFindMany(requestingSession, serverRuntime);
             },
-            channels(_parent: GqlSAdminMediaQuery, __: any, requestingSession: GqlSSession) {
-                return mediaChannelList(requestingSession, serverRuntime);
-            },
-            channelsByTopic(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryChannelsByTopicArgs, requestingSession: GqlSSession) {
-                return mediaChannelsByTopic(args.topic, requestingSession, serverRuntime);
+            adminMediaChannelFindMany(
+                _parent: GqlSAdminMediaQuery,
+                args: GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminMediaChannelFindMany(args.topic ?? null, requestingSession, serverRuntime);
             },
             // TMDB search sits on the read namespace even though it's a
             // live third-party fetch — the media page reaches for it every
             // keystroke through the same URQL client that reads the movie
             // list, so co-locating them keeps the wiring simple. Empty on
             // missing API key, on TMDB error, or on empty query.
-            tmdbSearch(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryTmdbSearchArgs) {
+            adminMediaTmdbFindMany(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs) {
                 return serverRuntime.tmdb.searchMovies(args.query);
             },
-            // Same shape as `tmdbSearch` above — third-party read used only
-            // by the channels-tab typeahead. Empty on missing API key, on
-            // YouTube error, or on empty query.
-            youtubeSearch(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryYoutubeSearchArgs) {
+            // Same shape as `adminMediaTmdbFindMany` above — third-party read
+            // used only by the channels-tab typeahead. Empty on missing API
+            // key, on YouTube error, or on empty query.
+            adminMediaYoutubeFindMany(_parent: GqlSAdminMediaQuery, args: GqlSAdminMediaQueryAdminMediaYoutubeFindManyArgs) {
                 return serverRuntime.youtube.searchChannels(args.query);
             },
         },
         AdminInventoryQuery: {
-            items(_parent: GqlSAdminInventoryQuery, args: GqlSAdminInventoryQueryItemsArgs, requestingSession: GqlSSession) {
-                return itemsList(args.includeDisposed ?? false, requestingSession, serverRuntime);
-            },
-            item(_parent: GqlSAdminInventoryQuery, args: GqlSAdminInventoryQueryItemArgs, requestingSession: GqlSSession) {
-                return itemGet(args.itemId, requestingSession, serverRuntime);
-            },
-            materialNetWorthCents(_parent: GqlSAdminInventoryQuery, __: any, requestingSession: GqlSSession) {
-                return materialNetWorthCentsGet(requestingSession, serverRuntime);
-            },
-            upcomingWarrantyExpirations(
+            adminInventoryItemFindMany(
                 _parent: GqlSAdminInventoryQuery,
-                args: GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs,
+                args: GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs,
                 requestingSession: GqlSSession,
             ) {
-                return upcomingWarrantyExpirationsList(args.withinDays ?? 90, requestingSession, serverRuntime);
+                return adminInventoryItemFindMany(args.includeDisposed ?? false, requestingSession, serverRuntime);
+            },
+            adminInventoryItemFindOne(
+                _parent: GqlSAdminInventoryQuery,
+                args: GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemFindOne(args.itemId, requestingSession, serverRuntime);
+            },
+            adminInventoryMaterialNetWorthCentsFindOne(_parent: GqlSAdminInventoryQuery, __: any, requestingSession: GqlSSession) {
+                return adminInventoryMaterialNetWorthCentsFindOne(requestingSession, serverRuntime);
+            },
+            adminInventoryItemUpcomingWarrantyFindMany(
+                _parent: GqlSAdminInventoryQuery,
+                args: GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemUpcomingWarrantyFindMany(args.withinDays ?? 90, requestingSession, serverRuntime);
             },
         },
         AdminMedicalQuery: {
-            appointments(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
-                return medicalAppointmentList(requestingSession, serverRuntime);
+            adminMedicalAppointmentFindMany(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
+                return adminMedicalAppointmentFindMany(requestingSession, serverRuntime);
             },
-            records(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
-                return medicalRecordList(requestingSession, serverRuntime);
+            adminMedicalRecordFindMany(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
+                return adminMedicalRecordFindMany(requestingSession, serverRuntime);
             },
-            overview(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
-                return medicalCategoryOverview(requestingSession, serverRuntime);
+            adminMedicalCategoryOverviewFindMany(_parent: GqlSAdminMedicalQuery, __: any, requestingSession: GqlSSession) {
+                return adminMedicalCategoryOverviewFindMany(requestingSession, serverRuntime);
             },
         },
         AdminTravelQuery: {
-            trips(_parent: GqlSAdminTravelQuery, __: any, requestingSession: GqlSSession) {
-                return tripList(requestingSession, serverRuntime);
+            adminTravelTripFindMany(_parent: GqlSAdminTravelQuery, __: any, requestingSession: GqlSSession) {
+                return adminTravelTripFindMany(requestingSession, serverRuntime);
             },
-            trip(_parent: GqlSAdminTravelQuery, args: GqlSAdminTravelQueryTripArgs, requestingSession: GqlSSession) {
-                return tripGet(args.tripId, requestingSession, serverRuntime);
+            adminTravelTripFindOne(
+                _parent: GqlSAdminTravelQuery,
+                args: GqlSAdminTravelQueryAdminTravelTripFindOneArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTravelTripFindOne(args.tripId, requestingSession, serverRuntime);
             },
         },
         AdminMutation: {
@@ -902,13 +927,13 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
         },
         Query: {
-            currentSession(_: any, __: any, requestingSession: GqlSSession) {
+            sessionFindOne(_: any, __: any, requestingSession: GqlSSession) {
                 return requestingSession;
             },
             // The CV namespace is public — every visitor can read the
             // timeline on `/cv` and the skill block on `/about`. Return an
             // empty parent shell; per-field resolvers do the actual reads.
-            cv() {
+            publicCvFindOne() {
                 return {} as GqlSCvQuery;
             },
         },
@@ -958,7 +983,7 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 async resolve(payload: ChatUpdateWirePayload): Promise<GqlSChatUpdate> {
                     switch (payload.kind) {
                         case 'messageAppended': {
-                            const joined = await chatMessageRowLoad(serverRuntime.db, payload.chatMessageId);
+                            const joined = await chatMessageFindOne(serverRuntime.db, payload.chatMessageId);
                             // Publish runs after commit, so the row should
                             // always be found. A miss here would be data
                             // corruption (row deleted between publish and
@@ -992,7 +1017,7 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 async resolve(payload: CompassInterviewUpdateWirePayload): Promise<GqlSCompassInterviewUpdate> {
                     switch (payload.kind) {
                         case 'messageAppended': {
-                            const row = await compassInterviewMessageRowLoad(serverRuntime.db, payload.interviewMessageId);
+                            const row = await compassInterviewMessageFindOne(serverRuntime.db, payload.interviewMessageId);
                             if (!row) throw new Error(`compassInterviewUpdates: row ${payload.interviewMessageId} not found on re-load`);
                             return {
                                 gqlTypeName: 'CompassInterviewUpdateMessageAppended',

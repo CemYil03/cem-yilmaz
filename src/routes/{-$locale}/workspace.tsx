@@ -29,7 +29,7 @@ import { useLocale } from '../../web/hooks/useLocale';
 export const Route = createFileRoute('/{-$locale}/workspace')({
     loader: async () => {
         const chatConfig = await routeLoaderGraphqlClient(WorkspaceChatConfigDocument)();
-        return { chatConfig: chatConfig.currentSession.user?.admin?.chatConfig ?? null };
+        return { chatConfig: chatConfig.sessionFindOne.user?.admin?.adminChatConfigFindOne ?? null };
     },
     component: WorkspaceLayout,
 });

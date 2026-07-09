@@ -22,7 +22,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatAssistantOptions, GqlSSession } from '../graphql/generated';
 import { chatTitleGenerate } from '../jobs/handlers/chatTitleGenerate';
 import { toModelMessages } from '../mappers/toModelMessages';
-import { chatMessageRowsLoad } from '../queries/chatMessageRowsLoad';
+import { chatMessageFindMany } from '../queries/chatMessageFindMany';
 import { chatMessageAppend } from './chatMessageAppend';
 
 // Shared turn-runner: builds the agent, streams or generates, persists every
@@ -42,7 +42,7 @@ import { chatMessageAppend } from './chatMessageAppend';
 //   pre-built `coreMessages` array; used by tests that want to drive the
 //   runner directly without going through the row-load path.
 // - `chatAssistantTurnRunDetached` — kicks the turn off on a void promise and
-//   returns immediately. Loads `coreMessages` itself (`chatMessageRowsLoad`
+//   returns immediately. Loads `coreMessages` itself (`chatMessageFindMany`
 //   then `toModelMessages`) so the three chat commands all share the same
 //   one-line "user-side row is durable; now run the agent" call. Bumps
 //   `chats.lastModifiedAt` after the turn finishes and routes any thrown
@@ -375,7 +375,7 @@ interface ChatAssistantTurnRunDetachedOptions {
  * mutation can resolve as soon as the user-side row is durable; the agent
  * runs detached and emits `TurnEnded` when done.
  *
- * Loads the prior conversation rows itself via `chatMessageRowsLoad +
+ * Loads the prior conversation rows itself via `chatMessageFindMany +
  * toModelMessages` — the three chat commands all need the same load + replay
  * step, and re-reading after their own writes is what picks up command-side
  * side-effects (e.g. the synthetic skipped-userInput row `chatMessageCreate`
@@ -394,7 +394,7 @@ export function chatAssistantTurnRunDetached({
 }: ChatAssistantTurnRunDetachedOptions): void {
     void (async () => {
         try {
-            const coreMessages = toModelMessages(await chatMessageRowsLoad(serverRuntime.db, chatId));
+            const coreMessages = toModelMessages(await chatMessageFindMany(serverRuntime.db, chatId));
             await chatAssistantTurnRun({
                 chatId,
                 coreMessages,

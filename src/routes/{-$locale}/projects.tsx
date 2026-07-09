@@ -50,7 +50,7 @@ function ProjectsPage() {
     // Admin-only "Workspace" entry in the header — non-admins (including
     // anonymous visitors) get `user.admin = null` and never see it. Same
     // probe as the landing page. See `docs/architecture/workspace-access.md`.
-    const isAdmin = data.currentSession.user?.admin != null;
+    const isAdmin = data.sessionFindOne.user?.admin != null;
 
     return (
         <div className="min-h-screen flex flex-col overflow-x-clip">

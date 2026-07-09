@@ -188,7 +188,7 @@ function ChatEmptyState({ locale, innerClass, currentPagePath }: { locale: Local
         requestPolicy: 'cache-and-network',
     });
 
-    const previousChats = data?.currentSession.visitorChats ?? [];
+    const previousChats = data?.sessionFindOne.visitorChatFindMany ?? [];
 
     return (
         <div className={innerClass}>
@@ -315,7 +315,7 @@ function ChatLoaded({
         [respondToApproval, live],
     );
 
-    const chat = data?.currentSession.visitorChat;
+    const chat = data?.sessionFindOne.visitorChatFindOne;
 
     if (error) {
         return (
@@ -379,7 +379,7 @@ function ChatTranscript({
     fetching,
     jumpToLatestLabel,
 }: {
-    chat: NonNullable<GqlCChatPageQuery['currentSession']['visitorChat']>;
+    chat: NonNullable<GqlCChatPageQuery['sessionFindOne']['visitorChatFindOne']>;
     appendedMessages: ReadonlyArray<TranscriptMessage>;
     streamingTexts: Readonly<Record<string, string>>;
     onCollectionSubmit: (

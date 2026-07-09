@@ -57,7 +57,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant/$chatId')(
     component() {
         const { chatId } = Route.useParams();
         const data = Route.useLoaderData();
-        const chat = data.currentSession.user?.admin?.chat ?? null;
+        const chat = data.sessionFindOne.user?.admin?.adminChatFindOne ?? null;
         const live = useChatLiveUpdates(chatId);
         const locale = useLocale();
         if (!chat) return <NotFound locale={locale} />;
@@ -70,7 +70,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant/$chatId')(
     },
 });
 
-type AssistantChat = NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['currentSession']['user']>['admin']>['chat'];
+type AssistantChat = NonNullable<NonNullable<GqlCWorkspaceChatPageQuery['sessionFindOne']['user']>['admin']>['adminChatFindOne'];
 
 function NotFound({ locale }: { locale: Locale }) {
     // Landing on `/workspace/assistant/<invalid>` is rare — deep links get

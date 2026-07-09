@@ -32,7 +32,10 @@ Each file exports a single async function that performs a read operation. Querie
 - Transform results using mappers
 - Return GraphQL types
 
-Example pattern: `userFindOne.ts`, `sessionFindMany.ts`.
+Example pattern: `{accessPath}{Entity}{FindOne|FindMany|Count|Counts}` — `adminProjectFindOne.ts`, `adminMediaMovieFindMany.ts`,
+`adminChatCount.ts`, `publicCvExperienceFindMany.ts`. Internal helpers not mounted on the resolver chain may omit the `accessPath`
+(`chatFindOne.ts`, `fileUploadFindOne.ts`) but keep the cardinality suffix. See
+[`docs/conventions.md`](../conventions.md#query-naming--the-four-pieces) for the full rule.
 
 ### Mappers
 

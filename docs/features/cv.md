@@ -45,7 +45,7 @@ is the exception — see its bullet below. Specifics:
 - `cvExperience` — `startDate` is required, `endDate` is nullable (null = ongoing, rendered as `heute` / `today`). `technologies` is a
   Postgres `text[]` because the labels are display chips, never queried by relation. `managerName` is a single varchar (the PDF can list
   more than one — the column accepts comma-separated text). **No `position` column**: experience is intrinsically chronological, so
-  `cvExperienceList` orders rows by `endDate DESC NULLS FIRST, startDate DESC` and the editor has no drag handles.
+  `publicCvExperienceFindMany` orders rows by `endDate DESC NULLS FIRST, startDate DESC` and the editor has no drag handles.
 - `cvEducation` — `endDate` is required, `startDate` is nullable (Abitur and similar entries only carry an end date).
   `subjectDe`/`subjectEn` default to the empty string so non-degree entries are valid without a sentinel. `notesDe`/`notesEn` carry
   free-form text — the renderer preserves newlines.
@@ -57,8 +57,8 @@ is the exception — see its bullet below. Specifics:
 
 ### GraphQL
 
-Read namespace: `Query.cv: CvQuery!` with four lists (`experience`, `education`, `skills`, `hobbies`). Reads are public — visitors hit them
-on `/cv` and `/about` directly.
+Read namespace: `Query.publicCvFindOne: CvQuery!` with four lists (`publicCvExperienceFindMany`, `publicCvEducationFindMany`,
+`publicCvSkillFindMany`, `publicCvHobbyFindMany`). Reads are public — visitors hit them on `/cv` and `/about` directly.
 
 Write namespace: 11 mutations on `AdminMutation` (`cv*Upsert`, `cv*Delete`, `cv{Education,Skill,Hobby}Reorder` — experience has no reorder
 mutation; it's sorted by date). The whole `Mutation.admin` is gated by `guardAdminMutation`, so each entity inherits the gate without a
@@ -72,8 +72,8 @@ request and complicate the admin editor (which needs both languages on screen at
 
 Mirroring the existing `chat*` files exactly:
 
-- `src/server/queries/cv{Experience,Education,Skill,Hobby}List.ts` — `SELECT … ORDER BY position ASC`, except `cvExperienceList`, which
-  sorts by `endDate DESC NULLS FIRST, startDate DESC`.
+- `src/server/queries/publicCv{Experience,Education,Skill,Hobby}FindMany.ts` — `SELECT … ORDER BY position ASC`, except
+  `publicCvExperienceFindMany`, which sorts by `endDate DESC NULLS FIRST, startDate DESC`.
 - `src/server/commands/cv{Experience,Education,Skill,Hobby}Upsert.ts` — two-phase per `docs/conventions.md` "Commands". Null `cv*Id` →
   insert; populated id → update.
 - `src/server/commands/cv{Experience,Education,Skill,Hobby}Delete.ts` — single-statement delete, throws on miss.

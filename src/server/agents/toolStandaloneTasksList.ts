@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { standaloneTasksList } from '../queries/standaloneTasksList';
+import { adminStandaloneTaskFindMany } from '../queries/adminStandaloneTaskFindMany';
 
 // Read tool for `agentPersonalAssistantProjects`. Lists tasks with
 // `projectId IS NULL` — the standalone todos surfaced at
@@ -23,7 +23,7 @@ export function toolStandaloneTasksList({ serverRuntime, session }: ProjectsAgen
         ].join(' '),
         inputSchema: z.object({}),
         execute: async () => {
-            const result = await standaloneTasksList(session, serverRuntime);
+            const result = await adminStandaloneTaskFindMany(session, serverRuntime);
             return result;
         },
     });

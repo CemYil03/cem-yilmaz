@@ -47,7 +47,7 @@ const logsSearchSchema = z.object({
     search: z.string().optional(),
 });
 
-type LogRow = NonNullable<NonNullable<GqlCWorkspaceLogsQuery['currentSession']['user']>['admin']>['logs'][number];
+type LogRow = NonNullable<NonNullable<GqlCWorkspaceLogsQuery['sessionFindOne']['user']>['admin']>['adminLogFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/logs')({
     validateSearch: logsSearchSchema,
@@ -58,7 +58,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/logs')({
             search: deps.search?.trim() ? deps.search.trim() : null,
             limit: null,
         })();
-        return { logs: data.currentSession.user?.admin?.logs ?? null };
+        return { logs: data.sessionFindOne.user?.admin?.adminLogFindMany ?? null };
     },
     staleTime: 0,
     head: ({ params }) => {

@@ -3,11 +3,11 @@
 # every workspace surface visit, so this stays cheap and `cache-first`.
 
 query WorkspaceHub {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                projectRequestsInboxCount
-                standaloneOpenTaskCount
+                adminProjectRequestInboxCount
+                adminStandaloneTaskOpenCount
             }
         }
     }

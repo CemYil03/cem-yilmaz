@@ -164,7 +164,7 @@ but nothing in the client asks it to.
 | Client ops        | `src/routes/{-$locale}/workspace/todos.graphql`                                                 |
 | Hub tile + badge  | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                   |
 | Redirect (legacy) | `src/routes/{-$locale}/workspace/projects.tsx` `beforeLoad` — `?tab=todos` → `/workspace/todos` |
-| Read              | `src/server/queries/standaloneTasksList.ts`, `standaloneOpenTaskCount.ts`                       |
+| Read              | `src/server/queries/adminStandaloneTaskFindMany.ts`, `adminStandaloneTaskOpenCount.ts`          |
 | Write             | Shared with projects — `src/server/commands/task{Upsert,Delete,Reorder}.ts`                     |
 | Table + types     | `src/server/db/schema.ts` (`tasks`, `taskStatuses`)                                             |
 | Agent tool        | `src/server/agents/toolStandaloneTasksList.ts`                                                  |
@@ -177,9 +177,9 @@ but nothing in the client asks it to.
 
 Read namespace (under `Admin`):
 
-- `standaloneTasks: [Task!]!` — full list of `projectId IS NULL` rows, ordered by `position`.
-- `standaloneOpenTaskCount: Int!` — `count(*)` of `projectId IS NULL AND status IN ('todo','doing')`. Drives the Todos tile badge on the
-  workspace hub.
+- `adminStandaloneTaskFindMany: [Task!]!` — full list of `projectId IS NULL` rows, ordered by `position`.
+- `adminStandaloneTaskOpenCount: Int!` — `count(*)` of `projectId IS NULL AND status IN ('todo','doing')`. Drives the Todos tile badge on
+  the workspace hub.
 
 Write namespace (under `AdminMutation`, gated by `guardAdminMutation`):
 
@@ -193,7 +193,7 @@ replace the entire page state in one push — no `router.invalidate()`.
 ### Hub tile
 
 `PERSONAL_FOCUS_AREAS` on the workspace hub carries a Todos entry with `badgeKey: 'todosOpen'`. The hub loader query pulls
-`admin.standaloneOpenTaskCount` and the tile renders it as the same primary-tinted pill the Projects tile uses for its inbox count.
+`admin.adminStandaloneTaskOpenCount` and the tile renders it as the same primary-tinted pill the Projects tile uses for its inbox count.
 
 ### URL state
 

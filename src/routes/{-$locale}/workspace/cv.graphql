@@ -7,8 +7,8 @@
 
 fragment WorkspaceCvPageUser on User {
     admin {
-        cv {
-            experience {
+        adminCvFindOne {
+            publicCvExperienceFindMany {
                 cvExperienceId
                 roleDe
                 roleEn
@@ -20,7 +20,7 @@ fragment WorkspaceCvPageUser on User {
                 technologies
                 managerName
             }
-            education {
+            publicCvEducationFindMany {
                 cvEducationId
                 degreeDe
                 degreeEn
@@ -33,13 +33,13 @@ fragment WorkspaceCvPageUser on User {
                 notesEn
                 position
             }
-            skills {
+            publicCvSkillFindMany {
                 cvSkillId
                 category
                 label
                 position
             }
-            hobbies {
+            publicCvHobbyFindMany {
                 cvHobbyId
                 textDe
                 textEn
@@ -51,7 +51,7 @@ fragment WorkspaceCvPageUser on User {
 }
 
 query WorkspaceCvPage {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceCvPageUser
         }

@@ -82,7 +82,7 @@ also fire-and-forget persists every change as the new default via `WorkspaceChat
 
 The dedicated chat surface for the personal assistant. Same shape as the public visitor chat sheet: empty state with the composer, loaded
 state with a header, the transcript, and the composer pinned to the bottom. The loaded transcript reads
-`currentSession.user.admin.chat(chatId)` so a stolen chatId from the visitor namespace is rejected by `chatFindByScope`.
+`sessionFindOne.user.admin.adminChatFindOne(chatId)` so a stolen chatId from the visitor namespace is rejected by `chatFindOne`.
 
 This route is the **bookmark-able** form of the same conversation that lives in the sheet. The sheet's "Open full-screen" button hands the
 active `chatId` off to this route via a normal navigation; the sheet stays the in-context surface for short questions while doing other

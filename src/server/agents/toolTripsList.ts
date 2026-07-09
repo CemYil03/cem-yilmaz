@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { tripList } from '../queries/tripList';
+import { adminTravelTripFindMany } from '../queries/adminTravelTripFindMany';
 
 // Full-trip read tool. The system-prompt snapshot already lists every trip
 // with days + activities + packing progress inline; use this only when the
@@ -25,7 +25,7 @@ export function toolTripsList({ serverRuntime, session }: TravelAgentReadContext
         ].join(' '),
         inputSchema: tripsListInputSchema,
         execute: async () => {
-            return tripList(session, serverRuntime);
+            return adminTravelTripFindMany(session, serverRuntime);
         },
     });
 }

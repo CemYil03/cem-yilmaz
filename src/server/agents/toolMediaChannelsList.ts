@@ -2,8 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { mediaChannelList } from '../queries/mediaChannelList';
-import { mediaChannelsByTopic } from '../queries/mediaChannelsByTopic';
+import { adminMediaChannelFindMany } from '../queries/adminMediaChannelFindMany';
 
 const mediaChannelsListInputSchema = z.object({
     topic: z.string().nullish().describe('Optional: narrow to channels tagged with this topic (case-sensitive). Omit for the full list.'),
@@ -23,8 +22,7 @@ export function toolMediaChannelsList({ serverRuntime, session }: MediaAgentRead
         ].join(' '),
         inputSchema: mediaChannelsListInputSchema,
         execute: async (input) => {
-            if (input.topic) return mediaChannelsByTopic(input.topic, session, serverRuntime);
-            return mediaChannelList(session, serverRuntime);
+            return adminMediaChannelFindMany(input.topic ?? null, session, serverRuntime);
         },
     });
 }

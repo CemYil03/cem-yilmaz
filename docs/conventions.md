@@ -103,18 +103,46 @@ Two favicons (`favicon.ico` / `favicon-dark.ico`) follow the active mode, includ
 This project uses **entity-action naming** where file and function names lead with the entity (or domain concept) followed by the action or
 role:
 
-| Category  | Pattern              | Examples                                        |
-| --------- | -------------------- | ----------------------------------------------- |
-| Commands  | `{entity}{Action}`   | `sessionUpsert`, `userCreate`                   |
-| Queries   | `{entity}{Query}`    | `userFindOne`, `sessionFindMany`                |
-| Mappers   | `toGql{Entity}`      | `toGqlSession`, `toGqlUser`                     |
-| Guards    | `guard{Entity}{Ctx}` | `guardUserSubscription`, `guardSessionMutation` |
-| Factories | `{entity}Create`     | `serverRuntimeCreate`, `resolversCreate`        |
-| Utils     | `{entity}Utils`      | `sessionUtils`                                  |
-| Tests     | `{source}.test`      | `sessionUtils.test`, `sessionUpsert.test`       |
-| Types     | `PascalCase`         | `ServerRuntime`, `PubSubPostgres`               |
+| Category  | Pattern                                                  | Examples                                                           |
+| --------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| Commands  | `{entity}{Action}`                                       | `sessionUpsert`, `userCreate`                                      |
+| Queries   | `{accessPath}{Entity}{FindOne\|FindMany\|Count\|Counts}` | `adminProjectFindOne`, `adminMediaMovieFindMany`, `adminChatCount` |
+| Mappers   | `toGql{Entity}`                                          | `toGqlSession`, `toGqlUser`                                        |
+| Guards    | `guard{Entity}{Ctx}`                                     | `guardUserSubscription`, `guardSessionMutation`                    |
+| Factories | `{entity}Create`                                         | `serverRuntimeCreate`, `resolversCreate`                           |
+| Utils     | `{entity}Utils`                                          | `sessionUtils`                                                     |
+| Tests     | `{source}.test`                                          | `sessionUtils.test`, `sessionUpsert.test`                          |
+| Types     | `PascalCase`                                             | `ServerRuntime`, `PubSubPostgres`                                  |
 
 This keeps related files sorted together in directory listings (all `session`\* files appear next to each other).
+
+### Query naming — the four pieces
+
+`{accessPath}{Entity}{Suffix}` is mandatory for every file under `src/server/queries/` that is directly resolver-mounted, and for every
+Query-side field name in `schema.graphqls`. Internal query helpers not mounted on the resolver chain (used by commands, agents, API routes,
+or other queries) may omit the `accessPath` prefix — `chatFindOne`, `fileUploadFindOne`, `ttsAudioCacheFindOne` — but keep the `FindOne` /
+`FindMany` suffix.
+
+- **`accessPath`** — the GraphQL namespace the query is mounted under:
+  - `public` — mounted under a public root (e.g. `Query.publicCvFindOne`), no admin guard
+  - `admin` — mounted under `Query.adminFindOne` (workspace), guarded by the resolver chain on `User.admin`
+  - `visitor` — mounted under `Session.*` and scoped to the visitor's session
+  - `session` — the session singleton (`Query.sessionFindOne`, `Session.sessionUserFindOne`)
+- **`Entity`** — the entity (or entity-with-sub-namespace) being read. The sub-namespace comes from the GraphQL parent type, not a new
+  coinage: `adminInventoryItemFindOne`, `adminMediaMovieFindMany`, `adminTravelTripFindOne`, `adminCompassInterviewFindOne`,
+  `adminMedicalRecordFindMany`.
+- **`Suffix`** — the return cardinality:
+  - `FindOne` — one row (nullable or not), one scalar attribute read, or a singleton namespace object (`Query.publicCvFindOne: CvQuery!` is
+    one namespace)
+  - `FindMany` — an array of rows
+  - `Count` — a single scalar integer (`adminChatCount`, `adminProjectRequestInboxCount`)
+  - `Counts` — a shape carrying multiple counts (e.g. counts-per-bucket)
+
+Filters that narrow a `FindMany` result stay as arguments on the same function (`adminMediaChannelFindMany(topic: String)` — the topic arg
+filters when set, returns everything when omitted). Do not coin a new function for every filter axis.
+
+GraphQL field names on the query side follow the same rule, camelCased, and namespace fields returning sub-query types get `FindOne`
+(`Admin.adminMediaFindOne: AdminMediaQuery!`).
 
 ## Comments
 

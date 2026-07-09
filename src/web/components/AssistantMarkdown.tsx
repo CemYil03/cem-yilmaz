@@ -5,9 +5,12 @@ import { cn } from '../utils/cn';
 // Shared markdown renderer for assistant messages — used both for the
 // streaming preview during a turn and for the persisted `ChatMessageAssistantText`
 // row that swaps into its slot at end-of-stream. Centralizing the Streamdown
-// config (plugins, table/code/mermaid controls, parseIncompleteMarkdown) means
-// the swap can never produce a visible reflow even when the assistant emitted
-// a code or table block mid-stream.
+// config (plugins, table/code/mermaid controls) means the swap can never
+// produce a visible reflow even when the assistant emitted a code or table
+// block mid-stream. Static content (streaming=false) uses mode="static" so
+// Streamdown updates synchronously — streaming mode wraps block updates in
+// useTransition, which defers re-renders and causes stale content when the
+// text prop changes (e.g. locale switch on the CV page).
 
 export function AssistantMarkdown({ text, className, streaming = false }: { text: string; className?: string; streaming?: boolean }) {
     if (streaming && !text) {
@@ -20,12 +23,13 @@ export function AssistantMarkdown({ text, className, streaming = false }: { text
     return (
         <Streamdown
             plugins={{ code }}
+            mode={streaming ? 'streaming' : 'static'}
             controls={{
                 table: { copy: false, download: false, fullscreen: false },
                 code: { copy: true, download: false },
                 mermaid: { download: false, copy: true, fullscreen: true, panZoom: true },
             }}
-            parseIncompleteMarkdown
+            parseIncompleteMarkdown={streaming}
             className={cn(
                 'text-sm leading-relaxed wrap-break-word *:first:mt-0 *:last:mb-0',
                 // Tailwind's preflight strips list markers and padding, so wrapped lines fall back under the bullet.

@@ -63,7 +63,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // via chat lands here immediately through the `userUpdates` subscription.
 
 type Admin = NonNullable<GqlCWorkspaceTravelDetailUserFragment['admin']>;
-type TripDetail = NonNullable<Admin['travel']['trip']>;
+type TripDetail = NonNullable<Admin['adminTravelFindOne']['adminTravelTripFindOne']>;
 type DayRow = TripDetail['days'][number];
 type ActivityRow = DayRow['activities'][number];
 type PackingRow = TripDetail['packingItems'][number];
@@ -120,9 +120,9 @@ function WorkspaceTravelDetail() {
     const locale = useLocale();
     const params = Route.useParams();
     const data = Route.useLoaderData();
-    const user = useWorkspaceTravelDetailLiveUser(data.currentSession.user, params.tripId);
+    const user = useWorkspaceTravelDetailLiveUser(data.sessionFindOne.user, params.tripId);
     const admin = user?.admin;
-    const trip = admin?.travel.trip;
+    const trip = admin?.adminTravelFindOne.adminTravelTripFindOne;
 
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
     if (!trip) return <TripNotFound locale={locale} />;

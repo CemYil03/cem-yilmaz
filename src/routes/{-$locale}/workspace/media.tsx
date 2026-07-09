@@ -186,9 +186,9 @@ const mediaSearchSchema = z.object({
 type MediaSearch = z.infer<typeof mediaSearchSchema>;
 
 type WorkspaceMediaAdmin = NonNullable<GqlCWorkspaceMediaPageUserFragment['admin']>;
-type MediaData = WorkspaceMediaAdmin['media'];
-type MovieRow = MediaData['movies'][number];
-type ChannelRow = MediaData['channels'][number];
+type MediaData = WorkspaceMediaAdmin['adminMediaFindOne'];
+type MovieRow = MediaData['adminMediaMovieFindMany'][number];
+type ChannelRow = MediaData['adminMediaChannelFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/media')({
     validateSearch: mediaSearchSchema,
@@ -219,9 +219,9 @@ function WorkspaceMedia() {
     // the `userUpdates` subscription replace it on every server push. Every
     // media mutation publishes on the user channel already, so we never
     // re-fetch from the client. See `docs/architecture/state-synchronization.md`.
-    const user = useWorkspaceMediaPageLiveUser(data.currentSession.user);
+    const user = useWorkspaceMediaPageLiveUser(data.sessionFindOne.user);
     const admin = user?.admin;
-    const media = admin?.media;
+    const media = admin?.adminMediaFindOne;
 
     // Deep-link focus: chat assistant emits links like
     // `/workspace/media?tab=movies&focus=<id>`. Scroll the row/card into view
@@ -298,9 +298,9 @@ function WorkspaceMedia() {
 
             <div className="mt-8">
                 {tab === 'movies' ? (
-                    <MoviesTab movies={media.movies} search={search} navigate={navigate} locale={locale} />
+                    <MoviesTab movies={media.adminMediaMovieFindMany} search={search} navigate={navigate} locale={locale} />
                 ) : (
-                    <ChannelsTab channels={media.channels} locale={locale} />
+                    <ChannelsTab channels={media.adminMediaChannelFindMany} locale={locale} />
                 )}
             </div>
         </main>
@@ -688,7 +688,7 @@ function MovieSearchBar({
         pause: !debounced,
         requestPolicy: 'network-only',
     });
-    const results = data?.currentSession.user?.admin?.media.tmdbSearch ?? [];
+    const results = data?.sessionFindOne.user?.admin?.adminMediaFindOne.adminMediaTmdbFindMany ?? [];
 
     // Close the panel on outside click. Focus/blur alone wouldn't cover
     // dropdown-item clicks, so we listen at the document level.
@@ -1453,8 +1453,8 @@ function formatSubscriberCount(count: number | null | undefined): string {
 }
 
 type YoutubeSearchHit = NonNullable<
-    NonNullable<GqlCWorkspaceMediaYoutubeSearchQuery['currentSession']['user']>['admin']
->['media']['youtubeSearch'][number];
+    NonNullable<GqlCWorkspaceMediaYoutubeSearchQuery['sessionFindOne']['user']>['admin']
+>['adminMediaFindOne']['adminMediaYoutubeFindMany'][number];
 
 // Search-first entry for new YouTube channels. Mirrors the TMDB search
 // shape (300ms debounce, `pause` on empty, `network-only`, keyboard nav,
@@ -1484,7 +1484,7 @@ function YoutubeChannelSearchBar({ locale, onSelect }: { locale: Locale; onSelec
         pause: !debounced,
         requestPolicy: 'network-only',
     });
-    const results = data?.currentSession.user?.admin?.media.youtubeSearch ?? [];
+    const results = data?.sessionFindOne.user?.admin?.adminMediaFindOne.adminMediaYoutubeFindMany ?? [];
 
     useEffect(() => {
         if (!open) return;

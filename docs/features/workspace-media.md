@@ -94,15 +94,15 @@ Migration: `drizzle/0017_violet_giant_man.sql`.
 
 ### GraphQL
 
-Read namespace under `Admin.media` (reached via `currentSession.user.admin.media`):
+Read namespace under `Admin.adminMediaFindOne` (reached via `sessionFindOne.user.admin.adminMediaFindOne`):
 
-- `movies: [Movie!]!` — full library; ordered watching → watchlist → watched → dropped, then by `updatedAt DESC`
-- `channels: [MediaChannel!]!` — every favourite; ordered by `priority ASC, name ASC`
-- `channelsByTopic(topic: String!): [MediaChannel!]!` — filtered via `WHERE :topic = ANY(topics)`; used by `/workspace/software` and any
-  future cross-view section
-- `tmdbSearch(query: String!): [TmdbMovieResult!]!` — live per-keystroke read; empty on missing key / TMDB error / empty query
-- `youtubeSearch(query: String!): [YoutubeChannelResult!]!` — live per-keystroke channel search, same empty-fallback semantics as
-  `tmdbSearch`
+- `adminMediaMovieFindMany: [Movie!]!` — full library; ordered watching → watchlist → watched → dropped, then by `updatedAt DESC`
+- `adminMediaChannelFindMany(topic: String): [MediaChannel!]!` — every favourite; ordered by `priority ASC, name ASC`. Passing `topic`
+  filters via `WHERE :topic = ANY(topics)`; used by `/workspace/software` and any future cross-view section. Omit or pass `null` to return
+  every channel.
+- `adminMediaTmdbFindMany(query: String!): [TmdbMovieResult!]!` — live per-keystroke read; empty on missing key / TMDB error / empty query
+- `adminMediaYoutubeFindMany(query: String!): [YoutubeChannelResult!]!` — live per-keystroke channel search, same empty-fallback semantics
+  as `adminMediaTmdbFindMany`
 
 Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 
@@ -166,9 +166,10 @@ The media page reads `?focus=<id>` on mount and scrolls the matching row into vi
 
 ### Cross-view: `/workspace/software`
 
-`software.tsx` runs `Admin.media.channelsByTopic(topic: "tech")` at load time and renders a "Favourite tech channels" section with avatar +
-name + handle + platform icon rows. Read-only there — all edits happen on `/workspace/media`. Adding this section to any other workspace
-area (e.g. a future `/workspace/movies-inbox` for film critics) is one small graphql file plus one component; the `topics` axis composes.
+`software.tsx` runs `Admin.adminMediaFindOne.adminMediaChannelFindMany(topic: "tech")` at load time and renders a "Favourite tech channels"
+section with avatar + name + handle + platform icon rows. Read-only there — all edits happen on `/workspace/media`. Adding this section to
+any other workspace area (e.g. a future `/workspace/movies-inbox` for film critics) is one small graphql file plus one component; the
+`topics` axis composes.
 
 ### Where things live
 
@@ -177,11 +178,11 @@ area (e.g. a future `/workspace/movies-inbox` for film critics) is one small gra
 | Tables + types              | `src/server/db/schema.ts` (`movies`, `mediaChannels`, `movieStatuses`, `mediaPlatforms`, `mediaTopics`)                                                                                                                                                                                                                                                            |
 | Migration                   | `drizzle/0017_violet_giant_man.sql`                                                                                                                                                                                                                                                                                                                                |
 | Mappers                     | `src/server/mappers/toGqlMovie.ts`, `toGqlMediaChannel.ts`                                                                                                                                                                                                                                                                                                         |
-| Queries                     | `src/server/queries/movieList.ts`, `mediaChannelList.ts`, `mediaChannelsByTopic.ts`                                                                                                                                                                                                                                                                                |
+| Queries                     | `src/server/queries/adminMediaMovieFindMany.ts`, `adminMediaChannelFindMany.ts`                                                                                                                                                                                                                                                                                    |
 | Commands                    | `src/server/commands/movie{Upsert,Delete,MarkWatched,AddFromTmdb}.ts`, `mediaChannel{Upsert,Delete,Reorder}.ts`                                                                                                                                                                                                                                                    |
 | TMDB client                 | `src/server/services/tmdbClientCreate.ts` (wired into `ServerRuntime.tmdb`)                                                                                                                                                                                                                                                                                        |
 | YouTube client              | `src/server/services/youtubeClientCreate.ts` (wired into `ServerRuntime.youtube`)                                                                                                                                                                                                                                                                                  |
-| Resolver wiring             | `src/server/graphql/resolversCreate.ts` (`Admin.media`, `AdminMediaQuery`, and the seven `AdminMutation` handlers)                                                                                                                                                                                                                                                 |
+| Resolver wiring             | `src/server/graphql/resolversCreate.ts` (`Admin.adminMediaFindOne`, `AdminMediaQuery`, and the seven `AdminMutation` handlers)                                                                                                                                                                                                                                     |
 | Page (UI)                   | `src/routes/{-$locale}/workspace/media.tsx`                                                                                                                                                                                                                                                                                                                        |
 | Client ops                  | `src/routes/{-$locale}/workspace/media.graphql`                                                                                                                                                                                                                                                                                                                    |
 | Cross-view (software)       | `src/routes/{-$locale}/workspace/software.tsx` + `software.graphql`                                                                                                                                                                                                                                                                                                |

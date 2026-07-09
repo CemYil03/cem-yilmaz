@@ -91,8 +91,8 @@ function WorkspaceCvEditor() {
     // CV mutation already calls `serverRuntime.publish.userUpdates` server-side,
     // so we never need to re-fetch from the client.
     // See `docs/architecture/state-synchronization.md` — Seed-and-Subscribe.
-    const user = useWorkspaceCvPageLiveUser(data.currentSession.user);
-    const cv = user?.admin?.cv;
+    const user = useWorkspaceCvPageLiveUser(data.sessionFindOne.user);
+    const cv = user?.admin?.adminCvFindOne;
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
@@ -106,10 +106,10 @@ function WorkspaceCvEditor() {
                 }
             </p>
 
-            <ExperienceSection rows={cv?.experience ?? []} locale={locale} />
-            <EducationSection rows={cv?.education ?? []} locale={locale} />
-            <SkillSection rows={cv?.skills ?? []} locale={locale} />
-            <HobbySection rows={cv?.hobbies ?? []} locale={locale} />
+            <ExperienceSection rows={cv?.publicCvExperienceFindMany ?? []} locale={locale} />
+            <EducationSection rows={cv?.publicCvEducationFindMany ?? []} locale={locale} />
+            <SkillSection rows={cv?.publicCvSkillFindMany ?? []} locale={locale} />
+            <HobbySection rows={cv?.publicCvHobbyFindMany ?? []} locale={locale} />
         </main>
     );
 }
@@ -117,8 +117,8 @@ function WorkspaceCvEditor() {
 // --- Experience -------------------------------------------------------------
 
 type WorkspaceCvAdmin = NonNullable<GqlCWorkspaceCvPageUserFragment['admin']>;
-type CvData = WorkspaceCvAdmin['cv'];
-type ExperienceRow = CvData['experience'][number];
+type CvData = NonNullable<WorkspaceCvAdmin['adminCvFindOne']>;
+type ExperienceRow = CvData['publicCvExperienceFindMany'][number];
 
 function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow>; locale: Locale }) {
     const [editing, setEditing] = useState<ExperienceRow | 'new' | null>(null);
@@ -250,7 +250,7 @@ function ExperienceForm({ row, locale, onClose }: { row: ExperienceRow | null; l
 
 // --- Education --------------------------------------------------------------
 
-type EducationRow = CvData['education'][number];
+type EducationRow = CvData['publicCvEducationFindMany'][number];
 
 function EducationSection({ rows, locale }: { rows: ReadonlyArray<EducationRow>; locale: Locale }) {
     const [editing, setEditing] = useState<EducationRow | 'new' | null>(null);
@@ -385,7 +385,7 @@ function EducationForm({
 
 // --- Skills -----------------------------------------------------------------
 
-type SkillRow = CvData['skills'][number];
+type SkillRow = CvData['publicCvSkillFindMany'][number];
 type SkillCategory = SkillRow['category'];
 
 const SKILL_CATEGORIES: ReadonlyArray<SkillCategory> = ['capabilities', 'frameworks', 'services', 'tools', 'languages'];
@@ -561,7 +561,7 @@ function SkillForm({ row, position, locale, onClose }: { row: SkillRow | null; p
 
 // --- Hobbies ----------------------------------------------------------------
 
-type HobbyRow = CvData['hobbies'][number];
+type HobbyRow = CvData['publicCvHobbyFindMany'][number];
 
 function HobbySection({ rows, locale }: { rows: ReadonlyArray<HobbyRow>; locale: Locale }) {
     const [editing, setEditing] = useState<HobbyRow | 'new' | null>(null);

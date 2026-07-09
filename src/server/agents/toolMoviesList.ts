@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { movieList } from '../queries/movieList';
+import { adminMediaMovieFindMany } from '../queries/adminMediaMovieFindMany';
 
 // Read tool for `agentPersonalAssistantMedia`. Thin wrapper around
 // `movieList` — same data the media page renders. The system prompt already
@@ -31,7 +31,7 @@ export function toolMoviesList({ serverRuntime, session }: MediaAgentReadContext
         ].join(' '),
         inputSchema: moviesListInputSchema,
         execute: async (input) => {
-            const rows = await movieList(session, serverRuntime);
+            const rows = await adminMediaMovieFindMany(session, serverRuntime);
             return input.status ? rows.filter((r) => r.status === input.status) : rows;
         },
     });

@@ -1,17 +1,17 @@
 # Admin review of visitor chats — rendered at `/workspace/visitor-chats`.
-# Reads cross-session through the `user.admin.publicChats` / `publicChat`
-# namespace (gated by the `User.admin` resolver, which returns null for
-# non-admin sessions). The transcript view reuses the
+# Reads cross-session through the `user.admin.adminPublicChatFindMany` /
+# `adminPublicChatFindOne` namespace (gated by the `User.admin` resolver,
+# which returns null for non-admin sessions). The transcript view reuses the
 # `WorkspaceChatMessageFields` fragment from `WorkspaceAssistantPage.graphql`
 # so we don't fork the per-variant rendering shape. See
 # `docs/features/chat-visitor.md`.
 
 query WorkspaceVisitorChats {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             admin {
-                publicChats {
+                adminPublicChatFindMany {
                     chatId
                     title
                     lastModifiedAt
@@ -22,11 +22,11 @@ query WorkspaceVisitorChats {
 }
 
 query WorkspaceVisitorChat($chatId: ID!) {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             admin {
-                publicChat(chatId: $chatId) {
+                adminPublicChatFindOne(chatId: $chatId) {
                     chatId
                     title
                     lastModifiedAt

@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { medicalCategoryOverview } from '../queries/medicalCategoryOverview';
+import { adminMedicalCategoryOverviewFindMany } from '../queries/adminMedicalCategoryOverviewFindMany';
 
 interface MedicalAgentReadContext {
     serverRuntime: ServerRuntime;
@@ -19,6 +19,6 @@ export function toolMedicalOverview({ serverRuntime, session }: MedicalAgentRead
             '"what\'s coming up medically?" — the same shape the /workspace/medical overview tab renders.',
         ].join(' '),
         inputSchema: medicalOverviewInputSchema,
-        execute: async () => medicalCategoryOverview(session, serverRuntime),
+        execute: async () => adminMedicalCategoryOverviewFindMany(session, serverRuntime),
     });
 }

@@ -87,7 +87,7 @@ const travelSearchSchema = z.object({
 });
 
 type WorkspaceTravelAdmin = NonNullable<GqlCWorkspaceTravelPageUserFragment['admin']>;
-type TripRow = WorkspaceTravelAdmin['travel']['trips'][number];
+type TripRow = WorkspaceTravelAdmin['adminTravelFindOne']['adminTravelTripFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/travel')({
     validateSearch: travelSearchSchema,
@@ -111,9 +111,9 @@ function TravelArea() {
     const locale = useLocale();
     const data = Route.useLoaderData();
     const search = Route.useSearch();
-    const user = useWorkspaceTravelLiveUser(data.currentSession.user);
+    const user = useWorkspaceTravelLiveUser(data.sessionFindOne.user);
     const admin = user?.admin;
-    const travel = admin?.travel;
+    const travel = admin?.adminTravelFindOne;
 
     const tab: TripTab = search.tab ?? 'upcoming';
     const [editing, setEditing] = useState<TripRow | 'new' | null>(null);
@@ -122,14 +122,14 @@ function TravelArea() {
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
     if (!travel) return null;
 
-    const filtered = travel.trips.filter((row) => tripBelongsInTab(row, tab));
+    const filtered = travel.adminTravelTripFindMany.filter((row) => tripBelongsInTab(row, tab));
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <p className="text-sm text-muted-foreground">{description[locale]}</p>
 
             <div className="mt-10 flex flex-wrap items-end justify-between gap-4 border-b border-border/60">
-                <TabChips tab={tab} locale={locale} counts={countTabs(travel.trips)} />
+                <TabChips tab={tab} locale={locale} counts={countTabs(travel.adminTravelTripFindMany)} />
                 <Button size="sm" onClick={() => setEditing('new')} className="mb-1">
                     <PlusIcon className="size-4" />
                     {{ de: 'Neue Reise', en: 'New trip' }[locale]}

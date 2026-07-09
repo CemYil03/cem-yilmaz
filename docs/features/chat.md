@@ -94,10 +94,10 @@ with the call's arguments JSON-pretty-printed — see "Tool argument inspection"
 | Per-message rendering        | `src/web/components/chat-message/` (existing, see [Chat](../architecture/chat.md)) |
 | Markdown renderer            | `src/web/components/AssistantMarkdown.tsx` (streaming + persisted)                 |
 | Server reads                 | `src/server/queries/chatFindOne.ts` (existing)                                     |
-| Joined-row JOIN + shape      | `src/server/queries/chatMessageRowsBaseQuery.ts`                                   |
+| Joined-row JOIN + shape      | `src/server/queries/chatMessageBaseQuery.ts`                                       |
 | Server writes + streaming    | `src/server/commands/chatMessageCreate.ts` (existing)                              |
 | Per-message commit + publish | `src/server/commands/chatMessageAppend.ts`                                         |
-| Joined-row read for publish  | `src/server/queries/chatMessageRowLoad.ts`                                         |
+| Joined-row read for publish  | `src/server/queries/chatMessageFindOne.ts`                                         |
 | Collection submit            | `src/server/commands/chatInputCollectionRespond.ts`                                |
 | Tool approval respond        | `src/server/commands/chatToolApprovalRespond.ts`                                   |
 | Approval-gated tool          | _none in Phase 1 — Phase 2 personal-assistant agent introduces real gated tools_   |
@@ -218,7 +218,7 @@ Implemented in `findLatestCollectionId` in `src/web/chat/chatTranscript.ts`. See
 
 ### History replay
 
-The agent sees the full prior conversation on every turn via the shared `chatMessageRowsLoad` + `toModelMessages` pipeline. Documented in
+The agent sees the full prior conversation on every turn via the shared `chatMessageFindMany` + `toModelMessages` pipeline. Documented in
 [Chat Persistence — History replay is one shared loader](../architecture/chat-persistence.md#history-replay-is-one-shared-loader).
 
 ### Tool argument inspection
@@ -280,7 +280,7 @@ app's lifetime.
   `resume`, `stop`, `preload`. `stop` aborts the in-flight fetch, kills the `MediaSource` pump, and pauses the `Audio` element; `pause` and
   `resume` toggle without tearing anything down. Progressive fallback to a blob-download path when `MediaSource` or `audio/mpeg` support is
   unavailable.
-- Cache: table `TtsAudioCache` (`src/server/db/schema.ts`), query `ttsAudioCacheLoad`, command `ttsAudioCacheUpsert`, key helper
+- Cache: table `TtsAudioCache` (`src/server/db/schema.ts`), query `ttsAudioCacheFindOne`, command `ttsAudioCacheUpsert`, key helper
   `ttsContentHash` — SHA-256 of `${text}|${voice}|${model}|${format}` so a wire-format migration never returns stale bytes.
 - Transcoder: `src/server/utils/audioTranscode.ts` — streaming PCM → MP3 via `ffmpeg-static` (pinned binary, libmp3lame compiled in, no
   `apt-get` layer in the Dockerfile).

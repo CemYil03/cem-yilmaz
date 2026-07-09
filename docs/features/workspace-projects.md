@@ -88,13 +88,15 @@ Migration: `drizzle/0004_secret_butterfly.sql`.
 
 ### GraphQL
 
-Read namespace under `Admin` (reached via `currentSession.user.admin`):
+Read namespace under `Admin` (reached via `sessionFindOne.user.admin`):
 
-- `admin.projectRequests(status: ProjectRequestStatus): [ProjectRequest!]!` — list (newest first); `convertedProject` field joined in
-- `admin.projectRequestsInboxCount: Int!` — count of `emailVerified` requests without a linked project, drives the hub badge
-- `admin.projects(status: ProjectStatus): [Project!]!` — board feed; eagerly loads `tasks` + `sourceRequest`
-- `admin.standaloneTasks: [Task!]!` — full list of standalone todos. Consumed by [/workspace/todos](./workspace-todos.md), not this page.
-- `admin.standaloneOpenTaskCount: Int!` — hub-badge count of standalone todos in `todo` or `doing`.
+- `admin.adminProjectRequestFindMany(status: ProjectRequestStatus): [ProjectRequest!]!` — list (newest first); `convertedProject` field
+  joined in
+- `admin.adminProjectRequestInboxCount: Int!` — count of `emailVerified` requests without a linked project, drives the hub badge
+- `admin.adminProjectFindMany(status: ProjectStatus): [Project!]!` — board feed; eagerly loads `tasks` + `sourceRequest`
+- `admin.adminStandaloneTaskFindMany: [Task!]!` — full list of standalone todos. Consumed by [/workspace/todos](./workspace-todos.md), not
+  this page.
+- `admin.adminStandaloneTaskOpenCount: Int!` — hub-badge count of standalone todos in `todo` or `doing`.
 
 Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 
@@ -111,18 +113,18 @@ Write namespace under `AdminMutation` (gated by `guardAdminMutation`):
 
 ### Where things live
 
-| Concern         | File                                                                                                                           |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                             |
-| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                            |
-| Mappers         | `src/server/mappers/toGqlProjectRequest.ts`, `toGqlProject.ts`, `toGqlTask.ts`                                                 |
-| Queries         | `src/server/queries/projectRequestsList.ts`, `projectRequestsInboxCount.ts`, `projectsList.ts`, `standaloneTasksList.ts`       |
-| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `project{Upsert,Delete,Reorder}.ts`, `task{Upsert,Delete,Reorder}.ts` |
-| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                        |
-| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                 |
-| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                             |
-| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                  |
-| Tests           | `src/server/commands/projectUpsert.test.ts`, `taskReorder.test.ts`                                                             |
+| Concern         | File                                                                                                                                                 |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                   |
+| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                  |
+| Mappers         | `src/server/mappers/toGqlProjectRequest.ts`, `toGqlProject.ts`, `toGqlTask.ts`                                                                       |
+| Queries         | `src/server/queries/adminProjectRequestFindMany.ts`, `adminProjectRequestInboxCount.ts`, `adminProjectFindMany.ts`, `adminStandaloneTaskFindMany.ts` |
+| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `project{Upsert,Delete,Reorder}.ts`, `task{Upsert,Delete,Reorder}.ts`                       |
+| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                              |
+| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                       |
+| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                   |
+| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                        |
+| Tests           | `src/server/commands/projectUpsert.test.ts`, `taskReorder.test.ts`                                                                                   |
 
 ## Out of scope (v1)
 
@@ -250,7 +252,8 @@ Database: `ProjectLinks` table — `projectLinkId`, `projectId` (FK, cascade), `
 `createdAt`, `updatedAt`. Indexes `(projectId, pinned)` and `(activityId)`.
 
 GraphQL: `type ProjectLink`, `enum ProjectLinkKind`, mutations `projectLinkUpsert`, `projectLinkDelete`, `projectLinkTogglePin`.
-`Project.links` and `ProjectActivity.links` are eagerly loaded by `projectsList` / `projectGet` in the same in-memory normalization pass.
+`Project.links` and `ProjectActivity.links` are eagerly loaded by `adminProjectFindMany` / `adminProjectFindOne` in the same in-memory
+normalization pass.
 
 ## Files
 
@@ -416,7 +419,8 @@ Files:
 - Migration: `drizzle/0005_chunky_switch.sql` (original); `drizzle/0007_fat_stature.sql` (links, files, offer columns)
 - Mapper: `src/server/mappers/toGqlProjectActivity.ts`, `toGqlProjectLink.ts`, `toGqlProjectFile.ts`, `toGqlFileUpload.ts`, and the extended
   `toGqlProject.ts`
-- Queries: `src/server/queries/activeTimerGet.ts`, `projectGet.ts`; lists + totals + links + files are loaded by `projectsList.ts`
+- Queries: `src/server/queries/adminProjectActiveTimerFindOne.ts`, `adminProjectFindOne.ts`; lists + totals + links + files are loaded by
+  `adminProjectFindMany.ts`
 - Commands: `src/server/commands/projectActivityUpsert.ts` (with atomic attach), `projectActivityDelete.ts`, `projectTimerStart.ts`,
   `projectTimerStop.ts`, `projectLink{Upsert,Delete,TogglePin}.ts`, `projectFile{Upsert,Delete,TogglePin}.ts`,
   `projectFileCreateFromMarkdown.ts`

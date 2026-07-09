@@ -114,20 +114,20 @@ underneath, day-bucketed (`Today` / `Yesterday` / `This week` / `Earlier`) so a 
 sections. Bucketing lives in `src/web/chat/workspaceChatListBuckets.ts`.
 
 The list is backed by the `WorkspaceAssistantChatsPage(limit, offset, query)` GraphQL query, which reads two sibling fields on `Admin` —
-`chats(limit, offset, query)` for the current page's shells and `chatsCount(query)` for the total — both resolved by
-`src/server/queries/adminChats.ts`:
+`adminChatFindMany(limit, offset, query)` for the current page's shells and `adminChatCount(query)` for the total — both resolved by
+`src/server/queries/adminChatFindMany.ts` and `src/server/queries/adminChatCount.ts`:
 
 - **Search.** When `query` is set, the server matches EITHER the chat title OR any user-message body (case-insensitive `ILIKE '%…%'` with
   `%` / `_` / `\` escaped). Assistant text is intentionally NOT searched — the intent of "find the chat where I said X" is anchored on the
   user's own words, not the model's paraphrase. The client debounces typing by 300ms (`SEARCH_DEBOUNCE_MS`) so a keystroke doesn't fire a
-  request per character; a fresh query resets pagination. `chats` and `chatsCount` share one predicate helper so the two fields cannot drift
-  on filter semantics.
+  request per character; a fresh query resets pagination. `adminChatFindMany` and `adminChatCount` share one predicate helper so the two
+  fields cannot drift on filter semantics.
 - **Pagination.** The client asks for `CHATS_PAGE_SIZE = 10` rows on first render. "Show more" grows the requested `limit` by 10 (same
   offset 0, urql caches the smaller subset) so a single query drives the whole grown list rather than concatenating pages on the client. The
   client compares `chats.length` against `chatsCount` to gate the "Show more" button — cheaper than a `limit + 1` peek and it also lets us
   surface the total elsewhere without another round-trip. `MAX_LIMIT = 20` at the server clamps a runaway `limit`; grow it in lock-step with
-  the client's page size if the browser ever renders more per screen. All three arguments on `Admin.chats` are optional so the field is
-  drop-in for a plain "list every admin chat" call.
+  the client's page size if the browser ever renders more per screen. All three arguments on `Admin.adminChatFindMany` are optional so the
+  field is drop-in for a plain "list every admin chat" call.
 - **Reactivity.** `cache-and-network` request policy — a fresh send updates `lastModifiedAt`, and the next time the browser mounts (or urql
   revalidates in-place) the resumed chat reorders to the top without a hard reload.
 
@@ -216,7 +216,8 @@ src/routes/{-$locale}/
 └── workspace/assistant.$chatId.tsx       Deep-link route — URL-driven view of one chat by id.
 
 src/server/queries/
-└── adminChats.ts                     Paged + searchable admin chat browser feed. Exports `adminChats` (list) and `adminChatsCount` (total for the same filter). `ILIKE` on title OR any user-message body; the two share one predicate helper so they cannot drift.
+├── adminChatFindMany.ts              Paged + searchable admin chat browser feed (list).
+└── adminChatCount.ts                 Total count for the same filter. `ILIKE` on title OR any user-message body; the two share one predicate helper so they cannot drift.
 ```
 
 ## Mutations
@@ -241,8 +242,8 @@ Two surface-level conveniences flow from [`architecture/agent-delegation.md`](..
   just like any other markdown — `<AssistantMarkdown>` renders them through Streamdown. See
   [Deep links](../architecture/agent-delegation.md#deep-links).
 - **Nested tool-call rows.** When the orchestrator delegates project work to its sub-agent, the resulting `delegateToProjects` tool-call row
-  in the transcript shows the sub-agent's own tool calls (`projectsList`, `projectUpsert`, `taskUpsert`, …) indented under it. The user
-  reads "Created project X" plus the actual sequence of DB writes that produced it. See
+  in the transcript shows the sub-agent's own tool calls (`adminProjectFindMany`, `projectUpsert`, `taskUpsert`, …) indented under it. The
+  user reads "Created project X" plus the actual sequence of DB writes that produced it. See
   [Nested tool calls](../architecture/agent-delegation.md#nested-tool-calls).
 
 ## Transcript scroll behaviour

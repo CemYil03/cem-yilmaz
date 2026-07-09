@@ -102,8 +102,8 @@ null. That has two consequences in the chat data path:
   check for the two user-authored variants and returns `null` when no user row is attached.
 
 Visitor chats are linked to their owning session via the new `chats.sessionId` column. This is what powers the "Previous chats" list in the
-sheet's empty state — `Session.visitorChats` selects from this column. Admin chats leave `sessionId` null; they're owned by the logged-in
-user (read via `scope = 'admin'`).
+sheet's empty state — `Session.visitorChatFindMany` selects from this column. Admin chats leave `sessionId` null; they're owned by the
+logged-in user (read via `scope = 'admin'`).
 
 ## Rate limiting
 
@@ -169,7 +169,7 @@ LIMIT 11
 The query probes `limit + 1` so the caller can distinguish "exactly at the limit" from "over". `toGqlVisitorChatQuota` clamps `used` at the
 limit so the sheet reads `10 / 10` even if more rows existed pre-clamp.
 
-### `Session.visitorChatQuota` GraphQL field
+### `Session.visitorChatQuotaFindOne` GraphQL field
 
 ```graphql
 type VisitorChatQuota {
@@ -184,9 +184,10 @@ type VisitorChatQuota {
 
 ## Previous chats list
 
-`Session.visitorChats` returns up to 50 chats owned by the requester's session (newest first), via `chatsFindBySession`. Empty `messages` —
-fetch a single transcript through `Session.visitorChat(chatId)` when the visitor actually picks one. The single-chat resolver rejects any
-read whose `chats.sessionId` doesn't match the requester's session, so a stolen chatId can't cross into another visitor's history.
+`Session.visitorChatFindMany` returns up to 50 chats owned by the requester's session (newest first), via `visitorChatFindMany`. Empty
+`messages` — fetch a single transcript through `Session.visitorChatFindOne(chatId)` when the visitor actually picks one. The single-chat
+resolver rejects any read whose `chats.sessionId` doesn't match the requester's session, so a stolen chatId can't cross into another
+visitor's history.
 
 The list is rendered in the sheet's empty state. Clicking a row calls the parent provider's `loadChat(chatId)` and the sheet drops into the
 loaded view without re-sending anything.

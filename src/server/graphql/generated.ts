@@ -18,61 +18,61 @@ export type Scalars = {
 
 export interface GqlSAdmin {
     __typename?: 'Admin';
-    activeTimer?: Maybe<GqlSProjectActivity>;
-    chat: GqlSChat;
-    chatConfig: GqlSAdminChatConfig;
-    chats: Array<GqlSChat>;
-    chatsCount: Scalars['Int']['output'];
-    compass: GqlSAdminCompass;
-    cv: GqlSCvQuery;
-    inventory: GqlSAdminInventoryQuery;
-    logs: Array<GqlSLog>;
-    media: GqlSAdminMediaQuery;
-    medical: GqlSAdminMedicalQuery;
-    project: GqlSProject;
-    projectRequests: Array<GqlSProjectRequest>;
-    projectRequestsInboxCount: Scalars['Int']['output'];
-    projects: Array<GqlSProject>;
-    publicChat: GqlSChat;
-    publicChats: Array<GqlSChat>;
-    standaloneOpenTaskCount: Scalars['Int']['output'];
-    standaloneTasks: Array<GqlSTask>;
-    travel: GqlSAdminTravelQuery;
+    adminChatConfigFindOne: GqlSAdminChatConfig;
+    adminChatCount: Scalars['Int']['output'];
+    adminChatFindMany: Array<GqlSChat>;
+    adminChatFindOne: GqlSChat;
+    adminCompassFindOne: GqlSAdminCompass;
+    adminCvFindOne: GqlSCvQuery;
+    adminInventoryFindOne: GqlSAdminInventoryQuery;
+    adminLogFindMany: Array<GqlSLog>;
+    adminMediaFindOne: GqlSAdminMediaQuery;
+    adminMedicalFindOne: GqlSAdminMedicalQuery;
+    adminProjectActiveTimerFindOne?: Maybe<GqlSProjectActivity>;
+    adminProjectFindMany: Array<GqlSProject>;
+    adminProjectFindOne: GqlSProject;
+    adminProjectRequestFindMany: Array<GqlSProjectRequest>;
+    adminProjectRequestInboxCount: Scalars['Int']['output'];
+    adminPublicChatFindMany: Array<GqlSChat>;
+    adminPublicChatFindOne: GqlSChat;
+    adminStandaloneTaskFindMany: Array<GqlSTask>;
+    adminStandaloneTaskOpenCount: Scalars['Int']['output'];
+    adminTravelFindOne: GqlSAdminTravelQuery;
 }
 
-export type GqlSAdminChatArgs = {
-    chatId: Scalars['ID']['input'];
+export type GqlSAdminAdminChatCountArgs = {
+    query?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlSAdminChatsArgs = {
+export type GqlSAdminAdminChatFindManyArgs = {
     limit?: InputMaybe<Scalars['Int']['input']>;
     offset?: InputMaybe<Scalars['Int']['input']>;
     query?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlSAdminChatsCountArgs = {
-    query?: InputMaybe<Scalars['String']['input']>;
+export type GqlSAdminAdminChatFindOneArgs = {
+    chatId: Scalars['ID']['input'];
 };
 
-export type GqlSAdminLogsArgs = {
+export type GqlSAdminAdminLogFindManyArgs = {
     level?: InputMaybe<GqlSLogLevel>;
     limit?: InputMaybe<Scalars['Int']['input']>;
     search?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlSAdminProjectArgs = {
-    projectId: Scalars['ID']['input'];
-};
-
-export type GqlSAdminProjectRequestsArgs = {
-    status?: InputMaybe<GqlSProjectRequestStatus>;
-};
-
-export type GqlSAdminProjectsArgs = {
+export type GqlSAdminAdminProjectFindManyArgs = {
     status?: InputMaybe<GqlSProjectStatus>;
 };
 
-export type GqlSAdminPublicChatArgs = {
+export type GqlSAdminAdminProjectFindOneArgs = {
+    projectId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminAdminProjectRequestFindManyArgs = {
+    status?: InputMaybe<GqlSProjectRequestStatus>;
+};
+
+export type GqlSAdminAdminPublicChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
 };
 
@@ -91,10 +91,10 @@ export interface GqlSAdminChatModel {
 
 export interface GqlSAdminCompass {
     __typename?: 'AdminCompass';
-    interview?: Maybe<GqlSCompassInterview>;
-    interviewPending?: Maybe<GqlSCompassInterview>;
-    interviews: Array<GqlSCompassInterview>;
-    observations: Array<GqlSCompassObservation>;
+    adminCompassInterviewFindMany: Array<GqlSCompassInterview>;
+    adminCompassInterviewFindOne?: Maybe<GqlSCompassInterview>;
+    adminCompassInterviewPendingFindOne?: Maybe<GqlSCompassInterview>;
+    adminCompassObservationFindMany: Array<GqlSCompassObservation>;
     observationsSinceSynthesis: Scalars['Int']['output'];
     prose: Scalars['String']['output'];
     psychology: Scalars['String']['output'];
@@ -107,61 +107,60 @@ export interface GqlSAdminCompass {
     synthesizedAt?: Maybe<Scalars['DateTime']['output']>;
 }
 
-export type GqlSAdminCompassInterviewArgs = {
+export type GqlSAdminCompassAdminCompassInterviewFindOneArgs = {
     interviewId: Scalars['ID']['input'];
 };
 
-export type GqlSAdminCompassObservationsArgs = {
+export type GqlSAdminCompassAdminCompassObservationFindManyArgs = {
     category?: InputMaybe<GqlSCompassObservationCategory>;
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export interface GqlSAdminInventoryQuery {
     __typename?: 'AdminInventoryQuery';
-    item?: Maybe<GqlSItem>;
-    items: Array<GqlSItem>;
-    materialNetWorthCents: Scalars['Int']['output'];
-    upcomingWarrantyExpirations: Array<GqlSItem>;
+    adminInventoryItemFindMany: Array<GqlSItem>;
+    adminInventoryItemFindOne?: Maybe<GqlSItem>;
+    adminInventoryItemUpcomingWarrantyFindMany: Array<GqlSItem>;
+    adminInventoryMaterialNetWorthCentsFindOne: Scalars['Int']['output'];
 }
 
-export type GqlSAdminInventoryQueryItemArgs = {
-    itemId: Scalars['ID']['input'];
-};
-
-export type GqlSAdminInventoryQueryItemsArgs = {
+export type GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs = {
     includeDisposed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export type GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs = {
+export type GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs = {
+    itemId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs = {
     withinDays?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export interface GqlSAdminMediaQuery {
     __typename?: 'AdminMediaQuery';
-    channels: Array<GqlSMediaChannel>;
-    channelsByTopic: Array<GqlSMediaChannel>;
-    movies: Array<GqlSMovie>;
-    tmdbSearch: Array<GqlSTmdbMovieResult>;
-    youtubeSearch: Array<GqlSYoutubeChannelResult>;
+    adminMediaChannelFindMany: Array<GqlSMediaChannel>;
+    adminMediaMovieFindMany: Array<GqlSMovie>;
+    adminMediaTmdbFindMany: Array<GqlSTmdbMovieResult>;
+    adminMediaYoutubeFindMany: Array<GqlSYoutubeChannelResult>;
 }
 
-export type GqlSAdminMediaQueryChannelsByTopicArgs = {
-    topic: Scalars['String']['input'];
+export type GqlSAdminMediaQueryAdminMediaChannelFindManyArgs = {
+    topic?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlSAdminMediaQueryTmdbSearchArgs = {
+export type GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs = {
     query: Scalars['String']['input'];
 };
 
-export type GqlSAdminMediaQueryYoutubeSearchArgs = {
+export type GqlSAdminMediaQueryAdminMediaYoutubeFindManyArgs = {
     query: Scalars['String']['input'];
 };
 
 export interface GqlSAdminMedicalQuery {
     __typename?: 'AdminMedicalQuery';
-    appointments: Array<GqlSMedicalAppointment>;
-    overview: Array<GqlSMedicalCategoryOverview>;
-    records: Array<GqlSMedicalRecord>;
+    adminMedicalAppointmentFindMany: Array<GqlSMedicalAppointment>;
+    adminMedicalCategoryOverviewFindMany: Array<GqlSMedicalCategoryOverview>;
+    adminMedicalRecordFindMany: Array<GqlSMedicalRecord>;
 }
 
 export interface GqlSAdminMutation {
@@ -545,11 +544,11 @@ export type GqlSAdminMutationTripsUpsertArgs = {
 
 export interface GqlSAdminTravelQuery {
     __typename?: 'AdminTravelQuery';
-    trip?: Maybe<GqlSTrip>;
-    trips: Array<GqlSTrip>;
+    adminTravelTripFindMany: Array<GqlSTrip>;
+    adminTravelTripFindOne?: Maybe<GqlSTrip>;
 }
 
-export type GqlSAdminTravelQueryTripArgs = {
+export type GqlSAdminTravelQueryAdminTravelTripFindOneArgs = {
     tripId: Scalars['ID']['input'];
 };
 
@@ -954,10 +953,10 @@ export type GqlSCvHobbyInput = {
 
 export interface GqlSCvQuery {
     __typename?: 'CvQuery';
-    education: Array<GqlSCvEducation>;
-    experience: Array<GqlSCvExperience>;
-    hobbies: Array<GqlSCvHobby>;
-    skills: Array<GqlSCvSkill>;
+    publicCvEducationFindMany: Array<GqlSCvEducation>;
+    publicCvExperienceFindMany: Array<GqlSCvExperience>;
+    publicCvHobbyFindMany: Array<GqlSCvHobby>;
+    publicCvSkillFindMany: Array<GqlSCvSkill>;
 }
 
 export interface GqlSCvSkill {
@@ -1485,20 +1484,20 @@ export type GqlSProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'pause
 
 export interface GqlSQuery {
     __typename?: 'Query';
-    currentSession: GqlSSession;
-    cv: GqlSCvQuery;
+    publicCvFindOne: GqlSCvQuery;
+    sessionFindOne: GqlSSession;
 }
 
 export interface GqlSSession {
     __typename?: 'Session';
     sessionId: Scalars['ID']['output'];
     user?: Maybe<GqlSUser>;
-    visitorChat: GqlSChat;
-    visitorChatQuota: GqlSVisitorChatQuota;
-    visitorChats: Array<GqlSChat>;
+    visitorChatFindMany: Array<GqlSChat>;
+    visitorChatFindOne: GqlSChat;
+    visitorChatQuotaFindOne: GqlSVisitorChatQuota;
 }
 
-export type GqlSSessionVisitorChatArgs = {
+export type GqlSSessionVisitorChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
 };
 
@@ -1681,11 +1680,11 @@ export type GqlSUserCreate = {
 
 export interface GqlSUserMutation {
     __typename?: 'UserMutation';
-    terminateSessions: GqlSMutationResult;
+    userSessionTerminateMany: GqlSMutationResult;
     userUpdate: GqlSMutationResult;
 }
 
-export type GqlSUserMutationTerminateSessionsArgs = {
+export type GqlSUserMutationUserSessionTerminateManyArgs = {
     sessionIds: Array<Scalars['ID']['input']>;
 };
 
@@ -1843,11 +1842,11 @@ export type GqlSResolversUnionTypes<_RefType extends Record<string, unknown>> = 
 /** Mapping between all available schema types and the resolvers types */
 export type GqlSResolversTypes = ResolversObject<{
     Admin: ResolverTypeWrapper<
-        Omit<GqlSAdmin, 'chat' | 'chats' | 'publicChat' | 'publicChats'> & {
-            chat: GqlSResolversTypes['Chat'];
-            chats: Array<GqlSResolversTypes['Chat']>;
-            publicChat: GqlSResolversTypes['Chat'];
-            publicChats: Array<GqlSResolversTypes['Chat']>;
+        Omit<GqlSAdmin, 'adminChatFindMany' | 'adminChatFindOne' | 'adminPublicChatFindMany' | 'adminPublicChatFindOne'> & {
+            adminChatFindMany: Array<GqlSResolversTypes['Chat']>;
+            adminChatFindOne: GqlSResolversTypes['Chat'];
+            adminPublicChatFindMany: Array<GqlSResolversTypes['Chat']>;
+            adminPublicChatFindOne: GqlSResolversTypes['Chat'];
         }
     >;
     AdminChatConfig: ResolverTypeWrapper<GqlSAdminChatConfig>;
@@ -1989,10 +1988,10 @@ export type GqlSResolversTypes = ResolversObject<{
     ProjectStatus: GqlSProjectStatus;
     Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
     Session: ResolverTypeWrapper<
-        Omit<GqlSSession, 'user' | 'visitorChat' | 'visitorChats'> & {
+        Omit<GqlSSession, 'user' | 'visitorChatFindMany' | 'visitorChatFindOne'> & {
             user?: Maybe<GqlSResolversTypes['User']>;
-            visitorChat: GqlSResolversTypes['Chat'];
-            visitorChats: Array<GqlSResolversTypes['Chat']>;
+            visitorChatFindMany: Array<GqlSResolversTypes['Chat']>;
+            visitorChatFindOne: GqlSResolversTypes['Chat'];
         }
     >;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -2023,11 +2022,11 @@ export type GqlSResolversTypes = ResolversObject<{
 
 /** Mapping between all available schema types and the resolvers parents */
 export type GqlSResolversParentTypes = ResolversObject<{
-    Admin: Omit<GqlSAdmin, 'chat' | 'chats' | 'publicChat' | 'publicChats'> & {
-        chat: GqlSResolversParentTypes['Chat'];
-        chats: Array<GqlSResolversParentTypes['Chat']>;
-        publicChat: GqlSResolversParentTypes['Chat'];
-        publicChats: Array<GqlSResolversParentTypes['Chat']>;
+    Admin: Omit<GqlSAdmin, 'adminChatFindMany' | 'adminChatFindOne' | 'adminPublicChatFindMany' | 'adminPublicChatFindOne'> & {
+        adminChatFindMany: Array<GqlSResolversParentTypes['Chat']>;
+        adminChatFindOne: GqlSResolversParentTypes['Chat'];
+        adminPublicChatFindMany: Array<GqlSResolversParentTypes['Chat']>;
+        adminPublicChatFindOne: GqlSResolversParentTypes['Chat'];
     };
     AdminChatConfig: GqlSAdminChatConfig;
     AdminChatModel: GqlSAdminChatModel;
@@ -2134,10 +2133,10 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ProjectLinkUpsert: GqlSProjectLinkUpsert;
     ProjectRequest: GqlSProjectRequest;
     Query: Record<PropertyKey, never>;
-    Session: Omit<GqlSSession, 'user' | 'visitorChat' | 'visitorChats'> & {
+    Session: Omit<GqlSSession, 'user' | 'visitorChatFindMany' | 'visitorChatFindOne'> & {
         user?: Maybe<GqlSResolversParentTypes['User']>;
-        visitorChat: GqlSResolversParentTypes['Chat'];
-        visitorChats: Array<GqlSResolversParentTypes['Chat']>;
+        visitorChatFindMany: Array<GqlSResolversParentTypes['Chat']>;
+        visitorChatFindOne: GqlSResolversParentTypes['Chat'];
     };
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
@@ -2164,26 +2163,51 @@ export type GqlSAdminResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Admin'] = GqlSResolversParentTypes['Admin'],
 > = ResolversObject<{
-    activeTimer?: Resolver<Maybe<GqlSResolversTypes['ProjectActivity']>, ParentType, ContextType>;
-    chat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminChatArgs, 'chatId'>>;
-    chatConfig?: Resolver<GqlSResolversTypes['AdminChatConfig'], ParentType, ContextType>;
-    chats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType, Partial<GqlSAdminChatsArgs>>;
-    chatsCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType, Partial<GqlSAdminChatsCountArgs>>;
-    compass?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
-    cv?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
-    inventory?: Resolver<GqlSResolversTypes['AdminInventoryQuery'], ParentType, ContextType>;
-    logs?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminLogsArgs>>;
-    media?: Resolver<GqlSResolversTypes['AdminMediaQuery'], ParentType, ContextType>;
-    medical?: Resolver<GqlSResolversTypes['AdminMedicalQuery'], ParentType, ContextType>;
-    project?: Resolver<GqlSResolversTypes['Project'], ParentType, ContextType, RequireFields<GqlSAdminProjectArgs, 'projectId'>>;
-    projectRequests?: Resolver<Array<GqlSResolversTypes['ProjectRequest']>, ParentType, ContextType, Partial<GqlSAdminProjectRequestsArgs>>;
-    projectRequestsInboxCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
-    projects?: Resolver<Array<GqlSResolversTypes['Project']>, ParentType, ContextType, Partial<GqlSAdminProjectsArgs>>;
-    publicChat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSAdminPublicChatArgs, 'chatId'>>;
-    publicChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
-    standaloneOpenTaskCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
-    standaloneTasks?: Resolver<Array<GqlSResolversTypes['Task']>, ParentType, ContextType>;
-    travel?: Resolver<GqlSResolversTypes['AdminTravelQuery'], ParentType, ContextType>;
+    adminChatConfigFindOne?: Resolver<GqlSResolversTypes['AdminChatConfig'], ParentType, ContextType>;
+    adminChatCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType, Partial<GqlSAdminAdminChatCountArgs>>;
+    adminChatFindMany?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType, Partial<GqlSAdminAdminChatFindManyArgs>>;
+    adminChatFindOne?: Resolver<
+        GqlSResolversTypes['Chat'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminAdminChatFindOneArgs, 'chatId'>
+    >;
+    adminCompassFindOne?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
+    adminCvFindOne?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
+    adminInventoryFindOne?: Resolver<GqlSResolversTypes['AdminInventoryQuery'], ParentType, ContextType>;
+    adminLogFindMany?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminAdminLogFindManyArgs>>;
+    adminMediaFindOne?: Resolver<GqlSResolversTypes['AdminMediaQuery'], ParentType, ContextType>;
+    adminMedicalFindOne?: Resolver<GqlSResolversTypes['AdminMedicalQuery'], ParentType, ContextType>;
+    adminProjectActiveTimerFindOne?: Resolver<Maybe<GqlSResolversTypes['ProjectActivity']>, ParentType, ContextType>;
+    adminProjectFindMany?: Resolver<
+        Array<GqlSResolversTypes['Project']>,
+        ParentType,
+        ContextType,
+        Partial<GqlSAdminAdminProjectFindManyArgs>
+    >;
+    adminProjectFindOne?: Resolver<
+        GqlSResolversTypes['Project'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminAdminProjectFindOneArgs, 'projectId'>
+    >;
+    adminProjectRequestFindMany?: Resolver<
+        Array<GqlSResolversTypes['ProjectRequest']>,
+        ParentType,
+        ContextType,
+        Partial<GqlSAdminAdminProjectRequestFindManyArgs>
+    >;
+    adminProjectRequestInboxCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminPublicChatFindMany?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    adminPublicChatFindOne?: Resolver<
+        GqlSResolversTypes['Chat'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminAdminPublicChatFindOneArgs, 'chatId'>
+    >;
+    adminStandaloneTaskFindMany?: Resolver<Array<GqlSResolversTypes['Task']>, ParentType, ContextType>;
+    adminStandaloneTaskOpenCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminTravelFindOne?: Resolver<GqlSResolversTypes['AdminTravelQuery'], ParentType, ContextType>;
 }>;
 
 export type GqlSAdminChatConfigResolvers<
@@ -2207,19 +2231,19 @@ export type GqlSAdminCompassResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminCompass'] = GqlSResolversParentTypes['AdminCompass'],
 > = ResolversObject<{
-    interview?: Resolver<
+    adminCompassInterviewFindMany?: Resolver<Array<GqlSResolversTypes['CompassInterview']>, ParentType, ContextType>;
+    adminCompassInterviewFindOne?: Resolver<
         Maybe<GqlSResolversTypes['CompassInterview']>,
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminCompassInterviewArgs, 'interviewId'>
+        RequireFields<GqlSAdminCompassAdminCompassInterviewFindOneArgs, 'interviewId'>
     >;
-    interviewPending?: Resolver<Maybe<GqlSResolversTypes['CompassInterview']>, ParentType, ContextType>;
-    interviews?: Resolver<Array<GqlSResolversTypes['CompassInterview']>, ParentType, ContextType>;
-    observations?: Resolver<
+    adminCompassInterviewPendingFindOne?: Resolver<Maybe<GqlSResolversTypes['CompassInterview']>, ParentType, ContextType>;
+    adminCompassObservationFindMany?: Resolver<
         Array<GqlSResolversTypes['CompassObservation']>,
         ParentType,
         ContextType,
-        Partial<GqlSAdminCompassObservationsArgs>
+        Partial<GqlSAdminCompassAdminCompassObservationFindManyArgs>
     >;
     observationsSinceSynthesis?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     prose?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
@@ -2237,45 +2261,49 @@ export type GqlSAdminInventoryQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminInventoryQuery'] = GqlSResolversParentTypes['AdminInventoryQuery'],
 > = ResolversObject<{
-    item?: Resolver<Maybe<GqlSResolversTypes['Item']>, ParentType, ContextType, RequireFields<GqlSAdminInventoryQueryItemArgs, 'itemId'>>;
-    items?: Resolver<
+    adminInventoryItemFindMany?: Resolver<
         Array<GqlSResolversTypes['Item']>,
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminInventoryQueryItemsArgs, 'includeDisposed'>
+        RequireFields<GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs, 'includeDisposed'>
     >;
-    materialNetWorthCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
-    upcomingWarrantyExpirations?: Resolver<
+    adminInventoryItemFindOne?: Resolver<
+        Maybe<GqlSResolversTypes['Item']>,
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs, 'itemId'>
+    >;
+    adminInventoryItemUpcomingWarrantyFindMany?: Resolver<
         Array<GqlSResolversTypes['Item']>,
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminInventoryQueryUpcomingWarrantyExpirationsArgs, 'withinDays'>
+        RequireFields<GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs, 'withinDays'>
     >;
+    adminInventoryMaterialNetWorthCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type GqlSAdminMediaQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminMediaQuery'] = GqlSResolversParentTypes['AdminMediaQuery'],
 > = ResolversObject<{
-    channels?: Resolver<Array<GqlSResolversTypes['MediaChannel']>, ParentType, ContextType>;
-    channelsByTopic?: Resolver<
+    adminMediaChannelFindMany?: Resolver<
         Array<GqlSResolversTypes['MediaChannel']>,
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMediaQueryChannelsByTopicArgs, 'topic'>
+        Partial<GqlSAdminMediaQueryAdminMediaChannelFindManyArgs>
     >;
-    movies?: Resolver<Array<GqlSResolversTypes['Movie']>, ParentType, ContextType>;
-    tmdbSearch?: Resolver<
+    adminMediaMovieFindMany?: Resolver<Array<GqlSResolversTypes['Movie']>, ParentType, ContextType>;
+    adminMediaTmdbFindMany?: Resolver<
         Array<GqlSResolversTypes['TmdbMovieResult']>,
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMediaQueryTmdbSearchArgs, 'query'>
+        RequireFields<GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs, 'query'>
     >;
-    youtubeSearch?: Resolver<
+    adminMediaYoutubeFindMany?: Resolver<
         Array<GqlSResolversTypes['YoutubeChannelResult']>,
         ParentType,
         ContextType,
-        RequireFields<GqlSAdminMediaQueryYoutubeSearchArgs, 'query'>
+        RequireFields<GqlSAdminMediaQueryAdminMediaYoutubeFindManyArgs, 'query'>
     >;
 }>;
 
@@ -2283,9 +2311,9 @@ export type GqlSAdminMedicalQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminMedicalQuery'] = GqlSResolversParentTypes['AdminMedicalQuery'],
 > = ResolversObject<{
-    appointments?: Resolver<Array<GqlSResolversTypes['MedicalAppointment']>, ParentType, ContextType>;
-    overview?: Resolver<Array<GqlSResolversTypes['MedicalCategoryOverview']>, ParentType, ContextType>;
-    records?: Resolver<Array<GqlSResolversTypes['MedicalRecord']>, ParentType, ContextType>;
+    adminMedicalAppointmentFindMany?: Resolver<Array<GqlSResolversTypes['MedicalAppointment']>, ParentType, ContextType>;
+    adminMedicalCategoryOverviewFindMany?: Resolver<Array<GqlSResolversTypes['MedicalCategoryOverview']>, ParentType, ContextType>;
+    adminMedicalRecordFindMany?: Resolver<Array<GqlSResolversTypes['MedicalRecord']>, ParentType, ContextType>;
 }>;
 
 export type GqlSAdminMutationResolvers<
@@ -2705,8 +2733,13 @@ export type GqlSAdminTravelQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminTravelQuery'] = GqlSResolversParentTypes['AdminTravelQuery'],
 > = ResolversObject<{
-    trip?: Resolver<Maybe<GqlSResolversTypes['Trip']>, ParentType, ContextType, RequireFields<GqlSAdminTravelQueryTripArgs, 'tripId'>>;
-    trips?: Resolver<Array<GqlSResolversTypes['Trip']>, ParentType, ContextType>;
+    adminTravelTripFindMany?: Resolver<Array<GqlSResolversTypes['Trip']>, ParentType, ContextType>;
+    adminTravelTripFindOne?: Resolver<
+        Maybe<GqlSResolversTypes['Trip']>,
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminTravelQueryAdminTravelTripFindOneArgs, 'tripId'>
+    >;
 }>;
 
 export type GqlSChatResolvers<
@@ -3205,10 +3238,10 @@ export type GqlSCvQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['CvQuery'] = GqlSResolversParentTypes['CvQuery'],
 > = ResolversObject<{
-    education?: Resolver<Array<GqlSResolversTypes['CvEducation']>, ParentType, ContextType>;
-    experience?: Resolver<Array<GqlSResolversTypes['CvExperience']>, ParentType, ContextType>;
-    hobbies?: Resolver<Array<GqlSResolversTypes['CvHobby']>, ParentType, ContextType>;
-    skills?: Resolver<Array<GqlSResolversTypes['CvSkill']>, ParentType, ContextType>;
+    publicCvEducationFindMany?: Resolver<Array<GqlSResolversTypes['CvEducation']>, ParentType, ContextType>;
+    publicCvExperienceFindMany?: Resolver<Array<GqlSResolversTypes['CvExperience']>, ParentType, ContextType>;
+    publicCvHobbyFindMany?: Resolver<Array<GqlSResolversTypes['CvHobby']>, ParentType, ContextType>;
+    publicCvSkillFindMany?: Resolver<Array<GqlSResolversTypes['CvSkill']>, ParentType, ContextType>;
 }>;
 
 export type GqlSCvSkillResolvers<
@@ -3561,8 +3594,8 @@ export type GqlSQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Query'] = GqlSResolversParentTypes['Query'],
 > = ResolversObject<{
-    currentSession?: Resolver<GqlSResolversTypes['Session'], ParentType, ContextType>;
-    cv?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
+    publicCvFindOne?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
+    sessionFindOne?: Resolver<GqlSResolversTypes['Session'], ParentType, ContextType>;
 }>;
 
 export type GqlSSessionResolvers<
@@ -3571,9 +3604,14 @@ export type GqlSSessionResolvers<
 > = ResolversObject<{
     sessionId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     user?: Resolver<Maybe<GqlSResolversTypes['User']>, ParentType, ContextType>;
-    visitorChat?: Resolver<GqlSResolversTypes['Chat'], ParentType, ContextType, RequireFields<GqlSSessionVisitorChatArgs, 'chatId'>>;
-    visitorChatQuota?: Resolver<GqlSResolversTypes['VisitorChatQuota'], ParentType, ContextType>;
-    visitorChats?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    visitorChatFindMany?: Resolver<Array<GqlSResolversTypes['Chat']>, ParentType, ContextType>;
+    visitorChatFindOne?: Resolver<
+        GqlSResolversTypes['Chat'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSSessionVisitorChatFindOneArgs, 'chatId'>
+    >;
+    visitorChatQuotaFindOne?: Resolver<GqlSResolversTypes['VisitorChatQuota'], ParentType, ContextType>;
 }>;
 
 export type GqlSSubscriptionResolvers<
@@ -3706,11 +3744,11 @@ export type GqlSUserMutationResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['UserMutation'] = GqlSResolversParentTypes['UserMutation'],
 > = ResolversObject<{
-    terminateSessions?: Resolver<
+    userSessionTerminateMany?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
         ContextType,
-        RequireFields<GqlSUserMutationTerminateSessionsArgs, 'sessionIds'>
+        RequireFields<GqlSUserMutationUserSessionTerminateManyArgs, 'sessionIds'>
     >;
     userUpdate?: Resolver<
         GqlSResolversTypes['MutationResult'],

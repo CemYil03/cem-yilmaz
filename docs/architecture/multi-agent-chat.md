@@ -29,24 +29,25 @@ and split admin reads into the two list queries. It is NOT consulted to pick an 
 - `chats: [Chat!]!` — admin chats.
 - `chat(chatId: ID!): Chat!` — a single admin chat (rejects `public` scope).
 
-`Session.chat(chatId)` is removed. Visitors reading their own chat go through `Session.visitorChat(chatId)` — the chat is owned by the
-session that created it, and the resolver rejects any read whose `chats.sessionId` doesn't match the requester's session (scope mismatches
-are rejected the same way). Admins read through `currentSession.user.admin.chat(chatId)` / `currentSession.user.admin.publicChat(chatId)`.
+`Session.chat(chatId)` is removed. Visitors reading their own chat go through `Session.visitorChatFindOne(chatId)` — the chat is owned by
+the session that created it, and the resolver rejects any read whose `chats.sessionId` doesn't match the requester's session (scope
+mismatches are rejected the same way). Admins read through `sessionFindOne.user.admin.adminChatFindOne(chatId)` /
+`sessionFindOne.user.admin.adminPublicChatFindOne(chatId)`.
 
 ### Schema shape
 
 ```graphql
 type Query {
-    currentSession: Session!
+    sessionFindOne: Session!
 }
 
 type Session {
     sessionId: ID!
     user: User
-    visitorChats: [Chat!]!
-    # scope='public' AND chats.sessionId = currentSession.sessionId
-    visitorChat(chatId: ID!): Chat!
-    visitorChatQuota: VisitorChatQuota!
+    visitorChatFindMany: [Chat!]!
+    # scope='public' AND chats.sessionId = sessionFindOne.sessionId
+    visitorChatFindOne(chatId: ID!): Chat!
+    visitorChatQuotaFindOne: VisitorChatQuota!
 }
 
 type User {
@@ -56,10 +57,10 @@ type User {
 }
 
 type Admin {
-    publicChats: [Chat!]!
-    publicChat(chatId: ID!): Chat!
-    chats: [Chat!]!
-    chat(chatId: ID!): Chat!
+    adminPublicChatFindMany: [Chat!]!
+    adminPublicChatFindOne(chatId: ID!): Chat!
+    adminChatFindMany: [Chat!]!
+    adminChatFindOne(chatId: ID!): Chat!
 }
 
 type Mutation {
@@ -79,8 +80,8 @@ type AdminMutation {
 }
 ```
 
-The `UserMutation` namespace keeps its non-chat fields (`userUpdate`, `terminateSessions`); the three chat mutations move out of it. Chat
-sending is a per-session capability, not a per-user one — the public visitor doesn't need to be a registered user to send.
+The `UserMutation` namespace keeps its non-chat fields (`userUpdate`, `userSessionTerminateMany`); the three chat mutations move out of it.
+Chat sending is a per-session capability, not a per-user one — the public visitor doesn't need to be a registered user to send.
 
 ### Schema change (db)
 
@@ -95,7 +96,7 @@ export const chats = pgTable('Chats', {
   scope: varchar().$type<'public' | 'admin'>().notNull().default('public'),
   // Owning visitor session for public-scope chats — stamped on insert,
   // ON DELETE SET NULL. Admin chats leave this null (they belong to the
-  // logged-in user, not the session). Powers Session.visitorChats and the
+  // logged-in user, not the session). Powers Session.visitorChatFindMany and the
   // visitor-chat rate limiter — see docs/features/chat-visitor.md.
   sessionId: uuid(),
   lastModifiedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
@@ -178,10 +179,10 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
   visitor chat by chatId.
 - `User.admin` → returns null for non-admins (and for cross-user lookups), the `Admin` namespace shell otherwise. Same `isAdmin` check
   `guardAdminMutation` uses; the read side returns `null` instead of throwing so the field is safely composable from the public landing page
-  (`currentSession.user.admin != null` drives the workspace link there). See [workspace-access.md](./workspace-access.md).
-- `Session.visitorChat(chatId)` → resolved chat must have `scope = 'public'` AND `chats.sessionId = currentSession.sessionId`. A stolen
-  chatId from another visitor's session is rejected with the same generic "not found" error as a wrong-scope hit, so a probing client can't
-  tell the two apart.
+  (`sessionFindOne.user.admin != null` drives the workspace link there). See [workspace-access.md](./workspace-access.md).
+- `Session.visitorChatFindOne(chatId)` → resolved chat must have `scope = 'public'` AND `chats.sessionId = sessionFindOne.sessionId`. A
+  stolen chatId from another visitor's session is rejected with the same generic "not found" error as a wrong-scope hit, so a probing client
+  can't tell the two apart.
 
 ### Routing
 
@@ -189,8 +190,8 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
   `scope = 'public'`. Sends through `Mutation.chatMessageCreate` (visitor namespace).
 - `/workspace` — workspace hub. Hosts the assistant composer as the page hero. Sends through `Mutation.admin.chatMessageCreate` and
   navigates to `/workspace/assistant?chatId=<new id>` on first send.
-- `/workspace/assistant` — loaded personal-assistant chat. Reads `currentSession.user.admin.chat(chatId)` and sends follow-up messages
-  through the `AdminMutation.*` namespace. Always creates new chats with `scope = 'admin'`.
+- `/workspace/assistant` — loaded personal-assistant chat. Reads `sessionFindOne.user.admin.adminChatFindOne(chatId)` and sends follow-up
+  messages through the `AdminMutation.*` namespace. Always creates new chats with `scope = 'admin'`.
 
 ## Alternatives Considered
 
@@ -211,8 +212,8 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
   chats stamp `scope`; existing chats are verified to match.
 - The three chat mutations move from `UserMutation` to `Mutation` (visitor) and are mirrored on `AdminMutation` (admin). Client `.graphql`
   operations drop the `user { … }` wrapper.
-- `Session.chat(chatId)` is removed. `Session.visitorChat(chatId)` replaces it for visitor reads (scope + session-ownership check);
-  `currentSession.user.admin.chat(chatId)` / `publicChat(chatId)` for admin reads.
+- `Session.chat(chatId)` is removed. `Session.visitorChatFindOne(chatId)` replaces it for visitor reads (scope + session-ownership check);
+  `sessionFindOne.user.admin.adminChatFindOne(chatId)` / `adminPublicChatFindOne(chatId)` for admin reads.
 - `agentUserConversation.ts` is renamed to `agentVisitorAboutCem.ts`. `agentPersonalAssistant.ts` lands as a Phase-2-stub sibling with the
   workspace system prompt.
 - The chat-related architecture docs (`chat.md`, `chat-persistence.md`) keep their links to this doc; the dispatch model described here
@@ -233,12 +234,12 @@ The personal assistant additionally reads a short synthesized summary on each tu
 of three artifacts produced by an out-of-loop profiler that watches admin chat messages — see
 [`docs/features/workspace-compass.md`](../features/workspace-compass.md).
 
-- **Read path**: `agentPersonalAssistant` calls `compassSummaryGet(serverRuntime)` once per turn and prepends the returned text to its
+- **Read path**: `agentPersonalAssistant` calls `compassSummaryFindOne(serverRuntime)` once per turn and prepends the returned text to its
   system prompt. That is the only compass data that crosses back into a prompt.
 - **Write path**: `chatMessageCreate` on the admin namespace enqueues a `compassAnalyze` background job after the assistant turn fires. The
   job records observations and may auto-trigger a synthesis. The visitor agent never enqueues this job.
-- **Firewall**: `compassSummaryGet` reads exactly one column (`Compass.summary`). The richer `prose` and `psychology` fields are surfaced
-  only at `/workspace/compass` and never reach any agent. Storage separation, not prompt hygiene, is what enforces the boundary.
+- **Firewall**: `compassSummaryFindOne` reads exactly one column (`Compass.summary`). The richer `prose` and `psychology` fields are
+  surfaced only at `/workspace/compass` and never reach any agent. Storage separation, not prompt hygiene, is what enforces the boundary.
 
 ## Compass psychological-interview agent
 
@@ -253,8 +254,8 @@ through `compassInterviewTurnRunDetached` (a compass-shaped analogue of `chatAss
   `compassInterviewUpdates` subscription (keyed on `interviewMessageId`) rather than `chatUpdates`.
 - **Why a separate agent factory**: same shape category as the other two (system prompt + tools + model binding) but a different read
   surface — the interviewer is the only place that intentionally widens the firewall to see `summary` + `psychology` + recent observations,
-  via the single `compassInterviewContextGet` query. The personal-assistant agent's `compassSummaryGet` read is unchanged. The factory
-  exposes both `agentCompassInterviewerStream` (used by the detached turn-run when a `generationId` is present) and
+  via the single `compassInterviewContextFindOne` query. The personal-assistant agent's `compassSummaryFindOne` read is unchanged. The
+  factory exposes both `agentCompassInterviewerStream` (used by the detached turn-run when a `generationId` is present) and
   `agentCompassInterviewerGenerate` (fallback for tests and any future scheduled-job caller with no live UI).
 - **Trigger**: a recurring `compassInterviewScheduledDue` pg-boss job creates a `pending` interview row on the cadence set by
   `COMPASS_INTERVIEW_CRON`. Cem starts it from `/workspace/compass`'s Interviews tab; replies feed the same `compassAnalyze` job (now

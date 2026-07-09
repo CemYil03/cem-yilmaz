@@ -3,7 +3,7 @@ import { asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { compass, compassObservations, users } from '../../db/schema';
 import type { QueuedJobDefinition } from '../types';
-import { compassGet } from '../../queries/compassGet';
+import { adminCompassFindOne } from '../../queries/adminCompassFindOne';
 import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
 
 // Reads every non-dismissed observation plus the prior compass and rewrites
@@ -60,7 +60,7 @@ export const compassSynthesize: QueuedJobDefinition<CompassSynthesizeData> = {
     handler: async ({ data, serverRuntime }) => {
         try {
             serverRuntime.log.info(`compassSynthesize: starting (reason=${data.reason})`);
-            const previous = await compassGet(serverRuntime.db);
+            const previous = await adminCompassFindOne(serverRuntime.db);
 
             const observations = await serverRuntime.db
                 .select({

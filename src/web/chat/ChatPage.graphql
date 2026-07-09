@@ -159,13 +159,13 @@ fragment ChatMessageFields on ChatMessage {
 }
 
 query ChatPage($chatId: ID!) {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             userId
             name
         }
-        visitorChat(chatId: $chatId) {
+        visitorChatFindOne(chatId: $chatId) {
             chatId
             title
             lastModifiedAt
@@ -279,12 +279,12 @@ fragment VisitorChatQuotaFields on VisitorChatQuota {
 }
 
 query VisitorPreviousChats {
-    currentSession {
+    sessionFindOne {
         sessionId
-        visitorChats {
+        visitorChatFindMany {
             ...VisitorChatListItem
         }
-        visitorChatQuota {
+        visitorChatQuotaFindOne {
             ...VisitorChatQuotaFields
         }
     }
@@ -296,9 +296,9 @@ query VisitorPreviousChats {
 # previous chats). `cache-and-network` on the consumer side keeps the line
 # fresh across remounts without forcing a refetch on every keystroke.
 query VisitorChatQuota {
-    currentSession {
+    sessionFindOne {
         sessionId
-        visitorChatQuota {
+        visitorChatQuotaFindOne {
             ...VisitorChatQuotaFields
         }
     }

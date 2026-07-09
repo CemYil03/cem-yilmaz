@@ -109,7 +109,7 @@ the parent's `<ChatMessageToolCall>` view, which renders them in an indented blo
 
 What this means concretely:
 
-- The user sees `Called delegateToProjects` followed by `Called projectsList`, `Called projectUpsert`, `Called taskUpsert`,
+- The user sees `Called delegateToProjects` followed by `Called adminProjectFindMany`, `Called projectUpsert`, `Called taskUpsert`,
   `Called projectActivityUpsert`, `Called projectLinkUpsert`, `Called projectFileCreate` … indented under the parent — an honest record of
   which DB writes happened, not a single opaque pill.
 - The `delegateToProjects` row's `toolResult` still carries the structured `{ status, summary, mutations }` payload the orchestrator uses
@@ -206,7 +206,7 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 
   The canonical exemplar of a self-describing tool is `toolProjectActivityUpsert.ts`: a multi-sentence description that names when to reach
   for it, the cross-tool guidance ("work timer rows are NOT created here"), and per-field `.describe(...)` for every input. The anti-pattern
-  is a `buildSystemPrompt` with a "You have nine tools: - `projectsList` — ... - `projectUpsert` — ..." block.
+  is a `buildSystemPrompt` with a "You have nine tools: - `adminProjectFindMany` — ... - `projectUpsert` — ..." block.
 
 - **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
   `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via

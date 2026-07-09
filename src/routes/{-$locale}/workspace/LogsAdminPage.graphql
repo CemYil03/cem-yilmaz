@@ -4,10 +4,10 @@
 # into the box. See `docs/features/logging.md`.
 
 query WorkspaceLogs($level: LogLevel, $search: String, $limit: Int) {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                logs(level: $level, search: $search, limit: $limit) {
+                adminLogFindMany(level: $level, search: $search, limit: $limit) {
                     logId
                     level
                     message

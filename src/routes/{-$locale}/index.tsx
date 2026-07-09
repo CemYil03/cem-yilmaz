@@ -120,7 +120,7 @@ function HomePage() {
     // Admin-only "Workspace" entry in the header — non-admins (including
     // anonymous visitors) get `user.admin = null` and never see it. See
     // `docs/architecture/workspace-access.md`.
-    const isAdmin = data.currentSession.user?.admin != null;
+    const isAdmin = data.sessionFindOne.user?.admin != null;
 
     function openChat(text: string) {
         void openWithMessage(text);

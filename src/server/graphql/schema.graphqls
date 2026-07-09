@@ -315,23 +315,24 @@ type Session {
     # Visitor-assistant chats owned by this session, most-recent first. Empty
     # for sessions that have never started a visitor chat. The `messages`
     # field on each entry is empty — fetch a single chat through
-    # `Session.visitorChat(chatId)` to materialize its transcript. Used by
-    # the chat dialog's empty state so a returning visitor can resume a
+    # `Session.visitorChatFindOne(chatId)` to materialize its transcript. Used
+    # by the chat dialog's empty state so a returning visitor can resume a
     # prior conversation.
-    visitorChats: [Chat!]!
+    visitorChatFindMany: [Chat!]!
     # A single visitor chat owned by this session. Resolves only when the
-    # chat row has `scope = 'public'` AND `sessionId = currentSession.sessionId`
+    # chat row has `scope = 'public'` AND `sessionId = sessionFindOne.sessionId`
     # — a stolen chatId from another session is rejected even if the scope
-    # is correct. Admin reads still use `currentSession.user.admin.chat(...)` /
-    # `currentSession.user.admin.publicChat(...)` instead. See
+    # is correct. Admin reads still use
+    # `sessionFindOne.user.admin.adminChatFindOne(...)` /
+    # `sessionFindOne.user.admin.adminPublicChatFindOne(...)` instead. See
     # `docs/architecture/multi-agent-chat.md`.
-    visitorChat(chatId: ID!): Chat!
+    visitorChatFindOne(chatId: ID!): Chat!
     # Rolling-24h cap on visitor-chat user messages from this requester.
     # Counted across (this session) OR (other sessions sharing this `ipHash`)
     # so clearing cookies does not reset the bucket. The visitor dialog
     # renders `used / limit` and the time until the oldest in-window message
     # ages out. See `docs/features/chat-visitor.md`.
-    visitorChatQuota: VisitorChatQuota!
+    visitorChatQuotaFindOne: VisitorChatQuota!
 }
 
 # Read-only quota snapshot. `resetsAt` is the moment the oldest in-window
@@ -359,7 +360,7 @@ type ChatMessageCreateResult {
 
 type UserMutation {
     userUpdate(user: UserUpdate!): MutationResult!
-    terminateSessions(sessionIds: [ID!]!): MutationResult!
+    userSessionTerminateMany(sessionIds: [ID!]!): MutationResult!
 }
 
 # --- User-input answer write shape -------------------------------------------
@@ -404,13 +405,13 @@ input ChatAssistantOptions {
 }
 
 type Query {
-    currentSession: Session!
+    sessionFindOne: Session!
     # Public CV namespace — surfaces the timeline (`/cv`) and the
     # skill/hobby blocks (`/about`). Always returns lists ordered by their
     # `position` column, ascending. Edits land via the admin namespace
     # (`Mutation.admin.cv*`), gated by `guardAdminMutation`. See
     # `docs/features/cv.md`.
-    cv: CvQuery!
+    publicCvFindOne: CvQuery!
 }
 
 # Workspace read namespace — Cem's own chats and a separate window onto the
@@ -419,9 +420,9 @@ type Query {
 # `Chat` type itself is the same.
 type Admin {
     # Visitor (`scope = 'public'`) chats, newest first.
-    publicChats: [Chat!]!
+    adminPublicChatFindMany: [Chat!]!
     # A single visitor chat by id. Rejects `scope = 'admin'` chats.
-    publicChat(chatId: ID!): Chat!
+    adminPublicChatFindOne(chatId: ID!): Chat!
     # Admin (`scope = 'admin'`) chats, newest first by `lastModifiedAt`.
     # Backs the workspace assistant sidebar's chat browser. All three
     # arguments are optional so the field is drop-in compatible with an
@@ -437,23 +438,23 @@ type Admin {
     #     is intentionally not searched.
     #
     # The returned `Chat` shells carry an empty `messages` array — fetch
-    # the transcript with `chat(chatId)` when the user opens one. Pair
-    # with `chatsCount(query)` to drive "Show more" (server does not
-    # return a page-size + hasMore combo).
-    chats(limit: Int, offset: Int, query: String): [Chat!]!
+    # the transcript with `adminChatFindOne(chatId)` when the user opens
+    # one. Pair with `adminChatCount(query)` to drive "Show more" (server
+    # does not return a page-size + hasMore combo).
+    adminChatFindMany(limit: Int, offset: Int, query: String): [Chat!]!
     # Total number of admin chats matching the same optional `query` as
-    # `chats(...)`. The client subtracts `offset + items.length` to
-    # decide whether "Show more" is still meaningful.
-    chatsCount(query: String): Int!
+    # `adminChatFindMany(...)`. The client subtracts `offset + items.length`
+    # to decide whether "Show more" is still meaningful.
+    adminChatCount(query: String): Int!
     # A single admin chat by id. Rejects `scope = 'public'` chats.
-    chat(chatId: ID!): Chat!
+    adminChatFindOne(chatId: ID!): Chat!
     # The AI-built compass of Cem. Reads three synthesized text artifacts
     # (`summary`, `prose`, `psychology`) plus the underlying observations
     # the analyzer extracted from admin chats. The `summary` field is the
     # only piece fed back into the personal-assistant system prompt; the
     # rest is read-only insight surfaced at `/workspace/compass`. See
     # `docs/features/compass.md`.
-    compass: AdminCompass!
+    adminCompassFindOne: AdminCompass!
 }
 
 # Compass artifacts surfaced at `/workspace/compass`. Three text fields
@@ -489,18 +490,18 @@ type AdminCompass {
     # toggles between active rows (default, null = active only),
     # `dismissed: true` shows dismissed rows, `dismissed` omitted with
     # `includeDismissed: true` shows both.
-    observations(category: CompassObservationCategory, includeDismissed: Boolean): [CompassObservation!]!
+    adminCompassObservationFindMany(category: CompassObservationCategory, includeDismissed: Boolean): [CompassObservation!]!
     # All psychological-interview rows newest-first — pending + in-progress at
     # the top, then completed/skipped history beneath. See
     # `docs/features/compass.md` ("Psychological-interview agent").
-    interviews: [CompassInterview!]!
+    adminCompassInterviewFindMany: [CompassInterview!]!
     # A single interview by id, including its message transcript. Returns
     # null when the id doesn't resolve.
-    interview(interviewId: ID!): CompassInterview
+    adminCompassInterviewFindOne(interviewId: ID!): CompassInterview
     # The open interview if one exists — `pending` (Cem hasn't started yet)
     # or `in_progress` (mid-conversation). The page surfaces this as the
     # "interview waiting" / "resume" card. Null when no open interview.
-    interviewPending: CompassInterview
+    adminCompassInterviewPendingFindOne: CompassInterview
     # AI-suggested next interview topic — set by the analyzer when a message
     # contains a time-sensitive signal. Null when no suggestion is active.
     scheduledInterviewTopic: CompassInterviewTopic
@@ -813,10 +814,10 @@ type CvHobby {
 }
 
 type CvQuery {
-    experience: [CvExperience!]!
-    education: [CvEducation!]!
-    skills: [CvSkill!]!
-    hobbies: [CvHobby!]!
+    publicCvExperienceFindMany: [CvExperience!]!
+    publicCvEducationFindMany: [CvEducation!]!
+    publicCvSkillFindMany: [CvSkill!]!
+    publicCvHobbyFindMany: [CvHobby!]!
 }
 
 # --- CV admin write inputs ---------------------------------------------------
@@ -1137,46 +1138,46 @@ type ProjectFile {
     updatedAt: DateTime!
 }
 
-# Workspace projects read namespace — mounted under `Admin.projects` so
+# Workspace projects read namespace — mounted under `Admin.adminProjectFindMany` so
 # the resolver chain on `User.admin` covers it.
 extend type Admin {
     # Incoming visitor project briefs, newest first. The `status` argument
     # filters server-side; omit to return every state (including the
     # half-baked `pendingOtp` rows, mostly useful for debugging).
-    projectRequests(status: ProjectRequestStatus): [ProjectRequest!]!
+    adminProjectRequestFindMany(status: ProjectRequestStatus): [ProjectRequest!]!
     # Lightweight count of verified-and-untriaged requests. Drives the
     # inbox badge on the workspace hub. Equivalent to
-    # `projectRequests(status: emailVerified)` minus rows already
+    # `adminProjectRequestFindMany(status: emailVerified)` minus rows already
     # converted into a project — but a single `count(*)` round-trip
     # instead of materialising every row + its join.
-    projectRequestsInboxCount: Int!
+    adminProjectRequestInboxCount: Int!
     # All projects, ordered by status then `position`. The board groups
     # client-side by status. `status` argument narrows server-side when set.
-    projects(status: ProjectStatus): [Project!]!
+    adminProjectFindMany(status: ProjectStatus): [Project!]!
     # Single project by id, loaded fully (tasks, activities, links, files,
     # source request). Powers the `/workspace/projects/$projectId` detail
     # route. Raises `notFound` when the id does not exist.
-    project(projectId: ID!): Project!
+    adminProjectFindOne(projectId: ID!): Project!
     # Standalone todos: rows with `projectId IS NULL`. Project-bound tasks
     # are reached through `Project.tasks` so `/workspace/todos` and the
     # project board don't fight over the same list.
-    standaloneTasks: [Task!]!
+    adminStandaloneTaskFindMany: [Task!]!
     # Count of standalone todos in an open state (`todo` or `doing`).
     # Drives the Todos badge on the workspace hub. `done` rows are
     # excluded so the badge tracks "still to do" and not lifetime volume.
-    standaloneOpenTaskCount: Int!
+    adminStandaloneTaskOpenCount: Int!
     # The single currently-running work timer, or null if none. Drives the
     # header badge and per-project timer pill. At most one row exists with
     # `endedAt IS NULL AND kind = 'work'` — the DB enforces this via a
     # partial unique index.
-    activeTimer: ProjectActivity
+    adminProjectActiveTimerFindOne: ProjectActivity
     # CV editor read namespace — mounts the same `CvQuery` shape the public
     # `/cv` and `/about` surfaces consume, but reached through `User.admin`
     # so the workspace CV page can seed-and-subscribe under `userUpdates`
     # like every other admin surface. The mutations stay on
     # `AdminMutation.cv*` and continue to publish `userUpdates` after commit.
     # See `docs/architecture/state-synchronization.md`.
-    cv: CvQuery!
+    adminCvFindOne: CvQuery!
 }
 
 input ProjectCreate {
@@ -1421,7 +1422,7 @@ type AdminChatConfig {
 }
 
 extend type Admin {
-    chatConfig: AdminChatConfig!
+    adminChatConfigFindOne: AdminChatConfig!
 }
 
 # --- Logs --------------------------------------------------------------------
@@ -1457,12 +1458,12 @@ extend type Admin {
     # `message` substring match — `%` / `_` in `search` are escaped so they
     # match literally. `limit` caps the result count — defaults to 200,
     # clamped at 1000 server-side so a runaway client can't OOM the API.
-    logs(level: LogLevel, search: String, limit: Int): [Log!]!
+    adminLogFindMany(level: LogLevel, search: String, limit: Int): [Log!]!
 }
 
 extend type AdminMutation {
     # Persist the admin's chosen default chat model. Rejects ids outside the
-    # catalog (`Admin.chatConfig.availableModels`).
+    # catalog (`Admin.adminChatConfigFindOne.availableModels`).
     chatConfigDefaultModelSet(modelId: String!): MutationResult!
 }
 
@@ -1577,29 +1578,29 @@ type YoutubeChannelResult {
     canonicalUrl: String!
 }
 
-# Read namespace mounted under `Admin`. Same posture as `Admin.chatConfig`:
+# Read namespace mounted under `Admin`. Same posture as `Admin.adminChatConfigFindOne`:
 # gated once at the `Query.admin` boundary by the resolver chain on
 # `User.admin`. Nothing here is public.
 type AdminMediaQuery {
-    movies: [Movie!]!
-    channels: [MediaChannel!]!
-    # Channels whose `topics` array contains `topic`. Case-sensitive.
-    # Used by `/workspace/software` to render its "favourite tech YouTubers"
-    # section without duplicating channel data.
-    channelsByTopic(topic: String!): [MediaChannel!]!
+    adminMediaMovieFindMany: [Movie!]!
+    # `topic` filters to channels whose `topics` array contains it
+    # (case-sensitive). Omit or pass `null` to return every channel.
+    # `/workspace/software` reads this with `topic: "tech"` to render its
+    # "favourite tech YouTubers" section without duplicating channel data.
+    adminMediaChannelFindMany(topic: String): [MediaChannel!]!
     # Live TMDB search — returns at most 10 results. Empty list when
     # `TMDB_API_KEY` is unset, when TMDB is unreachable, or when `query`
     # trims to empty; the media page treats "empty" as a cue to offer the
     # manual-entry dialog.
-    tmdbSearch(query: String!): [TmdbMovieResult!]!
+    adminMediaTmdbFindMany(query: String!): [TmdbMovieResult!]!
     # Live YouTube channel search — returns at most 10 results, each
     # enriched with handle + subscriber count. Same empty-fallback
-    # semantics as `tmdbSearch`.
-    youtubeSearch(query: String!): [YoutubeChannelResult!]!
+    # semantics as `adminMediaTmdbFindMany`.
+    adminMediaYoutubeFindMany(query: String!): [YoutubeChannelResult!]!
 }
 
 extend type Admin {
-    media: AdminMediaQuery!
+    adminMediaFindOne: AdminMediaQuery!
 }
 
 input MovieInput {
@@ -1768,13 +1769,13 @@ type MedicalCategoryOverview {
 # Read namespace mounted under `Admin`. Gated once at the `Query.admin`
 # boundary by the resolver chain on `User.admin`.
 type AdminMedicalQuery {
-    appointments: [MedicalAppointment!]!
-    records: [MedicalRecord!]!
-    overview: [MedicalCategoryOverview!]!
+    adminMedicalAppointmentFindMany: [MedicalAppointment!]!
+    adminMedicalRecordFindMany: [MedicalRecord!]!
+    adminMedicalCategoryOverviewFindMany: [MedicalCategoryOverview!]!
 }
 
 extend type Admin {
-    medical: AdminMedicalQuery!
+    adminMedicalFindOne: AdminMedicalQuery!
 }
 
 input MedicalAppointmentInput {
@@ -1894,9 +1895,10 @@ enum ItemFileKind {
 # `materialNetWorthCents` never need to `MAX(valuedAt)` at read time.
 #
 # `valuations` / `serviceEntries` / `files` are populated on the singular
-# `item(id)` fetch. On the plural `items` list they resolve to `[]` — mirrors
-# how `projectsList` returns projects without their tasks and `projectGet`
-# returns them with. Detail-view callers use the singular query.
+# `adminInventoryItemFindOne(itemId)` fetch. On the plural `adminInventoryItemFindMany`
+# list they resolve to `[]` — mirrors how `adminProjectFindMany` returns projects
+# without their tasks and `adminProjectFindOne` returns them with. Detail-view
+# callers use the singular query.
 type Item {
     itemId: ID!
     categoryKey: ItemCategory!
@@ -1971,22 +1973,22 @@ type AdminInventoryQuery {
     # All tracked items. Disposed / sold / gifted / lost rows are hidden by
     # default so the list surface stays focused on currently-owned things;
     # `includeDisposed: true` returns the full history for the "All" filter.
-    items(includeDisposed: Boolean = false): [Item!]!
+    adminInventoryItemFindMany(includeDisposed: Boolean = false): [Item!]!
     # Single item by id, loaded fully (valuations, service entries, files).
     # Null when the id does not exist.
-    item(itemId: ID!): Item
+    adminInventoryItemFindOne(itemId: ID!): Item
     # Sum of `currentValueCents` over items with `disposalState = 'owned'`.
     # Drives the overview strip and the future finances-page cross-reference
     # tile. Nullable columns count as 0.
-    materialNetWorthCents: Int!
+    adminInventoryMaterialNetWorthCentsFindOne: Int!
     # Items whose warranty ends within the given window. Ordered
     # `warrantyEndsAt ASC` so the soonest expirations sit on top of the
     # overview list.
-    upcomingWarrantyExpirations(withinDays: Int = 90): [Item!]!
+    adminInventoryItemUpcomingWarrantyFindMany(withinDays: Int = 90): [Item!]!
 }
 
 extend type Admin {
-    inventory: AdminInventoryQuery!
+    adminInventoryFindOne: AdminInventoryQuery!
 }
 
 input ItemInput {
@@ -2147,13 +2149,13 @@ type Trip {
 # boundary by the resolver chain on `User.admin`.
 type AdminTravelQuery {
     # All trips, sorted `startsOn NULLS LAST, createdAt DESC`.
-    trips: [Trip!]!
+    adminTravelTripFindMany: [Trip!]!
     # Single trip by id — null when the id does not exist.
-    trip(tripId: ID!): Trip
+    adminTravelTripFindOne(tripId: ID!): Trip
 }
 
 extend type Admin {
-    travel: AdminTravelQuery!
+    adminTravelFindOne: AdminTravelQuery!
 }
 
 input TripInput {

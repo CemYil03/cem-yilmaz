@@ -23,8 +23,8 @@ const title = { de: 'Softwareentwicklung & Architektur', en: 'Software developme
 const description = { de: 'Code, Architektur-Notizen, Werkzeuge.', en: 'Code, architecture notes, tools.' };
 
 type ChannelRow = NonNullable<
-    NonNullable<NonNullable<GqlCWorkspaceSoftwarePageQuery['currentSession']['user']>['admin']>['media']
->['channelsByTopic'][number];
+    NonNullable<NonNullable<GqlCWorkspaceSoftwarePageQuery['sessionFindOne']['user']>['admin']>['adminMediaFindOne']
+>['adminMediaChannelFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/software')({
     loader: () => routeLoaderGraphqlClient(WorkspaceSoftwarePageDocument)(),
@@ -46,7 +46,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/software')({
 function SoftwareArea() {
     const locale = useLocale();
     const data = Route.useLoaderData();
-    const channels = data.currentSession.user?.admin?.media.channelsByTopic ?? [];
+    const channels = data.sessionFindOne.user?.admin?.adminMediaFindOne.adminMediaChannelFindMany ?? [];
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-5xl mx-auto w-full py-12 leading-relaxed space-y-10">

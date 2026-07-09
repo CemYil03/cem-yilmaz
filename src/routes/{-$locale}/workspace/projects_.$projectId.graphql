@@ -8,7 +8,7 @@
 
 fragment WorkspaceProjectDetailUser on User {
     admin {
-        activeTimer {
+        adminProjectActiveTimerFindOne {
             activityId
             projectId
             taskId
@@ -19,7 +19,7 @@ fragment WorkspaceProjectDetailUser on User {
             endedAt
             durationSec
         }
-        project(projectId: $projectId) {
+        adminProjectFindOne(projectId: $projectId) {
             projectId
             title
             description
@@ -123,7 +123,7 @@ fragment WorkspaceProjectDetailUser on User {
 }
 
 query WorkspaceProjectDetail($projectId: ID!) {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceProjectDetailUser
         }

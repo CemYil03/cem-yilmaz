@@ -4,7 +4,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_CONFIG_SINGLETON_ID } from '../agents/adminChatConfig';
 import { isAdminChatModelId } from '../agents/adminChatModels';
-import { adminChatConfigGet } from '../queries/adminChatConfigGet';
+import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 
 // Persists the admin's chosen default chat model. Rejects unknown ids — the
 // catalog (`adminChatModels.ts`) is the only valid set; smuggling an unknown
@@ -26,7 +26,7 @@ export async function adminChatConfigDefaultModelSet(
     try {
         // Ensures the singleton row exists before we update — keeps the
         // bootstrap and the update on the same code path.
-        await adminChatConfigGet(serverRuntime.db);
+        await adminChatConfigFindOne(serverRuntime.db);
         const [updated] = await serverRuntime.db
             .update(adminChatConfig)
             .set({ defaultModelId: args.modelId, updatedAt: new Date() })

@@ -13,8 +13,8 @@
 
 fragment WorkspaceMediaPageUser on User {
     admin {
-        media {
-            movies {
+        adminMediaFindOne {
+            adminMediaMovieFindMany {
                 movieId
                 title
                 tmdbId
@@ -30,7 +30,7 @@ fragment WorkspaceMediaPageUser on User {
                 topics
                 updatedAt
             }
-            channels {
+            adminMediaChannelFindMany {
                 channelId
                 name
                 platform
@@ -48,7 +48,7 @@ fragment WorkspaceMediaPageUser on User {
 }
 
 query WorkspaceMediaPage {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceMediaPageUser
         }
@@ -62,11 +62,11 @@ subscription WorkspaceMediaPageUpdates {
 }
 
 query WorkspaceMediaTmdbSearch($query: String!) {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                media {
-                    tmdbSearch(query: $query) {
+                adminMediaFindOne {
+                    adminMediaTmdbFindMany(query: $query) {
                         tmdbId
                         title
                         releaseDate
@@ -80,11 +80,11 @@ query WorkspaceMediaTmdbSearch($query: String!) {
 }
 
 query WorkspaceMediaYoutubeSearch($query: String!) {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                media {
-                    youtubeSearch(query: $query) {
+                adminMediaFindOne {
+                    adminMediaYoutubeFindMany(query: $query) {
                         channelId
                         title
                         handle

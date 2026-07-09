@@ -8,7 +8,7 @@ import { clientIpFromRequest } from '../../server/utils/clientIpFromRequest';
 import { db } from '../../server/db';
 import { loggerCreate } from '../../server/utils/loggerCreate';
 import { ttsContentHash } from '../../server/utils/ttsContentHash';
-import { ttsAudioCacheLoad } from '../../server/queries/ttsAudioCacheLoad';
+import { ttsAudioCacheFindOne } from '../../server/queries/ttsAudioCacheFindOne';
 import { ttsAudioCacheUpsert } from '../../server/commands/ttsAudioCacheUpsert';
 import { audioTranscodePcmToMp3Stream } from '../../server/utils/audioTranscode';
 import { textToSentences } from '../../web/utils/textToSentences';
@@ -96,7 +96,7 @@ export const Route = createFileRoute('/api/tts')({
                 // always resolves to the same hash. On hit, we skip Gemini
                 // entirely; the second listen to any message is near-instant.
                 const contentHash = ttsContentHash({ text, voice: TTS_VOICE, model: TTS_MODEL, format: TTS_FORMAT });
-                const cached = await ttsAudioCacheLoad(db, contentHash);
+                const cached = await ttsAudioCacheFindOne(db, contentHash);
                 if (cached) {
                     const cachedBody = new ArrayBuffer(cached.bytes.byteLength);
                     new Uint8Array(cachedBody).set(cached.bytes);

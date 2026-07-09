@@ -139,10 +139,10 @@ const medicalSearchSchema = z.object({
 });
 
 type WorkspaceMedicalAdmin = NonNullable<GqlCWorkspaceMedicalPageUserFragment['admin']>;
-type MedicalData = WorkspaceMedicalAdmin['medical'];
+type MedicalData = WorkspaceMedicalAdmin['adminMedicalFindOne'];
 type AppointmentRow = GqlCWorkspaceMedicalPageAppointmentFragment;
 type RecordRow = GqlCWorkspaceMedicalPageRecordFragment;
-type OverviewRow = MedicalData['overview'][number];
+type OverviewRow = MedicalData['adminMedicalCategoryOverviewFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/medical')({
     validateSearch: medicalSearchSchema,
@@ -173,9 +173,9 @@ function WorkspaceMedical() {
     // server push. Every medical mutation publishes on the user channel
     // already, so we never re-fetch from the client. See
     // `docs/architecture/state-synchronization.md`.
-    const user = useWorkspaceMedicalPageLiveUser(data.currentSession.user);
+    const user = useWorkspaceMedicalPageLiveUser(data.sessionFindOne.user);
     const admin = user?.admin;
-    const medical = admin?.medical;
+    const medical = admin?.adminMedicalFindOne;
 
     // Deep-link focus: chat assistant emits links like
     // `/workspace/medical?tab=records&focus=<id>`. Same shape as `media.tsx`.
@@ -243,9 +243,15 @@ function WorkspaceMedical() {
             </nav>
 
             <div className="mt-8">
-                {tab === 'overview' && <OverviewTab overview={medical.overview} locale={locale} />}
-                {tab === 'appointments' && <AppointmentsTab appointments={medical.appointments} locale={locale} />}
-                {tab === 'records' && <RecordsTab records={medical.records} appointments={medical.appointments} locale={locale} />}
+                {tab === 'overview' && <OverviewTab overview={medical.adminMedicalCategoryOverviewFindMany} locale={locale} />}
+                {tab === 'appointments' && <AppointmentsTab appointments={medical.adminMedicalAppointmentFindMany} locale={locale} />}
+                {tab === 'records' && (
+                    <RecordsTab
+                        records={medical.adminMedicalRecordFindMany}
+                        appointments={medical.adminMedicalAppointmentFindMany}
+                        locale={locale}
+                    />
+                )}
             </div>
         </main>
     );

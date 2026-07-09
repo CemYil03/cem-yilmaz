@@ -94,13 +94,13 @@ triage:
 - Filters live in the URL (`?level=…&search=…`) so a view is deep-linkable. No live tail.
 
 The viewer is gated by the `User.admin` resolver chain — the same gate that protects the rest of the workspace surface. A non-admin
-visitor's `currentSession.user.admin` resolves to null, the page treats that as "not authorized" and renders the shared
+visitor's `sessionFindOne.user.admin` resolves to null, the page treats that as "not authorized" and renders the shared
 `<WorkspaceUnauthorized />` surface instead of crashing.
 
 ### Viewer Files
 
-- `src/server/graphql/schema.graphqls` — `Log` type, `LogLevel` enum, `Admin.logs(level, search, limit)` field
-- `src/server/queries/logsList.ts` — query (level/search filters, limit clamping, LIKE-escape)
+- `src/server/graphql/schema.graphqls` — `Log` type, `LogLevel` enum, `Admin.adminLogFindMany(level, search, limit)` field
+- `src/server/queries/adminLogFindMany.ts` — query (level/search filters, limit clamping, LIKE-escape)
 - `src/server/mappers/toGqlLog.ts` — DB row → GraphQL
 - `src/routes/{-$locale}/workspace/logs.tsx` — route
 - `src/routes/{-$locale}/workspace/LogsAdminPage.graphql` — client-side query

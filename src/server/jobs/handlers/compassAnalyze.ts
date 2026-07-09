@@ -15,7 +15,7 @@ import {
 import type { CompassInterviewMessageAnalysisCreate, CompassMessageAnalysisCreate } from '../../db/schema';
 import { COMPASS_SINGLETON_ID, COMPASS_SYNTHESIS_THRESHOLD } from '../../agents/compassConfig';
 import { compassInterviewTopics } from '../../agents/compassInterviewConfig';
-import { compassGet } from '../../queries/compassGet';
+import { adminCompassFindOne } from '../../queries/adminCompassFindOne';
 import type { QueuedJobDefinition } from '../types';
 import { compassSynthesize } from './compassSynthesize';
 
@@ -179,7 +179,7 @@ export const compassAnalyze: QueuedJobDefinition<CompassAnalyzeData> = {
             // Threshold auto-trigger. Read the current counter; if we crossed,
             // enqueue the synthesizer. The synthesizer resets the counter so a
             // burst of admin messages doesn't enqueue it ten times.
-            const compassRow = await compassGet(serverRuntime.db);
+            const compassRow = await adminCompassFindOne(serverRuntime.db);
             if (compassRow.observationsSinceSynthesis >= COMPASS_SYNTHESIS_THRESHOLD) {
                 await serverRuntime.jobs.enqueue(compassSynthesize, { reason: 'threshold' });
             }

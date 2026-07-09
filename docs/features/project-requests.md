@@ -87,8 +87,8 @@ Verified requests surface on the workspace projects page as the **Inbox** tab �
 - **Deleted** (`projectRequestDelete`) — permanent. Use only for spam that survived OTP verification. Projects converted earlier from this
   request keep their row but lose the FK backlink (the FK is `ON DELETE SET NULL`).
 
-The workspace hub's Projects card carries a badge with the un-triaged count, fed by `admin.projectRequestsInboxCount` — a single `count(*)`
-round-trip, not the full request list.
+The workspace hub's Projects card carries a badge with the un-triaged count, fed by `admin.adminProjectRequestInboxCount` — a single
+`count(*)` round-trip, not the full request list.
 
 ## Where things live
 

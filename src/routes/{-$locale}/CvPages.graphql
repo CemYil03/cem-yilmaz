@@ -2,7 +2,7 @@
 # blocks). Experience arrives ordered by `endDate` (ongoing first), then
 # `startDate`; the other three lists arrive in `position`-ascending order.
 query CvPage {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             # Presence-only probe — non-null when the user is an admin. Drives
@@ -14,8 +14,8 @@ query CvPage {
             }
         }
     }
-    cv {
-        experience {
+    publicCvFindOne {
+        publicCvExperienceFindMany {
             cvExperienceId
             roleDe
             roleEn
@@ -27,7 +27,7 @@ query CvPage {
             technologies
             managerName
         }
-        education {
+        publicCvEducationFindMany {
             cvEducationId
             degreeDe
             degreeEn
@@ -44,7 +44,7 @@ query CvPage {
 }
 
 query AboutPage {
-    currentSession {
+    sessionFindOne {
         sessionId
         user {
             admin {
@@ -52,14 +52,14 @@ query AboutPage {
             }
         }
     }
-    cv {
-        skills {
+    publicCvFindOne {
+        publicCvSkillFindMany {
             cvSkillId
             category
             label
             position
         }
-        hobbies {
+        publicCvHobbyFindMany {
             cvHobbyId
             textDe
             textEn

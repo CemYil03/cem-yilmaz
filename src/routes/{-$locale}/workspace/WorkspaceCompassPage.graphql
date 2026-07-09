@@ -50,7 +50,7 @@ fragment WorkspaceCompassInterviewWithMessages on CompassInterview {
 
 fragment WorkspaceCompassPageUser on User {
     admin {
-        compass {
+        adminCompassFindOne {
             summary
             prose
             psychology
@@ -58,16 +58,16 @@ fragment WorkspaceCompassPageUser on User {
             synthesisModelId
             observationsSinceSynthesis
             synthesisInProgress
-            observations(category: $category, includeDismissed: $includeDismissed) {
+            adminCompassObservationFindMany(category: $category, includeDismissed: $includeDismissed) {
                 ...WorkspaceCompassObservation
             }
-            interviewPending {
+            adminCompassInterviewPendingFindOne {
                 ...WorkspaceCompassInterviewWithMessages
             }
             scheduledInterviewTopic
             scheduledInterviewAt
             scheduledInterviewReason
-            interviews {
+            adminCompassInterviewFindMany {
                 ...WorkspaceCompassInterviewSummary
             }
         }
@@ -75,7 +75,7 @@ fragment WorkspaceCompassPageUser on User {
 }
 
 query WorkspaceCompassPage($category: CompassObservationCategory, $includeDismissed: Boolean) {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceCompassPageUser
         }
@@ -89,11 +89,11 @@ subscription WorkspaceCompassPageUpdates($category: CompassObservationCategory, 
 }
 
 query WorkspaceCompassInterview($interviewId: ID!) {
-    currentSession {
+    sessionFindOne {
         user {
             admin {
-                compass {
-                    interview(interviewId: $interviewId) {
+                adminCompassFindOne {
+                    adminCompassInterviewFindOne(interviewId: $interviewId) {
                         ...WorkspaceCompassInterviewWithMessages
                     }
                 }

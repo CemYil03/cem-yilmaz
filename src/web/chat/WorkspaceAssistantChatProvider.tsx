@@ -7,7 +7,9 @@ import type { TranscriptMessage } from './chatTranscript';
 import { useChatLiveUpdates } from './useChatLiveUpdates';
 import type { ChatLiveUpdates } from './useChatLiveUpdates';
 
-type WorkspaceChatConfig = NonNullable<NonNullable<GqlCWorkspaceChatConfigQuery['currentSession']['user']>['admin']>['chatConfig'];
+type WorkspaceChatConfig = NonNullable<
+    NonNullable<GqlCWorkspaceChatConfigQuery['sessionFindOne']['user']>['admin']
+>['adminChatConfigFindOne'];
 
 // Workspace-assistant coordination — see `docs/features/chat-workspace.md`.
 //
@@ -159,7 +161,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
             const result = await urqlClient
                 .query(WorkspaceChatPageDocument, { chatId: id }, { requestPolicy: 'cache-and-network' })
                 .toPromise();
-            const chat = result.data?.currentSession.user?.admin?.chat;
+            const chat = result.data?.sessionFindOne.user?.admin?.adminChatFindOne;
             if (result.error || !chat) {
                 live.endTurn();
                 return;

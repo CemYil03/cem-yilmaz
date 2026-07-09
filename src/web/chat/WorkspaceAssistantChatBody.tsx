@@ -101,9 +101,9 @@ export function WorkspaceAssistantChatBrowser({ locale }: { locale: Locale }) {
         variables: { limit: loadedCount, offset: 0, query: trimmedQuery.length > 0 ? trimmedQuery : null },
         requestPolicy: 'cache-and-network',
     });
-    const admin = data?.currentSession.user?.admin;
-    const chats = admin?.chats ?? [];
-    const totalCount = admin?.chatsCount ?? 0;
+    const admin = data?.sessionFindOne.user?.admin;
+    const chats = admin?.adminChatFindMany ?? [];
+    const totalCount = admin?.adminChatCount ?? 0;
     // Server hides the "Show more" affordance once the loaded window
     // covers every matching row for the current query. Comparing counts
     // is enough because we always request `offset: 0` and grow `limit` —

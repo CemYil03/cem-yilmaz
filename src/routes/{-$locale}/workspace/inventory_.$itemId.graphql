@@ -5,8 +5,8 @@
 
 fragment WorkspaceInventoryDetailUser on User {
     admin {
-        inventory {
-            item(itemId: $itemId) {
+        adminInventoryFindOne {
+            adminInventoryItemFindOne(itemId: $itemId) {
                 itemId
                 categoryKey
                 name
@@ -74,7 +74,7 @@ fragment WorkspaceInventoryDetailUser on User {
 }
 
 query WorkspaceInventoryDetail($itemId: ID!) {
-    currentSession {
+    sessionFindOne {
         user {
             ...WorkspaceInventoryDetailUser
         }
