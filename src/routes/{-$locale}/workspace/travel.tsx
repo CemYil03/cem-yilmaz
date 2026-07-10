@@ -24,8 +24,8 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCTransportMode,
-    GqlCTripStatus,
+    GqlCAdminTravelTransportMode as GqlCTransportMode,
+    GqlCAdminTravelTripStatus as GqlCTripStatus,
     GqlCWorkspaceTravelPageUpdatesSubscription,
     GqlCWorkspaceTravelPageUserFragment,
 } from '../../../web/graphql/generated';

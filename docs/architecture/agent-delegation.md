@@ -171,13 +171,14 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
   recover TS inference from the codegen's `Properties<T>` phantom; the runtime schema still validates against the type). Field-level
   explanations travel via the SDL's own field descriptions — `withDescriptions: true` on the codegen plumbs them into the generated Zod
   schemas — so the SDL stays the single source of truth for both the wire format and the field-level teaching the LLM sees.
-- **Prefer batch shapes (`entitiesAction`) over singulars.** One `tripDaysUpsert` (accepting `[TripDayInput!]!`) beats N `tripDayUpsert`
-  calls: fewer agent steps against `isStepCount(10)`, one transaction on the server, one `userUpdates` publish per batch. Every entity write
-  on the travel domain uses this shape (`tripsUpsert`, `tripDaysUpsert`, `tripActivitiesUpsert`, `tripPackingItemsUpsert`, plus the matching
-  deletes taking `[ID!]!`). Corresponding mutations return `MutationResult { success, referenceIds }` — never the hydrated entity — because
-  the seed-and-subscribe posture over `userUpdates` already delivers the new state; a second row-shape in the mutation result would just be
-  a second source of truth to keep aligned. `referenceIds` echoes the id per input row (in input order) so the sub-agent can use them as
-  parent ids for the next tool call without a follow-up read.
+- **Prefer batch shapes (`entitiesAction`) over singulars.** One `adminTravelTripDaysUpsert` (accepting `[AdminTravelTripDayInput!]!`) beats
+  N `adminTravelTripDayUpsert` calls: fewer agent steps against `isStepCount(10)`, one transaction on the server, one `userUpdates` publish
+  per batch. Every entity write on the travel domain uses this shape (`adminTravelTripsUpsert`, `adminTravelTripDaysUpsert`,
+  `adminTravelTripActivitiesUpsert`, `adminTravelTripPackingItemsUpsert`, plus the matching deletes taking `[ID!]!`). Corresponding
+  mutations return `MutationResult { success, referenceIds }` — never the hydrated entity — because the seed-and-subscribe posture over
+  `userUpdates` already delivers the new state; a second row-shape in the mutation result would just be a second source of truth to keep
+  aligned. `referenceIds` echoes the id per input row (in input order) so the sub-agent can use them as parent ids for the next tool call
+  without a follow-up read.
 - **Exception: `DateTime` fields.** When the underlying SDL input carries a `DateTime` scalar, the tool falls back to a hand-built
   `z.object` that uses `z.string()` for those fields and calls `new Date(...)` in `execute`. `typescript-validation-schema` emits `DateTime`
   as `z.date()`, which has no clean JSON-Schema representation under Gemini's constrained decoding (`structuredOutputs: true`) and produces

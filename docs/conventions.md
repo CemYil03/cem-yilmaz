@@ -144,6 +144,41 @@ filters when set, returns everything when omitted). Do not coin a new function f
 GraphQL field names on the query side follow the same rule, camelCased, and namespace fields returning sub-query types get `FindOne`
 (`Admin.adminMediaFindOne: AdminMediaQuery!`).
 
+### Type & input naming — the entity access path
+
+Object types, input types, enums, and DB tables that belong to **one domain** carry that domain's **access-path prefix** — the same prefix
+its query namespace already uses (`AdminTravel`, `AdminMedia`, `AdminInventory`, `AdminMedical`, `AdminFinances`, `AdminNutrition`,
+`AdminFitness`, …). A free-floating (prefix-less) name is reserved for types that are **genuinely shared across domains**. The rule in one
+line: **no free-floating type or input names unless they are shared between domains.**
+
+| Layer                        | Pattern                                   | Example                                                                      |
+| ---------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| GraphQL object type          | `Admin{Domain}{Entity}`                   | `AdminTravelTrip`, `AdminTravelTripDay`, `AdminTravelTripActivity`           |
+| GraphQL input                | `Admin{Domain}{Entity}Input`              | `AdminTravelTripInput`, `AdminTravelTripPackingItemInput`                    |
+| GraphQL / DB enum            | `Admin{Domain}{Concept}`                  | `AdminTravelTripStatus`, `AdminTravelTransportMode`                          |
+| DB table (`pgTable('…')`)    | `Admin{Domain}{Entity}` (singular)        | `pgTable('AdminTravelTrip')` — physical name equals the GraphQL type         |
+| Drizzle table export         | `admin{Domain}{Entities}` (camel, plural) | `export const adminTravelTrips = pgTable('AdminTravelTrip', …)`              |
+| Drizzle row type / insert    | `Admin{Domain}{Entity}` / `…Create`       | `type AdminTravelTrip`, `type AdminTravelTripCreate`                         |
+| Mutation field + `commands/` | `admin{Domain}{Entities}{Action}`         | `adminTravelTripsUpsert`, `adminTravelTripDaysDelete` (batch, plural entity) |
+| Query field + `queries/`     | `admin{Domain}{Entity}{Suffix}`           | `adminTravelTripFindMany`, `adminTravelTripFindOne` (singular entity)        |
+| Mapper                       | `toGql{Type}`                             | `toGqlAdminTravelTrip`, `toGqlAdminTravelTripActivity`                       |
+
+Notes:
+
+- **Physical table renames are hand-authored `ALTER TABLE … RENAME` migrations** — Drizzle's differ can't tell a rename from a drop+create,
+  so spell out the ALTERs (table, indexes, FK constraints) to preserve every row. See `drizzle/0027_travel_access_path_rename.sql` and the
+  `0012_compass_rename.sql` precedent. Regenerate the snapshot so `npm run db:generate` reports "No schema changes" afterwards.
+- **LLM-facing agent tool names stay short and prefix-less** (`tripsUpsert`, `tripDaysUpsert`). They are a sub-agent's private vocabulary,
+  not the resolver surface, and the GraphQL mutations / `commands/` functions they call are the access-path form. Only the four layers in
+  the table above follow the entity-access-path rule.
+
+**Shared types keep their free-floating names**, because more than one domain / access-path renders them: `FileUpload`, `User`, `Session`,
+`Chat`, `ChatMessage*`, `MutationResult`, `Log`, and the `Cv*` family (rendered by both the public `/cv` surface and the admin editor).
+
+**Travel is the reference implementation** of this convention. The remaining workspace domains (media, inventory, medical, finances,
+nutrition, fitness, projects, compass) still use pre-prefix names in places and are migrated to this shape incrementally — one domain per
+change so each rename migration stays reviewable.
+
 ## Comments
 
 Only add a comment if there is no other way to make the code self-explanatory. Reach for the alternatives first:

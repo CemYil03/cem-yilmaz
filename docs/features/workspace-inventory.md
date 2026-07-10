@@ -144,8 +144,8 @@ the tables, mirrored as GraphQL enums.
 ### CQRS wiring
 
 - `src/server/commands/item*.ts` — one file per batch mutation (`itemsUpsert`, `itemsDelete`, `itemsReprice`, `itemServiceEntriesUpsert`,
-  `itemServiceEntriesDelete`, `itemFilesAttach`, `itemFilesDelete`, `itemFilesUpsert`), each following the `moviesUpsert` / `tripsUpsert`
-  batch template.
+  `itemServiceEntriesDelete`, `itemFilesAttach`, `itemFilesDelete`, `itemFilesUpsert`), each following the `moviesUpsert` /
+  `adminTravelTripsUpsert` batch template.
 - `src/server/queries/{adminInventoryItemFindMany,adminInventoryItemFindOne,adminInventoryMaterialNetWorthCentsFindOne,adminInventoryItemUpcomingWarrantyFindMany}.ts`.
 - `src/server/mappers/{toGqlItem,toGqlItemValuation,toGqlItemServiceEntry,toGqlItemFile}.ts`.
 - Wired in `src/server/graphql/resolversCreate.ts` — the single entry point.

@@ -1,10 +1,10 @@
 import { inArray } from 'drizzle-orm';
-import { tripActivities } from '../db/schema';
+import { adminTravelTripActivities } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch delete of trip activities.
-export async function tripActivitiesDelete(
+export async function adminTravelTripActivitiesDelete(
     userId: string,
     tripActivityIds: readonly string[],
     requestingSession: GqlSSession,
@@ -12,13 +12,13 @@ export async function tripActivitiesDelete(
 ): Promise<GqlSMutationResult> {
     try {
         const deleted = await serverRuntime.db
-            .delete(tripActivities)
-            .where(inArray(tripActivities.tripActivityId, tripActivityIds as string[]))
-            .returning({ tripActivityId: tripActivities.tripActivityId });
+            .delete(adminTravelTripActivities)
+            .where(inArray(adminTravelTripActivities.tripActivityId, tripActivityIds as string[]))
+            .returning({ tripActivityId: adminTravelTripActivities.tripActivityId });
         if (deleted.length !== tripActivityIds.length) {
             const found = new Set(deleted.map((row) => row.tripActivityId));
             const missing = tripActivityIds.filter((id) => !found.has(id));
-            throw new Error(`tripActivitiesDelete: rows not found: ${missing.join(', ')}`);
+            throw new Error(`adminTravelTripActivitiesDelete: rows not found: ${missing.join(', ')}`);
         }
         await serverRuntime.publish.userUpdates({ userId });
         return { success: true, referenceId: null, referenceIds: [...tripActivityIds] };

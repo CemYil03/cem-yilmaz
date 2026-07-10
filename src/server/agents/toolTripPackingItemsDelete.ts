@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tripPackingItemsDelete } from '../commands/tripPackingItemsDelete';
+import { adminTravelTripPackingItemsDelete } from '../commands/adminTravelTripPackingItemsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { TravelAgentMutationLog } from './agentPersonalAssistantTravel';
@@ -21,7 +21,12 @@ export function toolTripPackingItemsDelete({ serverRuntime, session, mutations }
         description: 'Delete one or more packing-list items from a trip.',
         inputSchema: tripPackingItemsDeleteInputSchema,
         execute: async (input) => {
-            const result = await tripPackingItemsDelete(requireAdminUserId(session), input.tripPackingItemIds, session, serverRuntime);
+            const result = await adminTravelTripPackingItemsDelete(
+                requireAdminUserId(session),
+                input.tripPackingItemIds,
+                session,
+                serverRuntime,
+            );
             for (const id of input.tripPackingItemIds) mutations.push({ kind: 'tripPackingItemDelete', id });
             return result;
         },

@@ -98,8 +98,8 @@ a cacheable read — the same posture as `moviesAddFromTmdb`. It returns a
 
 ### CQRS
 
-Commands in `src/server/commands/` mirror `tripDaysUpsert.ts` (payload build → single transaction → parent-existence check via `inArray` →
-per-row insert/update → one `userUpdates` publish). Referenced `recipeId`s on plan/diary upserts are verified in one round-trip.
+Commands in `src/server/commands/` mirror `adminTravelTripDaysUpsert.ts` (payload build → single transaction → parent-existence check via
+`inArray` → per-row insert/update → one `userUpdates` publish). Referenced `recipeId`s on plan/diary upserts are verified in one round-trip.
 `supplementsUpsert` writes the parent row; `supplementNutrientsReplace` deletes then re-inserts the child set in one transaction;
 `supplementsDelete` relies on the FK cascade. The `supplementResearch` action is backed by
 `src/server/agents/supplementCompositionResearch.ts` — a two-step pass (grounded `generateText` with `webSearchTool()` gathers the label as

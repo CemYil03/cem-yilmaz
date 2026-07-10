@@ -1,8 +1,8 @@
 import { eq, inArray } from 'drizzle-orm';
-import { trips } from '../db/schema';
-import type { TripCreate } from '../db/schema';
+import { adminTravelTrips } from '../db/schema';
+import type { AdminTravelTripCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMutationResult, GqlSSession, GqlSTripInput } from '../graphql/generated';
+import type { GqlSAdminTravelTripInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of trips. Every row with a `tripId` is updated; every row
 // without one is inserted under a freshly-minted UUID. The whole batch runs
@@ -10,9 +10,9 @@ import type { GqlSMutationResult, GqlSSession, GqlSTripInput } from '../graphql/
 // nothing lands half-written. `referenceIds` echoes the id per input row (in
 // input order) so the caller can address newly-created rows without a
 // follow-up read.
-export async function tripsUpsert(
+export async function adminTravelTripsUpsert(
     userId: string,
-    inputs: readonly GqlSTripInput[],
+    inputs: readonly GqlSAdminTravelTripInput[],
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
 ): Promise<GqlSMutationResult> {
@@ -21,7 +21,7 @@ export async function tripsUpsert(
     // Phase 1 — payload construction.
     const rows = inputs.map((trip) => {
         const tripId = trip.tripId ?? crypto.randomUUID();
-        const payload: TripCreate = {
+        const payload: AdminTravelTripCreate = {
             tripId,
             title: trip.title,
             destination: trip.destination,
@@ -41,18 +41,21 @@ export async function tripsUpsert(
         const updateIds = rows.filter((row) => row.isUpdate).map((row) => row.tripId);
         await serverRuntime.db.transaction(async (transaction) => {
             if (updateIds.length > 0) {
-                const existing = await transaction.select({ tripId: trips.tripId }).from(trips).where(inArray(trips.tripId, updateIds));
+                const existing = await transaction
+                    .select({ tripId: adminTravelTrips.tripId })
+                    .from(adminTravelTrips)
+                    .where(inArray(adminTravelTrips.tripId, updateIds));
                 if (existing.length !== updateIds.length) {
                     const found = new Set(existing.map((row) => row.tripId));
                     const missing = updateIds.filter((id) => !found.has(id));
-                    throw new Error(`tripsUpsert: rows not found: ${missing.join(', ')}`);
+                    throw new Error(`adminTravelTripsUpsert: rows not found: ${missing.join(', ')}`);
                 }
             }
             for (const row of rows) {
                 if (row.isUpdate) {
-                    await transaction.update(trips).set(row.payload).where(eq(trips.tripId, row.tripId));
+                    await transaction.update(adminTravelTrips).set(row.payload).where(eq(adminTravelTrips.tripId, row.tripId));
                 } else {
-                    await transaction.insert(trips).values(row.payload);
+                    await transaction.insert(adminTravelTrips).values(row.payload);
                 }
             }
         });

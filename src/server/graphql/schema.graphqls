@@ -2167,18 +2167,20 @@ extend type AdminMutation {
 
 # --- Travel -----------------------------------------------------------------
 #
-# `/workspace/travel` — Cem's trip planner. Three-tier: `Trip` holds meta
-# (destination, dates, transport, accommodation), `TripDay` is a first-class
-# per-day bucket ("Day 3 in Rome"), `TripActivity` is a single item on that
-# day. `TripPackingItem` is a trip-scoped checklist grouped by free-text
-# `category`. Admin-only, `noindex`; no `*De`/`*En` pairs.
+# `/workspace/travel` — Cem's trip planner. Three-tier: `AdminTravelTrip` holds
+# meta (destination, dates, transport, accommodation), `AdminTravelTripDay` is a
+# first-class per-day bucket ("Day 3 in Rome"), `AdminTravelTripActivity` is a
+# single item on that day. `AdminTravelTripPackingItem` is a trip-scoped
+# checklist grouped by free-text `category`. Admin-only, `noindex`; no
+# `*De`/`*En` pairs. Types, inputs, and tables all carry the `AdminTravel`
+# entity-access-path prefix — see `docs/conventions.md` ("Type & input naming").
 #
 # The three-tier shape exists so the AI assistant can persist a day-by-day
 # itinerary from a chat and future chats read it from the DB instead of the
 # transcript — the whole reason the feature exists. See
 # `docs/features/workspace-travel.md`.
 
-enum TripStatus {
+enum AdminTravelTripStatus {
     draft
     planned
     active
@@ -2186,7 +2188,7 @@ enum TripStatus {
     cancelled
 }
 
-enum TransportMode {
+enum AdminTravelTransportMode {
     flight
     train
     car
@@ -2194,11 +2196,11 @@ enum TransportMode {
     mixed
 }
 
-# One activity within a `TripDay`. `startsAt` / `endsAt` are wall-clock strings
-# (`HH:MM` or `HH:MM:SS`) — a single tz would be a lie for a location-scoped
-# plan. Ordered by `position ASC` within a day; the client also honours times
-# when both `startsAt` values are set.
-type TripActivity {
+# One activity within an `AdminTravelTripDay`. `startsAt` / `endsAt` are
+# wall-clock strings (`HH:MM` or `HH:MM:SS`) — a single tz would be a lie for
+# a location-scoped plan. Ordered by `position ASC` within a day; the client
+# also honours times when both `startsAt` values are set.
+type AdminTravelTripActivity {
     tripActivityId: ID!
     tripDayId: ID!
     position: Int!
@@ -2216,21 +2218,21 @@ type TripActivity {
 # ("Day 3"). `date` is nullable — a draft trip may have days before the
 # calendar dates are settled. `summary` is the paragraph the agent writes to
 # frame the day; `activities` is ordered by position ascending.
-type TripDay {
+type AdminTravelTripDay {
     tripDayId: ID!
     tripId: ID!
     dayNumber: Int!
     date: Date
     title: String
     summary: String
-    activities: [TripActivity!]!
+    activities: [AdminTravelTripActivity!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
 
 # One row on the trip's packing checklist. `category` is free text so the
 # agent can invent a new bucket without a migration; the UI groups by it.
-type TripPackingItem {
+type AdminTravelTripPackingItem {
     tripPackingItemId: ID!
     tripId: ID!
     category: String!
@@ -2246,18 +2248,18 @@ type TripPackingItem {
 # A trip. On the list surface `days` / `packingItems` may still resolve fully
 # so the cards can show progress badges without a second fetch — the payload
 # stays small because trip volume is low (dozens, not thousands).
-type Trip {
+type AdminTravelTrip {
     tripId: ID!
     title: String!
     destination: String!
     startsOn: Date
     endsOn: Date
-    status: TripStatus!
-    transportMode: TransportMode
+    status: AdminTravelTripStatus!
+    transportMode: AdminTravelTransportMode
     accommodation: String
     notes: String
-    days: [TripDay!]!
-    packingItems: [TripPackingItem!]!
+    days: [AdminTravelTripDay!]!
+    packingItems: [AdminTravelTripPackingItem!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -2266,28 +2268,28 @@ type Trip {
 # boundary by the resolver chain on `User.admin`.
 type AdminTravelQuery {
     # All trips, sorted `startsOn NULLS LAST, createdAt DESC`.
-    adminTravelTripFindMany: [Trip!]!
+    adminTravelTripFindMany: [AdminTravelTrip!]!
     # Single trip by id — null when the id does not exist.
-    adminTravelTripFindOne(tripId: ID!): Trip
+    adminTravelTripFindOne(tripId: ID!): AdminTravelTrip
 }
 
 extend type Admin {
     adminTravelFindOne: AdminTravelQuery!
 }
 
-input TripInput {
+input AdminTravelTripInput {
     tripId: ID
     title: String!
     destination: String!
     startsOn: Date
     endsOn: Date
-    status: TripStatus!
-    transportMode: TransportMode
+    status: AdminTravelTripStatus!
+    transportMode: AdminTravelTransportMode
     accommodation: String
     notes: String
 }
 
-input TripDayInput {
+input AdminTravelTripDayInput {
     tripDayId: ID
     tripId: ID!
     dayNumber: Int!
@@ -2296,7 +2298,7 @@ input TripDayInput {
     summary: String
 }
 
-input TripActivityInput {
+input AdminTravelTripActivityInput {
     tripActivityId: ID
     tripDayId: ID!
     position: Int
@@ -2308,7 +2310,7 @@ input TripActivityInput {
     notes: String
 }
 
-input TripPackingItemInput {
+input AdminTravelTripPackingItemInput {
     tripPackingItemId: ID
     tripId: ID!
     category: String!
@@ -2320,17 +2322,17 @@ input TripPackingItemInput {
 }
 
 extend type AdminMutation {
-    tripsUpsert(trips: [TripInput!]!): MutationResult!
-    tripsDelete(tripIds: [ID!]!): MutationResult!
+    adminTravelTripsUpsert(trips: [AdminTravelTripInput!]!): MutationResult!
+    adminTravelTripsDelete(tripIds: [ID!]!): MutationResult!
 
-    tripDaysUpsert(tripDays: [TripDayInput!]!): MutationResult!
-    tripDaysDelete(tripDayIds: [ID!]!): MutationResult!
+    adminTravelTripDaysUpsert(tripDays: [AdminTravelTripDayInput!]!): MutationResult!
+    adminTravelTripDaysDelete(tripDayIds: [ID!]!): MutationResult!
 
-    tripActivitiesUpsert(tripActivities: [TripActivityInput!]!): MutationResult!
-    tripActivitiesDelete(tripActivityIds: [ID!]!): MutationResult!
+    adminTravelTripActivitiesUpsert(tripActivities: [AdminTravelTripActivityInput!]!): MutationResult!
+    adminTravelTripActivitiesDelete(tripActivityIds: [ID!]!): MutationResult!
 
-    tripPackingItemsUpsert(tripPackingItems: [TripPackingItemInput!]!): MutationResult!
-    tripPackingItemsDelete(tripPackingItemIds: [ID!]!): MutationResult!
+    adminTravelTripPackingItemsUpsert(tripPackingItems: [AdminTravelTripPackingItemInput!]!): MutationResult!
+    adminTravelTripPackingItemsDelete(tripPackingItemIds: [ID!]!): MutationResult!
 }
 
 # --- Finances ---------------------------------------------------------------

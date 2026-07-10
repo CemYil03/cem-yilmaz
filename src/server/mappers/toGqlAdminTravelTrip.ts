@@ -1,10 +1,14 @@
-import type { Trip } from '../db/schema';
-import type { GqlSTrip, GqlSTripDay, GqlSTripPackingItem } from '../graphql/generated';
+import type { AdminTravelTrip } from '../db/schema';
+import type { GqlSAdminTravelTrip, GqlSAdminTravelTripDay, GqlSAdminTravelTripPackingItem } from '../graphql/generated';
 
 // Trip with its hydrated days and packing items. The loading query owns the
 // batching and passes ordered arrays in — identical to how
 // `toGqlMedicalRecord(row, files)` receives its files.
-export function toGqlTrip(row: Trip, days: GqlSTripDay[], packingItems: GqlSTripPackingItem[]): GqlSTrip {
+export function toGqlAdminTravelTrip(
+    row: AdminTravelTrip,
+    days: GqlSAdminTravelTripDay[],
+    packingItems: GqlSAdminTravelTripPackingItem[],
+): GqlSAdminTravelTrip {
     return {
         tripId: row.tripId,
         title: row.title,
