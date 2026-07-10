@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { medicalRecordsDelete } from '../commands/medicalRecordsDelete';
+import { adminMedicalRecordsDelete } from '../commands/adminMedicalRecordsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { MedicalAgentMutationLog } from './agentPersonalAssistantMedical';
@@ -22,7 +22,7 @@ export function toolMedicalRecordsDelete({ serverRuntime, session, mutations }: 
             'Permanently delete one or more medical records. Attached files are removed along with each record row. There is no soft-delete — only use when the user really wants them gone.',
         inputSchema: toolMedicalRecordsDeleteInputSchema,
         execute: async (input) => {
-            const result = await medicalRecordsDelete(requireAdminUserId(session), input.recordIds, session, serverRuntime);
+            const result = await adminMedicalRecordsDelete(requireAdminUserId(session), input.recordIds, session, serverRuntime);
             for (const recordId of input.recordIds) mutations.push({ kind: 'recordDelete', id: recordId });
             return result;
         },

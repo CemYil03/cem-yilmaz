@@ -104,7 +104,7 @@ subscription WorkspaceProjectsPageUpdates {
 
 mutation WorkspaceProjectRequestArchive($projectRequestId: ID!) {
     admin {
-        projectRequestArchive(projectRequestId: $projectRequestId) {
+        adminProjectRequestArchive(projectRequestId: $projectRequestId) {
             success
         }
     }
@@ -112,7 +112,7 @@ mutation WorkspaceProjectRequestArchive($projectRequestId: ID!) {
 
 mutation WorkspaceProjectRequestDelete($projectRequestId: ID!) {
     admin {
-        projectRequestDelete(projectRequestId: $projectRequestId) {
+        adminProjectRequestDelete(projectRequestId: $projectRequestId) {
             success
         }
     }
@@ -123,14 +123,14 @@ mutation WorkspaceProjectUpsert(
     $title: String!
     $description: String
     $notes: String
-    $status: ProjectStatus!
+    $status: AdminProjectStatus!
     $position: Int
     $sourceRequestId: ID
     $startedAt: DateTime
     $completedAt: DateTime
 ) {
     admin {
-        projectsUpsert(
+        adminProjectsUpsert(
             projects: [
                 {
                     projectId: $projectId
@@ -153,7 +153,7 @@ mutation WorkspaceProjectUpsert(
 
 mutation WorkspaceProjectReorder($orderedIds: [ID!]!) {
     admin {
-        projectReorder(orderedIds: $orderedIds) {
+        adminProjectReorder(orderedIds: $orderedIds) {
             success
         }
     }
@@ -163,15 +163,15 @@ mutation WorkspaceProjectActivityUpsert(
     $activityId: ID
     $projectId: ID!
     $taskId: ID
-    $kind: ProjectActivityKind!
-    $channel: ProjectActivityChannel
+    $kind: AdminProjectActivityKind!
+    $channel: AdminProjectActivityChannel
     $title: String!
     $notes: String
     $occurredAt: DateTime!
     $durationSec: Int
 ) {
     admin {
-        projectActivitiesUpsert(
+        adminProjectActivitiesUpsert(
             projectActivities: [
                 {
                     activityId: $activityId
@@ -194,7 +194,7 @@ mutation WorkspaceProjectActivityUpsert(
 
 mutation WorkspaceProjectActivityDelete($activityId: ID!) {
     admin {
-        projectActivitiesDelete(activityIds: [$activityId]) {
+        adminProjectActivitiesDelete(activityIds: [$activityId]) {
             success
         }
     }

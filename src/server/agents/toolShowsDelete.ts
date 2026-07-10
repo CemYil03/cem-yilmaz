@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { showsDelete } from '../commands/showsDelete';
+import { adminMediaShowsDelete } from '../commands/adminMediaShowsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { MediaAgentMutationLog } from './agentPersonalAssistantMedia';
@@ -21,7 +21,7 @@ export function toolShowsDelete({ serverRuntime, session, mutations }: MediaAgen
         description: 'Permanently delete one or more TV series from the library. Irreversible — confirm intent before calling.',
         inputSchema: toolShowsDeleteInputSchema,
         execute: async (input) => {
-            const result = await showsDelete(requireAdminUserId(session), input.showIds, session, serverRuntime);
+            const result = await adminMediaShowsDelete(requireAdminUserId(session), input.showIds, session, serverRuntime);
             for (const showId of input.showIds) mutations.push({ kind: 'showDelete', id: showId });
             return result;
         },

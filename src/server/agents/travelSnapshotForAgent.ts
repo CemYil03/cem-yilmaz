@@ -1,6 +1,6 @@
 import { asc, inArray } from 'drizzle-orm';
 import type { AdminTravelTrip, AdminTravelTripActivity, AdminTravelTripDay, AdminTravelTripPackingItem } from '../db/schema';
-import { adminTravelTripActivities, adminTravelTripDays, adminTravelTripPackingItems, adminTravelTrips } from '../db/schema';
+import { tripActivities, tripDays, tripPackingItems, trips } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
 // Compact text snapshot of every trip for embedding in the travel sub-agent's
@@ -82,36 +82,29 @@ export async function travelSnapshotForAgent(serverRuntime: ServerRuntime): Prom
 async function loadAll(
     serverRuntime: ServerRuntime,
 ): Promise<[AdminTravelTrip[], AdminTravelTripDay[], AdminTravelTripActivity[], AdminTravelTripPackingItem[]]> {
-    const tripRows = await serverRuntime.db
-        .select()
-        .from(adminTravelTrips)
-        .orderBy(asc(adminTravelTrips.startsOn), asc(adminTravelTrips.createdAt));
+    const tripRows = await serverRuntime.db.select().from(trips).orderBy(asc(trips.startsOn), asc(trips.createdAt));
     if (tripRows.length === 0) return [tripRows, [], [], []];
 
     const tripIds = tripRows.map((t) => t.tripId);
     const dayRows = await serverRuntime.db
         .select()
-        .from(adminTravelTripDays)
-        .where(inArray(adminTravelTripDays.tripId, tripIds))
-        .orderBy(asc(adminTravelTripDays.tripId), asc(adminTravelTripDays.dayNumber));
+        .from(tripDays)
+        .where(inArray(tripDays.tripId, tripIds))
+        .orderBy(asc(tripDays.tripId), asc(tripDays.dayNumber));
     const packingRows = await serverRuntime.db
         .select()
-        .from(adminTravelTripPackingItems)
-        .where(inArray(adminTravelTripPackingItems.tripId, tripIds))
-        .orderBy(
-            asc(adminTravelTripPackingItems.tripId),
-            asc(adminTravelTripPackingItems.category),
-            asc(adminTravelTripPackingItems.position),
-        );
+        .from(tripPackingItems)
+        .where(inArray(tripPackingItems.tripId, tripIds))
+        .orderBy(asc(tripPackingItems.tripId), asc(tripPackingItems.category), asc(tripPackingItems.position));
 
     let activityRows: AdminTravelTripActivity[] = [];
     if (dayRows.length > 0) {
         const dayIds = dayRows.map((d) => d.tripDayId);
         activityRows = await serverRuntime.db
             .select()
-            .from(adminTravelTripActivities)
-            .where(inArray(adminTravelTripActivities.tripDayId, dayIds))
-            .orderBy(asc(adminTravelTripActivities.tripDayId), asc(adminTravelTripActivities.position));
+            .from(tripActivities)
+            .where(inArray(tripActivities.tripDayId, dayIds))
+            .orderBy(asc(tripActivities.tripDayId), asc(tripActivities.position));
     }
     return [tripRows, dayRows, activityRows, packingRows];
 }

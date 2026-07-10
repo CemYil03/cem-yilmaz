@@ -38,8 +38,8 @@ import { ChipInput } from '../../../web/components/ChipInput';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCFoodLogKind,
-    GqlCMealType,
+    GqlCAdminNutritionFoodLogKind,
+    GqlCAdminNutritionMealType,
     GqlCWorkspaceNutritionPageUpdatesSubscription,
     GqlCWorkspaceNutritionPageUserFragment,
 } from '../../../web/graphql/generated';
@@ -78,8 +78,8 @@ const description = {
     en: 'Cookbook, soft weekly planning, and a food diary.',
 };
 
-const MEAL_TYPES: ReadonlyArray<GqlCMealType> = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
-const MEAL_TYPE_LABELS: Record<GqlCMealType, { de: string; en: string }> = {
+const MEAL_TYPES: ReadonlyArray<GqlCAdminNutritionMealType> = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
+const MEAL_TYPE_LABELS: Record<GqlCAdminNutritionMealType, { de: string; en: string }> = {
     breakfast: { de: 'Frühstück', en: 'Breakfast' },
     lunch: { de: 'Mittag', en: 'Lunch' },
     dinner: { de: 'Abend', en: 'Dinner' },
@@ -89,9 +89,9 @@ const MEAL_TYPE_LABELS: Record<GqlCMealType, { de: string; en: string }> = {
 
 // Meal types shown as plan columns and diary buckets — `other` is available in
 // the recipe editor but omitted from the week grid to keep it to four columns.
-const PLAN_MEAL_TYPES: ReadonlyArray<GqlCMealType> = ['breakfast', 'lunch', 'dinner', 'snack'];
+const PLAN_MEAL_TYPES: ReadonlyArray<GqlCAdminNutritionMealType> = ['breakfast', 'lunch', 'dinner', 'snack'];
 
-const FOOD_LOG_KIND_LABELS: Record<GqlCFoodLogKind, { de: string; en: string }> = {
+const FOOD_LOG_KIND_LABELS: Record<GqlCAdminNutritionFoodLogKind, { de: string; en: string }> = {
     food: { de: 'Essen', en: 'Food' },
     drink: { de: 'Getränk', en: 'Drink' },
 };
@@ -234,7 +234,7 @@ function CookbookTab({ recipes, locale }: { recipes: ReadonlyArray<RecipeRow>; l
     const [deleting, setDeleting] = useState<RecipeRow | null>(null);
 
     const groups = useMemo(() => {
-        const byMeal = new Map<GqlCMealType, RecipeRow[]>();
+        const byMeal = new Map<GqlCAdminNutritionMealType, RecipeRow[]>();
         for (const row of recipes) {
             const list = byMeal.get(row.mealType) ?? [];
             list.push(row);
@@ -369,7 +369,7 @@ function RecipeCard({ recipe, locale, onEdit, onDelete }: { recipe: RecipeRow; l
 type RecipeFormState = {
     recipeId: string | null;
     title: string;
-    mealType: GqlCMealType;
+    mealType: GqlCAdminNutritionMealType;
     ingredients: string[];
     steps: string;
     tags: string[];
@@ -449,7 +449,10 @@ function EditRecipeDialog({ initial, locale, onClose }: { initial: RecipeRow | n
                         <Input value={state.title} onChange={(e) => setState((s) => ({ ...s, title: e.target.value }))} autoFocus />
                     </Field>
                     <Field label={{ de: 'Mahlzeit', en: 'Meal' }[locale]}>
-                        <Select value={state.mealType} onValueChange={(v) => setState((s) => ({ ...s, mealType: v as GqlCMealType }))}>
+                        <Select
+                            value={state.mealType}
+                            onValueChange={(v) => setState((s) => ({ ...s, mealType: v as GqlCAdminNutritionMealType }))}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
@@ -582,7 +585,7 @@ function PlanTab({
 }) {
     const weekStart = weekStartFromParam(weekParam);
     const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
-    const [editing, setEditing] = useState<{ date: string; mealType: GqlCMealType; entry: MealPlanRow | null } | null>(null);
+    const [editing, setEditing] = useState<{ date: string; mealType: GqlCAdminNutritionMealType; entry: MealPlanRow | null } | null>(null);
 
     // Index entries by `date|mealType` for O(1) cell lookup.
     const byCell = useMemo(() => {
@@ -678,7 +681,7 @@ function EditPlanCellDialog({
     onClose,
 }: {
     date: string;
-    mealType: GqlCMealType;
+    mealType: GqlCAdminNutritionMealType;
     entry: MealPlanRow | null;
     recipes: ReadonlyArray<RecipeRow>;
     locale: Locale;
@@ -740,7 +743,7 @@ function EditPlanCellDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    <Field label={{ de: 'Rezept', en: 'Recipe' }[locale]}>
+                    <Field label={{ de: 'Rezept', en: 'AdminNutritionRecipe' }[locale]}>
                         <Select value={recipeId} onValueChange={setRecipeId}>
                             <SelectTrigger className="w-full">
                                 <SelectValue />
@@ -917,8 +920,8 @@ function DiaryRow({ entry, locale, onEdit, onDelete }: { entry: FoodLogRow; loca
 type DiaryFormState = {
     logId: string | null;
     description: string;
-    kind: GqlCFoodLogKind;
-    mealType: GqlCMealType;
+    kind: GqlCAdminNutritionFoodLogKind;
+    mealType: GqlCAdminNutritionMealType;
     date: string;
     time: string;
 };
@@ -983,12 +986,15 @@ function EditDiaryDialog({ initial, locale, onClose }: { initial: FoodLogRow | n
                         />
                     </Field>
                     <Field label={{ de: 'Art', en: 'Kind' }[locale]}>
-                        <Select value={state.kind} onValueChange={(v) => setState((s) => ({ ...s, kind: v as GqlCFoodLogKind }))}>
+                        <Select
+                            value={state.kind}
+                            onValueChange={(v) => setState((s) => ({ ...s, kind: v as GqlCAdminNutritionFoodLogKind }))}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {(Object.keys(FOOD_LOG_KIND_LABELS) as GqlCFoodLogKind[]).map((key) => (
+                                {(Object.keys(FOOD_LOG_KIND_LABELS) as GqlCAdminNutritionFoodLogKind[]).map((key) => (
                                     <SelectItem key={key} value={key}>
                                         {FOOD_LOG_KIND_LABELS[key][locale]}
                                     </SelectItem>
@@ -997,7 +1003,10 @@ function EditDiaryDialog({ initial, locale, onClose }: { initial: FoodLogRow | n
                         </Select>
                     </Field>
                     <Field label={{ de: 'Mahlzeit', en: 'Meal' }[locale]}>
-                        <Select value={state.mealType} onValueChange={(v) => setState((s) => ({ ...s, mealType: v as GqlCMealType }))}>
+                        <Select
+                            value={state.mealType}
+                            onValueChange={(v) => setState((s) => ({ ...s, mealType: v as GqlCAdminNutritionMealType }))}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
@@ -1247,7 +1256,7 @@ function EditSupplementDialog({ initial, locale, onClose }: { initial: Supplemen
         setResearchNote(null);
         try {
             const result = await research({ input: { name: state.name.trim(), brand: state.brand.trim() || null } });
-            const data = result.data?.admin.supplementResearch;
+            const data = result.data?.admin.adminNutritionSupplementResearch;
             if (result.error || !data) {
                 setResearchNote({ tone: 'warn', text: { de: 'Recherche fehlgeschlagen.', en: 'Research failed.' }[locale] });
                 return;
@@ -1301,7 +1310,7 @@ function EditSupplementDialog({ initial, locale, onClose }: { initial: Supplemen
                 ],
             });
             if (upsertResult.error) return;
-            const supplementId = upsertResult.data?.admin.supplementsUpsert.referenceIds?.[0] ?? state.supplementId;
+            const supplementId = upsertResult.data?.admin.adminNutritionSupplementsUpsert.referenceIds?.[0] ?? state.supplementId;
             if (!supplementId) return;
             const nutrients = state.nutrients
                 .filter((n) => n.name.trim().length > 0)
@@ -1581,7 +1590,7 @@ function weekStartFromParam(weekParam: string | undefined): Date {
     return startOfWeek(base, { weekStartsOn: 1 });
 }
 
-function guessMealType(at: Date): GqlCMealType {
+function guessMealType(at: Date): GqlCAdminNutritionMealType {
     const h = at.getHours();
     if (h < 11) return 'breakfast';
     if (h < 15) return 'lunch';

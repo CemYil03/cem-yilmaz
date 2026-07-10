@@ -1,14 +1,18 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { itemsUpsert } from '../commands/itemsUpsert';
+import { adminInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSItemCategorySchema, GqlSItemConditionSchema, GqlSItemDisposalStateSchema } from '../graphql/generated';
-import type { GqlSItemInput, GqlSSession } from '../graphql/generated';
+import {
+    GqlSAdminInventoryItemCategorySchema,
+    GqlSAdminInventoryItemConditionSchema,
+    GqlSAdminInventoryItemDisposalStateSchema,
+} from '../graphql/generated';
+import type { GqlSAdminInventoryItemInput, GqlSSession } from '../graphql/generated';
 import type { InventoryAgentMutationLog } from './agentPersonalAssistantInventory';
 import { requireAdminUserId } from './requireAdminUserId';
 
 // Batch create-or-edit of items. Hand-built row schema rather than the
-// generated `GqlSItemInputSchema()` because `ItemInput.disposedAt` is a
+// generated `GqlSAdminInventoryItemInputSchema()` because `AdminInventoryItemInput.disposedAt` is a
 // `DateTime` scalar, which the codegen emits as `z.date()`; Gemini's
 // constrained decoding rejects `z.date()` and yields `MALFORMED_FUNCTION_CALL`.
 // `disposedAt` therefore rides the wire as an ISO string and `execute`
@@ -19,21 +23,21 @@ import { requireAdminUserId } from './requireAdminUserId';
 // mismatch. See `docs/architecture/agent-delegation.md#tool-input-schemas`.
 const itemRowSchema = z.object({
     itemId: z.uuid().nullish().describe('Omit (or null) to create a new item. Pass an existing id to edit.'),
-    categoryKey: GqlSItemCategorySchema.describe(
+    categoryKey: GqlSAdminInventoryItemCategorySchema.describe(
         'appliance | clothing | electronics | furniture | kitchen | sports | tool | vehicle | other',
     ),
-    name: z.string().min(1).max(300).describe('Item name, e.g. "MacBook Pro 14".'),
+    name: z.string().min(1).max(300).describe('AdminInventoryItem name, e.g. "MacBook Pro 14".'),
     brand: z.string().max(200).nullish(),
     model: z.string().max(200).nullish(),
     serialNumber: z.string().max(200).nullish(),
     purchasedAt: z.string().nullish().describe('ISO date `YYYY-MM-DD` the item was bought. Optional.'),
     purchasePriceCents: z.number().int().min(0).nullish().describe('Purchase price in cents. 2.500 € → 250000.'),
-    condition: GqlSItemConditionSchema.nullish().describe('new | likeNew | good | fair | poor'),
+    condition: GqlSAdminInventoryItemConditionSchema.nullish().describe('new | likeNew | good | fair | poor'),
     warrantyEndsAt: z.string().nullish().describe('ISO date `YYYY-MM-DD` the warranty lapses. Optional.'),
     warrantyProvider: z.string().max(200).nullish(),
     warrantyNotes: z.string().max(2000).nullish(),
     notes: z.string().max(4000).nullish(),
-    disposalState: GqlSItemDisposalStateSchema.nullish().describe(
+    disposalState: GqlSAdminInventoryItemDisposalStateSchema.nullish().describe(
         'owned (default) | sold | gifted | lost | disposed. Set to dispose of an item — the row is kept so net worth stays reconcilable.',
     ),
     disposedAt: z
@@ -65,7 +69,7 @@ export function toolInventoryItemsUpsert({ serverRuntime, session, mutations }: 
         ].join(' '),
         inputSchema: toolInventoryItemsUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSItemInput[] = input.items.map((item) => ({
+            const inputs: GqlSAdminInventoryItemInput[] = input.items.map((item) => ({
                 itemId: item.itemId ?? null,
                 categoryKey: item.categoryKey,
                 name: item.name,
@@ -82,7 +86,7 @@ export function toolInventoryItemsUpsert({ serverRuntime, session, mutations }: 
                 disposalState: item.disposalState ?? null,
                 disposedAt: item.disposedAt ? new Date(item.disposedAt) : null,
             }));
-            const result = await itemsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminInventoryItemsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.items.forEach((item, index) => {
                 mutations.push({

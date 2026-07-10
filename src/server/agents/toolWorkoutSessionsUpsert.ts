@@ -1,9 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { workoutSessionsUpsert } from '../commands/workoutSessionsUpsert';
+import { adminFitnessWorkoutSessionsUpsert } from '../commands/adminFitnessWorkoutSessionsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSWorkoutSessionInputSchema } from '../graphql/generated';
-import type { GqlSSession, GqlSWorkoutSessionInput } from '../graphql/generated';
+import { GqlSAdminFitnessWorkoutSessionInputSchema } from '../graphql/generated';
+import type { GqlSSession, GqlSAdminFitnessWorkoutSessionInput } from '../graphql/generated';
 import type { FitnessAgentMutationLog } from './agentPersonalAssistantFitness';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -13,7 +13,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 // parent `sessionId`.
 
 const toolWorkoutSessionsUpsertInputSchema = z.object({
-    workoutSessions: z.array(GqlSWorkoutSessionInputSchema()).min(1),
+    workoutSessions: z.array(GqlSAdminFitnessWorkoutSessionInputSchema()).min(1),
 });
 
 interface FitnessAgentMutationContext {
@@ -32,8 +32,8 @@ export function toolWorkoutSessionsUpsert({ serverRuntime, session, mutations }:
         ].join(' '),
         inputSchema: toolWorkoutSessionsUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.workoutSessions as GqlSWorkoutSessionInput[];
-            const result = await workoutSessionsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.workoutSessions as GqlSAdminFitnessWorkoutSessionInput[];
+            const result = await adminFitnessWorkoutSessionsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((workout, index) => {
                 mutations.push({

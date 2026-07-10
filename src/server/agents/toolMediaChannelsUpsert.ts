@@ -1,17 +1,17 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { mediaChannelsUpsert } from '../commands/mediaChannelsUpsert';
+import { adminMediaChannelsUpsert } from '../commands/adminMediaChannelsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMediaChannelInputSchema } from '../graphql/generated';
-import type { GqlSMediaChannelInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminMediaChannelInputSchema } from '../graphql/generated';
+import type { GqlSAdminMediaChannelInput, GqlSSession } from '../graphql/generated';
 import type { MediaAgentMutationLog } from './agentPersonalAssistantMedia';
 import { requireAdminUserId } from './requireAdminUserId';
 
 // Batch create-or-edit of favourite YouTube / Twitch / podcast / other
-// channels. Each row is `GqlSMediaChannelInputSchema()` — same shape the
+// channels. Each row is `GqlSAdminMediaChannelInputSchema()` — same shape the
 // GraphQL resolver validates. Gemini-safe: no `DateTime` fields.
 const toolMediaChannelsUpsertInputSchema = z.object({
-    mediaChannels: z.array(GqlSMediaChannelInputSchema()).min(1),
+    mediaChannels: z.array(GqlSAdminMediaChannelInputSchema()).min(1),
 });
 
 interface MediaAgentMutationContext {
@@ -34,8 +34,8 @@ export function toolMediaChannelsUpsert({ serverRuntime, session, mutations }: M
         ].join(' '),
         inputSchema: toolMediaChannelsUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.mediaChannels as GqlSMediaChannelInput[];
-            const result = await mediaChannelsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.mediaChannels as GqlSAdminMediaChannelInput[];
+            const result = await adminMediaChannelsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((channel, index) => {
                 mutations.push({

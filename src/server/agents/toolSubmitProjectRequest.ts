@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { projectRequests, projectRequestTypes } from '../db/schema';
-import type { ProjectRequestCreate } from '../db/schema';
+import type { AdminProjectRequestCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { projectRequestOtpSend } from '../jobs/handlers/projectRequestOtpSend';
 
@@ -85,7 +85,7 @@ export function toolSubmitProjectRequest({ serverRuntime, chatId }: SubmitProjec
                 .digest('hex');
             const projectRequestId = crypto.randomUUID();
             const now = new Date();
-            const row: ProjectRequestCreate = {
+            const row: AdminProjectRequestCreate = {
                 projectRequestId,
                 chatId,
                 name: input.name,

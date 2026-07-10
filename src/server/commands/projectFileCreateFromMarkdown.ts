@@ -1,22 +1,22 @@
 import { projectFiles } from '../db/schema';
-import type { ProjectFileCreate } from '../db/schema';
+import type { AdminProjectFileCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSProjectFile, GqlSProjectFileKind, GqlSSession } from '../graphql/generated';
-import { toGqlProjectFile } from '../mappers/toGqlProjectFile';
+import type { GqlSAdminProjectFile, GqlSAdminProjectFileKind, GqlSSession } from '../graphql/generated';
+import { toGqlAdminProjectFile } from '../mappers/toGqlAdminProjectFile';
 import { fileUploadCreate } from './fileUploadCreate';
 
 // Server-side path for an agent (or any non-HTTP caller) to materialize a
 // markdown document as a real `FileUploads` row and link it to a project via
 // `projectFiles`. The browser still uses `POST /api/file-uploads` →
-// `projectFilesUpsert`; this command is the byte-source-is-in-process
+// `adminProjectFilesUpsert`; this command is the byte-source-is-in-process
 // equivalent and stays narrow on purpose:
 //
 // - markdown only — `mediaType` is hard-coded to `text/markdown`. Other
 //   formats need their own command so the call site is auditable and the
 //   schema can't drift.
 // - create-only — no `projectFileId` parameter. Edits stay on the existing
-//   `projectFilesUpsert` path.
-// - returns the hydrated `GqlSProjectFile` because the sub-agent tool needs
+//   `adminProjectFilesUpsert` path.
+// - returns the hydrated `GqlSAdminProjectFile` because the sub-agent tool needs
 //   the created id for its mutation log — this is the one intentional
 //   non-batch survivor in the projects domain, not exposed on `AdminMutation`.
 //
@@ -32,12 +32,12 @@ export interface ProjectFileCreateFromMarkdownInput {
     projectId: string;
     filename: string;
     label: string | null;
-    kind: GqlSProjectFileKind;
+    kind: GqlSAdminProjectFileKind;
     pinned: boolean;
     markdown: string;
 }
 
-export async function projectFileCreateFromMarkdown(input: ProjectFileCreateFromMarkdownInput): Promise<GqlSProjectFile> {
+export async function projectFileCreateFromMarkdown(input: ProjectFileCreateFromMarkdownInput): Promise<GqlSAdminProjectFile> {
     const { session, serverRuntime, projectId, filename, label, kind, pinned, markdown } = input;
 
     if (!session.userId) {
@@ -52,7 +52,7 @@ export async function projectFileCreateFromMarkdown(input: ProjectFileCreateFrom
             bytes: Buffer.from(markdown, 'utf8'),
         });
 
-        const payload: ProjectFileCreate = {
+        const payload: AdminProjectFileCreate = {
             projectFileId: crypto.randomUUID(),
             projectId,
             activityId: null,
@@ -66,7 +66,7 @@ export async function projectFileCreateFromMarkdown(input: ProjectFileCreateFrom
         if (!inserted) throw new Error('projectFileCreateFromMarkdown: insert returned no rows');
 
         await serverRuntime.publish.userUpdates({ userId: session.userId });
-        return toGqlProjectFile(inserted, upload);
+        return toGqlAdminProjectFile(inserted, upload);
     } catch (error) {
         serverRuntime.log.error(error, session);
         throw error;

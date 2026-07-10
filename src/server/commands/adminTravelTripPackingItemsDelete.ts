@@ -1,5 +1,5 @@
 import { inArray } from 'drizzle-orm';
-import { adminTravelTripPackingItems } from '../db/schema';
+import { tripPackingItems } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
@@ -12,9 +12,9 @@ export async function adminTravelTripPackingItemsDelete(
 ): Promise<GqlSMutationResult> {
     try {
         const deleted = await serverRuntime.db
-            .delete(adminTravelTripPackingItems)
-            .where(inArray(adminTravelTripPackingItems.tripPackingItemId, tripPackingItemIds as string[]))
-            .returning({ tripPackingItemId: adminTravelTripPackingItems.tripPackingItemId });
+            .delete(tripPackingItems)
+            .where(inArray(tripPackingItems.tripPackingItemId, tripPackingItemIds as string[]))
+            .returning({ tripPackingItemId: tripPackingItems.tripPackingItemId });
         if (deleted.length !== tripPackingItemIds.length) {
             const found = new Set(deleted.map((row) => row.tripPackingItemId));
             const missing = tripPackingItemIds.filter((id) => !found.has(id));

@@ -43,7 +43,7 @@ Top-to-bottom structure:
    / San Francisco / Bengaluru pinned as remote regions, plus dashed primary-tinted arcs from Berlin to each remote pin. The map is
    decorative, not cartographic; the markers' halos breathe and the arc dashes drift on a slow loop. Both motions stop under
    `prefers-reduced-motion: reduce`. Sits **after** the CTA on purpose — it's supporting detail, not the close.
-7. **Explore** — secondary nav cards for `About`, `CV`, and `Projects`. Demoted to the bottom of the page since the marketing pitch +
+7. **Explore** — secondary nav cards for `About`, `CV`, and `AdminProject`. Demoted to the bottom of the page since the marketing pitch +
    assistant come first; still links to real routes.
 8. **Footer** — contact links (GitHub, LinkedIn, email) plus legal links to `/impressum` and `/datenschutz`.
 

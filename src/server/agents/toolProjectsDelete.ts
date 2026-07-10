@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { projectsDelete } from '../commands/projectsDelete';
+import { adminProjectsDelete } from '../commands/adminProjectsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
@@ -11,7 +11,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 // that in the summary back to the user when the sub-agent uses this tool.
 
 const toolProjectsDeleteInputSchema = z.object({
-    projectIds: z.array(z.uuid()).min(1).describe('Project ids from the system-prompt snapshot or a prior list call.'),
+    projectIds: z.array(z.uuid()).min(1).describe('AdminProject ids from the system-prompt snapshot or a prior list call.'),
 });
 
 interface ProjectsAgentMutationContext {
@@ -29,7 +29,7 @@ export function toolProjectsDelete({ serverRuntime, session, mutations }: Projec
         ].join(' '),
         inputSchema: toolProjectsDeleteInputSchema,
         execute: async (input) => {
-            const result = await projectsDelete(requireAdminUserId(session), input.projectIds, session, serverRuntime);
+            const result = await adminProjectsDelete(requireAdminUserId(session), input.projectIds, session, serverRuntime);
             for (const projectId of input.projectIds) mutations.push({ kind: 'projectDelete', id: projectId });
             return result;
         },

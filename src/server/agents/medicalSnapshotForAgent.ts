@@ -1,5 +1,5 @@
 import { asc, desc, sql } from 'drizzle-orm';
-import type { MedicalAppointment, MedicalCategory, MedicalRecord } from '../db/schema';
+import type { AdminMedicalAppointment, AdminMedicalCategory, AdminMedicalRecord } from '../db/schema';
 import { medicalAppointments, medicalRecords } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { MEDICAL_CATEGORY_CADENCE } from './medicalCategoryCadence';
@@ -36,7 +36,7 @@ export async function medicalSnapshotForAgent(serverRuntime: ServerRuntime): Pro
     const now = new Date();
     const appointmentsByCategory = groupByCategory(appointmentRows);
     const recordsByCategory = groupByCategory(recordRows);
-    const categories = Array.from(new Set<MedicalCategory>([...appointmentsByCategory.keys(), ...recordsByCategory.keys()]));
+    const categories = Array.from(new Set<AdminMedicalCategory>([...appointmentsByCategory.keys(), ...recordsByCategory.keys()]));
     categories.sort();
 
     const lines: string[] = ['## Medical'];
@@ -93,8 +93,8 @@ export async function medicalSnapshotForAgent(serverRuntime: ServerRuntime): Pro
     return lines.join('\n');
 }
 
-function groupByCategory<T extends { category: MedicalCategory }>(rows: T[]): Map<MedicalCategory, T[]> {
-    const map = new Map<MedicalCategory, T[]>();
+function groupByCategory<T extends { category: AdminMedicalCategory }>(rows: T[]): Map<AdminMedicalCategory, T[]> {
+    const map = new Map<AdminMedicalCategory, T[]>();
     for (const row of rows) {
         const bucket = map.get(row.category) ?? [];
         bucket.push(row);
@@ -103,14 +103,14 @@ function groupByCategory<T extends { category: MedicalCategory }>(rows: T[]): Ma
     return map;
 }
 
-function appointmentLine(row: MedicalAppointment): string {
+function appointmentLine(row: AdminMedicalAppointment): string {
     const when = row.scheduledAt.toISOString().slice(0, 10);
     const status = row.status !== 'scheduled' ? `, ${row.status}` : '';
     const provider = row.providerName ? ` @ ${row.providerName}` : '';
     return `- ${when}: ${row.title}${provider} (id: ${row.appointmentId}${status})`;
 }
 
-function recordLine(row: MedicalRecord): string {
+function recordLine(row: AdminMedicalRecord): string {
     const when = (row.occurredAt ?? row.createdAt).toISOString().slice(0, 10);
     const severity = row.severity ? `, ${row.severity}` : '';
     const symptoms = row.symptoms.length > 0 ? `, symptoms: ${row.symptoms.join('/')}` : '';

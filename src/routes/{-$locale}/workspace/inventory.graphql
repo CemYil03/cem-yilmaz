@@ -54,9 +54,9 @@ subscription WorkspaceInventoryPageUpdates {
     }
 }
 
-mutation WorkspaceItemsUpsert($items: [ItemInput!]!) {
+mutation WorkspaceItemsUpsert($items: [AdminInventoryItemInput!]!) {
     admin {
-        itemsUpsert(items: $items) {
+        adminInventoryItemsUpsert(items: $items) {
             success
             referenceIds
         }
@@ -65,15 +65,15 @@ mutation WorkspaceItemsUpsert($items: [ItemInput!]!) {
 
 mutation WorkspaceItemsDelete($itemIds: [ID!]!) {
     admin {
-        itemsDelete(itemIds: $itemIds) {
+        adminInventoryItemsDelete(itemIds: $itemIds) {
             success
         }
     }
 }
 
-mutation WorkspaceItemsReprice($inputs: [ItemRepriceInput!]!) {
+mutation WorkspaceItemsReprice($inputs: [AdminInventoryItemRepriceInput!]!) {
     admin {
-        itemsReprice(inputs: $inputs) {
+        adminInventoryItemsReprice(inputs: $inputs) {
             success
             referenceIds
         }

@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
-import { adminTravelTripPackingItems, adminTravelTrips } from '../db/schema';
+import { tripPackingItems, trips } from '../db/schema';
 import type { AdminTravelTripPackingItemCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminTravelTripPackingItemInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -31,10 +31,7 @@ export async function adminTravelTripPackingItemsUpsert(
         const updateIds = seeds.filter((seed) => seed.isUpdate).map((seed) => seed.tripPackingItemId);
 
         await serverRuntime.db.transaction(async (transaction) => {
-            const parents = await transaction
-                .select({ tripId: adminTravelTrips.tripId })
-                .from(adminTravelTrips)
-                .where(inArray(adminTravelTrips.tripId, parentTripIds));
+            const parents = await transaction.select({ tripId: trips.tripId }).from(trips).where(inArray(trips.tripId, parentTripIds));
             if (parents.length !== parentTripIds.length) {
                 const found = new Set(parents.map((row) => row.tripId));
                 const missing = parentTripIds.filter((id) => !found.has(id));
@@ -42,9 +39,9 @@ export async function adminTravelTripPackingItemsUpsert(
             }
             if (updateIds.length > 0) {
                 const existing = await transaction
-                    .select({ tripPackingItemId: adminTravelTripPackingItems.tripPackingItemId })
-                    .from(adminTravelTripPackingItems)
-                    .where(inArray(adminTravelTripPackingItems.tripPackingItemId, updateIds));
+                    .select({ tripPackingItemId: tripPackingItems.tripPackingItemId })
+                    .from(tripPackingItems)
+                    .where(inArray(tripPackingItems.tripPackingItemId, updateIds));
                 if (existing.length !== updateIds.length) {
                     const found = new Set(existing.map((row) => row.tripPackingItemId));
                     const missing = updateIds.filter((id) => !found.has(id));
@@ -60,15 +57,10 @@ export async function adminTravelTripPackingItemsUpsert(
                     const cached = tailByBucket.get(bucketKey);
                     if (cached === undefined) {
                         const [top] = await transaction
-                            .select({ position: adminTravelTripPackingItems.position })
-                            .from(adminTravelTripPackingItems)
-                            .where(
-                                and(
-                                    eq(adminTravelTripPackingItems.tripId, item.tripId),
-                                    eq(adminTravelTripPackingItems.category, item.category),
-                                ),
-                            )
-                            .orderBy(desc(adminTravelTripPackingItems.position))
+                            .select({ position: tripPackingItems.position })
+                            .from(tripPackingItems)
+                            .where(and(eq(tripPackingItems.tripId, item.tripId), eq(tripPackingItems.category, item.category)))
+                            .orderBy(desc(tripPackingItems.position))
                             .limit(1);
                         position = top ? top.position + 1 : 0;
                     } else {
@@ -89,11 +81,11 @@ export async function adminTravelTripPackingItemsUpsert(
                 };
                 if (isUpdate) {
                     await transaction
-                        .update(adminTravelTripPackingItems)
+                        .update(tripPackingItems)
                         .set(payload)
-                        .where(eq(adminTravelTripPackingItems.tripPackingItemId, tripPackingItemId));
+                        .where(eq(tripPackingItems.tripPackingItemId, tripPackingItemId));
                 } else {
-                    await transaction.insert(adminTravelTripPackingItems).values(payload);
+                    await transaction.insert(tripPackingItems).values(payload);
                 }
             }
         });

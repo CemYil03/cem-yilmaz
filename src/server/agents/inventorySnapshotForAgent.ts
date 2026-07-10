@@ -1,4 +1,4 @@
-import type { GqlSItem, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
 import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
@@ -41,7 +41,7 @@ export async function inventorySnapshotForAgent(session: GqlSSession, serverRunt
         return lines.join('\n');
     }
 
-    const byCategory = new Map<string, GqlSItem[]>();
+    const byCategory = new Map<string, GqlSAdminInventoryItem[]>();
     for (const item of ownedItems) {
         const list = byCategory.get(item.categoryKey) ?? [];
         list.push(item);
@@ -57,7 +57,7 @@ export async function inventorySnapshotForAgent(session: GqlSSession, serverRunt
     return lines.join('\n');
 }
 
-function itemLine(item: GqlSItem): string {
+function itemLine(item: GqlSAdminInventoryItem): string {
     const label = [item.brand, item.model].filter(Boolean).join(' ');
     const name = label ? `${item.name} (${label})` : item.name;
     const value = item.currentValueCents === null || item.currentValueCents === undefined ? 'unvalued' : formatEur(item.currentValueCents);

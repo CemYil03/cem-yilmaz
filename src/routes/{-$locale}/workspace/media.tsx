@@ -59,9 +59,9 @@ import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCMediaPlatform,
-    GqlCMediaTopic,
-    GqlCMovieStatus,
+    GqlCAdminMediaPlatform,
+    GqlCAdminMediaTopic,
+    GqlCAdminMediaMovieStatus,
     GqlCWorkspaceMediaPageUpdatesSubscription,
     GqlCWorkspaceMediaPageUserFragment,
     GqlCWorkspaceMediaYoutubeSearchQuery,
@@ -111,15 +111,15 @@ const pageDescription = {
     en: 'Watchlist, current favourites, and the channels I follow.',
 };
 
-const MOVIE_STATUS_ORDER: ReadonlyArray<GqlCMovieStatus> = ['watchlist', 'watching', 'watched', 'dropped'];
-const MOVIE_STATUS_LABELS: Record<GqlCMovieStatus, { de: string; en: string }> = {
+const MOVIE_STATUS_ORDER: ReadonlyArray<GqlCAdminMediaMovieStatus> = ['watchlist', 'watching', 'watched', 'dropped'];
+const MOVIE_STATUS_LABELS: Record<GqlCAdminMediaMovieStatus, { de: string; en: string }> = {
     watchlist: { de: 'Watchlist', en: 'Watchlist' },
     watching: { de: 'Schaue gerade', en: 'Watching' },
     watched: { de: 'Gesehen', en: 'Watched' },
     dropped: { de: 'Abgebrochen', en: 'Dropped' },
 };
 
-const PLATFORM_LABELS: Record<GqlCMediaPlatform, { de: string; en: string }> = {
+const PLATFORM_LABELS: Record<GqlCAdminMediaPlatform, { de: string; en: string }> = {
     youtube: { de: 'YouTube', en: 'YouTube' },
     twitch: { de: 'Twitch', en: 'Twitch' },
     podcast: { de: 'Podcast', en: 'Podcast' },
@@ -130,7 +130,7 @@ const PLATFORM_LABELS: Record<GqlCMediaPlatform, { de: string; en: string }> = {
 // picker. The `topics` column itself is free-form, so users can also type
 // ad-hoc labels; these are just the ones we know match the visitor-facing
 // filters on `/workspace/software`.
-const KNOWN_TOPICS: ReadonlyArray<GqlCMediaTopic> = [
+const KNOWN_TOPICS: ReadonlyArray<GqlCAdminMediaTopic> = [
     'tech',
     'ai',
     'software',
@@ -147,7 +147,7 @@ const KNOWN_TOPICS: ReadonlyArray<GqlCMediaTopic> = [
     'lifestyle',
     'education',
 ];
-const TOPIC_LABELS: Record<GqlCMediaTopic, { de: string; en: string }> = {
+const TOPIC_LABELS: Record<GqlCAdminMediaTopic, { de: string; en: string }> = {
     tech: { de: 'Tech', en: 'Tech' },
     ai: { de: 'KI', en: 'AI' },
     software: { de: 'Software', en: 'Software' },
@@ -166,7 +166,7 @@ const TOPIC_LABELS: Record<GqlCMediaTopic, { de: string; en: string }> = {
 };
 
 function topicLabel(topic: string, locale: Locale): string {
-    return topic in TOPIC_LABELS ? TOPIC_LABELS[topic as GqlCMediaTopic][locale] : topic;
+    return topic in TOPIC_LABELS ? TOPIC_LABELS[topic as GqlCAdminMediaTopic][locale] : topic;
 }
 
 type Tab = 'movies' | 'series' | 'channels';
@@ -383,7 +383,7 @@ function MoviesTab({
 
     // Group filtered by status in the fixed section order.
     const grouped = useMemo(() => {
-        const buckets: Record<GqlCMovieStatus, MovieRow[]> = {
+        const buckets: Record<GqlCAdminMediaMovieStatus, MovieRow[]> = {
             watchlist: [],
             watching: [],
             watched: [],
@@ -489,7 +489,7 @@ function MovieStatusGroup({
     onEdit,
     locale,
 }: {
-    status: GqlCMovieStatus;
+    status: GqlCAdminMediaMovieStatus;
     movies: ReadonlyArray<MovieRow>;
     onEdit: (row: MovieRow) => void;
     locale: Locale;
@@ -518,7 +518,7 @@ function MovieCard({ movie, onEdit, locale }: { movie: MovieRow; onEdit: () => v
     const [, del] = useMutation(WorkspaceMoviesDeleteDocument);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-    const changeStatus = async (next: GqlCMovieStatus) => {
+    const changeStatus = async (next: GqlCAdminMediaMovieStatus) => {
         await upsert({
             movies: [
                 {
@@ -663,7 +663,7 @@ function MovieCard({ movie, onEdit, locale }: { movie: MovieRow; onEdit: () => v
 // query stabilises. Suggestions dropdown mirrors a Radix popover but is a
 // plain absolutely-positioned panel below the input so keyboard arrow-key
 // navigation stays inside the input's focus. Enter on a highlighted result
-// adds via `moviesAddFromTmdb`; Escape clears the query. A subtle "Add
+// adds via `adminMediaMoviesAddFromTmdb`; Escape clears the query. A subtle "Add
 // manually" link at the foot opens the empty edit dialog.
 function MovieSearchBar({
     inputRef,
@@ -759,7 +759,7 @@ function MovieSearchBar({
                         }
                     }}
                     placeholder={{ de: 'Film suchen…', en: 'Search a movie…' }[locale]}
-                    aria-label={{ de: 'Film-Suche', en: 'Movie search' }[locale]}
+                    aria-label={{ de: 'Film-Suche', en: 'AdminMediaMovie search' }[locale]}
                     role="combobox"
                     aria-expanded={open}
                     aria-controls="tmdb-suggestions"
@@ -866,9 +866,9 @@ function MovieSearchBar({
     );
 }
 
-// Movie edit dialog: single centered modal used for both "new" (movie=null)
-// and "edit existing" states. Every field maps 1:1 to `MovieInput` — the
-// server hydrates from TMDB on `moviesAddFromTmdb`, so the poster/backdrop
+// AdminMediaMovie edit dialog: single centered modal used for both "new" (movie=null)
+// and "edit existing" states. Every field maps 1:1 to `AdminMediaMovieInput` — the
+// server hydrates from TMDB on `adminMediaMoviesAddFromTmdb`, so the poster/backdrop
 // URL fields land here already populated and stay editable but rarely
 // touched.
 function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; locale: Locale; onClose: () => void }) {
@@ -883,7 +883,7 @@ function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; l
         releaseDate: movie?.releaseDate ?? '',
         runtimeMinutes: movie?.runtimeMinutes != null ? String(movie.runtimeMinutes) : '',
         overview: movie?.overview ?? '',
-        status: movie?.status ?? ('watchlist' as GqlCMovieStatus),
+        status: movie?.status ?? ('watchlist' as GqlCAdminMediaMovieStatus),
         rating: movie?.rating ?? 0,
         watchedAt: movie?.watchedAt ?? '',
         notes: movie?.notes ?? '',
@@ -960,7 +960,7 @@ function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; l
                                 <Field label={{ de: 'Status', en: 'Status' }[locale]}>
                                     <Select
                                         value={form.status}
-                                        onValueChange={(value) => setForm({ ...form, status: value as GqlCMovieStatus })}
+                                        onValueChange={(value) => setForm({ ...form, status: value as GqlCAdminMediaMovieStatus })}
                                     >
                                         <SelectTrigger className="w-full">
                                             <SelectValue />
@@ -1153,7 +1153,7 @@ function SeriesTab({
     }, [shows, activeTopics]);
 
     const grouped = useMemo(() => {
-        const buckets: Record<GqlCMovieStatus, ShowRow[]> = {
+        const buckets: Record<GqlCAdminMediaMovieStatus, ShowRow[]> = {
             watchlist: [],
             watching: [],
             watched: [],
@@ -1257,7 +1257,7 @@ function ShowStatusGroup({
     onEdit,
     locale,
 }: {
-    status: GqlCMovieStatus;
+    status: GqlCAdminMediaMovieStatus;
     shows: ReadonlyArray<ShowRow>;
     onEdit: (row: ShowRow) => void;
     locale: Locale;
@@ -1299,7 +1299,7 @@ function ShowCard({ show, onEdit, locale }: { show: ShowRow; onEdit: () => void;
     const [, del] = useMutation(WorkspaceShowsDeleteDocument);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-    const changeStatus = async (next: GqlCMovieStatus) => {
+    const changeStatus = async (next: GqlCAdminMediaMovieStatus) => {
         await upsert({
             shows: [
                 {
@@ -1662,7 +1662,7 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
         backdropUrl: show?.backdropUrl ?? '',
         firstAirDate: show?.firstAirDate ?? '',
         overview: show?.overview ?? '',
-        status: show?.status ?? ('watchlist' as GqlCMovieStatus),
+        status: show?.status ?? ('watchlist' as GqlCAdminMediaMovieStatus),
         rating: show?.rating ?? 0,
         notes: show?.notes ?? '',
         topics: show?.topics ?? [],
@@ -1742,7 +1742,7 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
                                 <Field label={{ de: 'Status', en: 'Status' }[locale]}>
                                     <Select
                                         value={form.status}
-                                        onValueChange={(value) => setForm({ ...form, status: value as GqlCMovieStatus })}
+                                        onValueChange={(value) => setForm({ ...form, status: value as GqlCAdminMediaMovieStatus })}
                                     >
                                         <SelectTrigger className="w-full">
                                             <SelectValue />
@@ -1918,7 +1918,7 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
 
 // --- Channels tab -----------------------------------------------------------
 
-const PLATFORM_ICON: Record<GqlCMediaPlatform, typeof PlayIcon> = {
+const PLATFORM_ICON: Record<GqlCAdminMediaPlatform, typeof PlayIcon> = {
     youtube: PlayIcon,
     twitch: PlayIcon,
     podcast: PodcastIcon,
@@ -1928,7 +1928,7 @@ const PLATFORM_ICON: Record<GqlCMediaPlatform, typeof PlayIcon> = {
 function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>; locale: Locale }) {
     const [editing, setEditing] = useState<ChannelRow | null>(null);
     const [activeTopics, setActiveTopics] = useState<string[]>([]);
-    const [activePlatforms, setActivePlatforms] = useState<GqlCMediaPlatform[]>([]);
+    const [activePlatforms, setActivePlatforms] = useState<GqlCAdminMediaPlatform[]>([]);
     const [, reorderMutation] = useMutation(WorkspaceMediaChannelReorderDocument);
     const searchInputRef = useRef<HTMLInputElement | null>(null);
     const focusSearch = () => searchInputRef.current?.focus();
@@ -1942,9 +1942,9 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
     }, [channels]);
 
     const platformChips = useMemo(() => {
-        const counts = new Map<GqlCMediaPlatform, number>();
+        const counts = new Map<GqlCAdminMediaPlatform, number>();
         for (const channel of channels) counts.set(channel.platform, (counts.get(channel.platform) ?? 0) + 1);
-        return (Object.keys(PLATFORM_LABELS) as GqlCMediaPlatform[]).filter((p) => (counts.get(p) ?? 0) > 0);
+        return (Object.keys(PLATFORM_LABELS) as GqlCAdminMediaPlatform[]).filter((p) => (counts.get(p) ?? 0) > 0);
     }, [channels]);
 
     const filtered = useMemo(() => {
@@ -1975,7 +1975,7 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
     const toggleTopic = (topic: string) => {
         setActiveTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
     };
-    const togglePlatform = (platform: GqlCMediaPlatform) => {
+    const togglePlatform = (platform: GqlCAdminMediaPlatform) => {
         setActivePlatforms((prev) => (prev.includes(platform) ? prev.filter((p) => p !== platform) : [...prev, platform]));
     };
 
@@ -2226,13 +2226,13 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow; 
                             <Field label={{ de: 'Plattform', en: 'Platform' }[locale]}>
                                 <Select
                                     value={form.platform}
-                                    onValueChange={(value) => setForm({ ...form, platform: value as GqlCMediaPlatform })}
+                                    onValueChange={(value) => setForm({ ...form, platform: value as GqlCAdminMediaPlatform })}
                                 >
                                     <SelectTrigger className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {(Object.keys(PLATFORM_LABELS) as GqlCMediaPlatform[]).map((p) => (
+                                        {(Object.keys(PLATFORM_LABELS) as GqlCAdminMediaPlatform[]).map((p) => (
                                             <SelectItem key={p} value={p}>
                                                 {PLATFORM_LABELS[p][locale]}
                                             </SelectItem>
@@ -2329,7 +2329,7 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow; 
 // Sticky search-to-add bar for the channels tab. Mirrors the movies / series
 // TMDB search shape (300ms debounce, `pause` on empty, `network-only`,
 // keyboard nav, outside-click closes) but hits the YouTube Data API. Picking
-// a suggestion creates the channel directly via `mediaChannelsUpsert` — the
+// a suggestion creates the channel directly via `adminMediaChannelsUpsert` — the
 // identity fields (name / url / handle / avatar / description) come from the
 // API; topics / notes are edited afterwards on the card. There is no manual
 // identity entry on the add path.
@@ -2537,7 +2537,7 @@ type YoutubeSearchHit = NonNullable<
 
 // --- Topic chip input -------------------------------------------------------
 
-// Topic-flavoured `ChipInput`: suggestion chips surface the `MediaTopic` enum
+// Topic-flavoured `ChipInput`: suggestion chips surface the `AdminMediaTopic` enum
 // values not yet selected, and stored values render through their localized
 // label. Ad-hoc strings are allowed (the DB column is `text[]`), so the enum is
 // a hint, not a constraint.

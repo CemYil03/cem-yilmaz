@@ -1,17 +1,19 @@
 # Workspace todos
 
-A dedicated workspace surface at `/workspace/todos` for standalone tasks — the rows in the `Tasks` table with `projectId IS NULL`. Todos are
-quick captures that don't belong to any project: no timer, no activity feed, no lifecycle beyond `todo → doing → done`. Project-bound tasks
-live on the project detail route (`/workspace/projects/$projectId`) and never appear here; the two surfaces are disjoint by construction.
+A dedicated workspace surface at `/workspace/todos` for standalone tasks — the rows in the `AdminProjectTask` table with
+`projectId IS NULL`. Todos are quick captures that don't belong to any project: no timer, no activity feed, no lifecycle beyond
+`todo → doing → done`. Project-bound tasks live on the project detail route (`/workspace/projects/$projectId`) and never appear here; the
+two surfaces are disjoint by construction.
 
 The surface is small but ritualised — completion is meant to feel earned, momentum is visible, and capture is instant. Both this page and
-the project-tasks section on `/workspace/projects/{projectId}` share the redesigned `Task` shape (see
+the project-tasks section on `/workspace/projects/{projectId}` share the redesigned `AdminProjectTask` shape (see
 [content-model.md](../architecture/content-model.md#tasks-added-columns)) and the same visual language for the effort strip + when-bucket
 chips.
 
 See also:
 
-- [features/workspace-projects.md](./workspace-projects.md) — Inbox + Projects board. Shares the `Tasks` table but not the surface.
+- [features/workspace-projects.md](./workspace-projects.md) — Inbox + Projects board. Shares the `AdminProjectTask` table but not the
+  surface.
 - [architecture/state-synchronization.md](../architecture/state-synchronization.md) — the seed-and-subscribe pattern this page uses.
 
 ## User behavior
@@ -141,18 +143,18 @@ Deep-linking from the personal assistant: any standalone task the agent referenc
 
 ## Options considered
 
-| Approach                                                            | Why we picked / didn't                                                                                                                                                                              |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Todos tab on `/workspace/projects`** (original)                   | Conflated "ongoing project + kanban + timer" with "flat todo list". The mental space is the same word (task) but the workflow isn't; the tab kept the two surfaces glued to one URL for no benefit. |
-| **Separate `Todos` table**                                          | Two near-identical schemas. A nullable `projectId` is one column that already carries the distinction.                                                                                              |
-| **Dedicated `/workspace/todos` route, same `Tasks` table** (chosen) | Reuses the DB shape; each page owns its own read query so neither has to filter the other out. Legacy `/workspace/projects?tab=todos` links redirect to this route so nothing 404s.                 |
+| Approach                                                                       | Why we picked / didn't                                                                                                                                                                              |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Todos tab on `/workspace/projects`** (original)                              | Conflated "ongoing project + kanban + timer" with "flat todo list". The mental space is the same word (task) but the workflow isn't; the tab kept the two surfaces glued to one URL for no benefit. |
+| **Separate `Todos` table**                                                     | Two near-identical schemas. A nullable `projectId` is one column that already carries the distinction.                                                                                              |
+| **Dedicated `/workspace/todos` route, same `AdminProjectTask` table** (chosen) | Reuses the DB shape; each page owns its own read query so neither has to filter the other out. Legacy `/workspace/projects?tab=todos` links redirect to this route so nothing 404s.                 |
 
 ## Option chosen
 
-Dedicated route, same `Tasks` table. `projectId IS NULL` = standalone todo. The page reads only `admin.standaloneTasks` and writes through
-`admin.taskUpsert(input: { projectId: null, … })` / `admin.taskDelete`. Project-bound tasks flow through the same commands with a real
-`projectId`; the server enforces access via `guardAdminMutation` — nothing on the schema forbids either side from touching the other's rows,
-but nothing in the client asks it to.
+Dedicated route, same `AdminProjectTask` table. `projectId IS NULL` = standalone todo. The page reads only `admin.standaloneTasks` and
+writes through `admin.taskUpsert(input: { projectId: null, … })` / `admin.taskDelete`. Project-bound tasks flow through the same commands
+with a real `projectId`; the server enforces access via `guardAdminMutation` — nothing on the schema forbids either side from touching the
+other's rows, but nothing in the client asks it to.
 
 ## Implementation details
 
@@ -177,7 +179,7 @@ but nothing in the client asks it to.
 
 Read namespace (under `Admin`):
 
-- `adminStandaloneTaskFindMany: [Task!]!` — full list of `projectId IS NULL` rows, ordered by `position`.
+- `adminStandaloneTaskFindMany: [AdminProjectTask!]!` — full list of `projectId IS NULL` rows, ordered by `position`.
 - `adminStandaloneTaskOpenCount: Int!` — `count(*)` of `projectId IS NULL AND status IN ('todo','doing')`. Drives the Todos tile badge on
   the workspace hub.
 
@@ -234,7 +236,7 @@ Everything above respects `prefers-reduced-motion: reduce`:
 
 ## Out of scope (v1)
 
-- **Drag reorder.** The `taskReorder` mutation exists (used by the CV page pattern) but no visual drag handle yet.
+- **Drag reorder.** The `adminProjectTaskReorder` mutation exists (used by the CV page pattern) but no visual drag handle yet.
 - **AI summarization / bulk-add from natural language.** Personal-assistant candidate.
 - **Filtering by due date or tag.** Not needed until the list grows.
 

@@ -1,18 +1,18 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { mealPlanEntriesUpsert } from '../commands/mealPlanEntriesUpsert';
+import { adminNutritionMealPlanEntriesUpsert } from '../commands/adminNutritionMealPlanEntriesUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMealPlanEntryInputSchema } from '../graphql/generated';
-import type { GqlSMealPlanEntryInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminNutritionMealPlanEntryInputSchema } from '../graphql/generated';
+import type { GqlSAdminNutritionMealPlanEntryInput, GqlSSession } from '../graphql/generated';
 import type { NutritionAgentMutationLog } from './agentPersonalAssistantNutrition';
 import { requireAdminUserId } from './requireAdminUserId';
 
 // Batch create-or-edit of soft-plan slots. Reuses the generated input schema —
-// `MealPlanEntryInput.date` is a `Date` scalar (a `YYYY-MM-DD` string), so the
+// `AdminNutritionMealPlanEntryInput.date` is a `Date` scalar (a `YYYY-MM-DD` string), so the
 // schema is Gemini-safe (no `z.date()`).
 
 const toolMealPlanEntriesUpsertInputSchema = z.object({
-    mealPlanEntries: z.array(GqlSMealPlanEntryInputSchema()).min(1),
+    mealPlanEntries: z.array(GqlSAdminNutritionMealPlanEntryInputSchema()).min(1),
 });
 
 interface NutritionAgentMutationContext {
@@ -31,8 +31,8 @@ export function toolMealPlanEntriesUpsert({ serverRuntime, session, mutations }:
         ].join(' '),
         inputSchema: toolMealPlanEntriesUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.mealPlanEntries as GqlSMealPlanEntryInput[];
-            const result = await mealPlanEntriesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.mealPlanEntries as GqlSAdminNutritionMealPlanEntryInput[];
+            const result = await adminNutritionMealPlanEntriesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((entry, index) => {
                 mutations.push({

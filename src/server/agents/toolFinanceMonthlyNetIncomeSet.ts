@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { financeMonthlyNetIncomeSet } from '../commands/financeMonthlyNetIncomeSet';
+import { adminFinancesMonthlyNetIncomeSet } from '../commands/adminFinancesMonthlyNetIncomeSet';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { FinanceAgentMutationLog } from './agentPersonalAssistantFinances';
@@ -25,7 +25,7 @@ export function toolFinanceMonthlyNetIncomeSet({ serverRuntime, session, mutatio
         ].join(' '),
         inputSchema: toolFinanceMonthlyNetIncomeSetInputSchema,
         execute: async (input) => {
-            const result = await financeMonthlyNetIncomeSet(
+            const result = await adminFinancesMonthlyNetIncomeSet(
                 requireAdminUserId(session),
                 { amountCents: input.amountCents ?? null },
                 session,

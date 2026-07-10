@@ -23,7 +23,7 @@ interface MediaAgentReadContext {
 export function toolTmdbSearch({ serverRuntime }: MediaAgentReadContext) {
     return tool({
         description: [
-            'Search The Movie Database (TMDB) for a movie by title. Returns up to 10 results with `tmdbId`, title,',
+            'Search The AdminMediaMovie Database (TMDB) for a movie by title. Returns up to 10 results with `tmdbId`, title,',
             'release date, poster URL, and short overview. Use this BEFORE `moviesAddFromTmdb` when Cem names a',
             'film he has not tracked yet — feed the chosen `tmdbId` into that tool. Empty results mean no match,',
             'no TMDB key, or TMDB is unreachable; in all three cases fall back to `moviesUpsert` with a manual',

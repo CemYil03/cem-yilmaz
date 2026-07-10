@@ -24,8 +24,8 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCEquipmentType,
-    GqlCMuscleGroup,
+    GqlCAdminFitnessEquipmentType,
+    GqlCAdminFitnessMuscleGroup,
     GqlCWorkspaceFitnessPageUpdatesSubscription,
     GqlCWorkspaceFitnessPageUserFragment,
 } from '../../../web/graphql/generated';
@@ -60,8 +60,18 @@ import { localeFromParam } from '../../../web/utils/locale';
 const title = { de: 'Fitness', en: 'Fitness' };
 const description = { de: 'Training, Fortschritt und Routinen.', en: 'Workouts, progress, and routines.' };
 
-const MUSCLE_GROUPS: ReadonlyArray<GqlCMuscleGroup> = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'fullBody', 'cardio', 'other'];
-const MUSCLE_GROUP_LABELS: Record<GqlCMuscleGroup, { de: string; en: string }> = {
+const MUSCLE_GROUPS: ReadonlyArray<GqlCAdminFitnessMuscleGroup> = [
+    'chest',
+    'back',
+    'legs',
+    'shoulders',
+    'arms',
+    'core',
+    'fullBody',
+    'cardio',
+    'other',
+];
+const MUSCLE_GROUP_LABELS: Record<GqlCAdminFitnessMuscleGroup, { de: string; en: string }> = {
     chest: { de: 'Brust', en: 'Chest' },
     back: { de: 'Rücken', en: 'Back' },
     legs: { de: 'Beine', en: 'Legs' },
@@ -73,8 +83,16 @@ const MUSCLE_GROUP_LABELS: Record<GqlCMuscleGroup, { de: string; en: string }> =
     other: { de: 'Sonstiges', en: 'Other' },
 };
 
-const EQUIPMENT_TYPES: ReadonlyArray<GqlCEquipmentType> = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'kettlebell', 'other'];
-const EQUIPMENT_LABELS: Record<GqlCEquipmentType, { de: string; en: string }> = {
+const EQUIPMENT_TYPES: ReadonlyArray<GqlCAdminFitnessEquipmentType> = [
+    'barbell',
+    'dumbbell',
+    'machine',
+    'cable',
+    'bodyweight',
+    'kettlebell',
+    'other',
+];
+const EQUIPMENT_LABELS: Record<GqlCAdminFitnessEquipmentType, { de: string; en: string }> = {
     barbell: { de: 'Langhantel', en: 'Barbell' },
     dumbbell: { de: 'Kurzhantel', en: 'Dumbbell' },
     machine: { de: 'Maschine', en: 'Machine' },
@@ -481,7 +499,7 @@ function EditSessionDialog({
             // Seeding: a brand-new session created from a routine gets one set
             // per routine item (target weight/reps carried over) so the log
             // starts pre-filled.
-            const newSessionId = result.data?.admin.workoutSessionsUpsert.referenceIds?.[0];
+            const newSessionId = result.data?.admin.adminFitnessWorkoutSessionsUpsert.referenceIds?.[0];
             if (isNew && routineId && newSessionId) {
                 const routine = routines.find((r) => r.routineId === routineId);
                 if (routine && routine.items.length > 0) {
@@ -643,11 +661,11 @@ function EditSetDialog({
                         {isNew ? { de: 'Satz hinzufügen', en: 'Add set' }[locale] : { de: 'Satz bearbeiten', en: 'Edit set' }[locale]}
                     </DialogTitle>
                     <DialogDescription>
-                        {{ de: 'Übung, Gewicht und Wiederholungen.', en: 'Exercise, weight, and reps.' }[locale]}
+                        {{ de: 'Übung, Gewicht und Wiederholungen.', en: 'AdminFitnessExercise, weight, and reps.' }[locale]}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label={{ de: 'Übung', en: 'Exercise' }[locale]} className="sm:col-span-2">
+                    <Field label={{ de: 'Übung', en: 'AdminFitnessExercise' }[locale]} className="sm:col-span-2">
                         <Select value={state.exerciseId} onValueChange={(v) => setState((s) => ({ ...s, exerciseId: v }))}>
                             <SelectTrigger className="w-full">
                                 <SelectValue />
@@ -893,7 +911,7 @@ function EditRoutineDialog({
                 ],
             });
             if (result.error) return;
-            const routineId = result.data?.admin.workoutRoutinesUpsert.referenceIds?.[0];
+            const routineId = result.data?.admin.adminFitnessWorkoutRoutinesUpsert.referenceIds?.[0];
             if (routineId && items.length > 0) {
                 const itemsResult = await upsertItems({
                     workoutRoutineItems: items.map((item, index) => ({
@@ -1037,7 +1055,7 @@ function ExercisesTab({ exercises, locale }: { exercises: ReadonlyArray<Exercise
     const [deleting, setDeleting] = useState<ExerciseRow | null>(null);
 
     const groups = useMemo(() => {
-        const byGroup = new Map<GqlCMuscleGroup, ExerciseRow[]>();
+        const byGroup = new Map<GqlCAdminFitnessMuscleGroup, ExerciseRow[]>();
         for (const row of exercises) {
             const list = byGroup.get(row.muscleGroup) ?? [];
             list.push(row);
@@ -1167,8 +1185,8 @@ function ExerciseCard({
 type ExerciseFormState = {
     exerciseId: string | null;
     name: string;
-    muscleGroup: GqlCMuscleGroup;
-    equipment: GqlCEquipmentType | 'none';
+    muscleGroup: GqlCAdminFitnessMuscleGroup;
+    equipment: GqlCAdminFitnessEquipmentType | 'none';
     notes: string;
 };
 
@@ -1221,7 +1239,7 @@ function EditExerciseDialog({ initial, locale, onClose }: { initial: ExerciseRow
                     <Field label={{ de: 'Muskelgruppe', en: 'Muscle group' }[locale]}>
                         <Select
                             value={state.muscleGroup}
-                            onValueChange={(v) => setState((s) => ({ ...s, muscleGroup: v as GqlCMuscleGroup }))}
+                            onValueChange={(v) => setState((s) => ({ ...s, muscleGroup: v as GqlCAdminFitnessMuscleGroup }))}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
@@ -1238,7 +1256,7 @@ function EditExerciseDialog({ initial, locale, onClose }: { initial: ExerciseRow
                     <Field label={{ de: 'Gerät', en: 'Equipment' }[locale]}>
                         <Select
                             value={state.equipment}
-                            onValueChange={(v) => setState((s) => ({ ...s, equipment: v as GqlCEquipmentType | 'none' }))}
+                            onValueChange={(v) => setState((s) => ({ ...s, equipment: v as GqlCAdminFitnessEquipmentType | 'none' }))}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue />

@@ -3,7 +3,7 @@ import type { GqlSAdminTravelTrip, GqlSAdminTravelTripDay, GqlSAdminTravelTripPa
 
 // Trip with its hydrated days and packing items. The loading query owns the
 // batching and passes ordered arrays in — identical to how
-// `toGqlMedicalRecord(row, files)` receives its files.
+// `toGqlAdminMedicalRecord(row, files)` receives its files.
 export function toGqlAdminTravelTrip(
     row: AdminTravelTrip,
     days: GqlSAdminTravelTripDay[],

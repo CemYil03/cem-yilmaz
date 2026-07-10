@@ -174,7 +174,7 @@ fragment WorkspaceChatListItem on Chat {
 # Paged + searchable admin-chat browser feed for the sidebar. All three
 # variables are optional at the schema level; the client always passes
 # `limit` + `offset`, and `query` when the search field is non-empty.
-# `adminChatCount` (same optional `query`) drives the "Show more" gate on
+# `adminChatCount` (same optional `query`) drives the "AdminMediaShow more" gate on
 # the client side — subtract `offset + items.length` to know if more rows
 # exist for the same filter.
 query WorkspaceAssistantChatsPage($limit: Int!, $offset: Int!, $query: String) {

@@ -2,11 +2,11 @@ import { asc, desc, eq, inArray } from 'drizzle-orm';
 import { fileUploads, itemFiles, itemServiceEntries, itemValuations, items } from '../db/schema';
 import type { FileUpload } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSItem, GqlSSession } from '../graphql/generated';
-import { toGqlItem } from '../mappers/toGqlItem';
-import { toGqlItemFile } from '../mappers/toGqlItemFile';
-import { toGqlItemServiceEntry } from '../mappers/toGqlItemServiceEntry';
-import { toGqlItemValuation } from '../mappers/toGqlItemValuation';
+import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';
+import { toGqlAdminInventoryItem } from '../mappers/toGqlAdminInventoryItem';
+import { toGqlAdminInventoryItemFile } from '../mappers/toGqlAdminInventoryItemFile';
+import { toGqlAdminInventoryItemServiceEntry } from '../mappers/toGqlAdminInventoryItemServiceEntry';
+import { toGqlAdminInventoryItemValuation } from '../mappers/toGqlAdminInventoryItemValuation';
 
 // Loads a single item by id with every nested row needed by the detail
 // route (`/workspace/inventory/$itemId`): valuations (desc by valuedAt),
@@ -18,7 +18,7 @@ export async function adminInventoryItemFindOne(
     itemId: string,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSItem | null> {
+): Promise<GqlSAdminInventoryItem | null> {
     try {
         const [row] = await serverRuntime.db.select().from(items).where(eq(items.itemId, itemId)).limit(1);
         if (!row) return null;
@@ -51,7 +51,7 @@ export async function adminInventoryItemFindOne(
         const files = fileRows
             .map((f) => {
                 const upload = fileUploadsById.get(f.fileUploadId);
-                return upload ? toGqlItemFile(f, upload) : null;
+                return upload ? toGqlAdminInventoryItemFile(f, upload) : null;
             })
             .filter((f): f is NonNullable<typeof f> => f !== null);
 
@@ -64,13 +64,13 @@ export async function adminInventoryItemFindOne(
         }
 
         const serviceEntries = serviceRows.map((s) => ({
-            ...toGqlItemServiceEntry(s),
+            ...toGqlAdminInventoryItemServiceEntry(s),
             files: filesByServiceEntryId.get(s.serviceEntryId) ?? [],
         }));
 
         return {
-            ...toGqlItem(row),
-            valuations: valuationRows.map(toGqlItemValuation),
+            ...toGqlAdminInventoryItem(row),
+            valuations: valuationRows.map(toGqlAdminInventoryItemValuation),
             serviceEntries,
             files,
         };

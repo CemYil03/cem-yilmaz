@@ -1,9 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { medicalRecordsUpsert } from '../commands/medicalRecordsUpsert';
+import { adminMedicalRecordsUpsert } from '../commands/adminMedicalRecordsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMedicalCategorySchema, GqlSMedicalRecordSeveritySchema } from '../graphql/generated';
-import type { GqlSMedicalRecordInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminMedicalCategorySchema, GqlSAdminMedicalRecordSeveritySchema } from '../graphql/generated';
+import type { GqlSAdminMedicalRecordInput, GqlSSession } from '../graphql/generated';
 import type { MedicalAgentMutationLog } from './agentPersonalAssistantMedical';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -16,7 +16,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 
 const medicalRecordItemSchema = z.object({
     recordId: z.uuid().nullish().describe('Omit (or null) to create a new record. Pass an existing id to edit.'),
-    category: GqlSMedicalCategorySchema.describe('dentist | gp | dermatology | eyes | mentalHealth | ent | physio | other'),
+    category: GqlSAdminMedicalCategorySchema.describe('dentist | gp | dermatology | eyes | mentalHealth | ent | physio | other'),
     title: z.string().min(1).max(200).describe('Short title, e.g. "Rash on forearm".'),
     summary: z
         .string()
@@ -25,7 +25,7 @@ const medicalRecordItemSchema = z.object({
         .describe(
             "Structured writeup of what the user described, in the user's language. Include: what happened, when it started, symptoms, what makes it better/worse, any relevant history. End with the standard disclaimer.",
         ),
-    severity: GqlSMedicalRecordSeveritySchema.nullish().describe('info | mild | moderate | severe. Omit if genuinely unclear.'),
+    severity: GqlSAdminMedicalRecordSeveritySchema.nullish().describe('info | mild | moderate | severe. Omit if genuinely unclear.'),
     symptoms: z.array(z.string()).describe('Symptom words the user named, lightly normalized. e.g. ["itch", "redness"]. Empty if none.'),
     bodyAreas: z.array(z.string()).describe('Body regions involved, lightly normalized. e.g. ["forearm", "left wrist"]. Empty if none.'),
     occurredAt: z.string().nullish().describe('ISO-8601 stamp when the issue occurred / was noticed. Optional.'),
@@ -63,7 +63,7 @@ export function toolMedicalRecordsUpsert({ serverRuntime, session, mutations }: 
         ].join(' '),
         inputSchema: toolMedicalRecordsUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSMedicalRecordInput[] = input.medicalRecords.map((record) => ({
+            const inputs: GqlSAdminMedicalRecordInput[] = input.medicalRecords.map((record) => ({
                 recordId: record.recordId ?? null,
                 category: record.category,
                 title: record.title,
@@ -77,7 +77,7 @@ export function toolMedicalRecordsUpsert({ serverRuntime, session, mutations }: 
                 topics: record.topics,
                 fileUploadIds: record.fileUploadIds ?? null,
             }));
-            const result = await medicalRecordsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminMedicalRecordsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.medicalRecords.forEach((record, index) => {
                 mutations.push({

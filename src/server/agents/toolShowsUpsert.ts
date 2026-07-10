@@ -1,17 +1,17 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { showsUpsert } from '../commands/showsUpsert';
+import { adminMediaShowsUpsert } from '../commands/adminMediaShowsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSShowInputSchema } from '../graphql/generated';
-import type { GqlSSession, GqlSShowInput } from '../graphql/generated';
+import { GqlSAdminMediaShowInputSchema } from '../graphql/generated';
+import type { GqlSSession, GqlSAdminMediaShowInput } from '../graphql/generated';
 import type { MediaAgentMutationLog } from './agentPersonalAssistantMedia';
 import { requireAdminUserId } from './requireAdminUserId';
 
-// Batch create-or-edit of TV series. Each row is `GqlSShowInputSchema()` —
-// same shape the resolver validates against. Gemini-safe because `ShowInput`
+// Batch create-or-edit of TV series. Each row is `GqlSAdminMediaShowInputSchema()` —
+// same shape the resolver validates against. Gemini-safe because `AdminMediaShowInput`
 // uses `Date` scalars (codegen emits `z.string()`) and no `DateTime` fields.
 const toolShowsUpsertInputSchema = z.object({
-    shows: z.array(GqlSShowInputSchema()).min(1),
+    shows: z.array(GqlSAdminMediaShowInputSchema()).min(1),
 });
 
 interface MediaAgentMutationContext {
@@ -32,8 +32,8 @@ export function toolShowsUpsert({ serverRuntime, session, mutations }: MediaAgen
         ].join(' '),
         inputSchema: toolShowsUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.shows as GqlSShowInput[];
-            const result = await showsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.shows as GqlSAdminMediaShowInput[];
+            const result = await adminMediaShowsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((show, index) => {
                 mutations.push({

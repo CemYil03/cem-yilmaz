@@ -157,7 +157,7 @@ line: **no free-floating type or input names unless they are shared between doma
 | GraphQL input                | `Admin{Domain}{Entity}Input`              | `AdminTravelTripInput`, `AdminTravelTripPackingItemInput`                    |
 | GraphQL / DB enum            | `Admin{Domain}{Concept}`                  | `AdminTravelTripStatus`, `AdminTravelTransportMode`                          |
 | DB table (`pgTable('…')`)    | `Admin{Domain}{Entity}` (singular)        | `pgTable('AdminTravelTrip')` — physical name equals the GraphQL type         |
-| Drizzle table export         | `admin{Domain}{Entities}` (camel, plural) | `export const adminTravelTrips = pgTable('AdminTravelTrip', …)`              |
+| Drizzle table export const   | plain camelCase plural (**not** prefixed) | `export const trips = pgTable('AdminTravelTrip', …)`, `movies`, `items`      |
 | Drizzle row type / insert    | `Admin{Domain}{Entity}` / `…Create`       | `type AdminTravelTrip`, `type AdminTravelTripCreate`                         |
 | Mutation field + `commands/` | `admin{Domain}{Entities}{Action}`         | `adminTravelTripsUpsert`, `adminTravelTripDaysDelete` (batch, plural entity) |
 | Query field + `queries/`     | `admin{Domain}{Entity}{Suffix}`           | `adminTravelTripFindMany`, `adminTravelTripFindOne` (singular entity)        |
@@ -165,19 +165,28 @@ line: **no free-floating type or input names unless they are shared between doma
 
 Notes:
 
+- **The Drizzle export const stays the plain camelCase plural** (`trips`, `movies`, `items`, `tasks`). It is a module-local variable, not
+  the physical table name, and prefixing it collides with GraphQL/interface field names spelled the same (`items`, `tasks`). The physical
+  name (the `pgTable('…')` string) and the row/insert types DO carry the access-path prefix.
 - **Physical table renames are hand-authored `ALTER TABLE … RENAME` migrations** — Drizzle's differ can't tell a rename from a drop+create,
-  so spell out the ALTERs (table, indexes, FK constraints) to preserve every row. See `drizzle/0027_travel_access_path_rename.sql` and the
-  `0012_compass_rename.sql` precedent. Regenerate the snapshot so `npm run db:generate` reports "No schema changes" afterwards.
-- **LLM-facing agent tool names stay short and prefix-less** (`tripsUpsert`, `tripDaysUpsert`). They are a sub-agent's private vocabulary,
-  not the resolver surface, and the GraphQL mutations / `commands/` functions they call are the access-path form. Only the four layers in
-  the table above follow the entity-access-path rule.
+  so spell out the ALTERs (table, indexes, unique + FK constraints) to preserve every row. See `drizzle/0027_travel_access_path_rename.sql`
+  and `drizzle/0028_domain_access_path_rename.sql`, plus the `0012_compass_rename.sql` precedent. Regenerate the snapshot so
+  `npm run db:generate` reports "No schema changes" afterwards.
+- **LLM-facing agent tool names stay short and prefix-less** (`tripsUpsert`, `moviesUpsert`). They are a sub-agent's private vocabulary, not
+  the resolver surface, and the GraphQL mutations / `commands/` functions they call are the access-path form. Only the layers in the table
+  above follow the entity-access-path rule.
 
-**Shared types keep their free-floating names**, because more than one domain / access-path renders them: `FileUpload`, `User`, `Session`,
-`Chat`, `ChatMessage*`, `MutationResult`, `Log`, and the `Cv*` family (rendered by both the public `/cv` surface and the admin editor).
+**Shared types keep their free-floating names**, because more than one domain / access-path renders them:
 
-**Travel is the reference implementation** of this convention. The remaining workspace domains (media, inventory, medical, finances,
-nutrition, fitness, projects, compass) still use pre-prefix names in places and are migrated to this shape incrementally — one domain per
-change so each rename migration stays reviewable.
+- `FileUpload`, `User`, `Session`, `MutationResult`, `Log` — cross-cutting primitives.
+- `Chat`, `ChatMessage*`, `ChatAssistantInput*`, `ChatUpdate*` — the messaging layer, shared by the visitor and admin chat surfaces.
+- The `Cv*` family — rendered by **both** the public `/cv` surface and the admin editor, so it is shared across access paths.
+- The `Compass*` family (`CompassObservation`, `CompassInterview*`) — already namespaced under `Compass`, and `CompassObservation` is
+  embedded in the shared `ChatMessageUser` type, so it is shared with the chat domain.
+
+**Coverage.** Every domain-owned workspace surface now follows this convention: Travel, Media, Inventory, Medical, Finances, Nutrition,
+Fitness, and Projects (the `Project` / `AdminProjectTask` / `AdminProjectRequest` / `AdminProjectActivity` / `AdminProjectLink` /
+`AdminProjectFile` family). CV and Compass stay free-floating for the sharing reasons above.
 
 ## Comments
 

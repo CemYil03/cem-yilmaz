@@ -20,34 +20,34 @@ matching card into view and highlights it for a moment — the assistant's deep-
 
 - **Movies** — sticky **search bar at the top** hits TMDB movie search live (300 ms debounce). Placeholder says "Film suchen…" / "Search a
   movie…" (movies only — series live on their own tab). Suggestions appear as a dropdown with poster thumbnails; clicking one calls
-  `moviesAddFromTmdb`, which fetches full detail server-side and inserts the row into Watchlist. A subtle "Add manually" link at the bottom
-  of the dropdown opens the empty edit dialog for films TMDB has never heard of. Cards sit in a responsive **poster-first grid**
+  `adminMediaMoviesAddFromTmdb`, which fetches full detail server-side and inserts the row into Watchlist. A subtle "Add manually" link at
+  the bottom of the dropdown opens the empty edit dialog for films TMDB has never heard of. Cards sit in a responsive **poster-first grid**
   (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`), grouped into four sections in this order: Watchlist → Watching → Watched →
   Dropped. Card = poster (2:3 `AspectRatio`) + title + release year, with a rating badge in the top-right corner on watched rows. Kebab menu
   on each card carries the quick actions (Mark watching / Mark watched → rating popover / Move to dropped / Edit / Delete). Clicking a card
   opens a **centered modal dialog** with the full edit form (title, release date via `DatePicker` with `captionLayout="dropdown"` for
   far-past years, runtime, overview, status select, rating, watchedAt, notes textarea, topics multi-select).
-- **Series** — same poster-grid + status grouping as Movies, but the search hits TMDB TV (`tmdbTvSearch` → `showsAddFromTmdb`). Each card
-  surfaces a completed badge or next-season hint (exact date formatted as `MMM yyyy`, or the rough label). The edit dialog adds:
+- **Series** — same poster-grid + status grouping as Movies, but the search hits TMDB TV (`tmdbTvSearch` → `adminMediaShowsAddFromTmdb`).
+  Each card surfaces a completed badge or next-season hint (exact date formatted as `MMM yyyy`, or the rough label). The edit dialog adds:
   - **Series completed** toggle (`isCompleted`) — when on, next-season fields clear and hide.
   - **Next season (date)** — exact `DatePicker` value (`nextSeasonReleaseDate`).
   - **Next season (rough)** — free-form string (`nextSeasonReleaseRough`, e.g. "Herbst 2026" / "Fall 2026"). Both date fields can coexist;
     the card prefers exact → rough → completed.
 - **Channels** — **filterable avatar card grid** (1 / 2 / 3 columns). A sticky **search bar at the top** hits the YouTube Data API live (300
   ms debounce), exactly like the movies / series TMDB search: suggestions drop down with avatar + handle + subscriber count, and **clicking
-  one adds the channel directly** via `mediaChannelsUpsert` (identity fields — name / url / handle / avatar / description — filled from the
-  API, `platform: youtube`, topics / notes left empty for later). There is **no manual identity entry on the add path** and no "New channel"
-  button — Cem never hand-adds a channel. Below the search bar, chip rows for platform and topic filter the grid (AND-composed, local
-  state). Each card shows avatar, name, handle, platform, topic chips, first-line notes preview, and an external-link affordance; clicking
-  the card opens the edit dialog. **Drag-reorder** (via the shared `useReorderableList` hook) is available when no filters are active —
-  filtered views hide the grip so priorities aren't rewritten from a partial list. **Editing** a channel opens a dialog with the full manual
-  form (name / platform / url / handle / avatar / description / topics / notes), so the YouTube fields the API can't infer, plus any legacy
-  Twitch / podcast / other rows, stay editable.
+  one adds the channel directly** via `adminMediaChannelsUpsert` (identity fields — name / url / handle / avatar / description — filled from
+  the API, `platform: youtube`, topics / notes left empty for later). There is **no manual identity entry on the add path** and no "New
+  channel" button — Cem never hand-adds a channel. Below the search bar, chip rows for platform and topic filter the grid (AND-composed,
+  local state). Each card shows avatar, name, handle, platform, topic chips, first-line notes preview, and an external-link affordance;
+  clicking the card opens the edit dialog. **Drag-reorder** (via the shared `useReorderableList` hook) is available when no filters are
+  active — filtered views hide the grip so priorities aren't rewritten from a partial list. **Editing** a channel opens a dialog with the
+  full manual form (name / platform / url / handle / avatar / description / topics / notes), so the YouTube fields the API can't infer, plus
+  any legacy Twitch / podcast / other rows, stay editable.
 
-Topics on all three entities are a **chip input**: known topics (the `MediaTopic` enum) come as suggested chips; free-form values work too
-(the column is a plain `text[]`, so ad-hoc topics can be added without a migration). Removing a chip removes it from the array. The known
-vocabulary drives the UI autocomplete and the `MediaTopic` GraphQL enum surface. Current known topics: `tech`, `ai`, `software`, `gaming`,
-`movieCritic`, `entertainment`, `comedy`, `science`, `business`, `finance`, `news`, `music`, `sports`, `lifestyle`, `education`.
+Topics on all three entities are a **chip input**: known topics (the `AdminMediaTopic` enum) come as suggested chips; free-form values work
+too (the column is a plain `text[]`, so ad-hoc topics can be added without a migration). Removing a chip removes it from the array. The
+known vocabulary drives the UI autocomplete and the `AdminMediaTopic` GraphQL enum surface. Current known topics: `tech`, `ai`, `software`,
+`gaming`, `movieCritic`, `entertainment`, `comedy`, `science`, `business`, `finance`, `news`, `music`, `sports`, `lifestyle`, `education`.
 
 All search fields across the three tabs (TMDB movie search, TMDB TV search, and the YouTube channel search) are built from the shadcn
 **`InputGroup`** primitives (`InputGroupAddon` for the leading search icon + trailing spinner/clear button, `InputGroupInput` for the field)
@@ -59,35 +59,35 @@ there is no free-text channel filter — the top-of-tab search box is the YouTub
 
 ## Options considered
 
-| Approach                                                                   | Why we picked / didn't                                                                                                                                                                                                                         |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **One `Titles` table with a `kind` enum** (movie \| tv \| short)           | Cheapest schema on paper. Loses type-safe TV-specific tracking (completed / next-season fields) and forces every read to filter by `kind` even when the surface only cares about one shape. Dedicated `Shows` table keeps the movie path lean. |
-| **Movies + TV shows both in this phase** (chosen for series)               | Series landed with the fields Cem actually needs (completed + next-season exact/rough) without a full seasons/episodes cascade. Episode-level tracking stays deferred.                                                                         |
-| **Local poster storage in `FileUploads`**                                  | Full control, but every add is a manual step and blob storage costs. TMDB's CDN URLs are stable and cache well; storing the URL as a `varchar` is one column instead of a join row.                                                            |
-| **No third-party integration** (paste poster URLs by hand)                 | Zero dependencies, poor UX. TMDB gives release date, runtime, and overview for free — a two-keystroke add flow is worth one env var.                                                                                                           |
-| **TMDB search + cached URL** (chosen)                                      | Server-side fetch at add-time, stores `tmdbId` + cached URLs + metadata. Cost: one optional env var; graceful degradation when unset (search returns empty, manual add still works).                                                           |
-| **Single-topic `varchar` enum** on channels (mirroring `CvSkill.category`) | Strictest. Forces awkward choices for creators who span topics ("Fireship" is both tech and entertainment). One rigid column.                                                                                                                  |
-| **Multi-topic M2M** (dedicated `MediaTopics` + `MediaChannelTopics` join)  | First M2M in the repo. Overkill unless topics themselves need pages/descriptions. `text[]` covers every current need with `WHERE :topic = ANY(topics)`.                                                                                        |
-| **Multi-topic `text[]` on both entities** (chosen)                         | Mirrors `cvExperience.technologies`. A channel can be `['tech','ai']`; a movie can be `['scifi','noir']`. Cross-view reads use `ANY(topics)` — the software page's "tech YouTubers" query is one line. New topics land without a migration.    |
-| **Dedicated `MediaChannel` ← `SoftwareArea` FK** for cross-referencing     | Duplicates the intent of `topics`. If the reference axis is "these channels are relevant to software", the topic tag already carries that. Cross-section reads via topic scale to future areas (medical, finance) automatically.               |
-| **Channels grouped by topic sections** (v1)                                | Worked for a short list; duplicated multi-topic channels and made scanning harder as the library grew. Replaced with a filterable card grid + optional drag-reorder.                                                                           |
+| Approach                                                                    | Why we picked / didn't                                                                                                                                                                                                                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **One `Titles` table with a `kind` enum** (movie \| tv \| short)            | Cheapest schema on paper. Loses type-safe TV-specific tracking (completed / next-season fields) and forces every read to filter by `kind` even when the surface only cares about one shape. Dedicated `AdminMediaShow` table keeps the movie path lean. |
+| **Movies + TV shows both in this phase** (chosen for series)                | Series landed with the fields Cem actually needs (completed + next-season exact/rough) without a full seasons/episodes cascade. Episode-level tracking stays deferred.                                                                                  |
+| **Local poster storage in `FileUploads`**                                   | Full control, but every add is a manual step and blob storage costs. TMDB's CDN URLs are stable and cache well; storing the URL as a `varchar` is one column instead of a join row.                                                                     |
+| **No third-party integration** (paste poster URLs by hand)                  | Zero dependencies, poor UX. TMDB gives release date, runtime, and overview for free — a two-keystroke add flow is worth one env var.                                                                                                                    |
+| **TMDB search + cached URL** (chosen)                                       | Server-side fetch at add-time, stores `tmdbId` + cached URLs + metadata. Cost: one optional env var; graceful degradation when unset (search returns empty, manual add still works).                                                                    |
+| **Single-topic `varchar` enum** on channels (mirroring `CvSkill.category`)  | Strictest. Forces awkward choices for creators who span topics ("Fireship" is both tech and entertainment). One rigid column.                                                                                                                           |
+| **Multi-topic M2M** (dedicated `MediaTopics` + `MediaChannelTopics` join)   | First M2M in the repo. Overkill unless topics themselves need pages/descriptions. `text[]` covers every current need with `WHERE :topic = ANY(topics)`.                                                                                                 |
+| **Multi-topic `text[]` on both entities** (chosen)                          | Mirrors `cvExperience.technologies`. A channel can be `['tech','ai']`; a movie can be `['scifi','noir']`. Cross-view reads use `ANY(topics)` — the software page's "tech YouTubers" query is one line. New topics land without a migration.             |
+| **Dedicated `AdminMediaChannel` ← `SoftwareArea` FK** for cross-referencing | Duplicates the intent of `topics`. If the reference axis is "these channels are relevant to software", the topic tag already carries that. Cross-section reads via topic scale to future areas (medical, finance) automatically.                        |
+| **Channels grouped by topic sections** (v1)                                 | Worked for a short list; duplicated multi-topic channels and made scanning harder as the library grew. Replaced with a filterable card grid + optional drag-reorder.                                                                                    |
 
 ## Option chosen
 
-Three dedicated tables: `Movies`, `Shows`, and `MediaChannels`. All admin-only (no `*De` / `*En` pairs, same rationale as Projects / Tasks).
-`topics` is `text[]` on all three — the clustering axis for the media page and the referent for cross-view reads. TMDB is the primary add
-path for movies and series; the client falls through to manual entry when TMDB has no match or `TMDB_API_KEY` is missing.
+Three dedicated tables: `AdminMediaMovie`, `AdminMediaShow`, and `AdminMediaChannel`. All admin-only (no `*De` / `*En` pairs, same rationale
+as Projects / Tasks). `topics` is `text[]` on all three — the clustering axis for the media page and the referent for cross-view reads. TMDB
+is the primary add path for movies and series; the client falls through to manual entry when TMDB has no match or `TMDB_API_KEY` is missing.
 
 ## Implementation details
 
 ### Database schema
 
-`Movies`:
+`AdminMediaMovie`:
 
 - `movieId uuid PK`
 - `title varchar` required
-- `tmdbId int` — **unique nullable**, so a re-add of the same TMDB movie updates in place (`moviesAddFromTmdb` looks up before inserting),
-  while multiple manually-entered rows coexist
+- `tmdbId int` — **unique nullable**, so a re-add of the same TMDB movie updates in place (`adminMediaMoviesAddFromTmdb` looks up before
+  inserting), while multiple manually-entered rows coexist
 - `posterUrl`, `backdropUrl varchar` — cached TMDB CDN URLs; no local blob storage
 - `releaseDate date`, `runtimeMinutes int`, `overview text`
 - `status varchar` (`watchlist | watching | watched | dropped`), default `watchlist`
@@ -97,7 +97,7 @@ path for movies and series; the client falls through to manual entry when TMDB h
 - `createdAt`, `updatedAt`
 - Indexes: unique on `tmdbId`, `(status)` for the grouped-by-status list
 
-`Shows`:
+`AdminMediaShow`:
 
 - `showId uuid PK`
 - `title varchar` required
@@ -113,13 +113,13 @@ path for movies and series; the client falls through to manual entry when TMDB h
 - `createdAt`, `updatedAt`
 - Indexes: unique on `tmdbId`, `(status)`
 
-`MediaChannels`:
+`AdminMediaChannel`:
 
 - `channelId uuid PK`
 - `name varchar` required, `platform varchar` (`youtube | twitch | podcast | other`), `url varchar` required
 - `handle varchar`, `avatarUrl varchar`, `description text`
-- `topics text[]` — clustering axis; same string vocabulary as `Movies.topics` / `Shows.topics`
-- `priority int` default 0 — global ordering for drag-reorder via `mediaChannelReorder`
+- `topics text[]` — clustering axis; same string vocabulary as `AdminMediaMovie.topics` / `AdminMediaShow.topics`
+- `priority int` default 0 — global ordering for drag-reorder via `adminMediaChannelReorder`
 - `notes text`, `createdAt`, `updatedAt`
 - Index: `(priority)`
 
@@ -129,16 +129,16 @@ Migrations: `drizzle/0017_violet_giant_man.sql` (movies + channels), `drizzle/00
 
 Read namespace under `Admin.adminMediaFindOne` (reached via `sessionFindOne.user.admin.adminMediaFindOne`):
 
-- `adminMediaMovieFindMany: [Movie!]!` — full library; ordered watching → watchlist → watched → dropped, then by `updatedAt DESC`
-- `adminMediaShowFindMany: [Show!]!` — full series library; same status-bucket ordering as movies
-- `adminMediaChannelFindMany(topic: String): [MediaChannel!]!` — every favourite; ordered by `priority ASC, name ASC`. Passing `topic`
+- `adminMediaMovieFindMany: [AdminMediaMovie!]!` — full library; ordered watching → watchlist → watched → dropped, then by `updatedAt DESC`
+- `adminMediaShowFindMany: [AdminMediaShow!]!` — full series library; same status-bucket ordering as movies
+- `adminMediaChannelFindMany(topic: String): [AdminMediaChannel!]!` — every favourite; ordered by `priority ASC, name ASC`. Passing `topic`
   filters via `WHERE :topic = ANY(topics)`; used by `/workspace/software` and any future cross-view section. Omit or pass `null` to return
   every channel.
-- `adminMediaTmdbFindMany(query: String!): [TmdbMovieResult!]!` — live per-keystroke movie search; empty on missing key / TMDB error / empty
-  query
-- `adminMediaTmdbTvFindMany(query: String!): [TmdbTvResult!]!` — live per-keystroke TV search; same empty-fallback semantics
-- `adminMediaYoutubeFindMany(query: String!): [YoutubeChannelResult!]!` — live per-keystroke channel search, same empty-fallback semantics
-  as `adminMediaTmdbFindMany`
+- `adminMediaTmdbFindMany(query: String!): [AdminMediaTmdbMovieResult!]!` — live per-keystroke movie search; empty on missing key / TMDB
+  error / empty query
+- `adminMediaTmdbTvFindMany(query: String!): [AdminMediaTmdbTvResult!]!` — live per-keystroke TV search; same empty-fallback semantics
+- `adminMediaYoutubeFindMany(query: String!): [AdminMediaYoutubeChannelResult!]!` — live per-keystroke channel search, same empty-fallback
+  semantics as `adminMediaTmdbFindMany`
 
 Write namespace under `AdminMutation` (gated by `guardAdminMutation`). Every entity mutation is a **batch** that returns
 `MutationResult { success, referenceId, referenceIds }` — never the hydrated entity. The `userUpdates` subscription is the single source of
@@ -146,19 +146,22 @@ truth for the new state; `referenceIds` echoes the affected row ids in input ord
 follow-up read. A single-item edit passes a one-element array (UI dialogs, agent tools, and status toggles all do this — there is no
 parallel singular path). This matches the travel and CV batch conventions.
 
-- `moviesUpsert(movies: [MovieInput!]!)`, `moviesDelete(movieIds: [ID!]!)` — every input with a `movieId` is updated, every input without
-  one is inserted; the whole batch runs in one transaction. **Marking a movie watched is a `moviesUpsert`** with a one-element array
-  carrying the existing row plus `status: watched` and `watchedAt` set (there is no separate `movieMarkWatched` mutation).
-- `moviesAddFromTmdb(inputs: [MovieAddFromTmdbInput!]!)` — kept separate from `moviesUpsert` because it hits TMDB and has distinct control
-  flow. TMDB fetches happen in parallel outside the transaction; only the DB writes are inside. Dedupes by `tmdbId` (refreshes metadata in
-  place rather than inserting a duplicate). `referenceIds` echoes the resolved `movieId` per input in input order.
-- `showsUpsert(shows: [ShowInput!]!)`, `showsDelete(showIds: [ID!]!)` — parallel to movies.
-- `showsAddFromTmdb(inputs: [ShowAddFromTmdbInput!]!)` — fetches TMDB TV detail, seeds `isCompleted` / `nextSeasonReleaseDate` when
-  available; `nextSeasonReleaseRough` stays admin-authored. Same batch + dedupe posture as `moviesAddFromTmdb`.
-- `mediaChannelsUpsert(mediaChannels: [MediaChannelInput!]!)`, `mediaChannelsDelete(channelIds: [ID!]!)` — new channels append at the bottom
-  of every topic section (`priority = max + 1`, resolved inside the transaction so a batch of new rows lands contiguously);
-  `mediaChannelReorder` is the sole writer of `priority` on update.
-- `mediaChannelReorder(orderedIds)` — full-array rewrite (same shape as `cvEducationReorder`); already batch + `MutationResult`.
+- `adminMediaMoviesUpsert(movies: [AdminMediaMovieInput!]!)`, `adminMediaMoviesDelete(movieIds: [ID!]!)` — every input with a `movieId` is
+  updated, every input without one is inserted; the whole batch runs in one transaction. **Marking a movie watched is a
+  `adminMediaMoviesUpsert`** with a one-element array carrying the existing row plus `status: watched` and `watchedAt` set (there is no
+  separate `movieMarkWatched` mutation).
+- `adminMediaMoviesAddFromTmdb(inputs: [AdminMediaMovieAddFromTmdbInput!]!)` — kept separate from `adminMediaMoviesUpsert` because it hits
+  TMDB and has distinct control flow. TMDB fetches happen in parallel outside the transaction; only the DB writes are inside. Dedupes by
+  `tmdbId` (refreshes metadata in place rather than inserting a duplicate). `referenceIds` echoes the resolved `movieId` per input in input
+  order.
+- `adminMediaShowsUpsert(shows: [AdminMediaShowInput!]!)`, `adminMediaShowsDelete(showIds: [ID!]!)` — parallel to movies.
+- `adminMediaShowsAddFromTmdb(inputs: [AdminMediaShowAddFromTmdbInput!]!)` — fetches TMDB TV detail, seeds `isCompleted` /
+  `nextSeasonReleaseDate` when available; `nextSeasonReleaseRough` stays admin-authored. Same batch + dedupe posture as
+  `adminMediaMoviesAddFromTmdb`.
+- `adminMediaChannelsUpsert(mediaChannels: [AdminMediaChannelInput!]!)`, `adminMediaChannelsDelete(channelIds: [ID!]!)` — new channels
+  append at the bottom of every topic section (`priority = max + 1`, resolved inside the transaction so a batch of new rows lands
+  contiguously); `adminMediaChannelReorder` is the sole writer of `priority` on update.
+- `adminMediaChannelReorder(orderedIds)` — full-array rewrite (same shape as `cvEducationReorder`); already batch + `MutationResult`.
 
 Every command publishes on `userUpdates` once after commit, so the media page's `WorkspaceMediaPageUpdates` subscription picks up new state
 without a client-side re-fetch.
@@ -184,12 +187,12 @@ resolved to `image.tmdb.org` fully-qualified URLs at the boundary — the fronte
 
 - `searchChannels(query)` → up to 10 hits enriched with handle + subscriber count via a follow-up `channels.list` call. Each result carries
   a pre-composed `canonicalUrl` (prefers the `@handle` form, falls back to `/channel/<id>`) so the client can drop it straight into the
-  `MediaChannelInput.url` field.
+  `AdminMediaChannelInput.url` field.
 
 Same posture as the TMDB client: `YOUTUBE_API_KEY` is capability-lazy, missing key → empty results (never a throw), 5-second per-request
 timeout. One user search costs two API calls (search 100 units + channels.list 2 units); free-tier quota is 10k units/day which is generous
 for a personal library. The channels tab's add flow is **built entirely around this search** — the sticky search bar at the top of the tab
-mirrors the movies / series TMDB search, and clicking a suggestion creates the channel directly (`mediaChannelsUpsert` with name, url,
+mirrors the movies / series TMDB search, and clicking a suggestion creates the channel directly (`adminMediaChannelsUpsert` with name, url,
 handle, avatarUrl, and description from the API; topics / notes edited later). There is no manual identity entry on the add path.
 
 ### Assistant integration
@@ -200,18 +203,19 @@ list / delete, plus series and channel management) delegates a natural-language 
 sub-agent has:
 
 - **Reads**: `moviesList`, `showsList`, `mediaChannelsList`, `tmdbSearch`, `tmdbTvSearch`, `youtubeSearch`
-- **Writes** (all batch tools taking arrays): `moviesAddFromTmdb`, `moviesUpsert`, `moviesDelete`, `showsAddFromTmdb`, `showsUpsert`,
-  `showsDelete`, `mediaChannelsUpsert`, `mediaChannelsDelete`. There is no `moviesMarkWatched` tool — marking watched is a `moviesUpsert`
-  with `status: watched` and `watchedAt` set. `toolMoviesUpsert` hand-builds its Zod item schema (Gemini's structured decoding rejects
-  `z.date()`, so `watchedAt` rides the wire as an ISO string and `execute` converts with `new Date(...)`); `toolShowsUpsert` and
-  `toolMediaChannelsUpsert` reuse the generated `GqlS*InputSchema()` (no DateTime fields).
+- **Writes** (all batch tools taking arrays): `adminMediaMoviesAddFromTmdb`, `adminMediaMoviesUpsert`, `adminMediaMoviesDelete`,
+  `adminMediaShowsAddFromTmdb`, `adminMediaShowsUpsert`, `adminMediaShowsDelete`, `adminMediaChannelsUpsert`, `adminMediaChannelsDelete`.
+  There is no `moviesMarkWatched` tool — marking watched is a `adminMediaMoviesUpsert` with `status: watched` and `watchedAt` set.
+  `toolMoviesUpsert` hand-builds its Zod item schema (Gemini's structured decoding rejects `z.date()`, so `watchedAt` rides the wire as an
+  ISO string and `execute` converts with `new Date(...)`); `toolShowsUpsert` and `toolMediaChannelsUpsert` reuse the generated
+  `GqlS*InputSchema()` (no DateTime fields).
 - **Snapshot**: `mediaSnapshotForAgent()` renders a compact markdown list of every movie + series + channel with ids inline, embedded in the
   sub-agent's system prompt so the LLM can lift ids without a list call for common asks
 
-Because every write is a batch, the sub-agent batches same-shape work into a single call — one `moviesUpsert` for N edits, one
-`moviesAddFromTmdb` for a whole set of adds (each TMDB fetch runs in parallel). A common "add three films I saw" ask is **two tool calls,
-not six**: one `tmdbSearch` per title to resolve ids (or a single batched intent) followed by one `moviesAddFromTmdb` carrying all three.
-Ids for follow-up edits come from the add result's `referenceIds` (input order) earlier in the same turn.
+Because every write is a batch, the sub-agent batches same-shape work into a single call — one `adminMediaMoviesUpsert` for N edits, one
+`adminMediaMoviesAddFromTmdb` for a whole set of adds (each TMDB fetch runs in parallel). A common "add three films I saw" ask is **two tool
+calls, not six**: one `tmdbSearch` per title to resolve ids (or a single batched intent) followed by one `adminMediaMoviesAddFromTmdb`
+carrying all three. Ids for follow-up edits come from the add result's `referenceIds` (input order) earlier in the same turn.
 
 Mutation-log entries flow back to the orchestrator as `MediaAgentMutation` (kinds: `movieAdd`, `movieUpdate`, `movieDelete`, `showAdd`,
 `showUpdate`, `showDelete`, `mediaChannelAdd`, `mediaChannelUpdate`, `mediaChannelDelete`), each populated per-input from a batch, with `id`
@@ -240,9 +244,9 @@ any other workspace area (e.g. a future `/workspace/movies-inbox` for film criti
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tables + types              | `src/server/db/schema.ts` (`movies`, `shows`, `mediaChannels`, `movieStatuses`, `mediaPlatforms`, `mediaTopics`)                                                                                                                                                                                     |
 | Migrations                  | `drizzle/0017_violet_giant_man.sql`, `drizzle/0023_uneven_johnny_blaze.sql`                                                                                                                                                                                                                          |
-| Mappers                     | `src/server/mappers/toGqlMovie.ts`, `toGqlShow.ts`, `toGqlMediaChannel.ts`                                                                                                                                                                                                                           |
+| Mappers                     | `src/server/mappers/toGqlAdminMediaMovie.ts`, `toGqlAdminMediaShow.ts`, `toGqlAdminMediaChannel.ts`                                                                                                                                                                                                  |
 | Queries                     | `src/server/queries/adminMediaMovieFindMany.ts`, `adminMediaShowFindMany.ts`, `adminMediaChannelFindMany.ts`                                                                                                                                                                                         |
-| Commands                    | `src/server/commands/movies{Upsert,Delete,AddFromTmdb}.ts`, `shows{Upsert,Delete,AddFromTmdb}.ts`, `mediaChannels{Upsert,Delete}.ts`, `mediaChannelReorder.ts`                                                                                                                                       |
+| Commands                    | `src/server/commands/movies{Upsert,Delete,AddFromTmdb}.ts`, `shows{Upsert,Delete,AddFromTmdb}.ts`, `mediaChannels{Upsert,Delete}.ts`, `adminMediaChannelReorder.ts`                                                                                                                                  |
 | TMDB client                 | `src/server/services/tmdbClientCreate.ts` (wired into `ServerRuntime.tmdb`)                                                                                                                                                                                                                          |
 | YouTube client              | `src/server/services/youtubeClientCreate.ts` (wired into `ServerRuntime.youtube`)                                                                                                                                                                                                                    |
 | Resolver wiring             | `src/server/graphql/resolversCreate.ts` (`Admin.adminMediaFindOne`, `AdminMediaQuery`, and the media `AdminMutation` handlers)                                                                                                                                                                       |
@@ -262,4 +266,4 @@ any other workspace area (e.g. a future `/workspace/movies-inbox` for film criti
 - **Rating notes / review markdown.** The `notes` column takes free-form text; a proper markdown-rendered review is a follow-up that could
   reuse the same rendering pipe the projects notes use.
 - **Public showcase.** Every media surface is `noindex` and admin-only. If a "what I watched in 2027" post ever ships publicly, it will be a
-  static export of the `Movies` / `Shows` tables into a markdown page, not a live public route.
+  static export of the `AdminMediaMovie` / `AdminMediaShow` tables into a markdown page, not a live public route.

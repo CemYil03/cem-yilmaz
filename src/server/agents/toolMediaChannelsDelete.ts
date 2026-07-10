@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { mediaChannelsDelete } from '../commands/mediaChannelsDelete';
+import { adminMediaChannelsDelete } from '../commands/adminMediaChannelsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { MediaAgentMutationLog } from './agentPersonalAssistantMedia';
@@ -21,7 +21,7 @@ export function toolMediaChannelsDelete({ serverRuntime, session, mutations }: M
         description: 'Permanently delete one or more channels from the favourites list. No soft-delete.',
         inputSchema: toolMediaChannelsDeleteInputSchema,
         execute: async (input) => {
-            const result = await mediaChannelsDelete(requireAdminUserId(session), input.channelIds, session, serverRuntime);
+            const result = await adminMediaChannelsDelete(requireAdminUserId(session), input.channelIds, session, serverRuntime);
             for (const channelId of input.channelIds) mutations.push({ kind: 'mediaChannelDelete', id: channelId });
             return result;
         },

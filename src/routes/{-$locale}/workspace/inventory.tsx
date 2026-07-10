@@ -38,9 +38,9 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCItemCategory,
-    GqlCItemCondition,
-    GqlCItemDisposalState,
+    GqlCAdminInventoryItemCategory,
+    GqlCAdminInventoryItemCondition,
+    GqlCAdminInventoryItemDisposalState,
     GqlCWorkspaceInventoryPageUpdatesSubscription,
     GqlCWorkspaceInventoryPageUserFragment,
 } from '../../../web/graphql/generated';
@@ -72,7 +72,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 const title = { de: 'Inventar', en: 'Inventory' };
 const description = { de: 'Materielle Besitztümer und ihr aktueller Wert.', en: 'Material belongings and their current value.' };
 
-const CATEGORY_ORDER: ReadonlyArray<GqlCItemCategory> = [
+const CATEGORY_ORDER: ReadonlyArray<GqlCAdminInventoryItemCategory> = [
     'electronics',
     'appliance',
     'kitchen',
@@ -83,7 +83,7 @@ const CATEGORY_ORDER: ReadonlyArray<GqlCItemCategory> = [
     'sports',
     'other',
 ];
-const CATEGORY_LABELS: Record<GqlCItemCategory, { de: string; en: string }> = {
+const CATEGORY_LABELS: Record<GqlCAdminInventoryItemCategory, { de: string; en: string }> = {
     electronics: { de: 'Elektronik', en: 'Electronics' },
     appliance: { de: 'Geräte', en: 'Appliances' },
     kitchen: { de: 'Küche', en: 'Kitchen' },
@@ -95,7 +95,7 @@ const CATEGORY_LABELS: Record<GqlCItemCategory, { de: string; en: string }> = {
     other: { de: 'Sonstiges', en: 'Other' },
 };
 
-const CONDITION_LABELS: Record<GqlCItemCondition, { de: string; en: string }> = {
+const CONDITION_LABELS: Record<GqlCAdminInventoryItemCondition, { de: string; en: string }> = {
     new: { de: 'Neu', en: 'New' },
     likeNew: { de: 'Wie neu', en: 'Like new' },
     good: { de: 'Gut', en: 'Good' },
@@ -317,7 +317,7 @@ function GroupedList({
     onDelete: (item: ItemRow) => void;
 }) {
     const groups = useMemo(() => {
-        const byCategory = new Map<GqlCItemCategory, ItemRow[]>();
+        const byCategory = new Map<GqlCAdminInventoryItemCategory, ItemRow[]>();
         for (const row of items) {
             const list = byCategory.get(row.categoryKey) ?? [];
             list.push(row);
@@ -471,21 +471,21 @@ function WarrantyBadge({ state, endsAt, locale }: { state: 'ok' | 'soon' | 'expi
 
 type FormState = {
     itemId: string | null;
-    categoryKey: GqlCItemCategory;
+    categoryKey: GqlCAdminInventoryItemCategory;
     name: string;
     brand: string;
     model: string;
     serialNumber: string;
     purchasedAt: Date | undefined;
     purchasePriceEuros: string;
-    condition: GqlCItemCondition | 'none';
+    condition: GqlCAdminInventoryItemCondition | 'none';
     warrantyEndsAt: Date | undefined;
     warrantyProvider: string;
     warrantyNotes: string;
     notes: string;
     // Carried through untouched so a plain field edit preserves the row's
     // disposal state — disposal is a field-set on the same upsert now.
-    disposalState: GqlCItemDisposalState;
+    disposalState: GqlCAdminInventoryItemDisposalState;
     disposedAt: string | null;
 };
 
@@ -566,7 +566,7 @@ function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null;
                     <Field label={{ de: 'Kategorie', en: 'Category' }[locale]}>
                         <Select
                             value={state.categoryKey}
-                            onValueChange={(v) => setState((s) => ({ ...s, categoryKey: v as GqlCItemCategory }))}
+                            onValueChange={(v) => setState((s) => ({ ...s, categoryKey: v as GqlCAdminInventoryItemCategory }))}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
@@ -592,14 +592,14 @@ function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null;
                     <Field label={{ de: 'Zustand', en: 'Condition' }[locale]}>
                         <Select
                             value={state.condition}
-                            onValueChange={(v) => setState((s) => ({ ...s, condition: v as GqlCItemCondition | 'none' }))}
+                            onValueChange={(v) => setState((s) => ({ ...s, condition: v as GqlCAdminInventoryItemCondition | 'none' }))}
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="none">{{ de: '– keine Angabe –', en: '– unspecified –' }[locale]}</SelectItem>
-                                {(Object.keys(CONDITION_LABELS) as GqlCItemCondition[]).map((key) => (
+                                {(Object.keys(CONDITION_LABELS) as GqlCAdminInventoryItemCondition[]).map((key) => (
                                     <SelectItem key={key} value={key}>
                                         {CONDITION_LABELS[key][locale]}
                                     </SelectItem>

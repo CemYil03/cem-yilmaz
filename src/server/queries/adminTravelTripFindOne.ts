@@ -1,5 +1,5 @@
 import { asc, eq, inArray } from 'drizzle-orm';
-import { adminTravelTripActivities, adminTravelTripDays, adminTravelTripPackingItems, adminTravelTrips } from '../db/schema';
+import { tripActivities, tripDays, tripPackingItems, trips } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminTravelTrip, GqlSAdminTravelTripDay, GqlSSession } from '../graphql/generated';
 import { toGqlAdminTravelTrip } from '../mappers/toGqlAdminTravelTrip';
@@ -17,27 +17,19 @@ export async function adminTravelTripFindOne(
     serverRuntime: ServerRuntime,
 ): Promise<GqlSAdminTravelTrip | null> {
     try {
-        const [row] = await serverRuntime.db.select().from(adminTravelTrips).where(eq(adminTravelTrips.tripId, tripId)).limit(1);
+        const [row] = await serverRuntime.db.select().from(trips).where(eq(trips.tripId, tripId)).limit(1);
         if (!row) return null;
 
-        const dayRows = await serverRuntime.db
-            .select()
-            .from(adminTravelTripDays)
-            .where(eq(adminTravelTripDays.tripId, tripId))
-            .orderBy(asc(adminTravelTripDays.dayNumber));
+        const dayRows = await serverRuntime.db.select().from(tripDays).where(eq(tripDays.tripId, tripId)).orderBy(asc(tripDays.dayNumber));
 
         const activitiesByDayId = new Map<string, GqlSAdminTravelTripDay['activities']>();
         if (dayRows.length > 0) {
             const dayIds = dayRows.map((d) => d.tripDayId);
             const activityRows = await serverRuntime.db
                 .select()
-                .from(adminTravelTripActivities)
-                .where(inArray(adminTravelTripActivities.tripDayId, dayIds))
-                .orderBy(
-                    asc(adminTravelTripActivities.tripDayId),
-                    asc(adminTravelTripActivities.position),
-                    asc(adminTravelTripActivities.tripActivityId),
-                );
+                .from(tripActivities)
+                .where(inArray(tripActivities.tripDayId, dayIds))
+                .orderBy(asc(tripActivities.tripDayId), asc(tripActivities.position), asc(tripActivities.tripActivityId));
             for (const a of activityRows) {
                 const list = activitiesByDayId.get(a.tripDayId) ?? [];
                 list.push(toGqlAdminTravelTripActivity(a));
@@ -47,13 +39,9 @@ export async function adminTravelTripFindOne(
 
         const packingRows = await serverRuntime.db
             .select()
-            .from(adminTravelTripPackingItems)
-            .where(eq(adminTravelTripPackingItems.tripId, tripId))
-            .orderBy(
-                asc(adminTravelTripPackingItems.category),
-                asc(adminTravelTripPackingItems.position),
-                asc(adminTravelTripPackingItems.tripPackingItemId),
-            );
+            .from(tripPackingItems)
+            .where(eq(tripPackingItems.tripId, tripId))
+            .orderBy(asc(tripPackingItems.category), asc(tripPackingItems.position), asc(tripPackingItems.tripPackingItemId));
 
         const days = dayRows.map((d) => toGqlAdminTravelTripDay(d, activitiesByDayId.get(d.tripDayId) ?? []));
         const packingItems = packingRows.map(toGqlAdminTravelTripPackingItem);

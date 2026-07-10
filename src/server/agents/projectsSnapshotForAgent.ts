@@ -1,5 +1,5 @@
 import { asc, isNull } from 'drizzle-orm';
-import type { Project, ProjectStatus, Task } from '../db/schema';
+import type { AdminProject, AdminProjectStatus, AdminProjectTask } from '../db/schema';
 import { projects, tasks } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
@@ -12,7 +12,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 //
 // Format keeps the project id on each line: the sub-agent's mutation tools
 // take ids, and we want it to be able to lift one straight out of the prompt
-// rather than guessing or re-querying. Task counts are pre-bucketed by
+// rather than guessing or re-querying. AdminProjectTask counts are pre-bucketed by
 // status so the sub-agent can answer progress questions without listing.
 //
 // Mirrors `cvSummaryForAgent.ts` — a single async helper returning one
@@ -24,7 +24,7 @@ export async function projectsSnapshotForAgent(serverRuntime: ServerRuntime): Pr
         serverRuntime.db.select().from(tasks).where(isNull(tasks.projectId)).orderBy(asc(tasks.position)),
     ]);
 
-    const tasksByProject = new Map<string, Task[]>();
+    const tasksByProject = new Map<string, AdminProjectTask[]>();
     for (const task of taskRows) {
         if (!task.projectId) continue;
         const bucket = tasksByProject.get(task.projectId) ?? [];
@@ -32,7 +32,7 @@ export async function projectsSnapshotForAgent(serverRuntime: ServerRuntime): Pr
         tasksByProject.set(task.projectId, bucket);
     }
 
-    const byStatus = new Map<ProjectStatus, Project[]>();
+    const byStatus = new Map<AdminProjectStatus, AdminProject[]>();
     for (const project of projectRows) {
         const bucket = byStatus.get(project.status) ?? [];
         bucket.push(project);
@@ -61,13 +61,13 @@ export async function projectsSnapshotForAgent(serverRuntime: ServerRuntime): Pr
     return lines.join('\n');
 }
 
-function projectLine(project: Project, projectTasks: Task[]): string {
+function projectLine(project: AdminProject, projectTasks: AdminProjectTask[]): string {
     const total = projectTasks.length;
     const done = projectTasks.filter((task) => task.status === 'done').length;
     const taskFragment = total === 0 ? 'no tasks' : `${done}/${total} tasks done`;
     return `- ${project.title} (id: ${project.projectId}, ${taskFragment})`;
 }
 
-function standaloneTaskLine(task: Task): string {
+function standaloneTaskLine(task: AdminProjectTask): string {
     return `- ${task.title} (id: ${task.taskId}, ${task.status})`;
 }

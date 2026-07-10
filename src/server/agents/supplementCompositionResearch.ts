@@ -1,7 +1,7 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSSupplementResearchResult } from '../graphql/generated';
+import type { GqlSAdminNutritionSupplementResearchResult } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 
@@ -51,7 +51,7 @@ const EXTRACT_SYSTEM_PROMPT = [
 export async function supplementCompositionResearch(
     input: { name: string; brand?: string | null },
     serverRuntime: ServerRuntime,
-): Promise<GqlSSupplementResearchResult> {
+): Promise<GqlSAdminNutritionSupplementResearchResult> {
     const label = [input.brand?.trim(), input.name.trim()].filter(Boolean).join(' ');
 
     // Step 1 — grounded search for the official supplement-facts panel.
@@ -76,7 +76,14 @@ export async function supplementCompositionResearch(
         model: serverRuntime.ai.compassAnalyzerModel(),
         output: Output.object({ schema: RESEARCH_SCHEMA }),
         system: EXTRACT_SYSTEM_PROMPT,
-        prompt: [`Supplement queried: "${label}".`, '', 'Research summary:', grounded.text, '', 'Return the structured record.'].join('\n'),
+        prompt: [
+            `AdminNutritionSupplement queried: "${label}".`,
+            '',
+            'Research summary:',
+            grounded.text,
+            '',
+            'Return the structured record.',
+        ].join('\n'),
     });
 
     const result = extracted.output;

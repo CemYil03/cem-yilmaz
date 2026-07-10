@@ -109,9 +109,9 @@ the parent's `<ChatMessageToolCall>` view, which renders them in an indented blo
 
 What this means concretely:
 
-- The user sees `Called delegateToProjects` followed by `Called adminProjectFindMany`, `Called projectsUpsert`, `Called tasksUpsert`,
-  `Called projectActivitiesUpsert`, `Called projectLinksUpsert`, `Called projectFileCreate` … indented under the parent — an honest record
-  of which DB writes happened, not a single opaque pill.
+- The user sees `Called delegateToProjects` followed by `Called adminProjectFindMany`, `Called adminProjectsUpsert`,
+  `Called adminProjectTasksUpsert`, `Called adminProjectActivitiesUpsert`, `Called adminProjectLinksUpsert`, `Called projectFileCreate` …
+  indented under the parent — an honest record of which DB writes happened, not a single opaque pill.
 - The `delegateToProjects` row's `toolResult` still carries the structured `{ status, summary, mutations }` payload the orchestrator uses
   for its narration. That payload is what the LLM sees on replay; the indented child rows are user-facing additional context.
 - `toModelMessages` does NOT look at `parentChatMessageId`. Each child is replayed as an ordinary `tool-call`/`tool-result` pair, so the
@@ -199,15 +199,15 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
   the other; the LLM sees the tool description on every call anyway, so the duplication buys nothing but drift risk.
 
   What DOES stay in a system prompt: persona ("you are Cem's medical sub-agent"), style rules (concision, language matching), cross-tool
-  workflow rules that span multiple tools (`agentPersonalAssistantMedia`'s "for 'I watched X' → `moviesUpsert` with `status: watched`; if
-  not in library → `moviesAddFromTmdb` first" workflow), agent-role behavior rules (the medical sub-agent's RED FLAGS block — that's a
-  _don't-call-any-tool_ rule), the `{ status: 'needsMoreInfo' | 'noOp' }` JSON sentinel contract (this is the sub-agent → orchestrator wire,
-  not a tool behavior), delegate-result-envelope narration policy on the orchestrator (how to react to `needsMoreInfo` / `failed`),
-  deep-link templates (narration policy for the ids delegates return), and inlined data snapshots.
+  workflow rules that span multiple tools (`agentPersonalAssistantMedia`'s "for 'I watched X' → `adminMediaMoviesUpsert` with
+  `status: watched`; if not in library → `adminMediaMoviesAddFromTmdb` first" workflow), agent-role behavior rules (the medical sub-agent's
+  RED FLAGS block — that's a _don't-call-any-tool_ rule), the `{ status: 'needsMoreInfo' | 'noOp' }` JSON sentinel contract (this is the
+  sub-agent → orchestrator wire, not a tool behavior), delegate-result-envelope narration policy on the orchestrator (how to react to
+  `needsMoreInfo` / `failed`), deep-link templates (narration policy for the ids delegates return), and inlined data snapshots.
 
   The canonical exemplar of a self-describing tool is `toolProjectActivitiesUpsert.ts`: a multi-sentence description that names when to
   reach for it, the cross-tool guidance ("work timer rows are NOT created here"), and per-field `.describe(...)` for every input. The
-  anti-pattern is a `buildSystemPrompt` with a "You have nine tools: - `adminProjectFindMany` — ... - `projectsUpsert` — ..." block.
+  anti-pattern is a `buildSystemPrompt` with a "You have nine tools: - `adminProjectFindMany` — ... - `adminProjectsUpsert` — ..." block.
 
 - **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
   `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via

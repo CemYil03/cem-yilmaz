@@ -915,7 +915,7 @@ export const compassInterviewMessageAnalysis = pgTable(
 export type CompassInterviewMessageAnalysis = typeof compassInterviewMessageAnalysis.$inferSelect;
 export type CompassInterviewMessageAnalysisCreate = typeof compassInterviewMessageAnalysis.$inferInsert;
 
-// --- Project requests --------------------------------------------------------
+// --- AdminProject requests --------------------------------------------------------
 //
 // Verified contact channel for the visitor chat's `submitProjectRequest`
 // tool. A visitor who describes a project in the chat lands here in state
@@ -935,13 +935,13 @@ export type CompassInterviewMessageAnalysisCreate = typeof compassInterviewMessa
 // `docs/features/chat-email-tools.md` for the chat-tool flow.
 
 export const projectRequestStatuses = ['pendingOtp', 'emailVerified', 'archived'] as const;
-export type ProjectRequestStatus = (typeof projectRequestStatuses)[number];
+export type AdminProjectRequestStatus = (typeof projectRequestStatuses)[number];
 
 export const projectRequestTypes = ['webApp', 'mobile', 'consulting', 'aiIntegration', 'other'] as const;
-export type ProjectRequestType = (typeof projectRequestTypes)[number];
+export type AdminProjectRequestType = (typeof projectRequestTypes)[number];
 
 export const projectRequests = pgTable(
-    'ProjectRequests',
+    'AdminProjectRequest',
     {
         projectRequestId: uuid().primaryKey(),
         // Owning visitor chat, when one exists. Set to null if the chat is
@@ -954,11 +954,11 @@ export const projectRequests = pgTable(
         // to fire until then.
         email: varchar().notNull(),
         company: varchar(),
-        projectType: varchar().$type<ProjectRequestType>().notNull(),
+        projectType: varchar().$type<AdminProjectRequestType>().notNull(),
         description: text().notNull(),
         budget: varchar(),
         timeline: varchar(),
-        status: varchar().$type<ProjectRequestStatus>().notNull().default('pendingOtp'),
+        status: varchar().$type<AdminProjectRequestStatus>().notNull().default('pendingOtp'),
         // `sha256(otp + otpSalt)` — plaintext OTP never stored. The salt is
         // per-row crypto.randomBytes(16) hex, regenerated on every project
         // request, so two requests with the same OTP produce different
@@ -982,13 +982,13 @@ export const projectRequests = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('ProjectRequests_status_createdAt_idx').on(table.status, table.createdAt),
-        index('ProjectRequests_chatId_idx').on(table.chatId),
+        index('AdminProjectRequest_status_createdAt_idx').on(table.status, table.createdAt),
+        index('AdminProjectRequest_chatId_idx').on(table.chatId),
     ],
 );
 
-export type ProjectRequest = typeof projectRequests.$inferSelect;
-export type ProjectRequestCreate = typeof projectRequests.$inferInsert;
+export type AdminProjectRequest = typeof projectRequests.$inferSelect;
+export type AdminProjectRequestCreate = typeof projectRequests.$inferInsert;
 
 // --- Projects & Tasks --------------------------------------------------------
 //
@@ -999,16 +999,16 @@ export type ProjectRequestCreate = typeof projectRequests.$inferInsert;
 //
 // `Tasks.projectId` is nullable: a row with `projectId IS NULL` is a
 // standalone todo (no parent project), surfaced on the workspace projects
-// page's Todos tab. Project-bound tasks cascade away with their project;
+// page's Todos tab. AdminProject-bound tasks cascade away with their project;
 // standalone todos live on independently.
 //
 // See `docs/features/projects-workspace.md`.
 
 export const projectStatuses = ['idea', 'planning', 'active', 'paused', 'done', 'archived'] as const;
-export type ProjectStatus = (typeof projectStatuses)[number];
+export type AdminProjectStatus = (typeof projectStatuses)[number];
 
 export const projects = pgTable(
-    'Projects',
+    'AdminProject',
     {
         projectId: uuid().primaryKey(),
         title: varchar().notNull(),
@@ -1019,13 +1019,13 @@ export const projects = pgTable(
         // Long-form markdown notes. Plain text in v1; rendered with the same
         // markdown pipeline used elsewhere when the editor lands a preview.
         notes: text(),
-        status: varchar().$type<ProjectStatus>().notNull().default('idea'),
+        status: varchar().$type<AdminProjectStatus>().notNull().default('idea'),
         // Within-status ordering. The board reorders inside a single column
         // only in v1 — moving a project across columns is a status change
         // through the editor, not a drag.
         position: integer().notNull().default(0),
         // Source request this project was created from, when applicable.
-        // `projectsUpsert` stamps this in the same transaction that
+        // `adminProjectsUpsert` stamps this in the same transaction that
         // archives the request, so the board can render a "Source request"
         // backlink. Null for hand-created projects.
         sourceRequestId: uuid(),
@@ -1041,33 +1041,33 @@ export const projects = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('Projects_status_position_idx').on(table.status, table.position),
-        index('Projects_sourceRequestId_idx').on(table.sourceRequestId),
+        index('AdminProject_status_position_idx').on(table.status, table.position),
+        index('AdminProject_sourceRequestId_idx').on(table.sourceRequestId),
     ],
 );
 
-export type Project = typeof projects.$inferSelect;
-export type ProjectCreate = typeof projects.$inferInsert;
+export type AdminProject = typeof projects.$inferSelect;
+export type AdminProjectCreate = typeof projects.$inferInsert;
 
 export const taskStatuses = ['todo', 'doing', 'done'] as const;
-export type TaskStatus = (typeof taskStatuses)[number];
+export type AdminProjectTaskStatus = (typeof taskStatuses)[number];
 
 // Weight of a task — how much focus it costs to make progress. Optional; a
 // null row is unclassified and renders without the effort bar. Drives the
 // left-edge color strip on the row card and the composer's default-effort
 // picker. See `docs/features/todos-experience.md`.
 export const taskEfforts = ['quick', 'focused', 'deep'] as const;
-export type TaskEffort = (typeof taskEfforts)[number];
+export type AdminProjectTaskEffort = (typeof taskEfforts)[number];
 
 // When the user intends to act on the task, independent of any due date.
 // A due date says "must be done by"; the bucket says "I want to do this".
 // Optional; null lets the row float in the general list. Drives the top
 // filter chips (Heute / Diese Woche / Alles / Warten auf).
 export const taskWhenBuckets = ['today', 'week', 'someday', 'waiting'] as const;
-export type TaskWhenBucket = (typeof taskWhenBuckets)[number];
+export type AdminProjectTaskWhenBucket = (typeof taskWhenBuckets)[number];
 
 export const tasks = pgTable(
-    'Tasks',
+    'AdminProjectTask',
     {
         taskId: uuid().primaryKey(),
         // Owning project. Null = standalone todo, surfaced on the Todos tab.
@@ -1076,7 +1076,7 @@ export const tasks = pgTable(
         projectId: uuid(),
         title: varchar().notNull(),
         notes: text(),
-        status: varchar().$type<TaskStatus>().notNull().default('todo'),
+        status: varchar().$type<AdminProjectTaskStatus>().notNull().default('todo'),
         // Position is scoped per `(projectId, status)` bucket on screen but
         // stored as a single integer per row — reorder rewrites the whole
         // bucket. Standalone todos share the `projectId IS NULL` bucket.
@@ -1085,9 +1085,9 @@ export const tasks = pgTable(
         completedAt: timestamp({ withTimezone: true }),
         // Perceived weight — quick / focused / deep. Nullable; unclassified
         // rows render without the left-edge effort strip.
-        effort: varchar().$type<TaskEffort>(),
+        effort: varchar().$type<AdminProjectTaskEffort>(),
         // When the user intends to act. Independent of `dueAt`.
-        whenBucket: varchar().$type<TaskWhenBucket>(),
+        whenBucket: varchar().$type<AdminProjectTaskWhenBucket>(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
@@ -1098,15 +1098,15 @@ export const tasks = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('Tasks_projectId_position_idx').on(table.projectId, table.position),
-        index('Tasks_status_dueAt_idx').on(table.status, table.dueAt),
+        index('AdminProjectTask_projectId_position_idx').on(table.projectId, table.position),
+        index('AdminProjectTask_status_dueAt_idx').on(table.status, table.dueAt),
     ],
 );
 
-export type Task = typeof tasks.$inferSelect;
-export type TaskCreate = typeof tasks.$inferInsert;
+export type AdminProjectTask = typeof tasks.$inferSelect;
+export type AdminProjectTaskCreate = typeof tasks.$inferInsert;
 
-// --- Project activities ------------------------------------------------------
+// --- AdminProject activities ------------------------------------------------------
 //
 // Unified per-project timeline. One row covers both event-style entries
 // (client wrote on Malt, offer sent, call held) and timed work sessions
@@ -1126,16 +1126,16 @@ export type TaskCreate = typeof tasks.$inferInsert;
 //
 // The partial unique index `(endedAt IS NULL) WHERE kind = 'work'` enforces
 // the one-global-active-timer invariant at the DB level — even with two tabs
-// open, the second `projectTimersStart` raises a unique-violation that the
+// open, the second `adminProjectTimersStart` raises a unique-violation that the
 // command handler catches and retries after stopping the existing timer.
 //
 // See `docs/features/projects-workspace.md`.
 
 export const projectActivityKinds = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'] as const;
-export type ProjectActivityKind = (typeof projectActivityKinds)[number];
+export type AdminProjectActivityKind = (typeof projectActivityKinds)[number];
 
 export const projectActivityChannels = ['malt', 'email', 'phone', 'videoCall', 'inPerson', 'aiAssistant', 'other'] as const;
-export type ProjectActivityChannel = (typeof projectActivityChannels)[number];
+export type AdminProjectActivityChannel = (typeof projectActivityChannels)[number];
 
 // Sidedness of an activity row. Drives the chat-style timeline layout on the
 // project detail page — `outgoing` rows render right-aligned (from Cem),
@@ -1148,15 +1148,15 @@ export type ProjectActivityChannel = (typeof projectActivityChannels)[number];
 // `offer`; for the implicit kinds the command normalizes to `internal`
 // regardless of what the client sent.
 export const projectActivityDirections = ['outgoing', 'incoming', 'internal'] as const;
-export type ProjectActivityDirection = (typeof projectActivityDirections)[number];
+export type AdminProjectActivityDirection = (typeof projectActivityDirections)[number];
 
 // Offer-row state. Meaningful only when `kind = 'offer'`; the UI hides the
 // pill for other kinds. A withdrawn offer keeps the row for history.
 export const projectOfferStatuses = ['sent', 'accepted', 'rejected', 'withdrawn'] as const;
-export type ProjectOfferStatus = (typeof projectOfferStatuses)[number];
+export type AdminProjectOfferStatus = (typeof projectOfferStatuses)[number];
 
 export const projectActivities = pgTable(
-    'ProjectActivities',
+    'AdminProjectActivity',
     {
         activityId: uuid().primaryKey(),
         projectId: uuid().notNull(),
@@ -1164,15 +1164,15 @@ export const projectActivities = pgTable(
         // without forcing every activity to pick one. Cascade-set-null on
         // task delete so removing a task doesn't shred its history.
         taskId: uuid(),
-        kind: varchar().$type<ProjectActivityKind>().notNull(),
+        kind: varchar().$type<AdminProjectActivityKind>().notNull(),
         // Communication channel; null when kind is `work` / `offer` /
         // `milestone` / `note`. Free to fill for `clientContact` / `meeting`.
-        channel: varchar().$type<ProjectActivityChannel>(),
+        channel: varchar().$type<AdminProjectActivityChannel>(),
         // Sidedness — drives the chat-style timeline. `outgoing` = Cem,
         // `incoming` = client, `internal` = system markers (work / note /
         // milestone). Defaulted at the command layer so existing rows backfill
         // sensibly via the migration default.
-        direction: varchar().$type<ProjectActivityDirection>().notNull().default('internal'),
+        direction: varchar().$type<AdminProjectActivityDirection>().notNull().default('internal'),
         title: varchar().notNull(),
         notes: text(),
         // When the event happened (call start, email send). For timer rows
@@ -1180,7 +1180,7 @@ export const projectActivities = pgTable(
         occurredAt: timestamp({ withTimezone: true }).notNull(),
         // Set on work-timer rows; null on event rows.
         startedAt: timestamp({ withTimezone: true }),
-        // Null while a timer is running; stamped by `projectTimersStop`.
+        // Null while a timer is running; stamped by `adminProjectTimersStop`.
         endedAt: timestamp({ withTimezone: true }),
         // Cached `endedAt - startedAt` in seconds, written on stop. Also
         // settable directly on event rows when Cem logs a known duration
@@ -1192,7 +1192,7 @@ export const projectActivities = pgTable(
         // `offerStatus` tracks the lifecycle the offer went through after
         // being logged.
         amountCents: integer(),
-        offerStatus: varchar().$type<ProjectOfferStatus>(),
+        offerStatus: varchar().$type<AdminProjectOfferStatus>(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
@@ -1209,26 +1209,26 @@ export const projectActivities = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('ProjectActivities_projectId_occurredAt_idx').on(table.projectId, table.occurredAt),
-        index('ProjectActivities_taskId_idx').on(table.taskId),
+        index('AdminProjectActivity_projectId_occurredAt_idx').on(table.projectId, table.occurredAt),
+        index('AdminProjectActivity_taskId_idx').on(table.taskId),
         // Partial unique enforces the single-active-timer invariant. The
         // `kind = 'work' AND endedAt IS NULL` predicate matches at most one
         // row across the whole table; a concurrent second start fails fast.
-        uniqueIndex('ProjectActivities_singleActiveTimer_uniq')
+        uniqueIndex('AdminProjectActivity_singleActiveTimer_uniq')
             .on(table.kind)
             .where(sql`${table.endedAt} IS NULL AND ${table.kind} = 'work'`),
     ],
 );
 
-export type ProjectActivity = typeof projectActivities.$inferSelect;
-export type ProjectActivityCreate = typeof projectActivities.$inferInsert;
+export type AdminProjectActivity = typeof projectActivities.$inferSelect;
+export type AdminProjectActivityCreate = typeof projectActivities.$inferInsert;
 
-// --- Project links & files ---------------------------------------------------
+// --- AdminProject links & files ---------------------------------------------------
 //
 // First-class resources hanging off a project: external URLs (repo, Malt
 // mission, Figma file, client portal, shared drive) and uploaded files
 // (offer PDFs, signed contracts, invoices, screenshots). Each row optionally
-// references the `ProjectActivity` it was "born from" — when a link or file
+// references the `AdminProjectActivity` it was "born from" — when a link or file
 // is added at the moment of logging "sent offer", `activityId` points at
 // that activity and the timeline row renders the chip inline. Adding the
 // resource directly at project level leaves `activityId` null.
@@ -1246,10 +1246,10 @@ export type ProjectActivityCreate = typeof projectActivities.$inferInsert;
 // See `docs/features/projects-workspace.md`.
 
 export const projectLinkKinds = ['github', 'malt', 'figma', 'gdrive', 'notion', 'invoice', 'offer', 'other'] as const;
-export type ProjectLinkKind = (typeof projectLinkKinds)[number];
+export type AdminProjectLinkKind = (typeof projectLinkKinds)[number];
 
 export const projectLinks = pgTable(
-    'ProjectLinks',
+    'AdminProjectLink',
     {
         projectLinkId: uuid().primaryKey(),
         projectId: uuid().notNull(),
@@ -1260,7 +1260,7 @@ export const projectLinks = pgTable(
         url: varchar().notNull(),
         // Human label for the link card. Null falls back to the URL host.
         label: varchar(),
-        kind: varchar().$type<ProjectLinkKind>().notNull().default('other'),
+        kind: varchar().$type<AdminProjectLinkKind>().notNull().default('other'),
         // True surfaces this link in the project detail header's pinned rail.
         // The full list always renders on the Links tab regardless of `pinned`.
         pinned: boolean().notNull().default(false),
@@ -1280,19 +1280,19 @@ export const projectLinks = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('ProjectLinks_projectId_pinned_idx').on(table.projectId, table.pinned),
-        index('ProjectLinks_activityId_idx').on(table.activityId),
+        index('AdminProjectLink_projectId_pinned_idx').on(table.projectId, table.pinned),
+        index('AdminProjectLink_activityId_idx').on(table.activityId),
     ],
 );
 
-export type ProjectLink = typeof projectLinks.$inferSelect;
-export type ProjectLinkCreate = typeof projectLinks.$inferInsert;
+export type AdminProjectLink = typeof projectLinks.$inferSelect;
+export type AdminProjectLinkCreate = typeof projectLinks.$inferInsert;
 
 export const projectFileKinds = ['offer', 'invoice', 'contract', 'screenshot', 'other'] as const;
-export type ProjectFileKind = (typeof projectFileKinds)[number];
+export type AdminProjectFileKind = (typeof projectFileKinds)[number];
 
 export const projectFiles = pgTable(
-    'ProjectFiles',
+    'AdminProjectFile',
     {
         projectFileId: uuid().primaryKey(),
         projectId: uuid().notNull(),
@@ -1304,7 +1304,7 @@ export const projectFiles = pgTable(
         // posted it and lives on `fileUploads`.
         fileUploadId: uuid().notNull(),
         label: varchar(),
-        kind: varchar().$type<ProjectFileKind>().notNull().default('other'),
+        kind: varchar().$type<AdminProjectFileKind>().notNull().default('other'),
         pinned: boolean().notNull().default(false),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
@@ -1328,14 +1328,14 @@ export const projectFiles = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('ProjectFiles_projectId_pinned_idx').on(table.projectId, table.pinned),
-        index('ProjectFiles_activityId_idx').on(table.activityId),
-        index('ProjectFiles_fileUploadId_idx').on(table.fileUploadId),
+        index('AdminProjectFile_projectId_pinned_idx').on(table.projectId, table.pinned),
+        index('AdminProjectFile_activityId_idx').on(table.activityId),
+        index('AdminProjectFile_fileUploadId_idx').on(table.fileUploadId),
     ],
 );
 
-export type ProjectFile = typeof projectFiles.$inferSelect;
-export type ProjectFileCreate = typeof projectFiles.$inferInsert;
+export type AdminProjectFile = typeof projectFiles.$inferSelect;
+export type AdminProjectFileCreate = typeof projectFiles.$inferInsert;
 
 // --- Media -------------------------------------------------------------------
 //
@@ -1348,15 +1348,15 @@ export type ProjectFileCreate = typeof projectFiles.$inferInsert;
 // genre tags on titles. Mirrors `cvExperience.technologies`: display chips +
 // `ANY(topics)` filter for cross-view reads (e.g. `/workspace/software`
 // pulling `mediaChannelsByTopic("tech")`). The `mediaTopics` const array below
-// is the *known* vocabulary the UI autocomplete and `MediaTopic` GraphQL enum
+// is the *known* vocabulary the UI autocomplete and `AdminMediaTopic` GraphQL enum
 // surface; the column itself accepts any string so the enum can grow without a
 // migration.
 
 export const movieStatuses = ['watchlist', 'watching', 'watched', 'dropped'] as const;
-export type MovieStatus = (typeof movieStatuses)[number];
+export type AdminMediaMovieStatus = (typeof movieStatuses)[number];
 
 export const mediaPlatforms = ['youtube', 'twitch', 'podcast', 'other'] as const;
-export type MediaPlatform = (typeof mediaPlatforms)[number];
+export type AdminMediaPlatform = (typeof mediaPlatforms)[number];
 
 export const mediaTopics = [
     'tech',
@@ -1375,7 +1375,7 @@ export const mediaTopics = [
     'lifestyle',
     'education',
 ] as const;
-export type MediaTopic = (typeof mediaTopics)[number];
+export type AdminMediaTopic = (typeof mediaTopics)[number];
 
 // `tmdbId` is UNIQUE-nullable: multiple manually-entered movies can coexist
 // (all NULL) but a TMDB-sourced movie is de-duplicated across re-adds.
@@ -1383,7 +1383,7 @@ export type MediaTopic = (typeof mediaTopics)[number];
 // see `docs/features/workspace-media.md` for the "no local blob storage"
 // rationale. `rating` is 1..10, admin's own; movie-critic ratings live off-DB.
 export const movies = pgTable(
-    'Movies',
+    'AdminMediaMovie',
     {
         movieId: uuid().primaryKey(),
         title: varchar().notNull(),
@@ -1393,7 +1393,7 @@ export const movies = pgTable(
         releaseDate: date(),
         runtimeMinutes: integer(),
         overview: text(),
-        status: varchar().$type<MovieStatus>().notNull().default('watchlist'),
+        status: varchar().$type<AdminMediaMovieStatus>().notNull().default('watchlist'),
         rating: integer(),
         watchedAt: timestamp({ withTimezone: true }),
         notes: text(),
@@ -1401,11 +1401,11 @@ export const movies = pgTable(
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [uniqueIndex('Movies_tmdbId_key').on(table.tmdbId), index('Movies_status_idx').on(table.status)],
+    (table) => [uniqueIndex('AdminMediaMovie_tmdbId_key').on(table.tmdbId), index('AdminMediaMovie_status_idx').on(table.status)],
 );
 
-export type Movie = typeof movies.$inferSelect;
-export type MovieCreate = typeof movies.$inferInsert;
+export type AdminMediaMovie = typeof movies.$inferSelect;
+export type AdminMediaMovieCreate = typeof movies.$inferInsert;
 
 // TV series tracked on `/workspace/media` (Serien tab). Same watch-status
 // vocabulary as `Movies`, plus series-specific tracking: whether the show has
@@ -1414,7 +1414,7 @@ export type MovieCreate = typeof movies.$inferInsert;
 // "Q3 2027"). Both date fields can coexist (exact when known, rough as a
 // fallback label). See `docs/features/workspace-media.md`.
 export const shows = pgTable(
-    'Shows',
+    'AdminMediaShow',
     {
         showId: uuid().primaryKey(),
         title: varchar().notNull(),
@@ -1423,7 +1423,7 @@ export const shows = pgTable(
         backdropUrl: varchar(),
         firstAirDate: date(),
         overview: text(),
-        status: varchar().$type<MovieStatus>().notNull().default('watchlist'),
+        status: varchar().$type<AdminMediaMovieStatus>().notNull().default('watchlist'),
         rating: integer(),
         notes: text(),
         topics: text().array().notNull().default([]),
@@ -1433,22 +1433,22 @@ export const shows = pgTable(
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [uniqueIndex('Shows_tmdbId_key').on(table.tmdbId), index('Shows_status_idx').on(table.status)],
+    (table) => [uniqueIndex('AdminMediaShow_tmdbId_key').on(table.tmdbId), index('AdminMediaShow_status_idx').on(table.status)],
 );
 
-export type Show = typeof shows.$inferSelect;
-export type ShowCreate = typeof shows.$inferInsert;
+export type AdminMediaShow = typeof shows.$inferSelect;
+export type AdminMediaShowCreate = typeof shows.$inferInsert;
 
 // `priority` orders channels within a topic section on the editor (drag-reorder
 // via `useReorderableList`). Reorder is not delta-based — the command rewrites
 // every priority in one txn, matching the CV pattern
 // (`docs/architecture/content-model.md`).
 export const mediaChannels = pgTable(
-    'MediaChannels',
+    'AdminMediaChannel',
     {
         channelId: uuid().primaryKey(),
         name: varchar().notNull(),
-        platform: varchar().$type<MediaPlatform>().notNull().default('youtube'),
+        platform: varchar().$type<AdminMediaPlatform>().notNull().default('youtube'),
         url: varchar().notNull(),
         handle: varchar(),
         avatarUrl: varchar(),
@@ -1459,11 +1459,11 @@ export const mediaChannels = pgTable(
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [index('MediaChannels_priority_idx').on(table.priority)],
+    (table) => [index('AdminMediaChannel_priority_idx').on(table.priority)],
 );
 
-export type MediaChannel = typeof mediaChannels.$inferSelect;
-export type MediaChannelCreate = typeof mediaChannels.$inferInsert;
+export type AdminMediaChannel = typeof mediaChannels.$inferSelect;
+export type AdminMediaChannelCreate = typeof mediaChannels.$inferInsert;
 
 // --- Medical -----------------------------------------------------------------
 //
@@ -1489,13 +1489,13 @@ export type MediaChannelCreate = typeof mediaChannels.$inferInsert;
 // survive appointment cleanup.
 
 export const medicalCategories = ['dentist', 'gp', 'dermatology', 'eyes', 'mentalHealth', 'ent', 'physio', 'other'] as const;
-export type MedicalCategory = (typeof medicalCategories)[number];
+export type AdminMedicalCategory = (typeof medicalCategories)[number];
 
 export const medicalAppointmentStatuses = ['scheduled', 'completed', 'cancelled', 'missed'] as const;
-export type MedicalAppointmentStatus = (typeof medicalAppointmentStatuses)[number];
+export type AdminMedicalAppointmentStatus = (typeof medicalAppointmentStatuses)[number];
 
 export const medicalRecordSeverities = ['info', 'mild', 'moderate', 'severe'] as const;
-export type MedicalRecordSeverity = (typeof medicalRecordSeverities)[number];
+export type AdminMedicalRecordSeverity = (typeof medicalRecordSeverities)[number];
 
 // A scheduled or completed appointment with a provider. `providerName` is
 // free-text (no dedicated `MedicalProvider` table in v1 — see the feature
@@ -1504,29 +1504,29 @@ export type MedicalRecordSeverity = (typeof medicalRecordSeverities)[number];
 // `nextDueAt` is an explicit override for the "next visit" question — when
 // absent, the category's default cadence applies.
 export const medicalAppointments = pgTable(
-    'MedicalAppointments',
+    'AdminMedicalAppointment',
     {
         appointmentId: uuid().primaryKey(),
-        category: varchar().$type<MedicalCategory>().notNull().default('other'),
+        category: varchar().$type<AdminMedicalCategory>().notNull().default('other'),
         providerName: varchar(),
         title: varchar().notNull(),
         notes: text(),
         scheduledAt: timestamp({ withTimezone: true }).notNull(),
         completedAt: timestamp({ withTimezone: true }),
         nextDueAt: timestamp({ withTimezone: true }),
-        status: varchar().$type<MedicalAppointmentStatus>().notNull().default('scheduled'),
+        status: varchar().$type<AdminMedicalAppointmentStatus>().notNull().default('scheduled'),
         topics: text().array().notNull().default([]),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
     (table) => [
-        index('MedicalAppointments_category_idx').on(table.category),
-        index('MedicalAppointments_scheduledAt_idx').on(table.scheduledAt),
+        index('AdminMedicalAppointment_category_idx').on(table.category),
+        index('AdminMedicalAppointment_scheduledAt_idx').on(table.scheduledAt),
     ],
 );
 
-export type MedicalAppointment = typeof medicalAppointments.$inferSelect;
-export type MedicalAppointmentCreate = typeof medicalAppointments.$inferInsert;
+export type AdminMedicalAppointment = typeof medicalAppointments.$inferSelect;
+export type AdminMedicalAppointmentCreate = typeof medicalAppointments.$inferInsert;
 
 // A health-journal entry, usually authored by the medical sub-agent from a
 // chat conversation. `summary` is the agent's structured writeup;
@@ -1535,13 +1535,13 @@ export type MedicalAppointmentCreate = typeof medicalAppointments.$inferInsert;
 // — a record can reference the appointment that produced it (or a future
 // follow-up); on appointment delete the FK is nulled so the record survives.
 export const medicalRecords = pgTable(
-    'MedicalRecords',
+    'AdminMedicalRecord',
     {
         recordId: uuid().primaryKey(),
-        category: varchar().$type<MedicalCategory>().notNull().default('other'),
+        category: varchar().$type<AdminMedicalCategory>().notNull().default('other'),
         title: varchar().notNull(),
         summary: text().notNull(),
-        severity: varchar().$type<MedicalRecordSeverity>(),
+        severity: varchar().$type<AdminMedicalRecordSeverity>(),
         symptoms: text().array().notNull().default([]),
         bodyAreas: text().array().notNull().default([]),
         occurredAt: timestamp({ withTimezone: true }),
@@ -1558,14 +1558,14 @@ export const medicalRecords = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('MedicalRecords_category_idx').on(table.category),
-        index('MedicalRecords_appointmentId_idx').on(table.appointmentId),
-        index('MedicalRecords_occurredAt_idx').on(table.occurredAt),
+        index('AdminMedicalRecord_category_idx').on(table.category),
+        index('AdminMedicalRecord_appointmentId_idx').on(table.appointmentId),
+        index('AdminMedicalRecord_occurredAt_idx').on(table.occurredAt),
     ],
 );
 
-export type MedicalRecord = typeof medicalRecords.$inferSelect;
-export type MedicalRecordCreate = typeof medicalRecords.$inferInsert;
+export type AdminMedicalRecord = typeof medicalRecords.$inferSelect;
+export type AdminMedicalRecordCreate = typeof medicalRecords.$inferInsert;
 
 // Join row pinning `FileUploads` to a medical record — the "attach the photo
 // you sent in chat to this dermatology record" wire. Mirrors `ItemFiles` and
@@ -1574,7 +1574,7 @@ export type MedicalRecordCreate = typeof medicalRecords.$inferInsert;
 // delete the join also cascades (the file was the anchor, so losing it means
 // the reference is meaningless).
 export const medicalRecordFiles = pgTable(
-    'MedicalRecordFiles',
+    'AdminMedicalRecordFile',
     {
         recordFileId: uuid().primaryKey(),
         recordId: uuid().notNull(),
@@ -1597,13 +1597,13 @@ export const medicalRecordFiles = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('MedicalRecordFiles_recordId_pinned_idx').on(table.recordId, table.pinned),
-        index('MedicalRecordFiles_fileUploadId_idx').on(table.fileUploadId),
+        index('AdminMedicalRecordFile_recordId_pinned_idx').on(table.recordId, table.pinned),
+        index('AdminMedicalRecordFile_fileUploadId_idx').on(table.fileUploadId),
     ],
 );
 
-export type MedicalRecordFile = typeof medicalRecordFiles.$inferSelect;
-export type MedicalRecordFileCreate = typeof medicalRecordFiles.$inferInsert;
+export type AdminMedicalRecordFile = typeof medicalRecordFiles.$inferSelect;
+export type AdminMedicalRecordFileCreate = typeof medicalRecordFiles.$inferInsert;
 
 // --- Inventory ---------------------------------------------------------------
 //
@@ -1625,7 +1625,7 @@ export type MedicalRecordFileCreate = typeof medicalRecordFiles.$inferInsert;
 //
 // Category taxonomy stays hard-coded (`itemCategories` below) — the media
 // convention for known-vocabulary enums. A new category is a one-line change
-// here plus a mirror in the `ItemCategory` GraphQL enum. If categories ever
+// here plus a mirror in the `AdminInventoryItemCategory` GraphQL enum. If categories ever
 // need to be user-editable, elevate to a `ItemCategories` table.
 
 export const itemCategories = [
@@ -1639,29 +1639,29 @@ export const itemCategories = [
     'sports',
     'other',
 ] as const;
-export type ItemCategory = (typeof itemCategories)[number];
+export type AdminInventoryItemCategory = (typeof itemCategories)[number];
 
 export const itemConditions = ['new', 'likeNew', 'good', 'fair', 'poor'] as const;
-export type ItemCondition = (typeof itemConditions)[number];
+export type AdminInventoryItemCondition = (typeof itemConditions)[number];
 
 export const itemDisposalStates = ['owned', 'sold', 'gifted', 'lost', 'disposed'] as const;
-export type ItemDisposalState = (typeof itemDisposalStates)[number];
+export type AdminInventoryItemDisposalState = (typeof itemDisposalStates)[number];
 
 export const itemServiceKinds = ['service', 'repair', 'replacement', 'other'] as const;
-export type ItemServiceKind = (typeof itemServiceKinds)[number];
+export type AdminInventoryItemServiceKind = (typeof itemServiceKinds)[number];
 
 export const itemFileKinds = ['photo', 'receipt', 'warranty', 'manual', 'invoice', 'other'] as const;
-export type ItemFileKind = (typeof itemFileKinds)[number];
+export type AdminInventoryItemFileKind = (typeof itemFileKinds)[number];
 
 // `currentValueCents` is a cached snapshot of the latest `ItemValuations` row
 // so the list surface and finances tile never need to `MAX(valuedAt)` at
-// query time. The `itemsReprice` command is the single writer: journal insert
+// query time. The `adminInventoryItemsReprice` command is the single writer: journal insert
 // + this cache update in one transaction.
 export const items = pgTable(
-    'Items',
+    'AdminInventoryItem',
     {
         itemId: uuid().primaryKey(),
-        categoryKey: varchar().$type<ItemCategory>().notNull().default('other'),
+        categoryKey: varchar().$type<AdminInventoryItemCategory>().notNull().default('other'),
         name: varchar().notNull(),
         brand: varchar(),
         model: varchar(),
@@ -1669,8 +1669,8 @@ export const items = pgTable(
         purchasedAt: date(),
         purchasePriceCents: integer(),
         currentValueCents: integer(),
-        condition: varchar().$type<ItemCondition>(),
-        disposalState: varchar().$type<ItemDisposalState>().notNull().default('owned'),
+        condition: varchar().$type<AdminInventoryItemCondition>(),
+        disposalState: varchar().$type<AdminInventoryItemDisposalState>().notNull().default('owned'),
         disposedAt: timestamp({ withTimezone: true }),
         warrantyEndsAt: date(),
         warrantyProvider: varchar(),
@@ -1680,20 +1680,20 @@ export const items = pgTable(
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
     (table) => [
-        index('Items_disposalState_idx').on(table.disposalState),
-        index('Items_warrantyEndsAt_idx').on(table.warrantyEndsAt),
-        index('Items_categoryKey_idx').on(table.categoryKey),
+        index('AdminInventoryItem_disposalState_idx').on(table.disposalState),
+        index('AdminInventoryItem_warrantyEndsAt_idx').on(table.warrantyEndsAt),
+        index('AdminInventoryItem_categoryKey_idx').on(table.categoryKey),
     ],
 );
 
-export type Item = typeof items.$inferSelect;
-export type ItemCreate = typeof items.$inferInsert;
+export type AdminInventoryItem = typeof items.$inferSelect;
+export type AdminInventoryItemCreate = typeof items.$inferInsert;
 
-// Repricing journal. `itemsReprice` writes one row here and updates the cached
+// Repricing journal. `adminInventoryItemsReprice` writes one row here and updates the cached
 // `items.currentValueCents` in the same transaction. `valuedAt` defaults to
 // now but is settable — an appraisal from last month can be back-dated.
 export const itemValuations = pgTable(
-    'ItemValuations',
+    'AdminInventoryItemValuation',
     {
         valuationId: uuid().primaryKey(),
         itemId: uuid().notNull(),
@@ -1709,23 +1709,23 @@ export const itemValuations = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('ItemValuations_itemId_valuedAt_idx').on(table.itemId, table.valuedAt),
+        index('AdminInventoryItemValuation_itemId_valuedAt_idx').on(table.itemId, table.valuedAt),
     ],
 );
 
-export type ItemValuation = typeof itemValuations.$inferSelect;
-export type ItemValuationCreate = typeof itemValuations.$inferInsert;
+export type AdminInventoryItemValuation = typeof itemValuations.$inferSelect;
+export type AdminInventoryItemValuationCreate = typeof itemValuations.$inferInsert;
 
 // Service events on an item — services, repairs, replacements, other. The
 // optional `nextDueAt` drives a "next service due" reminder computed by the
 // list query. Independent of warranty; both live on the item and are
 // surfaced side-by-side on the detail page.
 export const itemServiceEntries = pgTable(
-    'ItemServiceEntries',
+    'AdminInventoryItemServiceEntry',
     {
         serviceEntryId: uuid().primaryKey(),
         itemId: uuid().notNull(),
-        kind: varchar().$type<ItemServiceKind>().notNull().default('service'),
+        kind: varchar().$type<AdminInventoryItemServiceKind>().notNull().default('service'),
         performedAt: date().notNull(),
         vendor: varchar(),
         costCents: integer(),
@@ -1741,12 +1741,12 @@ export const itemServiceEntries = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('ItemServiceEntries_itemId_performedAt_idx').on(table.itemId, table.performedAt),
+        index('AdminInventoryItemServiceEntry_itemId_performedAt_idx').on(table.itemId, table.performedAt),
     ],
 );
 
-export type ItemServiceEntry = typeof itemServiceEntries.$inferSelect;
-export type ItemServiceEntryCreate = typeof itemServiceEntries.$inferInsert;
+export type AdminInventoryItemServiceEntry = typeof itemServiceEntries.$inferSelect;
+export type AdminInventoryItemServiceEntryCreate = typeof itemServiceEntries.$inferInsert;
 
 // Join row pinning `FileUploads` to an item (and optionally a specific
 // service entry, e.g. an invoice). Mirrors `projectFiles`: the underlying
@@ -1754,14 +1754,14 @@ export type ItemServiceEntryCreate = typeof itemServiceEntries.$inferInsert;
 // service-entry delete the join's `serviceEntryId` sets to null (the file
 // still belongs to the item), on upload delete the whole join cascades.
 export const itemFiles = pgTable(
-    'ItemFiles',
+    'AdminInventoryItemFile',
     {
         itemFileId: uuid().primaryKey(),
         itemId: uuid().notNull(),
         serviceEntryId: uuid(),
         fileUploadId: uuid().notNull(),
         label: varchar(),
-        kind: varchar().$type<ItemFileKind>().notNull().default('other'),
+        kind: varchar().$type<AdminInventoryItemFileKind>().notNull().default('other'),
         pinned: boolean().notNull().default(false),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
@@ -1785,14 +1785,14 @@ export const itemFiles = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('ItemFiles_itemId_pinned_idx').on(table.itemId, table.pinned),
-        index('ItemFiles_serviceEntryId_idx').on(table.serviceEntryId),
-        index('ItemFiles_fileUploadId_idx').on(table.fileUploadId),
+        index('AdminInventoryItemFile_itemId_pinned_idx').on(table.itemId, table.pinned),
+        index('AdminInventoryItemFile_serviceEntryId_idx').on(table.serviceEntryId),
+        index('AdminInventoryItemFile_fileUploadId_idx').on(table.fileUploadId),
     ],
 );
 
-export type ItemFile = typeof itemFiles.$inferSelect;
-export type ItemFileCreate = typeof itemFiles.$inferInsert;
+export type AdminInventoryItemFile = typeof itemFiles.$inferSelect;
+export type AdminInventoryItemFileCreate = typeof itemFiles.$inferInsert;
 
 // Content-addressed cache for `/api/tts` audio. The primary key is a
 // SHA-256 hex of `${text}|${voice}|${model}|${format}` — identical inputs
@@ -1841,13 +1841,13 @@ export type TtsAudioCacheCreate = typeof ttsAudioCache.$inferInsert;
 // `AdminTravelTripPackingItem` rows are trip-scoped for v1. A reusable base
 // template is a follow-up — see the feature doc's Future Work.
 
-export const adminTravelTripStatuses = ['draft', 'planned', 'active', 'completed', 'cancelled'] as const;
-export type AdminTravelTripStatus = (typeof adminTravelTripStatuses)[number];
+export const tripStatuses = ['draft', 'planned', 'active', 'completed', 'cancelled'] as const;
+export type AdminTravelTripStatus = (typeof tripStatuses)[number];
 
-export const adminTravelTransportModes = ['flight', 'train', 'car', 'ferry', 'mixed'] as const;
-export type AdminTravelTransportMode = (typeof adminTravelTransportModes)[number];
+export const transportModes = ['flight', 'train', 'car', 'ferry', 'mixed'] as const;
+export type AdminTravelTransportMode = (typeof transportModes)[number];
 
-export const adminTravelTrips = pgTable(
+export const trips = pgTable(
     'AdminTravelTrip',
     {
         tripId: uuid().primaryKey(),
@@ -1865,15 +1865,15 @@ export const adminTravelTrips = pgTable(
     (table) => [index('AdminTravelTrip_status_idx').on(table.status), index('AdminTravelTrip_startsOn_idx').on(table.startsOn)],
 );
 
-export type AdminTravelTrip = typeof adminTravelTrips.$inferSelect;
-export type AdminTravelTripCreate = typeof adminTravelTrips.$inferInsert;
+export type AdminTravelTrip = typeof trips.$inferSelect;
+export type AdminTravelTripCreate = typeof trips.$inferInsert;
 
 // A day within a trip. `dayNumber` is the 1-based ordinal used by the agent
 // ("Day 3") and the UI; `date` is the calendar date once the trip has real
 // dates (nullable — a draft trip may have days without dates yet). `summary`
 // holds the AI-written paragraph describing the day at a glance; `title` is
 // a shorter label ("Colosseum + Trastevere").
-export const adminTravelTripDays = pgTable(
+export const tripDays = pgTable(
     'AdminTravelTripDay',
     {
         tripDayId: uuid().primaryKey(),
@@ -1888,7 +1888,7 @@ export const adminTravelTripDays = pgTable(
     (table) => [
         foreignKey({
             columns: [table.tripId],
-            foreignColumns: [adminTravelTrips.tripId],
+            foreignColumns: [trips.tripId],
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
@@ -1897,14 +1897,14 @@ export const adminTravelTripDays = pgTable(
     ],
 );
 
-export type AdminTravelTripDay = typeof adminTravelTripDays.$inferSelect;
-export type AdminTravelTripDayCreate = typeof adminTravelTripDays.$inferInsert;
+export type AdminTravelTripDay = typeof tripDays.$inferSelect;
+export type AdminTravelTripDayCreate = typeof tripDays.$inferInsert;
 
 // An activity slotted into a `TripDay`. Times are stored as wall-clock only
 // (`time` — the trip is location-scoped, so a single tz would be a lie); the
 // UI joins them with the day's `date` for display. `position` orders
 // activities within a day when times are missing or equal.
-export const adminTravelTripActivities = pgTable(
+export const tripActivities = pgTable(
     'AdminTravelTripActivity',
     {
         tripActivityId: uuid().primaryKey(),
@@ -1922,7 +1922,7 @@ export const adminTravelTripActivities = pgTable(
     (table) => [
         foreignKey({
             columns: [table.tripDayId],
-            foreignColumns: [adminTravelTripDays.tripDayId],
+            foreignColumns: [tripDays.tripDayId],
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
@@ -1930,14 +1930,14 @@ export const adminTravelTripActivities = pgTable(
     ],
 );
 
-export type AdminTravelTripActivity = typeof adminTravelTripActivities.$inferSelect;
-export type AdminTravelTripActivityCreate = typeof adminTravelTripActivities.$inferInsert;
+export type AdminTravelTripActivity = typeof tripActivities.$inferSelect;
+export type AdminTravelTripActivityCreate = typeof tripActivities.$inferInsert;
 
 // Trip-scoped packing checklist. `category` is free text (Documents,
 // Electronics, Clothing …) — a known vocabulary lives in
 // `travelPackingCategories` and the UI groups by it, but the column stays
 // text so the agent can invent a new bucket without a migration.
-export const adminTravelTripPackingItems = pgTable(
+export const tripPackingItems = pgTable(
     'AdminTravelTripPackingItem',
     {
         tripPackingItemId: uuid().primaryKey(),
@@ -1954,7 +1954,7 @@ export const adminTravelTripPackingItems = pgTable(
     (table) => [
         foreignKey({
             columns: [table.tripId],
-            foreignColumns: [adminTravelTrips.tripId],
+            foreignColumns: [trips.tripId],
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
@@ -1962,8 +1962,8 @@ export const adminTravelTripPackingItems = pgTable(
     ],
 );
 
-export type AdminTravelTripPackingItem = typeof adminTravelTripPackingItems.$inferSelect;
-export type AdminTravelTripPackingItemCreate = typeof adminTravelTripPackingItems.$inferInsert;
+export type AdminTravelTripPackingItem = typeof tripPackingItems.$inferSelect;
+export type AdminTravelTripPackingItemCreate = typeof tripPackingItems.$inferInsert;
 
 // --- Finances ---------------------------------------------------------------
 //
@@ -1994,19 +1994,19 @@ export const financeRecurringCostCategories = [
     'savingsVacation',
     'other',
 ] as const;
-export type FinanceRecurringCostCategory = (typeof financeRecurringCostCategories)[number];
+export type AdminFinancesRecurringCostCategory = (typeof financeRecurringCostCategories)[number];
 
 export const financeCadences = ['monthly', 'yearly'] as const;
-export type FinanceCadence = (typeof financeCadences)[number];
+export type AdminFinancesCadence = (typeof financeCadences)[number];
 
 export const financeRecurringCosts = pgTable(
-    'FinanceRecurringCosts',
+    'AdminFinancesRecurringCost',
     {
         costId: uuid().primaryKey(),
         name: varchar().notNull(),
-        categoryKey: varchar().$type<FinanceRecurringCostCategory>().notNull().default('other'),
+        categoryKey: varchar().$type<AdminFinancesRecurringCostCategory>().notNull().default('other'),
         amountCents: integer().notNull(),
-        cadence: varchar().$type<FinanceCadence>().notNull().default('monthly'),
+        cadence: varchar().$type<AdminFinancesCadence>().notNull().default('monthly'),
         currency: varchar({ length: 3 }).notNull().default('EUR'),
         notes: text(),
         active: boolean().notNull().default(true),
@@ -2016,13 +2016,13 @@ export const financeRecurringCosts = pgTable(
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
     (table) => [
-        index('FinanceRecurringCosts_categoryKey_idx').on(table.categoryKey),
-        index('FinanceRecurringCosts_active_idx').on(table.active),
+        index('AdminFinancesRecurringCost_categoryKey_idx').on(table.categoryKey),
+        index('AdminFinancesRecurringCost_active_idx').on(table.active),
     ],
 );
 
-export type FinanceRecurringCost = typeof financeRecurringCosts.$inferSelect;
-export type FinanceRecurringCostCreate = typeof financeRecurringCosts.$inferInsert;
+export type AdminFinancesRecurringCost = typeof financeRecurringCosts.$inferSelect;
+export type AdminFinancesRecurringCostCreate = typeof financeRecurringCosts.$inferInsert;
 
 export const adminFinancesSettings = pgTable(
     'AdminFinancesSettings',
@@ -2059,17 +2059,17 @@ export type AdminFinancesSettingsCreate = typeof adminFinancesSettings.$inferIns
 // suggest something Cem likes and hasn't made recently.
 
 export const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'other'] as const;
-export type MealType = (typeof mealTypes)[number];
+export type AdminNutritionMealType = (typeof mealTypes)[number];
 
 export const foodLogKinds = ['food', 'drink'] as const;
-export type FoodLogKind = (typeof foodLogKinds)[number];
+export type AdminNutritionFoodLogKind = (typeof foodLogKinds)[number];
 
 export const recipes = pgTable(
-    'Recipes',
+    'AdminNutritionRecipe',
     {
         recipeId: uuid().primaryKey(),
         title: varchar().notNull(),
-        mealType: varchar().$type<MealType>().notNull().default('other'),
+        mealType: varchar().$type<AdminNutritionMealType>().notNull().default('other'),
         ingredients: text()
             .array()
             .notNull()
@@ -2089,22 +2089,25 @@ export const recipes = pgTable(
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [index('Recipes_mealType_idx').on(table.mealType), index('Recipes_isFavorite_idx').on(table.isFavorite)],
+    (table) => [
+        index('AdminNutritionRecipe_mealType_idx').on(table.mealType),
+        index('AdminNutritionRecipe_isFavorite_idx').on(table.isFavorite),
+    ],
 );
 
-export type Recipe = typeof recipes.$inferSelect;
-export type RecipeCreate = typeof recipes.$inferInsert;
+export type AdminNutritionRecipe = typeof recipes.$inferSelect;
+export type AdminNutritionRecipeCreate = typeof recipes.$inferInsert;
 
 // A single soft-plan slot: a `(date, mealType)` cell that either references a
-// `Recipe` or carries a free-text idea (`customText`). Both may be set — the
+// `AdminNutritionRecipe` or carries a free-text idea (`customText`). Both may be set — the
 // UI prefers the recipe. On recipe delete the FK nulls so the plan slot
 // survives as a bare idea rather than vanishing.
 export const mealPlanEntries = pgTable(
-    'MealPlanEntries',
+    'AdminNutritionMealPlanEntry',
     {
         entryId: uuid().primaryKey(),
         date: date().notNull(),
-        mealType: varchar().$type<MealType>().notNull().default('other'),
+        mealType: varchar().$type<AdminNutritionMealType>().notNull().default('other'),
         recipeId: uuid(),
         customText: varchar(),
         notes: text(),
@@ -2118,24 +2121,24 @@ export const mealPlanEntries = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('MealPlanEntries_date_idx').on(table.date),
+        index('AdminNutritionMealPlanEntry_date_idx').on(table.date),
     ],
 );
 
-export type MealPlanEntry = typeof mealPlanEntries.$inferSelect;
-export type MealPlanEntryCreate = typeof mealPlanEntries.$inferInsert;
+export type AdminNutritionMealPlanEntry = typeof mealPlanEntries.$inferSelect;
+export type AdminNutritionMealPlanEntryCreate = typeof mealPlanEntries.$inferInsert;
 
 // The diary: one row per thing eaten or drunk. `kind` (food | drink) lets the
 // weekly overview split intake; `recipeId` optionally links back to a cooked
 // dish (nulled on recipe delete). `consumedAt` is a full timestamp so the
 // page can group by day and the agent can log "for breakfast" against a time.
 export const foodLogEntries = pgTable(
-    'FoodLogEntries',
+    'AdminNutritionFoodLogEntry',
     {
         logId: uuid().primaryKey(),
         consumedAt: timestamp({ withTimezone: true }).notNull(),
-        mealType: varchar().$type<MealType>().notNull().default('other'),
-        kind: varchar().$type<FoodLogKind>().notNull().default('food'),
+        mealType: varchar().$type<AdminNutritionMealType>().notNull().default('other'),
+        kind: varchar().$type<AdminNutritionFoodLogKind>().notNull().default('food'),
         description: text().notNull(),
         recipeId: uuid(),
         notes: text(),
@@ -2149,12 +2152,12 @@ export const foodLogEntries = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('FoodLogEntries_consumedAt_idx').on(table.consumedAt),
+        index('AdminNutritionFoodLogEntry_consumedAt_idx').on(table.consumedAt),
     ],
 );
 
-export type FoodLogEntry = typeof foodLogEntries.$inferSelect;
-export type FoodLogEntryCreate = typeof foodLogEntries.$inferInsert;
+export type AdminNutritionFoodLogEntry = typeof foodLogEntries.$inferSelect;
+export type AdminNutritionFoodLogEntryCreate = typeof foodLogEntries.$inferInsert;
 
 // One tracked supplement (a pill / powder / capsule Cem takes). The exact
 // per-serving composition lives in the child `SupplementNutrients` rows, which
@@ -2163,7 +2166,7 @@ export type FoodLogEntryCreate = typeof foodLogEntries.$inferInsert;
 // from that AI fill; `sourceUrl` is the product page it was read from. No
 // `userId` / `*De`/`*En` — admin-only, matching the rest of Nutrition.
 export const supplements = pgTable(
-    'Supplements',
+    'AdminNutritionSupplement',
     {
         supplementId: uuid().primaryKey(),
         name: varchar().notNull(),
@@ -2176,11 +2179,11 @@ export const supplements = pgTable(
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [index('Supplements_name_idx').on(table.name)],
+    (table) => [index('AdminNutritionSupplement_name_idx').on(table.name)],
 );
 
-export type Supplement = typeof supplements.$inferSelect;
-export type SupplementCreate = typeof supplements.$inferInsert;
+export type AdminNutritionSupplement = typeof supplements.$inferSelect;
+export type AdminNutritionSupplementCreate = typeof supplements.$inferInsert;
 
 // One nutrient line on a supplement's facts panel (e.g. "Vitamin D3 · 2000 ·
 // IU · 250 %DV"). Owned by the parent supplement — `ON DELETE cascade`, unlike
@@ -2189,7 +2192,7 @@ export type SupplementCreate = typeof supplements.$inferInsert;
 // `sortOrder` preserves the label's own ordering (the upsert rewrites the whole
 // child set with the array index).
 export const supplementNutrients = pgTable(
-    'SupplementNutrients',
+    'AdminNutritionSupplementNutrient',
     {
         nutrientId: uuid().primaryKey(),
         supplementId: uuid().notNull(),
@@ -2208,12 +2211,12 @@ export const supplementNutrients = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('SupplementNutrients_supplementId_idx').on(table.supplementId),
+        index('AdminNutritionSupplementNutrient_supplementId_idx').on(table.supplementId),
     ],
 );
 
-export type SupplementNutrient = typeof supplementNutrients.$inferSelect;
-export type SupplementNutrientCreate = typeof supplementNutrients.$inferInsert;
+export type AdminNutritionSupplementNutrient = typeof supplementNutrients.$inferSelect;
+export type AdminNutritionSupplementNutrientCreate = typeof supplementNutrients.$inferInsert;
 
 // --- Fitness ----------------------------------------------------------------
 //
@@ -2230,30 +2233,30 @@ export type SupplementNutrientCreate = typeof supplementNutrients.$inferInsert;
 // plates round-trip without float drift.
 
 export const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'fullBody', 'cardio', 'other'] as const;
-export type MuscleGroup = (typeof muscleGroups)[number];
+export type AdminFitnessMuscleGroup = (typeof muscleGroups)[number];
 
 export const equipmentTypes = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'kettlebell', 'other'] as const;
-export type EquipmentType = (typeof equipmentTypes)[number];
+export type AdminFitnessEquipmentType = (typeof equipmentTypes)[number];
 
 export const exercises = pgTable(
-    'Exercises',
+    'AdminFitnessExercise',
     {
         exerciseId: uuid().primaryKey(),
         name: varchar().notNull(),
-        muscleGroup: varchar().$type<MuscleGroup>().notNull().default('other'),
-        equipment: varchar().$type<EquipmentType>(),
+        muscleGroup: varchar().$type<AdminFitnessMuscleGroup>().notNull().default('other'),
+        equipment: varchar().$type<AdminFitnessEquipmentType>(),
         notes: text(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [index('Exercises_muscleGroup_idx').on(table.muscleGroup)],
+    (table) => [index('AdminFitnessExercise_muscleGroup_idx').on(table.muscleGroup)],
 );
 
-export type Exercise = typeof exercises.$inferSelect;
-export type ExerciseCreate = typeof exercises.$inferInsert;
+export type AdminFitnessExercise = typeof exercises.$inferSelect;
+export type AdminFitnessExerciseCreate = typeof exercises.$inferInsert;
 
 export const workoutRoutines = pgTable(
-    'WorkoutRoutines',
+    'AdminFitnessWorkoutRoutine',
     {
         routineId: uuid().primaryKey(),
         name: varchar().notNull(),
@@ -2262,16 +2265,16 @@ export const workoutRoutines = pgTable(
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [index('WorkoutRoutines_position_idx').on(table.position)],
+    (table) => [index('AdminFitnessWorkoutRoutine_position_idx').on(table.position)],
 );
 
-export type WorkoutRoutine = typeof workoutRoutines.$inferSelect;
-export type WorkoutRoutineCreate = typeof workoutRoutines.$inferInsert;
+export type AdminFitnessWorkoutRoutine = typeof workoutRoutines.$inferSelect;
+export type AdminFitnessWorkoutRoutineCreate = typeof workoutRoutines.$inferInsert;
 
 // One planned exercise within a routine, with optional targets. `targetWeight`
 // is `numeric` for half-kg increments. `position` orders the routine.
 export const workoutRoutineItems = pgTable(
-    'WorkoutRoutineItems',
+    'AdminFitnessWorkoutRoutineItem',
     {
         routineItemId: uuid().primaryKey(),
         routineId: uuid().notNull(),
@@ -2297,15 +2300,15 @@ export const workoutRoutineItems = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('WorkoutRoutineItems_routineId_position_idx').on(table.routineId, table.position),
+        index('AdminFitnessWorkoutRoutineItem_routineId_position_idx').on(table.routineId, table.position),
     ],
 );
 
-export type WorkoutRoutineItem = typeof workoutRoutineItems.$inferSelect;
-export type WorkoutRoutineItemCreate = typeof workoutRoutineItems.$inferInsert;
+export type AdminFitnessWorkoutRoutineItem = typeof workoutRoutineItems.$inferSelect;
+export type AdminFitnessWorkoutRoutineItemCreate = typeof workoutRoutineItems.$inferInsert;
 
 export const workoutSessions = pgTable(
-    'WorkoutSessions',
+    'AdminFitnessWorkoutSession',
     {
         sessionId: uuid().primaryKey(),
         date: date().notNull(),
@@ -2323,18 +2326,18 @@ export const workoutSessions = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('set null'),
-        index('WorkoutSessions_date_idx').on(table.date),
+        index('AdminFitnessWorkoutSession_date_idx').on(table.date),
     ],
 );
 
-export type WorkoutSession = typeof workoutSessions.$inferSelect;
-export type WorkoutSessionCreate = typeof workoutSessions.$inferInsert;
+export type AdminFitnessWorkoutSession = typeof workoutSessions.$inferSelect;
+export type AdminFitnessWorkoutSessionCreate = typeof workoutSessions.$inferInsert;
 
 // One logged set within a session: `weight` × `reps`, optional `rpe`, and an
 // `isWarmup` flag so warmups don't pollute PR math. `position` orders sets
 // within a session; the `(exerciseId)` index backs per-exercise history.
 export const workoutSets = pgTable(
-    'WorkoutSets',
+    'AdminFitnessWorkoutSet',
     {
         setId: uuid().primaryKey(),
         sessionId: uuid().notNull(),
@@ -2361,10 +2364,10 @@ export const workoutSets = pgTable(
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('WorkoutSets_sessionId_position_idx').on(table.sessionId, table.position),
-        index('WorkoutSets_exerciseId_idx').on(table.exerciseId),
+        index('AdminFitnessWorkoutSet_sessionId_position_idx').on(table.sessionId, table.position),
+        index('AdminFitnessWorkoutSet_exerciseId_idx').on(table.exerciseId),
     ],
 );
 
-export type WorkoutSet = typeof workoutSets.$inferSelect;
-export type WorkoutSetCreate = typeof workoutSets.$inferInsert;
+export type AdminFitnessWorkoutSet = typeof workoutSets.$inferSelect;
+export type AdminFitnessWorkoutSetCreate = typeof workoutSets.$inferInsert;

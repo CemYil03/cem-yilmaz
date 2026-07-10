@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { adminTravelTrips } from '../db/schema';
+import { trips } from '../db/schema';
 import type { AdminTravelTripCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminTravelTripInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -41,10 +41,7 @@ export async function adminTravelTripsUpsert(
         const updateIds = rows.filter((row) => row.isUpdate).map((row) => row.tripId);
         await serverRuntime.db.transaction(async (transaction) => {
             if (updateIds.length > 0) {
-                const existing = await transaction
-                    .select({ tripId: adminTravelTrips.tripId })
-                    .from(adminTravelTrips)
-                    .where(inArray(adminTravelTrips.tripId, updateIds));
+                const existing = await transaction.select({ tripId: trips.tripId }).from(trips).where(inArray(trips.tripId, updateIds));
                 if (existing.length !== updateIds.length) {
                     const found = new Set(existing.map((row) => row.tripId));
                     const missing = updateIds.filter((id) => !found.has(id));
@@ -53,9 +50,9 @@ export async function adminTravelTripsUpsert(
             }
             for (const row of rows) {
                 if (row.isUpdate) {
-                    await transaction.update(adminTravelTrips).set(row.payload).where(eq(adminTravelTrips.tripId, row.tripId));
+                    await transaction.update(trips).set(row.payload).where(eq(trips.tripId, row.tripId));
                 } else {
-                    await transaction.insert(adminTravelTrips).values(row.payload);
+                    await transaction.insert(trips).values(row.payload);
                 }
             }
         });

@@ -52,7 +52,7 @@ options, and the tab labels.
 
 Two tables, admin-only convention — no `*De`/`*En` pairs, no per-row `userId` (the `User.admin` / `Mutation.admin` gate authorizes):
 
-- **`FinanceRecurringCosts`** — `costId`, `name`, `categoryKey` (enum: `housing` | `connectivity` | `transport` | `insurance` |
+- **`AdminFinancesRecurringCost`** — `costId`, `name`, `categoryKey` (enum: `housing` | `connectivity` | `transport` | `insurance` |
   `subscriptionsEntertainment` | `subscriptionsWork` | `memberships` | `donations` | `household` | `savingsGeneral` | `savingsVacation` |
   `other`, default `other`), `amountCents` (per-`cadence` amount), `cadence` (`monthly` | `yearly`, default `monthly`), `currency`
   (`char(3)`, default `EUR`), `notes`, `active` (default `true`), `startsOn` / `endsOn` (informational for v1), timestamps. Indexed on
@@ -61,34 +61,36 @@ Two tables, admin-only convention — no `*De`/`*En` pairs, no per-row `userId` 
   (nullable — null = unset). Sits next to the domain table because "my income" is meaningful only per user; the recurring-cost rows are not.
 
 Enum tuples exported as `financeRecurringCostCategories` and `financeCadences`, mirrored in `schema.graphqls` as
-`FinanceRecurringCostCategory` / `FinanceCadence`.
+`AdminFinancesRecurringCostCategory` / `AdminFinancesCadence`.
 
 ### GraphQL
 
 `AdminFinancesQuery` mounted at `Admin.adminFinancesFindOne`:
 
-- `adminFinancesRecurringCostFindMany: [FinanceRecurringCost!]!` — every row, ordered by category then name.
+- `adminFinancesRecurringCostFindMany: [AdminFinancesRecurringCost!]!` — every row, ordered by category then name.
 - `adminFinancesMonthlyNetIncomeCentsFindOne: Int` — null when unset.
 - `adminFinancesMonthlyExpensesCentsFindOne: Int!` and `adminFinancesYearlyExpensesCentsFindOne: Int!` — projected totals over the active
   rows, computed in one SQL pass (see `adminFinancesExpensesCentsFindOne`). Yearly rows contribute `amount / 12` to the monthly total and
   `amount` to the yearly total; monthly rows do the mirror.
 
 `AdminMutation` extensions follow the repo-wide batch + `MutationResult` conventions:
-`financeRecurringCostsUpsert(financeRecurringCosts: [FinanceRecurringCostInput!]!)`, `financeRecurringCostsDelete(costIds: [ID!]!)` — both
-return `MutationResult!` (`referenceIds` echoes the row id per input in input order). Single-item edits (the dialog, the delete alert) pass
-a one-element array; pausing a cost rides the same upsert with `active` flipped. `financeMonthlyNetIncomeSet(amountCents: Int)` stays
-singular — it writes the one per-admin settings row, so there is nothing to batch; a nullable `amountCents` clears the baseline and it too
-returns `MutationResult!`. The `userUpdates` subscription re-renders the totals in all three cases.
+`adminFinancesRecurringCostsUpsert(financeRecurringCosts: [AdminFinancesRecurringCostInput!]!)`,
+`adminFinancesRecurringCostsDelete(costIds: [ID!]!)` — both return `MutationResult!` (`referenceIds` echoes the row id per input in input
+order). Single-item edits (the dialog, the delete alert) pass a one-element array; pausing a cost rides the same upsert with `active`
+flipped. `adminFinancesMonthlyNetIncomeSet(amountCents: Int)` stays singular — it writes the one per-admin settings row, so there is nothing
+to batch; a nullable `amountCents` clears the baseline and it too returns `MutationResult!`. The `userUpdates` subscription re-renders the
+totals in all three cases.
 
 ### CQRS wiring
 
-- Commands: `financeRecurringCostsUpsert` (two-phase batch — single pre-flight `inArray` existence check for update ids, per-row
-  insert/update in the loop, one transaction), `financeRecurringCostsDelete` (batch hard delete — inactive rows are the soft option),
-  `financeMonthlyNetIncomeSet` (`ON CONFLICT DO UPDATE` on the `userId` PK, singleton setter). Each publishes `userUpdates` on success.
+- Commands: `adminFinancesRecurringCostsUpsert` (two-phase batch — single pre-flight `inArray` existence check for update ids, per-row
+  insert/update in the loop, one transaction), `adminFinancesRecurringCostsDelete` (batch hard delete — inactive rows are the soft option),
+  `adminFinancesMonthlyNetIncomeSet` (`ON CONFLICT DO UPDATE` on the `userId` PK, singleton setter). Each publishes `userUpdates` on
+  success.
 - Queries: `adminFinancesRecurringCostFindMany`, `adminFinancesMonthlyNetIncomeCentsFindOne`, `adminFinancesExpensesCentsFindOne` (returns
   `{ monthlyCents, yearlyCents }` — the two total resolvers both call it).
-- Mapper: `toGqlFinanceRecurringCost` — scalar 1:1 (used by the `FindMany` query; the batch commands return `MutationResult` and no longer
-  hydrate rows).
+- Mapper: `toGqlAdminFinancesRecurringCost` — scalar 1:1 (used by the `FindMany` query; the batch commands return `MutationResult` and no
+  longer hydrate rows).
 - Resolver wiring: `Admin.adminFinancesFindOne` shell, four `AdminFinancesQuery` field resolvers, three `AdminMutation` handlers (the two
   batch handlers unwrap `args.financeRecurringCosts` / `args.costIds` before calling the command) — all in
   `src/server/graphql/resolversCreate.ts`.

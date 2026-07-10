@@ -1,7 +1,7 @@
 # Project requests
 
 A verified contact channel for the visitor AI chat. When a visitor describes a project (freelance gig, paid work, business enquiry), the
-assistant offers to submit a structured brief. The brief is recorded in `ProjectRequests` in state `pendingOtp` and gated behind a
+assistant offers to submit a structured brief. The brief is recorded in `AdminProjectRequest` in state `pendingOtp` and gated behind a
 one-time-password verification: nothing reaches Cem's inbox until the visitor proves they own the email address they gave.
 
 See also:
@@ -24,7 +24,7 @@ The cheapest place to filter spam and impersonation is **before** the email land
 
 ## State machine
 
-A `ProjectRequests` row moves through one of three states. Status is a flat `varchar` (`pendingOtp | emailVerified | archived`) — same
+A `AdminProjectRequest` row moves through one of three states. Status is a flat `varchar` (`pendingOtp | emailVerified | archived`) — same
 column-shape pattern as `chats.scope` and the chat-message kinds.
 
 ```text
@@ -78,14 +78,14 @@ important gate; the cap exists to keep the assistant honest when it tries to be 
 Verified requests surface on the workspace projects page as the **Inbox** tab — see
 [features/workspace-projects.md](./workspace-projects.md). From there the row can be:
 
-- **Archived** (`projectRequestArchive`) — flips status to `archived` without creating a project. Hidden by default.
+- **Archived** (`adminProjectRequestArchive`) — flips status to `archived` without creating a project. Hidden by default.
 - **Converted to a project** (`projectUpsert` with `sourceRequestId`) — opens the project editor inline on the Inbox row, prefilled with a
   title built from the project-type label + company/visitor name, the brief's `description` copied across, and Budget / Timeline / Contact
   lines pasted into `notes`. The admin reviews and edits before saving. The save runs through `projectUpsert`: in a single transaction it
-  inserts the new `Project` (default state `planning`, position auto-appended to the planning column), stamps `sourceRequestId` pointing
-  back at the request, and archives the source request. Refuses to act when the source request is not `emailVerified`.
-- **Deleted** (`projectRequestDelete`) — permanent. Use only for spam that survived OTP verification. Projects converted earlier from this
-  request keep their row but lose the FK backlink (the FK is `ON DELETE SET NULL`).
+  inserts the new `AdminProject` (default state `planning`, position auto-appended to the planning column), stamps `sourceRequestId`
+  pointing back at the request, and archives the source request. Refuses to act when the source request is not `emailVerified`.
+- **Deleted** (`adminProjectRequestDelete`) — permanent. Use only for spam that survived OTP verification. Projects converted earlier from
+  this request keep their row but lose the FK backlink (the FK is `ON DELETE SET NULL`).
 
 The workspace hub's Projects card carries a badge with the un-triaged count, fed by `admin.adminProjectRequestInboxCount` — a single
 `count(*)` round-trip, not the full request list.
@@ -94,7 +94,7 @@ The workspace hub's Projects card carries a badge with the un-triaged count, fed
 
 | Concern                              | File                                                                                                 |
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Table definition + types             | `src/server/db/schema.ts` (`projectRequests`, `ProjectRequest*`)                                     |
+| Table definition + types             | `src/server/db/schema.ts` (`projectRequests`, `AdminProjectRequest*`)                                |
 | Migration (initial)                  | `drizzle/0003_giant_sentinels.sql`                                                                   |
 | Submit tool (state → `pendingOtp`)   | `src/server/agents/toolSubmitProjectRequest.ts`                                                      |
 | Verify tool (`pendingOtp` → next)    | `src/server/agents/toolVerifyProjectRequestOtp.ts`                                                   |

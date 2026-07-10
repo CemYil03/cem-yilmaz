@@ -87,9 +87,9 @@ subscription WorkspaceInventoryDetailUpdates($itemId: ID!) {
     }
 }
 
-mutation WorkspaceItemServiceEntriesUpsert($itemServiceEntries: [ItemServiceEntryInput!]!) {
+mutation WorkspaceItemServiceEntriesUpsert($itemServiceEntries: [AdminInventoryItemServiceEntryInput!]!) {
     admin {
-        itemServiceEntriesUpsert(itemServiceEntries: $itemServiceEntries) {
+        adminInventoryItemServiceEntriesUpsert(itemServiceEntries: $itemServiceEntries) {
             success
             referenceIds
         }
@@ -98,15 +98,15 @@ mutation WorkspaceItemServiceEntriesUpsert($itemServiceEntries: [ItemServiceEntr
 
 mutation WorkspaceItemServiceEntriesDelete($serviceEntryIds: [ID!]!) {
     admin {
-        itemServiceEntriesDelete(serviceEntryIds: $serviceEntryIds) {
+        adminInventoryItemServiceEntriesDelete(serviceEntryIds: $serviceEntryIds) {
             success
         }
     }
 }
 
-mutation WorkspaceItemFilesAttach($inputs: [ItemFileAttachInput!]!) {
+mutation WorkspaceItemFilesAttach($inputs: [AdminInventoryItemFileAttachInput!]!) {
     admin {
-        itemFilesAttach(inputs: $inputs) {
+        adminInventoryItemFilesAttach(inputs: $inputs) {
             success
             referenceIds
         }
@@ -115,15 +115,15 @@ mutation WorkspaceItemFilesAttach($inputs: [ItemFileAttachInput!]!) {
 
 mutation WorkspaceItemFilesDelete($itemFileIds: [ID!]!) {
     admin {
-        itemFilesDelete(itemFileIds: $itemFileIds) {
+        adminInventoryItemFilesDelete(itemFileIds: $itemFileIds) {
             success
         }
     }
 }
 
-mutation WorkspaceItemFilesUpsert($itemFiles: [ItemFileUpsert!]!) {
+mutation WorkspaceItemFilesUpsert($itemFiles: [AdminInventoryItemFileUpsert!]!) {
     admin {
-        itemFilesUpsert(itemFiles: $itemFiles) {
+        adminInventoryItemFilesUpsert(itemFiles: $itemFiles) {
             success
             referenceIds
         }

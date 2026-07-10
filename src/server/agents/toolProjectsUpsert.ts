@@ -1,9 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { projectsUpsert } from '../commands/projectsUpsert';
+import { adminProjectsUpsert } from '../commands/adminProjectsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSProjectStatusSchema } from '../graphql/generated';
-import type { GqlSProjectCreate, GqlSSession } from '../graphql/generated';
+import { GqlSAdminProjectStatusSchema } from '../graphql/generated';
+import type { GqlSAdminProjectCreate, GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -14,13 +14,13 @@ import { requireAdminUserId } from './requireAdminUserId';
 // `toolDelegateToProjects` can surface them back to the orchestrator.
 //
 // The item schema is hand-built here rather than derived from
-// `GqlSProjectCreateSchema()`. The generated schema carries `z.date()` for
+// `GqlSAdminProjectCreateSchema()`. The generated schema carries `z.date()` for
 // the two timestamp scalars; under `structuredOutputs: true` the AI SDK
 // converts the tool schema to JSON Schema for Gemini's constrained decoding,
 // and `z.date()` has no clean JSON-Schema representation. The wire shape is
 // always JSON, so every timestamp field declares `z.string()` here and the
 // `execute` converts with `new Date(...)`. Only the GraphQL enum schema
-// (`GqlSProjectStatusSchema`) is reused so a future status addition surfaces
+// (`GqlSAdminProjectStatusSchema`) is reused so a future status addition surfaces
 // as a TS error here rather than a runtime mismatch.
 
 const projectItemSchema = z.object({
@@ -33,7 +33,7 @@ const projectItemSchema = z.object({
     title: z.string().min(1).max(200).describe('Single-line project title.'),
     description: z.string().max(2000).nullish().describe('Short summary shown on the card. Optional.'),
     notes: z.string().max(10000).nullish().describe('Long-form notes / markdown context. Optional.'),
-    status: GqlSProjectStatusSchema.describe('Board column. New projects typically land in `planning` or `idea`.'),
+    status: GqlSAdminProjectStatusSchema.describe('Board column. New projects typically land in `planning` or `idea`.'),
     position: z
         .number()
         .int()
@@ -52,7 +52,7 @@ const projectItemSchema = z.object({
         .uuid()
         .nullish()
         .describe(
-            'Optional: id of a verified `ProjectRequest` to convert into this project. Leave null unless the user is explicitly converting an inbox request.',
+            'Optional: id of a verified `AdminProjectRequest` to convert into this project. Leave null unless the user is explicitly converting an inbox request.',
         ),
 });
 
@@ -81,7 +81,7 @@ export function toolProjectsUpsert({ serverRuntime, session, mutations }: Projec
         ].join(' '),
         inputSchema: toolProjectsUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSProjectCreate[] = input.projects.map((project) => ({
+            const inputs: GqlSAdminProjectCreate[] = input.projects.map((project) => ({
                 projectId: project.projectId ?? null,
                 title: project.title,
                 description: project.description ?? null,
@@ -92,7 +92,7 @@ export function toolProjectsUpsert({ serverRuntime, session, mutations }: Projec
                 startedAt: project.startedAt ? new Date(project.startedAt) : null,
                 completedAt: project.completedAt ? new Date(project.completedAt) : null,
             }));
-            const result = await projectsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminProjectsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.projects.forEach((project, index) => {
                 mutations.push({

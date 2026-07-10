@@ -170,7 +170,7 @@ Every travel route is `noindex: true` and absent from `SITEMAP_PATHS` — same p
   activity with a `url` and free-text `notes`.
 - **Cost tracking / budget.** Per-activity or per-booking cost, running total, currency. Overlaps with the Finances area and is deferred
   until that area lands.
-- **File attachments per trip.** Boarding passes, hotel confirmations, insurance PDFs. Would mirror `MedicalRecordFiles` — a `TripFiles`
+- **File attachments per trip.** Boarding passes, hotel confirmations, insurance PDFs. Would mirror `AdminMedicalRecordFile` — a `TripFiles`
   join between `AdminTravelTrip` and the shared `FileUploads` table. Deferred because the current AI-driven flow does not need binary
   artefacts.
 - **Compass ingestion.** `travelSnapshotForAgent` is currently only read by the travel sub-agent. Feeding it into the compass would let the

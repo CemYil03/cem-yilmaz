@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { financeRecurringCostsDelete } from '../commands/financeRecurringCostsDelete';
+import { adminFinancesRecurringCostsDelete } from '../commands/adminFinancesRecurringCostsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { FinanceAgentMutationLog } from './agentPersonalAssistantFinances';
@@ -25,7 +25,7 @@ export function toolFinanceRecurringCostsDelete({ serverRuntime, session, mutati
         ].join(' '),
         inputSchema: toolFinanceRecurringCostsDeleteInputSchema,
         execute: async (input) => {
-            const result = await financeRecurringCostsDelete(requireAdminUserId(session), input.costIds, session, serverRuntime);
+            const result = await adminFinancesRecurringCostsDelete(requireAdminUserId(session), input.costIds, session, serverRuntime);
             for (const costId of input.costIds) mutations.push({ kind: 'recurringCostDelete', id: costId });
             return result;
         },

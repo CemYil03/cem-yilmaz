@@ -1,9 +1,9 @@
 import { desc, inArray } from 'drizzle-orm';
 import { foodLogEntries, recipes } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSFoodLogEntry, GqlSRecipe, GqlSSession } from '../graphql/generated';
-import { toGqlFoodLogEntry } from '../mappers/toGqlFoodLogEntry';
-import { toGqlRecipe } from '../mappers/toGqlRecipe';
+import type { GqlSAdminNutritionFoodLogEntry, GqlSAdminNutritionRecipe, GqlSSession } from '../graphql/generated';
+import { toGqlAdminNutritionFoodLogEntry } from '../mappers/toGqlAdminNutritionFoodLogEntry';
+import { toGqlAdminNutritionRecipe } from '../mappers/toGqlAdminNutritionRecipe';
 
 // Every diary entry, newest first. The page filters to the visible week and
 // rolls up the end-of-week overview client-side (matching the args-free
@@ -12,7 +12,7 @@ import { toGqlRecipe } from '../mappers/toGqlRecipe';
 export async function adminNutritionFoodLogFindMany(
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSFoodLogEntry[]> {
+): Promise<GqlSAdminNutritionFoodLogEntry[]> {
     try {
         const rows = await serverRuntime.db
             .select()
@@ -21,13 +21,13 @@ export async function adminNutritionFoodLogFindMany(
         if (rows.length === 0) return [];
 
         const recipeIds = Array.from(new Set(rows.map((r) => r.recipeId).filter((id): id is string => id !== null)));
-        const recipeById = new Map<string, GqlSRecipe>();
+        const recipeById = new Map<string, GqlSAdminNutritionRecipe>();
         if (recipeIds.length > 0) {
             const recipeRows = await serverRuntime.db.select().from(recipes).where(inArray(recipes.recipeId, recipeIds));
-            for (const recipe of recipeRows) recipeById.set(recipe.recipeId, toGqlRecipe(recipe));
+            for (const recipe of recipeRows) recipeById.set(recipe.recipeId, toGqlAdminNutritionRecipe(recipe));
         }
 
-        return rows.map((row) => toGqlFoodLogEntry(row, row.recipeId ? (recipeById.get(row.recipeId) ?? null) : null));
+        return rows.map((row) => toGqlAdminNutritionFoodLogEntry(row, row.recipeId ? (recipeById.get(row.recipeId) ?? null) : null));
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

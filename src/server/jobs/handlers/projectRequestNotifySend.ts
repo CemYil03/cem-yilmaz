@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { projectRequests } from '../../db/schema';
-import type { ProjectRequestType } from '../../db/schema';
+import type { AdminProjectRequestType } from '../../db/schema';
 import type { QueuedJobDefinition } from '../types';
 
 // Email Cem the full project brief, *after* the visitor has proved control
@@ -16,7 +16,7 @@ export interface ProjectRequestNotifySendData {
     projectRequestId: string;
 }
 
-const PROJECT_TYPE_LABELS: Record<ProjectRequestType, string> = {
+const PROJECT_TYPE_LABELS: Record<AdminProjectRequestType, string> = {
     webApp: 'Web app',
     mobile: 'Mobile app',
     consulting: 'Consulting',
@@ -65,7 +65,7 @@ export const projectRequestNotifySend: QueuedJobDefinition<ProjectRequestNotifyS
             row.description,
             ``,
             `— sent via the visitor chat on cem-yilmaz.de`,
-            `Project request id: ${projectRequestId}`,
+            `AdminProject request id: ${projectRequestId}`,
         ].filter((line): line is string => line !== null);
         const text = lines.join('\n');
 
@@ -88,13 +88,13 @@ export const projectRequestNotifySend: QueuedJobDefinition<ProjectRequestNotifyS
             `<h3 style="margin-top:24px">Description</h3>`,
             `<p style="white-space:pre-wrap">${escapeHtml(row.description)}</p>`,
             `<hr />`,
-            `<p style="color:#888;font-size:12px">Sent via the visitor chat on cem-yilmaz.de. Project request id: ${projectRequestId}</p>`,
+            `<p style="color:#888;font-size:12px">Sent via the visitor chat on cem-yilmaz.de. AdminProject request id: ${projectRequestId}</p>`,
         ].join('');
 
         await serverRuntime.emailService.sendEmail({
             to: { email: serverRuntime.emailService.cemPrimaryAddress, name: 'Cem Yilmaz' },
             replyTo: row.email,
-            subject: `[Project request] ${projectTypeLabel} — ${row.name}`,
+            subject: `[AdminProject request] ${projectTypeLabel} — ${row.name}`,
             text,
             html,
         });

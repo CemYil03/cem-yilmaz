@@ -1,10 +1,15 @@
 import { asc, inArray } from 'drizzle-orm';
 import { exercises, workoutRoutineItems, workoutRoutines } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSExercise, GqlSSession, GqlSWorkoutRoutine, GqlSWorkoutRoutineItem } from '../graphql/generated';
-import { toGqlExercise } from '../mappers/toGqlExercise';
-import { toGqlWorkoutRoutine } from '../mappers/toGqlWorkoutRoutine';
-import { toGqlWorkoutRoutineItem } from '../mappers/toGqlWorkoutRoutineItem';
+import type {
+    GqlSAdminFitnessExercise,
+    GqlSSession,
+    GqlSAdminFitnessWorkoutRoutine,
+    GqlSAdminFitnessWorkoutRoutineItem,
+} from '../graphql/generated';
+import { toGqlAdminFitnessExercise } from '../mappers/toGqlAdminFitnessExercise';
+import { toGqlAdminFitnessWorkoutRoutine } from '../mappers/toGqlAdminFitnessWorkoutRoutine';
+import { toGqlAdminFitnessWorkoutRoutineItem } from '../mappers/toGqlAdminFitnessWorkoutRoutineItem';
 
 // Every routine with its items pre-joined (each item's exercise hydrated).
 // Ordered `position ASC`. The join fan-out mirrors `adminTravelTripFindMany`:
@@ -12,7 +17,7 @@ import { toGqlWorkoutRoutineItem } from '../mappers/toGqlWorkoutRoutineItem';
 export async function adminFitnessRoutineFindMany(
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSWorkoutRoutine[]> {
+): Promise<GqlSAdminFitnessWorkoutRoutine[]> {
     try {
         const rows = await serverRuntime.db
             .select()
@@ -28,22 +33,22 @@ export async function adminFitnessRoutineFindMany(
             .orderBy(asc(workoutRoutineItems.routineId), asc(workoutRoutineItems.position), asc(workoutRoutineItems.routineItemId));
 
         const exerciseIds = Array.from(new Set(itemRows.map((i) => i.exerciseId)));
-        const exerciseById = new Map<string, GqlSExercise>();
+        const exerciseById = new Map<string, GqlSAdminFitnessExercise>();
         if (exerciseIds.length > 0) {
             const exerciseRows = await serverRuntime.db.select().from(exercises).where(inArray(exercises.exerciseId, exerciseIds));
-            for (const exercise of exerciseRows) exerciseById.set(exercise.exerciseId, toGqlExercise(exercise));
+            for (const exercise of exerciseRows) exerciseById.set(exercise.exerciseId, toGqlAdminFitnessExercise(exercise));
         }
 
-        const itemsByRoutineId = new Map<string, GqlSWorkoutRoutineItem[]>();
+        const itemsByRoutineId = new Map<string, GqlSAdminFitnessWorkoutRoutineItem[]>();
         for (const item of itemRows) {
             const exercise = exerciseById.get(item.exerciseId);
             if (!exercise) continue; // FK guarantees presence; guard keeps types honest
             const list = itemsByRoutineId.get(item.routineId) ?? [];
-            list.push(toGqlWorkoutRoutineItem(item, exercise));
+            list.push(toGqlAdminFitnessWorkoutRoutineItem(item, exercise));
             itemsByRoutineId.set(item.routineId, list);
         }
 
-        return rows.map((row) => toGqlWorkoutRoutine(row, itemsByRoutineId.get(row.routineId) ?? []));
+        return rows.map((row) => toGqlAdminFitnessWorkoutRoutine(row, itemsByRoutineId.get(row.routineId) ?? []));
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

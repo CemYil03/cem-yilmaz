@@ -6,7 +6,7 @@
 # and diary lists return everything; the page slices to the visible week
 # client-side. See `docs/features/workspace-nutrition.md`.
 
-fragment WorkspaceNutritionRecipe on Recipe {
+fragment WorkspaceNutritionRecipe on AdminNutritionRecipe {
     recipeId
     title
     mealType
@@ -22,7 +22,7 @@ fragment WorkspaceNutritionRecipe on Recipe {
     lastMadeAt
 }
 
-fragment WorkspaceNutritionSupplement on Supplement {
+fragment WorkspaceNutritionSupplement on AdminNutritionSupplement {
     supplementId
     name
     brand
@@ -92,9 +92,9 @@ subscription WorkspaceNutritionPageUpdates {
     }
 }
 
-mutation WorkspaceRecipesUpsert($recipes: [RecipeInput!]!) {
+mutation WorkspaceRecipesUpsert($recipes: [AdminNutritionRecipeInput!]!) {
     admin {
-        recipesUpsert(recipes: $recipes) {
+        adminNutritionRecipesUpsert(recipes: $recipes) {
             success
             referenceIds
         }
@@ -103,15 +103,15 @@ mutation WorkspaceRecipesUpsert($recipes: [RecipeInput!]!) {
 
 mutation WorkspaceRecipesDelete($recipeIds: [ID!]!) {
     admin {
-        recipesDelete(recipeIds: $recipeIds) {
+        adminNutritionRecipesDelete(recipeIds: $recipeIds) {
             success
         }
     }
 }
 
-mutation WorkspaceMealPlanEntriesUpsert($mealPlanEntries: [MealPlanEntryInput!]!) {
+mutation WorkspaceMealPlanEntriesUpsert($mealPlanEntries: [AdminNutritionMealPlanEntryInput!]!) {
     admin {
-        mealPlanEntriesUpsert(mealPlanEntries: $mealPlanEntries) {
+        adminNutritionMealPlanEntriesUpsert(mealPlanEntries: $mealPlanEntries) {
             success
             referenceIds
         }
@@ -120,15 +120,15 @@ mutation WorkspaceMealPlanEntriesUpsert($mealPlanEntries: [MealPlanEntryInput!]!
 
 mutation WorkspaceMealPlanEntriesDelete($entryIds: [ID!]!) {
     admin {
-        mealPlanEntriesDelete(entryIds: $entryIds) {
+        adminNutritionMealPlanEntriesDelete(entryIds: $entryIds) {
             success
         }
     }
 }
 
-mutation WorkspaceFoodLogEntriesUpsert($foodLogEntries: [FoodLogEntryInput!]!) {
+mutation WorkspaceFoodLogEntriesUpsert($foodLogEntries: [AdminNutritionFoodLogEntryInput!]!) {
     admin {
-        foodLogEntriesUpsert(foodLogEntries: $foodLogEntries) {
+        adminNutritionFoodLogEntriesUpsert(foodLogEntries: $foodLogEntries) {
             success
             referenceIds
         }
@@ -137,24 +137,24 @@ mutation WorkspaceFoodLogEntriesUpsert($foodLogEntries: [FoodLogEntryInput!]!) {
 
 mutation WorkspaceFoodLogEntriesDelete($logIds: [ID!]!) {
     admin {
-        foodLogEntriesDelete(logIds: $logIds) {
+        adminNutritionFoodLogEntriesDelete(logIds: $logIds) {
             success
         }
     }
 }
 
-mutation WorkspaceSupplementsUpsert($supplements: [SupplementInput!]!) {
+mutation WorkspaceSupplementsUpsert($supplements: [AdminNutritionSupplementInput!]!) {
     admin {
-        supplementsUpsert(supplements: $supplements) {
+        adminNutritionSupplementsUpsert(supplements: $supplements) {
             success
             referenceIds
         }
     }
 }
 
-mutation WorkspaceSupplementNutrientsReplace($supplementId: ID!, $nutrients: [SupplementNutrientInput!]!) {
+mutation WorkspaceSupplementNutrientsReplace($supplementId: ID!, $nutrients: [AdminNutritionSupplementNutrientInput!]!) {
     admin {
-        supplementNutrientsReplace(supplementId: $supplementId, nutrients: $nutrients) {
+        adminNutritionSupplementNutrientsReplace(supplementId: $supplementId, nutrients: $nutrients) {
             success
         }
     }
@@ -162,15 +162,15 @@ mutation WorkspaceSupplementNutrientsReplace($supplementId: ID!, $nutrients: [Su
 
 mutation WorkspaceSupplementsDelete($supplementIds: [ID!]!) {
     admin {
-        supplementsDelete(supplementIds: $supplementIds) {
+        adminNutritionSupplementsDelete(supplementIds: $supplementIds) {
             success
         }
     }
 }
 
-mutation WorkspaceSupplementResearch($input: SupplementResearchInput!) {
+mutation WorkspaceSupplementResearch($input: AdminNutritionSupplementResearchInput!) {
     admin {
-        supplementResearch(input: $input) {
+        adminNutritionSupplementResearch(input: $input) {
             found
             brand
             servingSize

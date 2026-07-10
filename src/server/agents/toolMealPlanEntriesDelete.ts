@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { mealPlanEntriesDelete } from '../commands/mealPlanEntriesDelete';
+import { adminNutritionMealPlanEntriesDelete } from '../commands/adminNutritionMealPlanEntriesDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { NutritionAgentMutationLog } from './agentPersonalAssistantNutrition';
@@ -21,7 +21,7 @@ export function toolMealPlanEntriesDelete({ serverRuntime, session, mutations }:
         description: 'Clear one or more soft-plan slots. Use when Cem wants to remove a planned meal.',
         inputSchema: mealPlanEntriesDeleteInputSchema,
         execute: async (input) => {
-            const result = await mealPlanEntriesDelete(requireAdminUserId(session), input.entryIds, session, serverRuntime);
+            const result = await adminNutritionMealPlanEntriesDelete(requireAdminUserId(session), input.entryIds, session, serverRuntime);
             for (const entryId of input.entryIds) mutations.push({ kind: 'mealPlanDelete', id: entryId });
             return result;
         },

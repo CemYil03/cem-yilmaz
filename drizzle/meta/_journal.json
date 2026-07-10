@@ -197,6 +197,13 @@
             "when": 1783677647107,
             "tag": "0027_travel_access_path_rename",
             "breakpoints": true
+        },
+        {
+            "idx": 28,
+            "version": "7",
+            "when": 1783702150988,
+            "tag": "0028_domain_access_path_rename",
+            "breakpoints": true
         }
     ]
 }

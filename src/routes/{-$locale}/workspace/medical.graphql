@@ -6,7 +6,7 @@
 # channel and the page picks up the new payload over SSE. See
 # `docs/architecture/state-synchronization.md`.
 
-fragment WorkspaceMedicalPageAppointment on MedicalAppointment {
+fragment WorkspaceMedicalPageAppointment on AdminMedicalAppointment {
     appointmentId
     category
     providerName
@@ -21,7 +21,7 @@ fragment WorkspaceMedicalPageAppointment on MedicalAppointment {
     updatedAt
 }
 
-fragment WorkspaceMedicalPageRecordFile on MedicalRecordFile {
+fragment WorkspaceMedicalPageRecordFile on AdminMedicalRecordFile {
     recordFileId
     recordId
     label
@@ -37,7 +37,7 @@ fragment WorkspaceMedicalPageRecordFile on MedicalRecordFile {
     }
 }
 
-fragment WorkspaceMedicalPageRecord on MedicalRecord {
+fragment WorkspaceMedicalPageRecord on AdminMedicalRecord {
     recordId
     category
     title
@@ -96,9 +96,9 @@ subscription WorkspaceMedicalPageUpdates {
     }
 }
 
-mutation WorkspaceMedicalAppointmentsUpsert($medicalAppointments: [MedicalAppointmentInput!]!) {
+mutation WorkspaceMedicalAppointmentsUpsert($medicalAppointments: [AdminMedicalAppointmentInput!]!) {
     admin {
-        medicalAppointmentsUpsert(medicalAppointments: $medicalAppointments) {
+        adminMedicalAppointmentsUpsert(medicalAppointments: $medicalAppointments) {
             success
             referenceIds
         }
@@ -107,15 +107,15 @@ mutation WorkspaceMedicalAppointmentsUpsert($medicalAppointments: [MedicalAppoin
 
 mutation WorkspaceMedicalAppointmentsDelete($appointmentIds: [ID!]!) {
     admin {
-        medicalAppointmentsDelete(appointmentIds: $appointmentIds) {
+        adminMedicalAppointmentsDelete(appointmentIds: $appointmentIds) {
             success
         }
     }
 }
 
-mutation WorkspaceMedicalRecordsUpsert($medicalRecords: [MedicalRecordInput!]!) {
+mutation WorkspaceMedicalRecordsUpsert($medicalRecords: [AdminMedicalRecordInput!]!) {
     admin {
-        medicalRecordsUpsert(medicalRecords: $medicalRecords) {
+        adminMedicalRecordsUpsert(medicalRecords: $medicalRecords) {
             success
             referenceIds
         }
@@ -124,15 +124,15 @@ mutation WorkspaceMedicalRecordsUpsert($medicalRecords: [MedicalRecordInput!]!) 
 
 mutation WorkspaceMedicalRecordsDelete($recordIds: [ID!]!) {
     admin {
-        medicalRecordsDelete(recordIds: $recordIds) {
+        adminMedicalRecordsDelete(recordIds: $recordIds) {
             success
         }
     }
 }
 
-mutation WorkspaceMedicalRecordFilesAttach($inputs: [MedicalRecordFileAttachInput!]!) {
+mutation WorkspaceMedicalRecordFilesAttach($inputs: [AdminMedicalRecordFileAttachInput!]!) {
     admin {
-        medicalRecordFilesAttach(inputs: $inputs) {
+        adminMedicalRecordFilesAttach(inputs: $inputs) {
             success
             referenceIds
         }
@@ -141,7 +141,7 @@ mutation WorkspaceMedicalRecordFilesAttach($inputs: [MedicalRecordFileAttachInpu
 
 mutation WorkspaceMedicalRecordFilesDelete($recordFileIds: [ID!]!) {
     admin {
-        medicalRecordFilesDelete(recordFileIds: $recordFileIds) {
+        adminMedicalRecordFilesDelete(recordFileIds: $recordFileIds) {
             success
         }
     }

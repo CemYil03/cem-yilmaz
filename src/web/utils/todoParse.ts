@@ -21,12 +21,12 @@
 // on the returned object is optional so callers can pass only what was
 // actually detected.
 
-import type { TaskEffort, TaskWhenBucket } from '../../server/db/schema';
+import type { AdminProjectTaskEffort, AdminProjectTaskWhenBucket } from '../../server/db/schema';
 
 export type ParsedTodo = {
     title: string;
-    effort?: TaskEffort;
-    whenBucket?: TaskWhenBucket;
+    effort?: AdminProjectTaskEffort;
+    whenBucket?: AdminProjectTaskWhenBucket;
     dueAt?: Date;
 };
 
@@ -134,7 +134,7 @@ function endOfDay(date: Date): Date {
     return end;
 }
 
-function effortFromMinutes(minutes: number): TaskEffort {
+function effortFromMinutes(minutes: number): AdminProjectTaskEffort {
     if (minutes <= 15) return 'quick';
     if (minutes <= 90) return 'focused';
     return 'deep';

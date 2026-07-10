@@ -34,14 +34,14 @@ export interface GqlCAdmin {
     adminMediaFindOne: GqlCAdminMediaQuery;
     adminMedicalFindOne: GqlCAdminMedicalQuery;
     adminNutritionFindOne: GqlCAdminNutritionQuery;
-    adminProjectActiveTimerFindOne?: Maybe<GqlCProjectActivity>;
-    adminProjectFindMany: Array<GqlCProject>;
-    adminProjectFindOne: GqlCProject;
-    adminProjectRequestFindMany: Array<GqlCProjectRequest>;
+    adminProjectActiveTimerFindOne?: Maybe<GqlCAdminProjectActivity>;
+    adminProjectFindMany: Array<GqlCAdminProject>;
+    adminProjectFindOne: GqlCAdminProject;
+    adminProjectRequestFindMany: Array<GqlCAdminProjectRequest>;
     adminProjectRequestInboxCount: Scalars['Int']['output'];
     adminPublicChatFindMany: Array<GqlCChat>;
     adminPublicChatFindOne: GqlCChat;
-    adminStandaloneTaskFindMany: Array<GqlCTask>;
+    adminStandaloneTaskFindMany: Array<GqlCAdminProjectTask>;
     adminStandaloneTaskOpenCount: Scalars['Int']['output'];
     adminTravelFindOne: GqlCAdminTravelQuery;
 }
@@ -67,7 +67,7 @@ export type GqlCAdminAdminLogFindManyArgs = {
 };
 
 export type GqlCAdminAdminProjectFindManyArgs = {
-    status?: InputMaybe<GqlCProjectStatus>;
+    status?: InputMaybe<GqlCAdminProjectStatus>;
 };
 
 export type GqlCAdminAdminProjectFindOneArgs = {
@@ -75,7 +75,7 @@ export type GqlCAdminAdminProjectFindOneArgs = {
 };
 
 export type GqlCAdminAdminProjectRequestFindManyArgs = {
-    status?: InputMaybe<GqlCProjectRequestStatus>;
+    status?: InputMaybe<GqlCAdminProjectRequestStatus>;
 };
 
 export type GqlCAdminAdminPublicChatFindOneArgs = {
@@ -122,26 +122,308 @@ export type GqlCAdminCompassAdminCompassObservationFindManyArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export type GqlCAdminFinancesCadence = 'monthly' | 'yearly';
+
 export interface GqlCAdminFinancesQuery {
     __typename?: 'AdminFinancesQuery';
     adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
     adminFinancesMonthlyNetIncomeCentsFindOne?: Maybe<Scalars['Int']['output']>;
-    adminFinancesRecurringCostFindMany: Array<GqlCFinanceRecurringCost>;
+    adminFinancesRecurringCostFindMany: Array<GqlCAdminFinancesRecurringCost>;
     adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
 }
 
+export interface GqlCAdminFinancesRecurringCost {
+    __typename?: 'AdminFinancesRecurringCost';
+    active: Scalars['Boolean']['output'];
+    amountCents: Scalars['Int']['output'];
+    cadence: GqlCAdminFinancesCadence;
+    categoryKey: GqlCAdminFinancesRecurringCostCategory;
+    costId: Scalars['ID']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    currency: Scalars['String']['output'];
+    endsOn?: Maybe<Scalars['Date']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    startsOn?: Maybe<Scalars['Date']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminFinancesRecurringCostCategory =
+    | 'connectivity'
+    | 'donations'
+    | 'household'
+    | 'housing'
+    | 'insurance'
+    | 'memberships'
+    | 'other'
+    | 'savingsGeneral'
+    | 'savingsVacation'
+    | 'subscriptionsEntertainment'
+    | 'subscriptionsWork'
+    | 'transport';
+
+export type GqlCAdminFinancesRecurringCostInput = {
+    active?: InputMaybe<Scalars['Boolean']['input']>;
+    amountCents: Scalars['Int']['input'];
+    cadence: GqlCAdminFinancesCadence;
+    categoryKey: GqlCAdminFinancesRecurringCostCategory;
+    costId?: InputMaybe<Scalars['ID']['input']>;
+    currency?: InputMaybe<Scalars['String']['input']>;
+    endsOn?: InputMaybe<Scalars['Date']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    startsOn?: InputMaybe<Scalars['Date']['input']>;
+};
+
+export type GqlCAdminFitnessEquipmentType = 'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'kettlebell' | 'machine' | 'other';
+
+export interface GqlCAdminFitnessExercise {
+    __typename?: 'AdminFitnessExercise';
+    createdAt: Scalars['DateTime']['output'];
+    equipment?: Maybe<GqlCAdminFitnessEquipmentType>;
+    exerciseId: Scalars['ID']['output'];
+    muscleGroup: GqlCAdminFitnessMuscleGroup;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminFitnessExerciseInput = {
+    equipment?: InputMaybe<GqlCAdminFitnessEquipmentType>;
+    exerciseId?: InputMaybe<Scalars['ID']['input']>;
+    muscleGroup: GqlCAdminFitnessMuscleGroup;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminFitnessMuscleGroup = 'arms' | 'back' | 'cardio' | 'chest' | 'core' | 'fullBody' | 'legs' | 'other' | 'shoulders';
+
 export interface GqlCAdminFitnessQuery {
     __typename?: 'AdminFitnessQuery';
-    adminFitnessExerciseFindMany: Array<GqlCExercise>;
-    adminFitnessRoutineFindMany: Array<GqlCWorkoutRoutine>;
-    adminFitnessSessionFindMany: Array<GqlCWorkoutSession>;
+    adminFitnessExerciseFindMany: Array<GqlCAdminFitnessExercise>;
+    adminFitnessRoutineFindMany: Array<GqlCAdminFitnessWorkoutRoutine>;
+    adminFitnessSessionFindMany: Array<GqlCAdminFitnessWorkoutSession>;
+}
+
+export interface GqlCAdminFitnessWorkoutRoutine {
+    __typename?: 'AdminFitnessWorkoutRoutine';
+    createdAt: Scalars['DateTime']['output'];
+    items: Array<GqlCAdminFitnessWorkoutRoutineItem>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    routineId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminFitnessWorkoutRoutineInput = {
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    routineId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlCAdminFitnessWorkoutRoutineItem {
+    __typename?: 'AdminFitnessWorkoutRoutineItem';
+    createdAt: Scalars['DateTime']['output'];
+    exercise: GqlCAdminFitnessExercise;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    routineId: Scalars['ID']['output'];
+    routineItemId: Scalars['ID']['output'];
+    targetReps?: Maybe<Scalars['Int']['output']>;
+    targetSets?: Maybe<Scalars['Int']['output']>;
+    targetWeight?: Maybe<Scalars['Float']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminFitnessWorkoutRoutineItemInput = {
+    exerciseId: Scalars['ID']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    routineId: Scalars['ID']['input'];
+    routineItemId?: InputMaybe<Scalars['ID']['input']>;
+    targetReps?: InputMaybe<Scalars['Int']['input']>;
+    targetSets?: InputMaybe<Scalars['Int']['input']>;
+    targetWeight?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export interface GqlCAdminFitnessWorkoutSession {
+    __typename?: 'AdminFitnessWorkoutSession';
+    createdAt: Scalars['DateTime']['output'];
+    date: Scalars['Date']['output'];
+    durationMinutes?: Maybe<Scalars['Int']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    routineId?: Maybe<Scalars['ID']['output']>;
+    sessionId: Scalars['ID']['output'];
+    sets: Array<GqlCAdminFitnessWorkoutSet>;
+    title?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminFitnessWorkoutSessionInput = {
+    date: Scalars['Date']['input'];
+    durationMinutes?: InputMaybe<Scalars['Int']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    routineId?: InputMaybe<Scalars['ID']['input']>;
+    sessionId?: InputMaybe<Scalars['ID']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlCAdminFitnessWorkoutSet {
+    __typename?: 'AdminFitnessWorkoutSet';
+    createdAt: Scalars['DateTime']['output'];
+    exercise: GqlCAdminFitnessExercise;
+    isWarmup: Scalars['Boolean']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    reps?: Maybe<Scalars['Int']['output']>;
+    rpe?: Maybe<Scalars['Int']['output']>;
+    sessionId: Scalars['ID']['output'];
+    setId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    weight?: Maybe<Scalars['Float']['output']>;
+}
+
+export type GqlCAdminFitnessWorkoutSetInput = {
+    exerciseId: Scalars['ID']['input'];
+    isWarmup?: InputMaybe<Scalars['Boolean']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    reps?: InputMaybe<Scalars['Int']['input']>;
+    rpe?: InputMaybe<Scalars['Int']['input']>;
+    sessionId: Scalars['ID']['input'];
+    setId?: InputMaybe<Scalars['ID']['input']>;
+    weight?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export interface GqlCAdminInventoryItem {
+    __typename?: 'AdminInventoryItem';
+    brand?: Maybe<Scalars['String']['output']>;
+    categoryKey: GqlCAdminInventoryItemCategory;
+    condition?: Maybe<GqlCAdminInventoryItemCondition>;
+    createdAt: Scalars['DateTime']['output'];
+    currentValueCents?: Maybe<Scalars['Int']['output']>;
+    disposalState: GqlCAdminInventoryItemDisposalState;
+    disposedAt?: Maybe<Scalars['DateTime']['output']>;
+    files: Array<GqlCAdminInventoryItemFile>;
+    itemId: Scalars['ID']['output'];
+    model?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    purchasePriceCents?: Maybe<Scalars['Int']['output']>;
+    purchasedAt?: Maybe<Scalars['Date']['output']>;
+    serialNumber?: Maybe<Scalars['String']['output']>;
+    serviceEntries: Array<GqlCAdminInventoryItemServiceEntry>;
+    updatedAt: Scalars['DateTime']['output'];
+    valuations: Array<GqlCAdminInventoryItemValuation>;
+    warrantyEndsAt?: Maybe<Scalars['Date']['output']>;
+    warrantyNotes?: Maybe<Scalars['String']['output']>;
+    warrantyProvider?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCAdminInventoryItemCategory =
+    'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle';
+
+export type GqlCAdminInventoryItemCondition = 'fair' | 'good' | 'likeNew' | 'new' | 'poor';
+
+export type GqlCAdminInventoryItemDisposalState = 'disposed' | 'gifted' | 'lost' | 'owned' | 'sold';
+
+export interface GqlCAdminInventoryItemFile {
+    __typename?: 'AdminInventoryItemFile';
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlCFileUpload;
+    itemFileId: Scalars['ID']['output'];
+    itemId: Scalars['ID']['output'];
+    kind: GqlCAdminInventoryItemFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    serviceEntryId?: Maybe<Scalars['ID']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminInventoryItemFileAttachInput = {
+    fileUploadId: Scalars['ID']['input'];
+    itemId: Scalars['ID']['input'];
+    kind: GqlCAdminInventoryItemFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminInventoryItemFileKind = 'invoice' | 'manual' | 'other' | 'photo' | 'receipt' | 'warranty';
+
+export type GqlCAdminInventoryItemFileUpsert = {
+    itemFileId: Scalars['ID']['input'];
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type GqlCAdminInventoryItemInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    categoryKey: GqlCAdminInventoryItemCategory;
+    condition?: InputMaybe<GqlCAdminInventoryItemCondition>;
+    disposalState?: InputMaybe<GqlCAdminInventoryItemDisposalState>;
+    disposedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    itemId?: InputMaybe<Scalars['ID']['input']>;
+    model?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    purchasePriceCents?: InputMaybe<Scalars['Int']['input']>;
+    purchasedAt?: InputMaybe<Scalars['Date']['input']>;
+    serialNumber?: InputMaybe<Scalars['String']['input']>;
+    warrantyEndsAt?: InputMaybe<Scalars['Date']['input']>;
+    warrantyNotes?: InputMaybe<Scalars['String']['input']>;
+    warrantyProvider?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminInventoryItemRepriceInput = {
+    itemId: Scalars['ID']['input'];
+    note?: InputMaybe<Scalars['String']['input']>;
+    valueCents: Scalars['Int']['input'];
+    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export interface GqlCAdminInventoryItemServiceEntry {
+    __typename?: 'AdminInventoryItemServiceEntry';
+    costCents?: Maybe<Scalars['Int']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    files: Array<GqlCAdminInventoryItemFile>;
+    kind: GqlCAdminInventoryItemServiceKind;
+    nextDueAt?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    performedAt: Scalars['Date']['output'];
+    serviceEntryId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    vendor?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCAdminInventoryItemServiceEntryInput = {
+    costCents?: InputMaybe<Scalars['Int']['input']>;
+    itemId: Scalars['ID']['input'];
+    kind: GqlCAdminInventoryItemServiceKind;
+    nextDueAt?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    performedAt: Scalars['Date']['input'];
+    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
+    vendor?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminInventoryItemServiceKind = 'other' | 'repair' | 'replacement' | 'service';
+
+export interface GqlCAdminInventoryItemValuation {
+    __typename?: 'AdminInventoryItemValuation';
+    note?: Maybe<Scalars['String']['output']>;
+    valuationId: Scalars['ID']['output'];
+    valueCents: Scalars['Int']['output'];
+    valuedAt: Scalars['DateTime']['output'];
 }
 
 export interface GqlCAdminInventoryQuery {
     __typename?: 'AdminInventoryQuery';
-    adminInventoryItemFindMany: Array<GqlCItem>;
-    adminInventoryItemFindOne?: Maybe<GqlCItem>;
-    adminInventoryItemUpcomingWarrantyFindMany: Array<GqlCItem>;
+    adminInventoryItemFindMany: Array<GqlCAdminInventoryItem>;
+    adminInventoryItemFindOne?: Maybe<GqlCAdminInventoryItem>;
+    adminInventoryItemUpcomingWarrantyFindMany: Array<GqlCAdminInventoryItem>;
     adminInventoryMaterialNetWorthCentsFindOne: Scalars['Int']['output'];
 }
 
@@ -157,14 +439,84 @@ export type GqlCAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArg
     withinDays?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export interface GqlCAdminMediaChannel {
+    __typename?: 'AdminMediaChannel';
+    avatarUrl?: Maybe<Scalars['String']['output']>;
+    channelId: Scalars['ID']['output'];
+    description?: Maybe<Scalars['String']['output']>;
+    handle?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    platform: GqlCAdminMediaPlatform;
+    priority: Scalars['Int']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    url: Scalars['String']['output'];
+}
+
+export type GqlCAdminMediaChannelInput = {
+    avatarUrl?: InputMaybe<Scalars['String']['input']>;
+    channelId?: InputMaybe<Scalars['ID']['input']>;
+    description?: InputMaybe<Scalars['String']['input']>;
+    handle?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    platform: GqlCAdminMediaPlatform;
+    topics: Array<Scalars['String']['input']>;
+    url: Scalars['String']['input'];
+};
+
+export interface GqlCAdminMediaMovie {
+    __typename?: 'AdminMediaMovie';
+    backdropUrl?: Maybe<Scalars['String']['output']>;
+    movieId: Scalars['ID']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    releaseDate?: Maybe<Scalars['Date']['output']>;
+    runtimeMinutes?: Maybe<Scalars['Int']['output']>;
+    status: GqlCAdminMediaMovieStatus;
+    title: Scalars['String']['output'];
+    tmdbId?: Maybe<Scalars['Int']['output']>;
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    watchedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlCAdminMediaMovieAddFromTmdbInput = {
+    status?: InputMaybe<GqlCAdminMediaMovieStatus>;
+    tmdbId: Scalars['Int']['input'];
+};
+
+export type GqlCAdminMediaMovieInput = {
+    backdropUrl?: InputMaybe<Scalars['String']['input']>;
+    movieId?: InputMaybe<Scalars['ID']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    overview?: InputMaybe<Scalars['String']['input']>;
+    posterUrl?: InputMaybe<Scalars['String']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    releaseDate?: InputMaybe<Scalars['Date']['input']>;
+    runtimeMinutes?: InputMaybe<Scalars['Int']['input']>;
+    status: GqlCAdminMediaMovieStatus;
+    title: Scalars['String']['input'];
+    tmdbId?: InputMaybe<Scalars['Int']['input']>;
+    topics: Array<Scalars['String']['input']>;
+    watchedAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type GqlCAdminMediaMovieStatus = 'dropped' | 'watched' | 'watching' | 'watchlist';
+
+export type GqlCAdminMediaPlatform = 'other' | 'podcast' | 'twitch' | 'youtube';
+
 export interface GqlCAdminMediaQuery {
     __typename?: 'AdminMediaQuery';
-    adminMediaChannelFindMany: Array<GqlCMediaChannel>;
-    adminMediaMovieFindMany: Array<GqlCMovie>;
-    adminMediaShowFindMany: Array<GqlCShow>;
-    adminMediaTmdbFindMany: Array<GqlCTmdbMovieResult>;
-    adminMediaTmdbTvFindMany: Array<GqlCTmdbTvResult>;
-    adminMediaYoutubeFindMany: Array<GqlCYoutubeChannelResult>;
+    adminMediaChannelFindMany: Array<GqlCAdminMediaChannel>;
+    adminMediaMovieFindMany: Array<GqlCAdminMediaMovie>;
+    adminMediaShowFindMany: Array<GqlCAdminMediaShow>;
+    adminMediaTmdbFindMany: Array<GqlCAdminMediaTmdbMovieResult>;
+    adminMediaTmdbTvFindMany: Array<GqlCAdminMediaTmdbTvResult>;
+    adminMediaYoutubeFindMany: Array<GqlCAdminMediaYoutubeChannelResult>;
 }
 
 export type GqlCAdminMediaQueryAdminMediaChannelFindManyArgs = {
@@ -183,15 +535,261 @@ export type GqlCAdminMediaQueryAdminMediaYoutubeFindManyArgs = {
     query: Scalars['String']['input'];
 };
 
+export interface GqlCAdminMediaShow {
+    __typename?: 'AdminMediaShow';
+    backdropUrl?: Maybe<Scalars['String']['output']>;
+    firstAirDate?: Maybe<Scalars['Date']['output']>;
+    isCompleted: Scalars['Boolean']['output'];
+    nextSeasonReleaseDate?: Maybe<Scalars['Date']['output']>;
+    nextSeasonReleaseRough?: Maybe<Scalars['String']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    showId: Scalars['ID']['output'];
+    status: GqlCAdminMediaMovieStatus;
+    title: Scalars['String']['output'];
+    tmdbId?: Maybe<Scalars['Int']['output']>;
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminMediaShowAddFromTmdbInput = {
+    status?: InputMaybe<GqlCAdminMediaMovieStatus>;
+    tmdbId: Scalars['Int']['input'];
+};
+
+export type GqlCAdminMediaShowInput = {
+    backdropUrl?: InputMaybe<Scalars['String']['input']>;
+    firstAirDate?: InputMaybe<Scalars['Date']['input']>;
+    isCompleted: Scalars['Boolean']['input'];
+    nextSeasonReleaseDate?: InputMaybe<Scalars['Date']['input']>;
+    nextSeasonReleaseRough?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    overview?: InputMaybe<Scalars['String']['input']>;
+    posterUrl?: InputMaybe<Scalars['String']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    showId?: InputMaybe<Scalars['ID']['input']>;
+    status: GqlCAdminMediaMovieStatus;
+    title: Scalars['String']['input'];
+    tmdbId?: InputMaybe<Scalars['Int']['input']>;
+    topics: Array<Scalars['String']['input']>;
+};
+
+export interface GqlCAdminMediaTmdbMovieResult {
+    __typename?: 'AdminMediaTmdbMovieResult';
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    releaseDate?: Maybe<Scalars['Date']['output']>;
+    title: Scalars['String']['output'];
+    tmdbId: Scalars['Int']['output'];
+}
+
+export interface GqlCAdminMediaTmdbTvResult {
+    __typename?: 'AdminMediaTmdbTvResult';
+    firstAirDate?: Maybe<Scalars['Date']['output']>;
+    overview?: Maybe<Scalars['String']['output']>;
+    posterUrl?: Maybe<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    tmdbId: Scalars['Int']['output'];
+}
+
+export type GqlCAdminMediaTopic =
+    | 'ai'
+    | 'business'
+    | 'comedy'
+    | 'education'
+    | 'entertainment'
+    | 'finance'
+    | 'gaming'
+    | 'lifestyle'
+    | 'movieCritic'
+    | 'music'
+    | 'news'
+    | 'science'
+    | 'software'
+    | 'sports'
+    | 'tech';
+
+export interface GqlCAdminMediaYoutubeChannelResult {
+    __typename?: 'AdminMediaYoutubeChannelResult';
+    avatarUrl?: Maybe<Scalars['String']['output']>;
+    canonicalUrl: Scalars['String']['output'];
+    channelId: Scalars['String']['output'];
+    description?: Maybe<Scalars['String']['output']>;
+    handle?: Maybe<Scalars['String']['output']>;
+    subscriberCount?: Maybe<Scalars['Int']['output']>;
+    title: Scalars['String']['output'];
+}
+
+export interface GqlCAdminMedicalAppointment {
+    __typename?: 'AdminMedicalAppointment';
+    appointmentId: Scalars['ID']['output'];
+    category: GqlCAdminMedicalCategory;
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    providerName?: Maybe<Scalars['String']['output']>;
+    scheduledAt: Scalars['DateTime']['output'];
+    status: GqlCAdminMedicalAppointmentStatus;
+    title: Scalars['String']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminMedicalAppointmentInput = {
+    appointmentId?: InputMaybe<Scalars['ID']['input']>;
+    category: GqlCAdminMedicalCategory;
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    nextDueAt?: InputMaybe<Scalars['DateTime']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    providerName?: InputMaybe<Scalars['String']['input']>;
+    scheduledAt: Scalars['DateTime']['input'];
+    status: GqlCAdminMedicalAppointmentStatus;
+    title: Scalars['String']['input'];
+    topics: Array<Scalars['String']['input']>;
+};
+
+export type GqlCAdminMedicalAppointmentStatus = 'cancelled' | 'completed' | 'missed' | 'scheduled';
+
+export type GqlCAdminMedicalCategory = 'dentist' | 'dermatology' | 'ent' | 'eyes' | 'gp' | 'mentalHealth' | 'other' | 'physio';
+
+export interface GqlCAdminMedicalCategoryOverview {
+    __typename?: 'AdminMedicalCategoryOverview';
+    category: GqlCAdminMedicalCategory;
+    defaultCadenceMonths?: Maybe<Scalars['Int']['output']>;
+    isOverdue: Scalars['Boolean']['output'];
+    lastCompletedAt?: Maybe<Scalars['DateTime']['output']>;
+    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
+    recentRecords: Array<GqlCAdminMedicalRecord>;
+    upcoming: Array<GqlCAdminMedicalAppointment>;
+}
+
 export interface GqlCAdminMedicalQuery {
     __typename?: 'AdminMedicalQuery';
-    adminMedicalAppointmentFindMany: Array<GqlCMedicalAppointment>;
-    adminMedicalCategoryOverviewFindMany: Array<GqlCMedicalCategoryOverview>;
-    adminMedicalRecordFindMany: Array<GqlCMedicalRecord>;
+    adminMedicalAppointmentFindMany: Array<GqlCAdminMedicalAppointment>;
+    adminMedicalCategoryOverviewFindMany: Array<GqlCAdminMedicalCategoryOverview>;
+    adminMedicalRecordFindMany: Array<GqlCAdminMedicalRecord>;
 }
+
+export interface GqlCAdminMedicalRecord {
+    __typename?: 'AdminMedicalRecord';
+    appointmentId?: Maybe<Scalars['ID']['output']>;
+    bodyAreas: Array<Scalars['String']['output']>;
+    category: GqlCAdminMedicalCategory;
+    createdAt: Scalars['DateTime']['output'];
+    files: Array<GqlCAdminMedicalRecordFile>;
+    occurredAt?: Maybe<Scalars['DateTime']['output']>;
+    recordId: Scalars['ID']['output'];
+    resolvedAt?: Maybe<Scalars['DateTime']['output']>;
+    severity?: Maybe<GqlCAdminMedicalRecordSeverity>;
+    summary: Scalars['String']['output'];
+    symptoms: Array<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    topics: Array<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface GqlCAdminMedicalRecordFile {
+    __typename?: 'AdminMedicalRecordFile';
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlCFileUpload;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    recordFileId: Scalars['ID']['output'];
+    recordId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminMedicalRecordFileAttachInput = {
+    fileUploadId: Scalars['ID']['input'];
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    recordId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMedicalRecordInput = {
+    appointmentId?: InputMaybe<Scalars['ID']['input']>;
+    bodyAreas: Array<Scalars['String']['input']>;
+    category: GqlCAdminMedicalCategory;
+    fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+    occurredAt?: InputMaybe<Scalars['DateTime']['input']>;
+    recordId?: InputMaybe<Scalars['ID']['input']>;
+    resolvedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    severity?: InputMaybe<GqlCAdminMedicalRecordSeverity>;
+    summary: Scalars['String']['input'];
+    symptoms: Array<Scalars['String']['input']>;
+    title: Scalars['String']['input'];
+    topics: Array<Scalars['String']['input']>;
+};
+
+export type GqlCAdminMedicalRecordSeverity = 'info' | 'mild' | 'moderate' | 'severe';
 
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
+    adminFinancesMonthlyNetIncomeSet: GqlCMutationResult;
+    adminFinancesRecurringCostsDelete: GqlCMutationResult;
+    adminFinancesRecurringCostsUpsert: GqlCMutationResult;
+    adminFitnessExercisesDelete: GqlCMutationResult;
+    adminFitnessExercisesUpsert: GqlCMutationResult;
+    adminFitnessWorkoutRoutineItemsDelete: GqlCMutationResult;
+    adminFitnessWorkoutRoutineItemsUpsert: GqlCMutationResult;
+    adminFitnessWorkoutRoutinesDelete: GqlCMutationResult;
+    adminFitnessWorkoutRoutinesUpsert: GqlCMutationResult;
+    adminFitnessWorkoutSessionsDelete: GqlCMutationResult;
+    adminFitnessWorkoutSessionsUpsert: GqlCMutationResult;
+    adminFitnessWorkoutSetsDelete: GqlCMutationResult;
+    adminFitnessWorkoutSetsUpsert: GqlCMutationResult;
+    adminInventoryItemFilesAttach: GqlCMutationResult;
+    adminInventoryItemFilesDelete: GqlCMutationResult;
+    adminInventoryItemFilesUpsert: GqlCMutationResult;
+    adminInventoryItemServiceEntriesDelete: GqlCMutationResult;
+    adminInventoryItemServiceEntriesUpsert: GqlCMutationResult;
+    adminInventoryItemsDelete: GqlCMutationResult;
+    adminInventoryItemsReprice: GqlCMutationResult;
+    adminInventoryItemsUpsert: GqlCMutationResult;
+    adminMediaChannelReorder: GqlCMutationResult;
+    adminMediaChannelsDelete: GqlCMutationResult;
+    adminMediaChannelsUpsert: GqlCMutationResult;
+    adminMediaMoviesAddFromTmdb: GqlCMutationResult;
+    adminMediaMoviesDelete: GqlCMutationResult;
+    adminMediaMoviesUpsert: GqlCMutationResult;
+    adminMediaShowsAddFromTmdb: GqlCMutationResult;
+    adminMediaShowsDelete: GqlCMutationResult;
+    adminMediaShowsUpsert: GqlCMutationResult;
+    adminMedicalAppointmentsDelete: GqlCMutationResult;
+    adminMedicalAppointmentsUpsert: GqlCMutationResult;
+    adminMedicalRecordFilesAttach: GqlCMutationResult;
+    adminMedicalRecordFilesDelete: GqlCMutationResult;
+    adminMedicalRecordsDelete: GqlCMutationResult;
+    adminMedicalRecordsUpsert: GqlCMutationResult;
+    adminNutritionFoodLogEntriesDelete: GqlCMutationResult;
+    adminNutritionFoodLogEntriesUpsert: GqlCMutationResult;
+    adminNutritionMealPlanEntriesDelete: GqlCMutationResult;
+    adminNutritionMealPlanEntriesUpsert: GqlCMutationResult;
+    adminNutritionRecipesDelete: GqlCMutationResult;
+    adminNutritionRecipesUpsert: GqlCMutationResult;
+    adminNutritionSupplementNutrientsReplace: GqlCMutationResult;
+    adminNutritionSupplementResearch: GqlCAdminNutritionSupplementResearchResult;
+    adminNutritionSupplementsDelete: GqlCMutationResult;
+    adminNutritionSupplementsUpsert: GqlCMutationResult;
+    adminProjectActivitiesDelete: GqlCMutationResult;
+    adminProjectActivitiesUpsert: GqlCMutationResult;
+    adminProjectFilesDelete: GqlCMutationResult;
+    adminProjectFilesUpsert: GqlCMutationResult;
+    adminProjectLinksDelete: GqlCMutationResult;
+    adminProjectLinksUpsert: GqlCMutationResult;
+    adminProjectReorder: GqlCMutationResult;
+    adminProjectRequestArchive: GqlCMutationResult;
+    adminProjectRequestDelete: GqlCMutationResult;
+    adminProjectTaskReorder: GqlCMutationResult;
+    adminProjectTasksDelete: GqlCMutationResult;
+    adminProjectTasksUpsert: GqlCMutationResult;
+    adminProjectTimersStart: GqlCMutationResult;
+    adminProjectTimersStop: GqlCMutationResult;
+    adminProjectsDelete: GqlCMutationResult;
+    adminProjectsUpsert: GqlCMutationResult;
     adminTravelTripActivitiesDelete: GqlCMutationResult;
     adminTravelTripActivitiesUpsert: GqlCMutationResult;
     adminTravelTripDaysDelete: GqlCMutationResult;
@@ -223,69 +821,256 @@ export interface GqlCAdminMutation {
     cvSkillReorder: GqlCMutationResult;
     cvSkillsDelete: GqlCMutationResult;
     cvSkillsUpsert: GqlCMutationResult;
-    exercisesDelete: GqlCMutationResult;
-    exercisesUpsert: GqlCMutationResult;
-    financeMonthlyNetIncomeSet: GqlCMutationResult;
-    financeRecurringCostsDelete: GqlCMutationResult;
-    financeRecurringCostsUpsert: GqlCMutationResult;
-    foodLogEntriesDelete: GqlCMutationResult;
-    foodLogEntriesUpsert: GqlCMutationResult;
-    itemFilesAttach: GqlCMutationResult;
-    itemFilesDelete: GqlCMutationResult;
-    itemFilesUpsert: GqlCMutationResult;
-    itemServiceEntriesDelete: GqlCMutationResult;
-    itemServiceEntriesUpsert: GqlCMutationResult;
-    itemsDelete: GqlCMutationResult;
-    itemsReprice: GqlCMutationResult;
-    itemsUpsert: GqlCMutationResult;
-    mealPlanEntriesDelete: GqlCMutationResult;
-    mealPlanEntriesUpsert: GqlCMutationResult;
-    mediaChannelReorder: GqlCMutationResult;
-    mediaChannelsDelete: GqlCMutationResult;
-    mediaChannelsUpsert: GqlCMutationResult;
-    medicalAppointmentsDelete: GqlCMutationResult;
-    medicalAppointmentsUpsert: GqlCMutationResult;
-    medicalRecordFilesAttach: GqlCMutationResult;
-    medicalRecordFilesDelete: GqlCMutationResult;
-    medicalRecordsDelete: GqlCMutationResult;
-    medicalRecordsUpsert: GqlCMutationResult;
-    moviesAddFromTmdb: GqlCMutationResult;
-    moviesDelete: GqlCMutationResult;
-    moviesUpsert: GqlCMutationResult;
-    projectActivitiesDelete: GqlCMutationResult;
-    projectActivitiesUpsert: GqlCMutationResult;
-    projectFilesDelete: GqlCMutationResult;
-    projectFilesUpsert: GqlCMutationResult;
-    projectLinksDelete: GqlCMutationResult;
-    projectLinksUpsert: GqlCMutationResult;
-    projectReorder: GqlCMutationResult;
-    projectRequestArchive: GqlCMutationResult;
-    projectRequestDelete: GqlCMutationResult;
-    projectTimersStart: GqlCMutationResult;
-    projectTimersStop: GqlCMutationResult;
-    projectsDelete: GqlCMutationResult;
-    projectsUpsert: GqlCMutationResult;
-    recipesDelete: GqlCMutationResult;
-    recipesUpsert: GqlCMutationResult;
-    showsAddFromTmdb: GqlCMutationResult;
-    showsDelete: GqlCMutationResult;
-    showsUpsert: GqlCMutationResult;
-    supplementNutrientsReplace: GqlCMutationResult;
-    supplementResearch: GqlCSupplementResearchResult;
-    supplementsDelete: GqlCMutationResult;
-    supplementsUpsert: GqlCMutationResult;
-    taskReorder: GqlCMutationResult;
-    tasksDelete: GqlCMutationResult;
-    tasksUpsert: GqlCMutationResult;
-    workoutRoutineItemsDelete: GqlCMutationResult;
-    workoutRoutineItemsUpsert: GqlCMutationResult;
-    workoutRoutinesDelete: GqlCMutationResult;
-    workoutRoutinesUpsert: GqlCMutationResult;
-    workoutSessionsDelete: GqlCMutationResult;
-    workoutSessionsUpsert: GqlCMutationResult;
-    workoutSetsDelete: GqlCMutationResult;
-    workoutSetsUpsert: GqlCMutationResult;
 }
+
+export type GqlCAdminMutationAdminFinancesMonthlyNetIncomeSetArgs = {
+    amountCents?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type GqlCAdminMutationAdminFinancesRecurringCostsDeleteArgs = {
+    costIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFinancesRecurringCostsUpsertArgs = {
+    financeRecurringCosts: Array<GqlCAdminFinancesRecurringCostInput>;
+};
+
+export type GqlCAdminMutationAdminFitnessExercisesDeleteArgs = {
+    exerciseIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFitnessExercisesUpsertArgs = {
+    exercises: Array<GqlCAdminFitnessExerciseInput>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutRoutineItemsDeleteArgs = {
+    routineItemIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutRoutineItemsUpsertArgs = {
+    workoutRoutineItems: Array<GqlCAdminFitnessWorkoutRoutineItemInput>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutRoutinesDeleteArgs = {
+    routineIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutRoutinesUpsertArgs = {
+    workoutRoutines: Array<GqlCAdminFitnessWorkoutRoutineInput>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutSessionsDeleteArgs = {
+    sessionIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutSessionsUpsertArgs = {
+    workoutSessions: Array<GqlCAdminFitnessWorkoutSessionInput>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutSetsDeleteArgs = {
+    setIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFitnessWorkoutSetsUpsertArgs = {
+    workoutSets: Array<GqlCAdminFitnessWorkoutSetInput>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemFilesAttachArgs = {
+    inputs: Array<GqlCAdminInventoryItemFileAttachInput>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemFilesDeleteArgs = {
+    itemFileIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemFilesUpsertArgs = {
+    itemFiles: Array<GqlCAdminInventoryItemFileUpsert>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemServiceEntriesDeleteArgs = {
+    serviceEntryIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemServiceEntriesUpsertArgs = {
+    itemServiceEntries: Array<GqlCAdminInventoryItemServiceEntryInput>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemsDeleteArgs = {
+    itemIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemsRepriceArgs = {
+    inputs: Array<GqlCAdminInventoryItemRepriceInput>;
+};
+
+export type GqlCAdminMutationAdminInventoryItemsUpsertArgs = {
+    items: Array<GqlCAdminInventoryItemInput>;
+};
+
+export type GqlCAdminMutationAdminMediaChannelReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminMediaChannelsDeleteArgs = {
+    channelIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminMediaChannelsUpsertArgs = {
+    mediaChannels: Array<GqlCAdminMediaChannelInput>;
+};
+
+export type GqlCAdminMutationAdminMediaMoviesAddFromTmdbArgs = {
+    inputs: Array<GqlCAdminMediaMovieAddFromTmdbInput>;
+};
+
+export type GqlCAdminMutationAdminMediaMoviesDeleteArgs = {
+    movieIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminMediaMoviesUpsertArgs = {
+    movies: Array<GqlCAdminMediaMovieInput>;
+};
+
+export type GqlCAdminMutationAdminMediaShowsAddFromTmdbArgs = {
+    inputs: Array<GqlCAdminMediaShowAddFromTmdbInput>;
+};
+
+export type GqlCAdminMutationAdminMediaShowsDeleteArgs = {
+    showIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminMediaShowsUpsertArgs = {
+    shows: Array<GqlCAdminMediaShowInput>;
+};
+
+export type GqlCAdminMutationAdminMedicalAppointmentsDeleteArgs = {
+    appointmentIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminMedicalAppointmentsUpsertArgs = {
+    medicalAppointments: Array<GqlCAdminMedicalAppointmentInput>;
+};
+
+export type GqlCAdminMutationAdminMedicalRecordFilesAttachArgs = {
+    inputs: Array<GqlCAdminMedicalRecordFileAttachInput>;
+};
+
+export type GqlCAdminMutationAdminMedicalRecordFilesDeleteArgs = {
+    recordFileIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminMedicalRecordsDeleteArgs = {
+    recordIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminMedicalRecordsUpsertArgs = {
+    medicalRecords: Array<GqlCAdminMedicalRecordInput>;
+};
+
+export type GqlCAdminMutationAdminNutritionFoodLogEntriesDeleteArgs = {
+    logIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminNutritionFoodLogEntriesUpsertArgs = {
+    foodLogEntries: Array<GqlCAdminNutritionFoodLogEntryInput>;
+};
+
+export type GqlCAdminMutationAdminNutritionMealPlanEntriesDeleteArgs = {
+    entryIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminNutritionMealPlanEntriesUpsertArgs = {
+    mealPlanEntries: Array<GqlCAdminNutritionMealPlanEntryInput>;
+};
+
+export type GqlCAdminMutationAdminNutritionRecipesDeleteArgs = {
+    recipeIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminNutritionRecipesUpsertArgs = {
+    recipes: Array<GqlCAdminNutritionRecipeInput>;
+};
+
+export type GqlCAdminMutationAdminNutritionSupplementNutrientsReplaceArgs = {
+    nutrients: Array<GqlCAdminNutritionSupplementNutrientInput>;
+    supplementId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationAdminNutritionSupplementResearchArgs = {
+    input: GqlCAdminNutritionSupplementResearchInput;
+};
+
+export type GqlCAdminMutationAdminNutritionSupplementsDeleteArgs = {
+    supplementIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminNutritionSupplementsUpsertArgs = {
+    supplements: Array<GqlCAdminNutritionSupplementInput>;
+};
+
+export type GqlCAdminMutationAdminProjectActivitiesDeleteArgs = {
+    activityIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectActivitiesUpsertArgs = {
+    projectActivities: Array<GqlCAdminProjectActivityCreate>;
+};
+
+export type GqlCAdminMutationAdminProjectFilesDeleteArgs = {
+    projectFileIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectFilesUpsertArgs = {
+    projectFiles: Array<GqlCAdminProjectFileUpsert>;
+};
+
+export type GqlCAdminMutationAdminProjectLinksDeleteArgs = {
+    projectLinkIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectLinksUpsertArgs = {
+    projectLinks: Array<GqlCAdminProjectLinkUpsert>;
+};
+
+export type GqlCAdminMutationAdminProjectReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectRequestArchiveArgs = {
+    projectRequestId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationAdminProjectRequestDeleteArgs = {
+    projectRequestId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationAdminProjectTaskReorderArgs = {
+    orderedIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectTasksDeleteArgs = {
+    taskIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectTasksUpsertArgs = {
+    tasks: Array<GqlCAdminProjectTaskCreate>;
+};
+
+export type GqlCAdminMutationAdminProjectTimersStartArgs = {
+    inputs: Array<GqlCAdminProjectTimerStartInput>;
+};
+
+export type GqlCAdminMutationAdminProjectTimersStopArgs = {
+    activityIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectsDeleteArgs = {
+    projectIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminProjectsUpsertArgs = {
+    projects: Array<GqlCAdminProjectCreate>;
+};
 
 export type GqlCAdminMutationAdminTravelTripActivitiesDeleteArgs = {
     tripActivityIds: Array<Scalars['ID']['input']>;
@@ -415,266 +1200,369 @@ export type GqlCAdminMutationCvSkillsUpsertArgs = {
     cvSkills: Array<GqlCCvSkillInput>;
 };
 
-export type GqlCAdminMutationExercisesDeleteArgs = {
-    exerciseIds: Array<Scalars['ID']['input']>;
+export interface GqlCAdminNutritionFoodLogEntry {
+    __typename?: 'AdminNutritionFoodLogEntry';
+    consumedAt: Scalars['DateTime']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    description: Scalars['String']['output'];
+    kind: GqlCAdminNutritionFoodLogKind;
+    logId: Scalars['ID']['output'];
+    mealType: GqlCAdminNutritionMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    recipe?: Maybe<GqlCAdminNutritionRecipe>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminNutritionFoodLogEntryInput = {
+    consumedAt: Scalars['DateTime']['input'];
+    description: Scalars['String']['input'];
+    kind: GqlCAdminNutritionFoodLogKind;
+    logId?: InputMaybe<Scalars['ID']['input']>;
+    mealType: GqlCAdminNutritionMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminMutationExercisesUpsertArgs = {
-    exercises: Array<GqlCExerciseInput>;
+export type GqlCAdminNutritionFoodLogKind = 'drink' | 'food';
+
+export interface GqlCAdminNutritionMealPlanEntry {
+    __typename?: 'AdminNutritionMealPlanEntry';
+    createdAt: Scalars['DateTime']['output'];
+    customText?: Maybe<Scalars['String']['output']>;
+    date: Scalars['Date']['output'];
+    entryId: Scalars['ID']['output'];
+    mealType: GqlCAdminNutritionMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    recipe?: Maybe<GqlCAdminNutritionRecipe>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminNutritionMealPlanEntryInput = {
+    customText?: InputMaybe<Scalars['String']['input']>;
+    date: Scalars['Date']['input'];
+    entryId?: InputMaybe<Scalars['ID']['input']>;
+    mealType: GqlCAdminNutritionMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminMutationFinanceMonthlyNetIncomeSetArgs = {
-    amountCents?: InputMaybe<Scalars['Int']['input']>;
-};
-
-export type GqlCAdminMutationFinanceRecurringCostsDeleteArgs = {
-    costIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationFinanceRecurringCostsUpsertArgs = {
-    financeRecurringCosts: Array<GqlCFinanceRecurringCostInput>;
-};
-
-export type GqlCAdminMutationFoodLogEntriesDeleteArgs = {
-    logIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationFoodLogEntriesUpsertArgs = {
-    foodLogEntries: Array<GqlCFoodLogEntryInput>;
-};
-
-export type GqlCAdminMutationItemFilesAttachArgs = {
-    inputs: Array<GqlCItemFileAttachInput>;
-};
-
-export type GqlCAdminMutationItemFilesDeleteArgs = {
-    itemFileIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationItemFilesUpsertArgs = {
-    itemFiles: Array<GqlCItemFileUpsert>;
-};
-
-export type GqlCAdminMutationItemServiceEntriesDeleteArgs = {
-    serviceEntryIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationItemServiceEntriesUpsertArgs = {
-    itemServiceEntries: Array<GqlCItemServiceEntryInput>;
-};
-
-export type GqlCAdminMutationItemsDeleteArgs = {
-    itemIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationItemsRepriceArgs = {
-    inputs: Array<GqlCItemRepriceInput>;
-};
-
-export type GqlCAdminMutationItemsUpsertArgs = {
-    items: Array<GqlCItemInput>;
-};
-
-export type GqlCAdminMutationMealPlanEntriesDeleteArgs = {
-    entryIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationMealPlanEntriesUpsertArgs = {
-    mealPlanEntries: Array<GqlCMealPlanEntryInput>;
-};
-
-export type GqlCAdminMutationMediaChannelReorderArgs = {
-    orderedIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationMediaChannelsDeleteArgs = {
-    channelIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationMediaChannelsUpsertArgs = {
-    mediaChannels: Array<GqlCMediaChannelInput>;
-};
-
-export type GqlCAdminMutationMedicalAppointmentsDeleteArgs = {
-    appointmentIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationMedicalAppointmentsUpsertArgs = {
-    medicalAppointments: Array<GqlCMedicalAppointmentInput>;
-};
-
-export type GqlCAdminMutationMedicalRecordFilesAttachArgs = {
-    inputs: Array<GqlCMedicalRecordFileAttachInput>;
-};
-
-export type GqlCAdminMutationMedicalRecordFilesDeleteArgs = {
-    recordFileIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationMedicalRecordsDeleteArgs = {
-    recordIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationMedicalRecordsUpsertArgs = {
-    medicalRecords: Array<GqlCMedicalRecordInput>;
-};
-
-export type GqlCAdminMutationMoviesAddFromTmdbArgs = {
-    inputs: Array<GqlCMovieAddFromTmdbInput>;
-};
-
-export type GqlCAdminMutationMoviesDeleteArgs = {
-    movieIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationMoviesUpsertArgs = {
-    movies: Array<GqlCMovieInput>;
-};
-
-export type GqlCAdminMutationProjectActivitiesDeleteArgs = {
-    activityIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationProjectActivitiesUpsertArgs = {
-    projectActivities: Array<GqlCProjectActivityCreate>;
-};
-
-export type GqlCAdminMutationProjectFilesDeleteArgs = {
-    projectFileIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationProjectFilesUpsertArgs = {
-    projectFiles: Array<GqlCProjectFileUpsert>;
-};
-
-export type GqlCAdminMutationProjectLinksDeleteArgs = {
-    projectLinkIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationProjectLinksUpsertArgs = {
-    projectLinks: Array<GqlCProjectLinkUpsert>;
-};
-
-export type GqlCAdminMutationProjectReorderArgs = {
-    orderedIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationProjectRequestArchiveArgs = {
-    projectRequestId: Scalars['ID']['input'];
-};
-
-export type GqlCAdminMutationProjectRequestDeleteArgs = {
-    projectRequestId: Scalars['ID']['input'];
-};
-
-export type GqlCAdminMutationProjectTimersStartArgs = {
-    inputs: Array<GqlCProjectTimerStartInput>;
-};
-
-export type GqlCAdminMutationProjectTimersStopArgs = {
-    activityIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationProjectsDeleteArgs = {
-    projectIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationProjectsUpsertArgs = {
-    projects: Array<GqlCProjectCreate>;
-};
-
-export type GqlCAdminMutationRecipesDeleteArgs = {
-    recipeIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationRecipesUpsertArgs = {
-    recipes: Array<GqlCRecipeInput>;
-};
-
-export type GqlCAdminMutationShowsAddFromTmdbArgs = {
-    inputs: Array<GqlCShowAddFromTmdbInput>;
-};
-
-export type GqlCAdminMutationShowsDeleteArgs = {
-    showIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationShowsUpsertArgs = {
-    shows: Array<GqlCShowInput>;
-};
-
-export type GqlCAdminMutationSupplementNutrientsReplaceArgs = {
-    nutrients: Array<GqlCSupplementNutrientInput>;
-    supplementId: Scalars['ID']['input'];
-};
-
-export type GqlCAdminMutationSupplementResearchArgs = {
-    input: GqlCSupplementResearchInput;
-};
-
-export type GqlCAdminMutationSupplementsDeleteArgs = {
-    supplementIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationSupplementsUpsertArgs = {
-    supplements: Array<GqlCSupplementInput>;
-};
-
-export type GqlCAdminMutationTaskReorderArgs = {
-    orderedIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationTasksDeleteArgs = {
-    taskIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationTasksUpsertArgs = {
-    tasks: Array<GqlCTaskCreate>;
-};
-
-export type GqlCAdminMutationWorkoutRoutineItemsDeleteArgs = {
-    routineItemIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationWorkoutRoutineItemsUpsertArgs = {
-    workoutRoutineItems: Array<GqlCWorkoutRoutineItemInput>;
-};
-
-export type GqlCAdminMutationWorkoutRoutinesDeleteArgs = {
-    routineIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationWorkoutRoutinesUpsertArgs = {
-    workoutRoutines: Array<GqlCWorkoutRoutineInput>;
-};
-
-export type GqlCAdminMutationWorkoutSessionsDeleteArgs = {
-    sessionIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationWorkoutSessionsUpsertArgs = {
-    workoutSessions: Array<GqlCWorkoutSessionInput>;
-};
-
-export type GqlCAdminMutationWorkoutSetsDeleteArgs = {
-    setIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationWorkoutSetsUpsertArgs = {
-    workoutSets: Array<GqlCWorkoutSetInput>;
-};
+export type GqlCAdminNutritionMealType = 'breakfast' | 'dinner' | 'lunch' | 'other' | 'snack';
 
 export interface GqlCAdminNutritionQuery {
     __typename?: 'AdminNutritionQuery';
-    adminNutritionFoodLogFindMany: Array<GqlCFoodLogEntry>;
-    adminNutritionMealPlanFindMany: Array<GqlCMealPlanEntry>;
-    adminNutritionRecipeFindMany: Array<GqlCRecipe>;
-    adminNutritionSupplementFindMany: Array<GqlCSupplement>;
+    adminNutritionFoodLogFindMany: Array<GqlCAdminNutritionFoodLogEntry>;
+    adminNutritionMealPlanFindMany: Array<GqlCAdminNutritionMealPlanEntry>;
+    adminNutritionRecipeFindMany: Array<GqlCAdminNutritionRecipe>;
+    adminNutritionSupplementFindMany: Array<GqlCAdminNutritionSupplement>;
 }
 
 export type GqlCAdminNutritionQueryAdminNutritionRecipeFindManyArgs = {
     favorite?: InputMaybe<Scalars['Boolean']['input']>;
-    mealType?: InputMaybe<GqlCMealType>;
+    mealType?: InputMaybe<GqlCAdminNutritionMealType>;
+};
+
+export interface GqlCAdminNutritionRecipe {
+    __typename?: 'AdminNutritionRecipe';
+    createdAt: Scalars['DateTime']['output'];
+    ingredients: Array<Scalars['String']['output']>;
+    isFavorite: Scalars['Boolean']['output'];
+    lastMadeAt?: Maybe<Scalars['DateTime']['output']>;
+    mealType: GqlCAdminNutritionMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    prepTimeMinutes?: Maybe<Scalars['Int']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    recipeId: Scalars['ID']['output'];
+    servings?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    steps?: Maybe<Scalars['String']['output']>;
+    tags: Array<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminNutritionRecipeInput = {
+    ingredients?: InputMaybe<Array<Scalars['String']['input']>>;
+    isFavorite?: InputMaybe<Scalars['Boolean']['input']>;
+    lastMadeAt?: InputMaybe<Scalars['DateTime']['input']>;
+    mealType: GqlCAdminNutritionMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    prepTimeMinutes?: InputMaybe<Scalars['Int']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
+    servings?: InputMaybe<Scalars['Int']['input']>;
+    sourceUrl?: InputMaybe<Scalars['String']['input']>;
+    steps?: InputMaybe<Scalars['String']['input']>;
+    tags?: InputMaybe<Array<Scalars['String']['input']>>;
+    title: Scalars['String']['input'];
+};
+
+export interface GqlCAdminNutritionSupplement {
+    __typename?: 'AdminNutritionSupplement';
+    brand?: Maybe<Scalars['String']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    nutrients: Array<GqlCAdminNutritionSupplementNutrient>;
+    researchedAt?: Maybe<Scalars['DateTime']['output']>;
+    servingSize?: Maybe<Scalars['String']['output']>;
+    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    supplementId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminNutritionSupplementInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    researchedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    servingSize?: InputMaybe<Scalars['String']['input']>;
+    servingsPerContainer?: InputMaybe<Scalars['Int']['input']>;
+    sourceUrl?: InputMaybe<Scalars['String']['input']>;
+    supplementId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlCAdminNutritionSupplementNutrient {
+    __typename?: 'AdminNutritionSupplementNutrient';
+    amount?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    nutrientId: Scalars['ID']['output'];
+    percentDailyValue?: Maybe<Scalars['Int']['output']>;
+    sortOrder: Scalars['Int']['output'];
+    unit?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCAdminNutritionSupplementNutrientInput = {
+    amount?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    percentDailyValue?: InputMaybe<Scalars['Int']['input']>;
+    sortOrder?: InputMaybe<Scalars['Int']['input']>;
+    unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlCAdminNutritionSupplementNutrientProposal {
+    __typename?: 'AdminNutritionSupplementNutrientProposal';
+    amount?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    percentDailyValue?: Maybe<Scalars['Int']['output']>;
+    unit?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCAdminNutritionSupplementResearchInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+};
+
+export interface GqlCAdminNutritionSupplementResearchResult {
+    __typename?: 'AdminNutritionSupplementResearchResult';
+    brand?: Maybe<Scalars['String']['output']>;
+    found: Scalars['Boolean']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    nutrients: Array<GqlCAdminNutritionSupplementNutrientProposal>;
+    servingSize?: Maybe<Scalars['String']['output']>;
+    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    summary: Scalars['String']['output'];
+}
+
+export interface GqlCAdminProject {
+    __typename?: 'AdminProject';
+    activities: Array<GqlCAdminProjectActivity>;
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    description?: Maybe<Scalars['String']['output']>;
+    files: Array<GqlCAdminProjectFile>;
+    links: Array<GqlCAdminProjectLink>;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    projectId: Scalars['ID']['output'];
+    sourceRequest?: Maybe<GqlCAdminProjectRequest>;
+    startedAt?: Maybe<Scalars['DateTime']['output']>;
+    status: GqlCAdminProjectStatus;
+    tasks: Array<GqlCAdminProjectTask>;
+    title: Scalars['String']['output'];
+    totalWorkSec: Scalars['Int']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface GqlCAdminProjectActivity {
+    __typename?: 'AdminProjectActivity';
+    activityId: Scalars['ID']['output'];
+    amountCents?: Maybe<Scalars['Int']['output']>;
+    channel?: Maybe<GqlCAdminProjectActivityChannel>;
+    createdAt: Scalars['DateTime']['output'];
+    direction: GqlCAdminProjectActivityDirection;
+    durationSec?: Maybe<Scalars['Int']['output']>;
+    endedAt?: Maybe<Scalars['DateTime']['output']>;
+    files: Array<GqlCAdminProjectFile>;
+    kind: GqlCAdminProjectActivityKind;
+    links: Array<GqlCAdminProjectLink>;
+    notes?: Maybe<Scalars['String']['output']>;
+    occurredAt: Scalars['DateTime']['output'];
+    offerStatus?: Maybe<GqlCAdminProjectOfferStatus>;
+    projectId: Scalars['ID']['output'];
+    startedAt?: Maybe<Scalars['DateTime']['output']>;
+    taskId?: Maybe<Scalars['ID']['output']>;
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminProjectActivityChannel = 'aiAssistant' | 'email' | 'inPerson' | 'malt' | 'other' | 'phone' | 'videoCall';
+
+export type GqlCAdminProjectActivityCreate = {
+    activityId?: InputMaybe<Scalars['ID']['input']>;
+    amountCents?: InputMaybe<Scalars['Int']['input']>;
+    attachFileKind?: InputMaybe<GqlCAdminProjectFileKind>;
+    attachFileLabel?: InputMaybe<Scalars['String']['input']>;
+    attachFilePinned?: InputMaybe<Scalars['Boolean']['input']>;
+    attachFileUploadId?: InputMaybe<Scalars['ID']['input']>;
+    attachLinkKind?: InputMaybe<GqlCAdminProjectLinkKind>;
+    attachLinkLabel?: InputMaybe<Scalars['String']['input']>;
+    attachLinkPinned?: InputMaybe<Scalars['Boolean']['input']>;
+    attachLinkUrl?: InputMaybe<Scalars['String']['input']>;
+    channel?: InputMaybe<GqlCAdminProjectActivityChannel>;
+    direction?: InputMaybe<GqlCAdminProjectActivityDirection>;
+    durationSec?: InputMaybe<Scalars['Int']['input']>;
+    kind: GqlCAdminProjectActivityKind;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    occurredAt: Scalars['DateTime']['input'];
+    offerStatus?: InputMaybe<GqlCAdminProjectOfferStatus>;
+    projectId: Scalars['ID']['input'];
+    taskId?: InputMaybe<Scalars['ID']['input']>;
+    title: Scalars['String']['input'];
+};
+
+export type GqlCAdminProjectActivityDirection = 'incoming' | 'internal' | 'outgoing';
+
+export type GqlCAdminProjectActivityKind = 'clientContact' | 'meeting' | 'milestone' | 'note' | 'offer' | 'work';
+
+export type GqlCAdminProjectCreate = {
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    description?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    projectId?: InputMaybe<Scalars['ID']['input']>;
+    sourceRequestId?: InputMaybe<Scalars['ID']['input']>;
+    startedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    status: GqlCAdminProjectStatus;
+    title: Scalars['String']['input'];
+};
+
+export interface GqlCAdminProjectFile {
+    __typename?: 'AdminProjectFile';
+    activityId?: Maybe<Scalars['ID']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlCFileUpload;
+    kind: GqlCAdminProjectFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    projectFileId: Scalars['ID']['output'];
+    projectId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminProjectFileKind = 'contract' | 'invoice' | 'offer' | 'other' | 'screenshot';
+
+export type GqlCAdminProjectFileUpsert = {
+    activityId?: InputMaybe<Scalars['ID']['input']>;
+    fileUploadId: Scalars['ID']['input'];
+    kind: GqlCAdminProjectFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    projectFileId?: InputMaybe<Scalars['ID']['input']>;
+    projectId: Scalars['ID']['input'];
+};
+
+export interface GqlCAdminProjectLink {
+    __typename?: 'AdminProjectLink';
+    activityId?: Maybe<Scalars['ID']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    kind: GqlCAdminProjectLinkKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    projectId: Scalars['ID']['output'];
+    projectLinkId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    url: Scalars['String']['output'];
+}
+
+export type GqlCAdminProjectLinkKind = 'figma' | 'gdrive' | 'github' | 'invoice' | 'malt' | 'notion' | 'offer' | 'other';
+
+export type GqlCAdminProjectLinkUpsert = {
+    activityId?: InputMaybe<Scalars['ID']['input']>;
+    kind: GqlCAdminProjectLinkKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    projectId: Scalars['ID']['input'];
+    projectLinkId?: InputMaybe<Scalars['ID']['input']>;
+    url: Scalars['String']['input'];
+};
+
+export type GqlCAdminProjectOfferStatus = 'accepted' | 'rejected' | 'sent' | 'withdrawn';
+
+export interface GqlCAdminProjectRequest {
+    __typename?: 'AdminProjectRequest';
+    budget?: Maybe<Scalars['String']['output']>;
+    chatId?: Maybe<Scalars['ID']['output']>;
+    company?: Maybe<Scalars['String']['output']>;
+    convertedProject?: Maybe<GqlCAdminProject>;
+    createdAt: Scalars['DateTime']['output'];
+    description: Scalars['String']['output'];
+    email: Scalars['String']['output'];
+    name: Scalars['String']['output'];
+    projectRequestId: Scalars['ID']['output'];
+    projectType: GqlCAdminProjectRequestType;
+    status: GqlCAdminProjectRequestStatus;
+    timeline?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    verifiedAt?: Maybe<Scalars['DateTime']['output']>;
+}
+
+export type GqlCAdminProjectRequestStatus = 'archived' | 'emailVerified' | 'pendingOtp';
+
+export type GqlCAdminProjectRequestType = 'aiIntegration' | 'consulting' | 'mobile' | 'other' | 'webApp';
+
+export type GqlCAdminProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'paused' | 'planning';
+
+export interface GqlCAdminProjectTask {
+    __typename?: 'AdminProjectTask';
+    completedAt?: Maybe<Scalars['DateTime']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    dueAt?: Maybe<Scalars['DateTime']['output']>;
+    effort?: Maybe<GqlCAdminProjectTaskEffort>;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    projectId?: Maybe<Scalars['ID']['output']>;
+    status: GqlCAdminProjectTaskStatus;
+    taskId: Scalars['ID']['output'];
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    whenBucket?: Maybe<GqlCAdminProjectTaskWhenBucket>;
+}
+
+export type GqlCAdminProjectTaskCreate = {
+    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+    effort?: InputMaybe<GqlCAdminProjectTaskEffort>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position: Scalars['Int']['input'];
+    projectId?: InputMaybe<Scalars['ID']['input']>;
+    status: GqlCAdminProjectTaskStatus;
+    taskId?: InputMaybe<Scalars['ID']['input']>;
+    title: Scalars['String']['input'];
+    whenBucket?: InputMaybe<GqlCAdminProjectTaskWhenBucket>;
+};
+
+export type GqlCAdminProjectTaskEffort = 'deep' | 'focused' | 'quick';
+
+export type GqlCAdminProjectTaskStatus = 'doing' | 'done' | 'todo';
+
+export type GqlCAdminProjectTaskWhenBucket = 'someday' | 'today' | 'waiting' | 'week';
+
+export type GqlCAdminProjectTimerStartInput = {
+    projectId: Scalars['ID']['input'];
+    taskId?: InputMaybe<Scalars['ID']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export interface GqlCAdminTravelQuery {
@@ -1218,27 +2106,6 @@ export type GqlCCvSkillInput = {
     position: Scalars['Int']['input'];
 };
 
-export type GqlCEquipmentType = 'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'kettlebell' | 'machine' | 'other';
-
-export interface GqlCExercise {
-    __typename?: 'Exercise';
-    createdAt: Scalars['DateTime']['output'];
-    equipment?: Maybe<GqlCEquipmentType>;
-    exerciseId: Scalars['ID']['output'];
-    muscleGroup: GqlCMuscleGroup;
-    name: Scalars['String']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCExerciseInput = {
-    equipment?: InputMaybe<GqlCEquipmentType>;
-    exerciseId?: InputMaybe<Scalars['ID']['input']>;
-    muscleGroup: GqlCMuscleGroup;
-    name: Scalars['String']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-};
-
 export interface GqlCFileUpload {
     __typename?: 'FileUpload';
     fileUploadId: Scalars['ID']['output'];
@@ -1246,197 +2113,6 @@ export interface GqlCFileUpload {
     mediaType: Scalars['String']['output'];
     size: Scalars['Int']['output'];
     url: Scalars['String']['output'];
-}
-
-export type GqlCFinanceCadence = 'monthly' | 'yearly';
-
-export interface GqlCFinanceRecurringCost {
-    __typename?: 'FinanceRecurringCost';
-    active: Scalars['Boolean']['output'];
-    amountCents: Scalars['Int']['output'];
-    cadence: GqlCFinanceCadence;
-    categoryKey: GqlCFinanceRecurringCostCategory;
-    costId: Scalars['ID']['output'];
-    createdAt: Scalars['DateTime']['output'];
-    currency: Scalars['String']['output'];
-    endsOn?: Maybe<Scalars['Date']['output']>;
-    name: Scalars['String']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    startsOn?: Maybe<Scalars['Date']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCFinanceRecurringCostCategory =
-    | 'connectivity'
-    | 'donations'
-    | 'household'
-    | 'housing'
-    | 'insurance'
-    | 'memberships'
-    | 'other'
-    | 'savingsGeneral'
-    | 'savingsVacation'
-    | 'subscriptionsEntertainment'
-    | 'subscriptionsWork'
-    | 'transport';
-
-export type GqlCFinanceRecurringCostInput = {
-    active?: InputMaybe<Scalars['Boolean']['input']>;
-    amountCents: Scalars['Int']['input'];
-    cadence: GqlCFinanceCadence;
-    categoryKey: GqlCFinanceRecurringCostCategory;
-    costId?: InputMaybe<Scalars['ID']['input']>;
-    currency?: InputMaybe<Scalars['String']['input']>;
-    endsOn?: InputMaybe<Scalars['Date']['input']>;
-    name: Scalars['String']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-    startsOn?: InputMaybe<Scalars['Date']['input']>;
-};
-
-export interface GqlCFoodLogEntry {
-    __typename?: 'FoodLogEntry';
-    consumedAt: Scalars['DateTime']['output'];
-    createdAt: Scalars['DateTime']['output'];
-    description: Scalars['String']['output'];
-    kind: GqlCFoodLogKind;
-    logId: Scalars['ID']['output'];
-    mealType: GqlCMealType;
-    notes?: Maybe<Scalars['String']['output']>;
-    recipe?: Maybe<GqlCRecipe>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCFoodLogEntryInput = {
-    consumedAt: Scalars['DateTime']['input'];
-    description: Scalars['String']['input'];
-    kind: GqlCFoodLogKind;
-    logId?: InputMaybe<Scalars['ID']['input']>;
-    mealType: GqlCMealType;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    recipeId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GqlCFoodLogKind = 'drink' | 'food';
-
-export interface GqlCItem {
-    __typename?: 'Item';
-    brand?: Maybe<Scalars['String']['output']>;
-    categoryKey: GqlCItemCategory;
-    condition?: Maybe<GqlCItemCondition>;
-    createdAt: Scalars['DateTime']['output'];
-    currentValueCents?: Maybe<Scalars['Int']['output']>;
-    disposalState: GqlCItemDisposalState;
-    disposedAt?: Maybe<Scalars['DateTime']['output']>;
-    files: Array<GqlCItemFile>;
-    itemId: Scalars['ID']['output'];
-    model?: Maybe<Scalars['String']['output']>;
-    name: Scalars['String']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    purchasePriceCents?: Maybe<Scalars['Int']['output']>;
-    purchasedAt?: Maybe<Scalars['Date']['output']>;
-    serialNumber?: Maybe<Scalars['String']['output']>;
-    serviceEntries: Array<GqlCItemServiceEntry>;
-    updatedAt: Scalars['DateTime']['output'];
-    valuations: Array<GqlCItemValuation>;
-    warrantyEndsAt?: Maybe<Scalars['Date']['output']>;
-    warrantyNotes?: Maybe<Scalars['String']['output']>;
-    warrantyProvider?: Maybe<Scalars['String']['output']>;
-}
-
-export type GqlCItemCategory = 'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle';
-
-export type GqlCItemCondition = 'fair' | 'good' | 'likeNew' | 'new' | 'poor';
-
-export type GqlCItemDisposalState = 'disposed' | 'gifted' | 'lost' | 'owned' | 'sold';
-
-export interface GqlCItemFile {
-    __typename?: 'ItemFile';
-    createdAt: Scalars['DateTime']['output'];
-    fileUpload: GqlCFileUpload;
-    itemFileId: Scalars['ID']['output'];
-    itemId: Scalars['ID']['output'];
-    kind: GqlCItemFileKind;
-    label?: Maybe<Scalars['String']['output']>;
-    pinned: Scalars['Boolean']['output'];
-    serviceEntryId?: Maybe<Scalars['ID']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCItemFileAttachInput = {
-    fileUploadId: Scalars['ID']['input'];
-    itemId: Scalars['ID']['input'];
-    kind: GqlCItemFileKind;
-    label?: InputMaybe<Scalars['String']['input']>;
-    pinned?: InputMaybe<Scalars['Boolean']['input']>;
-    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GqlCItemFileKind = 'invoice' | 'manual' | 'other' | 'photo' | 'receipt' | 'warranty';
-
-export type GqlCItemFileUpsert = {
-    itemFileId: Scalars['ID']['input'];
-    label?: InputMaybe<Scalars['String']['input']>;
-    pinned?: InputMaybe<Scalars['Boolean']['input']>;
-};
-
-export type GqlCItemInput = {
-    brand?: InputMaybe<Scalars['String']['input']>;
-    categoryKey: GqlCItemCategory;
-    condition?: InputMaybe<GqlCItemCondition>;
-    disposalState?: InputMaybe<GqlCItemDisposalState>;
-    disposedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    itemId?: InputMaybe<Scalars['ID']['input']>;
-    model?: InputMaybe<Scalars['String']['input']>;
-    name: Scalars['String']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-    purchasePriceCents?: InputMaybe<Scalars['Int']['input']>;
-    purchasedAt?: InputMaybe<Scalars['Date']['input']>;
-    serialNumber?: InputMaybe<Scalars['String']['input']>;
-    warrantyEndsAt?: InputMaybe<Scalars['Date']['input']>;
-    warrantyNotes?: InputMaybe<Scalars['String']['input']>;
-    warrantyProvider?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type GqlCItemRepriceInput = {
-    itemId: Scalars['ID']['input'];
-    note?: InputMaybe<Scalars['String']['input']>;
-    valueCents: Scalars['Int']['input'];
-    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
-};
-
-export interface GqlCItemServiceEntry {
-    __typename?: 'ItemServiceEntry';
-    costCents?: Maybe<Scalars['Int']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    files: Array<GqlCItemFile>;
-    kind: GqlCItemServiceKind;
-    nextDueAt?: Maybe<Scalars['Date']['output']>;
-    notes?: Maybe<Scalars['String']['output']>;
-    performedAt: Scalars['Date']['output'];
-    serviceEntryId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-    vendor?: Maybe<Scalars['String']['output']>;
-}
-
-export type GqlCItemServiceEntryInput = {
-    costCents?: InputMaybe<Scalars['Int']['input']>;
-    itemId: Scalars['ID']['input'];
-    kind: GqlCItemServiceKind;
-    nextDueAt?: InputMaybe<Scalars['Date']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    performedAt: Scalars['Date']['input'];
-    serviceEntryId?: InputMaybe<Scalars['ID']['input']>;
-    vendor?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type GqlCItemServiceKind = 'other' | 'repair' | 'replacement' | 'service';
-
-export interface GqlCItemValuation {
-    __typename?: 'ItemValuation';
-    note?: Maybe<Scalars['String']['output']>;
-    valuationId: Scalars['ID']['output'];
-    valueCents: Scalars['Int']['output'];
-    valuedAt: Scalars['DateTime']['output'];
 }
 
 export interface GqlCLog {
@@ -1450,215 +2126,6 @@ export interface GqlCLog {
 }
 
 export type GqlCLogLevel = 'debug' | 'error' | 'info' | 'warn';
-
-export interface GqlCMealPlanEntry {
-    __typename?: 'MealPlanEntry';
-    createdAt: Scalars['DateTime']['output'];
-    customText?: Maybe<Scalars['String']['output']>;
-    date: Scalars['Date']['output'];
-    entryId: Scalars['ID']['output'];
-    mealType: GqlCMealType;
-    notes?: Maybe<Scalars['String']['output']>;
-    recipe?: Maybe<GqlCRecipe>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCMealPlanEntryInput = {
-    customText?: InputMaybe<Scalars['String']['input']>;
-    date: Scalars['Date']['input'];
-    entryId?: InputMaybe<Scalars['ID']['input']>;
-    mealType: GqlCMealType;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    recipeId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GqlCMealType = 'breakfast' | 'dinner' | 'lunch' | 'other' | 'snack';
-
-export interface GqlCMediaChannel {
-    __typename?: 'MediaChannel';
-    avatarUrl?: Maybe<Scalars['String']['output']>;
-    channelId: Scalars['ID']['output'];
-    description?: Maybe<Scalars['String']['output']>;
-    handle?: Maybe<Scalars['String']['output']>;
-    name: Scalars['String']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    platform: GqlCMediaPlatform;
-    priority: Scalars['Int']['output'];
-    topics: Array<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-    url: Scalars['String']['output'];
-}
-
-export type GqlCMediaChannelInput = {
-    avatarUrl?: InputMaybe<Scalars['String']['input']>;
-    channelId?: InputMaybe<Scalars['ID']['input']>;
-    description?: InputMaybe<Scalars['String']['input']>;
-    handle?: InputMaybe<Scalars['String']['input']>;
-    name: Scalars['String']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-    platform: GqlCMediaPlatform;
-    topics: Array<Scalars['String']['input']>;
-    url: Scalars['String']['input'];
-};
-
-export type GqlCMediaPlatform = 'other' | 'podcast' | 'twitch' | 'youtube';
-
-export type GqlCMediaTopic =
-    | 'ai'
-    | 'business'
-    | 'comedy'
-    | 'education'
-    | 'entertainment'
-    | 'finance'
-    | 'gaming'
-    | 'lifestyle'
-    | 'movieCritic'
-    | 'music'
-    | 'news'
-    | 'science'
-    | 'software'
-    | 'sports'
-    | 'tech';
-
-export interface GqlCMedicalAppointment {
-    __typename?: 'MedicalAppointment';
-    appointmentId: Scalars['ID']['output'];
-    category: GqlCMedicalCategory;
-    completedAt?: Maybe<Scalars['DateTime']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
-    notes?: Maybe<Scalars['String']['output']>;
-    providerName?: Maybe<Scalars['String']['output']>;
-    scheduledAt: Scalars['DateTime']['output'];
-    status: GqlCMedicalAppointmentStatus;
-    title: Scalars['String']['output'];
-    topics: Array<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCMedicalAppointmentInput = {
-    appointmentId?: InputMaybe<Scalars['ID']['input']>;
-    category: GqlCMedicalCategory;
-    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    nextDueAt?: InputMaybe<Scalars['DateTime']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    providerName?: InputMaybe<Scalars['String']['input']>;
-    scheduledAt: Scalars['DateTime']['input'];
-    status: GqlCMedicalAppointmentStatus;
-    title: Scalars['String']['input'];
-    topics: Array<Scalars['String']['input']>;
-};
-
-export type GqlCMedicalAppointmentStatus = 'cancelled' | 'completed' | 'missed' | 'scheduled';
-
-export type GqlCMedicalCategory = 'dentist' | 'dermatology' | 'ent' | 'eyes' | 'gp' | 'mentalHealth' | 'other' | 'physio';
-
-export interface GqlCMedicalCategoryOverview {
-    __typename?: 'MedicalCategoryOverview';
-    category: GqlCMedicalCategory;
-    defaultCadenceMonths?: Maybe<Scalars['Int']['output']>;
-    isOverdue: Scalars['Boolean']['output'];
-    lastCompletedAt?: Maybe<Scalars['DateTime']['output']>;
-    nextDueAt?: Maybe<Scalars['DateTime']['output']>;
-    recentRecords: Array<GqlCMedicalRecord>;
-    upcoming: Array<GqlCMedicalAppointment>;
-}
-
-export interface GqlCMedicalRecord {
-    __typename?: 'MedicalRecord';
-    appointmentId?: Maybe<Scalars['ID']['output']>;
-    bodyAreas: Array<Scalars['String']['output']>;
-    category: GqlCMedicalCategory;
-    createdAt: Scalars['DateTime']['output'];
-    files: Array<GqlCMedicalRecordFile>;
-    occurredAt?: Maybe<Scalars['DateTime']['output']>;
-    recordId: Scalars['ID']['output'];
-    resolvedAt?: Maybe<Scalars['DateTime']['output']>;
-    severity?: Maybe<GqlCMedicalRecordSeverity>;
-    summary: Scalars['String']['output'];
-    symptoms: Array<Scalars['String']['output']>;
-    title: Scalars['String']['output'];
-    topics: Array<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export interface GqlCMedicalRecordFile {
-    __typename?: 'MedicalRecordFile';
-    createdAt: Scalars['DateTime']['output'];
-    fileUpload: GqlCFileUpload;
-    label?: Maybe<Scalars['String']['output']>;
-    pinned: Scalars['Boolean']['output'];
-    recordFileId: Scalars['ID']['output'];
-    recordId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCMedicalRecordFileAttachInput = {
-    fileUploadId: Scalars['ID']['input'];
-    label?: InputMaybe<Scalars['String']['input']>;
-    pinned?: InputMaybe<Scalars['Boolean']['input']>;
-    recordId: Scalars['ID']['input'];
-};
-
-export type GqlCMedicalRecordInput = {
-    appointmentId?: InputMaybe<Scalars['ID']['input']>;
-    bodyAreas: Array<Scalars['String']['input']>;
-    category: GqlCMedicalCategory;
-    fileUploadIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-    occurredAt?: InputMaybe<Scalars['DateTime']['input']>;
-    recordId?: InputMaybe<Scalars['ID']['input']>;
-    resolvedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    severity?: InputMaybe<GqlCMedicalRecordSeverity>;
-    summary: Scalars['String']['input'];
-    symptoms: Array<Scalars['String']['input']>;
-    title: Scalars['String']['input'];
-    topics: Array<Scalars['String']['input']>;
-};
-
-export type GqlCMedicalRecordSeverity = 'info' | 'mild' | 'moderate' | 'severe';
-
-export interface GqlCMovie {
-    __typename?: 'Movie';
-    backdropUrl?: Maybe<Scalars['String']['output']>;
-    movieId: Scalars['ID']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    overview?: Maybe<Scalars['String']['output']>;
-    posterUrl?: Maybe<Scalars['String']['output']>;
-    rating?: Maybe<Scalars['Int']['output']>;
-    releaseDate?: Maybe<Scalars['Date']['output']>;
-    runtimeMinutes?: Maybe<Scalars['Int']['output']>;
-    status: GqlCMovieStatus;
-    title: Scalars['String']['output'];
-    tmdbId?: Maybe<Scalars['Int']['output']>;
-    topics: Array<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-    watchedAt?: Maybe<Scalars['DateTime']['output']>;
-}
-
-export type GqlCMovieAddFromTmdbInput = {
-    status?: InputMaybe<GqlCMovieStatus>;
-    tmdbId: Scalars['Int']['input'];
-};
-
-export type GqlCMovieInput = {
-    backdropUrl?: InputMaybe<Scalars['String']['input']>;
-    movieId?: InputMaybe<Scalars['ID']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    overview?: InputMaybe<Scalars['String']['input']>;
-    posterUrl?: InputMaybe<Scalars['String']['input']>;
-    rating?: InputMaybe<Scalars['Int']['input']>;
-    releaseDate?: InputMaybe<Scalars['Date']['input']>;
-    runtimeMinutes?: InputMaybe<Scalars['Int']['input']>;
-    status: GqlCMovieStatus;
-    title: Scalars['String']['input'];
-    tmdbId?: InputMaybe<Scalars['Int']['input']>;
-    topics: Array<Scalars['String']['input']>;
-    watchedAt?: InputMaybe<Scalars['DateTime']['input']>;
-};
-
-export type GqlCMovieStatus = 'dropped' | 'watched' | 'watching' | 'watchlist';
-
-export type GqlCMuscleGroup = 'arms' | 'back' | 'cardio' | 'chest' | 'core' | 'fullBody' | 'legs' | 'other' | 'shoulders';
 
 export interface GqlCMutation {
     __typename?: 'Mutation';
@@ -1702,211 +2169,11 @@ export interface GqlCMutationResult {
     success: Scalars['Boolean']['output'];
 }
 
-export interface GqlCProject {
-    __typename?: 'Project';
-    activities: Array<GqlCProjectActivity>;
-    completedAt?: Maybe<Scalars['DateTime']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    description?: Maybe<Scalars['String']['output']>;
-    files: Array<GqlCProjectFile>;
-    links: Array<GqlCProjectLink>;
-    notes?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
-    projectId: Scalars['ID']['output'];
-    sourceRequest?: Maybe<GqlCProjectRequest>;
-    startedAt?: Maybe<Scalars['DateTime']['output']>;
-    status: GqlCProjectStatus;
-    tasks: Array<GqlCTask>;
-    title: Scalars['String']['output'];
-    totalWorkSec: Scalars['Int']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export interface GqlCProjectActivity {
-    __typename?: 'ProjectActivity';
-    activityId: Scalars['ID']['output'];
-    amountCents?: Maybe<Scalars['Int']['output']>;
-    channel?: Maybe<GqlCProjectActivityChannel>;
-    createdAt: Scalars['DateTime']['output'];
-    direction: GqlCProjectActivityDirection;
-    durationSec?: Maybe<Scalars['Int']['output']>;
-    endedAt?: Maybe<Scalars['DateTime']['output']>;
-    files: Array<GqlCProjectFile>;
-    kind: GqlCProjectActivityKind;
-    links: Array<GqlCProjectLink>;
-    notes?: Maybe<Scalars['String']['output']>;
-    occurredAt: Scalars['DateTime']['output'];
-    offerStatus?: Maybe<GqlCProjectOfferStatus>;
-    projectId: Scalars['ID']['output'];
-    startedAt?: Maybe<Scalars['DateTime']['output']>;
-    taskId?: Maybe<Scalars['ID']['output']>;
-    title: Scalars['String']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCProjectActivityChannel = 'aiAssistant' | 'email' | 'inPerson' | 'malt' | 'other' | 'phone' | 'videoCall';
-
-export type GqlCProjectActivityCreate = {
-    activityId?: InputMaybe<Scalars['ID']['input']>;
-    amountCents?: InputMaybe<Scalars['Int']['input']>;
-    attachFileKind?: InputMaybe<GqlCProjectFileKind>;
-    attachFileLabel?: InputMaybe<Scalars['String']['input']>;
-    attachFilePinned?: InputMaybe<Scalars['Boolean']['input']>;
-    attachFileUploadId?: InputMaybe<Scalars['ID']['input']>;
-    attachLinkKind?: InputMaybe<GqlCProjectLinkKind>;
-    attachLinkLabel?: InputMaybe<Scalars['String']['input']>;
-    attachLinkPinned?: InputMaybe<Scalars['Boolean']['input']>;
-    attachLinkUrl?: InputMaybe<Scalars['String']['input']>;
-    channel?: InputMaybe<GqlCProjectActivityChannel>;
-    direction?: InputMaybe<GqlCProjectActivityDirection>;
-    durationSec?: InputMaybe<Scalars['Int']['input']>;
-    kind: GqlCProjectActivityKind;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    occurredAt: Scalars['DateTime']['input'];
-    offerStatus?: InputMaybe<GqlCProjectOfferStatus>;
-    projectId: Scalars['ID']['input'];
-    taskId?: InputMaybe<Scalars['ID']['input']>;
-    title: Scalars['String']['input'];
-};
-
-export type GqlCProjectActivityDirection = 'incoming' | 'internal' | 'outgoing';
-
-export type GqlCProjectActivityKind = 'clientContact' | 'meeting' | 'milestone' | 'note' | 'offer' | 'work';
-
-export type GqlCProjectCreate = {
-    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    description?: InputMaybe<Scalars['String']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    position?: InputMaybe<Scalars['Int']['input']>;
-    projectId?: InputMaybe<Scalars['ID']['input']>;
-    sourceRequestId?: InputMaybe<Scalars['ID']['input']>;
-    startedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    status: GqlCProjectStatus;
-    title: Scalars['String']['input'];
-};
-
-export interface GqlCProjectFile {
-    __typename?: 'ProjectFile';
-    activityId?: Maybe<Scalars['ID']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    fileUpload: GqlCFileUpload;
-    kind: GqlCProjectFileKind;
-    label?: Maybe<Scalars['String']['output']>;
-    pinned: Scalars['Boolean']['output'];
-    projectFileId: Scalars['ID']['output'];
-    projectId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCProjectFileKind = 'contract' | 'invoice' | 'offer' | 'other' | 'screenshot';
-
-export type GqlCProjectFileUpsert = {
-    activityId?: InputMaybe<Scalars['ID']['input']>;
-    fileUploadId: Scalars['ID']['input'];
-    kind: GqlCProjectFileKind;
-    label?: InputMaybe<Scalars['String']['input']>;
-    pinned?: InputMaybe<Scalars['Boolean']['input']>;
-    projectFileId?: InputMaybe<Scalars['ID']['input']>;
-    projectId: Scalars['ID']['input'];
-};
-
-export interface GqlCProjectLink {
-    __typename?: 'ProjectLink';
-    activityId?: Maybe<Scalars['ID']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    kind: GqlCProjectLinkKind;
-    label?: Maybe<Scalars['String']['output']>;
-    pinned: Scalars['Boolean']['output'];
-    projectId: Scalars['ID']['output'];
-    projectLinkId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-    url: Scalars['String']['output'];
-}
-
-export type GqlCProjectLinkKind = 'figma' | 'gdrive' | 'github' | 'invoice' | 'malt' | 'notion' | 'offer' | 'other';
-
-export type GqlCProjectLinkUpsert = {
-    activityId?: InputMaybe<Scalars['ID']['input']>;
-    kind: GqlCProjectLinkKind;
-    label?: InputMaybe<Scalars['String']['input']>;
-    pinned?: InputMaybe<Scalars['Boolean']['input']>;
-    projectId: Scalars['ID']['input'];
-    projectLinkId?: InputMaybe<Scalars['ID']['input']>;
-    url: Scalars['String']['input'];
-};
-
-export type GqlCProjectOfferStatus = 'accepted' | 'rejected' | 'sent' | 'withdrawn';
-
-export interface GqlCProjectRequest {
-    __typename?: 'ProjectRequest';
-    budget?: Maybe<Scalars['String']['output']>;
-    chatId?: Maybe<Scalars['ID']['output']>;
-    company?: Maybe<Scalars['String']['output']>;
-    convertedProject?: Maybe<GqlCProject>;
-    createdAt: Scalars['DateTime']['output'];
-    description: Scalars['String']['output'];
-    email: Scalars['String']['output'];
-    name: Scalars['String']['output'];
-    projectRequestId: Scalars['ID']['output'];
-    projectType: GqlCProjectRequestType;
-    status: GqlCProjectRequestStatus;
-    timeline?: Maybe<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-    verifiedAt?: Maybe<Scalars['DateTime']['output']>;
-}
-
-export type GqlCProjectRequestStatus = 'archived' | 'emailVerified' | 'pendingOtp';
-
-export type GqlCProjectRequestType = 'aiIntegration' | 'consulting' | 'mobile' | 'other' | 'webApp';
-
-export type GqlCProjectStatus = 'active' | 'archived' | 'done' | 'idea' | 'paused' | 'planning';
-
-export type GqlCProjectTimerStartInput = {
-    projectId: Scalars['ID']['input'];
-    taskId?: InputMaybe<Scalars['ID']['input']>;
-    title?: InputMaybe<Scalars['String']['input']>;
-};
-
 export interface GqlCQuery {
     __typename?: 'Query';
     publicCvFindOne: GqlCCvQuery;
     sessionFindOne: GqlCSession;
 }
-
-export interface GqlCRecipe {
-    __typename?: 'Recipe';
-    createdAt: Scalars['DateTime']['output'];
-    ingredients: Array<Scalars['String']['output']>;
-    isFavorite: Scalars['Boolean']['output'];
-    lastMadeAt?: Maybe<Scalars['DateTime']['output']>;
-    mealType: GqlCMealType;
-    notes?: Maybe<Scalars['String']['output']>;
-    prepTimeMinutes?: Maybe<Scalars['Int']['output']>;
-    rating?: Maybe<Scalars['Int']['output']>;
-    recipeId: Scalars['ID']['output'];
-    servings?: Maybe<Scalars['Int']['output']>;
-    sourceUrl?: Maybe<Scalars['String']['output']>;
-    steps?: Maybe<Scalars['String']['output']>;
-    tags: Array<Scalars['String']['output']>;
-    title: Scalars['String']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCRecipeInput = {
-    ingredients?: InputMaybe<Array<Scalars['String']['input']>>;
-    isFavorite?: InputMaybe<Scalars['Boolean']['input']>;
-    lastMadeAt?: InputMaybe<Scalars['DateTime']['input']>;
-    mealType: GqlCMealType;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    prepTimeMinutes?: InputMaybe<Scalars['Int']['input']>;
-    rating?: InputMaybe<Scalars['Int']['input']>;
-    recipeId?: InputMaybe<Scalars['ID']['input']>;
-    servings?: InputMaybe<Scalars['Int']['input']>;
-    sourceUrl?: InputMaybe<Scalars['String']['input']>;
-    steps?: InputMaybe<Scalars['String']['input']>;
-    tags?: InputMaybe<Array<Scalars['String']['input']>>;
-    title: Scalars['String']['input'];
-};
 
 export interface GqlCSession {
     __typename?: 'Session';
@@ -1919,47 +2186,6 @@ export interface GqlCSession {
 
 export type GqlCSessionVisitorChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
-};
-
-export interface GqlCShow {
-    __typename?: 'Show';
-    backdropUrl?: Maybe<Scalars['String']['output']>;
-    firstAirDate?: Maybe<Scalars['Date']['output']>;
-    isCompleted: Scalars['Boolean']['output'];
-    nextSeasonReleaseDate?: Maybe<Scalars['Date']['output']>;
-    nextSeasonReleaseRough?: Maybe<Scalars['String']['output']>;
-    notes?: Maybe<Scalars['String']['output']>;
-    overview?: Maybe<Scalars['String']['output']>;
-    posterUrl?: Maybe<Scalars['String']['output']>;
-    rating?: Maybe<Scalars['Int']['output']>;
-    showId: Scalars['ID']['output'];
-    status: GqlCMovieStatus;
-    title: Scalars['String']['output'];
-    tmdbId?: Maybe<Scalars['Int']['output']>;
-    topics: Array<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCShowAddFromTmdbInput = {
-    status?: InputMaybe<GqlCMovieStatus>;
-    tmdbId: Scalars['Int']['input'];
-};
-
-export type GqlCShowInput = {
-    backdropUrl?: InputMaybe<Scalars['String']['input']>;
-    firstAirDate?: InputMaybe<Scalars['Date']['input']>;
-    isCompleted: Scalars['Boolean']['input'];
-    nextSeasonReleaseDate?: InputMaybe<Scalars['Date']['input']>;
-    nextSeasonReleaseRough?: InputMaybe<Scalars['String']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    overview?: InputMaybe<Scalars['String']['input']>;
-    posterUrl?: InputMaybe<Scalars['String']['input']>;
-    rating?: InputMaybe<Scalars['Int']['input']>;
-    showId?: InputMaybe<Scalars['ID']['input']>;
-    status: GqlCMovieStatus;
-    title: Scalars['String']['input'];
-    tmdbId?: InputMaybe<Scalars['Int']['input']>;
-    topics: Array<Scalars['String']['input']>;
 };
 
 export interface GqlCSubscription {
@@ -1976,128 +2202,6 @@ export type GqlCSubscriptionChatUpdatesArgs = {
 export type GqlCSubscriptionCompassInterviewUpdatesArgs = {
     generationId: Scalars['ID']['input'];
 };
-
-export interface GqlCSupplement {
-    __typename?: 'Supplement';
-    brand?: Maybe<Scalars['String']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    name: Scalars['String']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    nutrients: Array<GqlCSupplementNutrient>;
-    researchedAt?: Maybe<Scalars['DateTime']['output']>;
-    servingSize?: Maybe<Scalars['String']['output']>;
-    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
-    sourceUrl?: Maybe<Scalars['String']['output']>;
-    supplementId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCSupplementInput = {
-    brand?: InputMaybe<Scalars['String']['input']>;
-    name: Scalars['String']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-    researchedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    servingSize?: InputMaybe<Scalars['String']['input']>;
-    servingsPerContainer?: InputMaybe<Scalars['Int']['input']>;
-    sourceUrl?: InputMaybe<Scalars['String']['input']>;
-    supplementId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export interface GqlCSupplementNutrient {
-    __typename?: 'SupplementNutrient';
-    amount?: Maybe<Scalars['String']['output']>;
-    name: Scalars['String']['output'];
-    nutrientId: Scalars['ID']['output'];
-    percentDailyValue?: Maybe<Scalars['Int']['output']>;
-    sortOrder: Scalars['Int']['output'];
-    unit?: Maybe<Scalars['String']['output']>;
-}
-
-export type GqlCSupplementNutrientInput = {
-    amount?: InputMaybe<Scalars['String']['input']>;
-    name: Scalars['String']['input'];
-    percentDailyValue?: InputMaybe<Scalars['Int']['input']>;
-    sortOrder?: InputMaybe<Scalars['Int']['input']>;
-    unit?: InputMaybe<Scalars['String']['input']>;
-};
-
-export interface GqlCSupplementNutrientProposal {
-    __typename?: 'SupplementNutrientProposal';
-    amount?: Maybe<Scalars['String']['output']>;
-    name: Scalars['String']['output'];
-    percentDailyValue?: Maybe<Scalars['Int']['output']>;
-    unit?: Maybe<Scalars['String']['output']>;
-}
-
-export type GqlCSupplementResearchInput = {
-    brand?: InputMaybe<Scalars['String']['input']>;
-    name: Scalars['String']['input'];
-};
-
-export interface GqlCSupplementResearchResult {
-    __typename?: 'SupplementResearchResult';
-    brand?: Maybe<Scalars['String']['output']>;
-    found: Scalars['Boolean']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    nutrients: Array<GqlCSupplementNutrientProposal>;
-    servingSize?: Maybe<Scalars['String']['output']>;
-    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
-    sourceUrl?: Maybe<Scalars['String']['output']>;
-    summary: Scalars['String']['output'];
-}
-
-export interface GqlCTask {
-    __typename?: 'Task';
-    completedAt?: Maybe<Scalars['DateTime']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    dueAt?: Maybe<Scalars['DateTime']['output']>;
-    effort?: Maybe<GqlCTaskEffort>;
-    notes?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
-    projectId?: Maybe<Scalars['ID']['output']>;
-    status: GqlCTaskStatus;
-    taskId: Scalars['ID']['output'];
-    title: Scalars['String']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-    whenBucket?: Maybe<GqlCTaskWhenBucket>;
-}
-
-export type GqlCTaskCreate = {
-    completedAt?: InputMaybe<Scalars['DateTime']['input']>;
-    dueAt?: InputMaybe<Scalars['DateTime']['input']>;
-    effort?: InputMaybe<GqlCTaskEffort>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    position: Scalars['Int']['input'];
-    projectId?: InputMaybe<Scalars['ID']['input']>;
-    status: GqlCTaskStatus;
-    taskId?: InputMaybe<Scalars['ID']['input']>;
-    title: Scalars['String']['input'];
-    whenBucket?: InputMaybe<GqlCTaskWhenBucket>;
-};
-
-export type GqlCTaskEffort = 'deep' | 'focused' | 'quick';
-
-export type GqlCTaskStatus = 'doing' | 'done' | 'todo';
-
-export type GqlCTaskWhenBucket = 'someday' | 'today' | 'waiting' | 'week';
-
-export interface GqlCTmdbMovieResult {
-    __typename?: 'TmdbMovieResult';
-    overview?: Maybe<Scalars['String']['output']>;
-    posterUrl?: Maybe<Scalars['String']['output']>;
-    releaseDate?: Maybe<Scalars['Date']['output']>;
-    title: Scalars['String']['output'];
-    tmdbId: Scalars['Int']['output'];
-}
-
-export interface GqlCTmdbTvResult {
-    __typename?: 'TmdbTvResult';
-    firstAirDate?: Maybe<Scalars['Date']['output']>;
-    overview?: Maybe<Scalars['String']['output']>;
-    posterUrl?: Maybe<Scalars['String']['output']>;
-    title: Scalars['String']['output'];
-    tmdbId: Scalars['Int']['output'];
-}
 
 export interface GqlCUser {
     __typename?: 'User';
@@ -2133,109 +2237,6 @@ export interface GqlCVisitorChatQuota {
     limit: Scalars['Int']['output'];
     resetsAt?: Maybe<Scalars['DateTime']['output']>;
     used: Scalars['Int']['output'];
-}
-
-export interface GqlCWorkoutRoutine {
-    __typename?: 'WorkoutRoutine';
-    createdAt: Scalars['DateTime']['output'];
-    items: Array<GqlCWorkoutRoutineItem>;
-    name: Scalars['String']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
-    routineId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCWorkoutRoutineInput = {
-    name: Scalars['String']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-    position?: InputMaybe<Scalars['Int']['input']>;
-    routineId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export interface GqlCWorkoutRoutineItem {
-    __typename?: 'WorkoutRoutineItem';
-    createdAt: Scalars['DateTime']['output'];
-    exercise: GqlCExercise;
-    notes?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
-    routineId: Scalars['ID']['output'];
-    routineItemId: Scalars['ID']['output'];
-    targetReps?: Maybe<Scalars['Int']['output']>;
-    targetSets?: Maybe<Scalars['Int']['output']>;
-    targetWeight?: Maybe<Scalars['Float']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCWorkoutRoutineItemInput = {
-    exerciseId: Scalars['ID']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-    position?: InputMaybe<Scalars['Int']['input']>;
-    routineId: Scalars['ID']['input'];
-    routineItemId?: InputMaybe<Scalars['ID']['input']>;
-    targetReps?: InputMaybe<Scalars['Int']['input']>;
-    targetSets?: InputMaybe<Scalars['Int']['input']>;
-    targetWeight?: InputMaybe<Scalars['Float']['input']>;
-};
-
-export interface GqlCWorkoutSession {
-    __typename?: 'WorkoutSession';
-    createdAt: Scalars['DateTime']['output'];
-    date: Scalars['Date']['output'];
-    durationMinutes?: Maybe<Scalars['Int']['output']>;
-    notes?: Maybe<Scalars['String']['output']>;
-    routineId?: Maybe<Scalars['ID']['output']>;
-    sessionId: Scalars['ID']['output'];
-    sets: Array<GqlCWorkoutSet>;
-    title?: Maybe<Scalars['String']['output']>;
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCWorkoutSessionInput = {
-    date: Scalars['Date']['input'];
-    durationMinutes?: InputMaybe<Scalars['Int']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    routineId?: InputMaybe<Scalars['ID']['input']>;
-    sessionId?: InputMaybe<Scalars['ID']['input']>;
-    title?: InputMaybe<Scalars['String']['input']>;
-};
-
-export interface GqlCWorkoutSet {
-    __typename?: 'WorkoutSet';
-    createdAt: Scalars['DateTime']['output'];
-    exercise: GqlCExercise;
-    isWarmup: Scalars['Boolean']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
-    reps?: Maybe<Scalars['Int']['output']>;
-    rpe?: Maybe<Scalars['Int']['output']>;
-    sessionId: Scalars['ID']['output'];
-    setId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-    weight?: Maybe<Scalars['Float']['output']>;
-}
-
-export type GqlCWorkoutSetInput = {
-    exerciseId: Scalars['ID']['input'];
-    isWarmup?: InputMaybe<Scalars['Boolean']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    position?: InputMaybe<Scalars['Int']['input']>;
-    reps?: InputMaybe<Scalars['Int']['input']>;
-    rpe?: InputMaybe<Scalars['Int']['input']>;
-    sessionId: Scalars['ID']['input'];
-    setId?: InputMaybe<Scalars['ID']['input']>;
-    weight?: InputMaybe<Scalars['Float']['input']>;
-};
-
-export interface GqlCYoutubeChannelResult {
-    __typename?: 'YoutubeChannelResult';
-    avatarUrl?: Maybe<Scalars['String']['output']>;
-    canonicalUrl: Scalars['String']['output'];
-    channelId: Scalars['String']['output'];
-    description?: Maybe<Scalars['String']['output']>;
-    handle?: Maybe<Scalars['String']['output']>;
-    subscriberCount?: Maybe<Scalars['Int']['output']>;
-    title: Scalars['String']['output'];
 }
 
 export type GqlCCvPageQueryVariables = Exact<{ [key: string]: never }>;
@@ -3332,9 +3333,9 @@ export type GqlCWorkspaceFinancesPageUserFragment = {
             adminFinancesRecurringCostFindMany: Array<{
                 costId: string;
                 name: string;
-                categoryKey: Schema.GqlCFinanceRecurringCostCategory;
+                categoryKey: Schema.GqlCAdminFinancesRecurringCostCategory;
                 amountCents: number;
-                cadence: Schema.GqlCFinanceCadence;
+                cadence: Schema.GqlCAdminFinancesCadence;
                 currency: string;
                 notes: string | null;
                 active: boolean;
@@ -3360,9 +3361,9 @@ export type GqlCWorkspaceFinancesPageQuery = {
                     adminFinancesRecurringCostFindMany: Array<{
                         costId: string;
                         name: string;
-                        categoryKey: Schema.GqlCFinanceRecurringCostCategory;
+                        categoryKey: Schema.GqlCAdminFinancesRecurringCostCategory;
                         amountCents: number;
-                        cadence: Schema.GqlCFinanceCadence;
+                        cadence: Schema.GqlCAdminFinancesCadence;
                         currency: string;
                         notes: string | null;
                         active: boolean;
@@ -3389,9 +3390,9 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
                 adminFinancesRecurringCostFindMany: Array<{
                     costId: string;
                     name: string;
-                    categoryKey: Schema.GqlCFinanceRecurringCostCategory;
+                    categoryKey: Schema.GqlCAdminFinancesRecurringCostCategory;
                     amountCents: number;
-                    cadence: Schema.GqlCFinanceCadence;
+                    cadence: Schema.GqlCAdminFinancesCadence;
                     currency: string;
                     notes: string | null;
                     active: boolean;
@@ -3406,30 +3407,30 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceFinanceRecurringCostUpsertMutationVariables = Exact<{
-    financeRecurringCosts: Array<Schema.GqlCFinanceRecurringCostInput> | Schema.GqlCFinanceRecurringCostInput;
+    financeRecurringCosts: Array<Schema.GqlCAdminFinancesRecurringCostInput> | Schema.GqlCAdminFinancesRecurringCostInput;
 }>;
 
 export type GqlCWorkspaceFinanceRecurringCostUpsertMutation = {
-    admin: { financeRecurringCostsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminFinancesRecurringCostsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables = Exact<{
     costIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceFinanceRecurringCostDeleteMutation = { admin: { financeRecurringCostsDelete: { success: boolean } } };
+export type GqlCWorkspaceFinanceRecurringCostDeleteMutation = { admin: { adminFinancesRecurringCostsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables = Exact<{
     amountCents?: number | null | undefined;
 }>;
 
-export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation = { admin: { financeMonthlyNetIncomeSet: { success: boolean } } };
+export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation = { admin: { adminFinancesMonthlyNetIncomeSet: { success: boolean } } };
 
 export type GqlCWorkspaceFitnessExerciseFragment = {
     exerciseId: string;
     name: string;
-    muscleGroup: Schema.GqlCMuscleGroup;
-    equipment: Schema.GqlCEquipmentType | null;
+    muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+    equipment: Schema.GqlCAdminFitnessEquipmentType | null;
     notes: string | null;
 };
 
@@ -3439,8 +3440,8 @@ export type GqlCWorkspaceFitnessPageUserFragment = {
             adminFitnessExerciseFindMany: Array<{
                 exerciseId: string;
                 name: string;
-                muscleGroup: Schema.GqlCMuscleGroup;
-                equipment: Schema.GqlCEquipmentType | null;
+                muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                 notes: string | null;
             }>;
             adminFitnessRoutineFindMany: Array<{
@@ -3459,8 +3460,8 @@ export type GqlCWorkspaceFitnessPageUserFragment = {
                     exercise: {
                         exerciseId: string;
                         name: string;
-                        muscleGroup: Schema.GqlCMuscleGroup;
-                        equipment: Schema.GqlCEquipmentType | null;
+                        muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                        equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                         notes: string | null;
                     };
                 }>;
@@ -3484,8 +3485,8 @@ export type GqlCWorkspaceFitnessPageUserFragment = {
                     exercise: {
                         exerciseId: string;
                         name: string;
-                        muscleGroup: Schema.GqlCMuscleGroup;
-                        equipment: Schema.GqlCEquipmentType | null;
+                        muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                        equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                         notes: string | null;
                     };
                 }>;
@@ -3504,8 +3505,8 @@ export type GqlCWorkspaceFitnessPageQuery = {
                     adminFitnessExerciseFindMany: Array<{
                         exerciseId: string;
                         name: string;
-                        muscleGroup: Schema.GqlCMuscleGroup;
-                        equipment: Schema.GqlCEquipmentType | null;
+                        muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                        equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                         notes: string | null;
                     }>;
                     adminFitnessRoutineFindMany: Array<{
@@ -3524,8 +3525,8 @@ export type GqlCWorkspaceFitnessPageQuery = {
                             exercise: {
                                 exerciseId: string;
                                 name: string;
-                                muscleGroup: Schema.GqlCMuscleGroup;
-                                equipment: Schema.GqlCEquipmentType | null;
+                                muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                                equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                                 notes: string | null;
                             };
                         }>;
@@ -3549,8 +3550,8 @@ export type GqlCWorkspaceFitnessPageQuery = {
                             exercise: {
                                 exerciseId: string;
                                 name: string;
-                                muscleGroup: Schema.GqlCMuscleGroup;
-                                equipment: Schema.GqlCEquipmentType | null;
+                                muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                                equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                                 notes: string | null;
                             };
                         }>;
@@ -3570,8 +3571,8 @@ export type GqlCWorkspaceFitnessPageUpdatesSubscription = {
                 adminFitnessExerciseFindMany: Array<{
                     exerciseId: string;
                     name: string;
-                    muscleGroup: Schema.GqlCMuscleGroup;
-                    equipment: Schema.GqlCEquipmentType | null;
+                    muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                    equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                     notes: string | null;
                 }>;
                 adminFitnessRoutineFindMany: Array<{
@@ -3590,8 +3591,8 @@ export type GqlCWorkspaceFitnessPageUpdatesSubscription = {
                         exercise: {
                             exerciseId: string;
                             name: string;
-                            muscleGroup: Schema.GqlCMuscleGroup;
-                            equipment: Schema.GqlCEquipmentType | null;
+                            muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                            equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                             notes: string | null;
                         };
                     }>;
@@ -3615,8 +3616,8 @@ export type GqlCWorkspaceFitnessPageUpdatesSubscription = {
                         exercise: {
                             exerciseId: string;
                             name: string;
-                            muscleGroup: Schema.GqlCMuscleGroup;
-                            equipment: Schema.GqlCEquipmentType | null;
+                            muscleGroup: Schema.GqlCAdminFitnessMuscleGroup;
+                            equipment: Schema.GqlCAdminFitnessEquipmentType | null;
                             notes: string | null;
                         };
                     }>;
@@ -3627,72 +3628,74 @@ export type GqlCWorkspaceFitnessPageUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceExercisesUpsertMutationVariables = Exact<{
-    exercises: Array<Schema.GqlCExerciseInput> | Schema.GqlCExerciseInput;
+    exercises: Array<Schema.GqlCAdminFitnessExerciseInput> | Schema.GqlCAdminFitnessExerciseInput;
 }>;
 
-export type GqlCWorkspaceExercisesUpsertMutation = { admin: { exercisesUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceExercisesUpsertMutation = {
+    admin: { adminFitnessExercisesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceExercisesDeleteMutationVariables = Exact<{
     exerciseIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceExercisesDeleteMutation = { admin: { exercisesDelete: { success: boolean } } };
+export type GqlCWorkspaceExercisesDeleteMutation = { admin: { adminFitnessExercisesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceWorkoutRoutinesUpsertMutationVariables = Exact<{
-    workoutRoutines: Array<Schema.GqlCWorkoutRoutineInput> | Schema.GqlCWorkoutRoutineInput;
+    workoutRoutines: Array<Schema.GqlCAdminFitnessWorkoutRoutineInput> | Schema.GqlCAdminFitnessWorkoutRoutineInput;
 }>;
 
 export type GqlCWorkspaceWorkoutRoutinesUpsertMutation = {
-    admin: { workoutRoutinesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminFitnessWorkoutRoutinesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceWorkoutRoutinesDeleteMutationVariables = Exact<{
     routineIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceWorkoutRoutinesDeleteMutation = { admin: { workoutRoutinesDelete: { success: boolean } } };
+export type GqlCWorkspaceWorkoutRoutinesDeleteMutation = { admin: { adminFitnessWorkoutRoutinesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceWorkoutRoutineItemsUpsertMutationVariables = Exact<{
-    workoutRoutineItems: Array<Schema.GqlCWorkoutRoutineItemInput> | Schema.GqlCWorkoutRoutineItemInput;
+    workoutRoutineItems: Array<Schema.GqlCAdminFitnessWorkoutRoutineItemInput> | Schema.GqlCAdminFitnessWorkoutRoutineItemInput;
 }>;
 
 export type GqlCWorkspaceWorkoutRoutineItemsUpsertMutation = {
-    admin: { workoutRoutineItemsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminFitnessWorkoutRoutineItemsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceWorkoutRoutineItemsDeleteMutationVariables = Exact<{
     routineItemIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceWorkoutRoutineItemsDeleteMutation = { admin: { workoutRoutineItemsDelete: { success: boolean } } };
+export type GqlCWorkspaceWorkoutRoutineItemsDeleteMutation = { admin: { adminFitnessWorkoutRoutineItemsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceWorkoutSessionsUpsertMutationVariables = Exact<{
-    workoutSessions: Array<Schema.GqlCWorkoutSessionInput> | Schema.GqlCWorkoutSessionInput;
+    workoutSessions: Array<Schema.GqlCAdminFitnessWorkoutSessionInput> | Schema.GqlCAdminFitnessWorkoutSessionInput;
 }>;
 
 export type GqlCWorkspaceWorkoutSessionsUpsertMutation = {
-    admin: { workoutSessionsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminFitnessWorkoutSessionsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceWorkoutSessionsDeleteMutationVariables = Exact<{
     sessionIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceWorkoutSessionsDeleteMutation = { admin: { workoutSessionsDelete: { success: boolean } } };
+export type GqlCWorkspaceWorkoutSessionsDeleteMutation = { admin: { adminFitnessWorkoutSessionsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceWorkoutSetsUpsertMutationVariables = Exact<{
-    workoutSets: Array<Schema.GqlCWorkoutSetInput> | Schema.GqlCWorkoutSetInput;
+    workoutSets: Array<Schema.GqlCAdminFitnessWorkoutSetInput> | Schema.GqlCAdminFitnessWorkoutSetInput;
 }>;
 
 export type GqlCWorkspaceWorkoutSetsUpsertMutation = {
-    admin: { workoutSetsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminFitnessWorkoutSetsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceWorkoutSetsDeleteMutationVariables = Exact<{
     setIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceWorkoutSetsDeleteMutation = { admin: { workoutSetsDelete: { success: boolean } } };
+export type GqlCWorkspaceWorkoutSetsDeleteMutation = { admin: { adminFitnessWorkoutSetsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -3706,7 +3709,7 @@ export type GqlCWorkspaceInventoryPageUserFragment = {
             adminInventoryMaterialNetWorthCentsFindOne: number;
             adminInventoryItemFindMany: Array<{
                 itemId: string;
-                categoryKey: Schema.GqlCItemCategory;
+                categoryKey: Schema.GqlCAdminInventoryItemCategory;
                 name: string;
                 brand: string | null;
                 model: string | null;
@@ -3714,8 +3717,8 @@ export type GqlCWorkspaceInventoryPageUserFragment = {
                 purchasedAt: string | null;
                 purchasePriceCents: number | null;
                 currentValueCents: number | null;
-                condition: Schema.GqlCItemCondition | null;
-                disposalState: Schema.GqlCItemDisposalState;
+                condition: Schema.GqlCAdminInventoryItemCondition | null;
+                disposalState: Schema.GqlCAdminInventoryItemDisposalState;
                 disposedAt: string | null;
                 warrantyEndsAt: string | null;
                 warrantyProvider: string | null;
@@ -3745,7 +3748,7 @@ export type GqlCWorkspaceInventoryPageQuery = {
                     adminInventoryMaterialNetWorthCentsFindOne: number;
                     adminInventoryItemFindMany: Array<{
                         itemId: string;
-                        categoryKey: Schema.GqlCItemCategory;
+                        categoryKey: Schema.GqlCAdminInventoryItemCategory;
                         name: string;
                         brand: string | null;
                         model: string | null;
@@ -3753,8 +3756,8 @@ export type GqlCWorkspaceInventoryPageQuery = {
                         purchasedAt: string | null;
                         purchasePriceCents: number | null;
                         currentValueCents: number | null;
-                        condition: Schema.GqlCItemCondition | null;
-                        disposalState: Schema.GqlCItemDisposalState;
+                        condition: Schema.GqlCAdminInventoryItemCondition | null;
+                        disposalState: Schema.GqlCAdminInventoryItemDisposalState;
                         disposedAt: string | null;
                         warrantyEndsAt: string | null;
                         warrantyProvider: string | null;
@@ -3785,7 +3788,7 @@ export type GqlCWorkspaceInventoryPageUpdatesSubscription = {
                 adminInventoryMaterialNetWorthCentsFindOne: number;
                 adminInventoryItemFindMany: Array<{
                     itemId: string;
-                    categoryKey: Schema.GqlCItemCategory;
+                    categoryKey: Schema.GqlCAdminInventoryItemCategory;
                     name: string;
                     brand: string | null;
                     model: string | null;
@@ -3793,8 +3796,8 @@ export type GqlCWorkspaceInventoryPageUpdatesSubscription = {
                     purchasedAt: string | null;
                     purchasePriceCents: number | null;
                     currentValueCents: number | null;
-                    condition: Schema.GqlCItemCondition | null;
-                    disposalState: Schema.GqlCItemDisposalState;
+                    condition: Schema.GqlCAdminInventoryItemCondition | null;
+                    disposalState: Schema.GqlCAdminInventoryItemDisposalState;
                     disposedAt: string | null;
                     warrantyEndsAt: string | null;
                     warrantyProvider: string | null;
@@ -3816,29 +3819,33 @@ export type GqlCWorkspaceInventoryPageUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceItemsUpsertMutationVariables = Exact<{
-    items: Array<Schema.GqlCItemInput> | Schema.GqlCItemInput;
+    items: Array<Schema.GqlCAdminInventoryItemInput> | Schema.GqlCAdminInventoryItemInput;
 }>;
 
-export type GqlCWorkspaceItemsUpsertMutation = { admin: { itemsUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceItemsUpsertMutation = {
+    admin: { adminInventoryItemsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceItemsDeleteMutationVariables = Exact<{
     itemIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceItemsDeleteMutation = { admin: { itemsDelete: { success: boolean } } };
+export type GqlCWorkspaceItemsDeleteMutation = { admin: { adminInventoryItemsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceItemsRepriceMutationVariables = Exact<{
-    inputs: Array<Schema.GqlCItemRepriceInput> | Schema.GqlCItemRepriceInput;
+    inputs: Array<Schema.GqlCAdminInventoryItemRepriceInput> | Schema.GqlCAdminInventoryItemRepriceInput;
 }>;
 
-export type GqlCWorkspaceItemsRepriceMutation = { admin: { itemsReprice: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceItemsRepriceMutation = {
+    admin: { adminInventoryItemsReprice: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceInventoryDetailUserFragment = {
     admin: {
         adminInventoryFindOne: {
             adminInventoryItemFindOne: {
                 itemId: string;
-                categoryKey: Schema.GqlCItemCategory;
+                categoryKey: Schema.GqlCAdminInventoryItemCategory;
                 name: string;
                 brand: string | null;
                 model: string | null;
@@ -3846,8 +3853,8 @@ export type GqlCWorkspaceInventoryDetailUserFragment = {
                 purchasedAt: string | null;
                 purchasePriceCents: number | null;
                 currentValueCents: number | null;
-                condition: Schema.GqlCItemCondition | null;
-                disposalState: Schema.GqlCItemDisposalState;
+                condition: Schema.GqlCAdminInventoryItemCondition | null;
+                disposalState: Schema.GqlCAdminInventoryItemDisposalState;
                 disposedAt: string | null;
                 warrantyEndsAt: string | null;
                 warrantyProvider: string | null;
@@ -3858,7 +3865,7 @@ export type GqlCWorkspaceInventoryDetailUserFragment = {
                 valuations: Array<{ valuationId: string; valueCents: number; valuedAt: string; note: string | null }>;
                 serviceEntries: Array<{
                     serviceEntryId: string;
-                    kind: Schema.GqlCItemServiceKind;
+                    kind: Schema.GqlCAdminInventoryItemServiceKind;
                     performedAt: string;
                     vendor: string | null;
                     costCents: number | null;
@@ -3866,7 +3873,7 @@ export type GqlCWorkspaceInventoryDetailUserFragment = {
                     nextDueAt: string | null;
                     files: Array<{
                         itemFileId: string;
-                        kind: Schema.GqlCItemFileKind;
+                        kind: Schema.GqlCAdminInventoryItemFileKind;
                         label: string | null;
                         pinned: boolean;
                         fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
@@ -3876,7 +3883,7 @@ export type GqlCWorkspaceInventoryDetailUserFragment = {
                     itemFileId: string;
                     itemId: string;
                     serviceEntryId: string | null;
-                    kind: Schema.GqlCItemFileKind;
+                    kind: Schema.GqlCAdminInventoryItemFileKind;
                     label: string | null;
                     pinned: boolean;
                     fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
@@ -3897,7 +3904,7 @@ export type GqlCWorkspaceInventoryDetailQuery = {
                 adminInventoryFindOne: {
                     adminInventoryItemFindOne: {
                         itemId: string;
-                        categoryKey: Schema.GqlCItemCategory;
+                        categoryKey: Schema.GqlCAdminInventoryItemCategory;
                         name: string;
                         brand: string | null;
                         model: string | null;
@@ -3905,8 +3912,8 @@ export type GqlCWorkspaceInventoryDetailQuery = {
                         purchasedAt: string | null;
                         purchasePriceCents: number | null;
                         currentValueCents: number | null;
-                        condition: Schema.GqlCItemCondition | null;
-                        disposalState: Schema.GqlCItemDisposalState;
+                        condition: Schema.GqlCAdminInventoryItemCondition | null;
+                        disposalState: Schema.GqlCAdminInventoryItemDisposalState;
                         disposedAt: string | null;
                         warrantyEndsAt: string | null;
                         warrantyProvider: string | null;
@@ -3917,7 +3924,7 @@ export type GqlCWorkspaceInventoryDetailQuery = {
                         valuations: Array<{ valuationId: string; valueCents: number; valuedAt: string; note: string | null }>;
                         serviceEntries: Array<{
                             serviceEntryId: string;
-                            kind: Schema.GqlCItemServiceKind;
+                            kind: Schema.GqlCAdminInventoryItemServiceKind;
                             performedAt: string;
                             vendor: string | null;
                             costCents: number | null;
@@ -3925,7 +3932,7 @@ export type GqlCWorkspaceInventoryDetailQuery = {
                             nextDueAt: string | null;
                             files: Array<{
                                 itemFileId: string;
-                                kind: Schema.GqlCItemFileKind;
+                                kind: Schema.GqlCAdminInventoryItemFileKind;
                                 label: string | null;
                                 pinned: boolean;
                                 fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
@@ -3935,7 +3942,7 @@ export type GqlCWorkspaceInventoryDetailQuery = {
                             itemFileId: string;
                             itemId: string;
                             serviceEntryId: string | null;
-                            kind: Schema.GqlCItemFileKind;
+                            kind: Schema.GqlCAdminInventoryItemFileKind;
                             label: string | null;
                             pinned: boolean;
                             fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
@@ -3957,7 +3964,7 @@ export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
             adminInventoryFindOne: {
                 adminInventoryItemFindOne: {
                     itemId: string;
-                    categoryKey: Schema.GqlCItemCategory;
+                    categoryKey: Schema.GqlCAdminInventoryItemCategory;
                     name: string;
                     brand: string | null;
                     model: string | null;
@@ -3965,8 +3972,8 @@ export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
                     purchasedAt: string | null;
                     purchasePriceCents: number | null;
                     currentValueCents: number | null;
-                    condition: Schema.GqlCItemCondition | null;
-                    disposalState: Schema.GqlCItemDisposalState;
+                    condition: Schema.GqlCAdminInventoryItemCondition | null;
+                    disposalState: Schema.GqlCAdminInventoryItemDisposalState;
                     disposedAt: string | null;
                     warrantyEndsAt: string | null;
                     warrantyProvider: string | null;
@@ -3977,7 +3984,7 @@ export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
                     valuations: Array<{ valuationId: string; valueCents: number; valuedAt: string; note: string | null }>;
                     serviceEntries: Array<{
                         serviceEntryId: string;
-                        kind: Schema.GqlCItemServiceKind;
+                        kind: Schema.GqlCAdminInventoryItemServiceKind;
                         performedAt: string;
                         vendor: string | null;
                         costCents: number | null;
@@ -3985,7 +3992,7 @@ export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
                         nextDueAt: string | null;
                         files: Array<{
                             itemFileId: string;
-                            kind: Schema.GqlCItemFileKind;
+                            kind: Schema.GqlCAdminInventoryItemFileKind;
                             label: string | null;
                             pinned: boolean;
                             fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
@@ -3995,7 +4002,7 @@ export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
                         itemFileId: string;
                         itemId: string;
                         serviceEntryId: string | null;
-                        kind: Schema.GqlCItemFileKind;
+                        kind: Schema.GqlCAdminInventoryItemFileKind;
                         label: string | null;
                         pinned: boolean;
                         fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
@@ -4007,36 +4014,40 @@ export type GqlCWorkspaceInventoryDetailUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceItemServiceEntriesUpsertMutationVariables = Exact<{
-    itemServiceEntries: Array<Schema.GqlCItemServiceEntryInput> | Schema.GqlCItemServiceEntryInput;
+    itemServiceEntries: Array<Schema.GqlCAdminInventoryItemServiceEntryInput> | Schema.GqlCAdminInventoryItemServiceEntryInput;
 }>;
 
 export type GqlCWorkspaceItemServiceEntriesUpsertMutation = {
-    admin: { itemServiceEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminInventoryItemServiceEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceItemServiceEntriesDeleteMutationVariables = Exact<{
     serviceEntryIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceItemServiceEntriesDeleteMutation = { admin: { itemServiceEntriesDelete: { success: boolean } } };
+export type GqlCWorkspaceItemServiceEntriesDeleteMutation = { admin: { adminInventoryItemServiceEntriesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceItemFilesAttachMutationVariables = Exact<{
-    inputs: Array<Schema.GqlCItemFileAttachInput> | Schema.GqlCItemFileAttachInput;
+    inputs: Array<Schema.GqlCAdminInventoryItemFileAttachInput> | Schema.GqlCAdminInventoryItemFileAttachInput;
 }>;
 
-export type GqlCWorkspaceItemFilesAttachMutation = { admin: { itemFilesAttach: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceItemFilesAttachMutation = {
+    admin: { adminInventoryItemFilesAttach: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceItemFilesDeleteMutationVariables = Exact<{
     itemFileIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceItemFilesDeleteMutation = { admin: { itemFilesDelete: { success: boolean } } };
+export type GqlCWorkspaceItemFilesDeleteMutation = { admin: { adminInventoryItemFilesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceItemFilesUpsertMutationVariables = Exact<{
-    itemFiles: Array<Schema.GqlCItemFileUpsert> | Schema.GqlCItemFileUpsert;
+    itemFiles: Array<Schema.GqlCAdminInventoryItemFileUpsert> | Schema.GqlCAdminInventoryItemFileUpsert;
 }>;
 
-export type GqlCWorkspaceItemFilesUpsertMutation = { admin: { itemFilesUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceItemFilesUpsertMutation = {
+    admin: { adminInventoryItemFilesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceMediaPageUserFragment = {
     admin: {
@@ -4050,7 +4061,7 @@ export type GqlCWorkspaceMediaPageUserFragment = {
                 releaseDate: string | null;
                 runtimeMinutes: number | null;
                 overview: string | null;
-                status: Schema.GqlCMovieStatus;
+                status: Schema.GqlCAdminMediaMovieStatus;
                 rating: number | null;
                 watchedAt: string | null;
                 notes: string | null;
@@ -4065,7 +4076,7 @@ export type GqlCWorkspaceMediaPageUserFragment = {
                 backdropUrl: string | null;
                 firstAirDate: string | null;
                 overview: string | null;
-                status: Schema.GqlCMovieStatus;
+                status: Schema.GqlCAdminMediaMovieStatus;
                 rating: number | null;
                 notes: string | null;
                 topics: Array<string>;
@@ -4077,7 +4088,7 @@ export type GqlCWorkspaceMediaPageUserFragment = {
             adminMediaChannelFindMany: Array<{
                 channelId: string;
                 name: string;
-                platform: Schema.GqlCMediaPlatform;
+                platform: Schema.GqlCAdminMediaPlatform;
                 url: string;
                 handle: string | null;
                 avatarUrl: string | null;
@@ -4107,7 +4118,7 @@ export type GqlCWorkspaceMediaPageQuery = {
                         releaseDate: string | null;
                         runtimeMinutes: number | null;
                         overview: string | null;
-                        status: Schema.GqlCMovieStatus;
+                        status: Schema.GqlCAdminMediaMovieStatus;
                         rating: number | null;
                         watchedAt: string | null;
                         notes: string | null;
@@ -4122,7 +4133,7 @@ export type GqlCWorkspaceMediaPageQuery = {
                         backdropUrl: string | null;
                         firstAirDate: string | null;
                         overview: string | null;
-                        status: Schema.GqlCMovieStatus;
+                        status: Schema.GqlCAdminMediaMovieStatus;
                         rating: number | null;
                         notes: string | null;
                         topics: Array<string>;
@@ -4134,7 +4145,7 @@ export type GqlCWorkspaceMediaPageQuery = {
                     adminMediaChannelFindMany: Array<{
                         channelId: string;
                         name: string;
-                        platform: Schema.GqlCMediaPlatform;
+                        platform: Schema.GqlCAdminMediaPlatform;
                         url: string;
                         handle: string | null;
                         avatarUrl: string | null;
@@ -4165,7 +4176,7 @@ export type GqlCWorkspaceMediaPageUpdatesSubscription = {
                     releaseDate: string | null;
                     runtimeMinutes: number | null;
                     overview: string | null;
-                    status: Schema.GqlCMovieStatus;
+                    status: Schema.GqlCAdminMediaMovieStatus;
                     rating: number | null;
                     watchedAt: string | null;
                     notes: string | null;
@@ -4180,7 +4191,7 @@ export type GqlCWorkspaceMediaPageUpdatesSubscription = {
                     backdropUrl: string | null;
                     firstAirDate: string | null;
                     overview: string | null;
-                    status: Schema.GqlCMovieStatus;
+                    status: Schema.GqlCAdminMediaMovieStatus;
                     rating: number | null;
                     notes: string | null;
                     topics: Array<string>;
@@ -4192,7 +4203,7 @@ export type GqlCWorkspaceMediaPageUpdatesSubscription = {
                 adminMediaChannelFindMany: Array<{
                     channelId: string;
                     name: string;
-                    platform: Schema.GqlCMediaPlatform;
+                    platform: Schema.GqlCAdminMediaPlatform;
                     url: string;
                     handle: string | null;
                     avatarUrl: string | null;
@@ -4276,75 +4287,79 @@ export type GqlCWorkspaceMediaYoutubeSearchQuery = {
 };
 
 export type GqlCWorkspaceMoviesUpsertMutationVariables = Exact<{
-    movies: Array<Schema.GqlCMovieInput> | Schema.GqlCMovieInput;
+    movies: Array<Schema.GqlCAdminMediaMovieInput> | Schema.GqlCAdminMediaMovieInput;
 }>;
 
-export type GqlCWorkspaceMoviesUpsertMutation = { admin: { moviesUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceMoviesUpsertMutation = {
+    admin: { adminMediaMoviesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceMoviesDeleteMutationVariables = Exact<{
     movieIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceMoviesDeleteMutation = { admin: { moviesDelete: { success: boolean } } };
+export type GqlCWorkspaceMoviesDeleteMutation = { admin: { adminMediaMoviesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceMoviesAddFromTmdbMutationVariables = Exact<{
-    inputs: Array<Schema.GqlCMovieAddFromTmdbInput> | Schema.GqlCMovieAddFromTmdbInput;
+    inputs: Array<Schema.GqlCAdminMediaMovieAddFromTmdbInput> | Schema.GqlCAdminMediaMovieAddFromTmdbInput;
 }>;
 
 export type GqlCWorkspaceMoviesAddFromTmdbMutation = {
-    admin: { moviesAddFromTmdb: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminMediaMoviesAddFromTmdb: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceShowsUpsertMutationVariables = Exact<{
-    shows: Array<Schema.GqlCShowInput> | Schema.GqlCShowInput;
+    shows: Array<Schema.GqlCAdminMediaShowInput> | Schema.GqlCAdminMediaShowInput;
 }>;
 
-export type GqlCWorkspaceShowsUpsertMutation = { admin: { showsUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceShowsUpsertMutation = {
+    admin: { adminMediaShowsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceShowsDeleteMutationVariables = Exact<{
     showIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceShowsDeleteMutation = { admin: { showsDelete: { success: boolean } } };
+export type GqlCWorkspaceShowsDeleteMutation = { admin: { adminMediaShowsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceShowsAddFromTmdbMutationVariables = Exact<{
-    inputs: Array<Schema.GqlCShowAddFromTmdbInput> | Schema.GqlCShowAddFromTmdbInput;
+    inputs: Array<Schema.GqlCAdminMediaShowAddFromTmdbInput> | Schema.GqlCAdminMediaShowAddFromTmdbInput;
 }>;
 
 export type GqlCWorkspaceShowsAddFromTmdbMutation = {
-    admin: { showsAddFromTmdb: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminMediaShowsAddFromTmdb: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceMediaChannelsUpsertMutationVariables = Exact<{
-    mediaChannels: Array<Schema.GqlCMediaChannelInput> | Schema.GqlCMediaChannelInput;
+    mediaChannels: Array<Schema.GqlCAdminMediaChannelInput> | Schema.GqlCAdminMediaChannelInput;
 }>;
 
 export type GqlCWorkspaceMediaChannelsUpsertMutation = {
-    admin: { mediaChannelsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminMediaChannelsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceMediaChannelsDeleteMutationVariables = Exact<{
     channelIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceMediaChannelsDeleteMutation = { admin: { mediaChannelsDelete: { success: boolean } } };
+export type GqlCWorkspaceMediaChannelsDeleteMutation = { admin: { adminMediaChannelsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceMediaChannelReorderMutationVariables = Exact<{
     orderedIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceMediaChannelReorderMutation = { admin: { mediaChannelReorder: { success: boolean } } };
+export type GqlCWorkspaceMediaChannelReorderMutation = { admin: { adminMediaChannelReorder: { success: boolean } } };
 
 export type GqlCWorkspaceMedicalPageAppointmentFragment = {
     appointmentId: string;
-    category: Schema.GqlCMedicalCategory;
+    category: Schema.GqlCAdminMedicalCategory;
     providerName: string | null;
     title: string;
     notes: string | null;
     scheduledAt: string;
     completedAt: string | null;
     nextDueAt: string | null;
-    status: Schema.GqlCMedicalAppointmentStatus;
+    status: Schema.GqlCAdminMedicalAppointmentStatus;
     topics: Array<string>;
     createdAt: string;
     updatedAt: string;
@@ -4362,10 +4377,10 @@ export type GqlCWorkspaceMedicalPageRecordFileFragment = {
 
 export type GqlCWorkspaceMedicalPageRecordFragment = {
     recordId: string;
-    category: Schema.GqlCMedicalCategory;
+    category: Schema.GqlCAdminMedicalCategory;
     title: string;
     summary: string;
-    severity: Schema.GqlCMedicalRecordSeverity | null;
+    severity: Schema.GqlCAdminMedicalRecordSeverity | null;
     symptoms: Array<string>;
     bodyAreas: Array<string>;
     occurredAt: string | null;
@@ -4390,24 +4405,24 @@ export type GqlCWorkspaceMedicalPageUserFragment = {
         adminMedicalFindOne: {
             adminMedicalAppointmentFindMany: Array<{
                 appointmentId: string;
-                category: Schema.GqlCMedicalCategory;
+                category: Schema.GqlCAdminMedicalCategory;
                 providerName: string | null;
                 title: string;
                 notes: string | null;
                 scheduledAt: string;
                 completedAt: string | null;
                 nextDueAt: string | null;
-                status: Schema.GqlCMedicalAppointmentStatus;
+                status: Schema.GqlCAdminMedicalAppointmentStatus;
                 topics: Array<string>;
                 createdAt: string;
                 updatedAt: string;
             }>;
             adminMedicalRecordFindMany: Array<{
                 recordId: string;
-                category: Schema.GqlCMedicalCategory;
+                category: Schema.GqlCAdminMedicalCategory;
                 title: string;
                 summary: string;
-                severity: Schema.GqlCMedicalRecordSeverity | null;
+                severity: Schema.GqlCAdminMedicalRecordSeverity | null;
                 symptoms: Array<string>;
                 bodyAreas: Array<string>;
                 occurredAt: string | null;
@@ -4427,31 +4442,31 @@ export type GqlCWorkspaceMedicalPageUserFragment = {
                 }>;
             }>;
             adminMedicalCategoryOverviewFindMany: Array<{
-                category: Schema.GqlCMedicalCategory;
+                category: Schema.GqlCAdminMedicalCategory;
                 defaultCadenceMonths: number | null;
                 lastCompletedAt: string | null;
                 nextDueAt: string | null;
                 isOverdue: boolean;
                 upcoming: Array<{
                     appointmentId: string;
-                    category: Schema.GqlCMedicalCategory;
+                    category: Schema.GqlCAdminMedicalCategory;
                     providerName: string | null;
                     title: string;
                     notes: string | null;
                     scheduledAt: string;
                     completedAt: string | null;
                     nextDueAt: string | null;
-                    status: Schema.GqlCMedicalAppointmentStatus;
+                    status: Schema.GqlCAdminMedicalAppointmentStatus;
                     topics: Array<string>;
                     createdAt: string;
                     updatedAt: string;
                 }>;
                 recentRecords: Array<{
                     recordId: string;
-                    category: Schema.GqlCMedicalCategory;
+                    category: Schema.GqlCAdminMedicalCategory;
                     title: string;
                     summary: string;
-                    severity: Schema.GqlCMedicalRecordSeverity | null;
+                    severity: Schema.GqlCAdminMedicalRecordSeverity | null;
                     symptoms: Array<string>;
                     bodyAreas: Array<string>;
                     occurredAt: string | null;
@@ -4484,24 +4499,24 @@ export type GqlCWorkspaceMedicalPageQuery = {
                 adminMedicalFindOne: {
                     adminMedicalAppointmentFindMany: Array<{
                         appointmentId: string;
-                        category: Schema.GqlCMedicalCategory;
+                        category: Schema.GqlCAdminMedicalCategory;
                         providerName: string | null;
                         title: string;
                         notes: string | null;
                         scheduledAt: string;
                         completedAt: string | null;
                         nextDueAt: string | null;
-                        status: Schema.GqlCMedicalAppointmentStatus;
+                        status: Schema.GqlCAdminMedicalAppointmentStatus;
                         topics: Array<string>;
                         createdAt: string;
                         updatedAt: string;
                     }>;
                     adminMedicalRecordFindMany: Array<{
                         recordId: string;
-                        category: Schema.GqlCMedicalCategory;
+                        category: Schema.GqlCAdminMedicalCategory;
                         title: string;
                         summary: string;
-                        severity: Schema.GqlCMedicalRecordSeverity | null;
+                        severity: Schema.GqlCAdminMedicalRecordSeverity | null;
                         symptoms: Array<string>;
                         bodyAreas: Array<string>;
                         occurredAt: string | null;
@@ -4521,31 +4536,31 @@ export type GqlCWorkspaceMedicalPageQuery = {
                         }>;
                     }>;
                     adminMedicalCategoryOverviewFindMany: Array<{
-                        category: Schema.GqlCMedicalCategory;
+                        category: Schema.GqlCAdminMedicalCategory;
                         defaultCadenceMonths: number | null;
                         lastCompletedAt: string | null;
                         nextDueAt: string | null;
                         isOverdue: boolean;
                         upcoming: Array<{
                             appointmentId: string;
-                            category: Schema.GqlCMedicalCategory;
+                            category: Schema.GqlCAdminMedicalCategory;
                             providerName: string | null;
                             title: string;
                             notes: string | null;
                             scheduledAt: string;
                             completedAt: string | null;
                             nextDueAt: string | null;
-                            status: Schema.GqlCMedicalAppointmentStatus;
+                            status: Schema.GqlCAdminMedicalAppointmentStatus;
                             topics: Array<string>;
                             createdAt: string;
                             updatedAt: string;
                         }>;
                         recentRecords: Array<{
                             recordId: string;
-                            category: Schema.GqlCMedicalCategory;
+                            category: Schema.GqlCAdminMedicalCategory;
                             title: string;
                             summary: string;
-                            severity: Schema.GqlCMedicalRecordSeverity | null;
+                            severity: Schema.GqlCAdminMedicalRecordSeverity | null;
                             symptoms: Array<string>;
                             bodyAreas: Array<string>;
                             occurredAt: string | null;
@@ -4579,24 +4594,24 @@ export type GqlCWorkspaceMedicalPageUpdatesSubscription = {
             adminMedicalFindOne: {
                 adminMedicalAppointmentFindMany: Array<{
                     appointmentId: string;
-                    category: Schema.GqlCMedicalCategory;
+                    category: Schema.GqlCAdminMedicalCategory;
                     providerName: string | null;
                     title: string;
                     notes: string | null;
                     scheduledAt: string;
                     completedAt: string | null;
                     nextDueAt: string | null;
-                    status: Schema.GqlCMedicalAppointmentStatus;
+                    status: Schema.GqlCAdminMedicalAppointmentStatus;
                     topics: Array<string>;
                     createdAt: string;
                     updatedAt: string;
                 }>;
                 adminMedicalRecordFindMany: Array<{
                     recordId: string;
-                    category: Schema.GqlCMedicalCategory;
+                    category: Schema.GqlCAdminMedicalCategory;
                     title: string;
                     summary: string;
-                    severity: Schema.GqlCMedicalRecordSeverity | null;
+                    severity: Schema.GqlCAdminMedicalRecordSeverity | null;
                     symptoms: Array<string>;
                     bodyAreas: Array<string>;
                     occurredAt: string | null;
@@ -4616,31 +4631,31 @@ export type GqlCWorkspaceMedicalPageUpdatesSubscription = {
                     }>;
                 }>;
                 adminMedicalCategoryOverviewFindMany: Array<{
-                    category: Schema.GqlCMedicalCategory;
+                    category: Schema.GqlCAdminMedicalCategory;
                     defaultCadenceMonths: number | null;
                     lastCompletedAt: string | null;
                     nextDueAt: string | null;
                     isOverdue: boolean;
                     upcoming: Array<{
                         appointmentId: string;
-                        category: Schema.GqlCMedicalCategory;
+                        category: Schema.GqlCAdminMedicalCategory;
                         providerName: string | null;
                         title: string;
                         notes: string | null;
                         scheduledAt: string;
                         completedAt: string | null;
                         nextDueAt: string | null;
-                        status: Schema.GqlCMedicalAppointmentStatus;
+                        status: Schema.GqlCAdminMedicalAppointmentStatus;
                         topics: Array<string>;
                         createdAt: string;
                         updatedAt: string;
                     }>;
                     recentRecords: Array<{
                         recordId: string;
-                        category: Schema.GqlCMedicalCategory;
+                        category: Schema.GqlCAdminMedicalCategory;
                         title: string;
                         summary: string;
-                        severity: Schema.GqlCMedicalRecordSeverity | null;
+                        severity: Schema.GqlCAdminMedicalRecordSeverity | null;
                         symptoms: Array<string>;
                         bodyAreas: Array<string>;
                         occurredAt: string | null;
@@ -4666,51 +4681,51 @@ export type GqlCWorkspaceMedicalPageUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceMedicalAppointmentsUpsertMutationVariables = Exact<{
-    medicalAppointments: Array<Schema.GqlCMedicalAppointmentInput> | Schema.GqlCMedicalAppointmentInput;
+    medicalAppointments: Array<Schema.GqlCAdminMedicalAppointmentInput> | Schema.GqlCAdminMedicalAppointmentInput;
 }>;
 
 export type GqlCWorkspaceMedicalAppointmentsUpsertMutation = {
-    admin: { medicalAppointmentsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminMedicalAppointmentsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceMedicalAppointmentsDeleteMutationVariables = Exact<{
     appointmentIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceMedicalAppointmentsDeleteMutation = { admin: { medicalAppointmentsDelete: { success: boolean } } };
+export type GqlCWorkspaceMedicalAppointmentsDeleteMutation = { admin: { adminMedicalAppointmentsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceMedicalRecordsUpsertMutationVariables = Exact<{
-    medicalRecords: Array<Schema.GqlCMedicalRecordInput> | Schema.GqlCMedicalRecordInput;
+    medicalRecords: Array<Schema.GqlCAdminMedicalRecordInput> | Schema.GqlCAdminMedicalRecordInput;
 }>;
 
 export type GqlCWorkspaceMedicalRecordsUpsertMutation = {
-    admin: { medicalRecordsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminMedicalRecordsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceMedicalRecordsDeleteMutationVariables = Exact<{
     recordIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceMedicalRecordsDeleteMutation = { admin: { medicalRecordsDelete: { success: boolean } } };
+export type GqlCWorkspaceMedicalRecordsDeleteMutation = { admin: { adminMedicalRecordsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceMedicalRecordFilesAttachMutationVariables = Exact<{
-    inputs: Array<Schema.GqlCMedicalRecordFileAttachInput> | Schema.GqlCMedicalRecordFileAttachInput;
+    inputs: Array<Schema.GqlCAdminMedicalRecordFileAttachInput> | Schema.GqlCAdminMedicalRecordFileAttachInput;
 }>;
 
 export type GqlCWorkspaceMedicalRecordFilesAttachMutation = {
-    admin: { medicalRecordFilesAttach: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminMedicalRecordFilesAttach: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceMedicalRecordFilesDeleteMutationVariables = Exact<{
     recordFileIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceMedicalRecordFilesDeleteMutation = { admin: { medicalRecordFilesDelete: { success: boolean } } };
+export type GqlCWorkspaceMedicalRecordFilesDeleteMutation = { admin: { adminMedicalRecordFilesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceNutritionRecipeFragment = {
     recipeId: string;
     title: string;
-    mealType: Schema.GqlCMealType;
+    mealType: Schema.GqlCAdminNutritionMealType;
     ingredients: Array<string>;
     steps: string | null;
     tags: Array<string>;
@@ -4748,7 +4763,7 @@ export type GqlCWorkspaceNutritionPageUserFragment = {
             adminNutritionRecipeFindMany: Array<{
                 recipeId: string;
                 title: string;
-                mealType: Schema.GqlCMealType;
+                mealType: Schema.GqlCAdminNutritionMealType;
                 ingredients: Array<string>;
                 steps: string | null;
                 tags: Array<string>;
@@ -4763,16 +4778,16 @@ export type GqlCWorkspaceNutritionPageUserFragment = {
             adminNutritionMealPlanFindMany: Array<{
                 entryId: string;
                 date: string;
-                mealType: Schema.GqlCMealType;
+                mealType: Schema.GqlCAdminNutritionMealType;
                 customText: string | null;
                 notes: string | null;
-                recipe: { recipeId: string; title: string; mealType: Schema.GqlCMealType } | null;
+                recipe: { recipeId: string; title: string; mealType: Schema.GqlCAdminNutritionMealType } | null;
             }>;
             adminNutritionFoodLogFindMany: Array<{
                 logId: string;
                 consumedAt: string;
-                mealType: Schema.GqlCMealType;
-                kind: Schema.GqlCFoodLogKind;
+                mealType: Schema.GqlCAdminNutritionMealType;
+                kind: Schema.GqlCAdminNutritionFoodLogKind;
                 description: string;
                 notes: string | null;
                 recipe: { recipeId: string; title: string } | null;
@@ -4809,7 +4824,7 @@ export type GqlCWorkspaceNutritionPageQuery = {
                     adminNutritionRecipeFindMany: Array<{
                         recipeId: string;
                         title: string;
-                        mealType: Schema.GqlCMealType;
+                        mealType: Schema.GqlCAdminNutritionMealType;
                         ingredients: Array<string>;
                         steps: string | null;
                         tags: Array<string>;
@@ -4824,16 +4839,16 @@ export type GqlCWorkspaceNutritionPageQuery = {
                     adminNutritionMealPlanFindMany: Array<{
                         entryId: string;
                         date: string;
-                        mealType: Schema.GqlCMealType;
+                        mealType: Schema.GqlCAdminNutritionMealType;
                         customText: string | null;
                         notes: string | null;
-                        recipe: { recipeId: string; title: string; mealType: Schema.GqlCMealType } | null;
+                        recipe: { recipeId: string; title: string; mealType: Schema.GqlCAdminNutritionMealType } | null;
                     }>;
                     adminNutritionFoodLogFindMany: Array<{
                         logId: string;
                         consumedAt: string;
-                        mealType: Schema.GqlCMealType;
-                        kind: Schema.GqlCFoodLogKind;
+                        mealType: Schema.GqlCAdminNutritionMealType;
+                        kind: Schema.GqlCAdminNutritionFoodLogKind;
                         description: string;
                         notes: string | null;
                         recipe: { recipeId: string; title: string } | null;
@@ -4871,7 +4886,7 @@ export type GqlCWorkspaceNutritionPageUpdatesSubscription = {
                 adminNutritionRecipeFindMany: Array<{
                     recipeId: string;
                     title: string;
-                    mealType: Schema.GqlCMealType;
+                    mealType: Schema.GqlCAdminNutritionMealType;
                     ingredients: Array<string>;
                     steps: string | null;
                     tags: Array<string>;
@@ -4886,16 +4901,16 @@ export type GqlCWorkspaceNutritionPageUpdatesSubscription = {
                 adminNutritionMealPlanFindMany: Array<{
                     entryId: string;
                     date: string;
-                    mealType: Schema.GqlCMealType;
+                    mealType: Schema.GqlCAdminNutritionMealType;
                     customText: string | null;
                     notes: string | null;
-                    recipe: { recipeId: string; title: string; mealType: Schema.GqlCMealType } | null;
+                    recipe: { recipeId: string; title: string; mealType: Schema.GqlCAdminNutritionMealType } | null;
                 }>;
                 adminNutritionFoodLogFindMany: Array<{
                     logId: string;
                     consumedAt: string;
-                    mealType: Schema.GqlCMealType;
-                    kind: Schema.GqlCFoodLogKind;
+                    mealType: Schema.GqlCAdminNutritionMealType;
+                    kind: Schema.GqlCAdminNutritionFoodLogKind;
                     description: string;
                     notes: string | null;
                     recipe: { recipeId: string; title: string } | null;
@@ -4924,73 +4939,75 @@ export type GqlCWorkspaceNutritionPageUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceRecipesUpsertMutationVariables = Exact<{
-    recipes: Array<Schema.GqlCRecipeInput> | Schema.GqlCRecipeInput;
+    recipes: Array<Schema.GqlCAdminNutritionRecipeInput> | Schema.GqlCAdminNutritionRecipeInput;
 }>;
 
-export type GqlCWorkspaceRecipesUpsertMutation = { admin: { recipesUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceRecipesUpsertMutation = {
+    admin: { adminNutritionRecipesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceRecipesDeleteMutationVariables = Exact<{
     recipeIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceRecipesDeleteMutation = { admin: { recipesDelete: { success: boolean } } };
+export type GqlCWorkspaceRecipesDeleteMutation = { admin: { adminNutritionRecipesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceMealPlanEntriesUpsertMutationVariables = Exact<{
-    mealPlanEntries: Array<Schema.GqlCMealPlanEntryInput> | Schema.GqlCMealPlanEntryInput;
+    mealPlanEntries: Array<Schema.GqlCAdminNutritionMealPlanEntryInput> | Schema.GqlCAdminNutritionMealPlanEntryInput;
 }>;
 
 export type GqlCWorkspaceMealPlanEntriesUpsertMutation = {
-    admin: { mealPlanEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminNutritionMealPlanEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceMealPlanEntriesDeleteMutationVariables = Exact<{
     entryIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceMealPlanEntriesDeleteMutation = { admin: { mealPlanEntriesDelete: { success: boolean } } };
+export type GqlCWorkspaceMealPlanEntriesDeleteMutation = { admin: { adminNutritionMealPlanEntriesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceFoodLogEntriesUpsertMutationVariables = Exact<{
-    foodLogEntries: Array<Schema.GqlCFoodLogEntryInput> | Schema.GqlCFoodLogEntryInput;
+    foodLogEntries: Array<Schema.GqlCAdminNutritionFoodLogEntryInput> | Schema.GqlCAdminNutritionFoodLogEntryInput;
 }>;
 
 export type GqlCWorkspaceFoodLogEntriesUpsertMutation = {
-    admin: { foodLogEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminNutritionFoodLogEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceFoodLogEntriesDeleteMutationVariables = Exact<{
     logIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceFoodLogEntriesDeleteMutation = { admin: { foodLogEntriesDelete: { success: boolean } } };
+export type GqlCWorkspaceFoodLogEntriesDeleteMutation = { admin: { adminNutritionFoodLogEntriesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceSupplementsUpsertMutationVariables = Exact<{
-    supplements: Array<Schema.GqlCSupplementInput> | Schema.GqlCSupplementInput;
+    supplements: Array<Schema.GqlCAdminNutritionSupplementInput> | Schema.GqlCAdminNutritionSupplementInput;
 }>;
 
 export type GqlCWorkspaceSupplementsUpsertMutation = {
-    admin: { supplementsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminNutritionSupplementsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceSupplementNutrientsReplaceMutationVariables = Exact<{
     supplementId: string;
-    nutrients: Array<Schema.GqlCSupplementNutrientInput> | Schema.GqlCSupplementNutrientInput;
+    nutrients: Array<Schema.GqlCAdminNutritionSupplementNutrientInput> | Schema.GqlCAdminNutritionSupplementNutrientInput;
 }>;
 
-export type GqlCWorkspaceSupplementNutrientsReplaceMutation = { admin: { supplementNutrientsReplace: { success: boolean } } };
+export type GqlCWorkspaceSupplementNutrientsReplaceMutation = { admin: { adminNutritionSupplementNutrientsReplace: { success: boolean } } };
 
 export type GqlCWorkspaceSupplementsDeleteMutationVariables = Exact<{
     supplementIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceSupplementsDeleteMutation = { admin: { supplementsDelete: { success: boolean } } };
+export type GqlCWorkspaceSupplementsDeleteMutation = { admin: { adminNutritionSupplementsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceSupplementResearchMutationVariables = Exact<{
-    input: Schema.GqlCSupplementResearchInput;
+    input: Schema.GqlCAdminNutritionSupplementResearchInput;
 }>;
 
 export type GqlCWorkspaceSupplementResearchMutation = {
     admin: {
-        supplementResearch: {
+        adminNutritionSupplementResearch: {
             found: boolean;
             brand: string | null;
             servingSize: string | null;
@@ -5011,21 +5028,21 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
             name: string;
             email: string;
             company: string | null;
-            projectType: Schema.GqlCProjectRequestType;
+            projectType: Schema.GqlCAdminProjectRequestType;
             description: string;
             budget: string | null;
             timeline: string | null;
-            status: Schema.GqlCProjectRequestStatus;
+            status: Schema.GqlCAdminProjectRequestStatus;
             verifiedAt: string | null;
             createdAt: string;
-            convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
+            convertedProject: { projectId: string; title: string; status: Schema.GqlCAdminProjectStatus } | null;
         }>;
         adminProjectFindMany: Array<{
             projectId: string;
             title: string;
             description: string | null;
             notes: string | null;
-            status: Schema.GqlCProjectStatus;
+            status: Schema.GqlCAdminProjectStatus;
             position: number;
             startedAt: string | null;
             completedAt: string | null;
@@ -5037,14 +5054,14 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
                 name: string;
                 email: string;
                 company: string | null;
-                projectType: Schema.GqlCProjectRequestType;
+                projectType: Schema.GqlCAdminProjectRequestType;
             } | null;
             tasks: Array<{
                 taskId: string;
                 projectId: string | null;
                 title: string;
                 notes: string | null;
-                status: Schema.GqlCTaskStatus;
+                status: Schema.GqlCAdminProjectTaskStatus;
                 position: number;
                 dueAt: string | null;
                 completedAt: string | null;
@@ -5053,8 +5070,8 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
                 activityId: string;
                 projectId: string;
                 taskId: string | null;
-                kind: Schema.GqlCProjectActivityKind;
-                channel: Schema.GqlCProjectActivityChannel | null;
+                kind: Schema.GqlCAdminProjectActivityKind;
+                channel: Schema.GqlCAdminProjectActivityChannel | null;
                 title: string;
                 notes: string | null;
                 occurredAt: string;
@@ -5068,7 +5085,7 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
             activityId: string;
             projectId: string;
             taskId: string | null;
-            kind: Schema.GqlCProjectActivityKind;
+            kind: Schema.GqlCAdminProjectActivityKind;
             title: string;
             occurredAt: string;
             startedAt: string | null;
@@ -5090,21 +5107,21 @@ export type GqlCWorkspaceProjectsPageQuery = {
                     name: string;
                     email: string;
                     company: string | null;
-                    projectType: Schema.GqlCProjectRequestType;
+                    projectType: Schema.GqlCAdminProjectRequestType;
                     description: string;
                     budget: string | null;
                     timeline: string | null;
-                    status: Schema.GqlCProjectRequestStatus;
+                    status: Schema.GqlCAdminProjectRequestStatus;
                     verifiedAt: string | null;
                     createdAt: string;
-                    convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
+                    convertedProject: { projectId: string; title: string; status: Schema.GqlCAdminProjectStatus } | null;
                 }>;
                 adminProjectFindMany: Array<{
                     projectId: string;
                     title: string;
                     description: string | null;
                     notes: string | null;
-                    status: Schema.GqlCProjectStatus;
+                    status: Schema.GqlCAdminProjectStatus;
                     position: number;
                     startedAt: string | null;
                     completedAt: string | null;
@@ -5116,14 +5133,14 @@ export type GqlCWorkspaceProjectsPageQuery = {
                         name: string;
                         email: string;
                         company: string | null;
-                        projectType: Schema.GqlCProjectRequestType;
+                        projectType: Schema.GqlCAdminProjectRequestType;
                     } | null;
                     tasks: Array<{
                         taskId: string;
                         projectId: string | null;
                         title: string;
                         notes: string | null;
-                        status: Schema.GqlCTaskStatus;
+                        status: Schema.GqlCAdminProjectTaskStatus;
                         position: number;
                         dueAt: string | null;
                         completedAt: string | null;
@@ -5132,8 +5149,8 @@ export type GqlCWorkspaceProjectsPageQuery = {
                         activityId: string;
                         projectId: string;
                         taskId: string | null;
-                        kind: Schema.GqlCProjectActivityKind;
-                        channel: Schema.GqlCProjectActivityChannel | null;
+                        kind: Schema.GqlCAdminProjectActivityKind;
+                        channel: Schema.GqlCAdminProjectActivityChannel | null;
                         title: string;
                         notes: string | null;
                         occurredAt: string;
@@ -5147,7 +5164,7 @@ export type GqlCWorkspaceProjectsPageQuery = {
                     activityId: string;
                     projectId: string;
                     taskId: string | null;
-                    kind: Schema.GqlCProjectActivityKind;
+                    kind: Schema.GqlCAdminProjectActivityKind;
                     title: string;
                     occurredAt: string;
                     startedAt: string | null;
@@ -5170,21 +5187,21 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                 name: string;
                 email: string;
                 company: string | null;
-                projectType: Schema.GqlCProjectRequestType;
+                projectType: Schema.GqlCAdminProjectRequestType;
                 description: string;
                 budget: string | null;
                 timeline: string | null;
-                status: Schema.GqlCProjectRequestStatus;
+                status: Schema.GqlCAdminProjectRequestStatus;
                 verifiedAt: string | null;
                 createdAt: string;
-                convertedProject: { projectId: string; title: string; status: Schema.GqlCProjectStatus } | null;
+                convertedProject: { projectId: string; title: string; status: Schema.GqlCAdminProjectStatus } | null;
             }>;
             adminProjectFindMany: Array<{
                 projectId: string;
                 title: string;
                 description: string | null;
                 notes: string | null;
-                status: Schema.GqlCProjectStatus;
+                status: Schema.GqlCAdminProjectStatus;
                 position: number;
                 startedAt: string | null;
                 completedAt: string | null;
@@ -5196,14 +5213,14 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                     name: string;
                     email: string;
                     company: string | null;
-                    projectType: Schema.GqlCProjectRequestType;
+                    projectType: Schema.GqlCAdminProjectRequestType;
                 } | null;
                 tasks: Array<{
                     taskId: string;
                     projectId: string | null;
                     title: string;
                     notes: string | null;
-                    status: Schema.GqlCTaskStatus;
+                    status: Schema.GqlCAdminProjectTaskStatus;
                     position: number;
                     dueAt: string | null;
                     completedAt: string | null;
@@ -5212,8 +5229,8 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                     activityId: string;
                     projectId: string;
                     taskId: string | null;
-                    kind: Schema.GqlCProjectActivityKind;
-                    channel: Schema.GqlCProjectActivityChannel | null;
+                    kind: Schema.GqlCAdminProjectActivityKind;
+                    channel: Schema.GqlCAdminProjectActivityChannel | null;
                     title: string;
                     notes: string | null;
                     occurredAt: string;
@@ -5227,7 +5244,7 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                 activityId: string;
                 projectId: string;
                 taskId: string | null;
-                kind: Schema.GqlCProjectActivityKind;
+                kind: Schema.GqlCAdminProjectActivityKind;
                 title: string;
                 occurredAt: string;
                 startedAt: string | null;
@@ -5242,40 +5259,42 @@ export type GqlCWorkspaceProjectRequestArchiveMutationVariables = Exact<{
     projectRequestId: string;
 }>;
 
-export type GqlCWorkspaceProjectRequestArchiveMutation = { admin: { projectRequestArchive: { success: boolean } } };
+export type GqlCWorkspaceProjectRequestArchiveMutation = { admin: { adminProjectRequestArchive: { success: boolean } } };
 
 export type GqlCWorkspaceProjectRequestDeleteMutationVariables = Exact<{
     projectRequestId: string;
 }>;
 
-export type GqlCWorkspaceProjectRequestDeleteMutation = { admin: { projectRequestDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectRequestDeleteMutation = { admin: { adminProjectRequestDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectUpsertMutationVariables = Exact<{
     projectId?: string | null | undefined;
     title: string;
     description?: string | null | undefined;
     notes?: string | null | undefined;
-    status: Schema.GqlCProjectStatus;
+    status: Schema.GqlCAdminProjectStatus;
     position?: number | null | undefined;
     sourceRequestId?: string | null | undefined;
     startedAt?: string | null | undefined;
     completedAt?: string | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectUpsertMutation = { admin: { projectsUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceProjectUpsertMutation = {
+    admin: { adminProjectsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceProjectReorderMutationVariables = Exact<{
     orderedIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceProjectReorderMutation = { admin: { projectReorder: { success: boolean } } };
+export type GqlCWorkspaceProjectReorderMutation = { admin: { adminProjectReorder: { success: boolean } } };
 
 export type GqlCWorkspaceProjectActivityUpsertMutationVariables = Exact<{
     activityId?: string | null | undefined;
     projectId: string;
     taskId?: string | null | undefined;
-    kind: Schema.GqlCProjectActivityKind;
-    channel?: Schema.GqlCProjectActivityChannel | null | undefined;
+    kind: Schema.GqlCAdminProjectActivityKind;
+    channel?: Schema.GqlCAdminProjectActivityChannel | null | undefined;
     title: string;
     notes?: string | null | undefined;
     occurredAt: string;
@@ -5283,14 +5302,14 @@ export type GqlCWorkspaceProjectActivityUpsertMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProjectActivityUpsertMutation = {
-    admin: { projectActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminProjectActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceProjectActivityDeleteMutationVariables = Exact<{
     activityId: string;
 }>;
 
-export type GqlCWorkspaceProjectActivityDeleteMutation = { admin: { projectActivitiesDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectActivityDeleteMutation = { admin: { adminProjectActivitiesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectDetailUserFragment = {
     admin: {
@@ -5298,7 +5317,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
             activityId: string;
             projectId: string;
             taskId: string | null;
-            kind: Schema.GqlCProjectActivityKind;
+            kind: Schema.GqlCAdminProjectActivityKind;
             title: string;
             occurredAt: string;
             startedAt: string | null;
@@ -5310,7 +5329,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
             title: string;
             description: string | null;
             notes: string | null;
-            status: Schema.GqlCProjectStatus;
+            status: Schema.GqlCAdminProjectStatus;
             position: number;
             startedAt: string | null;
             completedAt: string | null;
@@ -5322,7 +5341,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
                 name: string;
                 email: string;
                 company: string | null;
-                projectType: Schema.GqlCProjectRequestType;
+                projectType: Schema.GqlCAdminProjectRequestType;
                 description: string;
                 budget: string | null;
                 timeline: string | null;
@@ -5332,20 +5351,20 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
                 projectId: string | null;
                 title: string;
                 notes: string | null;
-                status: Schema.GqlCTaskStatus;
+                status: Schema.GqlCAdminProjectTaskStatus;
                 position: number;
                 dueAt: string | null;
                 completedAt: string | null;
-                effort: Schema.GqlCTaskEffort | null;
-                whenBucket: Schema.GqlCTaskWhenBucket | null;
+                effort: Schema.GqlCAdminProjectTaskEffort | null;
+                whenBucket: Schema.GqlCAdminProjectTaskWhenBucket | null;
             }>;
             activities: Array<{
                 activityId: string;
                 projectId: string;
                 taskId: string | null;
-                kind: Schema.GqlCProjectActivityKind;
-                channel: Schema.GqlCProjectActivityChannel | null;
-                direction: Schema.GqlCProjectActivityDirection;
+                kind: Schema.GqlCAdminProjectActivityKind;
+                channel: Schema.GqlCAdminProjectActivityChannel | null;
+                direction: Schema.GqlCAdminProjectActivityDirection;
                 title: string;
                 notes: string | null;
                 occurredAt: string;
@@ -5353,19 +5372,19 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
                 endedAt: string | null;
                 durationSec: number | null;
                 amountCents: number | null;
-                offerStatus: Schema.GqlCProjectOfferStatus | null;
+                offerStatus: Schema.GqlCAdminProjectOfferStatus | null;
                 createdAt: string;
                 links: Array<{
                     projectLinkId: string;
                     url: string;
                     label: string | null;
-                    kind: Schema.GqlCProjectLinkKind;
+                    kind: Schema.GqlCAdminProjectLinkKind;
                     pinned: boolean;
                 }>;
                 files: Array<{
                     projectFileId: string;
                     label: string | null;
-                    kind: Schema.GqlCProjectFileKind;
+                    kind: Schema.GqlCAdminProjectFileKind;
                     pinned: boolean;
                     fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
                 }>;
@@ -5376,7 +5395,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
                 activityId: string | null;
                 url: string;
                 label: string | null;
-                kind: Schema.GqlCProjectLinkKind;
+                kind: Schema.GqlCAdminProjectLinkKind;
                 pinned: boolean;
                 createdAt: string;
                 updatedAt: string;
@@ -5386,7 +5405,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
                 projectId: string;
                 activityId: string | null;
                 label: string | null;
-                kind: Schema.GqlCProjectFileKind;
+                kind: Schema.GqlCAdminProjectFileKind;
                 pinned: boolean;
                 createdAt: string;
                 updatedAt: string;
@@ -5408,7 +5427,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                     activityId: string;
                     projectId: string;
                     taskId: string | null;
-                    kind: Schema.GqlCProjectActivityKind;
+                    kind: Schema.GqlCAdminProjectActivityKind;
                     title: string;
                     occurredAt: string;
                     startedAt: string | null;
@@ -5420,7 +5439,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                     title: string;
                     description: string | null;
                     notes: string | null;
-                    status: Schema.GqlCProjectStatus;
+                    status: Schema.GqlCAdminProjectStatus;
                     position: number;
                     startedAt: string | null;
                     completedAt: string | null;
@@ -5432,7 +5451,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                         name: string;
                         email: string;
                         company: string | null;
-                        projectType: Schema.GqlCProjectRequestType;
+                        projectType: Schema.GqlCAdminProjectRequestType;
                         description: string;
                         budget: string | null;
                         timeline: string | null;
@@ -5442,20 +5461,20 @@ export type GqlCWorkspaceProjectDetailQuery = {
                         projectId: string | null;
                         title: string;
                         notes: string | null;
-                        status: Schema.GqlCTaskStatus;
+                        status: Schema.GqlCAdminProjectTaskStatus;
                         position: number;
                         dueAt: string | null;
                         completedAt: string | null;
-                        effort: Schema.GqlCTaskEffort | null;
-                        whenBucket: Schema.GqlCTaskWhenBucket | null;
+                        effort: Schema.GqlCAdminProjectTaskEffort | null;
+                        whenBucket: Schema.GqlCAdminProjectTaskWhenBucket | null;
                     }>;
                     activities: Array<{
                         activityId: string;
                         projectId: string;
                         taskId: string | null;
-                        kind: Schema.GqlCProjectActivityKind;
-                        channel: Schema.GqlCProjectActivityChannel | null;
-                        direction: Schema.GqlCProjectActivityDirection;
+                        kind: Schema.GqlCAdminProjectActivityKind;
+                        channel: Schema.GqlCAdminProjectActivityChannel | null;
+                        direction: Schema.GqlCAdminProjectActivityDirection;
                         title: string;
                         notes: string | null;
                         occurredAt: string;
@@ -5463,19 +5482,19 @@ export type GqlCWorkspaceProjectDetailQuery = {
                         endedAt: string | null;
                         durationSec: number | null;
                         amountCents: number | null;
-                        offerStatus: Schema.GqlCProjectOfferStatus | null;
+                        offerStatus: Schema.GqlCAdminProjectOfferStatus | null;
                         createdAt: string;
                         links: Array<{
                             projectLinkId: string;
                             url: string;
                             label: string | null;
-                            kind: Schema.GqlCProjectLinkKind;
+                            kind: Schema.GqlCAdminProjectLinkKind;
                             pinned: boolean;
                         }>;
                         files: Array<{
                             projectFileId: string;
                             label: string | null;
-                            kind: Schema.GqlCProjectFileKind;
+                            kind: Schema.GqlCAdminProjectFileKind;
                             pinned: boolean;
                             fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
                         }>;
@@ -5486,7 +5505,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                         activityId: string | null;
                         url: string;
                         label: string | null;
-                        kind: Schema.GqlCProjectLinkKind;
+                        kind: Schema.GqlCAdminProjectLinkKind;
                         pinned: boolean;
                         createdAt: string;
                         updatedAt: string;
@@ -5496,7 +5515,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                         projectId: string;
                         activityId: string | null;
                         label: string | null;
-                        kind: Schema.GqlCProjectFileKind;
+                        kind: Schema.GqlCAdminProjectFileKind;
                         pinned: boolean;
                         createdAt: string;
                         updatedAt: string;
@@ -5519,7 +5538,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                 activityId: string;
                 projectId: string;
                 taskId: string | null;
-                kind: Schema.GqlCProjectActivityKind;
+                kind: Schema.GqlCAdminProjectActivityKind;
                 title: string;
                 occurredAt: string;
                 startedAt: string | null;
@@ -5531,7 +5550,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                 title: string;
                 description: string | null;
                 notes: string | null;
-                status: Schema.GqlCProjectStatus;
+                status: Schema.GqlCAdminProjectStatus;
                 position: number;
                 startedAt: string | null;
                 completedAt: string | null;
@@ -5543,7 +5562,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                     name: string;
                     email: string;
                     company: string | null;
-                    projectType: Schema.GqlCProjectRequestType;
+                    projectType: Schema.GqlCAdminProjectRequestType;
                     description: string;
                     budget: string | null;
                     timeline: string | null;
@@ -5553,20 +5572,20 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                     projectId: string | null;
                     title: string;
                     notes: string | null;
-                    status: Schema.GqlCTaskStatus;
+                    status: Schema.GqlCAdminProjectTaskStatus;
                     position: number;
                     dueAt: string | null;
                     completedAt: string | null;
-                    effort: Schema.GqlCTaskEffort | null;
-                    whenBucket: Schema.GqlCTaskWhenBucket | null;
+                    effort: Schema.GqlCAdminProjectTaskEffort | null;
+                    whenBucket: Schema.GqlCAdminProjectTaskWhenBucket | null;
                 }>;
                 activities: Array<{
                     activityId: string;
                     projectId: string;
                     taskId: string | null;
-                    kind: Schema.GqlCProjectActivityKind;
-                    channel: Schema.GqlCProjectActivityChannel | null;
-                    direction: Schema.GqlCProjectActivityDirection;
+                    kind: Schema.GqlCAdminProjectActivityKind;
+                    channel: Schema.GqlCAdminProjectActivityChannel | null;
+                    direction: Schema.GqlCAdminProjectActivityDirection;
                     title: string;
                     notes: string | null;
                     occurredAt: string;
@@ -5574,19 +5593,19 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                     endedAt: string | null;
                     durationSec: number | null;
                     amountCents: number | null;
-                    offerStatus: Schema.GqlCProjectOfferStatus | null;
+                    offerStatus: Schema.GqlCAdminProjectOfferStatus | null;
                     createdAt: string;
                     links: Array<{
                         projectLinkId: string;
                         url: string;
                         label: string | null;
-                        kind: Schema.GqlCProjectLinkKind;
+                        kind: Schema.GqlCAdminProjectLinkKind;
                         pinned: boolean;
                     }>;
                     files: Array<{
                         projectFileId: string;
                         label: string | null;
-                        kind: Schema.GqlCProjectFileKind;
+                        kind: Schema.GqlCAdminProjectFileKind;
                         pinned: boolean;
                         fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
                     }>;
@@ -5597,7 +5616,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                     activityId: string | null;
                     url: string;
                     label: string | null;
-                    kind: Schema.GqlCProjectLinkKind;
+                    kind: Schema.GqlCAdminProjectLinkKind;
                     pinned: boolean;
                     createdAt: string;
                     updatedAt: string;
@@ -5607,7 +5626,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                     projectId: string;
                     activityId: string | null;
                     label: string | null;
-                    kind: Schema.GqlCProjectFileKind;
+                    kind: Schema.GqlCAdminProjectFileKind;
                     pinned: boolean;
                     createdAt: string;
                     updatedAt: string;
@@ -5623,77 +5642,77 @@ export type GqlCWorkspaceProjectDetailUpsertProjectMutationVariables = Exact<{
     title: string;
     description?: string | null | undefined;
     notes?: string | null | undefined;
-    status: Schema.GqlCProjectStatus;
+    status: Schema.GqlCAdminProjectStatus;
     position?: number | null | undefined;
     startedAt?: string | null | undefined;
     completedAt?: string | null | undefined;
 }>;
 
 export type GqlCWorkspaceProjectDetailUpsertProjectMutation = {
-    admin: { projectsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminProjectsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceProjectDetailDeleteProjectMutationVariables = Exact<{
     projectId: string;
 }>;
 
-export type GqlCWorkspaceProjectDetailDeleteProjectMutation = { admin: { projectsDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectDetailDeleteProjectMutation = { admin: { adminProjectsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectDetailUpsertTaskMutationVariables = Exact<{
     taskId?: string | null | undefined;
     projectId?: string | null | undefined;
     title: string;
     notes?: string | null | undefined;
-    status: Schema.GqlCTaskStatus;
+    status: Schema.GqlCAdminProjectTaskStatus;
     position: number;
     dueAt?: string | null | undefined;
     completedAt?: string | null | undefined;
-    effort?: Schema.GqlCTaskEffort | null | undefined;
-    whenBucket?: Schema.GqlCTaskWhenBucket | null | undefined;
+    effort?: Schema.GqlCAdminProjectTaskEffort | null | undefined;
+    whenBucket?: Schema.GqlCAdminProjectTaskWhenBucket | null | undefined;
 }>;
 
 export type GqlCWorkspaceProjectDetailUpsertTaskMutation = {
-    admin: { tasksUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminProjectTasksUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceProjectDetailDeleteTaskMutationVariables = Exact<{
     taskId: string;
 }>;
 
-export type GqlCWorkspaceProjectDetailDeleteTaskMutation = { admin: { tasksDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectDetailDeleteTaskMutation = { admin: { adminProjectTasksDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectDetailUpsertActivityMutationVariables = Exact<{
     activityId?: string | null | undefined;
     projectId: string;
     taskId?: string | null | undefined;
-    kind: Schema.GqlCProjectActivityKind;
-    channel?: Schema.GqlCProjectActivityChannel | null | undefined;
-    direction?: Schema.GqlCProjectActivityDirection | null | undefined;
+    kind: Schema.GqlCAdminProjectActivityKind;
+    channel?: Schema.GqlCAdminProjectActivityChannel | null | undefined;
+    direction?: Schema.GqlCAdminProjectActivityDirection | null | undefined;
     title: string;
     notes?: string | null | undefined;
     occurredAt: string;
     durationSec?: number | null | undefined;
     amountCents?: number | null | undefined;
-    offerStatus?: Schema.GqlCProjectOfferStatus | null | undefined;
+    offerStatus?: Schema.GqlCAdminProjectOfferStatus | null | undefined;
     attachLinkUrl?: string | null | undefined;
-    attachLinkKind?: Schema.GqlCProjectLinkKind | null | undefined;
+    attachLinkKind?: Schema.GqlCAdminProjectLinkKind | null | undefined;
     attachLinkLabel?: string | null | undefined;
     attachLinkPinned?: boolean | null | undefined;
     attachFileUploadId?: string | null | undefined;
-    attachFileKind?: Schema.GqlCProjectFileKind | null | undefined;
+    attachFileKind?: Schema.GqlCAdminProjectFileKind | null | undefined;
     attachFileLabel?: string | null | undefined;
     attachFilePinned?: boolean | null | undefined;
 }>;
 
 export type GqlCWorkspaceProjectDetailUpsertActivityMutation = {
-    admin: { projectActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminProjectActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceProjectDetailDeleteActivityMutationVariables = Exact<{
     activityId: string;
 }>;
 
-export type GqlCWorkspaceProjectDetailDeleteActivityMutation = { admin: { projectActivitiesDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectDetailDeleteActivityMutation = { admin: { adminProjectActivitiesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectDetailTimerStartMutationVariables = Exact<{
     projectId: string;
@@ -5702,14 +5721,14 @@ export type GqlCWorkspaceProjectDetailTimerStartMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceProjectDetailTimerStartMutation = {
-    admin: { projectTimersStart: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminProjectTimersStart: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceProjectDetailTimerStopMutationVariables = Exact<{
     activityId: string;
 }>;
 
-export type GqlCWorkspaceProjectDetailTimerStopMutation = { admin: { projectTimersStop: { success: boolean } } };
+export type GqlCWorkspaceProjectDetailTimerStopMutation = { admin: { adminProjectTimersStop: { success: boolean } } };
 
 export type GqlCWorkspaceProjectLinkUpsertMutationVariables = Exact<{
     projectLinkId?: string | null | undefined;
@@ -5717,19 +5736,19 @@ export type GqlCWorkspaceProjectLinkUpsertMutationVariables = Exact<{
     activityId?: string | null | undefined;
     url: string;
     label?: string | null | undefined;
-    kind: Schema.GqlCProjectLinkKind;
+    kind: Schema.GqlCAdminProjectLinkKind;
     pinned?: boolean | null | undefined;
 }>;
 
 export type GqlCWorkspaceProjectLinkUpsertMutation = {
-    admin: { projectLinksUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminProjectLinksUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceProjectLinkDeleteMutationVariables = Exact<{
     projectLinkId: string;
 }>;
 
-export type GqlCWorkspaceProjectLinkDeleteMutation = { admin: { projectLinksDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectLinkDeleteMutation = { admin: { adminProjectLinksDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectFileUpsertMutationVariables = Exact<{
     projectFileId?: string | null | undefined;
@@ -5737,19 +5756,19 @@ export type GqlCWorkspaceProjectFileUpsertMutationVariables = Exact<{
     activityId?: string | null | undefined;
     fileUploadId: string;
     label?: string | null | undefined;
-    kind: Schema.GqlCProjectFileKind;
+    kind: Schema.GqlCAdminProjectFileKind;
     pinned?: boolean | null | undefined;
 }>;
 
 export type GqlCWorkspaceProjectFileUpsertMutation = {
-    admin: { projectFilesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminProjectFilesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceProjectFileDeleteMutationVariables = Exact<{
     projectFileId: string;
 }>;
 
-export type GqlCWorkspaceProjectFileDeleteMutation = { admin: { projectFilesDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectFileDeleteMutation = { admin: { adminProjectFilesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceSoftwarePageQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -5761,7 +5780,7 @@ export type GqlCWorkspaceSoftwarePageQuery = {
                     adminMediaChannelFindMany: Array<{
                         channelId: string;
                         name: string;
-                        platform: Schema.GqlCMediaPlatform;
+                        platform: Schema.GqlCAdminMediaPlatform;
                         url: string;
                         handle: string | null;
                         avatarUrl: string | null;
@@ -5781,12 +5800,12 @@ export type GqlCWorkspaceTodosPageUserFragment = {
             projectId: string | null;
             title: string;
             notes: string | null;
-            status: Schema.GqlCTaskStatus;
+            status: Schema.GqlCAdminProjectTaskStatus;
             position: number;
             dueAt: string | null;
             completedAt: string | null;
-            effort: Schema.GqlCTaskEffort | null;
-            whenBucket: Schema.GqlCTaskWhenBucket | null;
+            effort: Schema.GqlCAdminProjectTaskEffort | null;
+            whenBucket: Schema.GqlCAdminProjectTaskWhenBucket | null;
         }>;
     } | null;
 };
@@ -5802,12 +5821,12 @@ export type GqlCWorkspaceTodosPageQuery = {
                     projectId: string | null;
                     title: string;
                     notes: string | null;
-                    status: Schema.GqlCTaskStatus;
+                    status: Schema.GqlCAdminProjectTaskStatus;
                     position: number;
                     dueAt: string | null;
                     completedAt: string | null;
-                    effort: Schema.GqlCTaskEffort | null;
-                    whenBucket: Schema.GqlCTaskWhenBucket | null;
+                    effort: Schema.GqlCAdminProjectTaskEffort | null;
+                    whenBucket: Schema.GqlCAdminProjectTaskWhenBucket | null;
                 }>;
             } | null;
         } | null;
@@ -5824,12 +5843,12 @@ export type GqlCWorkspaceTodosPageUpdatesSubscription = {
                 projectId: string | null;
                 title: string;
                 notes: string | null;
-                status: Schema.GqlCTaskStatus;
+                status: Schema.GqlCAdminProjectTaskStatus;
                 position: number;
                 dueAt: string | null;
                 completedAt: string | null;
-                effort: Schema.GqlCTaskEffort | null;
-                whenBucket: Schema.GqlCTaskWhenBucket | null;
+                effort: Schema.GqlCAdminProjectTaskEffort | null;
+                whenBucket: Schema.GqlCAdminProjectTaskWhenBucket | null;
             }>;
         } | null;
     };
@@ -5839,21 +5858,23 @@ export type GqlCWorkspaceTodoUpsertMutationVariables = Exact<{
     taskId?: string | null | undefined;
     title: string;
     notes?: string | null | undefined;
-    status: Schema.GqlCTaskStatus;
+    status: Schema.GqlCAdminProjectTaskStatus;
     position: number;
     dueAt?: string | null | undefined;
     completedAt?: string | null | undefined;
-    effort?: Schema.GqlCTaskEffort | null | undefined;
-    whenBucket?: Schema.GqlCTaskWhenBucket | null | undefined;
+    effort?: Schema.GqlCAdminProjectTaskEffort | null | undefined;
+    whenBucket?: Schema.GqlCAdminProjectTaskWhenBucket | null | undefined;
 }>;
 
-export type GqlCWorkspaceTodoUpsertMutation = { admin: { tasksUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceTodoUpsertMutation = {
+    admin: { adminProjectTasksUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceTodoDeleteMutationVariables = Exact<{
     taskId: string;
 }>;
 
-export type GqlCWorkspaceTodoDeleteMutation = { admin: { tasksDelete: { success: boolean } } };
+export type GqlCWorkspaceTodoDeleteMutation = { admin: { adminProjectTasksDelete: { success: boolean } } };
 
 export type GqlCWorkspaceTravelPageUserFragment = {
     admin: {
@@ -7505,7 +7526,7 @@ export const WorkspaceFitnessExerciseFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessExercise' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -7659,7 +7680,7 @@ export const WorkspaceFitnessPageUserFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessExercise' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8043,7 +8064,7 @@ export const WorkspaceMedicalPageAppointmentFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalAppointment' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8070,7 +8091,7 @@ export const WorkspaceMedicalPageRecordFileFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecordFile' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8105,7 +8126,7 @@ export const WorkspaceMedicalPageRecordFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecord' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8136,7 +8157,7 @@ export const WorkspaceMedicalPageRecordFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecordFile' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8265,7 +8286,7 @@ export const WorkspaceMedicalPageUserFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecordFile' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8295,7 +8316,7 @@ export const WorkspaceMedicalPageUserFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalAppointment' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8317,7 +8338,7 @@ export const WorkspaceMedicalPageUserFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecord' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8353,7 +8374,7 @@ export const WorkspaceNutritionRecipeFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionRecipe' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8381,7 +8402,7 @@ export const WorkspaceNutritionSupplementFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionSupplement' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8525,7 +8546,7 @@ export const WorkspaceNutritionPageUserFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionRecipe' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -8548,7 +8569,7 @@ export const WorkspaceNutritionPageUserFragmentDoc = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionSupplement' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -13740,7 +13761,7 @@ export const WorkspaceFinanceRecurringCostUpsertDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'FinanceRecurringCostInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFinancesRecurringCostInput' } },
                             },
                         },
                     },
@@ -13757,7 +13778,7 @@ export const WorkspaceFinanceRecurringCostUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'financeRecurringCostsUpsert' },
+                                    name: { kind: 'Name', value: 'adminFinancesRecurringCostsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -13812,7 +13833,7 @@ export const WorkspaceFinanceRecurringCostDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'financeRecurringCostsDelete' },
+                                    name: { kind: 'Name', value: 'adminFinancesRecurringCostsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -13858,7 +13879,7 @@ export const WorkspaceFinanceMonthlyNetIncomeSetDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'financeMonthlyNetIncomeSet' },
+                                    name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeSet' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -13912,7 +13933,7 @@ export const WorkspaceFitnessPageDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessExercise' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -14084,7 +14105,7 @@ export const WorkspaceFitnessPageUpdatesDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessExercise' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -14247,7 +14268,10 @@ export const WorkspaceExercisesUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ExerciseInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessExerciseInput' } },
+                            },
                         },
                     },
                 },
@@ -14263,7 +14287,7 @@ export const WorkspaceExercisesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'exercisesUpsert' },
+                                    name: { kind: 'Name', value: 'adminFitnessExercisesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14318,7 +14342,7 @@ export const WorkspaceExercisesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'exercisesDelete' },
+                                    name: { kind: 'Name', value: 'adminFitnessExercisesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14356,7 +14380,7 @@ export const WorkspaceWorkoutRoutinesUpsertDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutRoutineInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessWorkoutRoutineInput' } },
                             },
                         },
                     },
@@ -14373,7 +14397,7 @@ export const WorkspaceWorkoutRoutinesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutRoutinesUpsert' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutRoutinesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14428,7 +14452,7 @@ export const WorkspaceWorkoutRoutinesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutRoutinesDelete' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutRoutinesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14466,7 +14490,7 @@ export const WorkspaceWorkoutRoutineItemsUpsertDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutRoutineItemInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessWorkoutRoutineItemInput' } },
                             },
                         },
                     },
@@ -14483,7 +14507,7 @@ export const WorkspaceWorkoutRoutineItemsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutRoutineItemsUpsert' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutRoutineItemsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14538,7 +14562,7 @@ export const WorkspaceWorkoutRoutineItemsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutRoutineItemsDelete' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutRoutineItemsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14576,7 +14600,7 @@ export const WorkspaceWorkoutSessionsUpsertDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutSessionInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessWorkoutSessionInput' } },
                             },
                         },
                     },
@@ -14593,7 +14617,7 @@ export const WorkspaceWorkoutSessionsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutSessionsUpsert' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutSessionsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14648,7 +14672,7 @@ export const WorkspaceWorkoutSessionsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutSessionsDelete' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutSessionsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14684,7 +14708,10 @@ export const WorkspaceWorkoutSetsUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutSetInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFitnessWorkoutSetInput' } },
+                            },
                         },
                     },
                 },
@@ -14700,7 +14727,7 @@ export const WorkspaceWorkoutSetsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutSetsUpsert' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutSetsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -14755,7 +14782,7 @@ export const WorkspaceWorkoutSetsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'workoutSetsDelete' },
+                                    name: { kind: 'Name', value: 'adminFitnessWorkoutSetsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15046,7 +15073,10 @@ export const WorkspaceItemsUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminInventoryItemInput' } },
+                            },
                         },
                     },
                 },
@@ -15062,7 +15092,7 @@ export const WorkspaceItemsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemsUpsert' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15117,7 +15147,7 @@ export const WorkspaceItemsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemsDelete' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15153,7 +15183,10 @@ export const WorkspaceItemsRepriceDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemRepriceInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminInventoryItemRepriceInput' } },
+                            },
                         },
                     },
                 },
@@ -15169,7 +15202,7 @@ export const WorkspaceItemsRepriceDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemsReprice' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemsReprice' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15635,7 +15668,7 @@ export const WorkspaceItemServiceEntriesUpsertDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemServiceEntryInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminInventoryItemServiceEntryInput' } },
                             },
                         },
                     },
@@ -15652,7 +15685,7 @@ export const WorkspaceItemServiceEntriesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemServiceEntriesUpsert' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemServiceEntriesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15707,7 +15740,7 @@ export const WorkspaceItemServiceEntriesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemServiceEntriesDelete' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemServiceEntriesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15745,7 +15778,7 @@ export const WorkspaceItemFilesAttachDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemFileAttachInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminInventoryItemFileAttachInput' } },
                             },
                         },
                     },
@@ -15762,7 +15795,7 @@ export const WorkspaceItemFilesAttachDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemFilesAttach' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemFilesAttach' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15817,7 +15850,7 @@ export const WorkspaceItemFilesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemFilesDelete' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemFilesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -15853,7 +15886,10 @@ export const WorkspaceItemFilesUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ItemFileUpsert' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminInventoryItemFileUpsert' } },
+                            },
                         },
                     },
                 },
@@ -15869,7 +15905,7 @@ export const WorkspaceItemFilesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'itemFilesUpsert' },
+                                    name: { kind: 'Name', value: 'adminInventoryItemFilesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16434,7 +16470,10 @@ export const WorkspaceMoviesUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MovieInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMediaMovieInput' } },
+                            },
                         },
                     },
                 },
@@ -16450,7 +16489,7 @@ export const WorkspaceMoviesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'moviesUpsert' },
+                                    name: { kind: 'Name', value: 'adminMediaMoviesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16505,7 +16544,7 @@ export const WorkspaceMoviesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'moviesDelete' },
+                                    name: { kind: 'Name', value: 'adminMediaMoviesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16543,7 +16582,7 @@ export const WorkspaceMoviesAddFromTmdbDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'MovieAddFromTmdbInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMediaMovieAddFromTmdbInput' } },
                             },
                         },
                     },
@@ -16560,7 +16599,7 @@ export const WorkspaceMoviesAddFromTmdbDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'moviesAddFromTmdb' },
+                                    name: { kind: 'Name', value: 'adminMediaMoviesAddFromTmdb' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16599,7 +16638,10 @@ export const WorkspaceShowsUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ShowInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMediaShowInput' } },
+                            },
                         },
                     },
                 },
@@ -16615,7 +16657,7 @@ export const WorkspaceShowsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'showsUpsert' },
+                                    name: { kind: 'Name', value: 'adminMediaShowsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16670,7 +16712,7 @@ export const WorkspaceShowsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'showsDelete' },
+                                    name: { kind: 'Name', value: 'adminMediaShowsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16708,7 +16750,7 @@ export const WorkspaceShowsAddFromTmdbDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'ShowAddFromTmdbInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMediaShowAddFromTmdbInput' } },
                             },
                         },
                     },
@@ -16725,7 +16767,7 @@ export const WorkspaceShowsAddFromTmdbDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'showsAddFromTmdb' },
+                                    name: { kind: 'Name', value: 'adminMediaShowsAddFromTmdb' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16764,7 +16806,10 @@ export const WorkspaceMediaChannelsUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MediaChannelInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMediaChannelInput' } },
+                            },
                         },
                     },
                 },
@@ -16780,7 +16825,7 @@ export const WorkspaceMediaChannelsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'mediaChannelsUpsert' },
+                                    name: { kind: 'Name', value: 'adminMediaChannelsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16835,7 +16880,7 @@ export const WorkspaceMediaChannelsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'mediaChannelsDelete' },
+                                    name: { kind: 'Name', value: 'adminMediaChannelsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16887,7 +16932,7 @@ export const WorkspaceMediaChannelReorderDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'mediaChannelReorder' },
+                                    name: { kind: 'Name', value: 'adminMediaChannelReorder' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -16941,7 +16986,7 @@ export const WorkspaceMedicalPageDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalAppointment' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -16963,7 +17008,7 @@ export const WorkspaceMedicalPageDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecordFile' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -16993,7 +17038,7 @@ export const WorkspaceMedicalPageDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecord' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -17141,7 +17186,7 @@ export const WorkspaceMedicalPageUpdatesDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageAppointment' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointment' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalAppointment' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -17163,7 +17208,7 @@ export const WorkspaceMedicalPageUpdatesDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecordFile' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFile' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecordFile' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -17193,7 +17238,7 @@ export const WorkspaceMedicalPageUpdatesDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceMedicalPageRecord' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecord' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecord' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -17334,7 +17379,7 @@ export const WorkspaceMedicalAppointmentsUpsertDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalAppointmentInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalAppointmentInput' } },
                             },
                         },
                     },
@@ -17351,7 +17396,7 @@ export const WorkspaceMedicalAppointmentsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medicalAppointmentsUpsert' },
+                                    name: { kind: 'Name', value: 'adminMedicalAppointmentsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -17406,7 +17451,7 @@ export const WorkspaceMedicalAppointmentsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medicalAppointmentsDelete' },
+                                    name: { kind: 'Name', value: 'adminMedicalAppointmentsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -17442,7 +17487,10 @@ export const WorkspaceMedicalRecordsUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecordInput' } },
+                            },
                         },
                     },
                 },
@@ -17458,7 +17506,7 @@ export const WorkspaceMedicalRecordsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medicalRecordsUpsert' },
+                                    name: { kind: 'Name', value: 'adminMedicalRecordsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -17513,7 +17561,7 @@ export const WorkspaceMedicalRecordsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medicalRecordsDelete' },
+                                    name: { kind: 'Name', value: 'adminMedicalRecordsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -17551,7 +17599,7 @@ export const WorkspaceMedicalRecordFilesAttachDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'MedicalRecordFileAttachInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminMedicalRecordFileAttachInput' } },
                             },
                         },
                     },
@@ -17568,7 +17616,7 @@ export const WorkspaceMedicalRecordFilesAttachDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medicalRecordFilesAttach' },
+                                    name: { kind: 'Name', value: 'adminMedicalRecordFilesAttach' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -17623,7 +17671,7 @@ export const WorkspaceMedicalRecordFilesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'medicalRecordFilesDelete' },
+                                    name: { kind: 'Name', value: 'adminMedicalRecordFilesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -17679,7 +17727,7 @@ export const WorkspaceNutritionPageDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionRecipe' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -17702,7 +17750,7 @@ export const WorkspaceNutritionPageDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionSupplement' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -17864,7 +17912,7 @@ export const WorkspaceNutritionPageUpdatesDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionRecipe' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -17887,7 +17935,7 @@ export const WorkspaceNutritionPageUpdatesDocument = {
         {
             kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
-            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionSupplement' } },
             selectionSet: {
                 kind: 'SelectionSet',
                 selections: [
@@ -18040,7 +18088,10 @@ export const WorkspaceRecipesUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'RecipeInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionRecipeInput' } },
+                            },
                         },
                     },
                 },
@@ -18056,7 +18107,7 @@ export const WorkspaceRecipesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'recipesUpsert' },
+                                    name: { kind: 'Name', value: 'adminNutritionRecipesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18111,7 +18162,7 @@ export const WorkspaceRecipesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'recipesDelete' },
+                                    name: { kind: 'Name', value: 'adminNutritionRecipesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18147,7 +18198,10 @@ export const WorkspaceMealPlanEntriesUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MealPlanEntryInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionMealPlanEntryInput' } },
+                            },
                         },
                     },
                 },
@@ -18163,7 +18217,7 @@ export const WorkspaceMealPlanEntriesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'mealPlanEntriesUpsert' },
+                                    name: { kind: 'Name', value: 'adminNutritionMealPlanEntriesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18218,7 +18272,7 @@ export const WorkspaceMealPlanEntriesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'mealPlanEntriesDelete' },
+                                    name: { kind: 'Name', value: 'adminNutritionMealPlanEntriesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18254,7 +18308,10 @@ export const WorkspaceFoodLogEntriesUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'FoodLogEntryInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionFoodLogEntryInput' } },
+                            },
                         },
                     },
                 },
@@ -18270,7 +18327,7 @@ export const WorkspaceFoodLogEntriesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'foodLogEntriesUpsert' },
+                                    name: { kind: 'Name', value: 'adminNutritionFoodLogEntriesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18325,7 +18382,7 @@ export const WorkspaceFoodLogEntriesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'foodLogEntriesDelete' },
+                                    name: { kind: 'Name', value: 'adminNutritionFoodLogEntriesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18361,7 +18418,10 @@ export const WorkspaceSupplementsUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'SupplementInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionSupplementInput' } },
+                            },
                         },
                     },
                 },
@@ -18377,7 +18437,7 @@ export const WorkspaceSupplementsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'supplementsUpsert' },
+                                    name: { kind: 'Name', value: 'adminNutritionSupplementsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18423,7 +18483,7 @@ export const WorkspaceSupplementNutrientsReplaceDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'SupplementNutrientInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionSupplementNutrientInput' } },
                             },
                         },
                     },
@@ -18440,7 +18500,7 @@ export const WorkspaceSupplementNutrientsReplaceDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'supplementNutrientsReplace' },
+                                    name: { kind: 'Name', value: 'adminNutritionSupplementNutrientsReplace' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18497,7 +18557,7 @@ export const WorkspaceSupplementsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'supplementsDelete' },
+                                    name: { kind: 'Name', value: 'adminNutritionSupplementsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18529,7 +18589,10 @@ export const WorkspaceSupplementResearchDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'SupplementResearchInput' } } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminNutritionSupplementResearchInput' } },
+                    },
                 },
             ],
             selectionSet: {
@@ -18543,7 +18606,7 @@ export const WorkspaceSupplementResearchDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'supplementResearch' },
+                                    name: { kind: 'Name', value: 'adminNutritionSupplementResearch' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18951,7 +19014,7 @@ export const WorkspaceProjectRequestArchiveDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectRequestArchive' },
+                                    name: { kind: 'Name', value: 'adminProjectRequestArchive' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -18997,7 +19060,7 @@ export const WorkspaceProjectRequestDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectRequestDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectRequestDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -19049,7 +19112,7 @@ export const WorkspaceProjectUpsertDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectStatus' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectStatus' } } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -19083,7 +19146,7 @@ export const WorkspaceProjectUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectsUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -19195,7 +19258,7 @@ export const WorkspaceProjectReorderDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectReorder' },
+                                    name: { kind: 'Name', value: 'adminProjectReorder' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -19242,12 +19305,12 @@ export const WorkspaceProjectActivityUpsertDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityKind' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectActivityKind' } } },
                 },
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'channel' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityChannel' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectActivityChannel' } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -19281,7 +19344,7 @@ export const WorkspaceProjectActivityUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectActivitiesUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectActivitiesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -19384,7 +19447,7 @@ export const WorkspaceProjectActivityDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectActivitiesDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectActivitiesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -19956,7 +20019,7 @@ export const WorkspaceProjectDetailUpsertProjectDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectStatus' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectStatus' } } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -19985,7 +20048,7 @@ export const WorkspaceProjectDetailUpsertProjectDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectsUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20088,7 +20151,7 @@ export const WorkspaceProjectDetailDeleteProjectDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectsDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20143,7 +20206,7 @@ export const WorkspaceProjectDetailUpsertTaskDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskStatus' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectTaskStatus' } } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -20163,12 +20226,12 @@ export const WorkspaceProjectDetailUpsertTaskDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'effort' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskEffort' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectTaskEffort' } },
                 },
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'whenBucket' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskWhenBucket' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectTaskWhenBucket' } },
                 },
             ],
             selectionSet: {
@@ -20182,7 +20245,7 @@ export const WorkspaceProjectDetailUpsertTaskDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tasksUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectTasksUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20290,7 +20353,7 @@ export const WorkspaceProjectDetailDeleteTaskDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tasksDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectTasksDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20340,17 +20403,17 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityKind' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectActivityKind' } } },
                 },
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'channel' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityChannel' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectActivityChannel' } },
                 },
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'direction' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectActivityDirection' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectActivityDirection' } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -20380,7 +20443,7 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'offerStatus' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectOfferStatus' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectOfferStatus' } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -20390,7 +20453,7 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachLinkKind' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectLinkKind' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectLinkKind' } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -20410,7 +20473,7 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'attachFileKind' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectFileKind' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectFileKind' } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -20434,7 +20497,7 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectActivitiesUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectActivitiesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20613,7 +20676,7 @@ export const WorkspaceProjectDetailDeleteActivityDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectActivitiesDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectActivitiesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20672,7 +20735,7 @@ export const WorkspaceProjectDetailTimerStartDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectTimersStart' },
+                                    name: { kind: 'Name', value: 'adminProjectTimersStart' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20745,7 +20808,7 @@ export const WorkspaceProjectDetailTimerStopDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectTimersStop' },
+                                    name: { kind: 'Name', value: 'adminProjectTimersStop' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20805,7 +20868,7 @@ export const WorkspaceProjectLinkUpsertDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectLinkKind' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectLinkKind' } } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -20824,7 +20887,7 @@ export const WorkspaceProjectLinkUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectLinksUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectLinksUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20917,7 +20980,7 @@ export const WorkspaceProjectLinkDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectLinksDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectLinksDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -20977,7 +21040,7 @@ export const WorkspaceProjectFileUpsertDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'kind' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ProjectFileKind' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectFileKind' } } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -20996,7 +21059,7 @@ export const WorkspaceProjectFileUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectFilesUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectFilesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -21089,7 +21152,7 @@ export const WorkspaceProjectFileDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'projectFilesDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectFilesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -21357,7 +21420,7 @@ export const WorkspaceTodoUpsertDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'status' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskStatus' } } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectTaskStatus' } } },
                 },
                 {
                     kind: 'VariableDefinition',
@@ -21377,12 +21440,12 @@ export const WorkspaceTodoUpsertDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'effort' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskEffort' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectTaskEffort' } },
                 },
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'whenBucket' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'TaskWhenBucket' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminProjectTaskWhenBucket' } },
                 },
             ],
             selectionSet: {
@@ -21396,7 +21459,7 @@ export const WorkspaceTodoUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tasksUpsert' },
+                                    name: { kind: 'Name', value: 'adminProjectTasksUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -21504,7 +21567,7 @@ export const WorkspaceTodoDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tasksDelete' },
+                                    name: { kind: 'Name', value: 'adminProjectTasksDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',

@@ -22,7 +22,7 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCProjectStatus,
+    GqlCAdminProjectStatus,
     GqlCWorkspaceProjectsPageUpdatesSubscription,
     GqlCWorkspaceProjectsPageUserFragment,
 } from '../../../web/graphql/generated';
@@ -42,9 +42,9 @@ import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
 // Workspace projects hub — two tabs glued to one read query: Inbox
-// triages incoming visitor `ProjectRequest`s, Projects is a status-grouped
+// triages incoming visitor `AdminProjectRequest`s, Projects is a status-grouped
 // board of ongoing personal work. Convert from inbox → project opens the
-// project editor prefilled from the request; on submit `projectsUpsert`
+// project editor prefilled from the request; on submit `adminProjectsUpsert`
 // inserts the project and archives the source request in one transaction.
 // Standalone todos (tasks with no project attached) live on
 // `/workspace/todos` — the two surfaces stay disjoint.
@@ -69,8 +69,8 @@ const description = {
     en: 'Incoming requests and ongoing projects.',
 };
 
-const PROJECT_STATUS_ORDER: ReadonlyArray<GqlCProjectStatus> = ['idea', 'planning', 'active', 'paused', 'done', 'archived'];
-const PROJECT_STATUS_LABELS: Record<GqlCProjectStatus, { de: string; en: string }> = {
+const PROJECT_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectStatus> = ['idea', 'planning', 'active', 'paused', 'done', 'archived'];
+const PROJECT_STATUS_LABELS: Record<GqlCAdminProjectStatus, { de: string; en: string }> = {
     idea: { de: 'Ideen', en: 'Ideas' },
     planning: { de: 'In Planung', en: 'Planning' },
     active: { de: 'Aktiv', en: 'Active' },
@@ -301,8 +301,8 @@ function InboxSection({ rows, showArchived, locale }: { rows: ReadonlyArray<Requ
                         replace
                     >
                         {showArchived
-                            ? { de: 'Eingang anzeigen', en: 'Show inbox' }[locale]
-                            : { de: 'Archiv anzeigen', en: 'Show archive' }[locale]}
+                            ? { de: 'Eingang anzeigen', en: 'AdminMediaShow inbox' }[locale]
+                            : { de: 'Archiv anzeigen', en: 'AdminMediaShow archive' }[locale]}
                     </Link>
                 </Button>
             </div>
@@ -440,11 +440,11 @@ function InboxRow({ row, locale }: { row: RequestRow; locale: Locale }) {
 // editor when converting a request: the admin reviews and tweaks before
 // the project lands on the board, rather than committing the auto-built
 // title/notes blindly. The server-side merge keeps the description and
-// notes intact when `projectsUpsert` archives the source request.
+// notes intact when `adminProjectsUpsert` archives the source request.
 function projectDraftFromRequest(
     row: RequestRow,
     locale: Locale,
-): { title: string; description: string; notes: string; status: GqlCProjectStatus } {
+): { title: string; description: string; notes: string; status: GqlCAdminProjectStatus } {
     const typeLabel = PROJECT_TYPE_LABELS[row.projectType]?.[locale] ?? row.projectType;
     const subject = row.company?.trim() ? row.company : row.name;
     const parts: string[] = [];
@@ -656,7 +656,7 @@ function ProjectForm({
     row: ProjectRow | null;
     locale: Locale;
     nextPosition: number | null;
-    initialValues?: { title?: string; description?: string; notes?: string; status?: GqlCProjectStatus };
+    initialValues?: { title?: string; description?: string; notes?: string; status?: GqlCAdminProjectStatus };
     sourceRequestId?: string | null;
     onClose: () => void;
     onSaved: () => void;
@@ -666,7 +666,7 @@ function ProjectForm({
         title: row?.title ?? initialValues?.title ?? '',
         description: row?.description ?? initialValues?.description ?? '',
         notes: row?.notes ?? initialValues?.notes ?? '',
-        status: row?.status ?? initialValues?.status ?? ('idea' as GqlCProjectStatus),
+        status: row?.status ?? initialValues?.status ?? ('idea' as GqlCAdminProjectStatus),
     });
     const [busy, setBusy] = useState(false);
 
@@ -703,7 +703,10 @@ function ProjectForm({
                         <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
                     </Field>
                     <Field label={{ de: 'Status', en: 'Status' }[locale]}>
-                        <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value as GqlCProjectStatus })}>
+                        <Select
+                            value={form.status}
+                            onValueChange={(value) => setForm({ ...form, status: value as GqlCAdminProjectStatus })}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>

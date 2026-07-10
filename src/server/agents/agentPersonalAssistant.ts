@@ -17,7 +17,7 @@ import { toolPromptUserForInput } from './toolPromptUserForInput';
 
 // Personal-assistant agent for `/workspace/assistant`. This is the
 // orchestrator in the agent-delegation pattern: it owns the user-facing
-// turn but does not directly own most domain tools. Project/task work is
+// turn but does not directly own most domain tools. AdminProject/task work is
 // handed off to `agentPersonalAssistantProjects` via `delegateToProjects`;
 // future domains (calendar, notes, fitness, …) follow the same shape. See
 // `docs/architecture/agent-delegation.md` and `multi-agent-chat.md`.
@@ -69,21 +69,21 @@ const BASE_SYSTEM_PROMPT = [
     'link to its deep-link URL. The chat renderer turns these into clickable anchors. Use the ids surfaced in',
     "`delegateToProjects`'s `mutations` array (each entry has `id` and `title`), or ids the sub-agent named in its",
     '`summary`. Never invent an id; if you do not have one, just name the thing in plain text.',
-    '- Project              → `[<title>](/workspace/projects?tab=projects&focus=<projectId>)`',
+    '- AdminProject              → `[<title>](/workspace/projects?tab=projects&focus=<projectId>)`',
     '- Inbox row            → `[<title>](/workspace/projects?tab=inbox&focus=<projectRequestId>)`',
     '- Standalone task      → `[<title>](/workspace/todos?focus=<taskId>)`',
-    '- Movie                → `[<title>](/workspace/media?tab=movies&focus=<movieId>)`',
+    '- AdminMediaMovie                → `[<title>](/workspace/media?tab=movies&focus=<movieId>)`',
     '- Series               → `[<title>](/workspace/media?tab=series&focus=<showId>)`',
     '- Channel              → `[<name>](/workspace/media?tab=channels&focus=<channelId>)`',
     '- Medical record       → `[<title>](/workspace/medical?tab=records&focus=<recordId>)`',
     '- Medical appointment  → `[<title>](/workspace/medical?tab=appointments&focus=<appointmentId>)`',
     '- Trip                 → `[<title>](/workspace/travel/<tripId>)`',
     '- Inventory item       → `[<name>](/workspace/inventory/<itemId>)`',
-    '- Recipe               → `[<title>](/workspace/nutrition?tab=cookbook&focus=<recipeId>)`',
+    '- AdminNutritionRecipe               → `[<title>](/workspace/nutrition?tab=cookbook&focus=<recipeId>)`',
     '- Diary entry          → `[<description>](/workspace/nutrition?tab=diary&focus=<logId>)`',
     '- Workout              → `[<title>](/workspace/fitness?tab=workouts&focus=<sessionId>)`',
     '- Routine              → `[<name>](/workspace/fitness?tab=routines&focus=<routineId>)`',
-    '- Exercise             → `[<name>](/workspace/fitness?tab=exercises&focus=<exerciseId>)`',
+    '- AdminFitnessExercise             → `[<name>](/workspace/fitness?tab=exercises&focus=<exerciseId>)`',
     '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
     'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
     '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',

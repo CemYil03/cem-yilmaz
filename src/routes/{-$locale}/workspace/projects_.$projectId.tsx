@@ -56,16 +56,16 @@ import { Checkbox } from '../../../web/components/base/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import type {
-    GqlCProjectActivityChannel,
-    GqlCProjectActivityDirection,
-    GqlCProjectActivityKind,
-    GqlCProjectFileKind,
-    GqlCProjectLinkKind,
-    GqlCProjectOfferStatus,
-    GqlCProjectStatus,
-    GqlCTaskEffort,
-    GqlCTaskStatus,
-    GqlCTaskWhenBucket,
+    GqlCAdminProjectActivityChannel,
+    GqlCAdminProjectActivityDirection,
+    GqlCAdminProjectActivityKind,
+    GqlCAdminProjectFileKind,
+    GqlCAdminProjectLinkKind,
+    GqlCAdminProjectOfferStatus,
+    GqlCAdminProjectStatus,
+    GqlCAdminProjectTaskEffort,
+    GqlCAdminProjectTaskStatus,
+    GqlCAdminProjectTaskWhenBucket,
     GqlCWorkspaceProjectDetailUpdatesSubscription,
     GqlCWorkspaceProjectDetailUserFragment,
 } from '../../../web/graphql/generated';
@@ -126,8 +126,8 @@ const TAB_ICONS: Record<DetailTab, LucideIcon> = {
     files: FileIcon,
 };
 
-const PROJECT_STATUS_ORDER: ReadonlyArray<GqlCProjectStatus> = ['idea', 'planning', 'active', 'paused', 'done', 'archived'];
-const PROJECT_STATUS_LABELS: Record<GqlCProjectStatus, { de: string; en: string }> = {
+const PROJECT_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectStatus> = ['idea', 'planning', 'active', 'paused', 'done', 'archived'];
+const PROJECT_STATUS_LABELS: Record<GqlCAdminProjectStatus, { de: string; en: string }> = {
     idea: { de: 'Idee', en: 'Idea' },
     planning: { de: 'In Planung', en: 'Planning' },
     active: { de: 'Aktiv', en: 'Active' },
@@ -139,7 +139,7 @@ const PROJECT_STATUS_LABELS: Record<GqlCProjectStatus, { de: string; en: string 
 // Color-coded chip tint per project status. Each entry is a single class string
 // covering background + foreground for both themes — the status pill applies it
 // directly so the surface reads as a state, not just a label.
-const PROJECT_STATUS_TINTS: Record<GqlCProjectStatus, string> = {
+const PROJECT_STATUS_TINTS: Record<GqlCAdminProjectStatus, string> = {
     idea: 'bg-muted text-muted-foreground',
     planning: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
     active: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
@@ -148,35 +148,35 @@ const PROJECT_STATUS_TINTS: Record<GqlCProjectStatus, string> = {
     archived: 'bg-muted/60 text-muted-foreground/70',
 };
 
-const TASK_STATUS_ORDER: ReadonlyArray<GqlCTaskStatus> = ['todo', 'doing', 'done'];
-const TASK_STATUS_LABELS: Record<GqlCTaskStatus, { de: string; en: string }> = {
+const TASK_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectTaskStatus> = ['todo', 'doing', 'done'];
+const TASK_STATUS_LABELS: Record<GqlCAdminProjectTaskStatus, { de: string; en: string }> = {
     todo: { de: 'Offen', en: 'To do' },
     doing: { de: 'Aktiv', en: 'Doing' },
     done: { de: 'Erledigt', en: 'Done' },
 };
 
-// Task effort / when-bucket labels — kept in sync with the standalone
+// AdminProjectTask effort / when-bucket labels — kept in sync with the standalone
 // todos surface so the visual language is identical on both pages.
 // See `docs/features/todos-experience.md`.
-const TASK_EFFORT_LABELS: Record<GqlCTaskEffort, { de: string; en: string }> = {
+const TASK_EFFORT_LABELS: Record<GqlCAdminProjectTaskEffort, { de: string; en: string }> = {
     quick: { de: 'schnell', en: 'quick' },
     focused: { de: 'fokussiert', en: 'focused' },
     deep: { de: 'tief', en: 'deep' },
 };
-const TASK_EFFORT_BAR: Record<GqlCTaskEffort, string> = {
+const TASK_EFFORT_BAR: Record<GqlCAdminProjectTaskEffort, string> = {
     quick: 'bg-emerald-400',
     focused: 'bg-amber-400',
     deep: 'bg-violet-400',
 };
-const TASK_WHEN_LABELS: Record<GqlCTaskWhenBucket, { de: string; en: string }> = {
+const TASK_WHEN_LABELS: Record<GqlCAdminProjectTaskWhenBucket, { de: string; en: string }> = {
     today: { de: 'heute', en: 'today' },
     week: { de: 'diese Woche', en: 'this week' },
     someday: { de: 'irgendwann', en: 'someday' },
     waiting: { de: 'blockiert', en: 'blocked' },
 };
 
-const ACTIVITY_KIND_ORDER: ReadonlyArray<GqlCProjectActivityKind> = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'];
-const ACTIVITY_KIND_LABELS: Record<GqlCProjectActivityKind, { de: string; en: string }> = {
+const ACTIVITY_KIND_ORDER: ReadonlyArray<GqlCAdminProjectActivityKind> = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'];
+const ACTIVITY_KIND_LABELS: Record<GqlCAdminProjectActivityKind, { de: string; en: string }> = {
     clientContact: { de: 'Kundenkontakt', en: 'Client contact' },
     meeting: { de: 'Meeting', en: 'Meeting' },
     work: { de: 'Arbeit', en: 'Work' },
@@ -184,7 +184,7 @@ const ACTIVITY_KIND_LABELS: Record<GqlCProjectActivityKind, { de: string; en: st
     milestone: { de: 'Meilenstein', en: 'Milestone' },
     note: { de: 'Notiz', en: 'Note' },
 };
-const ACTIVITY_KIND_ICONS: Record<GqlCProjectActivityKind, LucideIcon> = {
+const ACTIVITY_KIND_ICONS: Record<GqlCAdminProjectActivityKind, LucideIcon> = {
     clientContact: PhoneCallIcon,
     meeting: VideoIcon,
     work: TimerIcon,
@@ -192,7 +192,7 @@ const ACTIVITY_KIND_ICONS: Record<GqlCProjectActivityKind, LucideIcon> = {
     milestone: FlagIcon,
     note: StickyNoteIcon,
 };
-const ACTIVITY_CHANNEL_ORDER: ReadonlyArray<GqlCProjectActivityChannel> = [
+const ACTIVITY_CHANNEL_ORDER: ReadonlyArray<GqlCAdminProjectActivityChannel> = [
     'malt',
     'email',
     'phone',
@@ -201,7 +201,7 @@ const ACTIVITY_CHANNEL_ORDER: ReadonlyArray<GqlCProjectActivityChannel> = [
     'aiAssistant',
     'other',
 ];
-const ACTIVITY_CHANNEL_LABELS: Record<GqlCProjectActivityChannel, { de: string; en: string }> = {
+const ACTIVITY_CHANNEL_LABELS: Record<GqlCAdminProjectActivityChannel, { de: string; en: string }> = {
     malt: { de: 'Malt', en: 'Malt' },
     email: { de: 'E-Mail', en: 'Email' },
     phone: { de: 'Telefon', en: 'Phone' },
@@ -214,7 +214,7 @@ const ACTIVITY_CHANNEL_LABELS: Record<GqlCProjectActivityChannel, { de: string; 
 // Direction picker labels for the activity composer. `internal` is set by the
 // server for `work` / `note` / `milestone` rows and is not surfaced as a
 // choice in the picker.
-const ACTIVITY_DIRECTION_LABELS: Record<GqlCProjectActivityDirection, { de: string; en: string }> = {
+const ACTIVITY_DIRECTION_LABELS: Record<GqlCAdminProjectActivityDirection, { de: string; en: string }> = {
     outgoing: { de: 'Von mir', en: 'From me' },
     incoming: { de: 'Vom Kunden', en: 'From client' },
     internal: { de: 'Intern', en: 'Internal' },
@@ -222,14 +222,23 @@ const ACTIVITY_DIRECTION_LABELS: Record<GqlCProjectActivityDirection, { de: stri
 
 // Kind-aware default direction for the composer (matches `resolveDirection`
 // in the server command). The form pre-fills with this when adding a new row.
-function defaultDirectionForKind(kind: GqlCProjectActivityKind): GqlCProjectActivityDirection {
+function defaultDirectionForKind(kind: GqlCAdminProjectActivityKind): GqlCAdminProjectActivityDirection {
     if (kind === 'work' || kind === 'note' || kind === 'milestone') return 'internal';
     if (kind === 'clientContact') return 'incoming';
     return 'outgoing';
 }
 
-const LINK_KIND_ORDER: ReadonlyArray<GqlCProjectLinkKind> = ['github', 'malt', 'figma', 'gdrive', 'notion', 'invoice', 'offer', 'other'];
-const LINK_KIND_LABELS: Record<GqlCProjectLinkKind, { de: string; en: string }> = {
+const LINK_KIND_ORDER: ReadonlyArray<GqlCAdminProjectLinkKind> = [
+    'github',
+    'malt',
+    'figma',
+    'gdrive',
+    'notion',
+    'invoice',
+    'offer',
+    'other',
+];
+const LINK_KIND_LABELS: Record<GqlCAdminProjectLinkKind, { de: string; en: string }> = {
     github: { de: 'GitHub', en: 'GitHub' },
     malt: { de: 'Malt', en: 'Malt' },
     figma: { de: 'Figma', en: 'Figma' },
@@ -240,8 +249,8 @@ const LINK_KIND_LABELS: Record<GqlCProjectLinkKind, { de: string; en: string }> 
     other: { de: 'Sonstiges', en: 'Other' },
 };
 
-const FILE_KIND_ORDER: ReadonlyArray<GqlCProjectFileKind> = ['offer', 'invoice', 'contract', 'screenshot', 'other'];
-const FILE_KIND_LABELS: Record<GqlCProjectFileKind, { de: string; en: string }> = {
+const FILE_KIND_ORDER: ReadonlyArray<GqlCAdminProjectFileKind> = ['offer', 'invoice', 'contract', 'screenshot', 'other'];
+const FILE_KIND_LABELS: Record<GqlCAdminProjectFileKind, { de: string; en: string }> = {
     offer: { de: 'Angebot', en: 'Offer' },
     invoice: { de: 'Rechnung', en: 'Invoice' },
     contract: { de: 'Vertrag', en: 'Contract' },
@@ -249,8 +258,8 @@ const FILE_KIND_LABELS: Record<GqlCProjectFileKind, { de: string; en: string }> 
     other: { de: 'Sonstiges', en: 'Other' },
 };
 
-const OFFER_STATUS_ORDER: ReadonlyArray<GqlCProjectOfferStatus> = ['sent', 'accepted', 'rejected', 'withdrawn'];
-const OFFER_STATUS_LABELS: Record<GqlCProjectOfferStatus, { de: string; en: string }> = {
+const OFFER_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectOfferStatus> = ['sent', 'accepted', 'rejected', 'withdrawn'];
+const OFFER_STATUS_LABELS: Record<GqlCAdminProjectOfferStatus, { de: string; en: string }> = {
     sent: { de: 'Gesendet', en: 'Sent' },
     accepted: { de: 'Angenommen', en: 'Accepted' },
     rejected: { de: 'Abgelehnt', en: 'Rejected' },
@@ -307,8 +316,8 @@ export const Route = createFileRoute('/{-$locale}/workspace/projects_/$projectId
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: { de: 'Projekt', en: 'Project' }[locale],
-            description: { de: 'Projekt-Detail', en: 'Project detail' }[locale],
+            title: { de: 'Projekt', en: 'AdminProject' }[locale],
+            description: { de: 'Projekt-Detail', en: 'AdminProject detail' }[locale],
             path: `/workspace/projects/${params.projectId}`,
             locale,
             webPageUrl: webPageUrlGet(),
@@ -370,7 +379,7 @@ function WorkspaceProjectDetail() {
     if (!project) {
         return (
             <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-4xl mx-auto w-full pb-20 pt-16">
-                <p className="text-sm text-muted-foreground">{{ de: 'Projekt nicht gefunden.', en: 'Project not found.' }[locale]}</p>
+                <p className="text-sm text-muted-foreground">{{ de: 'Projekt nicht gefunden.', en: 'AdminProject not found.' }[locale]}</p>
             </main>
         );
     }
@@ -994,7 +1003,7 @@ function OverviewUpNextRow({ task, projectId, locale }: { task: TaskRow; project
                 aria-label={{ de: 'Status wechseln', en: 'Toggle status' }[locale]}
                 className="mt-0.5 text-muted-foreground hover:text-foreground"
                 onClick={async () => {
-                    const next: GqlCTaskStatus = task.status === 'todo' ? 'doing' : 'done';
+                    const next: GqlCAdminProjectTaskStatus = task.status === 'todo' ? 'doing' : 'done';
                     await upsert({
                         taskId: task.taskId,
                         projectId: task.projectId,
@@ -1273,7 +1282,7 @@ function TaskRow({ task, projectId, locale }: { task: TaskRow; projectId: string
     const toggle = async () => {
         // Same three-state cycle as before, plus the completion ritual
         // hook when we land on `done`.
-        const next: GqlCTaskStatus = task.status === 'todo' ? 'doing' : task.status === 'doing' ? 'done' : 'todo';
+        const next: GqlCAdminProjectTaskStatus = task.status === 'todo' ? 'doing' : task.status === 'doing' ? 'done' : 'todo';
         if (next === 'done') setCompleting(true);
         await upsert({
             taskId: task.taskId,
@@ -1386,10 +1395,10 @@ function TaskForm({
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
     const [title, setTitle] = useState(task?.title ?? '');
     const [notes, setNotes] = useState(task?.notes ?? '');
-    const [status, setStatus] = useState<GqlCTaskStatus>(task?.status ?? 'todo');
+    const [status, setStatus] = useState<GqlCAdminProjectTaskStatus>(task?.status ?? 'todo');
     const [dueAt, setDueAt] = useState<Date | null>(task?.dueAt ? parseISO(task.dueAt as unknown as string) : null);
-    const [effort, setEffort] = useState<GqlCTaskEffort | null>(task?.effort ?? null);
-    const [whenBucket, setWhenBucket] = useState<GqlCTaskWhenBucket | null>(task?.whenBucket ?? null);
+    const [effort, setEffort] = useState<GqlCAdminProjectTaskEffort | null>(task?.effort ?? null);
+    const [whenBucket, setWhenBucket] = useState<GqlCAdminProjectTaskWhenBucket | null>(task?.whenBucket ?? null);
     const [busy, setBusy] = useState(false);
 
     return (
@@ -1415,9 +1424,14 @@ function TaskForm({
                 onSaved();
             }}
         >
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={{ de: 'Aufgabe', en: 'Task' }[locale]} required />
+            <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={{ de: 'Aufgabe', en: 'AdminProjectTask' }[locale]}
+                required
+            />
             <div className="flex flex-wrap gap-2">
-                <Select value={status} onValueChange={(v: GqlCTaskStatus) => setStatus(v)}>
+                <Select value={status} onValueChange={(v: GqlCAdminProjectTaskStatus) => setStatus(v)}>
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                         <SelectValue />
                     </SelectTrigger>
@@ -1429,7 +1443,7 @@ function TaskForm({
                         ))}
                     </SelectContent>
                 </Select>
-                <Select value={effort ?? 'none'} onValueChange={(v) => setEffort(v === 'none' ? null : (v as GqlCTaskEffort))}>
+                <Select value={effort ?? 'none'} onValueChange={(v) => setEffort(v === 'none' ? null : (v as GqlCAdminProjectTaskEffort))}>
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                         <SelectValue placeholder={{ de: 'Aufwand', en: 'Effort' }[locale]} />
                     </SelectTrigger>
@@ -1440,7 +1454,10 @@ function TaskForm({
                         <SelectItem value="deep">{TASK_EFFORT_LABELS.deep[locale]}</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={whenBucket ?? 'none'} onValueChange={(v) => setWhenBucket(v === 'none' ? null : (v as GqlCTaskWhenBucket))}>
+                <Select
+                    value={whenBucket ?? 'none'}
+                    onValueChange={(v) => setWhenBucket(v === 'none' ? null : (v as GqlCAdminProjectTaskWhenBucket))}
+                >
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                         <SelectValue placeholder={{ de: 'Wann', en: 'When' }[locale]} />
                     </SelectTrigger>
@@ -1839,9 +1856,9 @@ function ActivityForm({
     onSaved: () => void;
 }) {
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertActivityDocument);
-    const [kind, setKind] = useState<GqlCProjectActivityKind>(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'note'));
-    const [channel, setChannel] = useState<GqlCProjectActivityChannel | null>(activity?.channel ?? null);
-    const [direction, setDirection] = useState<GqlCProjectActivityDirection>(
+    const [kind, setKind] = useState<GqlCAdminProjectActivityKind>(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'note'));
+    const [channel, setChannel] = useState<GqlCAdminProjectActivityChannel | null>(activity?.channel ?? null);
+    const [direction, setDirection] = useState<GqlCAdminProjectActivityDirection>(
         activity?.direction ?? defaultDirectionForKind(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'note')),
     );
     const [title, setTitle] = useState(activity?.title ?? '');
@@ -1850,11 +1867,11 @@ function ActivityForm({
     const [durationMin, setDurationMin] = useState<string>(activity?.durationSec ? String(Math.round(activity.durationSec / 60)) : '');
     const [taskId, setTaskId] = useState<string | null>(activity?.taskId ?? null);
     const [amountEur, setAmountEur] = useState<string>(activity?.amountCents != null ? String(activity.amountCents / 100) : '');
-    const [offerStatus, setOfferStatus] = useState<GqlCProjectOfferStatus | null>(activity?.offerStatus ?? null);
+    const [offerStatus, setOfferStatus] = useState<GqlCAdminProjectOfferStatus | null>(activity?.offerStatus ?? null);
     const [attachLinkUrl, setAttachLinkUrl] = useState('');
-    const [attachLinkKind, setAttachLinkKind] = useState<GqlCProjectLinkKind>('other');
+    const [attachLinkKind, setAttachLinkKind] = useState<GqlCAdminProjectLinkKind>('other');
     const [attachFile, setAttachFile] = useState<{ fileUploadId: string; filename: string } | null>(null);
-    const [attachFileKind, setAttachFileKind] = useState<GqlCProjectFileKind>('other');
+    const [attachFileKind, setAttachFileKind] = useState<GqlCAdminProjectFileKind>('other');
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [busy, setBusy] = useState(false);
@@ -1903,7 +1920,7 @@ function ActivityForm({
             <div className="flex flex-wrap gap-2">
                 <Select
                     value={kind}
-                    onValueChange={(v: GqlCProjectActivityKind) => {
+                    onValueChange={(v: GqlCAdminProjectActivityKind) => {
                         setKind(v);
                         // Auto-snap direction to the kind-appropriate default so the
                         // user doesn't have to re-pick it on every switch. Manual
@@ -1925,7 +1942,7 @@ function ActivityForm({
                 {channelEnabled ? (
                     <Select
                         value={channel ?? '__none'}
-                        onValueChange={(v) => setChannel(v === '__none' ? null : (v as GqlCProjectActivityChannel))}
+                        onValueChange={(v) => setChannel(v === '__none' ? null : (v as GqlCAdminProjectActivityChannel))}
                     >
                         <SelectTrigger className="h-8 w-[140px] text-xs">
                             <SelectValue placeholder={{ de: 'Kanal', en: 'Channel' }[locale]} />
@@ -1941,7 +1958,7 @@ function ActivityForm({
                     </Select>
                 ) : null}
                 {directionEnabled ? (
-                    <Select value={direction} onValueChange={(v: GqlCProjectActivityDirection) => setDirection(v)}>
+                    <Select value={direction} onValueChange={(v: GqlCAdminProjectActivityDirection) => setDirection(v)}>
                         <SelectTrigger className="h-8 w-[140px] text-xs">
                             <SelectValue placeholder={{ de: 'Richtung', en: 'Direction' }[locale]} />
                         </SelectTrigger>
@@ -1954,7 +1971,7 @@ function ActivityForm({
                 {tasks.length > 0 ? (
                     <Select value={taskId ?? '__none'} onValueChange={(v) => setTaskId(v === '__none' ? null : v)}>
                         <SelectTrigger className="h-8 w-[200px] text-xs">
-                            <SelectValue placeholder={{ de: 'Aufgabe (optional)', en: 'Task (optional)' }[locale]} />
+                            <SelectValue placeholder={{ de: 'Aufgabe (optional)', en: 'AdminProjectTask (optional)' }[locale]} />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="__none">{{ de: 'Keine Aufgabe', en: 'No task' }[locale]}</SelectItem>
@@ -1999,7 +2016,7 @@ function ActivityForm({
                     />
                     <Select
                         value={offerStatus ?? '__none'}
-                        onValueChange={(v) => setOfferStatus(v === '__none' ? null : (v as GqlCProjectOfferStatus))}
+                        onValueChange={(v) => setOfferStatus(v === '__none' ? null : (v as GqlCAdminProjectOfferStatus))}
                     >
                         <SelectTrigger className="h-8 w-[160px] text-xs">
                             <SelectValue placeholder={{ de: 'Status', en: 'Status' }[locale]} />
@@ -2027,7 +2044,7 @@ function ActivityForm({
                             placeholder="https://…"
                             className="flex-1 min-w-[200px]"
                         />
-                        <Select value={attachLinkKind} onValueChange={(v: GqlCProjectLinkKind) => setAttachLinkKind(v)}>
+                        <Select value={attachLinkKind} onValueChange={(v: GqlCAdminProjectLinkKind) => setAttachLinkKind(v)}>
                             <SelectTrigger className="h-8 w-[120px] text-xs">
                                 <SelectValue />
                             </SelectTrigger>
@@ -2072,7 +2089,7 @@ function ActivityForm({
                                   : { de: 'Datei wählen', en: 'Choose file' }[locale]}
                         </Button>
                         {attachFile ? (
-                            <Select value={attachFileKind} onValueChange={(v: GqlCProjectFileKind) => setAttachFileKind(v)}>
+                            <Select value={attachFileKind} onValueChange={(v: GqlCAdminProjectFileKind) => setAttachFileKind(v)}>
                                 <SelectTrigger className="h-8 w-[120px] text-xs">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -2283,7 +2300,7 @@ function LinkForm({
     const [, upsert] = useMutation(WorkspaceProjectLinkUpsertDocument);
     const [url, setUrl] = useState(link?.url ?? '');
     const [label, setLabel] = useState(link?.label ?? '');
-    const [kind, setKind] = useState<GqlCProjectLinkKind>(link?.kind ?? 'other');
+    const [kind, setKind] = useState<GqlCAdminProjectLinkKind>(link?.kind ?? 'other');
     const [pinned, setPinned] = useState(link?.pinned ?? false);
     const [busy, setBusy] = useState(false);
     return (
@@ -2313,7 +2330,7 @@ function LinkForm({
                 placeholder={{ de: 'Label (optional)', en: 'Label (optional)' }[locale]}
             />
             <div className="flex items-center gap-2">
-                <Select value={kind} onValueChange={(v: GqlCProjectLinkKind) => setKind(v)}>
+                <Select value={kind} onValueChange={(v: GqlCAdminProjectLinkKind) => setKind(v)}>
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                         <SelectValue />
                     </SelectTrigger>
@@ -2491,7 +2508,7 @@ function FileUploadForm({
     onSaved: () => void;
 }) {
     const [, upsert] = useMutation(WorkspaceProjectFileUpsertDocument);
-    const [kind, setKind] = useState<GqlCProjectFileKind>('other');
+    const [kind, setKind] = useState<GqlCAdminProjectFileKind>('other');
     const [pinned, setPinned] = useState(false);
     const [busy, setBusy] = useState(false);
     const [file, setFile] = useState<File | null>(null);
@@ -2606,7 +2623,7 @@ function FileUploadForm({
                 )}
             </button>
             <div className="flex items-center gap-2">
-                <Select value={kind} onValueChange={(v: GqlCProjectFileKind) => setKind(v)}>
+                <Select value={kind} onValueChange={(v: GqlCAdminProjectFileKind) => setKind(v)}>
                     <SelectTrigger className="h-8 w-[140px] text-xs">
                         <SelectValue />
                     </SelectTrigger>

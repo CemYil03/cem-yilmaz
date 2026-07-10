@@ -2,8 +2,8 @@ import { asc, desc, eq, inArray } from 'drizzle-orm';
 import { fileUploads, projectActivities, projectFiles, projectLinks, projectRequests, projects, tasks } from '../db/schema';
 import type { FileUpload } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSProject, GqlSSession } from '../graphql/generated';
-import { toGqlProject } from '../mappers/toGqlProject';
+import type { GqlSAdminProject, GqlSSession } from '../graphql/generated';
+import { toGqlAdminProject } from '../mappers/toGqlAdminProject';
 
 // Loads a single project by id with every nested row needed by the detail
 // route (`/workspace/projects/$projectId`): tasks, activities, links,
@@ -17,7 +17,7 @@ export async function adminProjectFindOne(
     projectId: string,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSProject> {
+): Promise<GqlSAdminProject> {
     try {
         const [row] = await serverRuntime.db
             .select({ project: projects, sourceRequest: projectRequests })
@@ -57,7 +57,7 @@ export async function adminProjectFindOne(
             for (const u of uploadRows) fileUploadsById.set(u.fileUploadId, u);
         }
 
-        return toGqlProject(row.project, taskRows, row.sourceRequest, activityRows, totalWorkSec, linkRows, fileRows, fileUploadsById);
+        return toGqlAdminProject(row.project, taskRows, row.sourceRequest, activityRows, totalWorkSec, linkRows, fileRows, fileUploadsById);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

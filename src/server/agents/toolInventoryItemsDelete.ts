@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { itemsDelete } from '../commands/itemsDelete';
+import { adminInventoryItemsDelete } from '../commands/adminInventoryItemsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { InventoryAgentMutationLog } from './agentPersonalAssistantInventory';
@@ -10,7 +10,7 @@ const toolInventoryItemsDeleteInputSchema = z.object({
     itemIds: z
         .array(z.uuid())
         .min(1)
-        .describe('Item row ids to permanently delete (also removes their valuations, service log, and file links).'),
+        .describe('AdminInventoryItem row ids to permanently delete (also removes their valuations, service log, and file links).'),
 });
 
 interface InventoryAgentMutationContext {
@@ -29,7 +29,7 @@ export function toolInventoryItemsDelete({ serverRuntime, session, mutations }: 
         ].join(' '),
         inputSchema: toolInventoryItemsDeleteInputSchema,
         execute: async (input) => {
-            const result = await itemsDelete(requireAdminUserId(session), input.itemIds, session, serverRuntime);
+            const result = await adminInventoryItemsDelete(requireAdminUserId(session), input.itemIds, session, serverRuntime);
             for (const itemId of input.itemIds) mutations.push({ kind: 'itemDelete', id: itemId });
             return result;
         },

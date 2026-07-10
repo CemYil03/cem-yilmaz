@@ -1,5 +1,5 @@
 import { asc } from 'drizzle-orm';
-import type { FinanceRecurringCost } from '../db/schema';
+import type { AdminFinancesRecurringCost } from '../db/schema';
 import { financeRecurringCosts } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
@@ -36,7 +36,7 @@ export async function financesSnapshotForAgent(session: GqlSSession, serverRunti
         return lines.join('\n');
     }
 
-    const byCategory = new Map<string, FinanceRecurringCost[]>();
+    const byCategory = new Map<string, AdminFinancesRecurringCost[]>();
     for (const row of rows) {
         const list = byCategory.get(row.categoryKey) ?? [];
         list.push(row);
@@ -52,7 +52,7 @@ export async function financesSnapshotForAgent(session: GqlSSession, serverRunti
     return lines.join('\n');
 }
 
-function costLine(cost: FinanceRecurringCost): string {
+function costLine(cost: AdminFinancesRecurringCost): string {
     const amount = `${formatEur(cost.amountCents)}/${cost.cadence === 'yearly' ? 'year' : 'month'}`;
     const paused = cost.active ? '' : ' [PAUSED]';
     const notes = cost.notes ? ` — ${cost.notes}` : '';

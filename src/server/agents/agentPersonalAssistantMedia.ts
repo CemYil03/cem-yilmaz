@@ -43,7 +43,7 @@ type MediaAgentMutationKind =
 
 export interface MediaAgentMutation {
     kind: MediaAgentMutationKind;
-    // Movie / show / channel id depending on `kind`.
+    // AdminMediaMovie / show / channel id depending on `kind`.
     id: string;
     // Best-effort label for the orchestrator's user-facing narration.
     title?: string;

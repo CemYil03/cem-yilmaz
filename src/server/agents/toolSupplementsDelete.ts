@@ -1,13 +1,16 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { supplementsDelete } from '../commands/supplementsDelete';
+import { adminNutritionSupplementsDelete } from '../commands/adminNutritionSupplementsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { NutritionAgentMutationLog } from './agentPersonalAssistantNutrition';
 import { requireAdminUserId } from './requireAdminUserId';
 
 const supplementsDeleteInputSchema = z.object({
-    supplementIds: z.array(z.uuid()).min(1).describe('Supplement ids to delete. Their nutrient rows are removed too (cascade).'),
+    supplementIds: z
+        .array(z.uuid())
+        .min(1)
+        .describe('AdminNutritionSupplement ids to delete. Their nutrient rows are removed too (cascade).'),
 });
 
 interface NutritionAgentMutationContext {
@@ -21,7 +24,7 @@ export function toolSupplementsDelete({ serverRuntime, session, mutations }: Nut
         description: 'Permanently delete one or more supplements (and their composition). Use only when Cem explicitly says to delete.',
         inputSchema: supplementsDeleteInputSchema,
         execute: async (input) => {
-            const result = await supplementsDelete(requireAdminUserId(session), input.supplementIds, session, serverRuntime);
+            const result = await adminNutritionSupplementsDelete(requireAdminUserId(session), input.supplementIds, session, serverRuntime);
             for (const supplementId of input.supplementIds) mutations.push({ kind: 'supplementDelete', id: supplementId });
             return result;
         },

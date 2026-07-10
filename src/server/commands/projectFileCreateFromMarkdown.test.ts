@@ -23,7 +23,7 @@ async function projectSeed(): Promise<string> {
 }
 
 describe('projectFileCreateFromMarkdown', () => {
-    it('writes both rows and returns a text/markdown ProjectFile', async () => {
+    it('writes both rows and returns a text/markdown AdminProjectFile', async () => {
         const { serverRuntime, requestingSession } = await commandSetup.withUser();
         const projectId = await projectSeed();
         const markdown = '# Offer for Acme\n\n- Sprint of two weeks\n- 8 000 EUR net\n';

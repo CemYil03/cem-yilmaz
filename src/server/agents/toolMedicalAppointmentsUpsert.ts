@@ -1,9 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { medicalAppointmentsUpsert } from '../commands/medicalAppointmentsUpsert';
+import { adminMedicalAppointmentsUpsert } from '../commands/adminMedicalAppointmentsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMedicalAppointmentStatusSchema, GqlSMedicalCategorySchema } from '../graphql/generated';
-import type { GqlSMedicalAppointmentInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminMedicalAppointmentStatusSchema, GqlSAdminMedicalCategorySchema } from '../graphql/generated';
+import type { GqlSAdminMedicalAppointmentInput, GqlSSession } from '../graphql/generated';
 import type { MedicalAgentMutationLog } from './agentPersonalAssistantMedical';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -15,14 +15,14 @@ import { requireAdminUserId } from './requireAdminUserId';
 
 const medicalAppointmentItemSchema = z.object({
     appointmentId: z.uuid().nullish().describe('Omit (or null) to create a new appointment. Pass an existing id to edit.'),
-    category: GqlSMedicalCategorySchema.describe('dentist | gp | dermatology | eyes | mentalHealth | ent | physio | other'),
+    category: GqlSAdminMedicalCategorySchema.describe('dentist | gp | dermatology | eyes | mentalHealth | ent | physio | other'),
     providerName: z.string().max(200).nullish().describe('e.g. "Dr Schmidt" or "Zahnarztpraxis Am Markt". Optional.'),
     title: z.string().min(1).max(200).describe('Short label for the visit, e.g. "routine check-up".'),
     notes: z.string().max(4000).nullish(),
     scheduledAt: z.string().describe('ISO-8601 timestamp of the intended visit time.'),
     completedAt: z.string().nullish().describe('ISO-8601 stamp when the visit actually happened. Set only when status is completed.'),
     nextDueAt: z.string().nullish().describe('ISO-8601 stamp for the next expected visit. Overrides the category cadence when present.'),
-    status: GqlSMedicalAppointmentStatusSchema.describe('scheduled | completed | cancelled | missed'),
+    status: GqlSAdminMedicalAppointmentStatusSchema.describe('scheduled | completed | cancelled | missed'),
     topics: z.array(z.string()).describe('Free-form cluster tags. Empty array if none.'),
 });
 
@@ -49,7 +49,7 @@ export function toolMedicalAppointmentsUpsert({ serverRuntime, session, mutation
         ].join(' '),
         inputSchema: toolMedicalAppointmentsUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSMedicalAppointmentInput[] = input.medicalAppointments.map((appointment) => ({
+            const inputs: GqlSAdminMedicalAppointmentInput[] = input.medicalAppointments.map((appointment) => ({
                 appointmentId: appointment.appointmentId ?? null,
                 category: appointment.category,
                 providerName: appointment.providerName ?? null,
@@ -61,7 +61,7 @@ export function toolMedicalAppointmentsUpsert({ serverRuntime, session, mutation
                 status: appointment.status,
                 topics: appointment.topics,
             }));
-            const result = await medicalAppointmentsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminMedicalAppointmentsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.medicalAppointments.forEach((appointment, index) => {
                 mutations.push({

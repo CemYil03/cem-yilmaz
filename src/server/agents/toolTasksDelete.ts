@@ -1,13 +1,13 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tasksDelete } from '../commands/tasksDelete';
+import { adminProjectTasksDelete } from '../commands/adminProjectTasksDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 import { requireAdminUserId } from './requireAdminUserId';
 
 const toolTasksDeleteInputSchema = z.object({
-    taskIds: z.array(z.uuid()).min(1).describe('Task ids from `projectsList` or `standaloneTasksList`.'),
+    taskIds: z.array(z.uuid()).min(1).describe('AdminProjectTask ids from `projectsList` or `standaloneTasksList`.'),
 });
 
 interface ProjectsAgentMutationContext {
@@ -24,7 +24,7 @@ export function toolTasksDelete({ serverRuntime, session, mutations }: ProjectsA
         ].join(' '),
         inputSchema: toolTasksDeleteInputSchema,
         execute: async (input) => {
-            const result = await tasksDelete(requireAdminUserId(session), input.taskIds, session, serverRuntime);
+            const result = await adminProjectTasksDelete(requireAdminUserId(session), input.taskIds, session, serverRuntime);
             for (const taskId of input.taskIds) mutations.push({ kind: 'taskDelete', id: taskId });
             return result;
         },

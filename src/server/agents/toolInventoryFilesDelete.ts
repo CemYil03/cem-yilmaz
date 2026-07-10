@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { itemFilesDelete } from '../commands/itemFilesDelete';
+import { adminInventoryItemFilesDelete } from '../commands/adminInventoryItemFilesDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { InventoryAgentMutationLog } from './agentPersonalAssistantInventory';
@@ -9,7 +9,10 @@ import { requireAdminUserId } from './requireAdminUserId';
 // Detach files from an item. Deletes the join rows only — the underlying
 // uploads belong to the user and are preserved.
 const toolInventoryFilesDeleteInputSchema = z.object({
-    itemFileIds: z.array(z.uuid()).min(1).describe('Item-file row ids to detach. Removes the link only; the uploaded file itself is kept.'),
+    itemFileIds: z
+        .array(z.uuid())
+        .min(1)
+        .describe('AdminInventoryItem-file row ids to detach. Removes the link only; the uploaded file itself is kept.'),
 });
 
 interface InventoryAgentMutationContext {
@@ -27,7 +30,7 @@ export function toolInventoryFilesDelete({ serverRuntime, session, mutations }: 
         ].join(' '),
         inputSchema: toolInventoryFilesDeleteInputSchema,
         execute: async (input) => {
-            const result = await itemFilesDelete(requireAdminUserId(session), input.itemFileIds, session, serverRuntime);
+            const result = await adminInventoryItemFilesDelete(requireAdminUserId(session), input.itemFileIds, session, serverRuntime);
             for (const itemFileId of input.itemFileIds) mutations.push({ kind: 'fileDelete', id: itemFileId });
             return result;
         },

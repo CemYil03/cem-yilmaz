@@ -1,6 +1,6 @@
 import { environmentVariables } from '../env/environmentVariablesCreate';
 
-// Single boundary between the rest of the server and The Movie Database v3
+// Single boundary between the rest of the server and The AdminMediaMovie Database v3
 // API. Powers the `/workspace/media` auto-fill flow for both movies and TV
 // series: search for a title, pick one, capture `tmdbId` + poster URLs +
 // release metadata into the `Movies` / `Shows` row. See
@@ -16,7 +16,7 @@ import { environmentVariables } from '../env/environmentVariablesCreate';
 const TMDB_API_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
-interface TmdbMovieResult {
+interface AdminMediaTmdbMovieResult {
     tmdbId: number;
     title: string;
     releaseDate: string | null;
@@ -24,12 +24,12 @@ interface TmdbMovieResult {
     overview: string | null;
 }
 
-interface TmdbMovieDetail extends TmdbMovieResult {
+interface TmdbMovieDetail extends AdminMediaTmdbMovieResult {
     backdropUrl: string | null;
     runtimeMinutes: number | null;
 }
 
-interface TmdbTvResult {
+interface AdminMediaTmdbTvResult {
     tmdbId: number;
     title: string;
     firstAirDate: string | null;
@@ -37,7 +37,7 @@ interface TmdbTvResult {
     overview: string | null;
 }
 
-interface TmdbTvDetail extends TmdbTvResult {
+interface TmdbTvDetail extends AdminMediaTmdbTvResult {
     backdropUrl: string | null;
     // True when TMDB reports the show as Ended / Canceled.
     isCompleted: boolean;
@@ -54,18 +54,18 @@ export interface TmdbClient {
      * TMDB HTTP error, or on empty query. Never throws — the media page
      * treats an empty result set as "no matches, offer manual entry".
      */
-    searchMovies: (query: string) => Promise<TmdbMovieResult[]>;
+    searchMovies: (query: string) => Promise<AdminMediaTmdbMovieResult[]>;
     /**
      * Fetch full detail for a TMDB movie id. Returns `null` if the key is
      * missing or the fetch fails — the media command falls back to
-     * `moviesUpsert` with whatever the client already knows.
+     * `adminMediaMoviesUpsert` with whatever the client already knows.
      */
     getMovie: (tmdbId: number) => Promise<TmdbMovieDetail | null>;
     /**
      * Search TMDB for TV series matching `query`. Same empty-fallback
      * semantics as `searchMovies`.
      */
-    searchTv: (query: string) => Promise<TmdbTvResult[]>;
+    searchTv: (query: string) => Promise<AdminMediaTmdbTvResult[]>;
     /**
      * Fetch full detail for a TMDB TV id, including a best-effort
      * `isCompleted` / `nextSeasonReleaseDate` derived from TMDB status and

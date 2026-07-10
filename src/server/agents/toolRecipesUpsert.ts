@@ -1,22 +1,22 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { recipesUpsert } from '../commands/recipesUpsert';
+import { adminNutritionRecipesUpsert } from '../commands/adminNutritionRecipesUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMealTypeSchema } from '../graphql/generated';
-import type { GqlSRecipeInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminNutritionMealTypeSchema } from '../graphql/generated';
+import type { GqlSAdminNutritionRecipeInput, GqlSSession } from '../graphql/generated';
 import type { NutritionAgentMutationLog } from './agentPersonalAssistantNutrition';
 import { requireAdminUserId } from './requireAdminUserId';
 
 // Batch create-or-edit of cookbook recipes. Hand-built item schema — same
 // rationale as `toolMoviesUpsert.ts`: Gemini's structured output rejects
 // `z.date()`, so `lastMadeAt` rides the wire as an ISO string and `execute`
-// converts with `new Date(...)`. The `MealType` enum schema is reused so a
+// converts with `new Date(...)`. The `AdminNutritionMealType` enum schema is reused so a
 // future enum addition surfaces as a TS error here.
 
 const recipeItemSchema = z.object({
     recipeId: z.uuid().nullish().describe('Omit (or null) to create a new recipe. Pass an existing id to edit.'),
     title: z.string().min(1).max(300).describe('Dish name.'),
-    mealType: GqlSMealTypeSchema.describe('breakfast | lunch | dinner | snack | other'),
+    mealType: GqlSAdminNutritionMealTypeSchema.describe('breakfast | lunch | dinner | snack | other'),
     ingredients: z.array(z.string()).describe('Ingredient list. Empty array if none.'),
     steps: z.string().max(8000).nullish().describe('Preparation steps, free text.'),
     tags: z.array(z.string()).describe('Free-form tags (e.g. high-protein, quick, vegetarian). Empty array if none.'),
@@ -49,7 +49,7 @@ export function toolRecipesUpsert({ serverRuntime, session, mutations }: Nutriti
         ].join(' '),
         inputSchema: toolRecipesUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSRecipeInput[] = input.recipes.map((recipe) => ({
+            const inputs: GqlSAdminNutritionRecipeInput[] = input.recipes.map((recipe) => ({
                 recipeId: recipe.recipeId ?? null,
                 title: recipe.title,
                 mealType: recipe.mealType,
@@ -64,7 +64,7 @@ export function toolRecipesUpsert({ serverRuntime, session, mutations }: Nutriti
                 notes: recipe.notes ?? null,
                 lastMadeAt: recipe.lastMadeAt ? new Date(recipe.lastMadeAt) : null,
             }));
-            const result = await recipesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminNutritionRecipesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.recipes.forEach((recipe, index) => {
                 mutations.push({

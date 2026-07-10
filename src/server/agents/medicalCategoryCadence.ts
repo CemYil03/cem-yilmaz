@@ -1,4 +1,4 @@
-import type { MedicalCategory } from '../db/schema';
+import type { AdminMedicalCategory } from '../db/schema';
 
 // Default cadence (months) between completed visits for each category.
 // `null` means "no recurring cadence — book when needed"; used for the
@@ -9,7 +9,7 @@ import type { MedicalCategory } from '../db/schema';
 // Numbers are conservative defaults, not medical advice. The admin can
 // override any category on a per-appointment basis by setting `nextDueAt`
 // explicitly (via the editor or via the sub-agent).
-export const MEDICAL_CATEGORY_CADENCE: Record<MedicalCategory, number | null> = {
+export const MEDICAL_CATEGORY_CADENCE: Record<AdminMedicalCategory, number | null> = {
     dentist: 6,
     gp: 12,
     dermatology: 12,

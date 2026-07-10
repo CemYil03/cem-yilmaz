@@ -30,9 +30,9 @@ import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCTaskEffort,
-    GqlCTaskStatus,
-    GqlCTaskWhenBucket,
+    GqlCAdminProjectTaskEffort,
+    GqlCAdminProjectTaskStatus,
+    GqlCAdminProjectTaskWhenBucket,
     GqlCWorkspaceTodosPageUpdatesSubscription,
     GqlCWorkspaceTodosPageUserFragment,
 } from '../../../web/graphql/generated';
@@ -69,14 +69,14 @@ import { todoParse } from '../../../web/utils/todoParse';
 // is noindex and reachable only via the hub tile, the header breadcrumb,
 // or a chat deep-link (`/workspace/todos?focus=<taskId>`).
 
-const TASK_STATUS_ORDER: ReadonlyArray<GqlCTaskStatus> = ['todo', 'doing', 'done'];
-const TASK_STATUS_LABELS: Record<GqlCTaskStatus, { de: string; en: string }> = {
+const TASK_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectTaskStatus> = ['todo', 'doing', 'done'];
+const TASK_STATUS_LABELS: Record<GqlCAdminProjectTaskStatus, { de: string; en: string }> = {
     todo: { de: 'Offen', en: 'To do' },
     doing: { de: 'Aktiv', en: 'Doing' },
     done: { de: 'Erledigt', en: 'Done' },
 };
 
-const EFFORT_LABELS: Record<GqlCTaskEffort, { de: string; en: string }> = {
+const EFFORT_LABELS: Record<GqlCAdminProjectTaskEffort, { de: string; en: string }> = {
     quick: { de: 'schnell', en: 'quick' },
     focused: { de: 'fokussiert', en: 'focused' },
     deep: { de: 'tief', en: 'deep' },
@@ -85,13 +85,13 @@ const EFFORT_LABELS: Record<GqlCTaskEffort, { de: string; en: string }> = {
 // Left-edge strip color per effort. Encoded as a single color-class so we
 // can drop it directly into the row card's `<span>` — no runtime object
 // spread.
-const EFFORT_BAR: Record<GqlCTaskEffort, string> = {
+const EFFORT_BAR: Record<GqlCAdminProjectTaskEffort, string> = {
     quick: 'bg-emerald-400',
     focused: 'bg-amber-400',
     deep: 'bg-violet-400',
 };
 
-const WHEN_LABELS: Record<GqlCTaskWhenBucket, { de: string; en: string }> = {
+const WHEN_LABELS: Record<GqlCAdminProjectTaskWhenBucket, { de: string; en: string }> = {
     today: { de: 'heute', en: 'today' },
     week: { de: 'diese Woche', en: 'this week' },
     someday: { de: 'irgendwann', en: 'someday' },
@@ -554,7 +554,7 @@ function endOfDay(d: Date): Date {
 
 // Bucket a fresh, untagged todo lands in based on which filter chip the user
 // is currently viewing. `all` returns null so the row stays unclassified.
-function filterDefaultWhenBucket(filter: FilterKey): GqlCTaskWhenBucket | null {
+function filterDefaultWhenBucket(filter: FilterKey): GqlCAdminProjectTaskWhenBucket | null {
     if (filter === 'today') return 'today';
     if (filter === 'week') return 'week';
     if (filter === 'waiting') return 'waiting';
@@ -563,7 +563,7 @@ function filterDefaultWhenBucket(filter: FilterKey): GqlCTaskWhenBucket | null {
 
 // Would a newly-composed row show up under the active filter? Mirrors the
 // rules in `filterRows` but only for the fields the composer sets.
-function rowMatchesFilter(created: { whenBucket: GqlCTaskWhenBucket | null }, filter: FilterKey): boolean {
+function rowMatchesFilter(created: { whenBucket: GqlCAdminProjectTaskWhenBucket | null }, filter: FilterKey): boolean {
     if (filter === 'all') return true;
     if (filter === 'today') return created.whenBucket === 'today';
     if (filter === 'week') return created.whenBucket === 'today' || created.whenBucket === 'week';
@@ -584,11 +584,11 @@ function InlineComposer({
     locale: Locale;
     nextPosition: number;
     filter: FilterKey;
-    onCreated: (created: { whenBucket: GqlCTaskWhenBucket | null }) => void;
+    onCreated: (created: { whenBucket: GqlCAdminProjectTaskWhenBucket | null }) => void;
 }) {
     const [, upsert] = useMutation(WorkspaceTodoUpsertDocument);
     const [value, setValue] = useState('');
-    const [effortPick, setEffortPick] = useState<GqlCTaskEffort | null>(null);
+    const [effortPick, setEffortPick] = useState<GqlCAdminProjectTaskEffort | null>(null);
     const [busy, setBusy] = useState(false);
 
     const submit = async () => {
@@ -681,9 +681,9 @@ function EffortPickerButton({
     icon: Icon,
     label,
 }: {
-    picked: GqlCTaskEffort | null;
-    value: GqlCTaskEffort;
-    onPick: (v: GqlCTaskEffort | null) => void;
+    picked: GqlCAdminProjectTaskEffort | null;
+    value: GqlCAdminProjectTaskEffort;
+    onPick: (v: GqlCAdminProjectTaskEffort | null) => void;
     icon: React.ComponentType<{ className?: string }>;
     label: string;
 }) {
@@ -959,7 +959,7 @@ function RitualCheckbox({ onComplete, completing, locale }: { onComplete: () => 
     );
 }
 
-// --- Task edit form (kept from the previous design; extended for effort/when)
+// --- AdminProjectTask edit form (kept from the previous design; extended for effort/when)
 
 function TaskForm({
     task,
@@ -978,7 +978,7 @@ function TaskForm({
     const [form, setForm] = useState({
         title: task?.title ?? '',
         notes: task?.notes ?? '',
-        status: task?.status ?? ('todo' as GqlCTaskStatus),
+        status: task?.status ?? ('todo' as GqlCAdminProjectTaskStatus),
         dueAt: task?.dueAt ? format(parseISO(task.dueAt as unknown as string), 'yyyy-MM-dd') : '',
         effort: task?.effort ?? null,
         whenBucket: task?.whenBucket ?? null,
@@ -1012,7 +1012,10 @@ function TaskForm({
                         <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
                     </Field>
                     <Field label={{ de: 'Status', en: 'Status' }[locale]}>
-                        <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value as GqlCTaskStatus })}>
+                        <Select
+                            value={form.status}
+                            onValueChange={(value) => setForm({ ...form, status: value as GqlCAdminProjectTaskStatus })}
+                        >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
@@ -1036,7 +1039,9 @@ function TaskForm({
                     <Field label={{ de: 'Aufwand', en: 'Effort' }[locale]}>
                         <Select
                             value={form.effort ?? 'none'}
-                            onValueChange={(value) => setForm({ ...form, effort: value === 'none' ? null : (value as GqlCTaskEffort) })}
+                            onValueChange={(value) =>
+                                setForm({ ...form, effort: value === 'none' ? null : (value as GqlCAdminProjectTaskEffort) })
+                            }
                         >
                             <SelectTrigger className="w-full">
                                 <SelectValue />
@@ -1053,7 +1058,7 @@ function TaskForm({
                         <Select
                             value={form.whenBucket ?? 'none'}
                             onValueChange={(value) =>
-                                setForm({ ...form, whenBucket: value === 'none' ? null : (value as GqlCTaskWhenBucket) })
+                                setForm({ ...form, whenBucket: value === 'none' ? null : (value as GqlCAdminProjectTaskWhenBucket) })
                             }
                         >
                             <SelectTrigger className="w-full">

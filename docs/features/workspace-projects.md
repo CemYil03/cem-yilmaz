@@ -16,11 +16,11 @@ The page has two tabs, switched via a `?tab=inbox|projects` search param (defaul
 daily-work surface). A legacy `?tab=todos` link on the loader hot-redirects to `/workspace/todos` so any pre-split bookmark or stale
 assistant message still resolves.
 
-- **Inbox** — every `ProjectRequest` whose visitor verified their email but Cem hasn't triaged yet. Each row shows the visitor, project
+- **Inbox** — every `AdminProjectRequest` whose visitor verified their email but Cem hasn't triaged yet. Each row shows the visitor, project
   type, submission date, and (on expand) the full brief plus budget/timeline. Two actions: **Archive** flips the request to `archived`
   without creating a project; **Convert to project** opens the project editor inline, prefilled with a title of
   `<project-type-label>: <company-or-name>`, description copied from the brief, and Budget / Timeline / Contact lines pre-pasted into
-  `notes`. The admin reviews, edits anything they want, and on save the editor's normal `projectsUpsert` mutation (a one-element array)
+  `notes`. The admin reviews, edits anything they want, and on save the editor's normal `adminProjectsUpsert` mutation (a one-element array)
   creates the project in the chosen status and archives the source request in the same transaction. A toggle reveals archived rows. Rows
   already converted are filtered out of the default view (they're visible on the linked Project as a "Source request" backlink instead).
 - **Projects** — responsive **tile grid** (1 column on mobile, 2 on `md`, 3 on `lg+`) grouped by project status
@@ -39,27 +39,27 @@ opening the page.
 
 ## Options considered
 
-| Approach                                                                       | Why we picked / didn't                                                                                                                                                                                               |
-| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Triage on a dedicated `/workspace/project-requests` page**                   | Splits the same mental space into two routes. The Inbox tab pattern is the same shape as Visitor-chats list-or-detail but bound to the page Cem actually lives in.                                                   |
-| **One unified `Item` table with a `kind` column** (request \| project \| task) | Saves one or two table definitions, costs a constraint on every read. The lifecycle and the writable fields of a `ProjectRequest` are different enough from a `Project` that the union obscures more than it shares. |
-| **Markdown file per project in `FileUploads`**                                 | Simple but loses the kanban + task-progress views. No structured query — every "what am I doing right now" answer becomes a regex.                                                                                   |
-| **Dedicated `Projects` + `Tasks` tables** (chosen)                             | Mirrors CV's DB-backed pattern. Status is filterable; tasks are countable. Markdown notes still live in `Projects.notes` for free-form context.                                                                      |
-| **Tasks table with required `projectId`** + separate todos table               | Two near-identical schemas. A nullable `projectId` is one column and one tab condition; it stays one table.                                                                                                          |
+| Approach                                                                                     | Why we picked / didn't                                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Triage on a dedicated `/workspace/project-requests` page**                                 | Splits the same mental space into two routes. The Inbox tab pattern is the same shape as Visitor-chats list-or-detail but bound to the page Cem actually lives in.                                                             |
+| **One unified `AdminInventoryItem` table with a `kind` column** (request \| project \| task) | Saves one or two table definitions, costs a constraint on every read. The lifecycle and the writable fields of a `AdminProjectRequest` are different enough from a `AdminProject` that the union obscures more than it shares. |
+| **Markdown file per project in `FileUploads`**                                               | Simple but loses the kanban + task-progress views. No structured query — every "what am I doing right now" answer becomes a regex.                                                                                             |
+| **Dedicated `AdminProject` + `AdminProjectTask` tables** (chosen)                            | Mirrors CV's DB-backed pattern. Status is filterable; tasks are countable. Markdown notes still live in `AdminProject.notes` for free-form context.                                                                            |
+| **Tasks table with required `projectId`** + separate todos table                             | Two near-identical schemas. A nullable `projectId` is one column and one tab condition; it stays one table.                                                                                                                    |
 
 ## Option chosen
 
-Dedicated `Projects` and `Tasks` tables. `Tasks.projectId` is nullable — `IS NULL` rows are standalone todos surfaced on the separate
-`/workspace/todos` page (see [features/workspace-todos.md](./workspace-todos.md)); this page never lists them so the two mental spaces stay
-disjoint. Convert flow runs through `projectsUpsert` with `sourceRequestId` set on the row; a single drizzle transaction inserts the
-project, stamps `Projects.sourceRequestId`, and archives the request. Single-language (English only) — the page is admin-only and never
-surfaced publicly, so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
+Dedicated `AdminProject` and `AdminProjectTask` tables. `AdminProjectTask.projectId` is nullable — `IS NULL` rows are standalone todos
+surfaced on the separate `/workspace/todos` page (see [features/workspace-todos.md](./workspace-todos.md)); this page never lists them so
+the two mental spaces stay disjoint. Convert flow runs through `adminProjectsUpsert` with `sourceRequestId` set on the row; a single drizzle
+transaction inserts the project, stamps `AdminProject.sourceRequestId`, and archives the request. Single-language (English only) — the page
+is admin-only and never surfaced publicly, so the `*De` / `*En` pairing the CV uses would cost typing without buying anything.
 
 ## Implementation details
 
 ### Database schema
 
-`Projects`:
+`AdminProject`:
 
 - `projectId uuid PK`
 - `title varchar` required, single-line summary
@@ -67,16 +67,16 @@ surfaced publicly, so the `*De` / `*En` pairing the CV uses would cost typing wi
 - `notes text` long-form markdown for the row (nullable; rendered as plain text in v1)
 - `status varchar` (`idea | planning | active | paused | done | archived`), default `idea`
 - `position int` for ordering within a status column
-- `sourceRequestId uuid` FK → `ProjectRequests.projectRequestId`, `ON DELETE SET NULL` — converted projects keep existing even if the source
-  request is later deleted
+- `sourceRequestId uuid` FK → `AdminProjectRequest.projectRequestId`, `ON DELETE SET NULL` — converted projects keep existing even if the
+  source request is later deleted
 - `startedAt`, `completedAt` nullable `timestamptz` — driven by the editor, not auto-stamped on status change in v1
 - `createdAt`, `updatedAt`
 - Indexes: `(status, position)` covers the board's primary scan; `(sourceRequestId)` powers the Inbox's "already converted" filter
 
-`Tasks`:
+`AdminProjectTask`:
 
 - `taskId uuid PK`
-- `projectId uuid` FK → `Projects.projectId`, `ON DELETE CASCADE` — nullable for standalone todos
+- `projectId uuid` FK → `AdminProject.projectId`, `ON DELETE CASCADE` — nullable for standalone todos
 - `title varchar`, `notes text`
 - `status varchar` (`todo | doing | done`), default `todo`
 - `position int` per `(projectId, status)` bucket
@@ -90,12 +90,12 @@ Migration: `drizzle/0004_secret_butterfly.sql`.
 
 Read namespace under `Admin` (reached via `sessionFindOne.user.admin`):
 
-- `admin.adminProjectRequestFindMany(status: ProjectRequestStatus): [ProjectRequest!]!` — list (newest first); `convertedProject` field
-  joined in
+- `admin.adminProjectRequestFindMany(status: AdminProjectRequestStatus): [AdminProjectRequest!]!` — list (newest first); `convertedProject`
+  field joined in
 - `admin.adminProjectRequestInboxCount: Int!` — count of `emailVerified` requests without a linked project, drives the hub badge
-- `admin.adminProjectFindMany(status: ProjectStatus): [Project!]!` — board feed; eagerly loads `tasks` + `sourceRequest`
-- `admin.adminStandaloneTaskFindMany: [Task!]!` — full list of standalone todos. Consumed by [/workspace/todos](./workspace-todos.md), not
-  this page.
+- `admin.adminProjectFindMany(status: AdminProjectStatus): [AdminProject!]!` — board feed; eagerly loads `tasks` + `sourceRequest`
+- `admin.adminStandaloneTaskFindMany: [AdminProjectTask!]!` — full list of standalone todos. Consumed by
+  [/workspace/todos](./workspace-todos.md), not this page.
 - `admin.adminStandaloneTaskOpenCount: Int!` — hub-badge count of standalone todos in `todo` or `doing`.
 
 Write namespace under `AdminMutation` (gated by `guardAdminMutation`). Every entity mutation is a **batch** returning
@@ -103,32 +103,33 @@ Write namespace under `AdminMutation` (gated by `guardAdminMutation`). Every ent
 truth; `referenceIds` echoes the row id per input in input order so a caller can address a newly-created row without a follow-up read. A
 single-item edit passes a one-element array — there is no parallel singular path.
 
-- `projectRequestArchive(projectRequestId)`, `projectRequestDelete(projectRequestId)` — admin-queue singulars, intentionally not batched.
-- `projectsUpsert(projects: [ProjectCreate!]!)` — single entry point for both hand-authored projects and conversions from an inbox request,
-  processed per input row. When a row's `projectId` is absent it creates; when present it updates. When `sourceRequestId` is also set on a
-  create the command loads the source request inside the same transaction, requires it to be `emailVerified`, links the new project back via
-  `sourceRequestId`, and flips the request to `archived`. The visitor's brief lives in `description` / `notes` because the inbox UI prefills
-  the editor from the request before submit; no synthesis happens server-side. `position` is optional on create — when omitted the row lands
-  at the end of the `planning` column. The planning tail is read once before the loop and incremented locally so a batch of creates lays out
-  contiguously.
-- `projectsDelete(projectIds: [ID!]!)`, `projectReorder(orderedIds)`
-- `tasksUpsert(tasks: [TaskCreate!]!)`, `tasksDelete(taskIds: [ID!]!)`, `taskReorder(orderedIds)` — reorder is bucket-scoped at the call
-  site (caller passes a single status column's worth of ids).
+- `adminProjectRequestArchive(projectRequestId)`, `adminProjectRequestDelete(projectRequestId)` — admin-queue singulars, intentionally not
+  batched.
+- `adminProjectsUpsert(projects: [AdminProjectCreate!]!)` — single entry point for both hand-authored projects and conversions from an inbox
+  request, processed per input row. When a row's `projectId` is absent it creates; when present it updates. When `sourceRequestId` is also
+  set on a create the command loads the source request inside the same transaction, requires it to be `emailVerified`, links the new project
+  back via `sourceRequestId`, and flips the request to `archived`. The visitor's brief lives in `description` / `notes` because the inbox UI
+  prefills the editor from the request before submit; no synthesis happens server-side. `position` is optional on create — when omitted the
+  row lands at the end of the `planning` column. The planning tail is read once before the loop and incremented locally so a batch of
+  creates lays out contiguously.
+- `adminProjectsDelete(projectIds: [ID!]!)`, `adminProjectReorder(orderedIds)`
+- `adminProjectTasksUpsert(tasks: [AdminProjectTaskCreate!]!)`, `adminProjectTasksDelete(taskIds: [ID!]!)`,
+  `adminProjectTaskReorder(orderedIds)` — reorder is bucket-scoped at the call site (caller passes a single status column's worth of ids).
 
 ### Where things live
 
-| Concern         | File                                                                                                                                                    |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                      |
-| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                     |
-| Mappers         | `src/server/mappers/toGqlProjectRequest.ts`, `toGqlProject.ts`, `toGqlTask.ts`                                                                          |
-| Queries         | `src/server/queries/adminProjectRequestFindMany.ts`, `adminProjectRequestInboxCount.ts`, `adminProjectFindMany.ts`, `adminStandaloneTaskFindMany.ts`    |
-| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `projects{Upsert,Delete}.ts`, `projectReorder.ts`, `tasks{Upsert,Delete}.ts`, `taskReorder.ts` |
-| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                                 |
-| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                          |
-| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                      |
-| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                           |
-| Tests           | `src/server/commands/projectsUpsert.test.ts`, `taskReorder.test.ts`                                                                                     |
+| Concern         | File                                                                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                                       |
+| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                                      |
+| Mappers         | `src/server/mappers/toGqlAdminProjectRequest.ts`, `toGqlAdminProject.ts`, `toGqlAdminProjectTask.ts`                                                                     |
+| Queries         | `src/server/queries/adminProjectRequestFindMany.ts`, `adminProjectRequestInboxCount.ts`, `adminProjectFindMany.ts`, `adminStandaloneTaskFindMany.ts`                     |
+| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `projects{Upsert,Delete}.ts`, `adminProjectReorder.ts`, `tasks{Upsert,Delete}.ts`, `adminProjectTaskReorder.ts` |
+| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                                                  |
+| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                                           |
+| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                                       |
+| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                                            |
+| Tests           | `src/server/commands/adminProjectsUpsert.test.ts`, `adminProjectTaskReorder.test.ts`                                                                                     |
 
 ## Out of scope (v1)
 
@@ -149,7 +150,7 @@ The detail route has its own search-param schema (`?tab=overview|tasks|activity|
 (`WorkspaceProjectDetail`) co-located in `projects_.$projectId.graphql`. The query mirrors the board's nested shape but adds `links` /
 `files` per project and per activity, the new offer columns (`amountCents`, `offerStatus`), and is fetched by
 `admin.project(projectId: ID!)` — a new single-entity counterpart to `admin.projects`. The board page's own GraphQL file no longer needs to
-ship the per-project activity-edit mutations (the detail page owns those); only `projectTimersStart` / `projectTimersStop` and the
+ship the per-project activity-edit mutations (the detail page owns those); only `adminProjectTimersStart` / `adminProjectTimersStop` and the
 project-level CRUD stayed.
 
 ### Layout
@@ -180,8 +181,8 @@ The **right column** is a sticky rail (`lg:sticky lg:top-24`) wrapped in `GlassC
 ### Status pill
 
 The pill is a `DropdownMenu` trigger styled per status — six color classes covering both themes (idea → muted, planning → amber, active →
-emerald, paused → secondary, done → primary, archived → muted/strikethrough). The menu items call the same `projectsUpsert` mutation the
-former `Select` did (a one-element array). Source of truth lives in `PROJECT_STATUS_TINTS` at the top of the route file.
+emerald, paused → secondary, done → primary, archived → muted/strikethrough). The menu items call the same `adminProjectsUpsert` mutation
+the former `Select` did (a one-element array). Source of truth lives in `PROJECT_STATUS_TINTS` at the top of the route file.
 
 ### Overview tab
 
@@ -222,13 +223,13 @@ direction is a real choice. Switching kind auto-snaps direction to the kind-appr
 
 The schema:
 
-- `ProjectActivities.direction varchar NOT NULL DEFAULT 'internal'` — backfilled by migration `drizzle/0010_grey_blindfold.sql`:
+- `AdminProjectActivity.direction varchar NOT NULL DEFAULT 'internal'` — backfilled by migration `drizzle/0010_grey_blindfold.sql`:
   pre-existing `clientContact` rows became `incoming`, `meeting` and `offer` became `outgoing`, everything else (`work` / `note` /
   `milestone`) is `internal`.
 - Enum: `projectActivityDirections = ['outgoing', 'incoming', 'internal']` in `src/server/db/schema.ts`.
-- GraphQL: `enum ProjectActivityDirection` + `direction: ProjectActivityDirection!` on the type + optional `direction` on
-  `ProjectActivityCreate`. The `projectActivitiesUpsert` command normalizes `work` / `note` / `milestone` to `internal` regardless of what
-  the client sent.
+- GraphQL: `enum AdminProjectActivityDirection` + `direction: AdminProjectActivityDirection!` on the type + optional `direction` on
+  `AdminProjectActivityCreate`. The `adminProjectActivitiesUpsert` command normalizes `work` / `note` / `milestone` to `internal` regardless
+  of what the client sent.
 
 ### Breadcrumb / chrome
 
@@ -252,28 +253,28 @@ A link is optionally **born from an activity**: when the user logs a "sent offer
 `projectLinks.activityId` is stamped with the new activity's id. Deleting the activity later cascade-set-nulls the link — the resource
 survives, it just detaches from the timeline. Adding a link directly on the Links tab leaves `activityId` null.
 
-Database: `ProjectLinks` table — `projectLinkId`, `projectId` (FK, cascade), `activityId` (FK, set-null), `url`, `label`, `kind`, `pinned`,
-`createdAt`, `updatedAt`. Indexes `(projectId, pinned)` and `(activityId)`.
+Database: `AdminProjectLink` table — `projectLinkId`, `projectId` (FK, cascade), `activityId` (FK, set-null), `url`, `label`, `kind`,
+`pinned`, `createdAt`, `updatedAt`. Indexes `(projectId, pinned)` and `(activityId)`.
 
-GraphQL: `type ProjectLink`, `enum ProjectLinkKind`, batch mutations `projectLinksUpsert` (pin toggles ride this — pass the existing row
-with `pinned` flipped), `projectLinksDelete`. `Project.links` and `ProjectActivity.links` are eagerly loaded by `adminProjectFindMany` /
-`adminProjectFindOne` in the same in-memory normalization pass.
+GraphQL: `type AdminProjectLink`, `enum AdminProjectLinkKind`, batch mutations `adminProjectLinksUpsert` (pin toggles ride this — pass the
+existing row with `pinned` flipped), `adminProjectLinksDelete`. `AdminProject.links` and `AdminProjectActivity.links` are eagerly loaded by
+`adminProjectFindMany` / `adminProjectFindOne` in the same in-memory normalization pass.
 
 ## Files
 
 Project files reuse the shared `FileUploads` store (see [architecture/file-storage.md](../architecture/file-storage.md)). The client uploads
-the bytes via `POST /api/file-uploads` first (same flow the chat composer uses), then calls `projectFilesUpsert` with the returned
+the bytes via `POST /api/file-uploads` first (same flow the chat composer uses), then calls `adminProjectFilesUpsert` with the returned
 `fileUploadId`. The detail page's Files tab and the inline "+ file" affordance on the activity composer share the same upload helper
 (`src/web/chat/fileUpload.ts`).
 
-A `ProjectFiles` row carries `projectId`, `activityId` (nullable, set-null on activity delete — same semantics as links), `fileUploadId` (FK
-to `fileUploads`, cascade), `label`, `kind` (`offer | invoice | contract | screenshot | other`), and `pinned`. On project delete the join
-rows cascade away; the underlying `FileUploads` row is preserved (it may still be reachable from a chat message), and the user-row cascade
-reclaims storage when the owner goes. If we later want eager cleanup of orphan uploads, do it in `projectFilesDelete` after confirming no
-other reference exists.
+A `AdminProjectFile` row carries `projectId`, `activityId` (nullable, set-null on activity delete — same semantics as links), `fileUploadId`
+(FK to `fileUploads`, cascade), `label`, `kind` (`offer | invoice | contract | screenshot | other`), and `pinned`. On project delete the
+join rows cascade away; the underlying `FileUploads` row is preserved (it may still be reachable from a chat message), and the user-row
+cascade reclaims storage when the owner goes. If we later want eager cleanup of orphan uploads, do it in `adminProjectFilesDelete` after
+confirming no other reference exists.
 
-GraphQL: `type ProjectFile { fileUpload: FileUpload! ... }`, `enum ProjectFileKind`, batch mutations `projectFilesUpsert` (pin toggles ride
-this — pass the existing row with `pinned` flipped), `projectFilesDelete`.
+GraphQL: `type AdminProjectFile { fileUpload: FileUpload! ... }`, `enum AdminProjectFileKind`, batch mutations `adminProjectFilesUpsert`
+(pin toggles ride this — pass the existing row with `pinned` flipped), `adminProjectFilesDelete`.
 
 ### Drop zone
 
@@ -302,7 +303,7 @@ re-uploads still go through the browser path so the call sites stay auditable.
 
 ## Atomic attach on activity create
 
-`projectActivitiesUpsert` accepts optional `attachLinkUrl` / `attachFileUploadId` (with companion `attachLinkKind` / `attachFileKind` /
+`adminProjectActivitiesUpsert` accepts optional `attachLinkUrl` / `attachFileUploadId` (with companion `attachLinkKind` / `attachFileKind` /
 labels / pin flags). When set on a create, the server runs the activity insert plus the matching `projectLinks` / `projectFiles` insert in
 one transaction. Lets the UI offer a single "+ link" / "+ file" toggle on the activity composer without forcing the client to chain two
 round-trips. The fields are ignored on update — edit the resource rows through their own mutations.
@@ -329,12 +330,13 @@ history.
 ## Assistant control
 
 The personal assistant at `/workspace/assistant` can read and mutate this board on Cem's instruction. It delegates project/task work to a
-dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `projectsUpsert` / `projectsDelete` / `tasksUpsert` /
-`tasksDelete` / `projectActivitiesUpsert` / `projectLinksUpsert` batch commands the page uses, plus `projectFileCreate` for agent-authored
-markdown files (see the **Files → Agent-authored markdown** section above). The sub-agent's tools are plural batch tools: it is instructed
-to batch every same-shape write into one call — one `tasksUpsert` for all of them, not N calls — and to source ids from the board snapshot
-in its system prompt or from a prior tool result's `referenceIds` (in input order) earlier in the same turn. There are no timer tools; the
-sub-agent does not run timers. See [architecture/agent-delegation.md](../architecture/agent-delegation.md).
+dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `adminProjectsUpsert` / `adminProjectsDelete` /
+`adminProjectTasksUpsert` / `adminProjectTasksDelete` / `adminProjectActivitiesUpsert` / `adminProjectLinksUpsert` batch commands the page
+uses, plus `projectFileCreate` for agent-authored markdown files (see the **Files → Agent-authored markdown** section above). The
+sub-agent's tools are plural batch tools: it is instructed to batch every same-shape write into one call — one `adminProjectTasksUpsert` for
+all of them, not N calls — and to source ids from the board snapshot in its system prompt or from a prior tool result's `referenceIds` (in
+input order) earlier in the same turn. There are no timer tools; the sub-agent does not run timers. See
+[architecture/agent-delegation.md](../architecture/agent-delegation.md).
 
 ### Deep linking from the assistant
 
@@ -355,8 +357,8 @@ chronological stream per project, and the work timer feeds the same stream from 
 
 ### Model
 
-One unified `ProjectActivities` table backs both shapes. The same row covers a logged event (a 12-minute call) and a timed work session (75
-minutes of offer writing); only the columns that are populated differ.
+One unified `AdminProjectActivity` table backs both shapes. The same row covers a logged event (a 12-minute call) and a timed work session
+(75 minutes of offer writing); only the columns that are populated differ.
 
 | Column        | Purpose                                                                                                           |
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -368,16 +370,16 @@ minutes of offer writing); only the columns that are populated differ.
 | `startedAt`   | set on `kind = 'work'` rows; equals `occurredAt`                                                                  |
 | `endedAt`     | null while a timer is running                                                                                     |
 | `durationSec` | cached `endedAt - startedAt`, written on stop; settable directly on event rows to log a known duration            |
-| `taskId`      | optional link to a specific `Task` for finer-grained reporting later                                              |
+| `taskId`      | optional link to a specific `AdminProjectTask` for finer-grained reporting later                                  |
 
 A partial unique index `(kind) WHERE endedAt IS NULL AND kind = 'work'` enforces the **one global active timer** invariant at the DB level —
-even if two tabs race a Start, only one row can exist. The `projectTimersStart` command runs inside a transaction that first stops the open
-row then inserts the new one, so the invariant holds without ever surfacing a unique-violation to the user.
+even if two tabs race a Start, only one row can exist. The `adminProjectTimersStart` command runs inside a transaction that first stops the
+open row then inserts the new one, so the invariant holds without ever surfacing a unique-violation to the user.
 
 ### Unified stream vs. two tables
 
 A separate `ProjectTimeEntry` table would have split the timeline into two parallel feeds — events on one, timed sessions on the other — and
-made every "total time and history" view a UNION. Folding both into `ProjectActivities` keeps the timeline a single
+made every "total time and history" view a UNION. Folding both into `AdminProjectActivity` keeps the timeline a single
 `ORDER BY occurredAt DESC` and lets `kind` decide the rendering. The cost is a few null columns on event rows; the win is that a card-level
 timer button and the event log share the same code path.
 
@@ -385,21 +387,21 @@ timer button and the event log share the same code path.
 
 Read additions on `Admin`:
 
-- `Project.activities: [ProjectActivity!]!` — newest first.
-- `Project.totalWorkSec: Int!` — sum of `durationSec` over `kind = 'work'` rows. Running timers contribute 0 server-side; the client adds
-  the live seconds for the currently-running timer.
-- `admin.activeTimer: ProjectActivity` — the one running timer, or null.
+- `AdminProject.activities: [AdminProjectActivity!]!` — newest first.
+- `AdminProject.totalWorkSec: Int!` — sum of `durationSec` over `kind = 'work'` rows. Running timers contribute 0 server-side; the client
+  adds the live seconds for the currently-running timer.
+- `admin.activeTimer: AdminProjectActivity` — the one running timer, or null.
 
 Mutations on `AdminMutation`:
 
-- `projectActivitiesUpsert(projectActivities)` — for event-style rows. Rejects `kind = 'work'` so the timer mutations stay the only path
-  into a work row. One-shot `attachLink*` / `attachFile*` extensions are honoured per create row.
-- `projectActivitiesDelete(activityIds)`.
-- `projectTimersStart(inputs: [ProjectTimerStartInput!]!)` — kept separate from the activity upsert because the clock semantics
+- `adminProjectActivitiesUpsert(projectActivities)` — for event-style rows. Rejects `kind = 'work'` so the timer mutations stay the only
+  path into a work row. One-shot `attachLink*` / `attachFile*` extensions are honoured per create row.
+- `adminProjectActivitiesDelete(activityIds)`.
+- `adminProjectTimersStart(inputs: [AdminProjectTimerStartInput!]!)` — kept separate from the activity upsert because the clock semantics
   (stop-open-timer + `startedAt: now`) are distinct. Each input atomically stops any running timer, then inserts the new one; a
   multi-element batch ends with only the last row open, respecting the single-active-timer index. `referenceIds` carries the new
   `activityId` per input. Default title is `Work session`.
-- `projectTimersStop(activityIds)` — stamps `endedAt = now`, computes `durationSec` per id. Idempotent on an already-stopped row (left
+- `adminProjectTimersStop(activityIds)` — stamps `endedAt = now`, computes `durationSec` per id. Idempotent on an already-stopped row (left
   untouched); throws if an id does not exist.
 
 ### UI
@@ -427,17 +429,18 @@ Files:
 
 - Table + types: `src/server/db/schema.ts` (`projectActivities`, `projectActivityKinds`, `projectActivityChannels`, `projectOfferStatuses`)
 - Migration: `drizzle/0005_chunky_switch.sql` (original); `drizzle/0007_fat_stature.sql` (links, files, offer columns)
-- Mapper: `src/server/mappers/toGqlProjectActivity.ts`, `toGqlProjectLink.ts`, `toGqlProjectFile.ts`, `toGqlFileUpload.ts`, and the extended
-  `toGqlProject.ts`
+- Mapper: `src/server/mappers/toGqlAdminProjectActivity.ts`, `toGqlAdminProjectLink.ts`, `toGqlAdminProjectFile.ts`, `toGqlFileUpload.ts`,
+  and the extended `toGqlAdminProject.ts`
 - Queries: `src/server/queries/adminProjectActiveTimerFindOne.ts`, `adminProjectFindOne.ts`; lists + totals + links + files are loaded by
   `adminProjectFindMany.ts`
-- Commands: `src/server/commands/projectActivitiesUpsert.ts` (with atomic attach), `projectActivitiesDelete.ts`, `projectTimersStart.ts`,
-  `projectTimersStop.ts`, `projectLinks{Upsert,Delete}.ts`, `projectFiles{Upsert,Delete}.ts`, `projectFileCreateFromMarkdown.ts` (the one
-  intentional non-batch survivor — returns a hydrated entity for the sub-agent tool's mutation log), `projectFileCreateFromMarkdown.ts`
+- Commands: `src/server/commands/adminProjectActivitiesUpsert.ts` (with atomic attach), `adminProjectActivitiesDelete.ts`,
+  `adminProjectTimersStart.ts`, `adminProjectTimersStop.ts`, `projectLinks{Upsert,Delete}.ts`, `projectFiles{Upsert,Delete}.ts`,
+  `projectFileCreateFromMarkdown.ts` (the one intentional non-batch survivor — returns a hydrated entity for the sub-agent tool's mutation
+  log), `projectFileCreateFromMarkdown.ts`
 - Agent tools: `src/server/agents/toolProject{sList,sUpsert,sDelete,LinksUpsert,ActivitiesUpsert,FileCreate}.ts`,
   `toolTasks{Upsert,Delete}.ts`, `toolStandaloneTasksList.ts`
-- Tests: `src/server/commands/projectTimersStart.test.ts`, `projectLinksUpsert.test.ts`, `projectFilesUpsert.test.ts`,
-  `projectFileCreateFromMarkdown.test.ts`, `projectActivitiesUpsert.test.ts`, `projectsUpsert.test.ts`
+- Tests: `src/server/commands/adminProjectTimersStart.test.ts`, `adminProjectLinksUpsert.test.ts`, `adminProjectFilesUpsert.test.ts`,
+  `projectFileCreateFromMarkdown.test.ts`, `adminProjectActivitiesUpsert.test.ts`, `adminProjectsUpsert.test.ts`
 - Resolver wiring: `src/server/graphql/resolversCreate.ts`
 - UI: board card in `src/routes/{-$locale}/workspace/projects.tsx`; detail route + tabs + pinned rail in
   `src/routes/{-$locale}/workspace/projects_.$projectId.tsx`; operations in `projects.graphql` (board) and `projects_.$projectId.graphql`

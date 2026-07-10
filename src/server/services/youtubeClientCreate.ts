@@ -14,7 +14,7 @@ import { environmentVariables } from '../env/environmentVariablesCreate';
 
 const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3';
 
-interface YoutubeChannelResult {
+interface AdminMediaYoutubeChannelResult {
     // The stable id used to construct a canonical channel URL. `handle` is
     // nicer to show but not stable across renames; `channelId` is forever.
     channelId: string;
@@ -41,7 +41,7 @@ export interface YoutubeClient {
      * throws — the media page treats an empty result set as "no matches,
      * offer manual entry".
      */
-    searchChannels: (query: string) => Promise<YoutubeChannelResult[]>;
+    searchChannels: (query: string) => Promise<AdminMediaYoutubeChannelResult[]>;
 }
 
 interface YoutubeSearchThumbnail {
@@ -154,7 +154,7 @@ export function youtubeClientCreate(): YoutubeClient {
             }
 
             return searchResponse.items
-                .map((item): YoutubeChannelResult | null => {
+                .map((item): AdminMediaYoutubeChannelResult | null => {
                     const channelId = item.id.channelId;
                     if (!channelId) return null;
                     const enrichment = enrichmentById.get(channelId);
@@ -177,7 +177,7 @@ export function youtubeClientCreate(): YoutubeClient {
                         canonicalUrl: canonicalUrlFor(channelId, handle),
                     };
                 })
-                .filter((result): result is YoutubeChannelResult => result !== null);
+                .filter((result): result is AdminMediaYoutubeChannelResult => result !== null);
         },
     };
 }
