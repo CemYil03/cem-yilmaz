@@ -91,6 +91,8 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Inventory             | Items + valuations + service log + receipt uploads; material net worth                                    | `docs/features/workspace-inventory.md`         |
 | Medical               | Health journal + appointment tracker; documentarian sub-agent with triage                                 | `docs/features/workspace-medical.md`           |
 | Travel                | Trips → days → activities + per-trip packing list; planner sub-agent writes durable itineraries from chat | `docs/features/workspace-travel.md`            |
+| Nutrition             | Cookbook + soft weekly meal plan + food/drink diary; sub-agent suggests snacks and logs intake            | `docs/features/workspace-nutrition.md`         |
+| Fitness               | Gym log (sessions → sets) + reusable routines + exercise catalog; sub-agent logs workouts from chat       | `docs/features/workspace-fitness.md`           |
 
 ## How to Add Things
 
@@ -170,7 +172,8 @@ src/
 │   │       ├── inventory.tsx   Inventory — material assets, warranty, valuations, service log
 │   │       ├── inventory_.$itemId.tsx  Per-item detail (facts, valuations sparkline, service history, files)
 │   │       ├── tax.tsx         Tax matters
-│   │       ├── fitness.tsx     Fitness & well-being
+│   │       ├── fitness.tsx     Fitness — gym log (sessions → sets), reusable routines, exercise catalog
+│   │       ├── nutrition.tsx   Nutrition — cookbook, soft weekly meal plan, food/drink diary
 │   │       ├── medical.tsx     Medical (appointments, results, health notes)
 │   │       ├── media.tsx       Movies, series & channels — watchlist, series next-season tracking, favourite YouTube/podcast channels
 │   │       ├── travel.tsx      Travel — trips list (upcoming / past) + new-trip dialog

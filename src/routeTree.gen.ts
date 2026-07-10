@@ -32,6 +32,7 @@ import { Route as Char123LocaleChar125WorkspaceTodosRouteImport } from './routes
 import { Route as Char123LocaleChar125WorkspaceTaxRouteImport } from './routes/{-$locale}/workspace/tax'
 import { Route as Char123LocaleChar125WorkspaceSoftwareRouteImport } from './routes/{-$locale}/workspace/software'
 import { Route as Char123LocaleChar125WorkspaceProjectsRouteImport } from './routes/{-$locale}/workspace/projects'
+import { Route as Char123LocaleChar125WorkspaceNutritionRouteImport } from './routes/{-$locale}/workspace/nutrition'
 import { Route as Char123LocaleChar125WorkspaceMedicalRouteImport } from './routes/{-$locale}/workspace/medical'
 import { Route as Char123LocaleChar125WorkspaceMediaRouteImport } from './routes/{-$locale}/workspace/media'
 import { Route as Char123LocaleChar125WorkspaceLogsRouteImport } from './routes/{-$locale}/workspace/logs'
@@ -174,6 +175,12 @@ const Char123LocaleChar125WorkspaceProjectsRoute =
     path: '/projects',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
+const Char123LocaleChar125WorkspaceNutritionRoute =
+  Char123LocaleChar125WorkspaceNutritionRouteImport.update({
+    id: '/nutrition',
+    path: '/nutrition',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
 const Char123LocaleChar125WorkspaceMedicalRoute =
   Char123LocaleChar125WorkspaceMedicalRouteImport.update({
     id: '/medical',
@@ -279,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
+  '/{-$locale}/workspace/nutrition': typeof Char123LocaleChar125WorkspaceNutritionRoute
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -315,6 +323,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
+  '/{-$locale}/workspace/nutrition': typeof Char123LocaleChar125WorkspaceNutritionRoute
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -354,6 +363,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/logs': typeof Char123LocaleChar125WorkspaceLogsRoute
   '/{-$locale}/workspace/media': typeof Char123LocaleChar125WorkspaceMediaRoute
   '/{-$locale}/workspace/medical': typeof Char123LocaleChar125WorkspaceMedicalRoute
+  '/{-$locale}/workspace/nutrition': typeof Char123LocaleChar125WorkspaceNutritionRoute
   '/{-$locale}/workspace/projects': typeof Char123LocaleChar125WorkspaceProjectsRoute
   '/{-$locale}/workspace/software': typeof Char123LocaleChar125WorkspaceSoftwareRoute
   '/{-$locale}/workspace/tax': typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
+    | '/{-$locale}/workspace/nutrition'
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
@@ -430,6 +441,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
+    | '/{-$locale}/workspace/nutrition'
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
@@ -468,6 +480,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/logs'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/medical'
+    | '/{-$locale}/workspace/nutrition'
     | '/{-$locale}/workspace/projects'
     | '/{-$locale}/workspace/software'
     | '/{-$locale}/workspace/tax'
@@ -657,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/{-$locale}/workspace/nutrition': {
+      id: '/{-$locale}/workspace/nutrition'
+      path: '/nutrition'
+      fullPath: '/{-$locale}/workspace/nutrition'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceNutritionRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
     '/{-$locale}/workspace/medical': {
       id: '/{-$locale}/workspace/medical'
       path: '/medical'
@@ -760,6 +780,7 @@ interface Char123LocaleChar125WorkspaceRouteChildren {
   Char123LocaleChar125WorkspaceLogsRoute: typeof Char123LocaleChar125WorkspaceLogsRoute
   Char123LocaleChar125WorkspaceMediaRoute: typeof Char123LocaleChar125WorkspaceMediaRoute
   Char123LocaleChar125WorkspaceMedicalRoute: typeof Char123LocaleChar125WorkspaceMedicalRoute
+  Char123LocaleChar125WorkspaceNutritionRoute: typeof Char123LocaleChar125WorkspaceNutritionRoute
   Char123LocaleChar125WorkspaceProjectsRoute: typeof Char123LocaleChar125WorkspaceProjectsRoute
   Char123LocaleChar125WorkspaceSoftwareRoute: typeof Char123LocaleChar125WorkspaceSoftwareRoute
   Char123LocaleChar125WorkspaceTaxRoute: typeof Char123LocaleChar125WorkspaceTaxRoute
@@ -790,6 +811,8 @@ const Char123LocaleChar125WorkspaceRouteChildren: Char123LocaleChar125WorkspaceR
       Char123LocaleChar125WorkspaceMediaRoute,
     Char123LocaleChar125WorkspaceMedicalRoute:
       Char123LocaleChar125WorkspaceMedicalRoute,
+    Char123LocaleChar125WorkspaceNutritionRoute:
+      Char123LocaleChar125WorkspaceNutritionRoute,
     Char123LocaleChar125WorkspaceProjectsRoute:
       Char123LocaleChar125WorkspaceProjectsRoute,
     Char123LocaleChar125WorkspaceSoftwareRoute:

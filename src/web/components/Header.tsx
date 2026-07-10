@@ -150,6 +150,16 @@ export function Header({
                                         {breadcrumbs.map((crumb, index) => {
                                             const isLast = index === breadcrumbs.length - 1;
                                             const Icon = crumb.icon;
+                                            // Ancestor crumbs (everything but the current
+                                            // page) collapse to their icon on narrow
+                                            // screens and hold a fixed width (`shrink-0`),
+                                            // so the flex row shrinks *them* first and the
+                                            // current-page label keeps its space instead of
+                                            // every crumb truncating to "Works…" at once.
+                                            // The label reappears at `sm`. Icon-less
+                                            // ancestors (rare fallbacks) keep their label so
+                                            // they never collapse to an empty separator.
+                                            const collapseAncestor = !isLast && !!Icon;
                                             const labelNode = Icon ? (
                                                 crumb.iconOnly ? (
                                                     <span className="flex shrink-0 items-center">
@@ -157,9 +167,21 @@ export function Header({
                                                         <span className="sr-only">{crumb.label}</span>
                                                     </span>
                                                 ) : (
-                                                    <span className="flex min-w-0 items-center gap-1.5">
+                                                    <span
+                                                        className={cn(
+                                                            'flex items-center gap-1.5',
+                                                            collapseAncestor ? 'shrink-0' : 'min-w-0',
+                                                        )}
+                                                    >
                                                         <Icon className="size-4 shrink-0 text-primary" aria-hidden />
-                                                        <span className="block min-w-0 truncate">{crumb.label}</span>
+                                                        <span
+                                                            className={cn(
+                                                                'min-w-0 truncate',
+                                                                collapseAncestor ? 'hidden sm:block' : 'block',
+                                                            )}
+                                                        >
+                                                            {crumb.label}
+                                                        </span>
                                                     </span>
                                                 )
                                             ) : (

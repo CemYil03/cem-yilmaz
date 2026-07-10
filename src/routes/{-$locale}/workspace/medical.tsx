@@ -210,7 +210,7 @@ function WorkspaceMedical() {
             <p className="text-sm text-muted-foreground">{pageDescription[locale]}</p>
 
             <nav
-                className="mt-8 flex gap-1 overflow-x-auto border-b border-border/60 scrollbar-none"
+                className="mt-8 flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
                 aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
             >
                 {TABS.map((t) => {
@@ -228,7 +228,7 @@ function WorkspaceMedical() {
                             })}
                             replace
                             className={cn(
-                                'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+                                'inline-flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
                                 isActive
                                     ? 'border-primary text-foreground'
                                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',

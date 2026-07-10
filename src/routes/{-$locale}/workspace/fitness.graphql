@@ -1,0 +1,162 @@
+# Workspace Fitness editor operations. Co-located with `/workspace/fitness`.
+# Same seed-and-subscribe posture as `/workspace/travel`: the loader query and
+# the live `userUpdates` subscription spread `WorkspaceFitnessPageUser` so
+# mutations don't need to re-invalidate — every fitness mutation publishes on
+# the user channel and the page picks up the new payload over SSE. See
+# `docs/features/workspace-fitness.md`.
+
+fragment WorkspaceFitnessExercise on Exercise {
+    exerciseId
+    name
+    muscleGroup
+    equipment
+    notes
+}
+
+fragment WorkspaceFitnessPageUser on User {
+    admin {
+        adminFitnessFindOne {
+            adminFitnessExerciseFindMany {
+                ...WorkspaceFitnessExercise
+            }
+            adminFitnessRoutineFindMany {
+                routineId
+                name
+                notes
+                position
+                items {
+                    routineItemId
+                    routineId
+                    position
+                    targetSets
+                    targetReps
+                    targetWeight
+                    notes
+                    exercise {
+                        ...WorkspaceFitnessExercise
+                    }
+                }
+            }
+            adminFitnessSessionFindMany {
+                sessionId
+                date
+                title
+                routineId
+                durationMinutes
+                notes
+                sets {
+                    setId
+                    sessionId
+                    position
+                    weight
+                    reps
+                    rpe
+                    isWarmup
+                    notes
+                    exercise {
+                        ...WorkspaceFitnessExercise
+                    }
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceFitnessPage {
+    sessionFindOne {
+        user {
+            ...WorkspaceFitnessPageUser
+        }
+    }
+}
+
+subscription WorkspaceFitnessPageUpdates {
+    userUpdates {
+        ...WorkspaceFitnessPageUser
+    }
+}
+
+mutation WorkspaceExercisesUpsert($exercises: [ExerciseInput!]!) {
+    admin {
+        exercisesUpsert(exercises: $exercises) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceExercisesDelete($exerciseIds: [ID!]!) {
+    admin {
+        exercisesDelete(exerciseIds: $exerciseIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceWorkoutRoutinesUpsert($workoutRoutines: [WorkoutRoutineInput!]!) {
+    admin {
+        workoutRoutinesUpsert(workoutRoutines: $workoutRoutines) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceWorkoutRoutinesDelete($routineIds: [ID!]!) {
+    admin {
+        workoutRoutinesDelete(routineIds: $routineIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceWorkoutRoutineItemsUpsert($workoutRoutineItems: [WorkoutRoutineItemInput!]!) {
+    admin {
+        workoutRoutineItemsUpsert(workoutRoutineItems: $workoutRoutineItems) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceWorkoutRoutineItemsDelete($routineItemIds: [ID!]!) {
+    admin {
+        workoutRoutineItemsDelete(routineItemIds: $routineItemIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceWorkoutSessionsUpsert($workoutSessions: [WorkoutSessionInput!]!) {
+    admin {
+        workoutSessionsUpsert(workoutSessions: $workoutSessions) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceWorkoutSessionsDelete($sessionIds: [ID!]!) {
+    admin {
+        workoutSessionsDelete(sessionIds: $sessionIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceWorkoutSetsUpsert($workoutSets: [WorkoutSetInput!]!) {
+    admin {
+        workoutSetsUpsert(workoutSets: $workoutSets) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceWorkoutSetsDelete($setIds: [ID!]!) {
+    admin {
+        workoutSetsDelete(setIds: $setIds) {
+            success
+        }
+    }
+}

@@ -302,7 +302,7 @@ function OverviewStrip({
 // See `docs/conventions.md` — "Top-of-page sub-view switcher".
 function PeriodChips({ period, locale }: { period: PeriodFilter; locale: Locale }) {
     return (
-        <nav className="flex flex-wrap gap-1" aria-label={{ de: 'Zeitraum', en: 'Period' }[locale]}>
+        <nav className="flex gap-1 overflow-x-auto no-scrollbar scroll-fade-x" aria-label={{ de: 'Zeitraum', en: 'Period' }[locale]}>
             {PERIOD_FILTERS.map((key) => {
                 const isActive = period === key;
                 const Icon = PERIOD_ICONS[key];
@@ -315,7 +315,7 @@ function PeriodChips({ period, locale }: { period: PeriodFilter; locale: Locale 
                         search={(prev) => ({ ...prev, period: key === 'monthly' ? undefined : key })}
                         replace
                         className={cn(
-                            '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                            '-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                             isActive ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
                         )}
                         aria-current={isActive ? 'page' : undefined}

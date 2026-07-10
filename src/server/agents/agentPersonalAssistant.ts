@@ -8,6 +8,8 @@ import { toolDelegateToMedia } from './toolDelegateToMedia';
 import { toolDelegateToMedical } from './toolDelegateToMedical';
 import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolDelegateToTravel } from './toolDelegateToTravel';
+import { toolDelegateToNutrition } from './toolDelegateToNutrition';
+import { toolDelegateToFitness } from './toolDelegateToFitness';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
@@ -74,6 +76,11 @@ const BASE_SYSTEM_PROMPT = [
     '- Medical record       → `[<title>](/workspace/medical?tab=records&focus=<recordId>)`',
     '- Medical appointment  → `[<title>](/workspace/medical?tab=appointments&focus=<appointmentId>)`',
     '- Trip                 → `[<title>](/workspace/travel/<tripId>)`',
+    '- Recipe               → `[<title>](/workspace/nutrition?tab=cookbook&focus=<recipeId>)`',
+    '- Diary entry          → `[<description>](/workspace/nutrition?tab=diary&focus=<logId>)`',
+    '- Workout              → `[<title>](/workspace/fitness?tab=workouts&focus=<sessionId>)`',
+    '- Routine              → `[<name>](/workspace/fitness?tab=routines&focus=<routineId>)`',
+    '- Exercise             → `[<name>](/workspace/fitness?tab=exercises&focus=<exerciseId>)`',
     '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
     'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
     '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',
@@ -205,6 +212,26 @@ export async function agentPersonalAssistant({
             // plan from `AdminTravelQuery.trip(...)` instead of replaying the
             // conversation. See `docs/features/workspace-travel.md`.
             delegateToTravel: toolDelegateToTravel({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Nutrition sub-agent — cookbook, soft meal plan, food/drink diary.
+            // Suggests snacks/meals from what Cem likes, logs what he ate, and
+            // plans the week. See `docs/features/workspace-nutrition.md`.
+            delegateToNutrition: toolDelegateToNutrition({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Fitness sub-agent — gym log (sessions + sets), routines, exercise
+            // catalog. Logs workouts from chat and answers progression
+            // questions. See `docs/features/workspace-fitness.md`.
+            delegateToFitness: toolDelegateToFitness({
                 serverRuntime,
                 session,
                 chatId,

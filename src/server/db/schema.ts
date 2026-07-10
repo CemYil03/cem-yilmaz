@@ -6,6 +6,7 @@ import {
     index,
     integer,
     jsonb,
+    numeric,
     pgTable,
     text,
     timestamp,
@@ -2035,3 +2036,269 @@ export const adminFinancesSettings = pgTable(
 
 export type AdminFinancesSettings = typeof adminFinancesSettings.$inferSelect;
 export type AdminFinancesSettingsCreate = typeof adminFinancesSettings.$inferInsert;
+
+// --- Nutrition --------------------------------------------------------------
+//
+// Three tables back `/workspace/nutrition`: `Recipes` (a cookbook of favourite
+// dishes grouped by meal type), `MealPlanEntries` (a *soft* weekly plan — only
+// filled slots exist, so an empty week is zero rows), and `FoodLogEntries` (a
+// what-I-ate/drank diary the page rolls up into an end-of-week overview).
+// Admin-only, `noindex` — no `*De`/`*En` pairs, no per-row `userId`, matching
+// Travel / Media. See `docs/features/workspace-nutrition.md`.
+//
+// `mealType` is shared across all three so the assistant's "snack idea" ask,
+// the plan grid's columns, and the diary all speak the same vocabulary. On a
+// recipe, `isFavorite` + `lastMadeAt` are what let the nutrition sub-agent
+// suggest something Cem likes and hasn't made recently.
+
+export const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack', 'other'] as const;
+export type MealType = (typeof mealTypes)[number];
+
+export const foodLogKinds = ['food', 'drink'] as const;
+export type FoodLogKind = (typeof foodLogKinds)[number];
+
+export const recipes = pgTable(
+    'Recipes',
+    {
+        recipeId: uuid().primaryKey(),
+        title: varchar().notNull(),
+        mealType: varchar().$type<MealType>().notNull().default('other'),
+        ingredients: text()
+            .array()
+            .notNull()
+            .default(sql`'{}'`),
+        steps: text(),
+        tags: text()
+            .array()
+            .notNull()
+            .default(sql`'{}'`),
+        isFavorite: boolean().notNull().default(false),
+        rating: integer(),
+        prepTimeMinutes: integer(),
+        servings: integer(),
+        sourceUrl: varchar(),
+        notes: text(),
+        lastMadeAt: timestamp({ withTimezone: true }),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('Recipes_mealType_idx').on(table.mealType), index('Recipes_isFavorite_idx').on(table.isFavorite)],
+);
+
+export type Recipe = typeof recipes.$inferSelect;
+export type RecipeCreate = typeof recipes.$inferInsert;
+
+// A single soft-plan slot: a `(date, mealType)` cell that either references a
+// `Recipe` or carries a free-text idea (`customText`). Both may be set — the
+// UI prefers the recipe. On recipe delete the FK nulls so the plan slot
+// survives as a bare idea rather than vanishing.
+export const mealPlanEntries = pgTable(
+    'MealPlanEntries',
+    {
+        entryId: uuid().primaryKey(),
+        date: date().notNull(),
+        mealType: varchar().$type<MealType>().notNull().default('other'),
+        recipeId: uuid(),
+        customText: varchar(),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.recipeId],
+            foreignColumns: [recipes.recipeId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('MealPlanEntries_date_idx').on(table.date),
+    ],
+);
+
+export type MealPlanEntry = typeof mealPlanEntries.$inferSelect;
+export type MealPlanEntryCreate = typeof mealPlanEntries.$inferInsert;
+
+// The diary: one row per thing eaten or drunk. `kind` (food | drink) lets the
+// weekly overview split intake; `recipeId` optionally links back to a cooked
+// dish (nulled on recipe delete). `consumedAt` is a full timestamp so the
+// page can group by day and the agent can log "for breakfast" against a time.
+export const foodLogEntries = pgTable(
+    'FoodLogEntries',
+    {
+        logId: uuid().primaryKey(),
+        consumedAt: timestamp({ withTimezone: true }).notNull(),
+        mealType: varchar().$type<MealType>().notNull().default('other'),
+        kind: varchar().$type<FoodLogKind>().notNull().default('food'),
+        description: text().notNull(),
+        recipeId: uuid(),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.recipeId],
+            foreignColumns: [recipes.recipeId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('FoodLogEntries_consumedAt_idx').on(table.consumedAt),
+    ],
+);
+
+export type FoodLogEntry = typeof foodLogEntries.$inferSelect;
+export type FoodLogEntryCreate = typeof foodLogEntries.$inferInsert;
+
+// --- Fitness ----------------------------------------------------------------
+//
+// Five tables back `/workspace/fitness`: `Exercises` (a catalog), `WorkoutRoutines`
+// + `WorkoutRoutineItems` (reusable templates like "Push day"), and
+// `WorkoutSessions` + `WorkoutSets` (the actual gym log — weight × reps per set).
+// Admin-only, `noindex` — no `*De`/`*En` pairs, no per-row `userId`, matching
+// Travel / Media. See `docs/features/workspace-fitness.md`.
+//
+// A session may be `routineId`-linked ("seeded from Push day", nulled if the
+// routine is later deleted). `WorkoutSets` carry the actual load; the
+// `(exerciseId)` index backs the "what did I bench last time?" lookup the
+// fitness sub-agent leans on. Weights are `numeric` (mode 'number') so half-kg
+// plates round-trip without float drift.
+
+export const muscleGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core', 'fullBody', 'cardio', 'other'] as const;
+export type MuscleGroup = (typeof muscleGroups)[number];
+
+export const equipmentTypes = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight', 'kettlebell', 'other'] as const;
+export type EquipmentType = (typeof equipmentTypes)[number];
+
+export const exercises = pgTable(
+    'Exercises',
+    {
+        exerciseId: uuid().primaryKey(),
+        name: varchar().notNull(),
+        muscleGroup: varchar().$type<MuscleGroup>().notNull().default('other'),
+        equipment: varchar().$type<EquipmentType>(),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('Exercises_muscleGroup_idx').on(table.muscleGroup)],
+);
+
+export type Exercise = typeof exercises.$inferSelect;
+export type ExerciseCreate = typeof exercises.$inferInsert;
+
+export const workoutRoutines = pgTable(
+    'WorkoutRoutines',
+    {
+        routineId: uuid().primaryKey(),
+        name: varchar().notNull(),
+        notes: text(),
+        position: integer().notNull().default(0),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('WorkoutRoutines_position_idx').on(table.position)],
+);
+
+export type WorkoutRoutine = typeof workoutRoutines.$inferSelect;
+export type WorkoutRoutineCreate = typeof workoutRoutines.$inferInsert;
+
+// One planned exercise within a routine, with optional targets. `targetWeight`
+// is `numeric` for half-kg increments. `position` orders the routine.
+export const workoutRoutineItems = pgTable(
+    'WorkoutRoutineItems',
+    {
+        routineItemId: uuid().primaryKey(),
+        routineId: uuid().notNull(),
+        exerciseId: uuid().notNull(),
+        position: integer().notNull().default(0),
+        targetSets: integer(),
+        targetReps: integer(),
+        targetWeight: numeric({ mode: 'number' }),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.routineId],
+            foreignColumns: [workoutRoutines.routineId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.exerciseId],
+            foreignColumns: [exercises.exerciseId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('WorkoutRoutineItems_routineId_position_idx').on(table.routineId, table.position),
+    ],
+);
+
+export type WorkoutRoutineItem = typeof workoutRoutineItems.$inferSelect;
+export type WorkoutRoutineItemCreate = typeof workoutRoutineItems.$inferInsert;
+
+export const workoutSessions = pgTable(
+    'WorkoutSessions',
+    {
+        sessionId: uuid().primaryKey(),
+        date: date().notNull(),
+        title: varchar(),
+        routineId: uuid(),
+        durationMinutes: integer(),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.routineId],
+            foreignColumns: [workoutRoutines.routineId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('WorkoutSessions_date_idx').on(table.date),
+    ],
+);
+
+export type WorkoutSession = typeof workoutSessions.$inferSelect;
+export type WorkoutSessionCreate = typeof workoutSessions.$inferInsert;
+
+// One logged set within a session: `weight` × `reps`, optional `rpe`, and an
+// `isWarmup` flag so warmups don't pollute PR math. `position` orders sets
+// within a session; the `(exerciseId)` index backs per-exercise history.
+export const workoutSets = pgTable(
+    'WorkoutSets',
+    {
+        setId: uuid().primaryKey(),
+        sessionId: uuid().notNull(),
+        exerciseId: uuid().notNull(),
+        position: integer().notNull().default(0),
+        weight: numeric({ mode: 'number' }),
+        reps: integer(),
+        rpe: integer(),
+        isWarmup: boolean().notNull().default(false),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.sessionId],
+            foreignColumns: [workoutSessions.sessionId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.exerciseId],
+            foreignColumns: [exercises.exerciseId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('WorkoutSets_sessionId_position_idx').on(table.sessionId, table.position),
+        index('WorkoutSets_exerciseId_idx').on(table.exerciseId),
+    ],
+);
+
+export type WorkoutSet = typeof workoutSets.$inferSelect;
+export type WorkoutSetCreate = typeof workoutSets.$inferInsert;

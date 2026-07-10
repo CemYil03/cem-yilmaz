@@ -28,10 +28,12 @@ export interface GqlCAdmin {
     adminCompassFindOne: GqlCAdminCompass;
     adminCvFindOne: GqlCCvQuery;
     adminFinancesFindOne: GqlCAdminFinancesQuery;
+    adminFitnessFindOne: GqlCAdminFitnessQuery;
     adminInventoryFindOne: GqlCAdminInventoryQuery;
     adminLogFindMany: Array<GqlCLog>;
     adminMediaFindOne: GqlCAdminMediaQuery;
     adminMedicalFindOne: GqlCAdminMedicalQuery;
+    adminNutritionFindOne: GqlCAdminNutritionQuery;
     adminProjectActiveTimerFindOne?: Maybe<GqlCProjectActivity>;
     adminProjectFindMany: Array<GqlCProject>;
     adminProjectFindOne: GqlCProject;
@@ -128,6 +130,13 @@ export interface GqlCAdminFinancesQuery {
     adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
 }
 
+export interface GqlCAdminFitnessQuery {
+    __typename?: 'AdminFitnessQuery';
+    adminFitnessExerciseFindMany: Array<GqlCExercise>;
+    adminFitnessRoutineFindMany: Array<GqlCWorkoutRoutine>;
+    adminFitnessSessionFindMany: Array<GqlCWorkoutSession>;
+}
+
 export interface GqlCAdminInventoryQuery {
     __typename?: 'AdminInventoryQuery';
     adminInventoryItemFindMany: Array<GqlCItem>;
@@ -206,9 +215,13 @@ export interface GqlCAdminMutation {
     cvSkillReorder: GqlCMutationResult;
     cvSkillsDelete: GqlCMutationResult;
     cvSkillsUpsert: GqlCMutationResult;
+    exercisesDelete: GqlCMutationResult;
+    exercisesUpsert: GqlCMutationResult;
     financeMonthlyNetIncomeSet: GqlCMutationResult;
     financeRecurringCostsDelete: GqlCMutationResult;
     financeRecurringCostsUpsert: GqlCMutationResult;
+    foodLogEntriesDelete: GqlCMutationResult;
+    foodLogEntriesUpsert: GqlCMutationResult;
     itemFilesAttach: GqlCMutationResult;
     itemFilesDelete: GqlCMutationResult;
     itemFilesUpsert: GqlCMutationResult;
@@ -217,6 +230,8 @@ export interface GqlCAdminMutation {
     itemsDelete: GqlCMutationResult;
     itemsReprice: GqlCMutationResult;
     itemsUpsert: GqlCMutationResult;
+    mealPlanEntriesDelete: GqlCMutationResult;
+    mealPlanEntriesUpsert: GqlCMutationResult;
     mediaChannelReorder: GqlCMutationResult;
     mediaChannelsDelete: GqlCMutationResult;
     mediaChannelsUpsert: GqlCMutationResult;
@@ -242,6 +257,8 @@ export interface GqlCAdminMutation {
     projectTimersStop: GqlCMutationResult;
     projectsDelete: GqlCMutationResult;
     projectsUpsert: GqlCMutationResult;
+    recipesDelete: GqlCMutationResult;
+    recipesUpsert: GqlCMutationResult;
     showsAddFromTmdb: GqlCMutationResult;
     showsDelete: GqlCMutationResult;
     showsUpsert: GqlCMutationResult;
@@ -256,6 +273,14 @@ export interface GqlCAdminMutation {
     tripPackingItemsUpsert: GqlCMutationResult;
     tripsDelete: GqlCMutationResult;
     tripsUpsert: GqlCMutationResult;
+    workoutRoutineItemsDelete: GqlCMutationResult;
+    workoutRoutineItemsUpsert: GqlCMutationResult;
+    workoutRoutinesDelete: GqlCMutationResult;
+    workoutRoutinesUpsert: GqlCMutationResult;
+    workoutSessionsDelete: GqlCMutationResult;
+    workoutSessionsUpsert: GqlCMutationResult;
+    workoutSetsDelete: GqlCMutationResult;
+    workoutSetsUpsert: GqlCMutationResult;
 }
 
 export type GqlCAdminMutationChatConfigDefaultModelSetArgs = {
@@ -354,6 +379,14 @@ export type GqlCAdminMutationCvSkillsUpsertArgs = {
     cvSkills: Array<GqlCCvSkillInput>;
 };
 
+export type GqlCAdminMutationExercisesDeleteArgs = {
+    exerciseIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationExercisesUpsertArgs = {
+    exercises: Array<GqlCExerciseInput>;
+};
+
 export type GqlCAdminMutationFinanceMonthlyNetIncomeSetArgs = {
     amountCents?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -364,6 +397,14 @@ export type GqlCAdminMutationFinanceRecurringCostsDeleteArgs = {
 
 export type GqlCAdminMutationFinanceRecurringCostsUpsertArgs = {
     financeRecurringCosts: Array<GqlCFinanceRecurringCostInput>;
+};
+
+export type GqlCAdminMutationFoodLogEntriesDeleteArgs = {
+    logIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationFoodLogEntriesUpsertArgs = {
+    foodLogEntries: Array<GqlCFoodLogEntryInput>;
 };
 
 export type GqlCAdminMutationItemFilesAttachArgs = {
@@ -396,6 +437,14 @@ export type GqlCAdminMutationItemsRepriceArgs = {
 
 export type GqlCAdminMutationItemsUpsertArgs = {
     items: Array<GqlCItemInput>;
+};
+
+export type GqlCAdminMutationMealPlanEntriesDeleteArgs = {
+    entryIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationMealPlanEntriesUpsertArgs = {
+    mealPlanEntries: Array<GqlCMealPlanEntryInput>;
 };
 
 export type GqlCAdminMutationMediaChannelReorderArgs = {
@@ -498,6 +547,14 @@ export type GqlCAdminMutationProjectsUpsertArgs = {
     projects: Array<GqlCProjectCreate>;
 };
 
+export type GqlCAdminMutationRecipesDeleteArgs = {
+    recipeIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationRecipesUpsertArgs = {
+    recipes: Array<GqlCRecipeInput>;
+};
+
 export type GqlCAdminMutationShowsAddFromTmdbArgs = {
     inputs: Array<GqlCShowAddFromTmdbInput>;
 };
@@ -552,6 +609,50 @@ export type GqlCAdminMutationTripsDeleteArgs = {
 
 export type GqlCAdminMutationTripsUpsertArgs = {
     trips: Array<GqlCTripInput>;
+};
+
+export type GqlCAdminMutationWorkoutRoutineItemsDeleteArgs = {
+    routineItemIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationWorkoutRoutineItemsUpsertArgs = {
+    workoutRoutineItems: Array<GqlCWorkoutRoutineItemInput>;
+};
+
+export type GqlCAdminMutationWorkoutRoutinesDeleteArgs = {
+    routineIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationWorkoutRoutinesUpsertArgs = {
+    workoutRoutines: Array<GqlCWorkoutRoutineInput>;
+};
+
+export type GqlCAdminMutationWorkoutSessionsDeleteArgs = {
+    sessionIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationWorkoutSessionsUpsertArgs = {
+    workoutSessions: Array<GqlCWorkoutSessionInput>;
+};
+
+export type GqlCAdminMutationWorkoutSetsDeleteArgs = {
+    setIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationWorkoutSetsUpsertArgs = {
+    workoutSets: Array<GqlCWorkoutSetInput>;
+};
+
+export interface GqlCAdminNutritionQuery {
+    __typename?: 'AdminNutritionQuery';
+    adminNutritionFoodLogFindMany: Array<GqlCFoodLogEntry>;
+    adminNutritionMealPlanFindMany: Array<GqlCMealPlanEntry>;
+    adminNutritionRecipeFindMany: Array<GqlCRecipe>;
+}
+
+export type GqlCAdminNutritionQueryAdminNutritionRecipeFindManyArgs = {
+    favorite?: InputMaybe<Scalars['Boolean']['input']>;
+    mealType?: InputMaybe<GqlCMealType>;
 };
 
 export interface GqlCAdminTravelQuery {
@@ -988,6 +1089,27 @@ export type GqlCCvSkillInput = {
     position: Scalars['Int']['input'];
 };
 
+export type GqlCEquipmentType = 'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'kettlebell' | 'machine' | 'other';
+
+export interface GqlCExercise {
+    __typename?: 'Exercise';
+    createdAt: Scalars['DateTime']['output'];
+    equipment?: Maybe<GqlCEquipmentType>;
+    exerciseId: Scalars['ID']['output'];
+    muscleGroup: GqlCMuscleGroup;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCExerciseInput = {
+    equipment?: InputMaybe<GqlCEquipmentType>;
+    exerciseId?: InputMaybe<Scalars['ID']['input']>;
+    muscleGroup: GqlCMuscleGroup;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+};
+
 export interface GqlCFileUpload {
     __typename?: 'FileUpload';
     fileUploadId: Scalars['ID']['output'];
@@ -1030,6 +1152,31 @@ export type GqlCFinanceRecurringCostInput = {
     notes?: InputMaybe<Scalars['String']['input']>;
     startsOn?: InputMaybe<Scalars['Date']['input']>;
 };
+
+export interface GqlCFoodLogEntry {
+    __typename?: 'FoodLogEntry';
+    consumedAt: Scalars['DateTime']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    description: Scalars['String']['output'];
+    kind: GqlCFoodLogKind;
+    logId: Scalars['ID']['output'];
+    mealType: GqlCMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    recipe?: Maybe<GqlCRecipe>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCFoodLogEntryInput = {
+    consumedAt: Scalars['DateTime']['input'];
+    description: Scalars['String']['input'];
+    kind: GqlCFoodLogKind;
+    logId?: InputMaybe<Scalars['ID']['input']>;
+    mealType: GqlCMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlCFoodLogKind = 'drink' | 'food';
 
 export interface GqlCItem {
     __typename?: 'Item';
@@ -1163,6 +1310,29 @@ export interface GqlCLog {
 }
 
 export type GqlCLogLevel = 'debug' | 'error' | 'info' | 'warn';
+
+export interface GqlCMealPlanEntry {
+    __typename?: 'MealPlanEntry';
+    createdAt: Scalars['DateTime']['output'];
+    customText?: Maybe<Scalars['String']['output']>;
+    date: Scalars['Date']['output'];
+    entryId: Scalars['ID']['output'];
+    mealType: GqlCMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    recipe?: Maybe<GqlCRecipe>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCMealPlanEntryInput = {
+    customText?: InputMaybe<Scalars['String']['input']>;
+    date: Scalars['Date']['input'];
+    entryId?: InputMaybe<Scalars['ID']['input']>;
+    mealType: GqlCMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlCMealType = 'breakfast' | 'dinner' | 'lunch' | 'other' | 'snack';
 
 export interface GqlCMediaChannel {
     __typename?: 'MediaChannel';
@@ -1347,6 +1517,8 @@ export type GqlCMovieInput = {
 };
 
 export type GqlCMovieStatus = 'dropped' | 'watched' | 'watching' | 'watchlist';
+
+export type GqlCMuscleGroup = 'arms' | 'back' | 'cardio' | 'chest' | 'core' | 'fullBody' | 'legs' | 'other' | 'shoulders';
 
 export interface GqlCMutation {
     __typename?: 'Mutation';
@@ -1560,6 +1732,41 @@ export interface GqlCQuery {
     publicCvFindOne: GqlCCvQuery;
     sessionFindOne: GqlCSession;
 }
+
+export interface GqlCRecipe {
+    __typename?: 'Recipe';
+    createdAt: Scalars['DateTime']['output'];
+    ingredients: Array<Scalars['String']['output']>;
+    isFavorite: Scalars['Boolean']['output'];
+    lastMadeAt?: Maybe<Scalars['DateTime']['output']>;
+    mealType: GqlCMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    prepTimeMinutes?: Maybe<Scalars['Int']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    recipeId: Scalars['ID']['output'];
+    servings?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    steps?: Maybe<Scalars['String']['output']>;
+    tags: Array<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCRecipeInput = {
+    ingredients?: InputMaybe<Array<Scalars['String']['input']>>;
+    isFavorite?: InputMaybe<Scalars['Boolean']['input']>;
+    lastMadeAt?: InputMaybe<Scalars['DateTime']['input']>;
+    mealType: GqlCMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    prepTimeMinutes?: InputMaybe<Scalars['Int']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
+    servings?: InputMaybe<Scalars['Int']['input']>;
+    sourceUrl?: InputMaybe<Scalars['String']['input']>;
+    steps?: InputMaybe<Scalars['String']['input']>;
+    tags?: InputMaybe<Array<Scalars['String']['input']>>;
+    title: Scalars['String']['input'];
+};
 
 export interface GqlCSession {
     __typename?: 'Session';
@@ -1825,6 +2032,98 @@ export interface GqlCVisitorChatQuota {
     resetsAt?: Maybe<Scalars['DateTime']['output']>;
     used: Scalars['Int']['output'];
 }
+
+export interface GqlCWorkoutRoutine {
+    __typename?: 'WorkoutRoutine';
+    createdAt: Scalars['DateTime']['output'];
+    items: Array<GqlCWorkoutRoutineItem>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    routineId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCWorkoutRoutineInput = {
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    routineId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlCWorkoutRoutineItem {
+    __typename?: 'WorkoutRoutineItem';
+    createdAt: Scalars['DateTime']['output'];
+    exercise: GqlCExercise;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    routineId: Scalars['ID']['output'];
+    routineItemId: Scalars['ID']['output'];
+    targetReps?: Maybe<Scalars['Int']['output']>;
+    targetSets?: Maybe<Scalars['Int']['output']>;
+    targetWeight?: Maybe<Scalars['Float']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCWorkoutRoutineItemInput = {
+    exerciseId: Scalars['ID']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    routineId: Scalars['ID']['input'];
+    routineItemId?: InputMaybe<Scalars['ID']['input']>;
+    targetReps?: InputMaybe<Scalars['Int']['input']>;
+    targetSets?: InputMaybe<Scalars['Int']['input']>;
+    targetWeight?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export interface GqlCWorkoutSession {
+    __typename?: 'WorkoutSession';
+    createdAt: Scalars['DateTime']['output'];
+    date: Scalars['Date']['output'];
+    durationMinutes?: Maybe<Scalars['Int']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    routineId?: Maybe<Scalars['ID']['output']>;
+    sessionId: Scalars['ID']['output'];
+    sets: Array<GqlCWorkoutSet>;
+    title?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCWorkoutSessionInput = {
+    date: Scalars['Date']['input'];
+    durationMinutes?: InputMaybe<Scalars['Int']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    routineId?: InputMaybe<Scalars['ID']['input']>;
+    sessionId?: InputMaybe<Scalars['ID']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlCWorkoutSet {
+    __typename?: 'WorkoutSet';
+    createdAt: Scalars['DateTime']['output'];
+    exercise: GqlCExercise;
+    isWarmup: Scalars['Boolean']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    reps?: Maybe<Scalars['Int']['output']>;
+    rpe?: Maybe<Scalars['Int']['output']>;
+    sessionId: Scalars['ID']['output'];
+    setId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    weight?: Maybe<Scalars['Float']['output']>;
+}
+
+export type GqlCWorkoutSetInput = {
+    exerciseId: Scalars['ID']['input'];
+    isWarmup?: InputMaybe<Scalars['Boolean']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    reps?: InputMaybe<Scalars['Int']['input']>;
+    rpe?: InputMaybe<Scalars['Int']['input']>;
+    sessionId: Scalars['ID']['input'];
+    setId?: InputMaybe<Scalars['ID']['input']>;
+    weight?: InputMaybe<Scalars['Float']['input']>;
+};
 
 export interface GqlCYoutubeChannelResult {
     __typename?: 'YoutubeChannelResult';
@@ -3024,6 +3323,275 @@ export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables = Exact<{
 
 export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation = { admin: { financeMonthlyNetIncomeSet: { success: boolean } } };
 
+export type GqlCWorkspaceFitnessExerciseFragment = {
+    exerciseId: string;
+    name: string;
+    muscleGroup: Schema.GqlCMuscleGroup;
+    equipment: Schema.GqlCEquipmentType | null;
+    notes: string | null;
+};
+
+export type GqlCWorkspaceFitnessPageUserFragment = {
+    admin: {
+        adminFitnessFindOne: {
+            adminFitnessExerciseFindMany: Array<{
+                exerciseId: string;
+                name: string;
+                muscleGroup: Schema.GqlCMuscleGroup;
+                equipment: Schema.GqlCEquipmentType | null;
+                notes: string | null;
+            }>;
+            adminFitnessRoutineFindMany: Array<{
+                routineId: string;
+                name: string;
+                notes: string | null;
+                position: number;
+                items: Array<{
+                    routineItemId: string;
+                    routineId: string;
+                    position: number;
+                    targetSets: number | null;
+                    targetReps: number | null;
+                    targetWeight: number | null;
+                    notes: string | null;
+                    exercise: {
+                        exerciseId: string;
+                        name: string;
+                        muscleGroup: Schema.GqlCMuscleGroup;
+                        equipment: Schema.GqlCEquipmentType | null;
+                        notes: string | null;
+                    };
+                }>;
+            }>;
+            adminFitnessSessionFindMany: Array<{
+                sessionId: string;
+                date: string;
+                title: string | null;
+                routineId: string | null;
+                durationMinutes: number | null;
+                notes: string | null;
+                sets: Array<{
+                    setId: string;
+                    sessionId: string;
+                    position: number;
+                    weight: number | null;
+                    reps: number | null;
+                    rpe: number | null;
+                    isWarmup: boolean;
+                    notes: string | null;
+                    exercise: {
+                        exerciseId: string;
+                        name: string;
+                        muscleGroup: Schema.GqlCMuscleGroup;
+                        equipment: Schema.GqlCEquipmentType | null;
+                        notes: string | null;
+                    };
+                }>;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceFitnessPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceFitnessPageQuery = {
+    sessionFindOne: {
+        user: {
+            admin: {
+                adminFitnessFindOne: {
+                    adminFitnessExerciseFindMany: Array<{
+                        exerciseId: string;
+                        name: string;
+                        muscleGroup: Schema.GqlCMuscleGroup;
+                        equipment: Schema.GqlCEquipmentType | null;
+                        notes: string | null;
+                    }>;
+                    adminFitnessRoutineFindMany: Array<{
+                        routineId: string;
+                        name: string;
+                        notes: string | null;
+                        position: number;
+                        items: Array<{
+                            routineItemId: string;
+                            routineId: string;
+                            position: number;
+                            targetSets: number | null;
+                            targetReps: number | null;
+                            targetWeight: number | null;
+                            notes: string | null;
+                            exercise: {
+                                exerciseId: string;
+                                name: string;
+                                muscleGroup: Schema.GqlCMuscleGroup;
+                                equipment: Schema.GqlCEquipmentType | null;
+                                notes: string | null;
+                            };
+                        }>;
+                    }>;
+                    adminFitnessSessionFindMany: Array<{
+                        sessionId: string;
+                        date: string;
+                        title: string | null;
+                        routineId: string | null;
+                        durationMinutes: number | null;
+                        notes: string | null;
+                        sets: Array<{
+                            setId: string;
+                            sessionId: string;
+                            position: number;
+                            weight: number | null;
+                            reps: number | null;
+                            rpe: number | null;
+                            isWarmup: boolean;
+                            notes: string | null;
+                            exercise: {
+                                exerciseId: string;
+                                name: string;
+                                muscleGroup: Schema.GqlCMuscleGroup;
+                                equipment: Schema.GqlCEquipmentType | null;
+                                notes: string | null;
+                            };
+                        }>;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceFitnessPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceFitnessPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            adminFitnessFindOne: {
+                adminFitnessExerciseFindMany: Array<{
+                    exerciseId: string;
+                    name: string;
+                    muscleGroup: Schema.GqlCMuscleGroup;
+                    equipment: Schema.GqlCEquipmentType | null;
+                    notes: string | null;
+                }>;
+                adminFitnessRoutineFindMany: Array<{
+                    routineId: string;
+                    name: string;
+                    notes: string | null;
+                    position: number;
+                    items: Array<{
+                        routineItemId: string;
+                        routineId: string;
+                        position: number;
+                        targetSets: number | null;
+                        targetReps: number | null;
+                        targetWeight: number | null;
+                        notes: string | null;
+                        exercise: {
+                            exerciseId: string;
+                            name: string;
+                            muscleGroup: Schema.GqlCMuscleGroup;
+                            equipment: Schema.GqlCEquipmentType | null;
+                            notes: string | null;
+                        };
+                    }>;
+                }>;
+                adminFitnessSessionFindMany: Array<{
+                    sessionId: string;
+                    date: string;
+                    title: string | null;
+                    routineId: string | null;
+                    durationMinutes: number | null;
+                    notes: string | null;
+                    sets: Array<{
+                        setId: string;
+                        sessionId: string;
+                        position: number;
+                        weight: number | null;
+                        reps: number | null;
+                        rpe: number | null;
+                        isWarmup: boolean;
+                        notes: string | null;
+                        exercise: {
+                            exerciseId: string;
+                            name: string;
+                            muscleGroup: Schema.GqlCMuscleGroup;
+                            equipment: Schema.GqlCEquipmentType | null;
+                            notes: string | null;
+                        };
+                    }>;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceExercisesUpsertMutationVariables = Exact<{
+    exercises: Array<Schema.GqlCExerciseInput> | Schema.GqlCExerciseInput;
+}>;
+
+export type GqlCWorkspaceExercisesUpsertMutation = { admin: { exercisesUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+
+export type GqlCWorkspaceExercisesDeleteMutationVariables = Exact<{
+    exerciseIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceExercisesDeleteMutation = { admin: { exercisesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceWorkoutRoutinesUpsertMutationVariables = Exact<{
+    workoutRoutines: Array<Schema.GqlCWorkoutRoutineInput> | Schema.GqlCWorkoutRoutineInput;
+}>;
+
+export type GqlCWorkspaceWorkoutRoutinesUpsertMutation = {
+    admin: { workoutRoutinesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceWorkoutRoutinesDeleteMutationVariables = Exact<{
+    routineIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceWorkoutRoutinesDeleteMutation = { admin: { workoutRoutinesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceWorkoutRoutineItemsUpsertMutationVariables = Exact<{
+    workoutRoutineItems: Array<Schema.GqlCWorkoutRoutineItemInput> | Schema.GqlCWorkoutRoutineItemInput;
+}>;
+
+export type GqlCWorkspaceWorkoutRoutineItemsUpsertMutation = {
+    admin: { workoutRoutineItemsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceWorkoutRoutineItemsDeleteMutationVariables = Exact<{
+    routineItemIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceWorkoutRoutineItemsDeleteMutation = { admin: { workoutRoutineItemsDelete: { success: boolean } } };
+
+export type GqlCWorkspaceWorkoutSessionsUpsertMutationVariables = Exact<{
+    workoutSessions: Array<Schema.GqlCWorkoutSessionInput> | Schema.GqlCWorkoutSessionInput;
+}>;
+
+export type GqlCWorkspaceWorkoutSessionsUpsertMutation = {
+    admin: { workoutSessionsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceWorkoutSessionsDeleteMutationVariables = Exact<{
+    sessionIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceWorkoutSessionsDeleteMutation = { admin: { workoutSessionsDelete: { success: boolean } } };
+
+export type GqlCWorkspaceWorkoutSetsUpsertMutationVariables = Exact<{
+    workoutSets: Array<Schema.GqlCWorkoutSetInput> | Schema.GqlCWorkoutSetInput;
+}>;
+
+export type GqlCWorkspaceWorkoutSetsUpsertMutation = {
+    admin: { workoutSetsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceWorkoutSetsDeleteMutationVariables = Exact<{
+    setIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceWorkoutSetsDeleteMutation = { admin: { workoutSetsDelete: { success: boolean } } };
+
 export type GqlCWorkspaceHubQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GqlCWorkspaceHubQuery = {
@@ -4036,6 +4604,189 @@ export type GqlCWorkspaceMedicalRecordFilesDeleteMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceMedicalRecordFilesDeleteMutation = { admin: { medicalRecordFilesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceNutritionRecipeFragment = {
+    recipeId: string;
+    title: string;
+    mealType: Schema.GqlCMealType;
+    ingredients: Array<string>;
+    steps: string | null;
+    tags: Array<string>;
+    isFavorite: boolean;
+    rating: number | null;
+    prepTimeMinutes: number | null;
+    servings: number | null;
+    sourceUrl: string | null;
+    notes: string | null;
+    lastMadeAt: string | null;
+};
+
+export type GqlCWorkspaceNutritionPageUserFragment = {
+    admin: {
+        adminNutritionFindOne: {
+            adminNutritionRecipeFindMany: Array<{
+                recipeId: string;
+                title: string;
+                mealType: Schema.GqlCMealType;
+                ingredients: Array<string>;
+                steps: string | null;
+                tags: Array<string>;
+                isFavorite: boolean;
+                rating: number | null;
+                prepTimeMinutes: number | null;
+                servings: number | null;
+                sourceUrl: string | null;
+                notes: string | null;
+                lastMadeAt: string | null;
+            }>;
+            adminNutritionMealPlanFindMany: Array<{
+                entryId: string;
+                date: string;
+                mealType: Schema.GqlCMealType;
+                customText: string | null;
+                notes: string | null;
+                recipe: { recipeId: string; title: string; mealType: Schema.GqlCMealType } | null;
+            }>;
+            adminNutritionFoodLogFindMany: Array<{
+                logId: string;
+                consumedAt: string;
+                mealType: Schema.GqlCMealType;
+                kind: Schema.GqlCFoodLogKind;
+                description: string;
+                notes: string | null;
+                recipe: { recipeId: string; title: string } | null;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceNutritionPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceNutritionPageQuery = {
+    sessionFindOne: {
+        user: {
+            admin: {
+                adminNutritionFindOne: {
+                    adminNutritionRecipeFindMany: Array<{
+                        recipeId: string;
+                        title: string;
+                        mealType: Schema.GqlCMealType;
+                        ingredients: Array<string>;
+                        steps: string | null;
+                        tags: Array<string>;
+                        isFavorite: boolean;
+                        rating: number | null;
+                        prepTimeMinutes: number | null;
+                        servings: number | null;
+                        sourceUrl: string | null;
+                        notes: string | null;
+                        lastMadeAt: string | null;
+                    }>;
+                    adminNutritionMealPlanFindMany: Array<{
+                        entryId: string;
+                        date: string;
+                        mealType: Schema.GqlCMealType;
+                        customText: string | null;
+                        notes: string | null;
+                        recipe: { recipeId: string; title: string; mealType: Schema.GqlCMealType } | null;
+                    }>;
+                    adminNutritionFoodLogFindMany: Array<{
+                        logId: string;
+                        consumedAt: string;
+                        mealType: Schema.GqlCMealType;
+                        kind: Schema.GqlCFoodLogKind;
+                        description: string;
+                        notes: string | null;
+                        recipe: { recipeId: string; title: string } | null;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceNutritionPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceNutritionPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            adminNutritionFindOne: {
+                adminNutritionRecipeFindMany: Array<{
+                    recipeId: string;
+                    title: string;
+                    mealType: Schema.GqlCMealType;
+                    ingredients: Array<string>;
+                    steps: string | null;
+                    tags: Array<string>;
+                    isFavorite: boolean;
+                    rating: number | null;
+                    prepTimeMinutes: number | null;
+                    servings: number | null;
+                    sourceUrl: string | null;
+                    notes: string | null;
+                    lastMadeAt: string | null;
+                }>;
+                adminNutritionMealPlanFindMany: Array<{
+                    entryId: string;
+                    date: string;
+                    mealType: Schema.GqlCMealType;
+                    customText: string | null;
+                    notes: string | null;
+                    recipe: { recipeId: string; title: string; mealType: Schema.GqlCMealType } | null;
+                }>;
+                adminNutritionFoodLogFindMany: Array<{
+                    logId: string;
+                    consumedAt: string;
+                    mealType: Schema.GqlCMealType;
+                    kind: Schema.GqlCFoodLogKind;
+                    description: string;
+                    notes: string | null;
+                    recipe: { recipeId: string; title: string } | null;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceRecipesUpsertMutationVariables = Exact<{
+    recipes: Array<Schema.GqlCRecipeInput> | Schema.GqlCRecipeInput;
+}>;
+
+export type GqlCWorkspaceRecipesUpsertMutation = { admin: { recipesUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+
+export type GqlCWorkspaceRecipesDeleteMutationVariables = Exact<{
+    recipeIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceRecipesDeleteMutation = { admin: { recipesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceMealPlanEntriesUpsertMutationVariables = Exact<{
+    mealPlanEntries: Array<Schema.GqlCMealPlanEntryInput> | Schema.GqlCMealPlanEntryInput;
+}>;
+
+export type GqlCWorkspaceMealPlanEntriesUpsertMutation = {
+    admin: { mealPlanEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceMealPlanEntriesDeleteMutationVariables = Exact<{
+    entryIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceMealPlanEntriesDeleteMutation = { admin: { mealPlanEntriesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceFoodLogEntriesUpsertMutationVariables = Exact<{
+    foodLogEntries: Array<Schema.GqlCFoodLogEntryInput> | Schema.GqlCFoodLogEntryInput;
+}>;
+
+export type GqlCWorkspaceFoodLogEntriesUpsertMutation = {
+    admin: { foodLogEntriesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceFoodLogEntriesDeleteMutationVariables = Exact<{
+    logIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceFoodLogEntriesDeleteMutation = { admin: { foodLogEntriesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectsPageUserFragment = {
     admin: {
@@ -6529,6 +7280,180 @@ export const WorkspaceFinancesPageUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceFinancesPageUserFragment, unknown>;
+export const WorkspaceFitnessExerciseFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'exerciseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'muscleGroup' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'equipment' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFitnessExerciseFragment, unknown>;
+export const WorkspaceFitnessPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFitnessPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFitnessFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessExerciseFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessRoutineFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'items' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'routineItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetSets' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetReps' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetWeight' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'exercise' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceFitnessExercise',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessSessionFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationMinutes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'sets' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'setId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'weight' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'reps' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'rpe' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'isWarmup' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'exercise' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceFitnessExercise',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'exerciseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'muscleGroup' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'equipment' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFitnessPageUserFragment, unknown>;
 export const WorkspaceInventoryPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -7203,6 +8128,155 @@ export const WorkspaceMedicalPageUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceMedicalPageUserFragment, unknown>;
+export const WorkspaceNutritionRecipeFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'ingredients' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'steps' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'tags' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'isFavorite' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'prepTimeMinutes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servings' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'lastMadeAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceNutritionRecipeFragment, unknown>;
+export const WorkspaceNutritionPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminNutritionFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionRecipeFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionMealPlanFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'entryId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'customText' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recipe' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionFoodLogFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'logId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'consumedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recipe' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'ingredients' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'steps' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'tags' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'isFavorite' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'prepTimeMinutes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servings' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'lastMadeAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceNutritionPageUserFragment, unknown>;
 export const WorkspaceProjectsPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -12502,6 +13576,903 @@ export const WorkspaceFinanceMonthlyNetIncomeSetDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation, GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables>;
+export const WorkspaceFitnessPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceFitnessPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'sessionFindOne' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceFitnessPageUser' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'exerciseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'muscleGroup' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'equipment' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFitnessPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFitnessFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessExerciseFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessRoutineFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'items' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'routineItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetSets' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetReps' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetWeight' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'exercise' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceFitnessExercise',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessSessionFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationMinutes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'sets' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'setId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'weight' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'reps' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'rpe' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'isWarmup' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'exercise' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceFitnessExercise',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFitnessPageQuery, GqlCWorkspaceFitnessPageQueryVariables>;
+export const WorkspaceFitnessPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceFitnessPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceFitnessPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Exercise' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'exerciseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'muscleGroup' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'equipment' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceFitnessPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFitnessFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessExerciseFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceFitnessExercise' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessRoutineFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'items' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'routineItemId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetSets' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetReps' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'targetWeight' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'exercise' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceFitnessExercise',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFitnessSessionFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'routineId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'durationMinutes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'sets' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'setId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'position' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'weight' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'reps' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'rpe' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'isWarmup' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'exercise' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: {
+                                                                                        kind: 'Name',
+                                                                                        value: 'WorkspaceFitnessExercise',
+                                                                                    },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFitnessPageUpdatesSubscription, GqlCWorkspaceFitnessPageUpdatesSubscriptionVariables>;
+export const WorkspaceExercisesUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceExercisesUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'exercises' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ExerciseInput' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'exercisesUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'exercises' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'exercises' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceExercisesUpsertMutation, GqlCWorkspaceExercisesUpsertMutationVariables>;
+export const WorkspaceExercisesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceExercisesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'exerciseIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'exercisesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'exerciseIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'exerciseIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceExercisesDeleteMutation, GqlCWorkspaceExercisesDeleteMutationVariables>;
+export const WorkspaceWorkoutRoutinesUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutRoutinesUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'workoutRoutines' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutRoutineInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutRoutinesUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'workoutRoutines' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'workoutRoutines' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutRoutinesUpsertMutation, GqlCWorkspaceWorkoutRoutinesUpsertMutationVariables>;
+export const WorkspaceWorkoutRoutinesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutRoutinesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'routineIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutRoutinesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'routineIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'routineIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutRoutinesDeleteMutation, GqlCWorkspaceWorkoutRoutinesDeleteMutationVariables>;
+export const WorkspaceWorkoutRoutineItemsUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutRoutineItemsUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'workoutRoutineItems' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutRoutineItemInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutRoutineItemsUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'workoutRoutineItems' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'workoutRoutineItems' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutRoutineItemsUpsertMutation, GqlCWorkspaceWorkoutRoutineItemsUpsertMutationVariables>;
+export const WorkspaceWorkoutRoutineItemsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutRoutineItemsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'routineItemIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutRoutineItemsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'routineItemIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'routineItemIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutRoutineItemsDeleteMutation, GqlCWorkspaceWorkoutRoutineItemsDeleteMutationVariables>;
+export const WorkspaceWorkoutSessionsUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutSessionsUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'workoutSessions' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutSessionInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutSessionsUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'workoutSessions' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'workoutSessions' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutSessionsUpsertMutation, GqlCWorkspaceWorkoutSessionsUpsertMutationVariables>;
+export const WorkspaceWorkoutSessionsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutSessionsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'sessionIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutSessionsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'sessionIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'sessionIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutSessionsDeleteMutation, GqlCWorkspaceWorkoutSessionsDeleteMutationVariables>;
+export const WorkspaceWorkoutSetsUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutSetsUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'workoutSets' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'WorkoutSetInput' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutSetsUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'workoutSets' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'workoutSets' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutSetsUpsertMutation, GqlCWorkspaceWorkoutSetsUpsertMutationVariables>;
+export const WorkspaceWorkoutSetsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceWorkoutSetsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'setIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'workoutSetsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'setIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'setIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceWorkoutSetsDeleteMutation, GqlCWorkspaceWorkoutSetsDeleteMutationVariables>;
 export const WorkspaceHubDocument = {
     kind: 'Document',
     definitions: [
@@ -15370,6 +17341,616 @@ export const WorkspaceMedicalRecordFilesDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceMedicalRecordFilesDeleteMutation, GqlCWorkspaceMedicalRecordFilesDeleteMutationVariables>;
+export const WorkspaceNutritionPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceNutritionPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'sessionFindOne' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceNutritionPageUser' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'ingredients' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'steps' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'tags' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'isFavorite' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'prepTimeMinutes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servings' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'lastMadeAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminNutritionFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionRecipeFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionMealPlanFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'entryId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'customText' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recipe' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionFoodLogFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'logId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'consumedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recipe' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceNutritionPageQuery, GqlCWorkspaceNutritionPageQueryVariables>;
+export const WorkspaceNutritionPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceNutritionPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceNutritionPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Recipe' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'ingredients' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'steps' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'tags' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'isFavorite' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'rating' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'prepTimeMinutes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servings' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'lastMadeAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminNutritionFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionRecipeFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceNutritionRecipe' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionMealPlanFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'entryId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'date' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'customText' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recipe' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionFoodLogFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'logId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'consumedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'mealType' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'recipe' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'recipeId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceNutritionPageUpdatesSubscription, GqlCWorkspaceNutritionPageUpdatesSubscriptionVariables>;
+export const WorkspaceRecipesUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceRecipesUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'recipes' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'RecipeInput' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'recipesUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'recipes' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'recipes' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceRecipesUpsertMutation, GqlCWorkspaceRecipesUpsertMutationVariables>;
+export const WorkspaceRecipesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceRecipesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'recipeIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'recipesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'recipeIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'recipeIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceRecipesDeleteMutation, GqlCWorkspaceRecipesDeleteMutationVariables>;
+export const WorkspaceMealPlanEntriesUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMealPlanEntriesUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'mealPlanEntries' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'MealPlanEntryInput' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'mealPlanEntriesUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'mealPlanEntries' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'mealPlanEntries' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMealPlanEntriesUpsertMutation, GqlCWorkspaceMealPlanEntriesUpsertMutationVariables>;
+export const WorkspaceMealPlanEntriesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceMealPlanEntriesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'entryIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'mealPlanEntriesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'entryIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'entryIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceMealPlanEntriesDeleteMutation, GqlCWorkspaceMealPlanEntriesDeleteMutationVariables>;
+export const WorkspaceFoodLogEntriesUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFoodLogEntriesUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'foodLogEntries' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'FoodLogEntryInput' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'foodLogEntriesUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'foodLogEntries' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'foodLogEntries' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFoodLogEntriesUpsertMutation, GqlCWorkspaceFoodLogEntriesUpsertMutationVariables>;
+export const WorkspaceFoodLogEntriesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFoodLogEntriesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'logIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'foodLogEntriesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'logIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'logIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFoodLogEntriesDeleteMutation, GqlCWorkspaceFoodLogEntriesDeleteMutationVariables>;
 export const WorkspaceProjectsPageDocument = {
     kind: 'Document',
     definitions: [

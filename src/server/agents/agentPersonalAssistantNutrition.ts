@@ -1,0 +1,119 @@
+import type { GenerateTextOnStepEndCallback } from 'ai';
+import { ToolLoopAgent, isStepCount } from 'ai';
+import type { ServerRuntime } from '../domain/ServerRuntime';
+import type { GqlSSession } from '../graphql/generated';
+import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
+import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
+import { nutritionSnapshotForAgent } from './nutritionSnapshotForAgent';
+import { toolFoodLogEntriesDelete } from './toolFoodLogEntriesDelete';
+import { toolFoodLogEntriesUpsert } from './toolFoodLogEntriesUpsert';
+import { toolFoodLogList } from './toolFoodLogList';
+import { toolMealPlanEntriesDelete } from './toolMealPlanEntriesDelete';
+import { toolMealPlanEntriesUpsert } from './toolMealPlanEntriesUpsert';
+import { toolMealPlanList } from './toolMealPlanList';
+import { toolRecipesDelete } from './toolRecipesDelete';
+import { toolRecipesList } from './toolRecipesList';
+import { toolRecipesUpsert } from './toolRecipesUpsert';
+
+// Nutrition domain sub-agent under the orchestrator pattern documented in
+// `docs/architecture/agent-delegation.md`. Runs in-process inside
+// `toolDelegateToNutrition`'s `execute`, receives an `onStepEnd` from the
+// delegate tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON
+// sentinel) plus a structured `mutations` log.
+//
+// It owns three surfaces: the cookbook (`Recipes`), the soft weekly plan
+// (`MealPlanEntries`), and the food/drink diary (`FoodLogEntries`). The
+// signature use-case is a snack suggestion drawn from what Cem actually likes:
+// the snapshot pre-computes favourites and last-made dates so the agent can
+// rank without a list call.
+
+type NutritionAgentMutationKind =
+    | 'recipeAdd'
+    | 'recipeUpdate'
+    | 'recipeDelete'
+    | 'mealPlanAdd'
+    | 'mealPlanUpdate'
+    | 'mealPlanDelete'
+    | 'foodLogAdd'
+    | 'foodLogUpdate'
+    | 'foodLogDelete';
+
+export interface NutritionAgentMutation {
+    kind: NutritionAgentMutationKind;
+    // Recipe / meal-plan-entry / diary-entry id depending on `kind`.
+    id: string;
+    // Best-effort label for the orchestrator's user-facing narration.
+    title?: string;
+}
+
+export type NutritionAgentMutationLog = NutritionAgentMutation[];
+
+export interface NutritionAgentOptions {
+    session: GqlSSession;
+    serverRuntime: ServerRuntime;
+    mutations: NutritionAgentMutationLog;
+    onStepEnd?: GenerateTextOnStepEndCallback<any>;
+}
+
+function buildSystemPrompt(snapshot: string): string {
+    return [
+        "You are the nutrition sub-agent inside Cem's personal workspace. You handle every ask about food: the",
+        'cookbook of favourite dishes, the soft weekly meal plan, and the food/drink diary. Your tools mutate the',
+        'workspace DB. Each tool carries its own description of when to reach for it and how its inputs are shaped;',
+        'the cross-tool workflow rules below are all the guidance you need beyond those descriptions.',
+        '',
+        currentDateForAgent(),
+        '',
+        'Workflow rules:',
+        '- Snack / meal idea: when Cem asks "what should I snack on?" or "give me a dinner idea", pick from HIS',
+        '  cookbook in the snapshot. Prefer favourites (★fav) that match the meal type and that he has NOT made',
+        '  recently (older or missing `last made`). Suggest by name; do not invent dishes that are not in the',
+        '  cookbook unless he asks for something new. If the cookbook is empty, say so and offer to add one.',
+        '- "I ate/drank X": log it with `foodLogEntriesUpsert` (set `kind` food/drink, pick the meal type from the',
+        '  time of day, use the current time unless Cem gives one). Batch several items from one meal into one call.',
+        '- "Plan Tuesday dinner" / "plan my week": write `mealPlanEntriesUpsert`. Reference a cookbook recipe by',
+        '  `recipeId` when it exists, otherwise use `customText`. Only fill the slots Cem asks for — the plan is',
+        '  soft, empty cells stay empty.',
+        '- "I made X today": stamp that recipe’s `lastMadeAt` via `recipesUpsert` so future suggestions rotate.',
+        '',
+        'General rules:',
+        '- Reply in the language the user wrote in (German or English).',
+        '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences.',
+        '- Never invent an id. Use ids from the snapshot below, from an upsert result’s `referenceIds` earlier in',
+        '  this turn (in input order), or omit the id entirely to insert a new row.',
+        '- Only ask for clarification when a required field is genuinely missing (nothing to log, no idea what to',
+        '  plan). In that case return EXACTLY this JSON as your final text, nothing else:',
+        '  {"status":"needsMoreInfo","missingFields":["..."],"summary":"..."}',
+        "- If the request is outside nutrition (e.g. 'log a workout'), return the same JSON with status `noOp` and",
+        '  an empty `missingFields` array.',
+        '',
+        'Current nutrition snapshot (refreshed at the start of this turn):',
+        '',
+        snapshot,
+    ].join('\n');
+}
+
+export async function agentPersonalAssistantNutrition({ session, serverRuntime, mutations, onStepEnd }: NutritionAgentOptions) {
+    const snapshot = await nutritionSnapshotForAgent(serverRuntime);
+    const readContext = { serverRuntime, session };
+    const mutationContext = { serverRuntime, session, mutations };
+    const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
+    return new ToolLoopAgent({
+        model: serverRuntime.ai.userConversationModel(modelId),
+        onStepEnd,
+        providerOptions: googleAgentProviderOptionsFor(modelId),
+        stopWhen: [isStepCount(10)],
+        instructions: buildSystemPrompt(snapshot),
+        tools: {
+            recipesList: toolRecipesList(readContext),
+            mealPlanList: toolMealPlanList(readContext),
+            foodLogList: toolFoodLogList(readContext),
+            recipesUpsert: toolRecipesUpsert(mutationContext),
+            recipesDelete: toolRecipesDelete(mutationContext),
+            mealPlanEntriesUpsert: toolMealPlanEntriesUpsert(mutationContext),
+            mealPlanEntriesDelete: toolMealPlanEntriesDelete(mutationContext),
+            foodLogEntriesUpsert: toolFoodLogEntriesUpsert(mutationContext),
+            foodLogEntriesDelete: toolFoodLogEntriesDelete(mutationContext),
+        },
+    });
+}

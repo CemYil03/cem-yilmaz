@@ -13,6 +13,7 @@ import {
     PlaneIcon,
     ReceiptTextIcon,
     StethoscopeIcon,
+    UtensilsCrossedIcon,
     WalletIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -53,6 +54,7 @@ const WORKSPACE_TITLES: Record<string, { de: string; en: string }> = {
     inventory: { de: 'Inventar', en: 'Inventory' },
     tax: { de: 'Steuern', en: 'Tax' },
     fitness: { de: 'Fitness', en: 'Fitness' },
+    nutrition: { de: 'Ernährung', en: 'Nutrition' },
     medical: { de: 'Medizinisches', en: 'Medical' },
     media: { de: 'Filme & Serien', en: 'Movies & TV' },
     travel: { de: 'Reisen', en: 'Travel' },
@@ -72,6 +74,7 @@ const WORKSPACE_ICONS: Record<string, LucideIcon> = {
     inventory: PackageIcon,
     tax: ReceiptTextIcon,
     fitness: DumbbellIcon,
+    nutrition: UtensilsCrossedIcon,
     medical: StethoscopeIcon,
     media: FilmIcon,
     travel: PlaneIcon,

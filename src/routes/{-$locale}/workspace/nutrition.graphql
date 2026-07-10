@@ -1,0 +1,122 @@
+# Workspace Nutrition editor operations. Co-located with `/workspace/nutrition`.
+# Same seed-and-subscribe posture as `/workspace/travel`: the loader query and
+# the live `userUpdates` subscription spread `WorkspaceNutritionPageUser` so
+# mutations don't need to re-invalidate — every nutrition mutation publishes on
+# the user channel and the page picks up the new payload over SSE. Meal-plan
+# and diary lists return everything; the page slices to the visible week
+# client-side. See `docs/features/workspace-nutrition.md`.
+
+fragment WorkspaceNutritionRecipe on Recipe {
+    recipeId
+    title
+    mealType
+    ingredients
+    steps
+    tags
+    isFavorite
+    rating
+    prepTimeMinutes
+    servings
+    sourceUrl
+    notes
+    lastMadeAt
+}
+
+fragment WorkspaceNutritionPageUser on User {
+    admin {
+        adminNutritionFindOne {
+            adminNutritionRecipeFindMany {
+                ...WorkspaceNutritionRecipe
+            }
+            adminNutritionMealPlanFindMany {
+                entryId
+                date
+                mealType
+                customText
+                notes
+                recipe {
+                    recipeId
+                    title
+                    mealType
+                }
+            }
+            adminNutritionFoodLogFindMany {
+                logId
+                consumedAt
+                mealType
+                kind
+                description
+                notes
+                recipe {
+                    recipeId
+                    title
+                }
+            }
+        }
+    }
+}
+
+query WorkspaceNutritionPage {
+    sessionFindOne {
+        user {
+            ...WorkspaceNutritionPageUser
+        }
+    }
+}
+
+subscription WorkspaceNutritionPageUpdates {
+    userUpdates {
+        ...WorkspaceNutritionPageUser
+    }
+}
+
+mutation WorkspaceRecipesUpsert($recipes: [RecipeInput!]!) {
+    admin {
+        recipesUpsert(recipes: $recipes) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceRecipesDelete($recipeIds: [ID!]!) {
+    admin {
+        recipesDelete(recipeIds: $recipeIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceMealPlanEntriesUpsert($mealPlanEntries: [MealPlanEntryInput!]!) {
+    admin {
+        mealPlanEntriesUpsert(mealPlanEntries: $mealPlanEntries) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceMealPlanEntriesDelete($entryIds: [ID!]!) {
+    admin {
+        mealPlanEntriesDelete(entryIds: $entryIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceFoodLogEntriesUpsert($foodLogEntries: [FoodLogEntryInput!]!) {
+    admin {
+        foodLogEntriesUpsert(foodLogEntries: $foodLogEntries) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceFoodLogEntriesDelete($logIds: [ID!]!) {
+    admin {
+        foodLogEntriesDelete(logIds: $logIds) {
+            success
+        }
+    }
+}

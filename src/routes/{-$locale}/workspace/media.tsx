@@ -270,7 +270,7 @@ function WorkspaceMedia() {
             <p className="text-sm text-muted-foreground">{pageDescription[locale]}</p>
 
             <nav
-                className="mt-8 flex gap-1 overflow-x-auto border-b border-border/60 scrollbar-none"
+                className="mt-8 flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
                 aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
             >
                 {TABS.map((t) => {
@@ -293,7 +293,7 @@ function WorkspaceMedia() {
                             })}
                             replace
                             className={cn(
-                                '-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                                '-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
                                 isActive
                                     ? 'border-primary text-foreground'
                                     : 'border-transparent text-muted-foreground hover:text-foreground',

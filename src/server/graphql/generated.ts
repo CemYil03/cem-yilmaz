@@ -25,10 +25,12 @@ export interface GqlSAdmin {
     adminCompassFindOne: GqlSAdminCompass;
     adminCvFindOne: GqlSCvQuery;
     adminFinancesFindOne: GqlSAdminFinancesQuery;
+    adminFitnessFindOne: GqlSAdminFitnessQuery;
     adminInventoryFindOne: GqlSAdminInventoryQuery;
     adminLogFindMany: Array<GqlSLog>;
     adminMediaFindOne: GqlSAdminMediaQuery;
     adminMedicalFindOne: GqlSAdminMedicalQuery;
+    adminNutritionFindOne: GqlSAdminNutritionQuery;
     adminProjectActiveTimerFindOne?: Maybe<GqlSProjectActivity>;
     adminProjectFindMany: Array<GqlSProject>;
     adminProjectFindOne: GqlSProject;
@@ -125,6 +127,13 @@ export interface GqlSAdminFinancesQuery {
     adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
 }
 
+export interface GqlSAdminFitnessQuery {
+    __typename?: 'AdminFitnessQuery';
+    adminFitnessExerciseFindMany: Array<GqlSExercise>;
+    adminFitnessRoutineFindMany: Array<GqlSWorkoutRoutine>;
+    adminFitnessSessionFindMany: Array<GqlSWorkoutSession>;
+}
+
 export interface GqlSAdminInventoryQuery {
     __typename?: 'AdminInventoryQuery';
     adminInventoryItemFindMany: Array<GqlSItem>;
@@ -203,9 +212,13 @@ export interface GqlSAdminMutation {
     cvSkillReorder: GqlSMutationResult;
     cvSkillsDelete: GqlSMutationResult;
     cvSkillsUpsert: GqlSMutationResult;
+    exercisesDelete: GqlSMutationResult;
+    exercisesUpsert: GqlSMutationResult;
     financeMonthlyNetIncomeSet: GqlSMutationResult;
     financeRecurringCostsDelete: GqlSMutationResult;
     financeRecurringCostsUpsert: GqlSMutationResult;
+    foodLogEntriesDelete: GqlSMutationResult;
+    foodLogEntriesUpsert: GqlSMutationResult;
     itemFilesAttach: GqlSMutationResult;
     itemFilesDelete: GqlSMutationResult;
     itemFilesUpsert: GqlSMutationResult;
@@ -214,6 +227,8 @@ export interface GqlSAdminMutation {
     itemsDelete: GqlSMutationResult;
     itemsReprice: GqlSMutationResult;
     itemsUpsert: GqlSMutationResult;
+    mealPlanEntriesDelete: GqlSMutationResult;
+    mealPlanEntriesUpsert: GqlSMutationResult;
     mediaChannelReorder: GqlSMutationResult;
     mediaChannelsDelete: GqlSMutationResult;
     mediaChannelsUpsert: GqlSMutationResult;
@@ -239,6 +254,8 @@ export interface GqlSAdminMutation {
     projectTimersStop: GqlSMutationResult;
     projectsDelete: GqlSMutationResult;
     projectsUpsert: GqlSMutationResult;
+    recipesDelete: GqlSMutationResult;
+    recipesUpsert: GqlSMutationResult;
     showsAddFromTmdb: GqlSMutationResult;
     showsDelete: GqlSMutationResult;
     showsUpsert: GqlSMutationResult;
@@ -253,6 +270,14 @@ export interface GqlSAdminMutation {
     tripPackingItemsUpsert: GqlSMutationResult;
     tripsDelete: GqlSMutationResult;
     tripsUpsert: GqlSMutationResult;
+    workoutRoutineItemsDelete: GqlSMutationResult;
+    workoutRoutineItemsUpsert: GqlSMutationResult;
+    workoutRoutinesDelete: GqlSMutationResult;
+    workoutRoutinesUpsert: GqlSMutationResult;
+    workoutSessionsDelete: GqlSMutationResult;
+    workoutSessionsUpsert: GqlSMutationResult;
+    workoutSetsDelete: GqlSMutationResult;
+    workoutSetsUpsert: GqlSMutationResult;
 }
 
 export type GqlSAdminMutationChatConfigDefaultModelSetArgs = {
@@ -351,6 +376,14 @@ export type GqlSAdminMutationCvSkillsUpsertArgs = {
     cvSkills: Array<GqlSCvSkillInput>;
 };
 
+export type GqlSAdminMutationExercisesDeleteArgs = {
+    exerciseIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationExercisesUpsertArgs = {
+    exercises: Array<GqlSExerciseInput>;
+};
+
 export type GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs = {
     amountCents?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -361,6 +394,14 @@ export type GqlSAdminMutationFinanceRecurringCostsDeleteArgs = {
 
 export type GqlSAdminMutationFinanceRecurringCostsUpsertArgs = {
     financeRecurringCosts: Array<GqlSFinanceRecurringCostInput>;
+};
+
+export type GqlSAdminMutationFoodLogEntriesDeleteArgs = {
+    logIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationFoodLogEntriesUpsertArgs = {
+    foodLogEntries: Array<GqlSFoodLogEntryInput>;
 };
 
 export type GqlSAdminMutationItemFilesAttachArgs = {
@@ -393,6 +434,14 @@ export type GqlSAdminMutationItemsRepriceArgs = {
 
 export type GqlSAdminMutationItemsUpsertArgs = {
     items: Array<GqlSItemInput>;
+};
+
+export type GqlSAdminMutationMealPlanEntriesDeleteArgs = {
+    entryIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationMealPlanEntriesUpsertArgs = {
+    mealPlanEntries: Array<GqlSMealPlanEntryInput>;
 };
 
 export type GqlSAdminMutationMediaChannelReorderArgs = {
@@ -495,6 +544,14 @@ export type GqlSAdminMutationProjectsUpsertArgs = {
     projects: Array<GqlSProjectCreate>;
 };
 
+export type GqlSAdminMutationRecipesDeleteArgs = {
+    recipeIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationRecipesUpsertArgs = {
+    recipes: Array<GqlSRecipeInput>;
+};
+
 export type GqlSAdminMutationShowsAddFromTmdbArgs = {
     inputs: Array<GqlSShowAddFromTmdbInput>;
 };
@@ -549,6 +606,50 @@ export type GqlSAdminMutationTripsDeleteArgs = {
 
 export type GqlSAdminMutationTripsUpsertArgs = {
     trips: Array<GqlSTripInput>;
+};
+
+export type GqlSAdminMutationWorkoutRoutineItemsDeleteArgs = {
+    routineItemIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationWorkoutRoutineItemsUpsertArgs = {
+    workoutRoutineItems: Array<GqlSWorkoutRoutineItemInput>;
+};
+
+export type GqlSAdminMutationWorkoutRoutinesDeleteArgs = {
+    routineIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationWorkoutRoutinesUpsertArgs = {
+    workoutRoutines: Array<GqlSWorkoutRoutineInput>;
+};
+
+export type GqlSAdminMutationWorkoutSessionsDeleteArgs = {
+    sessionIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationWorkoutSessionsUpsertArgs = {
+    workoutSessions: Array<GqlSWorkoutSessionInput>;
+};
+
+export type GqlSAdminMutationWorkoutSetsDeleteArgs = {
+    setIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationWorkoutSetsUpsertArgs = {
+    workoutSets: Array<GqlSWorkoutSetInput>;
+};
+
+export interface GqlSAdminNutritionQuery {
+    __typename?: 'AdminNutritionQuery';
+    adminNutritionFoodLogFindMany: Array<GqlSFoodLogEntry>;
+    adminNutritionMealPlanFindMany: Array<GqlSMealPlanEntry>;
+    adminNutritionRecipeFindMany: Array<GqlSRecipe>;
+}
+
+export type GqlSAdminNutritionQueryAdminNutritionRecipeFindManyArgs = {
+    favorite?: InputMaybe<Scalars['Boolean']['input']>;
+    mealType?: InputMaybe<GqlSMealType>;
 };
 
 export interface GqlSAdminTravelQuery {
@@ -985,6 +1086,27 @@ export type GqlSCvSkillInput = {
     position: Scalars['Int']['input'];
 };
 
+export type GqlSEquipmentType = 'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'kettlebell' | 'machine' | 'other';
+
+export interface GqlSExercise {
+    __typename?: 'Exercise';
+    createdAt: Scalars['DateTime']['output'];
+    equipment?: Maybe<GqlSEquipmentType>;
+    exerciseId: Scalars['ID']['output'];
+    muscleGroup: GqlSMuscleGroup;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSExerciseInput = {
+    equipment?: InputMaybe<GqlSEquipmentType>;
+    exerciseId?: InputMaybe<Scalars['ID']['input']>;
+    muscleGroup: GqlSMuscleGroup;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+};
+
 export interface GqlSFileUpload {
     __typename?: 'FileUpload';
     fileUploadId: Scalars['ID']['output'];
@@ -1027,6 +1149,31 @@ export type GqlSFinanceRecurringCostInput = {
     notes?: InputMaybe<Scalars['String']['input']>;
     startsOn?: InputMaybe<Scalars['Date']['input']>;
 };
+
+export interface GqlSFoodLogEntry {
+    __typename?: 'FoodLogEntry';
+    consumedAt: Scalars['DateTime']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    description: Scalars['String']['output'];
+    kind: GqlSFoodLogKind;
+    logId: Scalars['ID']['output'];
+    mealType: GqlSMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    recipe?: Maybe<GqlSRecipe>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSFoodLogEntryInput = {
+    consumedAt: Scalars['DateTime']['input'];
+    description: Scalars['String']['input'];
+    kind: GqlSFoodLogKind;
+    logId?: InputMaybe<Scalars['ID']['input']>;
+    mealType: GqlSMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlSFoodLogKind = 'drink' | 'food';
 
 export interface GqlSItem {
     __typename?: 'Item';
@@ -1160,6 +1307,29 @@ export interface GqlSLog {
 }
 
 export type GqlSLogLevel = 'debug' | 'error' | 'info' | 'warn';
+
+export interface GqlSMealPlanEntry {
+    __typename?: 'MealPlanEntry';
+    createdAt: Scalars['DateTime']['output'];
+    customText?: Maybe<Scalars['String']['output']>;
+    date: Scalars['Date']['output'];
+    entryId: Scalars['ID']['output'];
+    mealType: GqlSMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    recipe?: Maybe<GqlSRecipe>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSMealPlanEntryInput = {
+    customText?: InputMaybe<Scalars['String']['input']>;
+    date: Scalars['Date']['input'];
+    entryId?: InputMaybe<Scalars['ID']['input']>;
+    mealType: GqlSMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlSMealType = 'breakfast' | 'dinner' | 'lunch' | 'other' | 'snack';
 
 export interface GqlSMediaChannel {
     __typename?: 'MediaChannel';
@@ -1344,6 +1514,8 @@ export type GqlSMovieInput = {
 };
 
 export type GqlSMovieStatus = 'dropped' | 'watched' | 'watching' | 'watchlist';
+
+export type GqlSMuscleGroup = 'arms' | 'back' | 'cardio' | 'chest' | 'core' | 'fullBody' | 'legs' | 'other' | 'shoulders';
 
 export interface GqlSMutation {
     __typename?: 'Mutation';
@@ -1557,6 +1729,41 @@ export interface GqlSQuery {
     publicCvFindOne: GqlSCvQuery;
     sessionFindOne: GqlSSession;
 }
+
+export interface GqlSRecipe {
+    __typename?: 'Recipe';
+    createdAt: Scalars['DateTime']['output'];
+    ingredients: Array<Scalars['String']['output']>;
+    isFavorite: Scalars['Boolean']['output'];
+    lastMadeAt?: Maybe<Scalars['DateTime']['output']>;
+    mealType: GqlSMealType;
+    notes?: Maybe<Scalars['String']['output']>;
+    prepTimeMinutes?: Maybe<Scalars['Int']['output']>;
+    rating?: Maybe<Scalars['Int']['output']>;
+    recipeId: Scalars['ID']['output'];
+    servings?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    steps?: Maybe<Scalars['String']['output']>;
+    tags: Array<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSRecipeInput = {
+    ingredients?: InputMaybe<Array<Scalars['String']['input']>>;
+    isFavorite?: InputMaybe<Scalars['Boolean']['input']>;
+    lastMadeAt?: InputMaybe<Scalars['DateTime']['input']>;
+    mealType: GqlSMealType;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    prepTimeMinutes?: InputMaybe<Scalars['Int']['input']>;
+    rating?: InputMaybe<Scalars['Int']['input']>;
+    recipeId?: InputMaybe<Scalars['ID']['input']>;
+    servings?: InputMaybe<Scalars['Int']['input']>;
+    sourceUrl?: InputMaybe<Scalars['String']['input']>;
+    steps?: InputMaybe<Scalars['String']['input']>;
+    tags?: InputMaybe<Array<Scalars['String']['input']>>;
+    title: Scalars['String']['input'];
+};
 
 export interface GqlSSession {
     __typename?: 'Session';
@@ -1823,6 +2030,98 @@ export interface GqlSVisitorChatQuota {
     used: Scalars['Int']['output'];
 }
 
+export interface GqlSWorkoutRoutine {
+    __typename?: 'WorkoutRoutine';
+    createdAt: Scalars['DateTime']['output'];
+    items: Array<GqlSWorkoutRoutineItem>;
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    routineId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSWorkoutRoutineInput = {
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    routineId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlSWorkoutRoutineItem {
+    __typename?: 'WorkoutRoutineItem';
+    createdAt: Scalars['DateTime']['output'];
+    exercise: GqlSExercise;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    routineId: Scalars['ID']['output'];
+    routineItemId: Scalars['ID']['output'];
+    targetReps?: Maybe<Scalars['Int']['output']>;
+    targetSets?: Maybe<Scalars['Int']['output']>;
+    targetWeight?: Maybe<Scalars['Float']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSWorkoutRoutineItemInput = {
+    exerciseId: Scalars['ID']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    routineId: Scalars['ID']['input'];
+    routineItemId?: InputMaybe<Scalars['ID']['input']>;
+    targetReps?: InputMaybe<Scalars['Int']['input']>;
+    targetSets?: InputMaybe<Scalars['Int']['input']>;
+    targetWeight?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export interface GqlSWorkoutSession {
+    __typename?: 'WorkoutSession';
+    createdAt: Scalars['DateTime']['output'];
+    date: Scalars['Date']['output'];
+    durationMinutes?: Maybe<Scalars['Int']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    routineId?: Maybe<Scalars['ID']['output']>;
+    sessionId: Scalars['ID']['output'];
+    sets: Array<GqlSWorkoutSet>;
+    title?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSWorkoutSessionInput = {
+    date: Scalars['Date']['input'];
+    durationMinutes?: InputMaybe<Scalars['Int']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    routineId?: InputMaybe<Scalars['ID']['input']>;
+    sessionId?: InputMaybe<Scalars['ID']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlSWorkoutSet {
+    __typename?: 'WorkoutSet';
+    createdAt: Scalars['DateTime']['output'];
+    exercise: GqlSExercise;
+    isWarmup: Scalars['Boolean']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    reps?: Maybe<Scalars['Int']['output']>;
+    rpe?: Maybe<Scalars['Int']['output']>;
+    sessionId: Scalars['ID']['output'];
+    setId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    weight?: Maybe<Scalars['Float']['output']>;
+}
+
+export type GqlSWorkoutSetInput = {
+    exerciseId: Scalars['ID']['input'];
+    isWarmup?: InputMaybe<Scalars['Boolean']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    reps?: InputMaybe<Scalars['Int']['input']>;
+    rpe?: InputMaybe<Scalars['Int']['input']>;
+    sessionId: Scalars['ID']['input'];
+    setId?: InputMaybe<Scalars['ID']['input']>;
+    weight?: InputMaybe<Scalars['Float']['input']>;
+};
+
 export interface GqlSYoutubeChannelResult {
     __typename?: 'YoutubeChannelResult';
     avatarUrl?: Maybe<Scalars['String']['output']>;
@@ -1973,10 +2272,12 @@ export type GqlSResolversTypes = ResolversObject<{
     AdminChatModel: ResolverTypeWrapper<GqlSAdminChatModel>;
     AdminCompass: ResolverTypeWrapper<GqlSAdminCompass>;
     AdminFinancesQuery: ResolverTypeWrapper<GqlSAdminFinancesQuery>;
+    AdminFitnessQuery: ResolverTypeWrapper<GqlSAdminFitnessQuery>;
     AdminInventoryQuery: ResolverTypeWrapper<GqlSAdminInventoryQuery>;
     AdminMediaQuery: ResolverTypeWrapper<GqlSAdminMediaQuery>;
     AdminMedicalQuery: ResolverTypeWrapper<GqlSAdminMedicalQuery>;
     AdminMutation: ResolverTypeWrapper<GqlSAdminMutation>;
+    AdminNutritionQuery: ResolverTypeWrapper<GqlSAdminNutritionQuery>;
     AdminTravelQuery: ResolverTypeWrapper<GqlSAdminTravelQuery>;
     Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
     Chat: ResolverTypeWrapper<Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversTypes['ChatMessage']> }>;
@@ -2052,11 +2353,18 @@ export type GqlSResolversTypes = ResolversObject<{
     CvSkillInput: GqlSCvSkillInput;
     Date: ResolverTypeWrapper<Scalars['Date']['output']>;
     DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
+    EquipmentType: GqlSEquipmentType;
+    Exercise: ResolverTypeWrapper<GqlSExercise>;
+    ExerciseInput: GqlSExerciseInput;
     FileUpload: ResolverTypeWrapper<GqlSFileUpload>;
     FinanceCadence: GqlSFinanceCadence;
     FinanceRecurringCost: ResolverTypeWrapper<GqlSFinanceRecurringCost>;
     FinanceRecurringCostCategory: GqlSFinanceRecurringCostCategory;
     FinanceRecurringCostInput: GqlSFinanceRecurringCostInput;
+    Float: ResolverTypeWrapper<Scalars['Float']['output']>;
+    FoodLogEntry: ResolverTypeWrapper<GqlSFoodLogEntry>;
+    FoodLogEntryInput: GqlSFoodLogEntryInput;
+    FoodLogKind: GqlSFoodLogKind;
     ID: ResolverTypeWrapper<Scalars['ID']['output']>;
     Int: ResolverTypeWrapper<Scalars['Int']['output']>;
     Item: ResolverTypeWrapper<GqlSItem>;
@@ -2076,6 +2384,9 @@ export type GqlSResolversTypes = ResolversObject<{
     JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
     Log: ResolverTypeWrapper<GqlSLog>;
     LogLevel: GqlSLogLevel;
+    MealPlanEntry: ResolverTypeWrapper<GqlSMealPlanEntry>;
+    MealPlanEntryInput: GqlSMealPlanEntryInput;
+    MealType: GqlSMealType;
     MediaChannel: ResolverTypeWrapper<GqlSMediaChannel>;
     MediaChannelInput: GqlSMediaChannelInput;
     MediaPlatform: GqlSMediaPlatform;
@@ -2094,6 +2405,7 @@ export type GqlSResolversTypes = ResolversObject<{
     MovieAddFromTmdbInput: GqlSMovieAddFromTmdbInput;
     MovieInput: GqlSMovieInput;
     MovieStatus: GqlSMovieStatus;
+    MuscleGroup: GqlSMuscleGroup;
     Mutation: ResolverTypeWrapper<Record<PropertyKey, never>>;
     MutationResult: ResolverTypeWrapper<GqlSMutationResult>;
     Project: ResolverTypeWrapper<GqlSProject>;
@@ -2116,6 +2428,8 @@ export type GqlSResolversTypes = ResolversObject<{
     ProjectStatus: GqlSProjectStatus;
     ProjectTimerStartInput: GqlSProjectTimerStartInput;
     Query: ResolverTypeWrapper<Record<PropertyKey, never>>;
+    Recipe: ResolverTypeWrapper<GqlSRecipe>;
+    RecipeInput: GqlSRecipeInput;
     Session: ResolverTypeWrapper<
         Omit<GqlSSession, 'user' | 'visitorChatFindMany' | 'visitorChatFindOne'> & {
             user?: Maybe<GqlSResolversTypes['User']>;
@@ -2150,6 +2464,14 @@ export type GqlSResolversTypes = ResolversObject<{
     UserMutation: ResolverTypeWrapper<GqlSUserMutation>;
     UserUpdate: GqlSUserUpdate;
     VisitorChatQuota: ResolverTypeWrapper<GqlSVisitorChatQuota>;
+    WorkoutRoutine: ResolverTypeWrapper<GqlSWorkoutRoutine>;
+    WorkoutRoutineInput: GqlSWorkoutRoutineInput;
+    WorkoutRoutineItem: ResolverTypeWrapper<GqlSWorkoutRoutineItem>;
+    WorkoutRoutineItemInput: GqlSWorkoutRoutineItemInput;
+    WorkoutSession: ResolverTypeWrapper<GqlSWorkoutSession>;
+    WorkoutSessionInput: GqlSWorkoutSessionInput;
+    WorkoutSet: ResolverTypeWrapper<GqlSWorkoutSet>;
+    WorkoutSetInput: GqlSWorkoutSetInput;
     YoutubeChannelResult: ResolverTypeWrapper<GqlSYoutubeChannelResult>;
 }>;
 
@@ -2165,10 +2487,12 @@ export type GqlSResolversParentTypes = ResolversObject<{
     AdminChatModel: GqlSAdminChatModel;
     AdminCompass: GqlSAdminCompass;
     AdminFinancesQuery: GqlSAdminFinancesQuery;
+    AdminFitnessQuery: GqlSAdminFitnessQuery;
     AdminInventoryQuery: GqlSAdminInventoryQuery;
     AdminMediaQuery: GqlSAdminMediaQuery;
     AdminMedicalQuery: GqlSAdminMedicalQuery;
     AdminMutation: GqlSAdminMutation;
+    AdminNutritionQuery: GqlSAdminNutritionQuery;
     AdminTravelQuery: GqlSAdminTravelQuery;
     Boolean: Scalars['Boolean']['output'];
     Chat: Omit<GqlSChat, 'messages'> & { messages: Array<GqlSResolversParentTypes['ChatMessage']> };
@@ -2232,9 +2556,14 @@ export type GqlSResolversParentTypes = ResolversObject<{
     CvSkillInput: GqlSCvSkillInput;
     Date: Scalars['Date']['output'];
     DateTime: Scalars['DateTime']['output'];
+    Exercise: GqlSExercise;
+    ExerciseInput: GqlSExerciseInput;
     FileUpload: GqlSFileUpload;
     FinanceRecurringCost: GqlSFinanceRecurringCost;
     FinanceRecurringCostInput: GqlSFinanceRecurringCostInput;
+    Float: Scalars['Float']['output'];
+    FoodLogEntry: GqlSFoodLogEntry;
+    FoodLogEntryInput: GqlSFoodLogEntryInput;
     ID: Scalars['ID']['output'];
     Int: Scalars['Int']['output'];
     Item: GqlSItem;
@@ -2248,6 +2577,8 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ItemValuation: GqlSItemValuation;
     JSON: Scalars['JSON']['output'];
     Log: GqlSLog;
+    MealPlanEntry: GqlSMealPlanEntry;
+    MealPlanEntryInput: GqlSMealPlanEntryInput;
     MediaChannel: GqlSMediaChannel;
     MediaChannelInput: GqlSMediaChannelInput;
     MedicalAppointment: GqlSMedicalAppointment;
@@ -2273,6 +2604,8 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ProjectRequest: GqlSProjectRequest;
     ProjectTimerStartInput: GqlSProjectTimerStartInput;
     Query: Record<PropertyKey, never>;
+    Recipe: GqlSRecipe;
+    RecipeInput: GqlSRecipeInput;
     Session: Omit<GqlSSession, 'user' | 'visitorChatFindMany' | 'visitorChatFindOne'> & {
         user?: Maybe<GqlSResolversParentTypes['User']>;
         visitorChatFindMany: Array<GqlSResolversParentTypes['Chat']>;
@@ -2300,6 +2633,14 @@ export type GqlSResolversParentTypes = ResolversObject<{
     UserMutation: GqlSUserMutation;
     UserUpdate: GqlSUserUpdate;
     VisitorChatQuota: GqlSVisitorChatQuota;
+    WorkoutRoutine: GqlSWorkoutRoutine;
+    WorkoutRoutineInput: GqlSWorkoutRoutineInput;
+    WorkoutRoutineItem: GqlSWorkoutRoutineItem;
+    WorkoutRoutineItemInput: GqlSWorkoutRoutineItemInput;
+    WorkoutSession: GqlSWorkoutSession;
+    WorkoutSessionInput: GqlSWorkoutSessionInput;
+    WorkoutSet: GqlSWorkoutSet;
+    WorkoutSetInput: GqlSWorkoutSetInput;
     YoutubeChannelResult: GqlSYoutubeChannelResult;
 }>;
 
@@ -2319,10 +2660,12 @@ export type GqlSAdminResolvers<
     adminCompassFindOne?: Resolver<GqlSResolversTypes['AdminCompass'], ParentType, ContextType>;
     adminCvFindOne?: Resolver<GqlSResolversTypes['CvQuery'], ParentType, ContextType>;
     adminFinancesFindOne?: Resolver<GqlSResolversTypes['AdminFinancesQuery'], ParentType, ContextType>;
+    adminFitnessFindOne?: Resolver<GqlSResolversTypes['AdminFitnessQuery'], ParentType, ContextType>;
     adminInventoryFindOne?: Resolver<GqlSResolversTypes['AdminInventoryQuery'], ParentType, ContextType>;
     adminLogFindMany?: Resolver<Array<GqlSResolversTypes['Log']>, ParentType, ContextType, Partial<GqlSAdminAdminLogFindManyArgs>>;
     adminMediaFindOne?: Resolver<GqlSResolversTypes['AdminMediaQuery'], ParentType, ContextType>;
     adminMedicalFindOne?: Resolver<GqlSResolversTypes['AdminMedicalQuery'], ParentType, ContextType>;
+    adminNutritionFindOne?: Resolver<GqlSResolversTypes['AdminNutritionQuery'], ParentType, ContextType>;
     adminProjectActiveTimerFindOne?: Resolver<Maybe<GqlSResolversTypes['ProjectActivity']>, ParentType, ContextType>;
     adminProjectFindMany?: Resolver<
         Array<GqlSResolversTypes['Project']>,
@@ -2410,6 +2753,15 @@ export type GqlSAdminFinancesQueryResolvers<
     adminFinancesMonthlyNetIncomeCentsFindOne?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
     adminFinancesRecurringCostFindMany?: Resolver<Array<GqlSResolversTypes['FinanceRecurringCost']>, ParentType, ContextType>;
     adminFinancesYearlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminFitnessQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminFitnessQuery'] = GqlSResolversParentTypes['AdminFitnessQuery'],
+> = ResolversObject<{
+    adminFitnessExerciseFindMany?: Resolver<Array<GqlSResolversTypes['Exercise']>, ParentType, ContextType>;
+    adminFitnessRoutineFindMany?: Resolver<Array<GqlSResolversTypes['WorkoutRoutine']>, ParentType, ContextType>;
+    adminFitnessSessionFindMany?: Resolver<Array<GqlSResolversTypes['WorkoutSession']>, ParentType, ContextType>;
 }>;
 
 export type GqlSAdminInventoryQueryResolvers<
@@ -2610,6 +2962,18 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationCvSkillsUpsertArgs, 'cvSkills'>
     >;
+    exercisesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationExercisesDeleteArgs, 'exerciseIds'>
+    >;
+    exercisesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationExercisesUpsertArgs, 'exercises'>
+    >;
     financeMonthlyNetIncomeSet?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -2627,6 +2991,18 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationFinanceRecurringCostsUpsertArgs, 'financeRecurringCosts'>
+    >;
+    foodLogEntriesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationFoodLogEntriesDeleteArgs, 'logIds'>
+    >;
+    foodLogEntriesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationFoodLogEntriesUpsertArgs, 'foodLogEntries'>
     >;
     itemFilesAttach?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -2675,6 +3051,18 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationItemsUpsertArgs, 'items'>
+    >;
+    mealPlanEntriesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMealPlanEntriesDeleteArgs, 'entryIds'>
+    >;
+    mealPlanEntriesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationMealPlanEntriesUpsertArgs, 'mealPlanEntries'>
     >;
     mediaChannelReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -2826,6 +3214,18 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationProjectsUpsertArgs, 'projects'>
     >;
+    recipesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationRecipesDeleteArgs, 'recipeIds'>
+    >;
+    recipesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationRecipesUpsertArgs, 'recipes'>
+    >;
     showsAddFromTmdb?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -2909,6 +3309,68 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationTripsUpsertArgs, 'trips'>
+    >;
+    workoutRoutineItemsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutRoutineItemsDeleteArgs, 'routineItemIds'>
+    >;
+    workoutRoutineItemsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutRoutineItemsUpsertArgs, 'workoutRoutineItems'>
+    >;
+    workoutRoutinesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutRoutinesDeleteArgs, 'routineIds'>
+    >;
+    workoutRoutinesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutRoutinesUpsertArgs, 'workoutRoutines'>
+    >;
+    workoutSessionsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutSessionsDeleteArgs, 'sessionIds'>
+    >;
+    workoutSessionsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutSessionsUpsertArgs, 'workoutSessions'>
+    >;
+    workoutSetsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutSetsDeleteArgs, 'setIds'>
+    >;
+    workoutSetsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationWorkoutSetsUpsertArgs, 'workoutSets'>
+    >;
+}>;
+
+export type GqlSAdminNutritionQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminNutritionQuery'] = GqlSResolversParentTypes['AdminNutritionQuery'],
+> = ResolversObject<{
+    adminNutritionFoodLogFindMany?: Resolver<Array<GqlSResolversTypes['FoodLogEntry']>, ParentType, ContextType>;
+    adminNutritionMealPlanFindMany?: Resolver<Array<GqlSResolversTypes['MealPlanEntry']>, ParentType, ContextType>;
+    adminNutritionRecipeFindMany?: Resolver<
+        Array<GqlSResolversTypes['Recipe']>,
+        ParentType,
+        ContextType,
+        Partial<GqlSAdminNutritionQueryAdminNutritionRecipeFindManyArgs>
     >;
 }>;
 
@@ -3445,6 +3907,19 @@ export interface GqlSDateTimeScalarConfig extends GraphQLScalarTypeConfig<GqlSRe
     name: 'DateTime';
 }
 
+export type GqlSExerciseResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Exercise'] = GqlSResolversParentTypes['Exercise'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    equipment?: Resolver<Maybe<GqlSResolversTypes['EquipmentType']>, ParentType, ContextType>;
+    exerciseId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    muscleGroup?: Resolver<GqlSResolversTypes['MuscleGroup'], ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export type GqlSFileUploadResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['FileUpload'] = GqlSResolversParentTypes['FileUpload'],
@@ -3471,6 +3946,21 @@ export type GqlSFinanceRecurringCostResolvers<
     name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     startsOn?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSFoodLogEntryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['FoodLogEntry'] = GqlSResolversParentTypes['FoodLogEntry'],
+> = ResolversObject<{
+    consumedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    description?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['FoodLogKind'], ParentType, ContextType>;
+    logId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    mealType?: Resolver<GqlSResolversTypes['MealType'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    recipe?: Resolver<Maybe<GqlSResolversTypes['Recipe']>, ParentType, ContextType>;
     updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
 }>;
 
@@ -3556,6 +4046,20 @@ export type GqlSLogResolvers<
     logId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     message?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     sessionId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+}>;
+
+export type GqlSMealPlanEntryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['MealPlanEntry'] = GqlSResolversParentTypes['MealPlanEntry'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    customText?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    date?: Resolver<GqlSResolversTypes['Date'], ParentType, ContextType>;
+    entryId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    mealType?: Resolver<GqlSResolversTypes['MealType'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    recipe?: Resolver<Maybe<GqlSResolversTypes['Recipe']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
 }>;
 
 export type GqlSMediaChannelResolvers<
@@ -3799,6 +4303,27 @@ export type GqlSQueryResolvers<
     sessionFindOne?: Resolver<GqlSResolversTypes['Session'], ParentType, ContextType>;
 }>;
 
+export type GqlSRecipeResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Recipe'] = GqlSResolversParentTypes['Recipe'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    ingredients?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    isFavorite?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    lastMadeAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    mealType?: Resolver<GqlSResolversTypes['MealType'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    prepTimeMinutes?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    rating?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    recipeId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    servings?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    sourceUrl?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    steps?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    tags?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export type GqlSSessionResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Session'] = GqlSResolversParentTypes['Session'],
@@ -4000,6 +4525,67 @@ export type GqlSVisitorChatQuotaResolvers<
     used?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
+export type GqlSWorkoutRoutineResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['WorkoutRoutine'] = GqlSResolversParentTypes['WorkoutRoutine'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    items?: Resolver<Array<GqlSResolversTypes['WorkoutRoutineItem']>, ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    routineId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSWorkoutRoutineItemResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['WorkoutRoutineItem'] = GqlSResolversParentTypes['WorkoutRoutineItem'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    exercise?: Resolver<GqlSResolversTypes['Exercise'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    routineId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    routineItemId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    targetReps?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    targetSets?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    targetWeight?: Resolver<Maybe<GqlSResolversTypes['Float']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSWorkoutSessionResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['WorkoutSession'] = GqlSResolversParentTypes['WorkoutSession'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    date?: Resolver<GqlSResolversTypes['Date'], ParentType, ContextType>;
+    durationMinutes?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    routineId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    sessionId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    sets?: Resolver<Array<GqlSResolversTypes['WorkoutSet']>, ParentType, ContextType>;
+    title?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSWorkoutSetResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['WorkoutSet'] = GqlSResolversParentTypes['WorkoutSet'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    exercise?: Resolver<GqlSResolversTypes['Exercise'], ParentType, ContextType>;
+    isWarmup?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    position?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    reps?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    rpe?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    sessionId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    setId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    weight?: Resolver<Maybe<GqlSResolversTypes['Float']>, ParentType, ContextType>;
+}>;
+
 export type GqlSYoutubeChannelResultResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['YoutubeChannelResult'] = GqlSResolversParentTypes['YoutubeChannelResult'],
@@ -4019,10 +4605,12 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     AdminChatModel?: GqlSAdminChatModelResolvers<ContextType>;
     AdminCompass?: GqlSAdminCompassResolvers<ContextType>;
     AdminFinancesQuery?: GqlSAdminFinancesQueryResolvers<ContextType>;
+    AdminFitnessQuery?: GqlSAdminFitnessQueryResolvers<ContextType>;
     AdminInventoryQuery?: GqlSAdminInventoryQueryResolvers<ContextType>;
     AdminMediaQuery?: GqlSAdminMediaQueryResolvers<ContextType>;
     AdminMedicalQuery?: GqlSAdminMedicalQueryResolvers<ContextType>;
     AdminMutation?: GqlSAdminMutationResolvers<ContextType>;
+    AdminNutritionQuery?: GqlSAdminNutritionQueryResolvers<ContextType>;
     AdminTravelQuery?: GqlSAdminTravelQueryResolvers<ContextType>;
     Chat?: GqlSChatResolvers<ContextType>;
     ChatAssistantInput?: GqlSChatAssistantInputResolvers<ContextType>;
@@ -4072,14 +4660,17 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     CvSkill?: GqlSCvSkillResolvers<ContextType>;
     Date?: GraphQLScalarType;
     DateTime?: GraphQLScalarType;
+    Exercise?: GqlSExerciseResolvers<ContextType>;
     FileUpload?: GqlSFileUploadResolvers<ContextType>;
     FinanceRecurringCost?: GqlSFinanceRecurringCostResolvers<ContextType>;
+    FoodLogEntry?: GqlSFoodLogEntryResolvers<ContextType>;
     Item?: GqlSItemResolvers<ContextType>;
     ItemFile?: GqlSItemFileResolvers<ContextType>;
     ItemServiceEntry?: GqlSItemServiceEntryResolvers<ContextType>;
     ItemValuation?: GqlSItemValuationResolvers<ContextType>;
     JSON?: GraphQLScalarType;
     Log?: GqlSLogResolvers<ContextType>;
+    MealPlanEntry?: GqlSMealPlanEntryResolvers<ContextType>;
     MediaChannel?: GqlSMediaChannelResolvers<ContextType>;
     MedicalAppointment?: GqlSMedicalAppointmentResolvers<ContextType>;
     MedicalCategoryOverview?: GqlSMedicalCategoryOverviewResolvers<ContextType>;
@@ -4094,6 +4685,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ProjectLink?: GqlSProjectLinkResolvers<ContextType>;
     ProjectRequest?: GqlSProjectRequestResolvers<ContextType>;
     Query?: GqlSQueryResolvers<ContextType>;
+    Recipe?: GqlSRecipeResolvers<ContextType>;
     Session?: GqlSSessionResolvers<ContextType>;
     Show?: GqlSShowResolvers<ContextType>;
     Subscription?: GqlSSubscriptionResolvers<ContextType>;
@@ -4107,6 +4699,10 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     User?: GqlSUserResolvers<ContextType>;
     UserMutation?: GqlSUserMutationResolvers<ContextType>;
     VisitorChatQuota?: GqlSVisitorChatQuotaResolvers<ContextType>;
+    WorkoutRoutine?: GqlSWorkoutRoutineResolvers<ContextType>;
+    WorkoutRoutineItem?: GqlSWorkoutRoutineItemResolvers<ContextType>;
+    WorkoutSession?: GqlSWorkoutSessionResolvers<ContextType>;
+    WorkoutSet?: GqlSWorkoutSetResolvers<ContextType>;
     YoutubeChannelResult?: GqlSYoutubeChannelResultResolvers<ContextType>;
 }>;
 
@@ -4157,12 +4753,19 @@ export const GqlSCvSkillCategorySchema: z.ZodType<
     'capabilities' | 'frameworks' | 'languages' | 'services' | 'tools'
 > = z.enum(['capabilities', 'frameworks', 'languages', 'services', 'tools']);
 
+export const GqlSEquipmentTypeSchema: z.ZodType<
+    'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'kettlebell' | 'machine' | 'other',
+    'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'kettlebell' | 'machine' | 'other'
+> = z.enum(['barbell', 'bodyweight', 'cable', 'dumbbell', 'kettlebell', 'machine', 'other']);
+
 export const GqlSFinanceCadenceSchema: z.ZodType<'monthly' | 'yearly', 'monthly' | 'yearly'> = z.enum(['monthly', 'yearly']);
 
 export const GqlSFinanceRecurringCostCategorySchema: z.ZodType<
     'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities',
     'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities'
 > = z.enum(['finance', 'health', 'housing', 'insurance', 'other', 'subscriptions', 'transport', 'utilities']);
+
+export const GqlSFoodLogKindSchema: z.ZodType<'drink' | 'food', 'drink' | 'food'> = z.enum(['drink', 'food']);
 
 export const GqlSItemCategorySchema: z.ZodType<
     'appliance' | 'clothing' | 'electronics' | 'furniture' | 'kitchen' | 'other' | 'sports' | 'tool' | 'vehicle',
@@ -4195,6 +4798,11 @@ export const GqlSLogLevelSchema: z.ZodType<'debug' | 'error' | 'info' | 'warn', 
     'info',
     'warn',
 ]);
+
+export const GqlSMealTypeSchema: z.ZodType<
+    'breakfast' | 'dinner' | 'lunch' | 'other' | 'snack',
+    'breakfast' | 'dinner' | 'lunch' | 'other' | 'snack'
+> = z.enum(['breakfast', 'dinner', 'lunch', 'other', 'snack']);
 
 export const GqlSMediaPlatformSchema: z.ZodType<'other' | 'podcast' | 'twitch' | 'youtube', 'other' | 'podcast' | 'twitch' | 'youtube'> =
     z.enum(['other', 'podcast', 'twitch', 'youtube']);
@@ -4265,6 +4873,11 @@ export const GqlSMovieStatusSchema: z.ZodType<
     'dropped' | 'watched' | 'watching' | 'watchlist',
     'dropped' | 'watched' | 'watching' | 'watchlist'
 > = z.enum(['dropped', 'watched', 'watching', 'watchlist']);
+
+export const GqlSMuscleGroupSchema: z.ZodType<
+    'arms' | 'back' | 'cardio' | 'chest' | 'core' | 'fullBody' | 'legs' | 'other' | 'shoulders',
+    'arms' | 'back' | 'cardio' | 'chest' | 'core' | 'fullBody' | 'legs' | 'other' | 'shoulders'
+> = z.enum(['arms', 'back', 'cardio', 'chest', 'core', 'fullBody', 'legs', 'other', 'shoulders']);
 
 export const GqlSProjectActivityChannelSchema: z.ZodType<
     'aiAssistant' | 'email' | 'inPerson' | 'malt' | 'other' | 'phone' | 'videoCall',
@@ -4403,6 +5016,16 @@ export function GqlSCvSkillInputSchema(): z.ZodObject<Properties<GqlSCvSkillInpu
     });
 }
 
+export function GqlSExerciseInputSchema(): z.ZodObject<Properties<GqlSExerciseInput>> {
+    return z.object({
+        equipment: GqlSEquipmentTypeSchema.nullish(),
+        exerciseId: z.string().nullish(),
+        muscleGroup: GqlSMuscleGroupSchema,
+        name: z.string(),
+        notes: z.string().nullish(),
+    });
+}
+
 export function GqlSFinanceRecurringCostInputSchema(): z.ZodObject<Properties<GqlSFinanceRecurringCostInput>> {
     return z.object({
         active: z.boolean().nullish(),
@@ -4415,6 +5038,18 @@ export function GqlSFinanceRecurringCostInputSchema(): z.ZodObject<Properties<Gq
         name: z.string(),
         notes: z.string().nullish(),
         startsOn: z.string().nullish(),
+    });
+}
+
+export function GqlSFoodLogEntryInputSchema(): z.ZodObject<Properties<GqlSFoodLogEntryInput>> {
+    return z.object({
+        consumedAt: z.date(),
+        description: z.string(),
+        kind: GqlSFoodLogKindSchema,
+        logId: z.string().nullish(),
+        mealType: GqlSMealTypeSchema,
+        notes: z.string().nullish(),
+        recipeId: z.string().nullish(),
     });
 }
 
@@ -4476,6 +5111,17 @@ export function GqlSItemServiceEntryInputSchema(): z.ZodObject<Properties<GqlSIt
         performedAt: z.string(),
         serviceEntryId: z.string().nullish(),
         vendor: z.string().nullish(),
+    });
+}
+
+export function GqlSMealPlanEntryInputSchema(): z.ZodObject<Properties<GqlSMealPlanEntryInput>> {
+    return z.object({
+        customText: z.string().nullish(),
+        date: z.string(),
+        entryId: z.string().nullish(),
+        mealType: GqlSMealTypeSchema,
+        notes: z.string().nullish(),
+        recipeId: z.string().nullish(),
     });
 }
 
@@ -4630,6 +5276,24 @@ export function GqlSProjectTimerStartInputSchema(): z.ZodObject<Properties<GqlSP
     });
 }
 
+export function GqlSRecipeInputSchema(): z.ZodObject<Properties<GqlSRecipeInput>> {
+    return z.object({
+        ingredients: z.array(z.string()).nullish(),
+        isFavorite: z.boolean().nullish(),
+        lastMadeAt: z.date().nullish(),
+        mealType: GqlSMealTypeSchema,
+        notes: z.string().nullish(),
+        prepTimeMinutes: z.number().nullish(),
+        rating: z.number().nullish(),
+        recipeId: z.string().nullish(),
+        servings: z.number().nullish(),
+        sourceUrl: z.string().nullish(),
+        steps: z.string().nullish(),
+        tags: z.array(z.string()).nullish(),
+        title: z.string(),
+    });
+}
+
 export function GqlSShowAddFromTmdbInputSchema(): z.ZodObject<Properties<GqlSShowAddFromTmdbInput>> {
     return z.object({
         status: GqlSMovieStatusSchema.nullish(),
@@ -4732,5 +5396,52 @@ export function GqlSUserCreateSchema(): z.ZodObject<Properties<GqlSUserCreate>> 
 export function GqlSUserUpdateSchema(): z.ZodObject<Properties<GqlSUserUpdate>> {
     return z.object({
         name: z.string(),
+    });
+}
+
+export function GqlSWorkoutRoutineInputSchema(): z.ZodObject<Properties<GqlSWorkoutRoutineInput>> {
+    return z.object({
+        name: z.string(),
+        notes: z.string().nullish(),
+        position: z.number().nullish(),
+        routineId: z.string().nullish(),
+    });
+}
+
+export function GqlSWorkoutRoutineItemInputSchema(): z.ZodObject<Properties<GqlSWorkoutRoutineItemInput>> {
+    return z.object({
+        exerciseId: z.string(),
+        notes: z.string().nullish(),
+        position: z.number().nullish(),
+        routineId: z.string(),
+        routineItemId: z.string().nullish(),
+        targetReps: z.number().nullish(),
+        targetSets: z.number().nullish(),
+        targetWeight: z.number().nullish(),
+    });
+}
+
+export function GqlSWorkoutSessionInputSchema(): z.ZodObject<Properties<GqlSWorkoutSessionInput>> {
+    return z.object({
+        date: z.string(),
+        durationMinutes: z.number().nullish(),
+        notes: z.string().nullish(),
+        routineId: z.string().nullish(),
+        sessionId: z.string().nullish(),
+        title: z.string().nullish(),
+    });
+}
+
+export function GqlSWorkoutSetInputSchema(): z.ZodObject<Properties<GqlSWorkoutSetInput>> {
+    return z.object({
+        exerciseId: z.string(),
+        isWarmup: z.boolean().nullish(),
+        notes: z.string().nullish(),
+        position: z.number().nullish(),
+        reps: z.number().nullish(),
+        rpe: z.number().nullish(),
+        sessionId: z.string(),
+        setId: z.string().nullish(),
+        weight: z.number().nullish(),
     });
 }

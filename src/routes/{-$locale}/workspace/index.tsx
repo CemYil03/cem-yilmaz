@@ -14,6 +14,7 @@ import {
     ReceiptTextIcon,
     ScrollTextIcon,
     StethoscopeIcon,
+    UtensilsCrossedIcon,
     WalletIcon,
 } from 'lucide-react';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
@@ -60,6 +61,7 @@ type FocusAreaRoute =
     | '/{-$locale}/workspace/inventory'
     | '/{-$locale}/workspace/tax'
     | '/{-$locale}/workspace/fitness'
+    | '/{-$locale}/workspace/nutrition'
     | '/{-$locale}/workspace/medical'
     | '/{-$locale}/workspace/media'
     | '/{-$locale}/workspace/travel'
@@ -133,7 +135,13 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
         to: '/{-$locale}/workspace/fitness',
         icon: DumbbellIcon,
         title: { de: 'Fitness', en: 'Fitness' },
-        description: { de: 'Trainingspläne, Fortschritt.', en: 'Training plans, progress.' },
+        description: { de: 'Training, Fortschritt, Routinen.', en: 'Workouts, progress, routines.' },
+    },
+    {
+        to: '/{-$locale}/workspace/nutrition',
+        icon: UtensilsCrossedIcon,
+        title: { de: 'Ernährung', en: 'Nutrition' },
+        description: { de: 'Kochbuch, Wochenplan, Tagebuch.', en: 'Cookbook, meal plan, diary.' },
     },
     {
         to: '/{-$locale}/workspace/medical',
