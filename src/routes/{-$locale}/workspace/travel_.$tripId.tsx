@@ -517,7 +517,7 @@ function PackingPanel({ trip, locale }: { trip: TripDetail; locale: Locale }) {
                 </h2>
                 <Button size="sm" variant="ghost" onClick={() => setEditing('new')}>
                     <PlusIcon className="size-4" />
-                    {{ de: 'AdminInventoryItem', en: 'AdminInventoryItem' }[locale]}
+                    {{ de: 'Sache', en: 'Item' }[locale]}
                 </Button>
             </div>
             {total === 0 ? (

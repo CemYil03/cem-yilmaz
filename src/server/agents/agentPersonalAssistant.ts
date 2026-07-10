@@ -12,6 +12,7 @@ import { toolDelegateToNutrition } from './toolDelegateToNutrition';
 import { toolDelegateToFitness } from './toolDelegateToFitness';
 import { toolDelegateToFinances } from './toolDelegateToFinances';
 import { toolDelegateToInventory } from './toolDelegateToInventory';
+import { toolDelegateToTax } from './toolDelegateToTax';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
@@ -84,6 +85,9 @@ const BASE_SYSTEM_PROMPT = [
     '- Workout              → `[<title>](/workspace/fitness?tab=workouts&focus=<sessionId>)`',
     '- Routine              → `[<name>](/workspace/fitness?tab=routines&focus=<routineId>)`',
     '- AdminFitnessExercise             → `[<name>](/workspace/fitness?tab=exercises&focus=<exerciseId>)`',
+    '- Tax expense          → `[<description>](/workspace/tax?tab=expenses&focus=<expenseId>)`',
+    '- Tax income source    → `[<label>](/workspace/tax?tab=income&focus=<incomeSourceId>)`',
+    '- Tax document         → `[<title>](/workspace/tax?tab=documents&focus=<documentId>)`',
     '- Visitor chat         → `[<title>](/workspace/visitor-chats?chatId=<chatId>)`',
     'Examples of the right shape, given a `mutations` entry like `{ kind: "projectCreate", id: "4f2a…", title: "Acme rebuild" }`:',
     '- Good: "Created [Acme rebuild](/workspace/projects?tab=projects&focus=4f2a…) under planning."',
@@ -261,6 +265,20 @@ export async function agentPersonalAssistant({
             // path from chat) but can rename / pin / detach existing ones. See
             // `docs/features/workspace-inventory.md`.
             delegateToInventory: toolDelegateToInventory({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Tax sub-agent — the German tax return: tax years, income sources
+            // (one per Anlage), deductible expenses, and the document
+            // checklist. Writes to Postgres so `/workspace/tax` updates. It is
+            // a documentarian, not a tax advisor — it records and organises but
+            // never gives binding Steuerberatung. It cannot upload receipt
+            // files (no byte-upload path from chat). See
+            // `docs/features/workspace-tax.md`.
+            delegateToTax: toolDelegateToTax({
                 serverRuntime,
                 session,
                 chatId,

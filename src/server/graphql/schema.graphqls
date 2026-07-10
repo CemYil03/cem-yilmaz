@@ -2858,3 +2858,225 @@ extend type AdminMutation {
     adminFitnessWorkoutSetsUpsert(workoutSets: [AdminFitnessWorkoutSetInput!]!): MutationResult!
     adminFitnessWorkoutSetsDelete(setIds: [ID!]!): MutationResult!
 }
+
+# --- Tax --------------------------------------------------------------------
+# Organises a German tax return: a tax year holds income sources (one per
+# Anlage / employer), deductible expenses (with receipt files), and a document
+# checklist. Admin-only, gated once at `Query.admin` / `Mutation.admin`. This
+# is a collection/organisation tool, not a tax calculator — no advice.
+
+enum AdminTaxYearStatus {
+    open
+    collecting
+    filing
+    submitted
+    closed
+}
+
+enum AdminTaxIncomeKind {
+    employment
+    selfEmployment
+    business
+    minijob
+    capital
+    other
+}
+
+enum AdminTaxExpenseCategory {
+    businessExpense
+    workRelated
+    specialExpenses
+    insurance
+    extraordinary
+    homeOffice
+    other
+}
+
+enum AdminTaxDocumentKind {
+    lohnsteuerbescheinigung
+    euer
+    minijobConfirmation
+    insuranceStatement
+    donationReceipt
+    bankStatement
+    other
+}
+
+enum AdminTaxDocumentStatus {
+    needed
+    received
+    notApplicable
+}
+
+enum AdminTaxFileKind {
+    receipt
+    statement
+    scan
+    other
+}
+
+type AdminTaxFile {
+    taxFileId: ID!
+    taxYearId: ID!
+    expenseId: ID
+    documentId: ID
+    fileUpload: FileUpload!
+    label: String
+    kind: AdminTaxFileKind!
+    pinned: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type AdminTaxIncomeSource {
+    incomeSourceId: ID!
+    kind: AdminTaxIncomeKind!
+    label: String!
+    grossAmountCents: Int
+    notes: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type AdminTaxExpense {
+    expenseId: ID!
+    incomeSourceId: ID
+    categoryKey: AdminTaxExpenseCategory!
+    description: String!
+    amountCents: Int!
+    incurredOn: Date
+    deductible: Boolean!
+    notes: String
+    files: [AdminTaxFile!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type AdminTaxDocument {
+    documentId: ID!
+    kind: AdminTaxDocumentKind!
+    title: String!
+    status: AdminTaxDocumentStatus!
+    notes: String
+    files: [AdminTaxFile!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type AdminTaxYear {
+    taxYearId: ID!
+    year: Int!
+    status: AdminTaxYearStatus!
+    filingDeadline: Date
+    submittedAt: DateTime
+    notes: String
+    incomeSources: [AdminTaxIncomeSource!]!
+    expenses: [AdminTaxExpense!]!
+    documents: [AdminTaxDocument!]!
+    "Sum of `grossAmountCents` across income sources (nulls treated as 0)."
+    totalIncomeCents: Int!
+    "Sum of `amountCents` across expenses where `deductible` is true."
+    totalDeductibleCents: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type AdminTaxQuery {
+    "Every tax year with its income sources, expenses, documents, and computed totals, newest year first."
+    adminTaxYearFindMany: [AdminTaxYear!]!
+}
+
+extend type Admin {
+    adminTaxFindOne: AdminTaxQuery!
+}
+
+input AdminTaxYearInput {
+    "Omit to create a new year; supply to update an existing one."
+    taxYearId: ID
+    "The calendar year the return covers, e.g. 2025. Must be unique."
+    year: Int!
+    status: AdminTaxYearStatus
+    "Filing deadline as an ISO date (yyyy-mm-dd), e.g. 2026-07-31."
+    filingDeadline: Date
+    notes: String
+}
+
+input AdminTaxIncomeSourceInput {
+    "Omit to create; supply to update."
+    incomeSourceId: ID
+    taxYearId: ID!
+    "Which Anlage this income belongs to: employment=Anlage N, selfEmployment=Anlage S, business=Anlage G, minijob=geringfügige Beschäftigung, capital=Anlage KAP."
+    kind: AdminTaxIncomeKind!
+    "Human label, e.g. 'SAP – Festanstellung' or 'Freelance-Entwicklung'."
+    label: String!
+    "Gross income in cents (e.g. 4500000 for 45.000 €). Omit if not yet known."
+    grossAmountCents: Int
+    notes: String
+}
+
+input AdminTaxExpenseInput {
+    "Omit to create; supply to update."
+    expenseId: ID
+    taxYearId: ID!
+    "Optional link to the income source this expense offsets (Betriebsausgabe ↔ selfEmployment, Werbungskosten ↔ employment)."
+    incomeSourceId: ID
+    "businessExpense=Betriebsausgabe, workRelated=Werbungskosten, specialExpenses=Sonderausgaben, insurance=Vorsorgeaufwendungen, extraordinary=außergewöhnliche Belastung, homeOffice=Homeoffice-Pauschale."
+    categoryKey: AdminTaxExpenseCategory!
+    "What the expense was, e.g. 'MacBook Pro' or 'Fahrtkosten Januar'."
+    description: String!
+    "Amount in cents (e.g. 89900 for 899,00 €)."
+    amountCents: Int!
+    "When the expense was incurred, ISO date (yyyy-mm-dd)."
+    incurredOn: Date
+    "Whether this counts toward the deductible total. Defaults to true."
+    deductible: Boolean
+    notes: String
+}
+
+input AdminTaxDocumentInput {
+    "Omit to create; supply to update (e.g. to flip status to received)."
+    documentId: ID
+    taxYearId: ID!
+    kind: AdminTaxDocumentKind!
+    "Checklist label, e.g. 'Lohnsteuerbescheinigung 2025'."
+    title: String!
+    status: AdminTaxDocumentStatus
+    notes: String
+}
+
+input AdminTaxFileAttachInput {
+    taxYearId: ID!
+    "Optional: attach as a receipt for this expense."
+    expenseId: ID
+    "Optional: attach as a scan of this checklist document."
+    documentId: ID
+    fileUploadId: ID!
+    label: String
+    kind: AdminTaxFileKind!
+    pinned: Boolean
+}
+
+input AdminTaxFileUpsert {
+    taxFileId: ID!
+    label: String
+    pinned: Boolean
+}
+
+extend type AdminMutation {
+    "Create or update tax years. Inserting a new year also seeds its default document checklist."
+    adminTaxYearsUpsert(taxYears: [AdminTaxYearInput!]!): MutationResult!
+    adminTaxYearsDelete(taxYearIds: [ID!]!): MutationResult!
+
+    adminTaxIncomeSourcesUpsert(taxIncomeSources: [AdminTaxIncomeSourceInput!]!): MutationResult!
+    adminTaxIncomeSourcesDelete(incomeSourceIds: [ID!]!): MutationResult!
+
+    adminTaxExpensesUpsert(taxExpenses: [AdminTaxExpenseInput!]!): MutationResult!
+    adminTaxExpensesDelete(expenseIds: [ID!]!): MutationResult!
+
+    adminTaxDocumentsUpsert(taxDocuments: [AdminTaxDocumentInput!]!): MutationResult!
+    adminTaxDocumentsDelete(documentIds: [ID!]!): MutationResult!
+
+    adminTaxFilesAttach(inputs: [AdminTaxFileAttachInput!]!): MutationResult!
+    adminTaxFilesUpsert(inputs: [AdminTaxFileUpsert!]!): MutationResult!
+    adminTaxFilesDelete(taxFileIds: [ID!]!): MutationResult!
+}

@@ -2371,3 +2371,221 @@ export const workoutSets = pgTable(
 
 export type AdminFitnessWorkoutSet = typeof workoutSets.$inferSelect;
 export type AdminFitnessWorkoutSetCreate = typeof workoutSets.$inferInsert;
+
+// --- Tax --------------------------------------------------------------------
+//
+// Organises a German tax return end-to-end: a `AdminTaxYear` container holds
+// income sources (one per Anlage / employer), deductible expenses (with
+// receipt files), and a document checklist. Admin-only convention: no per-row
+// `userId` — `guardAdminMutation` gates the whole namespace at the resolver
+// boundary. This is a collection/organisation tool, not a tax calculator.
+
+export const taxYearStatuses = ['open', 'collecting', 'filing', 'submitted', 'closed'] as const;
+export type AdminTaxYearStatus = (typeof taxYearStatuses)[number];
+
+export const taxIncomeKinds = ['employment', 'selfEmployment', 'business', 'minijob', 'capital', 'other'] as const;
+export type AdminTaxIncomeKind = (typeof taxIncomeKinds)[number];
+
+export const taxExpenseCategories = [
+    'businessExpense',
+    'workRelated',
+    'specialExpenses',
+    'insurance',
+    'extraordinary',
+    'homeOffice',
+    'other',
+] as const;
+export type AdminTaxExpenseCategory = (typeof taxExpenseCategories)[number];
+
+export const taxDocumentKinds = [
+    'lohnsteuerbescheinigung',
+    'euer',
+    'minijobConfirmation',
+    'insuranceStatement',
+    'donationReceipt',
+    'bankStatement',
+    'other',
+] as const;
+export type AdminTaxDocumentKind = (typeof taxDocumentKinds)[number];
+
+export const taxDocumentStatuses = ['needed', 'received', 'notApplicable'] as const;
+export type AdminTaxDocumentStatus = (typeof taxDocumentStatuses)[number];
+
+export const taxFileKinds = ['receipt', 'statement', 'scan', 'other'] as const;
+export type AdminTaxFileKind = (typeof taxFileKinds)[number];
+
+// One tax year (e.g. 2025). `submittedAt` is stamped by the command when
+// `status` reaches `submitted`; `filingDeadline` is informational. `year` is
+// unique so a second "new year" for the same year is rejected at the DB.
+export const taxYears = pgTable(
+    'AdminTaxYear',
+    {
+        taxYearId: uuid().primaryKey(),
+        year: integer().notNull(),
+        status: varchar().$type<AdminTaxYearStatus>().notNull().default('open'),
+        filingDeadline: date(),
+        submittedAt: timestamp({ withTimezone: true }),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [uniqueIndex('AdminTaxYear_year_idx').on(table.year)],
+);
+
+export type AdminTaxYear = typeof taxYears.$inferSelect;
+export type AdminTaxYearCreate = typeof taxYears.$inferInsert;
+
+// An income source within a year, one per Anlage / employer (Anlage N =
+// employment, Anlage S = selfEmployment, Anlage G = business, Minijob, KAP =
+// capital). `grossAmountCents` nullable — the figure may not be known yet.
+export const taxIncomeSources = pgTable(
+    'AdminTaxIncomeSource',
+    {
+        incomeSourceId: uuid().primaryKey(),
+        taxYearId: uuid().notNull(),
+        kind: varchar().$type<AdminTaxIncomeKind>().notNull().default('other'),
+        label: varchar().notNull(),
+        grossAmountCents: integer(),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.taxYearId],
+            foreignColumns: [taxYears.taxYearId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('AdminTaxIncomeSource_taxYearId_idx').on(table.taxYearId),
+        index('AdminTaxIncomeSource_kind_idx').on(table.kind),
+    ],
+);
+
+export type AdminTaxIncomeSource = typeof taxIncomeSources.$inferSelect;
+export type AdminTaxIncomeSourceCreate = typeof taxIncomeSources.$inferInsert;
+
+// A deductible expense. `incomeSourceId` optionally links which income it
+// offsets (Betriebsausgabe ↔ selfEmployment, Werbungskosten ↔ employment); on
+// source delete the link is nulled so the expense survives. `deductible`
+// lets a row be recorded but excluded from the deductible total.
+export const taxExpenses = pgTable(
+    'AdminTaxExpense',
+    {
+        expenseId: uuid().primaryKey(),
+        taxYearId: uuid().notNull(),
+        incomeSourceId: uuid(),
+        categoryKey: varchar().$type<AdminTaxExpenseCategory>().notNull().default('other'),
+        description: varchar().notNull(),
+        amountCents: integer().notNull(),
+        incurredOn: date(),
+        deductible: boolean().notNull().default(true),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.taxYearId],
+            foreignColumns: [taxYears.taxYearId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.incomeSourceId],
+            foreignColumns: [taxIncomeSources.incomeSourceId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        index('AdminTaxExpense_taxYearId_idx').on(table.taxYearId),
+        index('AdminTaxExpense_categoryKey_idx').on(table.categoryKey),
+        index('AdminTaxExpense_incomeSourceId_idx').on(table.incomeSourceId),
+    ],
+);
+
+export type AdminTaxExpense = typeof taxExpenses.$inferSelect;
+export type AdminTaxExpenseCreate = typeof taxExpenses.$inferInsert;
+
+// Document-checklist row. Default rows are seeded on year insert (see
+// `taxDefaultChecklist`); the status toggles needed → received as scans come
+// in. `notApplicable` retires a row without deleting it.
+export const taxDocuments = pgTable(
+    'AdminTaxDocument',
+    {
+        documentId: uuid().primaryKey(),
+        taxYearId: uuid().notNull(),
+        kind: varchar().$type<AdminTaxDocumentKind>().notNull().default('other'),
+        title: varchar().notNull(),
+        status: varchar().$type<AdminTaxDocumentStatus>().notNull().default('needed'),
+        notes: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.taxYearId],
+            foreignColumns: [taxYears.taxYearId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('AdminTaxDocument_taxYearId_idx').on(table.taxYearId),
+        index('AdminTaxDocument_status_idx').on(table.status),
+    ],
+);
+
+export type AdminTaxDocument = typeof taxDocuments.$inferSelect;
+export type AdminTaxDocumentCreate = typeof taxDocuments.$inferInsert;
+
+// Join row pinning `FileUploads` to a tax year, and optionally to a specific
+// expense (a receipt) or checklist document (a scan). Mirrors `itemFiles`:
+// the upload is user-owned and lives on `fileUploads`; on expense/document
+// delete the secondary link nulls (the file stays on the year), on upload
+// delete the whole join cascades.
+export const taxFiles = pgTable(
+    'AdminTaxFile',
+    {
+        taxFileId: uuid().primaryKey(),
+        taxYearId: uuid().notNull(),
+        expenseId: uuid(),
+        documentId: uuid(),
+        fileUploadId: uuid().notNull(),
+        label: varchar(),
+        kind: varchar().$type<AdminTaxFileKind>().notNull().default('other'),
+        pinned: boolean().notNull().default(false),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.taxYearId],
+            foreignColumns: [taxYears.taxYearId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.expenseId],
+            foreignColumns: [taxExpenses.expenseId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        foreignKey({
+            columns: [table.documentId],
+            foreignColumns: [taxDocuments.documentId],
+        })
+            .onUpdate('cascade')
+            .onDelete('set null'),
+        foreignKey({
+            columns: [table.fileUploadId],
+            foreignColumns: [fileUploads.fileUploadId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('AdminTaxFile_taxYearId_idx').on(table.taxYearId),
+        index('AdminTaxFile_expenseId_idx').on(table.expenseId),
+        index('AdminTaxFile_documentId_idx').on(table.documentId),
+        index('AdminTaxFile_fileUploadId_idx').on(table.fileUploadId),
+    ],
+);
+
+export type AdminTaxFile = typeof taxFiles.$inferSelect;
+export type AdminTaxFileCreate = typeof taxFiles.$inferInsert;

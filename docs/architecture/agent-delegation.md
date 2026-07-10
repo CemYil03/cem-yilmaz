@@ -166,7 +166,8 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
   `typescript-validation-schema` (see [`codegen.ts`](../../codegen.ts) and [api-layer.md](./api-layer.md#code-generation)) emits both the
   object-schema factories (`GqlS<Input>Schema()`) and the enum schemas (`GqlS<Enum>Schema`) exactly for this consumer. Every mutation tool
   whose underlying command has a GraphQL input type — `toolProjectLinksUpsert`, `toolMediaChannelsUpsert`, `toolShowsUpsert`,
-  `toolMedicalRecordFileAttach`, and the four travel batch-upsert tools (which wrap the generated row schema in a single-key
+  `toolMedicalRecordFileAttach`, the five tax batch-upsert tools (all four tax input types carry only `Date` fields, never `DateTime`, so
+  they reuse the generated schema verbatim), and the four travel batch-upsert tools (which wrap the generated row schema in a single-key
   `z.object({ <entities>: z.array(...) })`) — imports its generated schema and uses it verbatim (with a `rawInput as GqlS<X>` cast to
   recover TS inference from the codegen's `Properties<T>` phantom; the runtime schema still validates against the type). Field-level
   explanations travel via the SDL's own field descriptions — `withDescriptions: true` on the codegen plumbs them into the generated Zod
@@ -235,8 +236,8 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 - **Sub-agent failure isolates to its turn.** See the **`status: 'failed'`** bullet above and
   [Server-side error surfacing](#server-side-error-surfacing). The orchestrator narrates the failure to the user; the chat is never broken.
 - **Cross-domain chaining is the orchestrator's job.** The orchestrator calls delegates in series within a single turn (nutrition, fitness,
-  travel, medical, media, projects, finances, inventory, and web search all ship today; calendar / notes are future). Each delegate tool's
-  result feeds the next one's brief through plain prompt context — no shared state channel.
+  travel, medical, media, projects, finances, inventory, tax, and web search all ship today; calendar / notes are future). Each delegate
+  tool's result feeds the next one's brief through plain prompt context — no shared state channel.
 
 ## Where things live
 
@@ -255,4 +256,5 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 | Fitness sub-agent (factory / snapshot / delegate)   | `src/server/agents/agentPersonalAssistantFitness.ts`, `fitnessSnapshotForAgent.ts`, `toolDelegateToFitness.ts` (+ `toolExercises*`, `toolWorkoutRoutines*`, `toolWorkoutRoutineItems*`, `toolWorkoutSessions*`, `toolWorkoutSets*`, `toolExercisesList`, `toolRoutinesList`, `toolWorkoutSessionsList`)                                                                               |
 | Finances sub-agent (factory / snapshot / delegate)  | `src/server/agents/agentPersonalAssistantFinances.ts`, `financesSnapshotForAgent.ts`, `toolDelegateToFinances.ts` (+ `toolFinanceRecurringCostsUpsert`, `toolFinanceRecurringCostsDelete`, `toolFinanceMonthlyNetIncomeSet`, `toolFinanceRecurringCostsList`)                                                                                                                         |
 | Inventory sub-agent (factory / snapshot / delegate) | `src/server/agents/agentPersonalAssistantInventory.ts`, `inventorySnapshotForAgent.ts`, `toolDelegateToInventory.ts` (+ `toolInventoryItemsUpsert`, `toolInventoryItemsDelete`, `toolInventoryItemsReprice`, `toolInventoryServiceEntriesUpsert`, `toolInventoryServiceEntriesDelete`, `toolInventoryFilesUpsert`, `toolInventoryFilesDelete`, `toolInventoryItemsList`)              |
-| Orchestrator                                        | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToProjects`, `delegateToMedia`, `delegateToMedical`, `delegateToTravel`, `delegateToNutrition`, `delegateToFitness`, `delegateToFinances`, `delegateToInventory`, `delegateToWebSearch`)                                                                                                                            |
+| Tax sub-agent (factory / snapshot / delegate)       | `src/server/agents/agentPersonalAssistantTax.ts`, `taxSnapshotForAgent.ts`, `toolDelegateToTax.ts` (+ `toolTaxYearsUpsert`, `toolTaxIncomeSourcesUpsert`, `toolTaxExpensesUpsert`, `toolTaxDocumentsUpsert`, `toolTaxYearsList`)                                                                                                                                                      |
+| Orchestrator                                        | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToProjects`, `delegateToMedia`, `delegateToMedical`, `delegateToTravel`, `delegateToNutrition`, `delegateToFitness`, `delegateToFinances`, `delegateToInventory`, `delegateToTax`, `delegateToWebSearch`)                                                                                                           |

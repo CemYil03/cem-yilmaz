@@ -43,6 +43,7 @@ export interface GqlCAdmin {
     adminPublicChatFindOne: GqlCChat;
     adminStandaloneTaskFindMany: Array<GqlCAdminProjectTask>;
     adminStandaloneTaskOpenCount: Scalars['Int']['output'];
+    adminTaxFindOne: GqlCAdminTaxQuery;
     adminTravelFindOne: GqlCAdminTravelQuery;
 }
 
@@ -790,6 +791,18 @@ export interface GqlCAdminMutation {
     adminProjectTimersStop: GqlCMutationResult;
     adminProjectsDelete: GqlCMutationResult;
     adminProjectsUpsert: GqlCMutationResult;
+    adminTaxDocumentsDelete: GqlCMutationResult;
+    adminTaxDocumentsUpsert: GqlCMutationResult;
+    adminTaxExpensesDelete: GqlCMutationResult;
+    adminTaxExpensesUpsert: GqlCMutationResult;
+    adminTaxFilesAttach: GqlCMutationResult;
+    adminTaxFilesDelete: GqlCMutationResult;
+    adminTaxFilesUpsert: GqlCMutationResult;
+    adminTaxIncomeSourcesDelete: GqlCMutationResult;
+    adminTaxIncomeSourcesUpsert: GqlCMutationResult;
+    adminTaxYearsDelete: GqlCMutationResult;
+    /** Create or update tax years. Inserting a new year also seeds its default document checklist. */
+    adminTaxYearsUpsert: GqlCMutationResult;
     adminTravelTripActivitiesDelete: GqlCMutationResult;
     adminTravelTripActivitiesUpsert: GqlCMutationResult;
     adminTravelTripDaysDelete: GqlCMutationResult;
@@ -1070,6 +1083,50 @@ export type GqlCAdminMutationAdminProjectsDeleteArgs = {
 
 export type GqlCAdminMutationAdminProjectsUpsertArgs = {
     projects: Array<GqlCAdminProjectCreate>;
+};
+
+export type GqlCAdminMutationAdminTaxDocumentsDeleteArgs = {
+    documentIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTaxDocumentsUpsertArgs = {
+    taxDocuments: Array<GqlCAdminTaxDocumentInput>;
+};
+
+export type GqlCAdminMutationAdminTaxExpensesDeleteArgs = {
+    expenseIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTaxExpensesUpsertArgs = {
+    taxExpenses: Array<GqlCAdminTaxExpenseInput>;
+};
+
+export type GqlCAdminMutationAdminTaxFilesAttachArgs = {
+    inputs: Array<GqlCAdminTaxFileAttachInput>;
+};
+
+export type GqlCAdminMutationAdminTaxFilesDeleteArgs = {
+    taxFileIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTaxFilesUpsertArgs = {
+    inputs: Array<GqlCAdminTaxFileUpsert>;
+};
+
+export type GqlCAdminMutationAdminTaxIncomeSourcesDeleteArgs = {
+    incomeSourceIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTaxIncomeSourcesUpsertArgs = {
+    taxIncomeSources: Array<GqlCAdminTaxIncomeSourceInput>;
+};
+
+export type GqlCAdminMutationAdminTaxYearsDeleteArgs = {
+    taxYearIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTaxYearsUpsertArgs = {
+    taxYears: Array<GqlCAdminTaxYearInput>;
 };
 
 export type GqlCAdminMutationAdminTravelTripActivitiesDeleteArgs = {
@@ -1564,6 +1621,169 @@ export type GqlCAdminProjectTimerStartInput = {
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title?: InputMaybe<Scalars['String']['input']>;
 };
+
+export interface GqlCAdminTaxDocument {
+    __typename?: 'AdminTaxDocument';
+    createdAt: Scalars['DateTime']['output'];
+    documentId: Scalars['ID']['output'];
+    files: Array<GqlCAdminTaxFile>;
+    kind: GqlCAdminTaxDocumentKind;
+    notes?: Maybe<Scalars['String']['output']>;
+    status: GqlCAdminTaxDocumentStatus;
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminTaxDocumentInput = {
+    /** Omit to create; supply to update (e.g. to flip status to received). */
+    documentId?: InputMaybe<Scalars['ID']['input']>;
+    kind: GqlCAdminTaxDocumentKind;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    status?: InputMaybe<GqlCAdminTaxDocumentStatus>;
+    taxYearId: Scalars['ID']['input'];
+    /** Checklist label, e.g. 'Lohnsteuerbescheinigung 2025'. */
+    title: Scalars['String']['input'];
+};
+
+export type GqlCAdminTaxDocumentKind =
+    'bankStatement' | 'donationReceipt' | 'euer' | 'insuranceStatement' | 'lohnsteuerbescheinigung' | 'minijobConfirmation' | 'other';
+
+export type GqlCAdminTaxDocumentStatus = 'needed' | 'notApplicable' | 'received';
+
+export interface GqlCAdminTaxExpense {
+    __typename?: 'AdminTaxExpense';
+    amountCents: Scalars['Int']['output'];
+    categoryKey: GqlCAdminTaxExpenseCategory;
+    createdAt: Scalars['DateTime']['output'];
+    deductible: Scalars['Boolean']['output'];
+    description: Scalars['String']['output'];
+    expenseId: Scalars['ID']['output'];
+    files: Array<GqlCAdminTaxFile>;
+    incomeSourceId?: Maybe<Scalars['ID']['output']>;
+    incurredOn?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminTaxExpenseCategory =
+    'businessExpense' | 'extraordinary' | 'homeOffice' | 'insurance' | 'other' | 'specialExpenses' | 'workRelated';
+
+export type GqlCAdminTaxExpenseInput = {
+    /** Amount in cents (e.g. 89900 for 899,00 €). */
+    amountCents: Scalars['Int']['input'];
+    /** businessExpense=Betriebsausgabe, workRelated=Werbungskosten, specialExpenses=Sonderausgaben, insurance=Vorsorgeaufwendungen, extraordinary=außergewöhnliche Belastung, homeOffice=Homeoffice-Pauschale. */
+    categoryKey: GqlCAdminTaxExpenseCategory;
+    /** Whether this counts toward the deductible total. Defaults to true. */
+    deductible?: InputMaybe<Scalars['Boolean']['input']>;
+    /** What the expense was, e.g. 'MacBook Pro' or 'Fahrtkosten Januar'. */
+    description: Scalars['String']['input'];
+    /** Omit to create; supply to update. */
+    expenseId?: InputMaybe<Scalars['ID']['input']>;
+    /** Optional link to the income source this expense offsets (Betriebsausgabe ↔ selfEmployment, Werbungskosten ↔ employment). */
+    incomeSourceId?: InputMaybe<Scalars['ID']['input']>;
+    /** When the expense was incurred, ISO date (yyyy-mm-dd). */
+    incurredOn?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    taxYearId: Scalars['ID']['input'];
+};
+
+export interface GqlCAdminTaxFile {
+    __typename?: 'AdminTaxFile';
+    createdAt: Scalars['DateTime']['output'];
+    documentId?: Maybe<Scalars['ID']['output']>;
+    expenseId?: Maybe<Scalars['ID']['output']>;
+    fileUpload: GqlCFileUpload;
+    kind: GqlCAdminTaxFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    taxFileId: Scalars['ID']['output'];
+    taxYearId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminTaxFileAttachInput = {
+    /** Optional: attach as a scan of this checklist document. */
+    documentId?: InputMaybe<Scalars['ID']['input']>;
+    /** Optional: attach as a receipt for this expense. */
+    expenseId?: InputMaybe<Scalars['ID']['input']>;
+    fileUploadId: Scalars['ID']['input'];
+    kind: GqlCAdminTaxFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    taxYearId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminTaxFileKind = 'other' | 'receipt' | 'scan' | 'statement';
+
+export type GqlCAdminTaxFileUpsert = {
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    taxFileId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminTaxIncomeKind = 'business' | 'capital' | 'employment' | 'minijob' | 'other' | 'selfEmployment';
+
+export interface GqlCAdminTaxIncomeSource {
+    __typename?: 'AdminTaxIncomeSource';
+    createdAt: Scalars['DateTime']['output'];
+    grossAmountCents?: Maybe<Scalars['Int']['output']>;
+    incomeSourceId: Scalars['ID']['output'];
+    kind: GqlCAdminTaxIncomeKind;
+    label: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminTaxIncomeSourceInput = {
+    /** Gross income in cents (e.g. 4500000 for 45.000 €). Omit if not yet known. */
+    grossAmountCents?: InputMaybe<Scalars['Int']['input']>;
+    /** Omit to create; supply to update. */
+    incomeSourceId?: InputMaybe<Scalars['ID']['input']>;
+    /** Which Anlage this income belongs to: employment=Anlage N, selfEmployment=Anlage S, business=Anlage G, minijob=geringfügige Beschäftigung, capital=Anlage KAP. */
+    kind: GqlCAdminTaxIncomeKind;
+    /** Human label, e.g. 'SAP – Festanstellung' or 'Freelance-Entwicklung'. */
+    label: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    taxYearId: Scalars['ID']['input'];
+};
+
+export interface GqlCAdminTaxQuery {
+    __typename?: 'AdminTaxQuery';
+    /** Every tax year with its income sources, expenses, documents, and computed totals, newest year first. */
+    adminTaxYearFindMany: Array<GqlCAdminTaxYear>;
+}
+
+export interface GqlCAdminTaxYear {
+    __typename?: 'AdminTaxYear';
+    createdAt: Scalars['DateTime']['output'];
+    documents: Array<GqlCAdminTaxDocument>;
+    expenses: Array<GqlCAdminTaxExpense>;
+    filingDeadline?: Maybe<Scalars['Date']['output']>;
+    incomeSources: Array<GqlCAdminTaxIncomeSource>;
+    notes?: Maybe<Scalars['String']['output']>;
+    status: GqlCAdminTaxYearStatus;
+    submittedAt?: Maybe<Scalars['DateTime']['output']>;
+    taxYearId: Scalars['ID']['output'];
+    /** Sum of `amountCents` across expenses where `deductible` is true. */
+    totalDeductibleCents: Scalars['Int']['output'];
+    /** Sum of `grossAmountCents` across income sources (nulls treated as 0). */
+    totalIncomeCents: Scalars['Int']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    year: Scalars['Int']['output'];
+}
+
+export type GqlCAdminTaxYearInput = {
+    /** Filing deadline as an ISO date (yyyy-mm-dd), e.g. 2026-07-31. */
+    filingDeadline?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    status?: InputMaybe<GqlCAdminTaxYearStatus>;
+    /** Omit to create a new year; supply to update an existing one. */
+    taxYearId?: InputMaybe<Scalars['ID']['input']>;
+    /** The calendar year the return covers, e.g. 2025. Must be unique. */
+    year: Scalars['Int']['input'];
+};
+
+export type GqlCAdminTaxYearStatus = 'closed' | 'collecting' | 'filing' | 'open' | 'submitted';
 
 export interface GqlCAdminTravelQuery {
     __typename?: 'AdminTravelQuery';
@@ -5793,6 +6013,318 @@ export type GqlCWorkspaceSoftwarePageQuery = {
     };
 };
 
+export type GqlCWorkspaceTaxFileFragment = {
+    taxFileId: string;
+    taxYearId: string;
+    expenseId: string | null;
+    documentId: string | null;
+    label: string | null;
+    kind: Schema.GqlCAdminTaxFileKind;
+    pinned: boolean;
+    createdAt: string;
+    updatedAt: string;
+    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+};
+
+export type GqlCWorkspaceTaxPageUserFragment = {
+    admin: {
+        adminTaxFindOne: {
+            adminTaxYearFindMany: Array<{
+                taxYearId: string;
+                year: number;
+                status: Schema.GqlCAdminTaxYearStatus;
+                filingDeadline: string | null;
+                submittedAt: string | null;
+                notes: string | null;
+                totalIncomeCents: number;
+                totalDeductibleCents: number;
+                createdAt: string;
+                updatedAt: string;
+                incomeSources: Array<{
+                    incomeSourceId: string;
+                    kind: Schema.GqlCAdminTaxIncomeKind;
+                    label: string;
+                    grossAmountCents: number | null;
+                    notes: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+                expenses: Array<{
+                    expenseId: string;
+                    incomeSourceId: string | null;
+                    categoryKey: Schema.GqlCAdminTaxExpenseCategory;
+                    description: string;
+                    amountCents: number;
+                    incurredOn: string | null;
+                    deductible: boolean;
+                    notes: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                    files: Array<{
+                        taxFileId: string;
+                        taxYearId: string;
+                        expenseId: string | null;
+                        documentId: string | null;
+                        label: string | null;
+                        kind: Schema.GqlCAdminTaxFileKind;
+                        pinned: boolean;
+                        createdAt: string;
+                        updatedAt: string;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                }>;
+                documents: Array<{
+                    documentId: string;
+                    kind: Schema.GqlCAdminTaxDocumentKind;
+                    title: string;
+                    status: Schema.GqlCAdminTaxDocumentStatus;
+                    notes: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                    files: Array<{
+                        taxFileId: string;
+                        taxYearId: string;
+                        expenseId: string | null;
+                        documentId: string | null;
+                        label: string | null;
+                        kind: Schema.GqlCAdminTaxFileKind;
+                        pinned: boolean;
+                        createdAt: string;
+                        updatedAt: string;
+                        fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                    }>;
+                }>;
+            }>;
+        };
+    } | null;
+};
+
+export type GqlCWorkspaceTaxPageQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceTaxPageQuery = {
+    sessionFindOne: {
+        user: {
+            admin: {
+                adminTaxFindOne: {
+                    adminTaxYearFindMany: Array<{
+                        taxYearId: string;
+                        year: number;
+                        status: Schema.GqlCAdminTaxYearStatus;
+                        filingDeadline: string | null;
+                        submittedAt: string | null;
+                        notes: string | null;
+                        totalIncomeCents: number;
+                        totalDeductibleCents: number;
+                        createdAt: string;
+                        updatedAt: string;
+                        incomeSources: Array<{
+                            incomeSourceId: string;
+                            kind: Schema.GqlCAdminTaxIncomeKind;
+                            label: string;
+                            grossAmountCents: number | null;
+                            notes: string | null;
+                            createdAt: string;
+                            updatedAt: string;
+                        }>;
+                        expenses: Array<{
+                            expenseId: string;
+                            incomeSourceId: string | null;
+                            categoryKey: Schema.GqlCAdminTaxExpenseCategory;
+                            description: string;
+                            amountCents: number;
+                            incurredOn: string | null;
+                            deductible: boolean;
+                            notes: string | null;
+                            createdAt: string;
+                            updatedAt: string;
+                            files: Array<{
+                                taxFileId: string;
+                                taxYearId: string;
+                                expenseId: string | null;
+                                documentId: string | null;
+                                label: string | null;
+                                kind: Schema.GqlCAdminTaxFileKind;
+                                pinned: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                                fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                            }>;
+                        }>;
+                        documents: Array<{
+                            documentId: string;
+                            kind: Schema.GqlCAdminTaxDocumentKind;
+                            title: string;
+                            status: Schema.GqlCAdminTaxDocumentStatus;
+                            notes: string | null;
+                            createdAt: string;
+                            updatedAt: string;
+                            files: Array<{
+                                taxFileId: string;
+                                taxYearId: string;
+                                expenseId: string | null;
+                                documentId: string | null;
+                                label: string | null;
+                                kind: Schema.GqlCAdminTaxFileKind;
+                                pinned: boolean;
+                                createdAt: string;
+                                updatedAt: string;
+                                fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                            }>;
+                        }>;
+                    }>;
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceTaxPageUpdatesSubscriptionVariables = Exact<{ [key: string]: never }>;
+
+export type GqlCWorkspaceTaxPageUpdatesSubscription = {
+    userUpdates: {
+        admin: {
+            adminTaxFindOne: {
+                adminTaxYearFindMany: Array<{
+                    taxYearId: string;
+                    year: number;
+                    status: Schema.GqlCAdminTaxYearStatus;
+                    filingDeadline: string | null;
+                    submittedAt: string | null;
+                    notes: string | null;
+                    totalIncomeCents: number;
+                    totalDeductibleCents: number;
+                    createdAt: string;
+                    updatedAt: string;
+                    incomeSources: Array<{
+                        incomeSourceId: string;
+                        kind: Schema.GqlCAdminTaxIncomeKind;
+                        label: string;
+                        grossAmountCents: number | null;
+                        notes: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
+                    expenses: Array<{
+                        expenseId: string;
+                        incomeSourceId: string | null;
+                        categoryKey: Schema.GqlCAdminTaxExpenseCategory;
+                        description: string;
+                        amountCents: number;
+                        incurredOn: string | null;
+                        deductible: boolean;
+                        notes: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                        files: Array<{
+                            taxFileId: string;
+                            taxYearId: string;
+                            expenseId: string | null;
+                            documentId: string | null;
+                            label: string | null;
+                            kind: Schema.GqlCAdminTaxFileKind;
+                            pinned: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                            fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                        }>;
+                    }>;
+                    documents: Array<{
+                        documentId: string;
+                        kind: Schema.GqlCAdminTaxDocumentKind;
+                        title: string;
+                        status: Schema.GqlCAdminTaxDocumentStatus;
+                        notes: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                        files: Array<{
+                            taxFileId: string;
+                            taxYearId: string;
+                            expenseId: string | null;
+                            documentId: string | null;
+                            label: string | null;
+                            kind: Schema.GqlCAdminTaxFileKind;
+                            pinned: boolean;
+                            createdAt: string;
+                            updatedAt: string;
+                            fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                        }>;
+                    }>;
+                }>;
+            };
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceTaxYearsUpsertMutationVariables = Exact<{
+    taxYears: Array<Schema.GqlCAdminTaxYearInput> | Schema.GqlCAdminTaxYearInput;
+}>;
+
+export type GqlCWorkspaceTaxYearsUpsertMutation = {
+    admin: { adminTaxYearsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceTaxYearsDeleteMutationVariables = Exact<{
+    taxYearIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceTaxYearsDeleteMutation = { admin: { adminTaxYearsDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTaxIncomeSourcesUpsertMutationVariables = Exact<{
+    taxIncomeSources: Array<Schema.GqlCAdminTaxIncomeSourceInput> | Schema.GqlCAdminTaxIncomeSourceInput;
+}>;
+
+export type GqlCWorkspaceTaxIncomeSourcesUpsertMutation = {
+    admin: { adminTaxIncomeSourcesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceTaxIncomeSourcesDeleteMutationVariables = Exact<{
+    incomeSourceIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceTaxIncomeSourcesDeleteMutation = { admin: { adminTaxIncomeSourcesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTaxExpensesUpsertMutationVariables = Exact<{
+    taxExpenses: Array<Schema.GqlCAdminTaxExpenseInput> | Schema.GqlCAdminTaxExpenseInput;
+}>;
+
+export type GqlCWorkspaceTaxExpensesUpsertMutation = {
+    admin: { adminTaxExpensesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceTaxExpensesDeleteMutationVariables = Exact<{
+    expenseIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceTaxExpensesDeleteMutation = { admin: { adminTaxExpensesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTaxDocumentsUpsertMutationVariables = Exact<{
+    taxDocuments: Array<Schema.GqlCAdminTaxDocumentInput> | Schema.GqlCAdminTaxDocumentInput;
+}>;
+
+export type GqlCWorkspaceTaxDocumentsUpsertMutation = {
+    admin: { adminTaxDocumentsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceTaxDocumentsDeleteMutationVariables = Exact<{
+    documentIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceTaxDocumentsDeleteMutation = { admin: { adminTaxDocumentsDelete: { success: boolean } } };
+
+export type GqlCWorkspaceTaxFilesAttachMutationVariables = Exact<{
+    inputs: Array<Schema.GqlCAdminTaxFileAttachInput> | Schema.GqlCAdminTaxFileAttachInput;
+}>;
+
+export type GqlCWorkspaceTaxFilesAttachMutation = {
+    admin: { adminTaxFilesAttach: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceTaxFilesDeleteMutationVariables = Exact<{
+    taxFileIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceTaxFilesDeleteMutation = { admin: { adminTaxFilesDelete: { success: boolean } } };
+
 export type GqlCWorkspaceTodosPageUserFragment = {
     admin: {
         adminStandaloneTaskFindMany: Array<{
@@ -8976,6 +9508,206 @@ export const WorkspaceProjectDetailUserFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectDetailUserFragment, unknown>;
+export const WorkspaceTaxFileFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxYearId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'expenseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'documentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxFileFragment, unknown>;
+export const WorkspaceTaxPageUserFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTaxPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminTaxYearFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taxYearId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'year' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'filingDeadline' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'submittedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'totalIncomeCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'totalDeductibleCents' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'incomeSources' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incomeSourceId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'grossAmountCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'expenses' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'expenseId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incomeSourceId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incurredOn' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'deductible' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'documents' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'documentId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxYearId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'expenseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'documentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxPageUserFragment, unknown>;
 export const WorkspaceTodosPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -21263,6 +21995,922 @@ export const WorkspaceSoftwarePageDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceSoftwarePageQuery, GqlCWorkspaceSoftwarePageQueryVariables>;
+export const WorkspaceTaxPageDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceTaxPage' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'sessionFindOne' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceTaxPageUser' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxYearId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'expenseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'documentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTaxPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminTaxYearFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taxYearId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'year' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'filingDeadline' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'submittedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'totalIncomeCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'totalDeductibleCents' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'incomeSources' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incomeSourceId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'grossAmountCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'expenses' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'expenseId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incomeSourceId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incurredOn' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'deductible' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'documents' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'documentId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxPageQuery, GqlCWorkspaceTaxPageQueryVariables>;
+export const WorkspaceTaxPageUpdatesDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'subscription',
+            name: { kind: 'Name', value: 'WorkspaceTaxPageUpdates' },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'userUpdates' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceTaxPageUser' } }],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxFile' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxFileId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'taxYearId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'expenseId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'documentId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'pinned' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'fileUpload' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'fileUploadId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'mediaType' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                            ],
+                        },
+                    },
+                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceTaxPageUser' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminTaxYearFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'taxYearId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'year' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'filingDeadline' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'submittedAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'totalIncomeCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'totalDeductibleCents' } },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'incomeSources' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incomeSourceId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'grossAmountCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'expenses' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'expenseId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incomeSourceId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'categoryKey' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'incurredOn' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'deductible' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'documents' },
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'documentId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'status' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'files' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'FragmentSpread',
+                                                                                    name: { kind: 'Name', value: 'WorkspaceTaxFile' },
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                ],
+                                                            },
+                                                        },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxPageUpdatesSubscription, GqlCWorkspaceTaxPageUpdatesSubscriptionVariables>;
+export const WorkspaceTaxYearsUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxYearsUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taxYears' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxYearInput' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxYearsUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taxYears' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taxYears' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxYearsUpsertMutation, GqlCWorkspaceTaxYearsUpsertMutationVariables>;
+export const WorkspaceTaxYearsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxYearsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taxYearIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxYearsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taxYearIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taxYearIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxYearsDeleteMutation, GqlCWorkspaceTaxYearsDeleteMutationVariables>;
+export const WorkspaceTaxIncomeSourcesUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxIncomeSourcesUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taxIncomeSources' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxIncomeSourceInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxIncomeSourcesUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taxIncomeSources' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taxIncomeSources' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxIncomeSourcesUpsertMutation, GqlCWorkspaceTaxIncomeSourcesUpsertMutationVariables>;
+export const WorkspaceTaxIncomeSourcesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxIncomeSourcesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'incomeSourceIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxIncomeSourcesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'incomeSourceIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'incomeSourceIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxIncomeSourcesDeleteMutation, GqlCWorkspaceTaxIncomeSourcesDeleteMutationVariables>;
+export const WorkspaceTaxExpensesUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxExpensesUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taxExpenses' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxExpenseInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxExpensesUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taxExpenses' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taxExpenses' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxExpensesUpsertMutation, GqlCWorkspaceTaxExpensesUpsertMutationVariables>;
+export const WorkspaceTaxExpensesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxExpensesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'expenseIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxExpensesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'expenseIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'expenseIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxExpensesDeleteMutation, GqlCWorkspaceTaxExpensesDeleteMutationVariables>;
+export const WorkspaceTaxDocumentsUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxDocumentsUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taxDocuments' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxDocumentInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxDocumentsUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taxDocuments' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taxDocuments' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxDocumentsUpsertMutation, GqlCWorkspaceTaxDocumentsUpsertMutationVariables>;
+export const WorkspaceTaxDocumentsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxDocumentsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'documentIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxDocumentsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'documentIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'documentIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxDocumentsDeleteMutation, GqlCWorkspaceTaxDocumentsDeleteMutationVariables>;
+export const WorkspaceTaxFilesAttachDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxFilesAttach' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'inputs' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTaxFileAttachInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxFilesAttach' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'inputs' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'inputs' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxFilesAttachMutation, GqlCWorkspaceTaxFilesAttachMutationVariables>;
+export const WorkspaceTaxFilesDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceTaxFilesDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'taxFileIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminTaxFilesDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'taxFileIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'taxFileIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceTaxFilesDeleteMutation, GqlCWorkspaceTaxFilesDeleteMutationVariables>;
 export const WorkspaceTodosPageDocument = {
     kind: 'Document',
     definitions: [

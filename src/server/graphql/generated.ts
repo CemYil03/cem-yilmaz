@@ -40,6 +40,7 @@ export interface GqlSAdmin {
     adminPublicChatFindOne: GqlSChat;
     adminStandaloneTaskFindMany: Array<GqlSAdminProjectTask>;
     adminStandaloneTaskOpenCount: Scalars['Int']['output'];
+    adminTaxFindOne: GqlSAdminTaxQuery;
     adminTravelFindOne: GqlSAdminTravelQuery;
 }
 
@@ -787,6 +788,18 @@ export interface GqlSAdminMutation {
     adminProjectTimersStop: GqlSMutationResult;
     adminProjectsDelete: GqlSMutationResult;
     adminProjectsUpsert: GqlSMutationResult;
+    adminTaxDocumentsDelete: GqlSMutationResult;
+    adminTaxDocumentsUpsert: GqlSMutationResult;
+    adminTaxExpensesDelete: GqlSMutationResult;
+    adminTaxExpensesUpsert: GqlSMutationResult;
+    adminTaxFilesAttach: GqlSMutationResult;
+    adminTaxFilesDelete: GqlSMutationResult;
+    adminTaxFilesUpsert: GqlSMutationResult;
+    adminTaxIncomeSourcesDelete: GqlSMutationResult;
+    adminTaxIncomeSourcesUpsert: GqlSMutationResult;
+    adminTaxYearsDelete: GqlSMutationResult;
+    /** Create or update tax years. Inserting a new year also seeds its default document checklist. */
+    adminTaxYearsUpsert: GqlSMutationResult;
     adminTravelTripActivitiesDelete: GqlSMutationResult;
     adminTravelTripActivitiesUpsert: GqlSMutationResult;
     adminTravelTripDaysDelete: GqlSMutationResult;
@@ -1067,6 +1080,50 @@ export type GqlSAdminMutationAdminProjectsDeleteArgs = {
 
 export type GqlSAdminMutationAdminProjectsUpsertArgs = {
     projects: Array<GqlSAdminProjectCreate>;
+};
+
+export type GqlSAdminMutationAdminTaxDocumentsDeleteArgs = {
+    documentIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationAdminTaxDocumentsUpsertArgs = {
+    taxDocuments: Array<GqlSAdminTaxDocumentInput>;
+};
+
+export type GqlSAdminMutationAdminTaxExpensesDeleteArgs = {
+    expenseIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationAdminTaxExpensesUpsertArgs = {
+    taxExpenses: Array<GqlSAdminTaxExpenseInput>;
+};
+
+export type GqlSAdminMutationAdminTaxFilesAttachArgs = {
+    inputs: Array<GqlSAdminTaxFileAttachInput>;
+};
+
+export type GqlSAdminMutationAdminTaxFilesDeleteArgs = {
+    taxFileIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationAdminTaxFilesUpsertArgs = {
+    inputs: Array<GqlSAdminTaxFileUpsert>;
+};
+
+export type GqlSAdminMutationAdminTaxIncomeSourcesDeleteArgs = {
+    incomeSourceIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationAdminTaxIncomeSourcesUpsertArgs = {
+    taxIncomeSources: Array<GqlSAdminTaxIncomeSourceInput>;
+};
+
+export type GqlSAdminMutationAdminTaxYearsDeleteArgs = {
+    taxYearIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationAdminTaxYearsUpsertArgs = {
+    taxYears: Array<GqlSAdminTaxYearInput>;
 };
 
 export type GqlSAdminMutationAdminTravelTripActivitiesDeleteArgs = {
@@ -1561,6 +1618,169 @@ export type GqlSAdminProjectTimerStartInput = {
     taskId?: InputMaybe<Scalars['ID']['input']>;
     title?: InputMaybe<Scalars['String']['input']>;
 };
+
+export interface GqlSAdminTaxDocument {
+    __typename?: 'AdminTaxDocument';
+    createdAt: Scalars['DateTime']['output'];
+    documentId: Scalars['ID']['output'];
+    files: Array<GqlSAdminTaxFile>;
+    kind: GqlSAdminTaxDocumentKind;
+    notes?: Maybe<Scalars['String']['output']>;
+    status: GqlSAdminTaxDocumentStatus;
+    title: Scalars['String']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSAdminTaxDocumentInput = {
+    /** Omit to create; supply to update (e.g. to flip status to received). */
+    documentId?: InputMaybe<Scalars['ID']['input']>;
+    kind: GqlSAdminTaxDocumentKind;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    status?: InputMaybe<GqlSAdminTaxDocumentStatus>;
+    taxYearId: Scalars['ID']['input'];
+    /** Checklist label, e.g. 'Lohnsteuerbescheinigung 2025'. */
+    title: Scalars['String']['input'];
+};
+
+export type GqlSAdminTaxDocumentKind =
+    'bankStatement' | 'donationReceipt' | 'euer' | 'insuranceStatement' | 'lohnsteuerbescheinigung' | 'minijobConfirmation' | 'other';
+
+export type GqlSAdminTaxDocumentStatus = 'needed' | 'notApplicable' | 'received';
+
+export interface GqlSAdminTaxExpense {
+    __typename?: 'AdminTaxExpense';
+    amountCents: Scalars['Int']['output'];
+    categoryKey: GqlSAdminTaxExpenseCategory;
+    createdAt: Scalars['DateTime']['output'];
+    deductible: Scalars['Boolean']['output'];
+    description: Scalars['String']['output'];
+    expenseId: Scalars['ID']['output'];
+    files: Array<GqlSAdminTaxFile>;
+    incomeSourceId?: Maybe<Scalars['ID']['output']>;
+    incurredOn?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSAdminTaxExpenseCategory =
+    'businessExpense' | 'extraordinary' | 'homeOffice' | 'insurance' | 'other' | 'specialExpenses' | 'workRelated';
+
+export type GqlSAdminTaxExpenseInput = {
+    /** Amount in cents (e.g. 89900 for 899,00 €). */
+    amountCents: Scalars['Int']['input'];
+    /** businessExpense=Betriebsausgabe, workRelated=Werbungskosten, specialExpenses=Sonderausgaben, insurance=Vorsorgeaufwendungen, extraordinary=außergewöhnliche Belastung, homeOffice=Homeoffice-Pauschale. */
+    categoryKey: GqlSAdminTaxExpenseCategory;
+    /** Whether this counts toward the deductible total. Defaults to true. */
+    deductible?: InputMaybe<Scalars['Boolean']['input']>;
+    /** What the expense was, e.g. 'MacBook Pro' or 'Fahrtkosten Januar'. */
+    description: Scalars['String']['input'];
+    /** Omit to create; supply to update. */
+    expenseId?: InputMaybe<Scalars['ID']['input']>;
+    /** Optional link to the income source this expense offsets (Betriebsausgabe ↔ selfEmployment, Werbungskosten ↔ employment). */
+    incomeSourceId?: InputMaybe<Scalars['ID']['input']>;
+    /** When the expense was incurred, ISO date (yyyy-mm-dd). */
+    incurredOn?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    taxYearId: Scalars['ID']['input'];
+};
+
+export interface GqlSAdminTaxFile {
+    __typename?: 'AdminTaxFile';
+    createdAt: Scalars['DateTime']['output'];
+    documentId?: Maybe<Scalars['ID']['output']>;
+    expenseId?: Maybe<Scalars['ID']['output']>;
+    fileUpload: GqlSFileUpload;
+    kind: GqlSAdminTaxFileKind;
+    label?: Maybe<Scalars['String']['output']>;
+    pinned: Scalars['Boolean']['output'];
+    taxFileId: Scalars['ID']['output'];
+    taxYearId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSAdminTaxFileAttachInput = {
+    /** Optional: attach as a scan of this checklist document. */
+    documentId?: InputMaybe<Scalars['ID']['input']>;
+    /** Optional: attach as a receipt for this expense. */
+    expenseId?: InputMaybe<Scalars['ID']['input']>;
+    fileUploadId: Scalars['ID']['input'];
+    kind: GqlSAdminTaxFileKind;
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    taxYearId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminTaxFileKind = 'other' | 'receipt' | 'scan' | 'statement';
+
+export type GqlSAdminTaxFileUpsert = {
+    label?: InputMaybe<Scalars['String']['input']>;
+    pinned?: InputMaybe<Scalars['Boolean']['input']>;
+    taxFileId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminTaxIncomeKind = 'business' | 'capital' | 'employment' | 'minijob' | 'other' | 'selfEmployment';
+
+export interface GqlSAdminTaxIncomeSource {
+    __typename?: 'AdminTaxIncomeSource';
+    createdAt: Scalars['DateTime']['output'];
+    grossAmountCents?: Maybe<Scalars['Int']['output']>;
+    incomeSourceId: Scalars['ID']['output'];
+    kind: GqlSAdminTaxIncomeKind;
+    label: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSAdminTaxIncomeSourceInput = {
+    /** Gross income in cents (e.g. 4500000 for 45.000 €). Omit if not yet known. */
+    grossAmountCents?: InputMaybe<Scalars['Int']['input']>;
+    /** Omit to create; supply to update. */
+    incomeSourceId?: InputMaybe<Scalars['ID']['input']>;
+    /** Which Anlage this income belongs to: employment=Anlage N, selfEmployment=Anlage S, business=Anlage G, minijob=geringfügige Beschäftigung, capital=Anlage KAP. */
+    kind: GqlSAdminTaxIncomeKind;
+    /** Human label, e.g. 'SAP – Festanstellung' or 'Freelance-Entwicklung'. */
+    label: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    taxYearId: Scalars['ID']['input'];
+};
+
+export interface GqlSAdminTaxQuery {
+    __typename?: 'AdminTaxQuery';
+    /** Every tax year with its income sources, expenses, documents, and computed totals, newest year first. */
+    adminTaxYearFindMany: Array<GqlSAdminTaxYear>;
+}
+
+export interface GqlSAdminTaxYear {
+    __typename?: 'AdminTaxYear';
+    createdAt: Scalars['DateTime']['output'];
+    documents: Array<GqlSAdminTaxDocument>;
+    expenses: Array<GqlSAdminTaxExpense>;
+    filingDeadline?: Maybe<Scalars['Date']['output']>;
+    incomeSources: Array<GqlSAdminTaxIncomeSource>;
+    notes?: Maybe<Scalars['String']['output']>;
+    status: GqlSAdminTaxYearStatus;
+    submittedAt?: Maybe<Scalars['DateTime']['output']>;
+    taxYearId: Scalars['ID']['output'];
+    /** Sum of `amountCents` across expenses where `deductible` is true. */
+    totalDeductibleCents: Scalars['Int']['output'];
+    /** Sum of `grossAmountCents` across income sources (nulls treated as 0). */
+    totalIncomeCents: Scalars['Int']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    year: Scalars['Int']['output'];
+}
+
+export type GqlSAdminTaxYearInput = {
+    /** Filing deadline as an ISO date (yyyy-mm-dd), e.g. 2026-07-31. */
+    filingDeadline?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    status?: InputMaybe<GqlSAdminTaxYearStatus>;
+    /** Omit to create a new year; supply to update an existing one. */
+    taxYearId?: InputMaybe<Scalars['ID']['input']>;
+    /** The calendar year the return covers, e.g. 2025. Must be unique. */
+    year: Scalars['Int']['input'];
+};
+
+export type GqlSAdminTaxYearStatus = 'closed' | 'collecting' | 'filing' | 'open' | 'submitted';
 
 export interface GqlSAdminTravelQuery {
     __typename?: 'AdminTravelQuery';
@@ -2474,6 +2694,24 @@ export type GqlSResolversTypes = ResolversObject<{
     AdminProjectTaskStatus: GqlSAdminProjectTaskStatus;
     AdminProjectTaskWhenBucket: GqlSAdminProjectTaskWhenBucket;
     AdminProjectTimerStartInput: GqlSAdminProjectTimerStartInput;
+    AdminTaxDocument: ResolverTypeWrapper<GqlSAdminTaxDocument>;
+    AdminTaxDocumentInput: GqlSAdminTaxDocumentInput;
+    AdminTaxDocumentKind: GqlSAdminTaxDocumentKind;
+    AdminTaxDocumentStatus: GqlSAdminTaxDocumentStatus;
+    AdminTaxExpense: ResolverTypeWrapper<GqlSAdminTaxExpense>;
+    AdminTaxExpenseCategory: GqlSAdminTaxExpenseCategory;
+    AdminTaxExpenseInput: GqlSAdminTaxExpenseInput;
+    AdminTaxFile: ResolverTypeWrapper<GqlSAdminTaxFile>;
+    AdminTaxFileAttachInput: GqlSAdminTaxFileAttachInput;
+    AdminTaxFileKind: GqlSAdminTaxFileKind;
+    AdminTaxFileUpsert: GqlSAdminTaxFileUpsert;
+    AdminTaxIncomeKind: GqlSAdminTaxIncomeKind;
+    AdminTaxIncomeSource: ResolverTypeWrapper<GqlSAdminTaxIncomeSource>;
+    AdminTaxIncomeSourceInput: GqlSAdminTaxIncomeSourceInput;
+    AdminTaxQuery: ResolverTypeWrapper<GqlSAdminTaxQuery>;
+    AdminTaxYear: ResolverTypeWrapper<GqlSAdminTaxYear>;
+    AdminTaxYearInput: GqlSAdminTaxYearInput;
+    AdminTaxYearStatus: GqlSAdminTaxYearStatus;
     AdminTravelQuery: ResolverTypeWrapper<GqlSAdminTravelQuery>;
     AdminTravelTransportMode: GqlSAdminTravelTransportMode;
     AdminTravelTrip: ResolverTypeWrapper<GqlSAdminTravelTrip>;
@@ -2667,6 +2905,18 @@ export type GqlSResolversParentTypes = ResolversObject<{
     AdminProjectTask: GqlSAdminProjectTask;
     AdminProjectTaskCreate: GqlSAdminProjectTaskCreate;
     AdminProjectTimerStartInput: GqlSAdminProjectTimerStartInput;
+    AdminTaxDocument: GqlSAdminTaxDocument;
+    AdminTaxDocumentInput: GqlSAdminTaxDocumentInput;
+    AdminTaxExpense: GqlSAdminTaxExpense;
+    AdminTaxExpenseInput: GqlSAdminTaxExpenseInput;
+    AdminTaxFile: GqlSAdminTaxFile;
+    AdminTaxFileAttachInput: GqlSAdminTaxFileAttachInput;
+    AdminTaxFileUpsert: GqlSAdminTaxFileUpsert;
+    AdminTaxIncomeSource: GqlSAdminTaxIncomeSource;
+    AdminTaxIncomeSourceInput: GqlSAdminTaxIncomeSourceInput;
+    AdminTaxQuery: GqlSAdminTaxQuery;
+    AdminTaxYear: GqlSAdminTaxYear;
+    AdminTaxYearInput: GqlSAdminTaxYearInput;
     AdminTravelQuery: GqlSAdminTravelQuery;
     AdminTravelTrip: GqlSAdminTravelTrip;
     AdminTravelTripActivity: GqlSAdminTravelTripActivity;
@@ -2812,6 +3062,7 @@ export type GqlSAdminResolvers<
     >;
     adminStandaloneTaskFindMany?: Resolver<Array<GqlSResolversTypes['AdminProjectTask']>, ParentType, ContextType>;
     adminStandaloneTaskOpenCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminTaxFindOne?: Resolver<GqlSResolversTypes['AdminTaxQuery'], ParentType, ContextType>;
     adminTravelFindOne?: Resolver<GqlSResolversTypes['AdminTravelQuery'], ParentType, ContextType>;
 }>;
 
@@ -3643,6 +3894,72 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationAdminProjectsUpsertArgs, 'projects'>
     >;
+    adminTaxDocumentsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxDocumentsDeleteArgs, 'documentIds'>
+    >;
+    adminTaxDocumentsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxDocumentsUpsertArgs, 'taxDocuments'>
+    >;
+    adminTaxExpensesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxExpensesDeleteArgs, 'expenseIds'>
+    >;
+    adminTaxExpensesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxExpensesUpsertArgs, 'taxExpenses'>
+    >;
+    adminTaxFilesAttach?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxFilesAttachArgs, 'inputs'>
+    >;
+    adminTaxFilesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxFilesDeleteArgs, 'taxFileIds'>
+    >;
+    adminTaxFilesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxFilesUpsertArgs, 'inputs'>
+    >;
+    adminTaxIncomeSourcesDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxIncomeSourcesDeleteArgs, 'incomeSourceIds'>
+    >;
+    adminTaxIncomeSourcesUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxIncomeSourcesUpsertArgs, 'taxIncomeSources'>
+    >;
+    adminTaxYearsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxYearsDeleteArgs, 'taxYearIds'>
+    >;
+    adminTaxYearsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminTaxYearsUpsertArgs, 'taxYears'>
+    >;
     adminTravelTripActivitiesDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -4054,6 +4371,92 @@ export type GqlSAdminProjectTaskResolvers<
     title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     whenBucket?: Resolver<Maybe<GqlSResolversTypes['AdminProjectTaskWhenBucket']>, ParentType, ContextType>;
+}>;
+
+export type GqlSAdminTaxDocumentResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminTaxDocument'] = GqlSResolversParentTypes['AdminTaxDocument'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    documentId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    files?: Resolver<Array<GqlSResolversTypes['AdminTaxFile']>, ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['AdminTaxDocumentKind'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['AdminTaxDocumentStatus'], ParentType, ContextType>;
+    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminTaxExpenseResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminTaxExpense'] = GqlSResolversParentTypes['AdminTaxExpense'],
+> = ResolversObject<{
+    amountCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    categoryKey?: Resolver<GqlSResolversTypes['AdminTaxExpenseCategory'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    deductible?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    description?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    expenseId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    files?: Resolver<Array<GqlSResolversTypes['AdminTaxFile']>, ParentType, ContextType>;
+    incomeSourceId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    incurredOn?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminTaxFileResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminTaxFile'] = GqlSResolversParentTypes['AdminTaxFile'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    documentId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    expenseId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    fileUpload?: Resolver<GqlSResolversTypes['FileUpload'], ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['AdminTaxFileKind'], ParentType, ContextType>;
+    label?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    pinned?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    taxFileId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    taxYearId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminTaxIncomeSourceResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminTaxIncomeSource'] = GqlSResolversParentTypes['AdminTaxIncomeSource'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    grossAmountCents?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    incomeSourceId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['AdminTaxIncomeKind'], ParentType, ContextType>;
+    label?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminTaxQueryResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminTaxQuery'] = GqlSResolversParentTypes['AdminTaxQuery'],
+> = ResolversObject<{
+    adminTaxYearFindMany?: Resolver<Array<GqlSResolversTypes['AdminTaxYear']>, ParentType, ContextType>;
+}>;
+
+export type GqlSAdminTaxYearResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminTaxYear'] = GqlSResolversParentTypes['AdminTaxYear'],
+> = ResolversObject<{
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    documents?: Resolver<Array<GqlSResolversTypes['AdminTaxDocument']>, ParentType, ContextType>;
+    expenses?: Resolver<Array<GqlSResolversTypes['AdminTaxExpense']>, ParentType, ContextType>;
+    filingDeadline?: Resolver<Maybe<GqlSResolversTypes['Date']>, ParentType, ContextType>;
+    incomeSources?: Resolver<Array<GqlSResolversTypes['AdminTaxIncomeSource']>, ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    status?: Resolver<GqlSResolversTypes['AdminTaxYearStatus'], ParentType, ContextType>;
+    submittedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    taxYearId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    totalDeductibleCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    totalIncomeCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    year?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type GqlSAdminTravelQueryResolvers<
@@ -4845,6 +5248,12 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     AdminProjectLink?: GqlSAdminProjectLinkResolvers<ContextType>;
     AdminProjectRequest?: GqlSAdminProjectRequestResolvers<ContextType>;
     AdminProjectTask?: GqlSAdminProjectTaskResolvers<ContextType>;
+    AdminTaxDocument?: GqlSAdminTaxDocumentResolvers<ContextType>;
+    AdminTaxExpense?: GqlSAdminTaxExpenseResolvers<ContextType>;
+    AdminTaxFile?: GqlSAdminTaxFileResolvers<ContextType>;
+    AdminTaxIncomeSource?: GqlSAdminTaxIncomeSourceResolvers<ContextType>;
+    AdminTaxQuery?: GqlSAdminTaxQueryResolvers<ContextType>;
+    AdminTaxYear?: GqlSAdminTaxYearResolvers<ContextType>;
     AdminTravelQuery?: GqlSAdminTravelQueryResolvers<ContextType>;
     AdminTravelTrip?: GqlSAdminTravelTripResolvers<ContextType>;
     AdminTravelTripActivity?: GqlSAdminTravelTripActivityResolvers<ContextType>;
@@ -5140,6 +5549,32 @@ export const GqlSAdminProjectTaskWhenBucketSchema: z.ZodType<
     'someday' | 'today' | 'waiting' | 'week',
     'someday' | 'today' | 'waiting' | 'week'
 > = z.enum(['someday', 'today', 'waiting', 'week']);
+
+export const GqlSAdminTaxDocumentKindSchema: z.ZodType<
+    'bankStatement' | 'donationReceipt' | 'euer' | 'insuranceStatement' | 'lohnsteuerbescheinigung' | 'minijobConfirmation' | 'other',
+    'bankStatement' | 'donationReceipt' | 'euer' | 'insuranceStatement' | 'lohnsteuerbescheinigung' | 'minijobConfirmation' | 'other'
+> = z.enum(['bankStatement', 'donationReceipt', 'euer', 'insuranceStatement', 'lohnsteuerbescheinigung', 'minijobConfirmation', 'other']);
+
+export const GqlSAdminTaxDocumentStatusSchema: z.ZodType<'needed' | 'notApplicable' | 'received', 'needed' | 'notApplicable' | 'received'> =
+    z.enum(['needed', 'notApplicable', 'received']);
+
+export const GqlSAdminTaxExpenseCategorySchema: z.ZodType<
+    'businessExpense' | 'extraordinary' | 'homeOffice' | 'insurance' | 'other' | 'specialExpenses' | 'workRelated',
+    'businessExpense' | 'extraordinary' | 'homeOffice' | 'insurance' | 'other' | 'specialExpenses' | 'workRelated'
+> = z.enum(['businessExpense', 'extraordinary', 'homeOffice', 'insurance', 'other', 'specialExpenses', 'workRelated']);
+
+export const GqlSAdminTaxFileKindSchema: z.ZodType<'other' | 'receipt' | 'scan' | 'statement', 'other' | 'receipt' | 'scan' | 'statement'> =
+    z.enum(['other', 'receipt', 'scan', 'statement']);
+
+export const GqlSAdminTaxIncomeKindSchema: z.ZodType<
+    'business' | 'capital' | 'employment' | 'minijob' | 'other' | 'selfEmployment',
+    'business' | 'capital' | 'employment' | 'minijob' | 'other' | 'selfEmployment'
+> = z.enum(['business', 'capital', 'employment', 'minijob', 'other', 'selfEmployment']);
+
+export const GqlSAdminTaxYearStatusSchema: z.ZodType<
+    'closed' | 'collecting' | 'filing' | 'open' | 'submitted',
+    'closed' | 'collecting' | 'filing' | 'open' | 'submitted'
+> = z.enum(['closed', 'collecting', 'filing', 'open', 'submitted']);
 
 export const GqlSAdminTravelTransportModeSchema: z.ZodType<
     'car' | 'ferry' | 'flight' | 'mixed' | 'train',
@@ -5588,6 +6023,81 @@ export function GqlSAdminProjectTimerStartInputSchema(): z.ZodObject<Properties<
         projectId: z.string(),
         taskId: z.string().nullish(),
         title: z.string().nullish(),
+    });
+}
+
+export function GqlSAdminTaxDocumentInputSchema(): z.ZodObject<Properties<GqlSAdminTaxDocumentInput>> {
+    return z.object({
+        documentId: z.string().nullish().describe('Omit to create; supply to update (e.g. to flip status to received).'),
+        kind: GqlSAdminTaxDocumentKindSchema,
+        notes: z.string().nullish(),
+        status: GqlSAdminTaxDocumentStatusSchema.nullish(),
+        taxYearId: z.string(),
+        title: z.string().describe("Checklist label, e.g. 'Lohnsteuerbescheinigung 2025'."),
+    });
+}
+
+export function GqlSAdminTaxExpenseInputSchema(): z.ZodObject<Properties<GqlSAdminTaxExpenseInput>> {
+    return z.object({
+        amountCents: z.number().describe('Amount in cents (e.g. 89900 for 899,00 €).'),
+        categoryKey: GqlSAdminTaxExpenseCategorySchema.describe(
+            'businessExpense=Betriebsausgabe, workRelated=Werbungskosten, specialExpenses=Sonderausgaben, insurance=Vorsorgeaufwendungen, extraordinary=außergewöhnliche Belastung, homeOffice=Homeoffice-Pauschale.',
+        ),
+        deductible: z.boolean().nullish().describe('Whether this counts toward the deductible total. Defaults to true.'),
+        description: z.string().describe("What the expense was, e.g. 'MacBook Pro' or 'Fahrtkosten Januar'."),
+        expenseId: z.string().nullish().describe('Omit to create; supply to update.'),
+        incomeSourceId: z
+            .string()
+            .nullish()
+            .describe(
+                'Optional link to the income source this expense offsets (Betriebsausgabe ↔ selfEmployment, Werbungskosten ↔ employment).',
+            ),
+        incurredOn: z.string().nullish().describe('When the expense was incurred, ISO date (yyyy-mm-dd).'),
+        notes: z.string().nullish(),
+        taxYearId: z.string(),
+    });
+}
+
+export function GqlSAdminTaxFileAttachInputSchema(): z.ZodObject<Properties<GqlSAdminTaxFileAttachInput>> {
+    return z.object({
+        documentId: z.string().nullish().describe('Optional: attach as a scan of this checklist document.'),
+        expenseId: z.string().nullish().describe('Optional: attach as a receipt for this expense.'),
+        fileUploadId: z.string(),
+        kind: GqlSAdminTaxFileKindSchema,
+        label: z.string().nullish(),
+        pinned: z.boolean().nullish(),
+        taxYearId: z.string(),
+    });
+}
+
+export function GqlSAdminTaxFileUpsertSchema(): z.ZodObject<Properties<GqlSAdminTaxFileUpsert>> {
+    return z.object({
+        label: z.string().nullish(),
+        pinned: z.boolean().nullish(),
+        taxFileId: z.string(),
+    });
+}
+
+export function GqlSAdminTaxIncomeSourceInputSchema(): z.ZodObject<Properties<GqlSAdminTaxIncomeSourceInput>> {
+    return z.object({
+        grossAmountCents: z.number().nullish().describe('Gross income in cents (e.g. 4500000 for 45.000 €). Omit if not yet known.'),
+        incomeSourceId: z.string().nullish().describe('Omit to create; supply to update.'),
+        kind: GqlSAdminTaxIncomeKindSchema.describe(
+            'Which Anlage this income belongs to: employment=Anlage N, selfEmployment=Anlage S, business=Anlage G, minijob=geringfügige Beschäftigung, capital=Anlage KAP.',
+        ),
+        label: z.string().describe("Human label, e.g. 'SAP – Festanstellung' or 'Freelance-Entwicklung'."),
+        notes: z.string().nullish(),
+        taxYearId: z.string(),
+    });
+}
+
+export function GqlSAdminTaxYearInputSchema(): z.ZodObject<Properties<GqlSAdminTaxYearInput>> {
+    return z.object({
+        filingDeadline: z.string().nullish().describe('Filing deadline as an ISO date (yyyy-mm-dd), e.g. 2026-07-31.'),
+        notes: z.string().nullish(),
+        status: GqlSAdminTaxYearStatusSchema.nullish(),
+        taxYearId: z.string().nullish().describe('Omit to create a new year; supply to update an existing one.'),
+        year: z.number().describe('The calendar year the return covers, e.g. 2025. Must be unique.'),
     });
 }
 

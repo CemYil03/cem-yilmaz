@@ -1,0 +1,179 @@
+# Workspace Tax editor operations. Co-located with `/workspace/tax`.
+# Seed-and-subscribe posture: the loader query and the live `userUpdates`
+# subscription spread `WorkspaceTaxPageUser`, so every mutation publishes on
+# the user channel and the page picks up the new payload over SSE without a
+# re-fetch. See `docs/architecture/state-synchronization.md` and
+# `docs/features/workspace-tax.md`.
+
+fragment WorkspaceTaxFile on AdminTaxFile {
+    taxFileId
+    taxYearId
+    expenseId
+    documentId
+    label
+    kind
+    pinned
+    fileUpload {
+        fileUploadId
+        filename
+        mediaType
+        size
+        url
+    }
+    createdAt
+    updatedAt
+}
+
+fragment WorkspaceTaxPageUser on User {
+    admin {
+        adminTaxFindOne {
+            adminTaxYearFindMany {
+                taxYearId
+                year
+                status
+                filingDeadline
+                submittedAt
+                notes
+                totalIncomeCents
+                totalDeductibleCents
+                incomeSources {
+                    incomeSourceId
+                    kind
+                    label
+                    grossAmountCents
+                    notes
+                    createdAt
+                    updatedAt
+                }
+                expenses {
+                    expenseId
+                    incomeSourceId
+                    categoryKey
+                    description
+                    amountCents
+                    incurredOn
+                    deductible
+                    notes
+                    files {
+                        ...WorkspaceTaxFile
+                    }
+                    createdAt
+                    updatedAt
+                }
+                documents {
+                    documentId
+                    kind
+                    title
+                    status
+                    notes
+                    files {
+                        ...WorkspaceTaxFile
+                    }
+                    createdAt
+                    updatedAt
+                }
+                createdAt
+                updatedAt
+            }
+        }
+    }
+}
+
+query WorkspaceTaxPage {
+    sessionFindOne {
+        user {
+            ...WorkspaceTaxPageUser
+        }
+    }
+}
+
+subscription WorkspaceTaxPageUpdates {
+    userUpdates {
+        ...WorkspaceTaxPageUser
+    }
+}
+
+mutation WorkspaceTaxYearsUpsert($taxYears: [AdminTaxYearInput!]!) {
+    admin {
+        adminTaxYearsUpsert(taxYears: $taxYears) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceTaxYearsDelete($taxYearIds: [ID!]!) {
+    admin {
+        adminTaxYearsDelete(taxYearIds: $taxYearIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTaxIncomeSourcesUpsert($taxIncomeSources: [AdminTaxIncomeSourceInput!]!) {
+    admin {
+        adminTaxIncomeSourcesUpsert(taxIncomeSources: $taxIncomeSources) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceTaxIncomeSourcesDelete($incomeSourceIds: [ID!]!) {
+    admin {
+        adminTaxIncomeSourcesDelete(incomeSourceIds: $incomeSourceIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTaxExpensesUpsert($taxExpenses: [AdminTaxExpenseInput!]!) {
+    admin {
+        adminTaxExpensesUpsert(taxExpenses: $taxExpenses) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceTaxExpensesDelete($expenseIds: [ID!]!) {
+    admin {
+        adminTaxExpensesDelete(expenseIds: $expenseIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTaxDocumentsUpsert($taxDocuments: [AdminTaxDocumentInput!]!) {
+    admin {
+        adminTaxDocumentsUpsert(taxDocuments: $taxDocuments) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceTaxDocumentsDelete($documentIds: [ID!]!) {
+    admin {
+        adminTaxDocumentsDelete(documentIds: $documentIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceTaxFilesAttach($inputs: [AdminTaxFileAttachInput!]!) {
+    admin {
+        adminTaxFilesAttach(inputs: $inputs) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceTaxFilesDelete($taxFileIds: [ID!]!) {
+    admin {
+        adminTaxFilesDelete(taxFileIds: $taxFileIds) {
+            success
+        }
+    }
+}

@@ -29,6 +29,17 @@ import { adminInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert
 import { adminFinancesMonthlyNetIncomeSet } from '../commands/adminFinancesMonthlyNetIncomeSet';
 import { adminFinancesRecurringCostsDelete } from '../commands/adminFinancesRecurringCostsDelete';
 import { adminFinancesRecurringCostsUpsert } from '../commands/adminFinancesRecurringCostsUpsert';
+import { adminTaxYearsUpsert } from '../commands/adminTaxYearsUpsert';
+import { adminTaxYearsDelete } from '../commands/adminTaxYearsDelete';
+import { adminTaxIncomeSourcesUpsert } from '../commands/adminTaxIncomeSourcesUpsert';
+import { adminTaxIncomeSourcesDelete } from '../commands/adminTaxIncomeSourcesDelete';
+import { adminTaxExpensesUpsert } from '../commands/adminTaxExpensesUpsert';
+import { adminTaxExpensesDelete } from '../commands/adminTaxExpensesDelete';
+import { adminTaxDocumentsUpsert } from '../commands/adminTaxDocumentsUpsert';
+import { adminTaxDocumentsDelete } from '../commands/adminTaxDocumentsDelete';
+import { adminTaxFilesAttach } from '../commands/adminTaxFilesAttach';
+import { adminTaxFilesUpsert } from '../commands/adminTaxFilesUpsert';
+import { adminTaxFilesDelete } from '../commands/adminTaxFilesDelete';
 import { adminMediaChannelsDelete } from '../commands/adminMediaChannelsDelete';
 import { adminMediaChannelReorder } from '../commands/adminMediaChannelReorder';
 import { adminMediaChannelsUpsert } from '../commands/adminMediaChannelsUpsert';
@@ -140,6 +151,7 @@ import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInve
 import { adminFinancesExpensesCentsFindOne } from '../queries/adminFinancesExpensesCentsFindOne';
 import { adminFinancesMonthlyNetIncomeCentsFindOne } from '../queries/adminFinancesMonthlyNetIncomeCentsFindOne';
 import { adminFinancesRecurringCostFindMany } from '../queries/adminFinancesRecurringCostFindMany';
+import { adminTaxYearFindMany } from '../queries/adminTaxYearFindMany';
 import { adminMediaMovieFindMany } from '../queries/adminMediaMovieFindMany';
 import { adminMediaShowFindMany } from '../queries/adminMediaShowFindMany';
 import { adminCompassFindOne } from '../queries/adminCompassFindOne';
@@ -220,6 +232,18 @@ import type {
     GqlSAdminMutationAdminFinancesMonthlyNetIncomeSetArgs,
     GqlSAdminMutationAdminFinancesRecurringCostsDeleteArgs,
     GqlSAdminMutationAdminFinancesRecurringCostsUpsertArgs,
+    GqlSAdminTaxQuery,
+    GqlSAdminMutationAdminTaxYearsUpsertArgs,
+    GqlSAdminMutationAdminTaxYearsDeleteArgs,
+    GqlSAdminMutationAdminTaxIncomeSourcesUpsertArgs,
+    GqlSAdminMutationAdminTaxIncomeSourcesDeleteArgs,
+    GqlSAdminMutationAdminTaxExpensesUpsertArgs,
+    GqlSAdminMutationAdminTaxExpensesDeleteArgs,
+    GqlSAdminMutationAdminTaxDocumentsUpsertArgs,
+    GqlSAdminMutationAdminTaxDocumentsDeleteArgs,
+    GqlSAdminMutationAdminTaxFilesAttachArgs,
+    GqlSAdminMutationAdminTaxFilesUpsertArgs,
+    GqlSAdminMutationAdminTaxFilesDeleteArgs,
     GqlSAdminMediaQuery,
     GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
     GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
@@ -484,6 +508,12 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             adminFinancesFindOne(): GqlSAdminFinancesQuery {
                 return {} as GqlSAdminFinancesQuery;
             },
+            // Tax namespace — same shell pattern. The single per-field resolver
+            // on `AdminTaxQuery` returns fully-hydrated tax years (children +
+            // computed totals). See `docs/features/workspace-tax.md`.
+            adminTaxFindOne(): GqlSAdminTaxQuery {
+                return {} as GqlSAdminTaxQuery;
+            },
             // Nutrition namespace — same shell pattern. Per-field resolvers on
             // `AdminNutritionQuery` fan out to the cookbook / meal-plan / diary
             // lists. See `docs/features/workspace-nutrition.md`.
@@ -702,6 +732,11 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             async adminFinancesYearlyExpensesCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
                 const totals = await adminFinancesExpensesCentsFindOne(requestingSession, serverRuntime);
                 return totals.yearlyCents;
+            },
+        },
+        AdminTaxQuery: {
+            adminTaxYearFindMany(_parent: GqlSAdminTaxQuery, __: any, requestingSession: GqlSSession) {
+                return adminTaxYearFindMany(requestingSession, serverRuntime);
             },
         },
         AdminMutation: {
@@ -1321,6 +1356,83 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return adminFinancesMonthlyNetIncomeSet(userId, args, requestingSession, serverRuntime);
+            },
+            adminTaxYearsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxYearsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxYearsUpsert(userId, args.taxYears, requestingSession, serverRuntime);
+            },
+            adminTaxYearsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxYearsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxYearsDelete(userId, args.taxYearIds, requestingSession, serverRuntime);
+            },
+            adminTaxIncomeSourcesUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxIncomeSourcesUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxIncomeSourcesUpsert(userId, args.taxIncomeSources, requestingSession, serverRuntime);
+            },
+            adminTaxIncomeSourcesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxIncomeSourcesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxIncomeSourcesDelete(userId, args.incomeSourceIds, requestingSession, serverRuntime);
+            },
+            adminTaxExpensesUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxExpensesUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxExpensesUpsert(userId, args.taxExpenses, requestingSession, serverRuntime);
+            },
+            adminTaxExpensesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxExpensesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxExpensesDelete(userId, args.expenseIds, requestingSession, serverRuntime);
+            },
+            adminTaxDocumentsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxDocumentsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxDocumentsUpsert(userId, args.taxDocuments, requestingSession, serverRuntime);
+            },
+            adminTaxDocumentsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxDocumentsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxDocumentsDelete(userId, args.documentIds, requestingSession, serverRuntime);
+            },
+            adminTaxFilesAttach(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxFilesAttachArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxFilesAttach(userId, args.inputs, requestingSession, serverRuntime);
+            },
+            adminTaxFilesUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxFilesUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxFilesUpsert(userId, args.inputs, requestingSession, serverRuntime);
+            },
+            adminTaxFilesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTaxFilesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTaxFilesDelete(userId, args.taxFileIds, requestingSession, serverRuntime);
             },
         },
         Query: {
