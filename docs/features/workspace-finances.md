@@ -134,8 +134,30 @@ hook, imperative URQL over `wonka`. If `user.admin` is null → `<WorkspaceUnaut
 
 - `AdminInventoryQuery.adminInventoryMaterialNetWorthCentsFindOne` already exists and is a natural addition to the overview strip — noted in
   _Future work_.
-- The workspace assistant sub-agent factory (`src/server/agents/agentPersonalAssistant*.ts`) could gain a `delegateToFinances` tool that
-  writes recurring costs from natural language, mirroring `agentPersonalAssistantTravel.ts`. Not built in v1.
+- The workspace assistant sub-agent factory (`src/server/agents/agentPersonalAssistantFinances.ts`) gains recurring costs from natural
+  language via `delegateToFinances`, mirroring `agentPersonalAssistantTravel.ts`. See _Assistant integration_ below.
+
+## Assistant integration
+
+The workspace assistant can create, edit, pause, and delete recurring costs — and set / clear the monthly net-income baseline — from natural
+language, so "Ich zahle für Apple One 25,95 im Monat, bitte füge das meinen Ausgaben hinzu" lands a `subscriptions` / `monthly` /
+`amountCents: 2595` row without opening the page. This follows the orchestrator + sub-agent recipe in
+[../architecture/agent-delegation.md](../architecture/agent-delegation.md), mirroring the travel domain 1:1:
+
+- **Sub-agent** — `src/server/agents/agentPersonalAssistantFinances.ts`. System prompt carries the persona, the cents-conversion rule
+  ("25,95 im Monat" → `amountCents: 2595, cadence: "monthly"`), the "add to my expenses = recurring cost, there is no dated-transaction
+  model" rule, and the `needsMoreInfo` / `noOp` sentinel contract (asks for the amount when a new cost has only a name).
+- **Snapshot** — `src/server/agents/financesSnapshotForAgent.ts` inlines every cost grouped by category (with ids), the income baseline, and
+  the current monthly/yearly totals, so the sub-agent answers "how much do I spend?" straight from its prompt.
+- **Tools** — thin wrappers over the same commands/queries the resolvers use: `toolFinanceRecurringCostsUpsert` (reuses the generated,
+  Gemini-safe `GqlSFinanceRecurringCostInputSchema()`), `toolFinanceRecurringCostsDelete`, `toolFinanceMonthlyNetIncomeSet`, and the
+  read-only `toolFinanceRecurringCostsList`. Pausing rides the upsert with `active: false` — the softer alternative to a hard delete.
+- **Delegate** — `toolDelegateToFinances` (orchestrator-side), registered in `agentPersonalAssistant.ts`. Writes fan out `userUpdates`, so
+  the open finances page re-renders the new totals + Sankey without a manual refresh.
+
+No deep-link template exists for finances yet: `/workspace/finances` has no `focus` search param (unlike projects / media / medical), so the
+assistant names costs in plain text rather than linking to them. Adding `focus` scroll/flash handling to the route would let a template land
+later.
 
 ## Future work
 
@@ -148,4 +170,3 @@ hook, imperative URQL over `wonka`. If `user.admin` is null → `<WorkspaceUnaut
 - **Bank CSV import.** Once transactions exist, import them from bank statements and let a small classifier assign categories.
 - **Multi-currency.** The `currency` column is written and stored; the UI is EUR-only. When it stops being EUR-only, add a settings row for
   base currency and a rate table.
-- **Assistant sub-agent.** `agentPersonalAssistantFinances` + `delegateToFinances` — same recipe as travel / media.

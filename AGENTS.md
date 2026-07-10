@@ -93,6 +93,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Travel                | Trips → days → activities + per-trip packing list; planner sub-agent writes durable itineraries from chat | `docs/features/workspace-travel.md`            |
 | Nutrition             | Cookbook + soft weekly meal plan + food/drink diary; sub-agent suggests snacks and logs intake            | `docs/features/workspace-nutrition.md`         |
 | Fitness               | Gym log (sessions → sets) + reusable routines + exercise catalog; sub-agent logs workouts from chat       | `docs/features/workspace-fitness.md`           |
+| Finances              | Recurring-cost tracker (income → categories → items Sankey); sub-agent adds/edits costs from chat         | `docs/features/workspace-finances.md`          |
 
 ## How to Add Things
 

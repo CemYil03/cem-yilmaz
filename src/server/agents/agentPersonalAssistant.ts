@@ -10,6 +10,7 @@ import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolDelegateToTravel } from './toolDelegateToTravel';
 import { toolDelegateToNutrition } from './toolDelegateToNutrition';
 import { toolDelegateToFitness } from './toolDelegateToFitness';
+import { toolDelegateToFinances } from './toolDelegateToFinances';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
@@ -232,6 +233,18 @@ export async function agentPersonalAssistant({
             // catalog. Logs workouts from chat and answers progression
             // questions. See `docs/features/workspace-fitness.md`.
             delegateToFitness: toolDelegateToFitness({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Finances sub-agent — recurring costs (rent, insurance,
+            // subscriptions, …) and the monthly net-income baseline. Writes to
+            // Postgres so `/workspace/finances` and its totals update. This is
+            // the "add this to my expenses / subscriptions" path. See
+            // `docs/features/workspace-finances.md`.
+            delegateToFinances: toolDelegateToFinances({
                 serverRuntime,
                 session,
                 chatId,
