@@ -1979,19 +1979,16 @@ export type TripPackingItemCreate = typeof tripPackingItems.$inferInsert;
 
 export const financeRecurringCostCategories = [
     'housing',
-    'utilities',
     'connectivity',
     'transport',
     'insurance',
     'subscriptionsEntertainment',
     'subscriptionsWork',
     'memberships',
-    'health',
     'donations',
     'household',
     'savingsGeneral',
     'savingsVacation',
-    'finance',
     'other',
 ] as const;
 export type FinanceRecurringCostCategory = (typeof financeRecurringCostCategories)[number];

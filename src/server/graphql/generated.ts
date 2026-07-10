@@ -1137,8 +1137,6 @@ export interface GqlSFinanceRecurringCost {
 export type GqlSFinanceRecurringCostCategory =
     | 'connectivity'
     | 'donations'
-    | 'finance'
-    | 'health'
     | 'household'
     | 'housing'
     | 'insurance'
@@ -1148,8 +1146,7 @@ export type GqlSFinanceRecurringCostCategory =
     | 'savingsVacation'
     | 'subscriptionsEntertainment'
     | 'subscriptionsWork'
-    | 'transport'
-    | 'utilities';
+    | 'transport';
 
 export type GqlSFinanceRecurringCostInput = {
     active?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4777,8 +4774,6 @@ export const GqlSFinanceCadenceSchema: z.ZodType<'monthly' | 'yearly', 'monthly'
 export const GqlSFinanceRecurringCostCategorySchema: z.ZodType<
     | 'connectivity'
     | 'donations'
-    | 'finance'
-    | 'health'
     | 'household'
     | 'housing'
     | 'insurance'
@@ -4788,12 +4783,9 @@ export const GqlSFinanceRecurringCostCategorySchema: z.ZodType<
     | 'savingsVacation'
     | 'subscriptionsEntertainment'
     | 'subscriptionsWork'
-    | 'transport'
-    | 'utilities',
+    | 'transport',
     | 'connectivity'
     | 'donations'
-    | 'finance'
-    | 'health'
     | 'household'
     | 'housing'
     | 'insurance'
@@ -4804,12 +4796,9 @@ export const GqlSFinanceRecurringCostCategorySchema: z.ZodType<
     | 'subscriptionsEntertainment'
     | 'subscriptionsWork'
     | 'transport'
-    | 'utilities'
 > = z.enum([
     'connectivity',
     'donations',
-    'finance',
-    'health',
     'household',
     'housing',
     'insurance',
@@ -4820,7 +4809,6 @@ export const GqlSFinanceRecurringCostCategorySchema: z.ZodType<
     'subscriptionsEntertainment',
     'subscriptionsWork',
     'transport',
-    'utilities',
 ]);
 
 export const GqlSFoodLogKindSchema: z.ZodType<'drink' | 'food', 'drink' | 'food'> = z.enum(['drink', 'food']);

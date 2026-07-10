@@ -2343,19 +2343,16 @@ extend type AdminMutation {
 
 enum FinanceRecurringCostCategory {
     housing
-    utilities
     connectivity
     transport
     insurance
     subscriptionsEntertainment
     subscriptionsWork
     memberships
-    health
     donations
     household
     savingsGeneral
     savingsVacation
-    finance
     other
 }
 

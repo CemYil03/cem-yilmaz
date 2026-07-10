@@ -1140,8 +1140,6 @@ export interface GqlCFinanceRecurringCost {
 export type GqlCFinanceRecurringCostCategory =
     | 'connectivity'
     | 'donations'
-    | 'finance'
-    | 'health'
     | 'household'
     | 'housing'
     | 'insurance'
@@ -1151,8 +1149,7 @@ export type GqlCFinanceRecurringCostCategory =
     | 'savingsVacation'
     | 'subscriptionsEntertainment'
     | 'subscriptionsWork'
-    | 'transport'
-    | 'utilities';
+    | 'transport';
 
 export type GqlCFinanceRecurringCostInput = {
     active?: InputMaybe<Scalars['Boolean']['input']>;

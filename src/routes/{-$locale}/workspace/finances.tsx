@@ -8,7 +8,6 @@ import {
     CodeIcon,
     HandHeartIcon,
     HeartHandshakeIcon,
-    HeartPulseIcon,
     HomeIcon,
     LayersIcon,
     PencilIcon,
@@ -19,9 +18,7 @@ import {
     SmartphoneIcon,
     SparklesIcon,
     Trash2Icon,
-    TrendingUpIcon,
     UsersIcon,
-    ZapIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -80,53 +77,44 @@ const description = { de: 'Laufende Kosten und ein Sankey deiner Ausgaben.', en:
 
 const CATEGORY_ORDER: ReadonlyArray<GqlCFinanceRecurringCostCategory> = [
     'housing',
-    'utilities',
     'connectivity',
     'transport',
     'insurance',
     'subscriptionsEntertainment',
     'subscriptionsWork',
     'memberships',
-    'health',
     'donations',
     'household',
     'savingsGeneral',
     'savingsVacation',
-    'finance',
     'other',
 ];
 const CATEGORY_LABELS: Record<GqlCFinanceRecurringCostCategory, { de: string; en: string }> = {
     housing: { de: 'Wohnen', en: 'Housing' },
-    utilities: { de: 'Nebenkosten', en: 'Utilities' },
     connectivity: { de: 'Kommunikation', en: 'Connectivity' },
     transport: { de: 'Verkehr', en: 'Transport' },
     insurance: { de: 'Versicherungen', en: 'Insurance' },
     subscriptionsEntertainment: { de: 'Abos (Unterhaltung)', en: 'Subscriptions (Entertainment)' },
     subscriptionsWork: { de: 'Abos (Arbeit)', en: 'Subscriptions (Work)' },
     memberships: { de: 'Vereinsbeiträge', en: 'Memberships' },
-    health: { de: 'Gesundheit', en: 'Health' },
     donations: { de: 'Spenden', en: 'Donations' },
     household: { de: 'Haushalt', en: 'Household' },
     savingsGeneral: { de: 'Sparen (Allgemein)', en: 'Savings (General)' },
     savingsVacation: { de: 'Sparen (Urlaub)', en: 'Savings (Vacation)' },
-    finance: { de: 'Finanzen', en: 'Finance' },
     other: { de: 'Sonstiges', en: 'Other' },
 };
 const CATEGORY_ICONS: Record<GqlCFinanceRecurringCostCategory, LucideIcon> = {
     housing: HomeIcon,
-    utilities: ZapIcon,
     connectivity: SmartphoneIcon,
     transport: CarIcon,
     insurance: Building2Icon,
     subscriptionsEntertainment: SparklesIcon,
     subscriptionsWork: CodeIcon,
     memberships: UsersIcon,
-    health: HeartPulseIcon,
     donations: HandHeartIcon,
     household: HeartHandshakeIcon,
     savingsGeneral: PiggyBankIcon,
     savingsVacation: PlaneIcon,
-    finance: TrendingUpIcon,
     other: LayersIcon,
 };
 
