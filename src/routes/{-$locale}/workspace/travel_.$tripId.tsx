@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
     CalendarDaysIcon,
+    CheckIcon,
     ClockIcon,
     ExternalLinkIcon,
     LuggageIcon,
@@ -28,6 +29,7 @@ import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../web/components/base/dialog';
 import { Input } from '../../../web/components/base/input';
+import { Popover, PopoverAnchor, PopoverContent } from '../../../web/components/base/popover';
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
@@ -852,7 +854,7 @@ function EditPackingItemDialog({
     const [notes, setNotes] = useState(initial?.notes ?? '');
     const [, upsert] = useMutation(WorkspaceTripPackingItemsUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
-    const categoryListId = 'packing-category-suggestions';
+    const [categoryOpen, setCategoryOpen] = useState(false);
 
     const categorySuggestions = useMemo(() => {
         const seen = new Set<string>();
@@ -868,6 +870,13 @@ function EditPackingItemDialog({
         }
         return out;
     }, [existingCategories, locale]);
+
+    const query = category.trim().toLowerCase();
+    const filteredCategories = useMemo(
+        () => (query.length === 0 ? categorySuggestions : categorySuggestions.filter((c) => c.toLowerCase().includes(query))),
+        [categorySuggestions, query],
+    );
+    const showAddCategory = query.length > 0 && !categorySuggestions.some((c) => c.toLowerCase() === query);
 
     const submit = async () => {
         setSubmitting(true);
@@ -903,18 +912,59 @@ function EditPackingItemDialog({
                 </DialogHeader>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FieldWithLabel label={{ de: 'Kategorie', en: 'Category' }[locale]}>
-                        <Input
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                            list={categoryListId}
-                            placeholder={{ de: 'Dokumente / Elektronik / …', en: 'Documents / Electronics / …' }[locale]}
-                            autoComplete="off"
-                        />
-                        <datalist id={categoryListId}>
-                            {categorySuggestions.map((suggestion) => (
-                                <option key={suggestion} value={suggestion} />
-                            ))}
-                        </datalist>
+                        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                            <PopoverAnchor asChild>
+                                <Input
+                                    value={category}
+                                    onChange={(e) => {
+                                        setCategory(e.target.value);
+                                        setCategoryOpen(true);
+                                    }}
+                                    onFocus={() => setCategoryOpen(true)}
+                                    placeholder={{ de: 'Dokumente / Elektronik / …', en: 'Documents / Electronics / …' }[locale]}
+                                    autoComplete="off"
+                                />
+                            </PopoverAnchor>
+                            {(filteredCategories.length > 0 || showAddCategory) && (
+                                <PopoverContent
+                                    align="start"
+                                    className="w-[--radix-popover-trigger-width] p-1"
+                                    onOpenAutoFocus={(e) => e.preventDefault()}
+                                >
+                                    <div className="max-h-56 overflow-y-auto">
+                                        {filteredCategories.map((suggestion) => {
+                                            const selected = suggestion.toLowerCase() === query;
+                                            return (
+                                                <button
+                                                    key={suggestion}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCategory(suggestion);
+                                                        setCategoryOpen(false);
+                                                    }}
+                                                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                                                >
+                                                    <CheckIcon className={cn('size-4 shrink-0', selected ? 'opacity-100' : 'opacity-0')} />
+                                                    <span className="truncate">{suggestion}</span>
+                                                </button>
+                                            );
+                                        })}
+                                        {showAddCategory && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setCategoryOpen(false)}
+                                                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                                            >
+                                                <PlusIcon className="size-4 shrink-0" />
+                                                <span className="truncate">
+                                                    {{ de: 'Hinzufügen', en: 'Add' }[locale]} „{category.trim()}“
+                                                </span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </PopoverContent>
+                            )}
+                        </Popover>
                     </FieldWithLabel>
                     <FieldWithLabel label={{ de: 'Anzahl', en: 'Quantity' }[locale]}>
                         <Input

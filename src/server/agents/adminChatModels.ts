@@ -58,7 +58,7 @@ export const ADMIN_CHAT_MODELS: readonly AdminChatModelDefinition[] = [
     { modelId: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', supportedMediaTypes: FLASH_MEDIA_TYPES },
     { modelId: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', supportedMediaTypes: PRO_MEDIA_TYPES },
     { modelId: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', supportedMediaTypes: FLASH_MEDIA_TYPES },
-    { modelId: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (preview)', supportedMediaTypes: PRO_MEDIA_TYPES },
+    { modelId: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', supportedMediaTypes: PRO_MEDIA_TYPES },
 ];
 
 const ADMIN_CHAT_MODEL_IDS: readonly AdminChatModelId[] = ADMIN_CHAT_MODELS.map((model) => model.modelId);

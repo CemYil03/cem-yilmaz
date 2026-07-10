@@ -30,9 +30,10 @@ past holds the rest. A "New trip" button opens the base-facts dialog (title, des
   `TripActivities` with time, title, location, url, notes. Add / edit / delete affordances at both levels.
 - **Packing list** — checkbox rows grouped by free-text `category` (Documents / Dokumente, Electronics / Elektronik, …). Each row shows
   quantity when > 1 and a notes preview. Checking the box calls `tripPackingItemsUpsert` with a one-element array flipping `packed`. The
-  add/edit dialog suggests locale-matched defaults via a native `<datalist>` (Documents, Electronics, Clothing, Toiletries, Health, Money,
-  Misc, Other — and their DE counterparts) merged with any categories already on the trip; typing a custom string is always allowed — the
-  column stays free-text, and picking a suggestion writes the active-locale label.
+  add/edit dialog suggests locale-matched defaults via a shadcn `Popover`-backed combobox (Documents, Electronics, Clothing, Toiletries,
+  Health, Money, Misc, Other — and their DE counterparts) merged with any categories already on the trip; the suggestion list filters as you
+  type and offers an "Add «value»" row, but typing a custom string is always allowed — the column stays free-text, and picking a suggestion
+  writes the active-locale label.
 
 ## The AI use-case (the whole reason this feature exists)
 
