@@ -52,6 +52,7 @@ import {
     DropdownMenuTrigger,
 } from '../../../web/components/base/dropdown-menu';
 import { Input } from '../../../web/components/base/input';
+import { Checkbox } from '../../../web/components/base/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import type {
@@ -2324,8 +2325,8 @@ function LinkForm({
                         ))}
                     </SelectContent>
                 </Select>
-                <label className="flex items-center gap-1 text-xs">
-                    <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
+                <label className="flex items-center gap-1.5 text-xs">
+                    <Checkbox checked={pinned} onCheckedChange={(checked) => setPinned(checked === true)} />
                     {{ de: 'Angepinnt', en: 'Pinned' }[locale]}
                 </label>
             </div>
@@ -2617,8 +2618,8 @@ function FileUploadForm({
                         ))}
                     </SelectContent>
                 </Select>
-                <label className="flex items-center gap-1 text-xs">
-                    <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
+                <label className="flex items-center gap-1.5 text-xs">
+                    <Checkbox checked={pinned} onCheckedChange={(checked) => setPinned(checked === true)} />
                     {{ de: 'Angepinnt', en: 'Pinned' }[locale]}
                 </label>
             </div>

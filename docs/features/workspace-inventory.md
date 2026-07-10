@@ -160,6 +160,36 @@ project detail already uses.
 
 `noindex: true` on both routes, not in `SITEMAP_PATHS` — same posture as the rest of `/workspace/*`.
 
+## Assistant integration
+
+The workspace assistant can add and edit items, reprice them, log service events, dispose of things, and tidy attached files from natural
+language, so "Ich habe mein MacBook Pro für 2500 € gekauft, bitte trag das ein" lands an `electronics` item with its current value seeded
+from the purchase price — without opening the page. This follows the orchestrator + sub-agent recipe in
+[../architecture/agent-delegation.md](../architecture/agent-delegation.md), mirroring the finances / travel domains:
+
+- **Sub-agent** — `src/server/agents/agentPersonalAssistantInventory.ts`. System prompt carries the persona, the cents-conversion rule
+  ("2.500 €" → `250000`), the "reprice ≠ edit" rule (current value is owned by `inventoryItemsReprice`, which journals a valuation — the
+  upsert cannot touch it), the "dispose, don't delete" rule (set `disposalState` so net-worth math stays reconcilable), the file-upload
+  limitation (see below), and the `needsMoreInfo` / `noOp` sentinel contract.
+- **Snapshot** — `src/server/agents/inventorySnapshotForAgent.ts` inlines material net worth, the owned-item count, warranties expiring
+  within 60 days, and every owned item grouped by category (with ids), so the sub-agent answers "how much are my things worth?" and "which
+  warranties are lapsing?" straight from its prompt. Disposed rows are omitted from the snapshot; the agent reaches them via
+  `inventoryItemsList` with `includeDisposed: true`.
+- **Tools** — thin wrappers over the same commands/queries the resolvers use: `toolInventoryItemsUpsert`, `toolInventoryItemsDelete`,
+  `toolInventoryItemsReprice`, `toolInventoryServiceEntriesUpsert`, `toolInventoryServiceEntriesDelete`, `toolInventoryFilesUpsert`,
+  `toolInventoryFilesDelete`, and the read-only `toolInventoryItemsList`. `toolInventoryItemsUpsert` and `toolInventoryItemsReprice` are
+  hand-built Zod (their `disposedAt` / `valuedAt` fields are `DateTime` scalars — see
+  [agent-delegation.md](../architecture/agent-delegation.md#tool-input-schemas)); `toolInventoryServiceEntriesUpsert` and
+  `toolInventoryFilesUpsert` reuse the generated `GqlSItemServiceEntryInputSchema()` / `GqlSItemFileUpsertSchema()` verbatim.
+- **Delegate** — `toolDelegateToInventory` (orchestrator-side), registered in `agentPersonalAssistant.ts`. Writes fan out `userUpdates`, so
+  the open inventory page re-renders the new item / value / net worth without a manual refresh. The orchestrator's route-map block links
+  every mentioned item as `[<name>](/workspace/inventory/<itemId>)` using the ids the delegate returns in its `mutations` array.
+
+**File upload is deliberately not wrapped.** `itemFilesAttach` needs bytes uploaded via `POST /api/file-uploads` first — a two-step flow a
+chat sub-agent has no way to perform. So the assistant gets `itemFilesUpsert` (rename / pin an already-attached file) and `itemFilesDelete`
+(detach), but not attach; the sub-agent's prompt tells it to point Cem at the item's Files section when he wants to add a new file. This
+mirrors why travel / finances / nutrition / fitness ship no file tools at all.
+
 ## Open TODOs
 
 - **Finances tile.** Once `/workspace/finances` graduates from stub, add a "material net worth" tile reading

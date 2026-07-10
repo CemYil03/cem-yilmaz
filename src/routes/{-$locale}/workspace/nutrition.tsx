@@ -10,7 +10,6 @@ import {
     StarIcon,
     Trash2Icon,
     UtensilsCrossedIcon,
-    XIcon,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
@@ -32,6 +31,7 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
+import { ChipInput } from '../../../web/components/ChipInput';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -1082,79 +1082,6 @@ function WeekNav({ weekStart, locale }: { weekStart: Date; locale: Locale }) {
             >
                 <ChevronRightIcon className="size-4" />
             </Link>
-        </div>
-    );
-}
-
-// Chip input for free-form string arrays (ingredients, tags). Enter or comma
-// commits the draft; Backspace on an empty draft pops the last chip. Optional
-// suggestion chips underneath. Same idiom as media's `TopicChipInput`.
-function ChipInput({
-    value,
-    onChange,
-    placeholder,
-    suggestions,
-}: {
-    value: ReadonlyArray<string>;
-    onChange: (next: string[]) => void;
-    placeholder: string;
-    suggestions?: ReadonlyArray<string>;
-}) {
-    const [draft, setDraft] = useState('');
-    const add = (raw: string) => {
-        const trimmed = raw.trim();
-        if (!trimmed || value.includes(trimmed)) return;
-        onChange([...value, trimmed]);
-    };
-    const remaining = (suggestions ?? []).filter((s) => !value.includes(s));
-
-    return (
-        <div>
-            <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-input bg-white dark:bg-black px-2 py-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/50">
-                {value.map((chip) => (
-                    <span key={chip} className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
-                        {chip}
-                        <button
-                            type="button"
-                            onClick={() => onChange(value.filter((c) => c !== chip))}
-                            aria-label="Remove"
-                            className="rounded-full hover:bg-primary/20"
-                        >
-                            <XIcon className="size-3" />
-                        </button>
-                    </span>
-                ))}
-                <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                        if ((e.key === 'Enter' || e.key === ',') && draft.trim()) {
-                            e.preventDefault();
-                            add(draft);
-                            setDraft('');
-                        } else if (e.key === 'Backspace' && !draft && value.length > 0) {
-                            e.preventDefault();
-                            onChange([...value.slice(0, -1)]);
-                        }
-                    }}
-                    placeholder={placeholder}
-                    className="flex-1 min-w-24 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                />
-            </div>
-            {remaining.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-1">
-                    {remaining.map((s) => (
-                        <button
-                            key={s}
-                            type="button"
-                            onClick={() => add(s)}
-                            className="rounded-full border border-border/60 px-2 py-0.5 text-[11px] text-muted-foreground hover:border-primary hover:text-primary"
-                        >
-                            + {s}
-                        </button>
-                    ))}
-                </div>
-            ) : null}
         </div>
     );
 }

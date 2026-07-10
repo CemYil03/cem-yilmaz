@@ -4,7 +4,7 @@ import { useVisitorChat } from '../chat/VisitorChatProvider';
 import { useSidebar } from './base/sidebar';
 import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
-import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
+import { HeaderIconButton } from './HeaderIconButton';
 
 // Header entry point into a chat surface. Sized to match `LanguageSelector` /
 // `ThemeSelector` so the right-side cluster stays visually balanced.
@@ -112,23 +112,8 @@ function ChatButton({
     }, [highlightSignal]);
 
     return (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <button
-                    type="button"
-                    onClick={onClick}
-                    aria-label={label}
-                    aria-pressed={isPressed}
-                    className={cn(
-                        'grid size-10 place-items-center rounded-full border border-foreground/10 text-foreground/80 transition hover:bg-foreground/5 active:bg-foreground/10 dark:border-white/10 dark:hover:bg-white/8 dark:active:bg-white/14 cursor-pointer',
-                        isPressed && 'bg-foreground/5 dark:bg-white/8',
-                        isPulsing && 'animate-chat-button-pulse',
-                    )}
-                >
-                    {icon}
-                </button>
-            </TooltipTrigger>
-            <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
+        <HeaderIconButton onClick={onClick} label={label} isPressed={isPressed} className={cn(isPulsing && 'animate-chat-button-pulse')}>
+            {icon}
+        </HeaderIconButton>
     );
 }

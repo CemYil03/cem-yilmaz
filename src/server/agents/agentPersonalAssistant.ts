@@ -11,6 +11,7 @@ import { toolDelegateToTravel } from './toolDelegateToTravel';
 import { toolDelegateToNutrition } from './toolDelegateToNutrition';
 import { toolDelegateToFitness } from './toolDelegateToFitness';
 import { toolDelegateToFinances } from './toolDelegateToFinances';
+import { toolDelegateToInventory } from './toolDelegateToInventory';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 
@@ -77,6 +78,7 @@ const BASE_SYSTEM_PROMPT = [
     '- Medical record       → `[<title>](/workspace/medical?tab=records&focus=<recordId>)`',
     '- Medical appointment  → `[<title>](/workspace/medical?tab=appointments&focus=<appointmentId>)`',
     '- Trip                 → `[<title>](/workspace/travel/<tripId>)`',
+    '- Inventory item       → `[<name>](/workspace/inventory/<itemId>)`',
     '- Recipe               → `[<title>](/workspace/nutrition?tab=cookbook&focus=<recipeId>)`',
     '- Diary entry          → `[<description>](/workspace/nutrition?tab=diary&focus=<logId>)`',
     '- Workout              → `[<title>](/workspace/fitness?tab=workouts&focus=<sessionId>)`',
@@ -245,6 +247,20 @@ export async function agentPersonalAssistant({
             // the "add this to my expenses / subscriptions" path. See
             // `docs/features/workspace-finances.md`.
             delegateToFinances: toolDelegateToFinances({
+                serverRuntime,
+                session,
+                chatId,
+                generationId: assistantOptions.generationId,
+                preWrittenToolCallIds,
+            }),
+            // Inventory sub-agent — material belongings (electronics,
+            // appliances, furniture, vehicles, …), what each is worth today
+            // (repricing journals a valuation), the service log, and disposal
+            // state. Writes to Postgres so `/workspace/inventory` and material
+            // net worth update. It cannot upload new files (no byte-upload
+            // path from chat) but can rename / pin / detach existing ones. See
+            // `docs/features/workspace-inventory.md`.
+            delegateToInventory: toolDelegateToInventory({
                 serverRuntime,
                 session,
                 chatId,

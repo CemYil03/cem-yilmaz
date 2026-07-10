@@ -54,6 +54,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Slider } from '../../../web/components/base/slider';
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
+import { ChipInput } from '../../../web/components/ChipInput';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
@@ -2536,86 +2537,21 @@ type YoutubeSearchHit = NonNullable<
 
 // --- Topic chip input -------------------------------------------------------
 
-// Free-form multi-select rendered as pills. Enter (or comma) commits the
-// current draft as a topic; Backspace on an empty draft pops the last chip.
-// Suggestion chips underneath surface the `MediaTopic` enum values that
-// aren't already selected — one click adds them. Ad-hoc strings are allowed
-// (the DB column is `text[]`), so the enum acts as a hint, not a constraint.
+// Topic-flavoured `ChipInput`: suggestion chips surface the `MediaTopic` enum
+// values not yet selected, and stored values render through their localized
+// label. Ad-hoc strings are allowed (the DB column is `text[]`), so the enum is
+// a hint, not a constraint.
 function TopicChipInput({ value, onChange, locale }: { value: ReadonlyArray<string>; onChange: (next: string[]) => void; locale: Locale }) {
-    const [draft, setDraft] = useState('');
-
-    const addTopic = (topic: string) => {
-        const trimmed = topic.trim();
-        if (!trimmed) return;
-        if (value.includes(trimmed)) return;
-        onChange([...value, trimmed]);
-    };
-
-    const removeTopic = (topic: string) => {
-        onChange(value.filter((t) => t !== topic));
-    };
-
-    const suggestions = KNOWN_TOPICS.filter((t) => !value.includes(t));
-
     return (
-        <div>
-            <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-input bg-white dark:bg-black px-2 py-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/50">
-                {value.map((topic) => (
-                    <span
-                        key={topic}
-                        className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary"
-                    >
-                        {topicLabel(topic, locale)}
-                        <button
-                            type="button"
-                            onClick={() => removeTopic(topic)}
-                            aria-label={{ de: 'Thema entfernen', en: 'Remove topic' }[locale]}
-                            className="rounded-full hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <XIcon className="size-3" />
-                        </button>
-                    </span>
-                ))}
-                <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && draft.trim()) {
-                            e.preventDefault();
-                            addTopic(draft);
-                            setDraft('');
-                        } else if (e.key === 'Backspace' && !draft && value.length > 0) {
-                            e.preventDefault();
-                            onChange([...value.slice(0, -1)]);
-                        } else if (e.key === ',' && draft.trim()) {
-                            e.preventDefault();
-                            addTopic(draft);
-                            setDraft('');
-                        }
-                    }}
-                    placeholder={
-                        value.length === 0
-                            ? { de: 'Thema hinzufügen…', en: 'Add a topic…' }[locale]
-                            : { de: 'Weiteres…', en: 'Another…' }[locale]
-                    }
-                    className="flex-1 min-w-24 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                />
-            </div>
-            {suggestions.length > 0 ? (
-                <div className="mt-2 flex flex-wrap gap-1">
-                    {suggestions.map((topic) => (
-                        <button
-                            key={topic}
-                            type="button"
-                            onClick={() => addTopic(topic)}
-                            className="rounded-full border border-border/60 bg-background/60 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            + {TOPIC_LABELS[topic][locale]}
-                        </button>
-                    ))}
-                </div>
-            ) : null}
-        </div>
+        <ChipInput
+            value={value}
+            onChange={onChange}
+            suggestions={KNOWN_TOPICS}
+            renderLabel={(topic) => topicLabel(topic, locale)}
+            removeLabel={{ de: 'Thema entfernen', en: 'Remove topic' }[locale]}
+            placeholder={{ de: 'Thema hinzufügen…', en: 'Add a topic…' }[locale]}
+            morePlaceholder={{ de: 'Weiteres…', en: 'Another…' }[locale]}
+        />
     );
 }
 
