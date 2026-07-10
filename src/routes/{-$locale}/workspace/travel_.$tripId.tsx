@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import {
+    CalendarArrowDownIcon,
     CalendarDaysIcon,
     CheckIcon,
     ClockIcon,
@@ -250,10 +251,11 @@ function ItineraryPanel({ trip, locale }: { trip: TripDetail; locale: Locale }) 
                 </GlassCard>
             ) : (
                 <div className="mt-4 space-y-4">
-                    {trip.days.map((day) => (
+                    {trip.days.map((day, index) => (
                         <DayBlock
                             key={day.tripDayId}
                             day={day}
+                            nextDay={trip.days[index + 1] ?? null}
                             locale={locale}
                             onEditDay={() => setEditingDay(day)}
                             onDeleteDay={() => setDeletingDay(day)}
@@ -292,6 +294,7 @@ function ItineraryPanel({ trip, locale }: { trip: TripDetail; locale: Locale }) 
 
 function DayBlock({
     day,
+    nextDay,
     locale,
     onEditDay,
     onDeleteDay,
@@ -300,6 +303,7 @@ function DayBlock({
     onDeleteActivity,
 }: {
     day: DayRow;
+    nextDay: DayRow | null;
     locale: Locale;
     onEditDay: () => void;
     onDeleteDay: () => void;
@@ -349,6 +353,7 @@ function DayBlock({
                         <ActivityRowView
                             key={activity.tripActivityId}
                             activity={activity}
+                            nextDay={nextDay}
                             locale={locale}
                             onEdit={() => onEditActivity(activity)}
                             onDelete={() => onDeleteActivity(activity)}
@@ -366,15 +371,42 @@ function DayBlock({
 
 function ActivityRowView({
     activity,
+    nextDay,
     locale,
     onEdit,
     onDelete,
 }: {
     activity: ActivityRow;
+    nextDay: DayRow | null;
     locale: Locale;
     onEdit: () => void;
     onDelete: () => void;
 }) {
+    const [moveState, moveToNextDay] = useMutation(WorkspaceTripActivitiesUpsertDocument);
+
+    const onMoveToNextDay = () => {
+        if (!nextDay) return;
+        // A move is an update (same id), so the server keeps whatever `position`
+        // we pass rather than recomputing a tail default. Append to the next
+        // day by reading its already-loaded activities' tail.
+        const tail = nextDay.activities.reduce((max, a) => Math.max(max, a.position), -1);
+        void moveToNextDay({
+            tripActivities: [
+                {
+                    tripActivityId: activity.tripActivityId,
+                    tripDayId: nextDay.tripDayId,
+                    position: tail + 1,
+                    startsAt: activity.startsAt,
+                    endsAt: activity.endsAt,
+                    title: activity.title,
+                    location: activity.location,
+                    url: activity.url,
+                    notes: activity.notes,
+                },
+            ],
+        });
+    };
+
     return (
         <li className="group flex items-start gap-3 rounded-md px-2 py-1.5 hover:bg-muted/40 transition-colors">
             <div className="mt-0.5 min-w-[3.5rem] text-xs tabular-nums text-muted-foreground">
@@ -411,6 +443,24 @@ function ActivityRowView({
                 {activity.notes ? <div className="mt-0.5 text-xs text-muted-foreground">{activity.notes}</div> : null}
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                {nextDay ? (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6"
+                        onClick={onMoveToNextDay}
+                        disabled={moveState.fetching}
+                        aria-label={{ de: 'Auf nächsten Tag verschieben', en: 'Move to next day' }[locale]}
+                        title={
+                            {
+                                de: `Auf Tag ${nextDay.dayNumber} verschieben`,
+                                en: `Move to day ${nextDay.dayNumber}`,
+                            }[locale]
+                        }
+                    >
+                        <CalendarArrowDownIcon className="size-3" />
+                    </Button>
+                ) : null}
                 <Button
                     variant="ghost"
                     size="icon"

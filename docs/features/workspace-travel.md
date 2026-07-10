@@ -27,7 +27,12 @@ past holds the rest. A "New trip" button opens the base-facts dialog (title, des
 `/workspace/travel/<tripId>` is the per-trip detail. Header renders the trip's facts; below it two side-by-side sections:
 
 - **Itinerary** — one collapsible block per `TripDay` (labeled "Day N · date · title"). Inside each day is an ordered list of
-  `TripActivities` with time, title, location, url, notes. Add / edit / delete affordances at both levels.
+  `TripActivities` with time, title, location, url, notes. Add / edit / delete affordances at both levels. Each activity also carries a
+  **move-to-next-day** button (calendar-arrow icon) — one click retargets the activity onto the following day, appended to its tail. The
+  button is hidden on the trip's last day (no later day to move onto). This is a client-only affordance: the detail page already holds every
+  day with its activities, so it computes the next day's tail `position` and reuses `tripActivitiesUpsert` with the new `tripDayId` — no new
+  mutation. Because the id is kept, the server treats it as an update and honours the passed `position` rather than recomputing a tail
+  default.
 - **Packing list** — checkbox rows grouped by free-text `category` (Documents / Dokumente, Electronics / Elektronik, …). Each row shows
   quantity when > 1 and a notes preview. Checking the box calls `tripPackingItemsUpsert` with a one-element array flipping `packed`. The
   add/edit dialog suggests locale-matched defaults via a shadcn `Popover`-backed combobox (Documents, Electronics, Clothing, Toiletries,
