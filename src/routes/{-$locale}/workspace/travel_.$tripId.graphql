@@ -66,9 +66,9 @@ subscription WorkspaceTravelDetailUpdates($tripId: ID!) {
     }
 }
 
-mutation WorkspaceTripDaysUpsert($tripDays: [TripDayInput!]!) {
+mutation WorkspaceTripDaysUpsert($tripDays: [AdminTravelTripDayInput!]!) {
     admin {
-        tripDaysUpsert(tripDays: $tripDays) {
+        adminTravelTripDaysUpsert(tripDays: $tripDays) {
             success
             referenceIds
         }
@@ -77,15 +77,15 @@ mutation WorkspaceTripDaysUpsert($tripDays: [TripDayInput!]!) {
 
 mutation WorkspaceTripDaysDelete($tripDayIds: [ID!]!) {
     admin {
-        tripDaysDelete(tripDayIds: $tripDayIds) {
+        adminTravelTripDaysDelete(tripDayIds: $tripDayIds) {
             success
         }
     }
 }
 
-mutation WorkspaceTripActivitiesUpsert($tripActivities: [TripActivityInput!]!) {
+mutation WorkspaceTripActivitiesUpsert($tripActivities: [AdminTravelTripActivityInput!]!) {
     admin {
-        tripActivitiesUpsert(tripActivities: $tripActivities) {
+        adminTravelTripActivitiesUpsert(tripActivities: $tripActivities) {
             success
             referenceIds
         }
@@ -94,15 +94,15 @@ mutation WorkspaceTripActivitiesUpsert($tripActivities: [TripActivityInput!]!) {
 
 mutation WorkspaceTripActivitiesDelete($tripActivityIds: [ID!]!) {
     admin {
-        tripActivitiesDelete(tripActivityIds: $tripActivityIds) {
+        adminTravelTripActivitiesDelete(tripActivityIds: $tripActivityIds) {
             success
         }
     }
 }
 
-mutation WorkspaceTripPackingItemsUpsert($tripPackingItems: [TripPackingItemInput!]!) {
+mutation WorkspaceTripPackingItemsUpsert($tripPackingItems: [AdminTravelTripPackingItemInput!]!) {
     admin {
-        tripPackingItemsUpsert(tripPackingItems: $tripPackingItems) {
+        adminTravelTripPackingItemsUpsert(tripPackingItems: $tripPackingItems) {
             success
             referenceIds
         }
@@ -111,7 +111,7 @@ mutation WorkspaceTripPackingItemsUpsert($tripPackingItems: [TripPackingItemInpu
 
 mutation WorkspaceTripPackingItemsDelete($tripPackingItemIds: [ID!]!) {
     admin {
-        tripPackingItemsDelete(tripPackingItemIds: $tripPackingItemIds) {
+        adminTravelTripPackingItemsDelete(tripPackingItemIds: $tripPackingItemIds) {
             success
         }
     }

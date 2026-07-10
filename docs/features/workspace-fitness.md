@@ -70,10 +70,10 @@ pre-joined, exercises hydrated), `adminFitnessSessionFindMany` (sets pre-joined,
 
 ### CQRS
 
-Commands mirror `tripActivitiesUpsert.ts` for the child tables (parent + exercise existence checked via `inArray`; `position` tail read once
-per parent and incremented locally). Queries in `src/server/queries/adminFitness*.ts` fan out one query per relation and normalize in
-memory. Mappers: `toGqlExercise`, `toGqlWorkoutRoutine`, `toGqlWorkoutRoutineItem`, `toGqlWorkoutSession`, `toGqlWorkoutSet`. Resolver
-wiring in `resolversCreate.ts`.
+Commands mirror `adminTravelTripActivitiesUpsert.ts` for the child tables (parent + exercise existence checked via `inArray`; `position`
+tail read once per parent and incremented locally). Queries in `src/server/queries/adminFitness*.ts` fan out one query per relation and
+normalize in memory. Mappers: `toGqlExercise`, `toGqlWorkoutRoutine`, `toGqlWorkoutRoutineItem`, `toGqlWorkoutSession`, `toGqlWorkoutSet`.
+Resolver wiring in `resolversCreate.ts`.
 
 ### Route
 

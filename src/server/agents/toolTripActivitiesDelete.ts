@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tripActivitiesDelete } from '../commands/tripActivitiesDelete';
+import { adminTravelTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { TravelAgentMutationLog } from './agentPersonalAssistantTravel';
@@ -21,7 +21,12 @@ export function toolTripActivitiesDelete({ serverRuntime, session, mutations }: 
         description: 'Delete one or more activities across trip days.',
         inputSchema: tripActivitiesDeleteInputSchema,
         execute: async (input) => {
-            const result = await tripActivitiesDelete(requireAdminUserId(session), input.tripActivityIds, session, serverRuntime);
+            const result = await adminTravelTripActivitiesDelete(
+                requireAdminUserId(session),
+                input.tripActivityIds,
+                session,
+                serverRuntime,
+            );
             for (const tripActivityId of input.tripActivityIds) mutations.push({ kind: 'tripActivityDelete', id: tripActivityId });
             return result;
         },

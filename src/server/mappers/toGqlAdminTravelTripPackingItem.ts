@@ -1,7 +1,7 @@
-import type { TripPackingItem } from '../db/schema';
-import type { GqlSTripPackingItem } from '../graphql/generated';
+import type { AdminTravelTripPackingItem } from '../db/schema';
+import type { GqlSAdminTravelTripPackingItem } from '../graphql/generated';
 
-export function toGqlTripPackingItem(row: TripPackingItem): GqlSTripPackingItem {
+export function toGqlAdminTravelTripPackingItem(row: AdminTravelTripPackingItem): GqlSAdminTravelTripPackingItem {
     return {
         tripPackingItemId: row.tripPackingItemId,
         tripId: row.tripId,

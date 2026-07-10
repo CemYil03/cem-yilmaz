@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tripsDelete } from '../commands/tripsDelete';
+import { adminTravelTripsDelete } from '../commands/adminTravelTripsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { TravelAgentMutationLog } from './agentPersonalAssistantTravel';
@@ -24,7 +24,7 @@ export function toolTripsDelete({ serverRuntime, session, mutations }: TravelAge
         description: 'Permanently delete one or more trips and everything under them. Use only when Cem explicitly says to delete.',
         inputSchema: tripsDeleteInputSchema,
         execute: async (input) => {
-            const result = await tripsDelete(requireAdminUserId(session), input.tripIds, session, serverRuntime);
+            const result = await adminTravelTripsDelete(requireAdminUserId(session), input.tripIds, session, serverRuntime);
             for (const tripId of input.tripIds) mutations.push({ kind: 'tripDelete', id: tripId });
             return result;
         },

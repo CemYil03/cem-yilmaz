@@ -190,6 +190,13 @@
             "when": 1783675128077,
             "tag": "0026_low_proteus",
             "breakpoints": true
+        },
+        {
+            "idx": 27,
+            "version": "7",
+            "when": 1783677647107,
+            "tag": "0027_travel_access_path_rename",
+            "breakpoints": true
         }
     ]
 }

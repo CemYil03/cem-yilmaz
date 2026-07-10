@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tripDaysDelete } from '../commands/tripDaysDelete';
+import { adminTravelTripDaysDelete } from '../commands/adminTravelTripDaysDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { TravelAgentMutationLog } from './agentPersonalAssistantTravel';
@@ -21,7 +21,7 @@ export function toolTripDaysDelete({ serverRuntime, session, mutations }: Travel
         description: 'Delete one or more days of a trip. Activities on those days cascade.',
         inputSchema: tripDaysDeleteInputSchema,
         execute: async (input) => {
-            const result = await tripDaysDelete(requireAdminUserId(session), input.tripDayIds, session, serverRuntime);
+            const result = await adminTravelTripDaysDelete(requireAdminUserId(session), input.tripDayIds, session, serverRuntime);
             for (const tripDayId of input.tripDayIds) mutations.push({ kind: 'tripDayDelete', id: tripDayId });
             return result;
         },

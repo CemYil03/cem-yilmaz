@@ -1,14 +1,14 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tripActivitiesUpsert } from '../commands/tripActivitiesUpsert';
+import { adminTravelTripActivitiesUpsert } from '../commands/adminTravelTripActivitiesUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSTripActivityInputSchema } from '../graphql/generated';
-import type { GqlSSession, GqlSTripActivityInput } from '../graphql/generated';
+import { GqlSAdminTravelTripActivityInputSchema } from '../graphql/generated';
+import type { GqlSAdminTravelTripActivityInput, GqlSSession } from '../graphql/generated';
 import type { TravelAgentMutationLog } from './agentPersonalAssistantTravel';
 import { requireAdminUserId } from './requireAdminUserId';
 
 const toolTripActivitiesUpsertInputSchema = z.object({
-    tripActivities: z.array(GqlSTripActivityInputSchema()).min(1),
+    tripActivities: z.array(GqlSAdminTravelTripActivityInputSchema()).min(1),
 });
 
 interface TravelAgentMutationContext {
@@ -27,8 +27,8 @@ export function toolTripActivitiesUpsert({ serverRuntime, session, mutations }: 
         ].join(' '),
         inputSchema: toolTripActivitiesUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.tripActivities as GqlSTripActivityInput[];
-            const result = await tripActivitiesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.tripActivities as GqlSAdminTravelTripActivityInput[];
+            const result = await adminTravelTripActivitiesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((activity, index) => {
                 mutations.push({

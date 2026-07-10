@@ -192,6 +192,14 @@ export interface GqlCAdminMedicalQuery {
 
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
+    adminTravelTripActivitiesDelete: GqlCMutationResult;
+    adminTravelTripActivitiesUpsert: GqlCMutationResult;
+    adminTravelTripDaysDelete: GqlCMutationResult;
+    adminTravelTripDaysUpsert: GqlCMutationResult;
+    adminTravelTripPackingItemsDelete: GqlCMutationResult;
+    adminTravelTripPackingItemsUpsert: GqlCMutationResult;
+    adminTravelTripsDelete: GqlCMutationResult;
+    adminTravelTripsUpsert: GqlCMutationResult;
     chatConfigDefaultModelSet: GqlCMutationResult;
     chatInputCollectionRespond?: Maybe<GqlCChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlCChatMessageCreateResult>;
@@ -269,14 +277,6 @@ export interface GqlCAdminMutation {
     taskReorder: GqlCMutationResult;
     tasksDelete: GqlCMutationResult;
     tasksUpsert: GqlCMutationResult;
-    tripActivitiesDelete: GqlCMutationResult;
-    tripActivitiesUpsert: GqlCMutationResult;
-    tripDaysDelete: GqlCMutationResult;
-    tripDaysUpsert: GqlCMutationResult;
-    tripPackingItemsDelete: GqlCMutationResult;
-    tripPackingItemsUpsert: GqlCMutationResult;
-    tripsDelete: GqlCMutationResult;
-    tripsUpsert: GqlCMutationResult;
     workoutRoutineItemsDelete: GqlCMutationResult;
     workoutRoutineItemsUpsert: GqlCMutationResult;
     workoutRoutinesDelete: GqlCMutationResult;
@@ -286,6 +286,38 @@ export interface GqlCAdminMutation {
     workoutSetsDelete: GqlCMutationResult;
     workoutSetsUpsert: GqlCMutationResult;
 }
+
+export type GqlCAdminMutationAdminTravelTripActivitiesDeleteArgs = {
+    tripActivityIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTravelTripActivitiesUpsertArgs = {
+    tripActivities: Array<GqlCAdminTravelTripActivityInput>;
+};
+
+export type GqlCAdminMutationAdminTravelTripDaysDeleteArgs = {
+    tripDayIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTravelTripDaysUpsertArgs = {
+    tripDays: Array<GqlCAdminTravelTripDayInput>;
+};
+
+export type GqlCAdminMutationAdminTravelTripPackingItemsDeleteArgs = {
+    tripPackingItemIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTravelTripPackingItemsUpsertArgs = {
+    tripPackingItems: Array<GqlCAdminTravelTripPackingItemInput>;
+};
+
+export type GqlCAdminMutationAdminTravelTripsDeleteArgs = {
+    tripIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminTravelTripsUpsertArgs = {
+    trips: Array<GqlCAdminTravelTripInput>;
+};
 
 export type GqlCAdminMutationChatConfigDefaultModelSetArgs = {
     modelId: Scalars['String']['input'];
@@ -600,38 +632,6 @@ export type GqlCAdminMutationTasksUpsertArgs = {
     tasks: Array<GqlCTaskCreate>;
 };
 
-export type GqlCAdminMutationTripActivitiesDeleteArgs = {
-    tripActivityIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationTripActivitiesUpsertArgs = {
-    tripActivities: Array<GqlCTripActivityInput>;
-};
-
-export type GqlCAdminMutationTripDaysDeleteArgs = {
-    tripDayIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationTripDaysUpsertArgs = {
-    tripDays: Array<GqlCTripDayInput>;
-};
-
-export type GqlCAdminMutationTripPackingItemsDeleteArgs = {
-    tripPackingItemIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationTripPackingItemsUpsertArgs = {
-    tripPackingItems: Array<GqlCTripPackingItemInput>;
-};
-
-export type GqlCAdminMutationTripsDeleteArgs = {
-    tripIds: Array<Scalars['ID']['input']>;
-};
-
-export type GqlCAdminMutationTripsUpsertArgs = {
-    trips: Array<GqlCTripInput>;
-};
-
 export type GqlCAdminMutationWorkoutRoutineItemsDeleteArgs = {
     routineItemIds: Array<Scalars['ID']['input']>;
 };
@@ -679,13 +679,120 @@ export type GqlCAdminNutritionQueryAdminNutritionRecipeFindManyArgs = {
 
 export interface GqlCAdminTravelQuery {
     __typename?: 'AdminTravelQuery';
-    adminTravelTripFindMany: Array<GqlCTrip>;
-    adminTravelTripFindOne?: Maybe<GqlCTrip>;
+    adminTravelTripFindMany: Array<GqlCAdminTravelTrip>;
+    adminTravelTripFindOne?: Maybe<GqlCAdminTravelTrip>;
 }
 
 export type GqlCAdminTravelQueryAdminTravelTripFindOneArgs = {
     tripId: Scalars['ID']['input'];
 };
+
+export type GqlCAdminTravelTransportMode = 'car' | 'ferry' | 'flight' | 'mixed' | 'train';
+
+export interface GqlCAdminTravelTrip {
+    __typename?: 'AdminTravelTrip';
+    accommodation?: Maybe<Scalars['String']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    days: Array<GqlCAdminTravelTripDay>;
+    destination: Scalars['String']['output'];
+    endsOn?: Maybe<Scalars['Date']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    packingItems: Array<GqlCAdminTravelTripPackingItem>;
+    startsOn?: Maybe<Scalars['Date']['output']>;
+    status: GqlCAdminTravelTripStatus;
+    title: Scalars['String']['output'];
+    transportMode?: Maybe<GqlCAdminTravelTransportMode>;
+    tripId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export interface GqlCAdminTravelTripActivity {
+    __typename?: 'AdminTravelTripActivity';
+    createdAt: Scalars['DateTime']['output'];
+    endsAt?: Maybe<Scalars['String']['output']>;
+    location?: Maybe<Scalars['String']['output']>;
+    notes?: Maybe<Scalars['String']['output']>;
+    position: Scalars['Int']['output'];
+    startsAt?: Maybe<Scalars['String']['output']>;
+    title: Scalars['String']['output'];
+    tripActivityId: Scalars['ID']['output'];
+    tripDayId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+    url?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCAdminTravelTripActivityInput = {
+    endsAt?: InputMaybe<Scalars['String']['input']>;
+    location?: InputMaybe<Scalars['String']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    startsAt?: InputMaybe<Scalars['String']['input']>;
+    title: Scalars['String']['input'];
+    tripActivityId?: InputMaybe<Scalars['ID']['input']>;
+    tripDayId: Scalars['ID']['input'];
+    url?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlCAdminTravelTripDay {
+    __typename?: 'AdminTravelTripDay';
+    activities: Array<GqlCAdminTravelTripActivity>;
+    createdAt: Scalars['DateTime']['output'];
+    date?: Maybe<Scalars['Date']['output']>;
+    dayNumber: Scalars['Int']['output'];
+    summary?: Maybe<Scalars['String']['output']>;
+    title?: Maybe<Scalars['String']['output']>;
+    tripDayId: Scalars['ID']['output'];
+    tripId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminTravelTripDayInput = {
+    date?: InputMaybe<Scalars['Date']['input']>;
+    dayNumber: Scalars['Int']['input'];
+    summary?: InputMaybe<Scalars['String']['input']>;
+    title?: InputMaybe<Scalars['String']['input']>;
+    tripDayId?: InputMaybe<Scalars['ID']['input']>;
+    tripId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminTravelTripInput = {
+    accommodation?: InputMaybe<Scalars['String']['input']>;
+    destination: Scalars['String']['input'];
+    endsOn?: InputMaybe<Scalars['Date']['input']>;
+    notes?: InputMaybe<Scalars['String']['input']>;
+    startsOn?: InputMaybe<Scalars['Date']['input']>;
+    status: GqlCAdminTravelTripStatus;
+    title: Scalars['String']['input'];
+    transportMode?: InputMaybe<GqlCAdminTravelTransportMode>;
+    tripId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlCAdminTravelTripPackingItem {
+    __typename?: 'AdminTravelTripPackingItem';
+    category: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    label: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    packed: Scalars['Boolean']['output'];
+    position: Scalars['Int']['output'];
+    quantity: Scalars['Int']['output'];
+    tripId: Scalars['ID']['output'];
+    tripPackingItemId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminTravelTripPackingItemInput = {
+    category: Scalars['String']['input'];
+    label: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    packed?: InputMaybe<Scalars['Boolean']['input']>;
+    position?: InputMaybe<Scalars['Int']['input']>;
+    quantity?: InputMaybe<Scalars['Int']['input']>;
+    tripId: Scalars['ID']['input'];
+    tripPackingItemId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminTravelTripStatus = 'active' | 'cancelled' | 'completed' | 'draft' | 'planned';
 
 export interface GqlCChat {
     __typename?: 'Chat';
@@ -1991,113 +2098,6 @@ export interface GqlCTmdbTvResult {
     title: Scalars['String']['output'];
     tmdbId: Scalars['Int']['output'];
 }
-
-export type GqlCTransportMode = 'car' | 'ferry' | 'flight' | 'mixed' | 'train';
-
-export interface GqlCTrip {
-    __typename?: 'Trip';
-    accommodation?: Maybe<Scalars['String']['output']>;
-    createdAt: Scalars['DateTime']['output'];
-    days: Array<GqlCTripDay>;
-    destination: Scalars['String']['output'];
-    endsOn?: Maybe<Scalars['Date']['output']>;
-    notes?: Maybe<Scalars['String']['output']>;
-    packingItems: Array<GqlCTripPackingItem>;
-    startsOn?: Maybe<Scalars['Date']['output']>;
-    status: GqlCTripStatus;
-    title: Scalars['String']['output'];
-    transportMode?: Maybe<GqlCTransportMode>;
-    tripId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export interface GqlCTripActivity {
-    __typename?: 'TripActivity';
-    createdAt: Scalars['DateTime']['output'];
-    endsAt?: Maybe<Scalars['String']['output']>;
-    location?: Maybe<Scalars['String']['output']>;
-    notes?: Maybe<Scalars['String']['output']>;
-    position: Scalars['Int']['output'];
-    startsAt?: Maybe<Scalars['String']['output']>;
-    title: Scalars['String']['output'];
-    tripActivityId: Scalars['ID']['output'];
-    tripDayId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-    url?: Maybe<Scalars['String']['output']>;
-}
-
-export type GqlCTripActivityInput = {
-    endsAt?: InputMaybe<Scalars['String']['input']>;
-    location?: InputMaybe<Scalars['String']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    position?: InputMaybe<Scalars['Int']['input']>;
-    startsAt?: InputMaybe<Scalars['String']['input']>;
-    title: Scalars['String']['input'];
-    tripActivityId?: InputMaybe<Scalars['ID']['input']>;
-    tripDayId: Scalars['ID']['input'];
-    url?: InputMaybe<Scalars['String']['input']>;
-};
-
-export interface GqlCTripDay {
-    __typename?: 'TripDay';
-    activities: Array<GqlCTripActivity>;
-    createdAt: Scalars['DateTime']['output'];
-    date?: Maybe<Scalars['Date']['output']>;
-    dayNumber: Scalars['Int']['output'];
-    summary?: Maybe<Scalars['String']['output']>;
-    title?: Maybe<Scalars['String']['output']>;
-    tripDayId: Scalars['ID']['output'];
-    tripId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCTripDayInput = {
-    date?: InputMaybe<Scalars['Date']['input']>;
-    dayNumber: Scalars['Int']['input'];
-    summary?: InputMaybe<Scalars['String']['input']>;
-    title?: InputMaybe<Scalars['String']['input']>;
-    tripDayId?: InputMaybe<Scalars['ID']['input']>;
-    tripId: Scalars['ID']['input'];
-};
-
-export type GqlCTripInput = {
-    accommodation?: InputMaybe<Scalars['String']['input']>;
-    destination: Scalars['String']['input'];
-    endsOn?: InputMaybe<Scalars['Date']['input']>;
-    notes?: InputMaybe<Scalars['String']['input']>;
-    startsOn?: InputMaybe<Scalars['Date']['input']>;
-    status: GqlCTripStatus;
-    title: Scalars['String']['input'];
-    transportMode?: InputMaybe<GqlCTransportMode>;
-    tripId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export interface GqlCTripPackingItem {
-    __typename?: 'TripPackingItem';
-    category: Scalars['String']['output'];
-    createdAt: Scalars['DateTime']['output'];
-    label: Scalars['String']['output'];
-    notes?: Maybe<Scalars['String']['output']>;
-    packed: Scalars['Boolean']['output'];
-    position: Scalars['Int']['output'];
-    quantity: Scalars['Int']['output'];
-    tripId: Scalars['ID']['output'];
-    tripPackingItemId: Scalars['ID']['output'];
-    updatedAt: Scalars['DateTime']['output'];
-}
-
-export type GqlCTripPackingItemInput = {
-    category: Scalars['String']['input'];
-    label: Scalars['String']['input'];
-    notes?: InputMaybe<Scalars['String']['input']>;
-    packed?: InputMaybe<Scalars['Boolean']['input']>;
-    position?: InputMaybe<Scalars['Int']['input']>;
-    quantity?: InputMaybe<Scalars['Int']['input']>;
-    tripId: Scalars['ID']['input'];
-    tripPackingItemId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GqlCTripStatus = 'active' | 'cancelled' | 'completed' | 'draft' | 'planned';
 
 export interface GqlCUser {
     __typename?: 'User';
@@ -5864,8 +5864,8 @@ export type GqlCWorkspaceTravelPageUserFragment = {
                 destination: string;
                 startsOn: string | null;
                 endsOn: string | null;
-                status: Schema.GqlCTripStatus;
-                transportMode: Schema.GqlCTransportMode | null;
+                status: Schema.GqlCAdminTravelTripStatus;
+                transportMode: Schema.GqlCAdminTravelTransportMode | null;
                 accommodation: string | null;
                 notes: string | null;
                 createdAt: string;
@@ -5890,8 +5890,8 @@ export type GqlCWorkspaceTravelPageQuery = {
                         destination: string;
                         startsOn: string | null;
                         endsOn: string | null;
-                        status: Schema.GqlCTripStatus;
-                        transportMode: Schema.GqlCTransportMode | null;
+                        status: Schema.GqlCAdminTravelTripStatus;
+                        transportMode: Schema.GqlCAdminTravelTransportMode | null;
                         accommodation: string | null;
                         notes: string | null;
                         createdAt: string;
@@ -5917,8 +5917,8 @@ export type GqlCWorkspaceTravelPageUpdatesSubscription = {
                     destination: string;
                     startsOn: string | null;
                     endsOn: string | null;
-                    status: Schema.GqlCTripStatus;
-                    transportMode: Schema.GqlCTransportMode | null;
+                    status: Schema.GqlCAdminTravelTripStatus;
+                    transportMode: Schema.GqlCAdminTravelTransportMode | null;
                     accommodation: string | null;
                     notes: string | null;
                     createdAt: string;
@@ -5932,16 +5932,18 @@ export type GqlCWorkspaceTravelPageUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceTripsUpsertMutationVariables = Exact<{
-    trips: Array<Schema.GqlCTripInput> | Schema.GqlCTripInput;
+    trips: Array<Schema.GqlCAdminTravelTripInput> | Schema.GqlCAdminTravelTripInput;
 }>;
 
-export type GqlCWorkspaceTripsUpsertMutation = { admin: { tripsUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceTripsUpsertMutation = {
+    admin: { adminTravelTripsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceTripsDeleteMutationVariables = Exact<{
     tripIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripsDeleteMutation = { admin: { tripsDelete: { success: boolean } } };
+export type GqlCWorkspaceTripsDeleteMutation = { admin: { adminTravelTripsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceTravelDetailUserFragment = {
     admin: {
@@ -5952,8 +5954,8 @@ export type GqlCWorkspaceTravelDetailUserFragment = {
                 destination: string;
                 startsOn: string | null;
                 endsOn: string | null;
-                status: Schema.GqlCTripStatus;
-                transportMode: Schema.GqlCTransportMode | null;
+                status: Schema.GqlCAdminTravelTripStatus;
+                transportMode: Schema.GqlCAdminTravelTransportMode | null;
                 accommodation: string | null;
                 notes: string | null;
                 createdAt: string;
@@ -6007,8 +6009,8 @@ export type GqlCWorkspaceTravelDetailQuery = {
                         destination: string;
                         startsOn: string | null;
                         endsOn: string | null;
-                        status: Schema.GqlCTripStatus;
-                        transportMode: Schema.GqlCTransportMode | null;
+                        status: Schema.GqlCAdminTravelTripStatus;
+                        transportMode: Schema.GqlCAdminTravelTransportMode | null;
                         accommodation: string | null;
                         notes: string | null;
                         createdAt: string;
@@ -6063,8 +6065,8 @@ export type GqlCWorkspaceTravelDetailUpdatesSubscription = {
                     destination: string;
                     startsOn: string | null;
                     endsOn: string | null;
-                    status: Schema.GqlCTripStatus;
-                    transportMode: Schema.GqlCTransportMode | null;
+                    status: Schema.GqlCAdminTravelTripStatus;
+                    transportMode: Schema.GqlCAdminTravelTransportMode | null;
                     accommodation: string | null;
                     notes: string | null;
                     createdAt: string;
@@ -6105,44 +6107,46 @@ export type GqlCWorkspaceTravelDetailUpdatesSubscription = {
 };
 
 export type GqlCWorkspaceTripDaysUpsertMutationVariables = Exact<{
-    tripDays: Array<Schema.GqlCTripDayInput> | Schema.GqlCTripDayInput;
+    tripDays: Array<Schema.GqlCAdminTravelTripDayInput> | Schema.GqlCAdminTravelTripDayInput;
 }>;
 
-export type GqlCWorkspaceTripDaysUpsertMutation = { admin: { tripDaysUpsert: { success: boolean; referenceIds: Array<string> | null } } };
+export type GqlCWorkspaceTripDaysUpsertMutation = {
+    admin: { adminTravelTripDaysUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceTripDaysDeleteMutationVariables = Exact<{
     tripDayIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripDaysDeleteMutation = { admin: { tripDaysDelete: { success: boolean } } };
+export type GqlCWorkspaceTripDaysDeleteMutation = { admin: { adminTravelTripDaysDelete: { success: boolean } } };
 
 export type GqlCWorkspaceTripActivitiesUpsertMutationVariables = Exact<{
-    tripActivities: Array<Schema.GqlCTripActivityInput> | Schema.GqlCTripActivityInput;
+    tripActivities: Array<Schema.GqlCAdminTravelTripActivityInput> | Schema.GqlCAdminTravelTripActivityInput;
 }>;
 
 export type GqlCWorkspaceTripActivitiesUpsertMutation = {
-    admin: { tripActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminTravelTripActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceTripActivitiesDeleteMutationVariables = Exact<{
     tripActivityIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripActivitiesDeleteMutation = { admin: { tripActivitiesDelete: { success: boolean } } };
+export type GqlCWorkspaceTripActivitiesDeleteMutation = { admin: { adminTravelTripActivitiesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceTripPackingItemsUpsertMutationVariables = Exact<{
-    tripPackingItems: Array<Schema.GqlCTripPackingItemInput> | Schema.GqlCTripPackingItemInput;
+    tripPackingItems: Array<Schema.GqlCAdminTravelTripPackingItemInput> | Schema.GqlCAdminTravelTripPackingItemInput;
 }>;
 
 export type GqlCWorkspaceTripPackingItemsUpsertMutation = {
-    admin: { tripPackingItemsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+    admin: { adminTravelTripPackingItemsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export type GqlCWorkspaceTripPackingItemsDeleteMutationVariables = Exact<{
     tripPackingItemIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceTripPackingItemsDeleteMutation = { admin: { tripPackingItemsDelete: { success: boolean } } };
+export type GqlCWorkspaceTripPackingItemsDeleteMutation = { admin: { adminTravelTripPackingItemsDelete: { success: boolean } } };
 
 export type GqlCChatMessageGenerationFragment = {
     modelId: string;
@@ -21736,7 +21740,10 @@ export const WorkspaceTripsUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTravelTripInput' } },
+                            },
                         },
                     },
                 },
@@ -21752,7 +21759,7 @@ export const WorkspaceTripsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripsUpsert' },
+                                    name: { kind: 'Name', value: 'adminTravelTripsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -21807,7 +21814,7 @@ export const WorkspaceTripsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripsDelete' },
+                                    name: { kind: 'Name', value: 'adminTravelTripsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -22154,7 +22161,10 @@ export const WorkspaceTripDaysUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripDayInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTravelTripDayInput' } },
+                            },
                         },
                     },
                 },
@@ -22170,7 +22180,7 @@ export const WorkspaceTripDaysUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripDaysUpsert' },
+                                    name: { kind: 'Name', value: 'adminTravelTripDaysUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -22225,7 +22235,7 @@ export const WorkspaceTripDaysDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripDaysDelete' },
+                                    name: { kind: 'Name', value: 'adminTravelTripDaysDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -22261,7 +22271,10 @@ export const WorkspaceTripActivitiesUpsertDocument = {
                         kind: 'NonNullType',
                         type: {
                             kind: 'ListType',
-                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripActivityInput' } } },
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTravelTripActivityInput' } },
+                            },
                         },
                     },
                 },
@@ -22277,7 +22290,7 @@ export const WorkspaceTripActivitiesUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripActivitiesUpsert' },
+                                    name: { kind: 'Name', value: 'adminTravelTripActivitiesUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -22332,7 +22345,7 @@ export const WorkspaceTripActivitiesDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripActivitiesDelete' },
+                                    name: { kind: 'Name', value: 'adminTravelTripActivitiesDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -22370,7 +22383,7 @@ export const WorkspaceTripPackingItemsUpsertDocument = {
                             kind: 'ListType',
                             type: {
                                 kind: 'NonNullType',
-                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'TripPackingItemInput' } },
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminTravelTripPackingItemInput' } },
                             },
                         },
                     },
@@ -22387,7 +22400,7 @@ export const WorkspaceTripPackingItemsUpsertDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripPackingItemsUpsert' },
+                                    name: { kind: 'Name', value: 'adminTravelTripPackingItemsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
@@ -22442,7 +22455,7 @@ export const WorkspaceTripPackingItemsDeleteDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'tripPackingItemsDelete' },
+                                    name: { kind: 'Name', value: 'adminTravelTripPackingItemsDelete' },
                                     arguments: [
                                         {
                                             kind: 'Argument',

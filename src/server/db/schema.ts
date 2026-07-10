@@ -1824,54 +1824,57 @@ export type TtsAudioCacheCreate = typeof ttsAudioCache.$inferInsert;
 
 // --- Travel -----------------------------------------------------------------
 //
-// `Trips` and its satellites (`TripDays`, `TripActivities`, `TripPackingItems`)
-// back `/workspace/travel`. Admin-only, `noindex` — no `*De`/`*En` pairs,
-// matching Media / Medical / Inventory / Projects. See
+// `AdminTravelTrip` and its satellites (`AdminTravelTripDay`,
+// `AdminTravelTripActivity`, `AdminTravelTripPackingItem`) back
+// `/workspace/travel`. Admin-only, `noindex` — no `*De`/`*En` pairs, matching
+// Media / Medical / Inventory / Projects. Every table carries the `AdminTravel`
+// entity-access-path prefix so the physical name matches its GraphQL type — see
+// `docs/conventions.md` ("Type & input naming"). See
 // `docs/features/workspace-travel.md`.
 //
 // The three-tier shape (trip → days → activities) exists so the AI assistant
 // can persist a day-by-day itinerary from a chat session — future chats read
-// the plan from the DB instead of the transcript. `TripDays` is a first-class
-// bucket (rather than each activity carrying its own date) so "Day 3 in Rome"
-// reads well both in the agent's tool calls and in the UI.
+// the plan from the DB instead of the transcript. `AdminTravelTripDay` is a
+// first-class bucket (rather than each activity carrying its own date) so
+// "Day 3 in Rome" reads well both in the agent's tool calls and in the UI.
 //
-// `TripPackingItems` are trip-scoped for v1. A reusable base template
-// (`PackingTemplates`) is a follow-up — see the feature doc's Future Work.
+// `AdminTravelTripPackingItem` rows are trip-scoped for v1. A reusable base
+// template is a follow-up — see the feature doc's Future Work.
 
-export const tripStatuses = ['draft', 'planned', 'active', 'completed', 'cancelled'] as const;
-export type TripStatus = (typeof tripStatuses)[number];
+export const adminTravelTripStatuses = ['draft', 'planned', 'active', 'completed', 'cancelled'] as const;
+export type AdminTravelTripStatus = (typeof adminTravelTripStatuses)[number];
 
-export const transportModes = ['flight', 'train', 'car', 'ferry', 'mixed'] as const;
-export type TransportMode = (typeof transportModes)[number];
+export const adminTravelTransportModes = ['flight', 'train', 'car', 'ferry', 'mixed'] as const;
+export type AdminTravelTransportMode = (typeof adminTravelTransportModes)[number];
 
-export const trips = pgTable(
-    'Trips',
+export const adminTravelTrips = pgTable(
+    'AdminTravelTrip',
     {
         tripId: uuid().primaryKey(),
         title: varchar().notNull(),
         destination: varchar().notNull(),
         startsOn: date(),
         endsOn: date(),
-        status: varchar().$type<TripStatus>().notNull().default('draft'),
-        transportMode: varchar().$type<TransportMode>(),
+        status: varchar().$type<AdminTravelTripStatus>().notNull().default('draft'),
+        transportMode: varchar().$type<AdminTravelTransportMode>(),
         accommodation: text(),
         notes: text(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [index('Trips_status_idx').on(table.status), index('Trips_startsOn_idx').on(table.startsOn)],
+    (table) => [index('AdminTravelTrip_status_idx').on(table.status), index('AdminTravelTrip_startsOn_idx').on(table.startsOn)],
 );
 
-export type Trip = typeof trips.$inferSelect;
-export type TripCreate = typeof trips.$inferInsert;
+export type AdminTravelTrip = typeof adminTravelTrips.$inferSelect;
+export type AdminTravelTripCreate = typeof adminTravelTrips.$inferInsert;
 
 // A day within a trip. `dayNumber` is the 1-based ordinal used by the agent
 // ("Day 3") and the UI; `date` is the calendar date once the trip has real
 // dates (nullable — a draft trip may have days without dates yet). `summary`
 // holds the AI-written paragraph describing the day at a glance; `title` is
 // a shorter label ("Colosseum + Trastevere").
-export const tripDays = pgTable(
-    'TripDays',
+export const adminTravelTripDays = pgTable(
+    'AdminTravelTripDay',
     {
         tripDayId: uuid().primaryKey(),
         tripId: uuid().notNull(),
@@ -1885,24 +1888,24 @@ export const tripDays = pgTable(
     (table) => [
         foreignKey({
             columns: [table.tripId],
-            foreignColumns: [trips.tripId],
+            foreignColumns: [adminTravelTrips.tripId],
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        uniqueIndex('TripDays_tripId_dayNumber_uniq').on(table.tripId, table.dayNumber),
-        index('TripDays_tripId_idx').on(table.tripId),
+        uniqueIndex('AdminTravelTripDay_tripId_dayNumber_uniq').on(table.tripId, table.dayNumber),
+        index('AdminTravelTripDay_tripId_idx').on(table.tripId),
     ],
 );
 
-export type TripDay = typeof tripDays.$inferSelect;
-export type TripDayCreate = typeof tripDays.$inferInsert;
+export type AdminTravelTripDay = typeof adminTravelTripDays.$inferSelect;
+export type AdminTravelTripDayCreate = typeof adminTravelTripDays.$inferInsert;
 
 // An activity slotted into a `TripDay`. Times are stored as wall-clock only
 // (`time` — the trip is location-scoped, so a single tz would be a lie); the
 // UI joins them with the day's `date` for display. `position` orders
 // activities within a day when times are missing or equal.
-export const tripActivities = pgTable(
-    'TripActivities',
+export const adminTravelTripActivities = pgTable(
+    'AdminTravelTripActivity',
     {
         tripActivityId: uuid().primaryKey(),
         tripDayId: uuid().notNull(),
@@ -1919,23 +1922,23 @@ export const tripActivities = pgTable(
     (table) => [
         foreignKey({
             columns: [table.tripDayId],
-            foreignColumns: [tripDays.tripDayId],
+            foreignColumns: [adminTravelTripDays.tripDayId],
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('TripActivities_tripDayId_position_idx').on(table.tripDayId, table.position),
+        index('AdminTravelTripActivity_tripDayId_position_idx').on(table.tripDayId, table.position),
     ],
 );
 
-export type TripActivity = typeof tripActivities.$inferSelect;
-export type TripActivityCreate = typeof tripActivities.$inferInsert;
+export type AdminTravelTripActivity = typeof adminTravelTripActivities.$inferSelect;
+export type AdminTravelTripActivityCreate = typeof adminTravelTripActivities.$inferInsert;
 
 // Trip-scoped packing checklist. `category` is free text (Documents,
 // Electronics, Clothing …) — a known vocabulary lives in
 // `travelPackingCategories` and the UI groups by it, but the column stays
 // text so the agent can invent a new bucket without a migration.
-export const tripPackingItems = pgTable(
-    'TripPackingItems',
+export const adminTravelTripPackingItems = pgTable(
+    'AdminTravelTripPackingItem',
     {
         tripPackingItemId: uuid().primaryKey(),
         tripId: uuid().notNull(),
@@ -1951,16 +1954,16 @@ export const tripPackingItems = pgTable(
     (table) => [
         foreignKey({
             columns: [table.tripId],
-            foreignColumns: [trips.tripId],
+            foreignColumns: [adminTravelTrips.tripId],
         })
             .onUpdate('cascade')
             .onDelete('cascade'),
-        index('TripPackingItems_tripId_category_position_idx').on(table.tripId, table.category, table.position),
+        index('AdminTravelTripPackingItem_tripId_category_position_idx').on(table.tripId, table.category, table.position),
     ],
 );
 
-export type TripPackingItem = typeof tripPackingItems.$inferSelect;
-export type TripPackingItemCreate = typeof tripPackingItems.$inferInsert;
+export type AdminTravelTripPackingItem = typeof adminTravelTripPackingItems.$inferSelect;
+export type AdminTravelTripPackingItemCreate = typeof adminTravelTripPackingItems.$inferInsert;
 
 // --- Finances ---------------------------------------------------------------
 //

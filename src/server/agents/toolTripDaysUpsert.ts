@@ -1,14 +1,14 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tripDaysUpsert } from '../commands/tripDaysUpsert';
+import { adminTravelTripDaysUpsert } from '../commands/adminTravelTripDaysUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSTripDayInputSchema } from '../graphql/generated';
-import type { GqlSSession, GqlSTripDayInput } from '../graphql/generated';
+import { GqlSAdminTravelTripDayInputSchema } from '../graphql/generated';
+import type { GqlSAdminTravelTripDayInput, GqlSSession } from '../graphql/generated';
 import type { TravelAgentMutationLog } from './agentPersonalAssistantTravel';
 import { requireAdminUserId } from './requireAdminUserId';
 
 const toolTripDaysUpsertInputSchema = z.object({
-    tripDays: z.array(GqlSTripDayInputSchema()).min(1),
+    tripDays: z.array(GqlSAdminTravelTripDayInputSchema()).min(1),
 });
 
 interface TravelAgentMutationContext {
@@ -27,8 +27,8 @@ export function toolTripDaysUpsert({ serverRuntime, session, mutations }: Travel
         ].join(' '),
         inputSchema: toolTripDaysUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.tripDays as GqlSTripDayInput[];
-            const result = await tripDaysUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.tripDays as GqlSAdminTravelTripDayInput[];
+            const result = await adminTravelTripDaysUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((day, index) => {
                 mutations.push({

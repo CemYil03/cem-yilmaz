@@ -38,14 +38,14 @@ import { medicalRecordFilesAttach } from '../commands/medicalRecordFilesAttach';
 import { medicalRecordFilesDelete } from '../commands/medicalRecordFilesDelete';
 import { medicalRecordsDelete } from '../commands/medicalRecordsDelete';
 import { medicalRecordsUpsert } from '../commands/medicalRecordsUpsert';
-import { tripActivitiesDelete } from '../commands/tripActivitiesDelete';
-import { tripActivitiesUpsert } from '../commands/tripActivitiesUpsert';
-import { tripDaysDelete } from '../commands/tripDaysDelete';
-import { tripDaysUpsert } from '../commands/tripDaysUpsert';
-import { tripPackingItemsDelete } from '../commands/tripPackingItemsDelete';
-import { tripPackingItemsUpsert } from '../commands/tripPackingItemsUpsert';
-import { tripsDelete } from '../commands/tripsDelete';
-import { tripsUpsert } from '../commands/tripsUpsert';
+import { adminTravelTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
+import { adminTravelTripActivitiesUpsert } from '../commands/adminTravelTripActivitiesUpsert';
+import { adminTravelTripDaysDelete } from '../commands/adminTravelTripDaysDelete';
+import { adminTravelTripDaysUpsert } from '../commands/adminTravelTripDaysUpsert';
+import { adminTravelTripPackingItemsDelete } from '../commands/adminTravelTripPackingItemsDelete';
+import { adminTravelTripPackingItemsUpsert } from '../commands/adminTravelTripPackingItemsUpsert';
+import { adminTravelTripsDelete } from '../commands/adminTravelTripsDelete';
+import { adminTravelTripsUpsert } from '../commands/adminTravelTripsUpsert';
 import { recipesUpsert } from '../commands/recipesUpsert';
 import { recipesDelete } from '../commands/recipesDelete';
 import { mealPlanEntriesUpsert } from '../commands/mealPlanEntriesUpsert';
@@ -198,14 +198,14 @@ import type {
     GqlSAdminMutationMedicalRecordFilesDeleteArgs,
     GqlSAdminMutationMedicalRecordsDeleteArgs,
     GqlSAdminMutationMedicalRecordsUpsertArgs,
-    GqlSAdminMutationTripActivitiesDeleteArgs,
-    GqlSAdminMutationTripActivitiesUpsertArgs,
-    GqlSAdminMutationTripDaysDeleteArgs,
-    GqlSAdminMutationTripDaysUpsertArgs,
-    GqlSAdminMutationTripPackingItemsDeleteArgs,
-    GqlSAdminMutationTripPackingItemsUpsertArgs,
-    GqlSAdminMutationTripsDeleteArgs,
-    GqlSAdminMutationTripsUpsertArgs,
+    GqlSAdminMutationAdminTravelTripActivitiesDeleteArgs,
+    GqlSAdminMutationAdminTravelTripActivitiesUpsertArgs,
+    GqlSAdminMutationAdminTravelTripDaysDeleteArgs,
+    GqlSAdminMutationAdminTravelTripDaysUpsertArgs,
+    GqlSAdminMutationAdminTravelTripPackingItemsDeleteArgs,
+    GqlSAdminMutationAdminTravelTripPackingItemsUpsertArgs,
+    GqlSAdminMutationAdminTravelTripsDeleteArgs,
+    GqlSAdminMutationAdminTravelTripsUpsertArgs,
     GqlSAdminMutationMoviesAddFromTmdbArgs,
     GqlSAdminMutationMoviesDeleteArgs,
     GqlSAdminMutationMoviesUpsertArgs,
@@ -1027,45 +1027,61 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             itemFilesUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFilesUpsertArgs, requestingSession: GqlSSession) {
                 return itemFilesUpsert(userId, args.itemFiles, requestingSession, serverRuntime);
             },
-            tripsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripsUpsertArgs, requestingSession: GqlSSession) {
-                return tripsUpsert(userId, args.trips, requestingSession, serverRuntime);
-            },
-            tripsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripsDeleteArgs, requestingSession: GqlSSession) {
-                return tripsDelete(userId, args.tripIds, requestingSession, serverRuntime);
-            },
-            tripDaysUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDaysUpsertArgs, requestingSession: GqlSSession) {
-                return tripDaysUpsert(userId, args.tripDays, requestingSession, serverRuntime);
-            },
-            tripDaysDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTripDaysDeleteArgs, requestingSession: GqlSSession) {
-                return tripDaysDelete(userId, args.tripDayIds, requestingSession, serverRuntime);
-            },
-            tripActivitiesUpsert(
+            adminTravelTripsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripActivitiesUpsertArgs,
+                args: GqlSAdminMutationAdminTravelTripsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripActivitiesUpsert(userId, args.tripActivities, requestingSession, serverRuntime);
+                return adminTravelTripsUpsert(userId, args.trips, requestingSession, serverRuntime);
             },
-            tripActivitiesDelete(
+            adminTravelTripsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripActivitiesDeleteArgs,
+                args: GqlSAdminMutationAdminTravelTripsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripActivitiesDelete(userId, args.tripActivityIds, requestingSession, serverRuntime);
+                return adminTravelTripsDelete(userId, args.tripIds, requestingSession, serverRuntime);
             },
-            tripPackingItemsUpsert(
+            adminTravelTripDaysUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripPackingItemsUpsertArgs,
+                args: GqlSAdminMutationAdminTravelTripDaysUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripPackingItemsUpsert(userId, args.tripPackingItems, requestingSession, serverRuntime);
+                return adminTravelTripDaysUpsert(userId, args.tripDays, requestingSession, serverRuntime);
             },
-            tripPackingItemsDelete(
+            adminTravelTripDaysDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationTripPackingItemsDeleteArgs,
+                args: GqlSAdminMutationAdminTravelTripDaysDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return tripPackingItemsDelete(userId, args.tripPackingItemIds, requestingSession, serverRuntime);
+                return adminTravelTripDaysDelete(userId, args.tripDayIds, requestingSession, serverRuntime);
+            },
+            adminTravelTripActivitiesUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTravelTripActivitiesUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTravelTripActivitiesUpsert(userId, args.tripActivities, requestingSession, serverRuntime);
+            },
+            adminTravelTripActivitiesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTravelTripActivitiesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTravelTripActivitiesDelete(userId, args.tripActivityIds, requestingSession, serverRuntime);
+            },
+            adminTravelTripPackingItemsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTravelTripPackingItemsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTravelTripPackingItemsUpsert(userId, args.tripPackingItems, requestingSession, serverRuntime);
+            },
+            adminTravelTripPackingItemsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminTravelTripPackingItemsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminTravelTripPackingItemsDelete(userId, args.tripPackingItemIds, requestingSession, serverRuntime);
             },
             recipesUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationRecipesUpsertArgs, requestingSession: GqlSSession) {
                 return recipesUpsert(userId, args.recipes, requestingSession, serverRuntime);

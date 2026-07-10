@@ -48,9 +48,9 @@ subscription WorkspaceTravelPageUpdates {
     }
 }
 
-mutation WorkspaceTripsUpsert($trips: [TripInput!]!) {
+mutation WorkspaceTripsUpsert($trips: [AdminTravelTripInput!]!) {
     admin {
-        tripsUpsert(trips: $trips) {
+        adminTravelTripsUpsert(trips: $trips) {
             success
             referenceIds
         }
@@ -59,7 +59,7 @@ mutation WorkspaceTripsUpsert($trips: [TripInput!]!) {
 
 mutation WorkspaceTripsDelete($tripIds: [ID!]!) {
     admin {
-        tripsDelete(tripIds: $tripIds) {
+        adminTravelTripsDelete(tripIds: $tripIds) {
             success
         }
     }
