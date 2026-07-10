@@ -2496,6 +2496,60 @@ type FoodLogEntry {
     updatedAt: DateTime!
 }
 
+# One tracked supplement. The exact per-serving composition lives in `nutrients`
+# — filled by the `supplementResearch` action (grounded web search) and
+# confirmed by Cem before saving. `researchedAt` is set when the composition
+# came from that AI fill; `sourceUrl` is the product page it was read from.
+type Supplement {
+    supplementId: ID!
+    name: String!
+    brand: String
+    # Free text as printed on the label, e.g. "2 capsules" or "1 scoop (5 g)".
+    servingSize: String
+    servingsPerContainer: Int
+    sourceUrl: String
+    notes: String
+    researchedAt: DateTime
+    # Per-serving composition, ordered as on the label (`sortOrder`).
+    nutrients: [SupplementNutrient!]!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+# One nutrient line on a supplement's facts panel. `amount` is a string so it
+# tolerates "<1", "trace", and ranges printed verbatim on the label.
+type SupplementNutrient {
+    nutrientId: ID!
+    name: String!
+    amount: String
+    unit: String
+    percentDailyValue: Int
+    sortOrder: Int!
+}
+
+# The proposed composition returned by `supplementResearch`. Non-persisted — the
+# dialog (or the sub-agent) reviews it and feeds the confirmed values into
+# `supplementsUpsert`. `found` is false when the product could not be
+# identified; in that case `nutrients` is empty and no amounts are invented.
+type SupplementResearchResult {
+    found: Boolean!
+    brand: String
+    servingSize: String
+    servingsPerContainer: Int
+    sourceUrl: String
+    notes: String
+    nutrients: [SupplementNutrientProposal!]!
+    # One-line note on what was found (or why nothing was), for the UI / agent.
+    summary: String!
+}
+
+type SupplementNutrientProposal {
+    name: String!
+    amount: String
+    unit: String
+    percentDailyValue: Int
+}
+
 # Read namespace mounted under `Admin`. Gated once at the `Query.admin`
 # boundary by the resolver chain on `User.admin`. Meal-plan and diary lists
 # return everything and the page slices to the visible week client-side —
@@ -2511,6 +2565,9 @@ type AdminNutritionQuery {
     # Every diary entry, newest first (`consumedAt DESC`). The page filters to
     # the selected week and rolls up the end-of-week overview.
     adminNutritionFoodLogFindMany: [FoodLogEntry!]!
+    # Every tracked supplement, ordered `name ASC`, each with its per-serving
+    # nutrient rows ordered by `sortOrder`.
+    adminNutritionSupplementFindMany: [Supplement!]!
 }
 
 extend type Admin {
@@ -2556,6 +2613,33 @@ input FoodLogEntryInput {
     notes: String
 }
 
+input SupplementNutrientInput {
+    name: String!
+    amount: String
+    unit: String
+    percentDailyValue: Int
+    # Position on the label; the replace falls back to array order when omitted.
+    sortOrder: Int
+}
+
+input SupplementInput {
+    supplementId: ID
+    name: String!
+    brand: String
+    servingSize: String
+    servingsPerContainer: Int
+    sourceUrl: String
+    notes: String
+    # ISO-8601 timestamp. Set when the composition came from the research
+    # action; leave null for a purely hand-entered supplement.
+    researchedAt: DateTime
+}
+
+input SupplementResearchInput {
+    name: String!
+    brand: String
+}
+
 extend type AdminMutation {
     # Batch create-or-edit. Every row with an id is updated; every row without
     # one is inserted. `referenceIds` echoes the id per input row in input
@@ -2569,6 +2653,25 @@ extend type AdminMutation {
 
     foodLogEntriesUpsert(foodLogEntries: [FoodLogEntryInput!]!): MutationResult!
     foodLogEntriesDelete(logIds: [ID!]!): MutationResult!
+
+    # Batch create-or-edit of supplements. Every row with a `supplementId` is
+    # updated; every row without one is inserted. `referenceIds` echoes the
+    # supplement id per input row in input order, so the caller can pass a new
+    # id straight into `supplementNutrientsReplace`. Nutrient rows are written
+    # separately (see below) — a supplement and its composition are two calls,
+    # mirroring the parent/child split used by travel and inventory.
+    supplementsUpsert(supplements: [SupplementInput!]!): MutationResult!
+    supplementsDelete(supplementIds: [ID!]!): MutationResult!
+
+    # Replace one supplement's entire per-serving composition with `nutrients`
+    # (pass [] to clear it). `sortOrder` defaults to array position when omitted.
+    supplementNutrientsReplace(supplementId: ID!, nutrients: [SupplementNutrientInput!]!): MutationResult!
+
+    # AI web-research action. Grounded search for the named product's official
+    # supplement facts, returning a proposed composition for review. Persists
+    # NOTHING — the caller confirms and then calls `supplementsUpsert` +
+    # `supplementNutrientsReplace`.
+    supplementResearch(input: SupplementResearchInput!): SupplementResearchResult!
 }
 
 # --- Fitness ----------------------------------------------------------------

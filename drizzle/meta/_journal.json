@@ -183,6 +183,13 @@
             "when": 1783629568773,
             "tag": "0025_tiresome_la_nuit",
             "breakpoints": true
+        },
+        {
+            "idx": 26,
+            "version": "7",
+            "when": 1783675128077,
+            "tag": "0026_low_proteus",
+            "breakpoints": true
         }
     ]
 }

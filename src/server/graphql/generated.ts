@@ -259,6 +259,10 @@ export interface GqlSAdminMutation {
     showsAddFromTmdb: GqlSMutationResult;
     showsDelete: GqlSMutationResult;
     showsUpsert: GqlSMutationResult;
+    supplementNutrientsReplace: GqlSMutationResult;
+    supplementResearch: GqlSSupplementResearchResult;
+    supplementsDelete: GqlSMutationResult;
+    supplementsUpsert: GqlSMutationResult;
     taskReorder: GqlSMutationResult;
     tasksDelete: GqlSMutationResult;
     tasksUpsert: GqlSMutationResult;
@@ -564,6 +568,23 @@ export type GqlSAdminMutationShowsUpsertArgs = {
     shows: Array<GqlSShowInput>;
 };
 
+export type GqlSAdminMutationSupplementNutrientsReplaceArgs = {
+    nutrients: Array<GqlSSupplementNutrientInput>;
+    supplementId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminMutationSupplementResearchArgs = {
+    input: GqlSSupplementResearchInput;
+};
+
+export type GqlSAdminMutationSupplementsDeleteArgs = {
+    supplementIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationSupplementsUpsertArgs = {
+    supplements: Array<GqlSSupplementInput>;
+};
+
 export type GqlSAdminMutationTaskReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
@@ -645,6 +666,7 @@ export interface GqlSAdminNutritionQuery {
     adminNutritionFoodLogFindMany: Array<GqlSFoodLogEntry>;
     adminNutritionMealPlanFindMany: Array<GqlSMealPlanEntry>;
     adminNutritionRecipeFindMany: Array<GqlSRecipe>;
+    adminNutritionSupplementFindMany: Array<GqlSSupplement>;
 }
 
 export type GqlSAdminNutritionQueryAdminNutritionRecipeFindManyArgs = {
@@ -1845,6 +1867,75 @@ export type GqlSSubscriptionCompassInterviewUpdatesArgs = {
     generationId: Scalars['ID']['input'];
 };
 
+export interface GqlSSupplement {
+    __typename?: 'Supplement';
+    brand?: Maybe<Scalars['String']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    nutrients: Array<GqlSSupplementNutrient>;
+    researchedAt?: Maybe<Scalars['DateTime']['output']>;
+    servingSize?: Maybe<Scalars['String']['output']>;
+    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    supplementId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSSupplementInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    researchedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    servingSize?: InputMaybe<Scalars['String']['input']>;
+    servingsPerContainer?: InputMaybe<Scalars['Int']['input']>;
+    sourceUrl?: InputMaybe<Scalars['String']['input']>;
+    supplementId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlSSupplementNutrient {
+    __typename?: 'SupplementNutrient';
+    amount?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    nutrientId: Scalars['ID']['output'];
+    percentDailyValue?: Maybe<Scalars['Int']['output']>;
+    sortOrder: Scalars['Int']['output'];
+    unit?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlSSupplementNutrientInput = {
+    amount?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    percentDailyValue?: InputMaybe<Scalars['Int']['input']>;
+    sortOrder?: InputMaybe<Scalars['Int']['input']>;
+    unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlSSupplementNutrientProposal {
+    __typename?: 'SupplementNutrientProposal';
+    amount?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    percentDailyValue?: Maybe<Scalars['Int']['output']>;
+    unit?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlSSupplementResearchInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+};
+
+export interface GqlSSupplementResearchResult {
+    __typename?: 'SupplementResearchResult';
+    brand?: Maybe<Scalars['String']['output']>;
+    found: Scalars['Boolean']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    nutrients: Array<GqlSSupplementNutrientProposal>;
+    servingSize?: Maybe<Scalars['String']['output']>;
+    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    summary: Scalars['String']['output'];
+}
+
 export interface GqlSTask {
     __typename?: 'Task';
     completedAt?: Maybe<Scalars['DateTime']['output']>;
@@ -2453,6 +2544,13 @@ export type GqlSResolversTypes = ResolversObject<{
     ShowInput: GqlSShowInput;
     String: ResolverTypeWrapper<Scalars['String']['output']>;
     Subscription: ResolverTypeWrapper<Record<PropertyKey, never>>;
+    Supplement: ResolverTypeWrapper<GqlSSupplement>;
+    SupplementInput: GqlSSupplementInput;
+    SupplementNutrient: ResolverTypeWrapper<GqlSSupplementNutrient>;
+    SupplementNutrientInput: GqlSSupplementNutrientInput;
+    SupplementNutrientProposal: ResolverTypeWrapper<GqlSSupplementNutrientProposal>;
+    SupplementResearchInput: GqlSSupplementResearchInput;
+    SupplementResearchResult: ResolverTypeWrapper<GqlSSupplementResearchResult>;
     Task: ResolverTypeWrapper<GqlSTask>;
     TaskCreate: GqlSTaskCreate;
     TaskEffort: GqlSTaskEffort;
@@ -2627,6 +2725,13 @@ export type GqlSResolversParentTypes = ResolversObject<{
     ShowInput: GqlSShowInput;
     String: Scalars['String']['output'];
     Subscription: Record<PropertyKey, never>;
+    Supplement: GqlSSupplement;
+    SupplementInput: GqlSSupplementInput;
+    SupplementNutrient: GqlSSupplementNutrient;
+    SupplementNutrientInput: GqlSSupplementNutrientInput;
+    SupplementNutrientProposal: GqlSSupplementNutrientProposal;
+    SupplementResearchInput: GqlSSupplementResearchInput;
+    SupplementResearchResult: GqlSSupplementResearchResult;
     Task: GqlSTask;
     TaskCreate: GqlSTaskCreate;
     TmdbMovieResult: GqlSTmdbMovieResult;
@@ -3255,6 +3360,30 @@ export type GqlSAdminMutationResolvers<
         ContextType,
         RequireFields<GqlSAdminMutationShowsUpsertArgs, 'shows'>
     >;
+    supplementNutrientsReplace?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationSupplementNutrientsReplaceArgs, 'nutrients' | 'supplementId'>
+    >;
+    supplementResearch?: Resolver<
+        GqlSResolversTypes['SupplementResearchResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationSupplementResearchArgs, 'input'>
+    >;
+    supplementsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationSupplementsDeleteArgs, 'supplementIds'>
+    >;
+    supplementsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationSupplementsUpsertArgs, 'supplements'>
+    >;
     taskReorder?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -3383,6 +3512,7 @@ export type GqlSAdminNutritionQueryResolvers<
         ContextType,
         Partial<GqlSAdminNutritionQueryAdminNutritionRecipeFindManyArgs>
     >;
+    adminNutritionSupplementFindMany?: Resolver<Array<GqlSResolversTypes['Supplement']>, ParentType, ContextType>;
 }>;
 
 export type GqlSAdminTravelQueryResolvers<
@@ -4393,6 +4523,59 @@ export type GqlSSubscriptionResolvers<
     userUpdates?: SubscriptionResolver<GqlSResolversTypes['User'], 'userUpdates', ParentType, ContextType>;
 }>;
 
+export type GqlSSupplementResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['Supplement'] = GqlSResolversParentTypes['Supplement'],
+> = ResolversObject<{
+    brand?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    nutrients?: Resolver<Array<GqlSResolversTypes['SupplementNutrient']>, ParentType, ContextType>;
+    researchedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
+    servingSize?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    servingsPerContainer?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    sourceUrl?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    supplementId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSSupplementNutrientResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['SupplementNutrient'] = GqlSResolversParentTypes['SupplementNutrient'],
+> = ResolversObject<{
+    amount?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    nutrientId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    percentDailyValue?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    sortOrder?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    unit?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type GqlSSupplementNutrientProposalResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['SupplementNutrientProposal'] = GqlSResolversParentTypes['SupplementNutrientProposal'],
+> = ResolversObject<{
+    amount?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    percentDailyValue?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    unit?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+}>;
+
+export type GqlSSupplementResearchResultResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['SupplementResearchResult'] = GqlSResolversParentTypes['SupplementResearchResult'],
+> = ResolversObject<{
+    brand?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    found?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    nutrients?: Resolver<Array<GqlSResolversTypes['SupplementNutrientProposal']>, ParentType, ContextType>;
+    servingSize?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    servingsPerContainer?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
+    sourceUrl?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    summary?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type GqlSTaskResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['Task'] = GqlSResolversParentTypes['Task'],
@@ -4700,6 +4883,10 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Session?: GqlSSessionResolvers<ContextType>;
     Show?: GqlSShowResolvers<ContextType>;
     Subscription?: GqlSSubscriptionResolvers<ContextType>;
+    Supplement?: GqlSSupplementResolvers<ContextType>;
+    SupplementNutrient?: GqlSSupplementNutrientResolvers<ContextType>;
+    SupplementNutrientProposal?: GqlSSupplementNutrientProposalResolvers<ContextType>;
+    SupplementResearchResult?: GqlSSupplementResearchResultResolvers<ContextType>;
     Task?: GqlSTaskResolvers<ContextType>;
     TmdbMovieResult?: GqlSTmdbMovieResultResolvers<ContextType>;
     TmdbTvResult?: GqlSTmdbTvResultResolvers<ContextType>;
@@ -5363,6 +5550,36 @@ export function GqlSShowInputSchema(): z.ZodObject<Properties<GqlSShowInput>> {
         title: z.string(),
         tmdbId: z.number().nullish(),
         topics: z.array(z.string()),
+    });
+}
+
+export function GqlSSupplementInputSchema(): z.ZodObject<Properties<GqlSSupplementInput>> {
+    return z.object({
+        brand: z.string().nullish(),
+        name: z.string(),
+        notes: z.string().nullish(),
+        researchedAt: z.date().nullish(),
+        servingSize: z.string().nullish(),
+        servingsPerContainer: z.number().nullish(),
+        sourceUrl: z.string().nullish(),
+        supplementId: z.string().nullish(),
+    });
+}
+
+export function GqlSSupplementNutrientInputSchema(): z.ZodObject<Properties<GqlSSupplementNutrientInput>> {
+    return z.object({
+        amount: z.string().nullish(),
+        name: z.string(),
+        percentDailyValue: z.number().nullish(),
+        sortOrder: z.number().nullish(),
+        unit: z.string().nullish(),
+    });
+}
+
+export function GqlSSupplementResearchInputSchema(): z.ZodObject<Properties<GqlSSupplementResearchInput>> {
+    return z.object({
+        brand: z.string().nullish(),
+        name: z.string(),
     });
 }
 

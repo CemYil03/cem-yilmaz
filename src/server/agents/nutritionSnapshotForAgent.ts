@@ -1,5 +1,5 @@
 import { asc, desc } from 'drizzle-orm';
-import { foodLogEntries, mealPlanEntries, recipes } from '../db/schema';
+import { foodLogEntries, mealPlanEntries, recipes, supplements } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
 // Compact markdown snapshot embedded in the nutrition sub-agent's system
@@ -20,6 +20,7 @@ export async function nutritionSnapshotForAgent(serverRuntime: ServerRuntime): P
         .from(mealPlanEntries)
         .orderBy(asc(mealPlanEntries.date), asc(mealPlanEntries.mealType));
     const logRows = await serverRuntime.db.select().from(foodLogEntries).orderBy(desc(foodLogEntries.consumedAt)).limit(15);
+    const supplementRows = await serverRuntime.db.select().from(supplements).orderBy(asc(supplements.name));
 
     const lines: string[] = [];
 
@@ -57,6 +58,19 @@ export async function nutritionSnapshotForAgent(serverRuntime: ServerRuntime): P
             lines.push(
                 `- ${l.consumedAt.toISOString().slice(0, 16).replace('T', ' ')} [${l.mealType}/${l.kind}] ${l.description} (id: ${l.logId})`,
             );
+        }
+    }
+
+    lines.push('', '## Supplements');
+    if (supplementRows.length === 0) {
+        lines.push('(none tracked)');
+    } else {
+        for (const s of supplementRows) {
+            const bits: string[] = [];
+            if (s.brand) bits.push(s.brand);
+            if (s.servingSize) bits.push(s.servingSize);
+            const meta = bits.length > 0 ? ` — ${bits.join(' · ')}` : '';
+            lines.push(`- ${s.name}${meta} (id: ${s.supplementId})`);
         }
     }
 

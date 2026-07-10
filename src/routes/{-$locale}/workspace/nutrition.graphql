@@ -22,6 +22,25 @@ fragment WorkspaceNutritionRecipe on Recipe {
     lastMadeAt
 }
 
+fragment WorkspaceNutritionSupplement on Supplement {
+    supplementId
+    name
+    brand
+    servingSize
+    servingsPerContainer
+    sourceUrl
+    notes
+    researchedAt
+    nutrients {
+        nutrientId
+        name
+        amount
+        unit
+        percentDailyValue
+        sortOrder
+    }
+}
+
 fragment WorkspaceNutritionPageUser on User {
     admin {
         adminNutritionFindOne {
@@ -51,6 +70,9 @@ fragment WorkspaceNutritionPageUser on User {
                     recipeId
                     title
                 }
+            }
+            adminNutritionSupplementFindMany {
+                ...WorkspaceNutritionSupplement
             }
         }
     }
@@ -117,6 +139,51 @@ mutation WorkspaceFoodLogEntriesDelete($logIds: [ID!]!) {
     admin {
         foodLogEntriesDelete(logIds: $logIds) {
             success
+        }
+    }
+}
+
+mutation WorkspaceSupplementsUpsert($supplements: [SupplementInput!]!) {
+    admin {
+        supplementsUpsert(supplements: $supplements) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceSupplementNutrientsReplace($supplementId: ID!, $nutrients: [SupplementNutrientInput!]!) {
+    admin {
+        supplementNutrientsReplace(supplementId: $supplementId, nutrients: $nutrients) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceSupplementsDelete($supplementIds: [ID!]!) {
+    admin {
+        supplementsDelete(supplementIds: $supplementIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceSupplementResearch($input: SupplementResearchInput!) {
+    admin {
+        supplementResearch(input: $input) {
+            found
+            brand
+            servingSize
+            servingsPerContainer
+            sourceUrl
+            notes
+            summary
+            nutrients {
+                name
+                amount
+                unit
+                percentDailyValue
+            }
         }
     }
 }

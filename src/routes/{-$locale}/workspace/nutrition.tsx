@@ -5,11 +5,14 @@ import {
     ChevronRightIcon,
     CoffeeIcon,
     HeartIcon,
+    Loader2Icon,
     PencilIcon,
     PlusIcon,
+    SearchIcon,
     StarIcon,
     Trash2Icon,
     UtensilsCrossedIcon,
+    XIcon,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
@@ -49,6 +52,10 @@ import {
     WorkspaceNutritionPageUpdatesDocument,
     WorkspaceRecipesDeleteDocument,
     WorkspaceRecipesUpsertDocument,
+    WorkspaceSupplementNutrientsReplaceDocument,
+    WorkspaceSupplementResearchDocument,
+    WorkspaceSupplementsDeleteDocument,
+    WorkspaceSupplementsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -93,12 +100,13 @@ const FOOD_LOG_KIND_LABELS: Record<GqlCFoodLogKind, { de: string; en: string }> 
 // column is a plain `text[]`, so these are hints, not a constraint.
 const SUGGESTED_TAGS = ['high-protein', 'quick', 'vegetarian', 'vegan', 'meal-prep', 'low-carb', 'comfort', 'healthy'] as const;
 
-type NutritionTab = 'cookbook' | 'plan' | 'diary';
-const TAB_ORDER: ReadonlyArray<NutritionTab> = ['cookbook', 'plan', 'diary'];
+type NutritionTab = 'cookbook' | 'plan' | 'diary' | 'supplements';
+const TAB_ORDER: ReadonlyArray<NutritionTab> = ['cookbook', 'plan', 'diary', 'supplements'];
 const TAB_LABELS: Record<NutritionTab, { de: string; en: string }> = {
     cookbook: { de: 'Kochbuch', en: 'Cookbook' },
     plan: { de: 'Wochenplan', en: 'Meal plan' },
     diary: { de: 'Tagebuch', en: 'Diary' },
+    supplements: { de: 'Nahrungsergänzung', en: 'Supplements' },
 };
 
 const nutritionSearchSchema = z.object({
@@ -113,6 +121,7 @@ type NutritionData = NutritionAdmin['adminNutritionFindOne'];
 type RecipeRow = NutritionData['adminNutritionRecipeFindMany'][number];
 type MealPlanRow = NutritionData['adminNutritionMealPlanFindMany'][number];
 type FoodLogRow = NutritionData['adminNutritionFoodLogFindMany'][number];
+type SupplementRow = NutritionData['adminNutritionSupplementFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/nutrition')({
     validateSearch: nutritionSearchSchema,
@@ -212,6 +221,7 @@ function NutritionArea() {
                     />
                 )}
                 {tab === 'diary' && <DiaryTab entries={nutrition.adminNutritionFoodLogFindMany} weekParam={search.week} locale={locale} />}
+                {tab === 'supplements' && <SupplementsTab supplements={nutrition.adminNutritionSupplementFindMany} locale={locale} />}
             </div>
         </main>
     );
@@ -1039,6 +1049,446 @@ function DeleteDiaryAlert({ entry, locale, onClose }: { entry: FoodLogRow; local
                     <AlertDialogTitle>{{ de: 'Eintrag löschen?', en: 'Delete this entry?' }[locale]}</AlertDialogTitle>
                     <AlertDialogDescription>
                         {{ de: `„${entry.description}“ wird entfernt.`, en: `"${entry.description}" will be removed.` }[locale]}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={submitting}>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
+                    <AlertDialogAction onClick={doDelete} disabled={submitting}>
+                        {{ de: 'Löschen', en: 'Delete' }[locale]}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+// --- Supplements tab --------------------------------------------------------
+
+function SupplementsTab({ supplements, locale }: { supplements: ReadonlyArray<SupplementRow>; locale: Locale }) {
+    const [editing, setEditing] = useState<SupplementRow | 'new' | null>(null);
+    const [deleting, setDeleting] = useState<SupplementRow | null>(null);
+
+    return (
+        <div>
+            <div className="flex justify-end">
+                <Button size="sm" onClick={() => setEditing('new')}>
+                    <PlusIcon className="size-4" />
+                    {{ de: 'Neues Präparat', en: 'New supplement' }[locale]}
+                </Button>
+            </div>
+
+            {supplements.length === 0 ? (
+                <GlassCard className="mt-6 px-6 py-10 text-center">
+                    <PlusIcon className="mx-auto size-8 text-muted-foreground/60" aria-hidden />
+                    <h2 className="mt-3 text-base font-semibold">{{ de: 'Noch keine Präparate', en: 'No supplements yet' }[locale]}</h2>
+                    <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+                        {
+                            {
+                                de: 'Trage ein Präparat ein — der Assistent recherchiert die genaue Zusammensetzung pro Portion, du prüfst und speicherst.',
+                                en: 'Add a supplement — the assistant researches its exact per-serving composition, you review and save.',
+                            }[locale]
+                        }
+                    </p>
+                    <Button className="mt-4" onClick={() => setEditing('new')}>
+                        <PlusIcon className="size-4" />
+                        {{ de: 'Erstes Präparat', en: 'First supplement' }[locale]}
+                    </Button>
+                </GlassCard>
+            ) : (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {supplements.map((supplement) => (
+                        <SupplementCard
+                            key={supplement.supplementId}
+                            supplement={supplement}
+                            locale={locale}
+                            onEdit={() => setEditing(supplement)}
+                            onDelete={() => setDeleting(supplement)}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {editing !== null ? (
+                <EditSupplementDialog initial={editing === 'new' ? null : editing} locale={locale} onClose={() => setEditing(null)} />
+            ) : null}
+            {deleting !== null ? <DeleteSupplementAlert supplement={deleting} locale={locale} onClose={() => setDeleting(null)} /> : null}
+        </div>
+    );
+}
+
+function SupplementCard({
+    supplement,
+    locale,
+    onEdit,
+    onDelete,
+}: {
+    supplement: SupplementRow;
+    locale: Locale;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
+    return (
+        <GlassCard
+            className="group px-4 py-4 data-[focused=true]:ring-2 data-[focused=true]:ring-primary transition-shadow"
+            data-row-id={supplement.supplementId}
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                    <div className="truncate text-base font-semibold">{supplement.name}</div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {supplement.brand ? <span className="truncate">{supplement.brand}</span> : null}
+                        {supplement.servingSize ? <span>{supplement.servingSize}</span> : null}
+                        {supplement.servingsPerContainer ? (
+                            <span className="tabular-nums">
+                                {
+                                    {
+                                        de: `${supplement.servingsPerContainer} Portionen`,
+                                        en: `${supplement.servingsPerContainer} servings`,
+                                    }[locale]
+                                }
+                            </span>
+                        ) : null}
+                    </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        onClick={onEdit}
+                        aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                    >
+                        <PencilIcon className="size-3.5" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 text-destructive/70 hover:text-destructive"
+                        onClick={onDelete}
+                        aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
+                    >
+                        <Trash2Icon className="size-3.5" />
+                    </Button>
+                </div>
+            </div>
+
+            {supplement.nutrients.length > 0 ? (
+                <table className="mt-3 w-full text-xs">
+                    <tbody>
+                        {supplement.nutrients.map((nutrient) => (
+                            <tr key={nutrient.nutrientId} className="border-t border-border/40">
+                                <td className="py-1 pr-2">{nutrient.name}</td>
+                                <td className="py-1 pr-2 text-right tabular-nums whitespace-nowrap">
+                                    {[nutrient.amount, nutrient.unit].filter(Boolean).join(' ')}
+                                </td>
+                                <td className="py-1 text-right tabular-nums text-muted-foreground">
+                                    {nutrient.percentDailyValue != null ? `${nutrient.percentDailyValue}%` : ''}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            ) : (
+                <p className="mt-3 text-xs text-muted-foreground/70">
+                    {{ de: 'Keine Zusammensetzung hinterlegt.', en: 'No composition recorded.' }[locale]}
+                </p>
+            )}
+
+            {supplement.notes ? <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{supplement.notes}</p> : null}
+        </GlassCard>
+    );
+}
+
+// Editable nutrient row in the dialog's repeater.
+type NutrientDraft = { name: string; amount: string; unit: string; percentDailyValue: string };
+
+type SupplementFormState = {
+    supplementId: string | null;
+    name: string;
+    brand: string;
+    servingSize: string;
+    servingsPerContainer: string;
+    sourceUrl: string;
+    notes: string;
+    researchedAt: string | null;
+    nutrients: NutrientDraft[];
+};
+
+function EditSupplementDialog({ initial, locale, onClose }: { initial: SupplementRow | null; locale: Locale; onClose: () => void }) {
+    const isNew = initial === null;
+    const [state, setState] = useState<SupplementFormState>(() => ({
+        supplementId: initial?.supplementId ?? null,
+        name: initial?.name ?? '',
+        brand: initial?.brand ?? '',
+        servingSize: initial?.servingSize ?? '',
+        servingsPerContainer: initial?.servingsPerContainer != null ? String(initial.servingsPerContainer) : '',
+        sourceUrl: initial?.sourceUrl ?? '',
+        notes: initial?.notes ?? '',
+        researchedAt: initial?.researchedAt ?? null,
+        nutrients: initial
+            ? initial.nutrients.map((n) => ({
+                  name: n.name,
+                  amount: n.amount ?? '',
+                  unit: n.unit ?? '',
+                  percentDailyValue: n.percentDailyValue != null ? String(n.percentDailyValue) : '',
+              }))
+            : [],
+    }));
+    const [, upsert] = useMutation(WorkspaceSupplementsUpsertDocument);
+    const [, replaceNutrients] = useMutation(WorkspaceSupplementNutrientsReplaceDocument);
+    const [, research] = useMutation(WorkspaceSupplementResearchDocument);
+    const [submitting, setSubmitting] = useState(false);
+    const [researching, setResearching] = useState(false);
+    const [researchNote, setResearchNote] = useState<{ tone: 'ok' | 'warn'; text: string } | null>(null);
+
+    const runResearch = async () => {
+        if (!state.name.trim()) return;
+        setResearching(true);
+        setResearchNote(null);
+        try {
+            const result = await research({ input: { name: state.name.trim(), brand: state.brand.trim() || null } });
+            const data = result.data?.admin.supplementResearch;
+            if (result.error || !data) {
+                setResearchNote({ tone: 'warn', text: { de: 'Recherche fehlgeschlagen.', en: 'Research failed.' }[locale] });
+                return;
+            }
+            if (!data.found) {
+                setResearchNote({ tone: 'warn', text: data.summary });
+                return;
+            }
+            setState((s) => ({
+                ...s,
+                brand: s.brand.trim() || data.brand || s.brand,
+                servingSize: data.servingSize ?? s.servingSize,
+                servingsPerContainer: data.servingsPerContainer != null ? String(data.servingsPerContainer) : s.servingsPerContainer,
+                sourceUrl: data.sourceUrl ?? s.sourceUrl,
+                notes: data.notes ?? s.notes,
+                researchedAt: new Date().toISOString(),
+                nutrients: data.nutrients.map((n) => ({
+                    name: n.name,
+                    amount: n.amount ?? '',
+                    unit: n.unit ?? '',
+                    percentDailyValue: n.percentDailyValue != null ? String(n.percentDailyValue) : '',
+                })),
+            }));
+            setResearchNote({ tone: 'ok', text: data.summary });
+        } finally {
+            setResearching(false);
+        }
+    };
+
+    const setNutrient = (index: number, patch: Partial<NutrientDraft>) =>
+        setState((s) => ({ ...s, nutrients: s.nutrients.map((n, i) => (i === index ? { ...n, ...patch } : n)) }));
+    const addNutrient = () =>
+        setState((s) => ({ ...s, nutrients: [...s.nutrients, { name: '', amount: '', unit: '', percentDailyValue: '' }] }));
+    const removeNutrient = (index: number) => setState((s) => ({ ...s, nutrients: s.nutrients.filter((_, i) => i !== index) }));
+
+    const submit = async () => {
+        setSubmitting(true);
+        try {
+            const upsertResult = await upsert({
+                supplements: [
+                    {
+                        supplementId: state.supplementId,
+                        name: state.name.trim(),
+                        brand: state.brand.trim() || null,
+                        servingSize: state.servingSize.trim() || null,
+                        servingsPerContainer: parseIntOrNull(state.servingsPerContainer),
+                        sourceUrl: state.sourceUrl.trim() || null,
+                        notes: state.notes.trim() || null,
+                        researchedAt: state.researchedAt,
+                    },
+                ],
+            });
+            if (upsertResult.error) return;
+            const supplementId = upsertResult.data?.admin.supplementsUpsert.referenceIds?.[0] ?? state.supplementId;
+            if (!supplementId) return;
+            const nutrients = state.nutrients
+                .filter((n) => n.name.trim().length > 0)
+                .map((n, index) => ({
+                    name: n.name.trim(),
+                    amount: n.amount.trim() || null,
+                    unit: n.unit.trim() || null,
+                    percentDailyValue: parseIntOrNull(n.percentDailyValue),
+                    sortOrder: index,
+                }));
+            const replaceResult = await replaceNutrients({ supplementId, nutrients });
+            if (replaceResult.error) return;
+            onClose();
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>
+                        {isNew
+                            ? { de: 'Neues Präparat', en: 'New supplement' }[locale]
+                            : { de: 'Präparat bearbeiten', en: 'Edit supplement' }[locale]}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {
+                            {
+                                de: 'Name eingeben, Zusammensetzung recherchieren lassen, prüfen und speichern.',
+                                en: 'Enter a name, have the composition researched, review, and save.',
+                            }[locale]
+                        }
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label={{ de: 'Name', en: 'Name' }[locale]} required>
+                        <Input value={state.name} onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))} autoFocus />
+                    </Field>
+                    <Field label={{ de: 'Marke', en: 'Brand' }[locale]}>
+                        <Input value={state.brand} onChange={(e) => setState((s) => ({ ...s, brand: e.target.value }))} />
+                    </Field>
+                </div>
+
+                <div className="mt-2 flex items-center gap-3">
+                    <Button variant="outline" size="sm" onClick={runResearch} disabled={researching || state.name.trim().length === 0}>
+                        {researching ? <Loader2Icon className="size-4 animate-spin" /> : <SearchIcon className="size-4" />}
+                        {{ de: 'Zusammensetzung recherchieren', en: 'Research composition' }[locale]}
+                    </Button>
+                    {researchNote ? (
+                        <span
+                            className={cn(
+                                'text-xs',
+                                researchNote.tone === 'warn' ? 'text-amber-600 dark:text-amber-500' : 'text-muted-foreground',
+                            )}
+                        >
+                            {researchNote.text}
+                        </span>
+                    ) : null}
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label={{ de: 'Portionsgröße', en: 'Serving size' }[locale]}>
+                        <Input
+                            value={state.servingSize}
+                            onChange={(e) => setState((s) => ({ ...s, servingSize: e.target.value }))}
+                            placeholder={{ de: 'z. B. 2 Kapseln', en: 'e.g. 2 capsules' }[locale]}
+                        />
+                    </Field>
+                    <Field label={{ de: 'Portionen pro Packung', en: 'Servings per container' }[locale]}>
+                        <Input
+                            type="number"
+                            min={0}
+                            value={state.servingsPerContainer}
+                            onChange={(e) => setState((s) => ({ ...s, servingsPerContainer: e.target.value }))}
+                        />
+                    </Field>
+                    <Field label={{ de: 'Quelle (URL)', en: 'Source (URL)' }[locale]} className="sm:col-span-2">
+                        <Input value={state.sourceUrl} onChange={(e) => setState((s) => ({ ...s, sourceUrl: e.target.value }))} />
+                    </Field>
+                </div>
+
+                <div className="mt-4">
+                    <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {{ de: 'Zusammensetzung pro Portion', en: 'Composition per serving' }[locale]}
+                        </span>
+                        <Button variant="ghost" size="sm" onClick={addNutrient}>
+                            <PlusIcon className="size-3.5" />
+                            {{ de: 'Zeile', en: 'Row' }[locale]}
+                        </Button>
+                    </div>
+                    {state.nutrients.length === 0 ? (
+                        <p className="text-xs text-muted-foreground/70">
+                            {
+                                {
+                                    de: 'Noch keine Nährstoffe — recherchieren oder manuell hinzufügen.',
+                                    en: 'No nutrients yet — research or add manually.',
+                                }[locale]
+                            }
+                        </p>
+                    ) : (
+                        <div className="space-y-2">
+                            {state.nutrients.map((nutrient, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        className="flex-1"
+                                        value={nutrient.name}
+                                        onChange={(e) => setNutrient(index, { name: e.target.value })}
+                                        placeholder={{ de: 'Nährstoff', en: 'Nutrient' }[locale]}
+                                    />
+                                    <Input
+                                        className="w-20"
+                                        value={nutrient.amount}
+                                        onChange={(e) => setNutrient(index, { amount: e.target.value })}
+                                        placeholder={{ de: 'Menge', en: 'Amount' }[locale]}
+                                    />
+                                    <Input
+                                        className="w-16"
+                                        value={nutrient.unit}
+                                        onChange={(e) => setNutrient(index, { unit: e.target.value })}
+                                        placeholder={{ de: 'Einheit', en: 'Unit' }[locale]}
+                                    />
+                                    <Input
+                                        className="w-16"
+                                        type="number"
+                                        value={nutrient.percentDailyValue}
+                                        onChange={(e) => setNutrient(index, { percentDailyValue: e.target.value })}
+                                        placeholder="%DV"
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-8 shrink-0 text-destructive/70 hover:text-destructive"
+                                        onClick={() => removeNutrient(index)}
+                                        aria-label={{ de: 'Zeile entfernen', en: 'Remove row' }[locale]}
+                                    >
+                                        <XIcon className="size-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <Field label={{ de: 'Notizen', en: 'Notes' }[locale]} className="mt-4">
+                    <Textarea rows={2} value={state.notes} onChange={(e) => setState((s) => ({ ...s, notes: e.target.value }))} />
+                </Field>
+
+                <DialogFooter>
+                    <Button variant="ghost" onClick={onClose} disabled={submitting}>
+                        {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
+                    </Button>
+                    <Button onClick={submit} disabled={submitting || state.name.trim().length === 0}>
+                        {{ de: 'Speichern', en: 'Save' }[locale]}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function DeleteSupplementAlert({ supplement, locale, onClose }: { supplement: SupplementRow; locale: Locale; onClose: () => void }) {
+    const [, del] = useMutation(WorkspaceSupplementsDeleteDocument);
+    const [submitting, setSubmitting] = useState(false);
+    const doDelete = async () => {
+        setSubmitting(true);
+        try {
+            await del({ supplementIds: [supplement.supplementId] });
+            onClose();
+        } finally {
+            setSubmitting(false);
+        }
+    };
+    return (
+        <AlertDialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{{ de: 'Präparat löschen?', en: 'Delete this supplement?' }[locale]}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {
+                            {
+                                de: `„${supplement.name}“ und seine Zusammensetzung werden entfernt.`,
+                                en: `"${supplement.name}" and its composition will be removed.`,
+                            }[locale]
+                        }
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

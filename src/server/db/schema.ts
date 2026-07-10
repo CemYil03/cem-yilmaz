@@ -2153,6 +2153,65 @@ export const foodLogEntries = pgTable(
 export type FoodLogEntry = typeof foodLogEntries.$inferSelect;
 export type FoodLogEntryCreate = typeof foodLogEntries.$inferInsert;
 
+// One tracked supplement (a pill / powder / capsule Cem takes). The exact
+// per-serving composition lives in the child `SupplementNutrients` rows, which
+// the "research composition" action fills from grounded web search and Cem
+// confirms before saving. `researchedAt` is stamped when the composition came
+// from that AI fill; `sourceUrl` is the product page it was read from. No
+// `userId` / `*De`/`*En` — admin-only, matching the rest of Nutrition.
+export const supplements = pgTable(
+    'Supplements',
+    {
+        supplementId: uuid().primaryKey(),
+        name: varchar().notNull(),
+        brand: varchar(),
+        servingSize: varchar(),
+        servingsPerContainer: integer(),
+        sourceUrl: varchar(),
+        notes: text(),
+        researchedAt: timestamp({ withTimezone: true }),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [index('Supplements_name_idx').on(table.name)],
+);
+
+export type Supplement = typeof supplements.$inferSelect;
+export type SupplementCreate = typeof supplements.$inferInsert;
+
+// One nutrient line on a supplement's facts panel (e.g. "Vitamin D3 · 2000 ·
+// IU · 250 %DV"). Owned by the parent supplement — `ON DELETE cascade`, unlike
+// the recipe links elsewhere in Nutrition that null out. `amount` is text so
+// it tolerates "<1", "trace", and ranges the label prints verbatim.
+// `sortOrder` preserves the label's own ordering (the upsert rewrites the whole
+// child set with the array index).
+export const supplementNutrients = pgTable(
+    'SupplementNutrients',
+    {
+        nutrientId: uuid().primaryKey(),
+        supplementId: uuid().notNull(),
+        name: varchar().notNull(),
+        amount: varchar(),
+        unit: varchar(),
+        percentDailyValue: integer(),
+        sortOrder: integer().notNull().default(0),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.supplementId],
+            foreignColumns: [supplements.supplementId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('SupplementNutrients_supplementId_idx').on(table.supplementId),
+    ],
+);
+
+export type SupplementNutrient = typeof supplementNutrients.$inferSelect;
+export type SupplementNutrientCreate = typeof supplementNutrients.$inferInsert;
+
 // --- Fitness ----------------------------------------------------------------
 //
 // Five tables back `/workspace/fitness`: `Exercises` (a catalog), `WorkoutRoutines`

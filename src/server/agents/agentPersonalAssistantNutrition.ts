@@ -14,6 +14,11 @@ import { toolMealPlanList } from './toolMealPlanList';
 import { toolRecipesDelete } from './toolRecipesDelete';
 import { toolRecipesList } from './toolRecipesList';
 import { toolRecipesUpsert } from './toolRecipesUpsert';
+import { toolSupplementNutrientsReplace } from './toolSupplementNutrientsReplace';
+import { toolSupplementResearch } from './toolSupplementResearch';
+import { toolSupplementsDelete } from './toolSupplementsDelete';
+import { toolSupplementsList } from './toolSupplementsList';
+import { toolSupplementsUpsert } from './toolSupplementsUpsert';
 
 // Nutrition domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
@@ -36,7 +41,10 @@ type NutritionAgentMutationKind =
     | 'mealPlanDelete'
     | 'foodLogAdd'
     | 'foodLogUpdate'
-    | 'foodLogDelete';
+    | 'foodLogDelete'
+    | 'supplementAdd'
+    | 'supplementUpdate'
+    | 'supplementDelete';
 
 export interface NutritionAgentMutation {
     kind: NutritionAgentMutationKind;
@@ -57,10 +65,11 @@ export interface NutritionAgentOptions {
 
 function buildSystemPrompt(snapshot: string): string {
     return [
-        "You are the nutrition sub-agent inside Cem's personal workspace. You handle every ask about food: the",
-        'cookbook of favourite dishes, the soft weekly meal plan, and the food/drink diary. Your tools mutate the',
-        'workspace DB. Each tool carries its own description of when to reach for it and how its inputs are shaped;',
-        'the cross-tool workflow rules below are all the guidance you need beyond those descriptions.',
+        "You are the nutrition sub-agent inside Cem's personal workspace. You handle every ask about food and",
+        'supplements: the cookbook of favourite dishes, the soft weekly meal plan, the food/drink diary, and the',
+        'supplement tracker. Your tools mutate the workspace DB. Each tool carries its own description of when to',
+        'reach for it and how its inputs are shaped; the cross-tool workflow rules below are all the guidance you',
+        'need beyond those descriptions.',
         '',
         currentDateForAgent(),
         '',
@@ -75,6 +84,11 @@ function buildSystemPrompt(snapshot: string): string {
         '  `recipeId` when it exists, otherwise use `customText`. Only fill the slots Cem asks for — the plan is',
         '  soft, empty cells stay empty.',
         '- "I made X today": stamp that recipe’s `lastMadeAt` via `recipesUpsert` so future suggestions rotate.',
+        '- "Add supplement X" / "I take creatine": call `supplementResearch` first to find the exact per-serving',
+        '  composition, then `supplementsUpsert` to create the record (set `researchedAt` to now when the',
+        '  composition came from research), then `supplementNutrientsReplace` with the nutrient rows. If research',
+        '  returns `found:false`, add the supplement with just its name/brand, leave the composition empty, and tell',
+        '  Cem you could not find its exact composition — NEVER invent amounts.',
         '',
         'General rules:',
         '- Reply in the language the user wrote in (German or English).',
@@ -114,6 +128,11 @@ export async function agentPersonalAssistantNutrition({ session, serverRuntime, 
             mealPlanEntriesDelete: toolMealPlanEntriesDelete(mutationContext),
             foodLogEntriesUpsert: toolFoodLogEntriesUpsert(mutationContext),
             foodLogEntriesDelete: toolFoodLogEntriesDelete(mutationContext),
+            supplementsList: toolSupplementsList(readContext),
+            supplementResearch: toolSupplementResearch(readContext),
+            supplementsUpsert: toolSupplementsUpsert(mutationContext),
+            supplementNutrientsReplace: toolSupplementNutrientsReplace(mutationContext),
+            supplementsDelete: toolSupplementsDelete(mutationContext),
         },
     });
 }

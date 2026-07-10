@@ -52,6 +52,10 @@ import { mealPlanEntriesUpsert } from '../commands/mealPlanEntriesUpsert';
 import { mealPlanEntriesDelete } from '../commands/mealPlanEntriesDelete';
 import { foodLogEntriesUpsert } from '../commands/foodLogEntriesUpsert';
 import { foodLogEntriesDelete } from '../commands/foodLogEntriesDelete';
+import { supplementsUpsert } from '../commands/supplementsUpsert';
+import { supplementsDelete } from '../commands/supplementsDelete';
+import { supplementNutrientsReplace } from '../commands/supplementNutrientsReplace';
+import { supplementCompositionResearch } from '../agents/supplementCompositionResearch';
 import { exercisesUpsert } from '../commands/exercisesUpsert';
 import { exercisesDelete } from '../commands/exercisesDelete';
 import { workoutRoutinesUpsert } from '../commands/workoutRoutinesUpsert';
@@ -125,6 +129,7 @@ import { adminTravelTripFindMany } from '../queries/adminTravelTripFindMany';
 import { adminNutritionRecipeFindMany } from '../queries/adminNutritionRecipeFindMany';
 import { adminNutritionMealPlanFindMany } from '../queries/adminNutritionMealPlanFindMany';
 import { adminNutritionFoodLogFindMany } from '../queries/adminNutritionFoodLogFindMany';
+import { adminNutritionSupplementFindMany } from '../queries/adminNutritionSupplementFindMany';
 import { adminFitnessExerciseFindMany } from '../queries/adminFitnessExerciseFindMany';
 import { adminFitnessRoutineFindMany } from '../queries/adminFitnessRoutineFindMany';
 import { adminFitnessSessionFindMany } from '../queries/adminFitnessSessionFindMany';
@@ -232,6 +237,10 @@ import type {
     GqlSAdminMutationMealPlanEntriesDeleteArgs,
     GqlSAdminMutationFoodLogEntriesUpsertArgs,
     GqlSAdminMutationFoodLogEntriesDeleteArgs,
+    GqlSAdminMutationSupplementsUpsertArgs,
+    GqlSAdminMutationSupplementsDeleteArgs,
+    GqlSAdminMutationSupplementNutrientsReplaceArgs,
+    GqlSAdminMutationSupplementResearchArgs,
     GqlSAdminMutationExercisesUpsertArgs,
     GqlSAdminMutationExercisesDeleteArgs,
     GqlSAdminMutationWorkoutRoutinesUpsertArgs,
@@ -664,6 +673,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             adminNutritionFoodLogFindMany(_parent: GqlSAdminNutritionQuery, __: any, requestingSession: GqlSSession) {
                 return adminNutritionFoodLogFindMany(requestingSession, serverRuntime);
             },
+            adminNutritionSupplementFindMany(_parent: GqlSAdminNutritionQuery, __: any, requestingSession: GqlSSession) {
+                return adminNutritionSupplementFindMany(requestingSession, serverRuntime);
+            },
         },
         AdminFitnessQuery: {
             adminFitnessExerciseFindMany(_parent: GqlSAdminFitnessQuery, __: any, requestingSession: GqlSSession) {
@@ -1088,6 +1100,22 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return foodLogEntriesDelete(userId, args.logIds, requestingSession, serverRuntime);
+            },
+            supplementsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationSupplementsUpsertArgs, requestingSession: GqlSSession) {
+                return supplementsUpsert(userId, args.supplements, requestingSession, serverRuntime);
+            },
+            supplementsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationSupplementsDeleteArgs, requestingSession: GqlSSession) {
+                return supplementsDelete(userId, args.supplementIds, requestingSession, serverRuntime);
+            },
+            supplementNutrientsReplace(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationSupplementNutrientsReplaceArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return supplementNutrientsReplace(userId, args.supplementId, args.nutrients, requestingSession, serverRuntime);
+            },
+            supplementResearch(_parent: GqlSAdminMutation, args: GqlSAdminMutationSupplementResearchArgs) {
+                return supplementCompositionResearch({ name: args.input.name, brand: args.input.brand ?? null }, serverRuntime);
             },
             exercisesUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationExercisesUpsertArgs, requestingSession: GqlSSession) {
                 return exercisesUpsert(userId, args.exercises, requestingSession, serverRuntime);

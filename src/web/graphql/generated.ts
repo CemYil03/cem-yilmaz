@@ -262,6 +262,10 @@ export interface GqlCAdminMutation {
     showsAddFromTmdb: GqlCMutationResult;
     showsDelete: GqlCMutationResult;
     showsUpsert: GqlCMutationResult;
+    supplementNutrientsReplace: GqlCMutationResult;
+    supplementResearch: GqlCSupplementResearchResult;
+    supplementsDelete: GqlCMutationResult;
+    supplementsUpsert: GqlCMutationResult;
     taskReorder: GqlCMutationResult;
     tasksDelete: GqlCMutationResult;
     tasksUpsert: GqlCMutationResult;
@@ -567,6 +571,23 @@ export type GqlCAdminMutationShowsUpsertArgs = {
     shows: Array<GqlCShowInput>;
 };
 
+export type GqlCAdminMutationSupplementNutrientsReplaceArgs = {
+    nutrients: Array<GqlCSupplementNutrientInput>;
+    supplementId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminMutationSupplementResearchArgs = {
+    input: GqlCSupplementResearchInput;
+};
+
+export type GqlCAdminMutationSupplementsDeleteArgs = {
+    supplementIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationSupplementsUpsertArgs = {
+    supplements: Array<GqlCSupplementInput>;
+};
+
 export type GqlCAdminMutationTaskReorderArgs = {
     orderedIds: Array<Scalars['ID']['input']>;
 };
@@ -648,6 +669,7 @@ export interface GqlCAdminNutritionQuery {
     adminNutritionFoodLogFindMany: Array<GqlCFoodLogEntry>;
     adminNutritionMealPlanFindMany: Array<GqlCMealPlanEntry>;
     adminNutritionRecipeFindMany: Array<GqlCRecipe>;
+    adminNutritionSupplementFindMany: Array<GqlCSupplement>;
 }
 
 export type GqlCAdminNutritionQueryAdminNutritionRecipeFindManyArgs = {
@@ -1847,6 +1869,75 @@ export type GqlCSubscriptionChatUpdatesArgs = {
 export type GqlCSubscriptionCompassInterviewUpdatesArgs = {
     generationId: Scalars['ID']['input'];
 };
+
+export interface GqlCSupplement {
+    __typename?: 'Supplement';
+    brand?: Maybe<Scalars['String']['output']>;
+    createdAt: Scalars['DateTime']['output'];
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    nutrients: Array<GqlCSupplementNutrient>;
+    researchedAt?: Maybe<Scalars['DateTime']['output']>;
+    servingSize?: Maybe<Scalars['String']['output']>;
+    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    supplementId: Scalars['ID']['output'];
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCSupplementInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    researchedAt?: InputMaybe<Scalars['DateTime']['input']>;
+    servingSize?: InputMaybe<Scalars['String']['input']>;
+    servingsPerContainer?: InputMaybe<Scalars['Int']['input']>;
+    sourceUrl?: InputMaybe<Scalars['String']['input']>;
+    supplementId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export interface GqlCSupplementNutrient {
+    __typename?: 'SupplementNutrient';
+    amount?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    nutrientId: Scalars['ID']['output'];
+    percentDailyValue?: Maybe<Scalars['Int']['output']>;
+    sortOrder: Scalars['Int']['output'];
+    unit?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCSupplementNutrientInput = {
+    amount?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+    percentDailyValue?: InputMaybe<Scalars['Int']['input']>;
+    sortOrder?: InputMaybe<Scalars['Int']['input']>;
+    unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export interface GqlCSupplementNutrientProposal {
+    __typename?: 'SupplementNutrientProposal';
+    amount?: Maybe<Scalars['String']['output']>;
+    name: Scalars['String']['output'];
+    percentDailyValue?: Maybe<Scalars['Int']['output']>;
+    unit?: Maybe<Scalars['String']['output']>;
+}
+
+export type GqlCSupplementResearchInput = {
+    brand?: InputMaybe<Scalars['String']['input']>;
+    name: Scalars['String']['input'];
+};
+
+export interface GqlCSupplementResearchResult {
+    __typename?: 'SupplementResearchResult';
+    brand?: Maybe<Scalars['String']['output']>;
+    found: Scalars['Boolean']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    nutrients: Array<GqlCSupplementNutrientProposal>;
+    servingSize?: Maybe<Scalars['String']['output']>;
+    servingsPerContainer?: Maybe<Scalars['Int']['output']>;
+    sourceUrl?: Maybe<Scalars['String']['output']>;
+    summary: Scalars['String']['output'];
+}
 
 export interface GqlCTask {
     __typename?: 'Task';
@@ -4632,6 +4723,25 @@ export type GqlCWorkspaceNutritionRecipeFragment = {
     lastMadeAt: string | null;
 };
 
+export type GqlCWorkspaceNutritionSupplementFragment = {
+    supplementId: string;
+    name: string;
+    brand: string | null;
+    servingSize: string | null;
+    servingsPerContainer: number | null;
+    sourceUrl: string | null;
+    notes: string | null;
+    researchedAt: string | null;
+    nutrients: Array<{
+        nutrientId: string;
+        name: string;
+        amount: string | null;
+        unit: string | null;
+        percentDailyValue: number | null;
+        sortOrder: number;
+    }>;
+};
+
 export type GqlCWorkspaceNutritionPageUserFragment = {
     admin: {
         adminNutritionFindOne: {
@@ -4666,6 +4776,24 @@ export type GqlCWorkspaceNutritionPageUserFragment = {
                 description: string;
                 notes: string | null;
                 recipe: { recipeId: string; title: string } | null;
+            }>;
+            adminNutritionSupplementFindMany: Array<{
+                supplementId: string;
+                name: string;
+                brand: string | null;
+                servingSize: string | null;
+                servingsPerContainer: number | null;
+                sourceUrl: string | null;
+                notes: string | null;
+                researchedAt: string | null;
+                nutrients: Array<{
+                    nutrientId: string;
+                    name: string;
+                    amount: string | null;
+                    unit: string | null;
+                    percentDailyValue: number | null;
+                    sortOrder: number;
+                }>;
             }>;
         };
     } | null;
@@ -4709,6 +4837,24 @@ export type GqlCWorkspaceNutritionPageQuery = {
                         description: string;
                         notes: string | null;
                         recipe: { recipeId: string; title: string } | null;
+                    }>;
+                    adminNutritionSupplementFindMany: Array<{
+                        supplementId: string;
+                        name: string;
+                        brand: string | null;
+                        servingSize: string | null;
+                        servingsPerContainer: number | null;
+                        sourceUrl: string | null;
+                        notes: string | null;
+                        researchedAt: string | null;
+                        nutrients: Array<{
+                            nutrientId: string;
+                            name: string;
+                            amount: string | null;
+                            unit: string | null;
+                            percentDailyValue: number | null;
+                            sortOrder: number;
+                        }>;
                     }>;
                 };
             } | null;
@@ -4754,6 +4900,24 @@ export type GqlCWorkspaceNutritionPageUpdatesSubscription = {
                     notes: string | null;
                     recipe: { recipeId: string; title: string } | null;
                 }>;
+                adminNutritionSupplementFindMany: Array<{
+                    supplementId: string;
+                    name: string;
+                    brand: string | null;
+                    servingSize: string | null;
+                    servingsPerContainer: number | null;
+                    sourceUrl: string | null;
+                    notes: string | null;
+                    researchedAt: string | null;
+                    nutrients: Array<{
+                        nutrientId: string;
+                        name: string;
+                        amount: string | null;
+                        unit: string | null;
+                        percentDailyValue: number | null;
+                        sortOrder: number;
+                    }>;
+                }>;
             };
         } | null;
     };
@@ -4798,6 +4962,46 @@ export type GqlCWorkspaceFoodLogEntriesDeleteMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceFoodLogEntriesDeleteMutation = { admin: { foodLogEntriesDelete: { success: boolean } } };
+
+export type GqlCWorkspaceSupplementsUpsertMutationVariables = Exact<{
+    supplements: Array<Schema.GqlCSupplementInput> | Schema.GqlCSupplementInput;
+}>;
+
+export type GqlCWorkspaceSupplementsUpsertMutation = {
+    admin: { supplementsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceSupplementNutrientsReplaceMutationVariables = Exact<{
+    supplementId: string;
+    nutrients: Array<Schema.GqlCSupplementNutrientInput> | Schema.GqlCSupplementNutrientInput;
+}>;
+
+export type GqlCWorkspaceSupplementNutrientsReplaceMutation = { admin: { supplementNutrientsReplace: { success: boolean } } };
+
+export type GqlCWorkspaceSupplementsDeleteMutationVariables = Exact<{
+    supplementIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceSupplementsDeleteMutation = { admin: { supplementsDelete: { success: boolean } } };
+
+export type GqlCWorkspaceSupplementResearchMutationVariables = Exact<{
+    input: Schema.GqlCSupplementResearchInput;
+}>;
+
+export type GqlCWorkspaceSupplementResearchMutation = {
+    admin: {
+        supplementResearch: {
+            found: boolean;
+            brand: string | null;
+            servingSize: string | null;
+            servingsPerContainer: number | null;
+            sourceUrl: string | null;
+            notes: string | null;
+            summary: string;
+            nutrients: Array<{ name: string; amount: string | null; unit: string | null; percentDailyValue: number | null }>;
+        };
+    };
+};
 
 export type GqlCWorkspaceProjectsPageUserFragment = {
     admin: {
@@ -8167,6 +8371,44 @@ export const WorkspaceNutritionRecipeFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceNutritionRecipeFragment, unknown>;
+export const WorkspaceNutritionSupplementFragmentDoc = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'supplementId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingSize' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingsPerContainer' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'researchedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'nutrients' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'nutrientId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'amount' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'unit' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'percentDailyValue' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'sortOrder' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceNutritionSupplementFragment, unknown>;
 export const WorkspaceNutritionPageUserFragmentDoc = {
     kind: 'Document',
     definitions: [
@@ -8254,6 +8496,19 @@ export const WorkspaceNutritionPageUserFragmentDoc = {
                                                     ],
                                                 },
                                             },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionSupplementFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
+                                                        },
+                                                    ],
+                                                },
+                                            },
                                         ],
                                     },
                                 },
@@ -8283,6 +8538,39 @@ export const WorkspaceNutritionPageUserFragmentDoc = {
                     { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
                     { kind: 'Field', name: { kind: 'Name', value: 'lastMadeAt' } },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'supplementId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingSize' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingsPerContainer' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'researchedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'nutrients' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'nutrientId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'amount' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'unit' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'percentDailyValue' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'sortOrder' } },
+                            ],
+                        },
+                    },
                 ],
             },
         },
@@ -17409,6 +17697,39 @@ export const WorkspaceNutritionPageDocument = {
         },
         {
             kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'supplementId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingSize' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingsPerContainer' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'researchedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'nutrients' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'nutrientId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'amount' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'unit' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'percentDailyValue' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'sortOrder' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionPageUser' },
             typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
             selectionSet: {
@@ -17487,6 +17808,19 @@ export const WorkspaceNutritionPageDocument = {
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'title' } },
                                                                 ],
                                                             },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionSupplementFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
                                                         },
                                                     ],
                                                 },
@@ -17548,6 +17882,39 @@ export const WorkspaceNutritionPageUpdatesDocument = {
         },
         {
             kind: 'FragmentDefinition',
+            name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
+            typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Supplement' } },
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    { kind: 'Field', name: { kind: 'Name', value: 'supplementId' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingSize' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'servingsPerContainer' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                    { kind: 'Field', name: { kind: 'Name', value: 'researchedAt' } },
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'nutrients' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'nutrientId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'amount' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'unit' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'percentDailyValue' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'sortOrder' } },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            kind: 'FragmentDefinition',
             name: { kind: 'Name', value: 'WorkspaceNutritionPageUser' },
             typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'User' } },
             selectionSet: {
@@ -17626,6 +17993,19 @@ export const WorkspaceNutritionPageUpdatesDocument = {
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'title' } },
                                                                 ],
                                                             },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminNutritionSupplementFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'FragmentSpread',
+                                                            name: { kind: 'Name', value: 'WorkspaceNutritionSupplement' },
                                                         },
                                                     ],
                                                 },
@@ -17962,6 +18342,245 @@ export const WorkspaceFoodLogEntriesDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceFoodLogEntriesDeleteMutation, GqlCWorkspaceFoodLogEntriesDeleteMutationVariables>;
+export const WorkspaceSupplementsUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceSupplementsUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'supplements' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'SupplementInput' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'supplementsUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'supplements' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'supplements' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceSupplementsUpsertMutation, GqlCWorkspaceSupplementsUpsertMutationVariables>;
+export const WorkspaceSupplementNutrientsReplaceDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceSupplementNutrientsReplace' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'supplementId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'nutrients' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'SupplementNutrientInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'supplementNutrientsReplace' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'supplementId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'supplementId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'nutrients' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'nutrients' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceSupplementNutrientsReplaceMutation, GqlCWorkspaceSupplementNutrientsReplaceMutationVariables>;
+export const WorkspaceSupplementsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceSupplementsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'supplementIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'supplementsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'supplementIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'supplementIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceSupplementsDeleteMutation, GqlCWorkspaceSupplementsDeleteMutationVariables>;
+export const WorkspaceSupplementResearchDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceSupplementResearch' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'SupplementResearchInput' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'supplementResearch' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'input' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'found' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'brand' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'servingSize' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'servingsPerContainer' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'sourceUrl' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'summary' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'nutrients' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amount' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'unit' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'percentDailyValue' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceSupplementResearchMutation, GqlCWorkspaceSupplementResearchMutationVariables>;
 export const WorkspaceProjectsPageDocument = {
     kind: 'Document',
     definitions: [
