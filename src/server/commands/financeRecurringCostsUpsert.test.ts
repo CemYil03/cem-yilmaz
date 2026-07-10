@@ -9,7 +9,7 @@ import { financeRecurringCostsUpsert } from './financeRecurringCostsUpsert';
 const baseInput = (overrides: Partial<GqlSFinanceRecurringCostInput> = {}): GqlSFinanceRecurringCostInput => ({
     costId: null,
     name: 'Netflix',
-    categoryKey: 'subscriptions',
+    categoryKey: 'subscriptionsEntertainment',
     amountCents: 1299,
     cadence: 'monthly',
     currency: null,

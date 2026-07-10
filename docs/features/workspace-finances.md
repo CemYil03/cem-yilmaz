@@ -17,7 +17,8 @@ until this base surface earns its keep.
   query string. The switch scales every number on the page — Sankey flows, per-item projections, category subtotals — nothing else moves.
 - **Sankey** — income → categories → items. Wrapped in a `GlassCard`, drawn as inline SVG using `d3-sankey` for the layout math (no chart
   library shell — see below). Hovering a flow shows the flow's amount as a native SVG `<title>` tooltip.
-- **Grouped list** — every recurring cost grouped by category (`housing`, `utilities`, `insurance`, `transport`, `subscriptions`, `health`,
+- **Grouped list** — every recurring cost grouped by category (`housing`, `utilities`, `connectivity`, `transport`, `insurance`,
+  `subscriptionsEntertainment`, `subscriptionsWork`, `memberships`, `health`, `donations`, `household`, `savingsGeneral`, `savingsVacation`,
   `finance`, `other`). Each row shows name, the row's own amount + cadence, and the projected amount at the current period. Inline edit /
   delete affordances on hover. Inactive rows stay in the list at reduced opacity with a "Paused" badge — they don't count toward totals or
   the Sankey.
@@ -52,8 +53,9 @@ options, and the tab labels.
 
 Two tables, admin-only convention — no `*De`/`*En` pairs, no per-row `userId` (the `User.admin` / `Mutation.admin` gate authorizes):
 
-- **`FinanceRecurringCosts`** — `costId`, `name`, `categoryKey` (enum: `housing` | `utilities` | `insurance` | `transport` | `subscriptions`
-  | `health` | `finance` | `other`, default `other`), `amountCents` (per-`cadence` amount), `cadence` (`monthly` | `yearly`, default
+- **`FinanceRecurringCosts`** — `costId`, `name`, `categoryKey` (enum: `housing` | `utilities` | `connectivity` | `transport` | `insurance`
+  | `subscriptionsEntertainment` | `subscriptionsWork` | `memberships` | `health` | `donations` | `household` | `savingsGeneral` |
+  `savingsVacation` | `finance` | `other`, default `other`), `amountCents` (per-`cadence` amount), `cadence` (`monthly` | `yearly`, default
   `monthly`), `currency` (`char(3)`, default `EUR`), `notes`, `active` (default `true`), `startsOn` / `endsOn` (informational for v1),
   timestamps. Indexed on `categoryKey` (list groups by it) and `active` (the SQL totals filter by it).
 - **`AdminFinancesSettings`** — per-admin config keyed by `userId` (FK to `Users` with cascade). Currently just `monthlyNetIncomeCents`

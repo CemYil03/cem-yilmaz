@@ -1135,7 +1135,21 @@ export interface GqlSFinanceRecurringCost {
 }
 
 export type GqlSFinanceRecurringCostCategory =
-    'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities';
+    | 'connectivity'
+    | 'donations'
+    | 'finance'
+    | 'health'
+    | 'household'
+    | 'housing'
+    | 'insurance'
+    | 'memberships'
+    | 'other'
+    | 'savingsGeneral'
+    | 'savingsVacation'
+    | 'subscriptionsEntertainment'
+    | 'subscriptionsWork'
+    | 'transport'
+    | 'utilities';
 
 export type GqlSFinanceRecurringCostInput = {
     active?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4761,9 +4775,53 @@ export const GqlSEquipmentTypeSchema: z.ZodType<
 export const GqlSFinanceCadenceSchema: z.ZodType<'monthly' | 'yearly', 'monthly' | 'yearly'> = z.enum(['monthly', 'yearly']);
 
 export const GqlSFinanceRecurringCostCategorySchema: z.ZodType<
-    'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities',
-    'finance' | 'health' | 'housing' | 'insurance' | 'other' | 'subscriptions' | 'transport' | 'utilities'
-> = z.enum(['finance', 'health', 'housing', 'insurance', 'other', 'subscriptions', 'transport', 'utilities']);
+    | 'connectivity'
+    | 'donations'
+    | 'finance'
+    | 'health'
+    | 'household'
+    | 'housing'
+    | 'insurance'
+    | 'memberships'
+    | 'other'
+    | 'savingsGeneral'
+    | 'savingsVacation'
+    | 'subscriptionsEntertainment'
+    | 'subscriptionsWork'
+    | 'transport'
+    | 'utilities',
+    | 'connectivity'
+    | 'donations'
+    | 'finance'
+    | 'health'
+    | 'household'
+    | 'housing'
+    | 'insurance'
+    | 'memberships'
+    | 'other'
+    | 'savingsGeneral'
+    | 'savingsVacation'
+    | 'subscriptionsEntertainment'
+    | 'subscriptionsWork'
+    | 'transport'
+    | 'utilities'
+> = z.enum([
+    'connectivity',
+    'donations',
+    'finance',
+    'health',
+    'household',
+    'housing',
+    'insurance',
+    'memberships',
+    'other',
+    'savingsGeneral',
+    'savingsVacation',
+    'subscriptionsEntertainment',
+    'subscriptionsWork',
+    'transport',
+    'utilities',
+]);
 
 export const GqlSFoodLogKindSchema: z.ZodType<'drink' | 'food', 'drink' | 'food'> = z.enum(['drink', 'food']);
 
