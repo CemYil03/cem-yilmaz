@@ -16,9 +16,9 @@ documentarian sub-agent + disclaimer).
 
 `/workspace/tax` is the surface. Top-down:
 
-- **Header + "New tax year"** — creating a year opens a small dialog (year + filing deadline). On insert the command seeds the default
-  document checklist (see [`taxDefaultChecklist.ts`](../../src/server/commands/taxDefaultChecklist.ts)) so Cem starts with Anlage N / S-EÜR
-  / minijob / Vorsorge rows to tick off.
+- **Header + "New tax year"** — creating a year opens a small dialog (year + filing deadline via shared `DateField` / `DatePicker`). On
+  insert the command seeds the default document checklist (see [`taxDefaultChecklist.ts`](../../src/server/commands/taxDefaultChecklist.ts))
+  so Cem starts with Anlage N / S-EÜR / minijob / Vorsorge rows to tick off.
 - **Year switcher** — pill row of every year; the selected year lives in the URL as `?year=2025` (default = newest, dropped from the URL).
 - **Overview strip** — three `GlassCard` tiles: filing deadline (with a live countdown; red **overdue** border when the deadline has passed
   and the year isn't submitted), total income (Σ gross across sources), total deductible (Σ deductible expenses).

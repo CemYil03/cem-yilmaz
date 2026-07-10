@@ -35,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
 import { ChipInput } from '../../../web/components/ChipInput';
+import { DateField } from '../../../web/components/DateField';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -1020,7 +1021,7 @@ function EditDiaryDialog({ initial, locale, onClose }: { initial: FoodLogRow | n
                         </Select>
                     </Field>
                     <Field label={{ de: 'Datum', en: 'Date' }[locale]}>
-                        <Input type="date" value={state.date} onChange={(e) => setState((s) => ({ ...s, date: e.target.value }))} />
+                        <DateField value={state.date} onChange={(next) => setState((s) => ({ ...s, date: next }))} locale={locale} />
                     </Field>
                     <Field label={{ de: 'Uhrzeit', en: 'Time' }[locale]}>
                         <Input type="time" value={state.time} onChange={(e) => setState((s) => ({ ...s, time: e.target.value }))} />

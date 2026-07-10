@@ -39,7 +39,6 @@ import {
 import { AspectRatio } from '../../../web/components/base/aspect-ratio';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../web/components/base/avatar';
 import { Button } from '../../../web/components/base/button';
-import { DatePicker } from '../../../web/components/base/date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../web/components/base/dialog';
 import {
     DropdownMenu,
@@ -55,6 +54,7 @@ import { Slider } from '../../../web/components/base/slider';
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
 import { ChipInput } from '../../../web/components/ChipInput';
+import { DateField } from '../../../web/components/DateField';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
@@ -2563,21 +2563,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
             <span className="text-xs font-medium text-muted-foreground">{label}</span>
             {children}
         </label>
-    );
-}
-
-// Bridges the ISO `YYYY-MM-DD` storage shape the GraphQL `Date` scalar
-// expects over to the `Date`-based `DatePicker`. Mirrors the shape used on
-// `/workspace/cv`.
-function DateField({ value, onChange, locale }: { value: string; onChange: (next: string) => void; locale: Locale }) {
-    return (
-        <DatePicker
-            value={value ? parseISO(value) : undefined}
-            onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : '')}
-            className="w-full"
-            captionLayout="dropdown"
-            locale={DATE_FNS_LOCALE[locale]}
-        />
     );
 }
 

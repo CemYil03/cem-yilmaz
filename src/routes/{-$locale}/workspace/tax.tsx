@@ -34,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
 import { uploadFile } from '../../../web/chat/fileUpload';
+import { DateField } from '../../../web/components/DateField';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -1025,7 +1026,7 @@ function NewYearDialog({ existingYears, locale, onClose }: { existingYears: numb
                         <Input inputMode="numeric" value={yearText} onChange={(e) => setYearText(e.target.value)} autoFocus />
                     </Field>
                     <Field label={{ de: 'Abgabefrist', en: 'Deadline' }[locale]}>
-                        <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+                        <DateField value={deadline} onChange={setDeadline} locale={locale} />
                     </Field>
                 </div>
                 {isDuplicate ? (
@@ -1307,10 +1308,10 @@ function ExpenseDialog({
                         />
                     </Field>
                     <Field label={{ de: 'Datum', en: 'Date' }[locale]}>
-                        <Input
-                            type="date"
+                        <DateField
                             value={state.incurredOn}
-                            onChange={(e) => setState((s) => ({ ...s, incurredOn: e.target.value }))}
+                            onChange={(next) => setState((s) => ({ ...s, incurredOn: next }))}
+                            locale={locale}
                         />
                     </Field>
                     <Field label={{ de: 'Zugeordnete Einnahmequelle', en: 'Linked income source' }[locale]}>

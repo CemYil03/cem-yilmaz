@@ -208,6 +208,9 @@ If a comment paraphrases what the next line does, delete the comment and fix the
 - Base components live in `src/web/components/base/` — these are Radix UI / shadcn primitives. Modify them sparingly.
 - Application-specific components live directly in `src/web/components/`.
 - Use the `cn()` utility from `src/web/utils/cn.ts` for conditional class merging.
+- Prefer base primitives over native HTML form controls when a matching component exists (`Button`, `Input`, `Select`, `Checkbox`, `Switch`,
+  `Textarea`, `Dialog`, `AlertDialog`, `DatePicker`, …). For GraphQL `Date` fields stored as ISO `YYYY-MM-DD` strings, use the shared
+  `DateField` (`src/web/components/DateField.tsx`) rather than `<Input type="date">` or a hand-rolled calendar.
 
 ### Top-of-page sub-view switcher
 

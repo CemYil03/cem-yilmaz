@@ -1,14 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
 import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { Button } from '../../../web/components/base/button';
-import { DatePicker } from '../../../web/components/base/date-picker';
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
+import { DateField } from '../../../web/components/DateField';
 import { GlassCard } from '../../../web/components/GlassCard';
 import type { GqlCWorkspaceCvPageUpdatesSubscription, GqlCWorkspaceCvPageUserFragment } from '../../../web/graphql/generated';
 import {
@@ -31,7 +30,6 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
-import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -888,45 +886,6 @@ function Field({ label, children, fullWidth }: { label: string; children: React.
             <span className="text-xs font-medium text-muted-foreground">{label}</span>
             {children}
         </label>
-    );
-}
-
-// Bridges the ISO `YYYY-MM-DD` storage shape the GraphQL `Date` scalar
-// expects over to the `Date`-based `DatePicker`. The mirrored input keeps
-// native HTML5 `required` validation working — the picker itself is a
-// popover trigger button, not a form control, so the browser can't see its
-// value.
-function DateField({
-    value,
-    onChange,
-    required,
-    locale,
-}: {
-    value: string;
-    onChange: (next: string) => void;
-    required?: boolean;
-    locale: Locale;
-}) {
-    return (
-        <div className="relative">
-            <DatePicker
-                value={value ? parseISO(value) : undefined}
-                onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : '')}
-                className="w-full"
-                captionLayout="dropdown"
-                locale={DATE_FNS_LOCALE[locale]}
-            />
-            {required ? (
-                <input
-                    tabIndex={-1}
-                    aria-hidden
-                    required
-                    value={value}
-                    onChange={() => {}}
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-px w-full opacity-0"
-                />
-            ) : null}
-        </div>
     );
 }
 

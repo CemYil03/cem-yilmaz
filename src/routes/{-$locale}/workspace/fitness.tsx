@@ -21,6 +21,7 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
+import { DateField } from '../../../web/components/DateField';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -544,7 +545,12 @@ function EditSessionDialog({
                 </DialogHeader>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label={{ de: 'Datum', en: 'Date' }[locale]} required>
-                        <Input type="date" value={state.date} onChange={(e) => setState((s) => ({ ...s, date: e.target.value }))} />
+                        <DateField
+                            value={state.date}
+                            onChange={(next) => setState((s) => ({ ...s, date: next }))}
+                            required
+                            locale={locale}
+                        />
                     </Field>
                     <Field label={{ de: 'Titel', en: 'Title' }[locale]}>
                         <Input
