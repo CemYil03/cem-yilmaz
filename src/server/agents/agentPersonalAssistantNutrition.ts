@@ -48,7 +48,7 @@ type NutritionAgentMutationKind =
 
 export interface NutritionAgentMutation {
     kind: NutritionAgentMutationKind;
-    // Recipe / meal-plan-entry / diary-entry id depending on `kind`.
+    // AdminNutritionRecipe / meal-plan-entry / diary-entry id depending on `kind`.
     id: string;
     // Best-effort label for the orchestrator's user-facing narration.
     title?: string;

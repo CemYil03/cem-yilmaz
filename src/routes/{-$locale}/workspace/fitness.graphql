@@ -5,7 +5,7 @@
 # the user channel and the page picks up the new payload over SSE. See
 # `docs/features/workspace-fitness.md`.
 
-fragment WorkspaceFitnessExercise on Exercise {
+fragment WorkspaceFitnessExercise on AdminFitnessExercise {
     exerciseId
     name
     muscleGroup
@@ -76,9 +76,9 @@ subscription WorkspaceFitnessPageUpdates {
     }
 }
 
-mutation WorkspaceExercisesUpsert($exercises: [ExerciseInput!]!) {
+mutation WorkspaceExercisesUpsert($exercises: [AdminFitnessExerciseInput!]!) {
     admin {
-        exercisesUpsert(exercises: $exercises) {
+        adminFitnessExercisesUpsert(exercises: $exercises) {
             success
             referenceIds
         }
@@ -87,15 +87,15 @@ mutation WorkspaceExercisesUpsert($exercises: [ExerciseInput!]!) {
 
 mutation WorkspaceExercisesDelete($exerciseIds: [ID!]!) {
     admin {
-        exercisesDelete(exerciseIds: $exerciseIds) {
+        adminFitnessExercisesDelete(exerciseIds: $exerciseIds) {
             success
         }
     }
 }
 
-mutation WorkspaceWorkoutRoutinesUpsert($workoutRoutines: [WorkoutRoutineInput!]!) {
+mutation WorkspaceWorkoutRoutinesUpsert($workoutRoutines: [AdminFitnessWorkoutRoutineInput!]!) {
     admin {
-        workoutRoutinesUpsert(workoutRoutines: $workoutRoutines) {
+        adminFitnessWorkoutRoutinesUpsert(workoutRoutines: $workoutRoutines) {
             success
             referenceIds
         }
@@ -104,15 +104,15 @@ mutation WorkspaceWorkoutRoutinesUpsert($workoutRoutines: [WorkoutRoutineInput!]
 
 mutation WorkspaceWorkoutRoutinesDelete($routineIds: [ID!]!) {
     admin {
-        workoutRoutinesDelete(routineIds: $routineIds) {
+        adminFitnessWorkoutRoutinesDelete(routineIds: $routineIds) {
             success
         }
     }
 }
 
-mutation WorkspaceWorkoutRoutineItemsUpsert($workoutRoutineItems: [WorkoutRoutineItemInput!]!) {
+mutation WorkspaceWorkoutRoutineItemsUpsert($workoutRoutineItems: [AdminFitnessWorkoutRoutineItemInput!]!) {
     admin {
-        workoutRoutineItemsUpsert(workoutRoutineItems: $workoutRoutineItems) {
+        adminFitnessWorkoutRoutineItemsUpsert(workoutRoutineItems: $workoutRoutineItems) {
             success
             referenceIds
         }
@@ -121,15 +121,15 @@ mutation WorkspaceWorkoutRoutineItemsUpsert($workoutRoutineItems: [WorkoutRoutin
 
 mutation WorkspaceWorkoutRoutineItemsDelete($routineItemIds: [ID!]!) {
     admin {
-        workoutRoutineItemsDelete(routineItemIds: $routineItemIds) {
+        adminFitnessWorkoutRoutineItemsDelete(routineItemIds: $routineItemIds) {
             success
         }
     }
 }
 
-mutation WorkspaceWorkoutSessionsUpsert($workoutSessions: [WorkoutSessionInput!]!) {
+mutation WorkspaceWorkoutSessionsUpsert($workoutSessions: [AdminFitnessWorkoutSessionInput!]!) {
     admin {
-        workoutSessionsUpsert(workoutSessions: $workoutSessions) {
+        adminFitnessWorkoutSessionsUpsert(workoutSessions: $workoutSessions) {
             success
             referenceIds
         }
@@ -138,15 +138,15 @@ mutation WorkspaceWorkoutSessionsUpsert($workoutSessions: [WorkoutSessionInput!]
 
 mutation WorkspaceWorkoutSessionsDelete($sessionIds: [ID!]!) {
     admin {
-        workoutSessionsDelete(sessionIds: $sessionIds) {
+        adminFitnessWorkoutSessionsDelete(sessionIds: $sessionIds) {
             success
         }
     }
 }
 
-mutation WorkspaceWorkoutSetsUpsert($workoutSets: [WorkoutSetInput!]!) {
+mutation WorkspaceWorkoutSetsUpsert($workoutSets: [AdminFitnessWorkoutSetInput!]!) {
     admin {
-        workoutSetsUpsert(workoutSets: $workoutSets) {
+        adminFitnessWorkoutSetsUpsert(workoutSets: $workoutSets) {
             success
             referenceIds
         }
@@ -155,7 +155,7 @@ mutation WorkspaceWorkoutSetsUpsert($workoutSets: [WorkoutSetInput!]!) {
 
 mutation WorkspaceWorkoutSetsDelete($setIds: [ID!]!) {
     admin {
-        workoutSetsDelete(setIds: $setIds) {
+        adminFitnessWorkoutSetsDelete(setIds: $setIds) {
             success
         }
     }

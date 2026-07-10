@@ -99,7 +99,7 @@ export interface ServerRuntime {
     // `projectRequestNotifySend`) are the only callers. See
     // `docs/features/chat-email-tools.md`.
     emailService: EmailService;
-    // TMDB (The Movie Database) client used by the `/workspace/media` add
+    // TMDB (The AdminMediaMovie Database) client used by the `/workspace/media` add
     // flow — search-as-you-type and auto-fill poster/release/runtime when
     // the admin picks a match. Missing `TMDB_API_KEY` degrades to
     // empty-search + manual entry (no throw). See

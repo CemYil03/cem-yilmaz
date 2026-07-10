@@ -47,9 +47,9 @@ import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import { uploadFile } from '../../../web/chat/fileUpload';
 import type {
-    GqlCMedicalAppointmentStatus,
-    GqlCMedicalCategory,
-    GqlCMedicalRecordSeverity,
+    GqlCAdminMedicalAppointmentStatus,
+    GqlCAdminMedicalCategory,
+    GqlCAdminMedicalRecordSeverity,
     GqlCWorkspaceMedicalPageAppointmentFragment,
     GqlCWorkspaceMedicalPageRecordFragment,
     GqlCWorkspaceMedicalPageUpdatesSubscription,
@@ -87,9 +87,18 @@ const pageDescription = {
     en: 'Appointments, records, and notes about my health.',
 };
 
-const CATEGORIES: ReadonlyArray<GqlCMedicalCategory> = ['dentist', 'gp', 'dermatology', 'eyes', 'mentalHealth', 'ent', 'physio', 'other'];
+const CATEGORIES: ReadonlyArray<GqlCAdminMedicalCategory> = [
+    'dentist',
+    'gp',
+    'dermatology',
+    'eyes',
+    'mentalHealth',
+    'ent',
+    'physio',
+    'other',
+];
 
-const CATEGORY_LABELS: Record<GqlCMedicalCategory, { de: string; en: string }> = {
+const CATEGORY_LABELS: Record<GqlCAdminMedicalCategory, { de: string; en: string }> = {
     dentist: { de: 'Zahnarzt', en: 'Dentist' },
     gp: { de: 'Hausarzt', en: 'GP' },
     dermatology: { de: 'Hautarzt', en: 'Dermatology' },
@@ -100,14 +109,14 @@ const CATEGORY_LABELS: Record<GqlCMedicalCategory, { de: string; en: string }> =
     other: { de: 'Sonstige', en: 'Other' },
 };
 
-const APPOINTMENT_STATUS_LABELS: Record<GqlCMedicalAppointmentStatus, { de: string; en: string }> = {
+const APPOINTMENT_STATUS_LABELS: Record<GqlCAdminMedicalAppointmentStatus, { de: string; en: string }> = {
     scheduled: { de: 'Geplant', en: 'Scheduled' },
     completed: { de: 'Erledigt', en: 'Completed' },
     cancelled: { de: 'Abgesagt', en: 'Cancelled' },
     missed: { de: 'Verpasst', en: 'Missed' },
 };
 
-const SEVERITY_LABELS: Record<GqlCMedicalRecordSeverity, { de: string; en: string }> = {
+const SEVERITY_LABELS: Record<GqlCAdminMedicalRecordSeverity, { de: string; en: string }> = {
     info: { de: 'Info', en: 'Info' },
     mild: { de: 'Leicht', en: 'Mild' },
     moderate: { de: 'Mittel', en: 'Moderate' },
@@ -359,7 +368,7 @@ function AppointmentsTab({ appointments, locale }: { appointments: ReadonlyArray
     const [, completeAppointment] = useMutation(WorkspaceMedicalAppointmentsUpsertDocument);
 
     const grouped = useMemo(() => {
-        const map = new Map<GqlCMedicalCategory, AppointmentRow[]>();
+        const map = new Map<GqlCAdminMedicalCategory, AppointmentRow[]>();
         for (const a of appointments) {
             const list = map.get(a.category) ?? [];
             list.push(a);
@@ -590,7 +599,10 @@ function AppointmentEditor({ appointment, onClose, locale }: { appointment: Appo
                 <div className="space-y-3">
                     <label className="block text-sm">
                         <span className="text-muted-foreground">{{ de: 'Kategorie', en: 'Category' }[locale]}</span>
-                        <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as GqlCMedicalCategory }))}>
+                        <Select
+                            value={form.category}
+                            onValueChange={(v) => setForm((f) => ({ ...f, category: v as GqlCAdminMedicalCategory }))}
+                        >
                             <SelectTrigger className="mt-1">
                                 <SelectValue />
                             </SelectTrigger>
@@ -642,7 +654,7 @@ function AppointmentEditor({ appointment, onClose, locale }: { appointment: Appo
                         <span className="text-muted-foreground">{{ de: 'Status', en: 'Status' }[locale]}</span>
                         <Select
                             value={form.status}
-                            onValueChange={(v) => setForm((f) => ({ ...f, status: v as GqlCMedicalAppointmentStatus }))}
+                            onValueChange={(v) => setForm((f) => ({ ...f, status: v as GqlCAdminMedicalAppointmentStatus }))}
                         >
                             <SelectTrigger className="mt-1">
                                 <SelectValue />
@@ -999,7 +1011,7 @@ function RecordEditor({
                             <span className="text-muted-foreground">{{ de: 'Kategorie', en: 'Category' }[locale]}</span>
                             <Select
                                 value={form.category}
-                                onValueChange={(v) => setForm((f) => ({ ...f, category: v as GqlCMedicalCategory }))}
+                                onValueChange={(v) => setForm((f) => ({ ...f, category: v as GqlCAdminMedicalCategory }))}
                             >
                                 <SelectTrigger className="mt-1">
                                     <SelectValue />
@@ -1018,7 +1030,7 @@ function RecordEditor({
                             <Select
                                 value={form.severity ?? '__none'}
                                 onValueChange={(v) =>
-                                    setForm((f) => ({ ...f, severity: v === '__none' ? null : (v as GqlCMedicalRecordSeverity) }))
+                                    setForm((f) => ({ ...f, severity: v === '__none' ? null : (v as GqlCAdminMedicalRecordSeverity) }))
                                 }
                             >
                                 <SelectTrigger className="mt-1">

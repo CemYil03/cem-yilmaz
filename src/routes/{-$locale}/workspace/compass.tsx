@@ -458,7 +458,7 @@ function DismissedToggle({ includeDismissed, locale }: { includeDismissed: boole
         >
             {includeDismissed
                 ? { de: 'Verworfene einblenden', en: 'Showing dismissed' }[locale]
-                : { de: 'Verworfene anzeigen', en: 'Show dismissed' }[locale]}
+                : { de: 'Verworfene anzeigen', en: 'AdminMediaShow dismissed' }[locale]}
         </Link>
     );
 }

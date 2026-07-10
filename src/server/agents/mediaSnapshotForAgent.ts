@@ -1,5 +1,5 @@
 import { asc, sql } from 'drizzle-orm';
-import type { MediaChannel, Movie, Show } from '../db/schema';
+import type { AdminMediaChannel, AdminMediaMovie, AdminMediaShow } from '../db/schema';
 import { mediaChannels, movies, shows } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
@@ -52,8 +52,8 @@ export async function mediaSnapshotForAgent(serverRuntime: ServerRuntime): Promi
         // Cluster by topic — mirrors the media page's channel grouping. A
         // channel with multiple topics appears under each; the sub-agent
         // sees the same shape the user does.
-        const byTopic = new Map<string, MediaChannel[]>();
-        const untagged: MediaChannel[] = [];
+        const byTopic = new Map<string, AdminMediaChannel[]>();
+        const untagged: AdminMediaChannel[] = [];
         for (const channel of channelRows) {
             if (channel.topics.length === 0) {
                 untagged.push(channel);
@@ -79,12 +79,16 @@ export async function mediaSnapshotForAgent(serverRuntime: ServerRuntime): Promi
     return lines.join('\n');
 }
 
-function appendStatusBuckets<T extends { status: Movie['status'] }>(lines: string[], rows: T[], lineFor: (row: T) => string): void {
+function appendStatusBuckets<T extends { status: AdminMediaMovie['status'] }>(
+    lines: string[],
+    rows: T[],
+    lineFor: (row: T) => string,
+): void {
     if (rows.length === 0) {
         lines.push('- (none tracked yet)');
         return;
     }
-    const byStatus = new Map<Movie['status'], T[]>();
+    const byStatus = new Map<AdminMediaMovie['status'], T[]>();
     for (const row of rows) {
         const bucket = byStatus.get(row.status) ?? [];
         bucket.push(row);
@@ -98,7 +102,7 @@ function appendStatusBuckets<T extends { status: Movie['status'] }>(lines: strin
     }
 }
 
-function movieLine(movie: Movie): string {
+function movieLine(movie: AdminMediaMovie): string {
     const bits: string[] = [movie.title];
     if (movie.releaseDate) bits.push(`(${movie.releaseDate.slice(0, 4)})`);
     if (movie.rating !== null) bits.push(`⭐${movie.rating}/10`);
@@ -106,7 +110,7 @@ function movieLine(movie: Movie): string {
     return `- ${bits.join(' ')} (id: ${movie.movieId}${topics})`;
 }
 
-function showLine(show: Show): string {
+function showLine(show: AdminMediaShow): string {
     const bits: string[] = [show.title];
     if (show.firstAirDate) bits.push(`(${show.firstAirDate.slice(0, 4)})`);
     if (show.rating !== null) bits.push(`⭐${show.rating}/10`);
@@ -117,7 +121,7 @@ function showLine(show: Show): string {
     return `- ${bits.join(' ')} (id: ${show.showId}${topics})`;
 }
 
-function channelLine(channel: MediaChannel): string {
+function channelLine(channel: AdminMediaChannel): string {
     const handle = channel.handle ? ` ${channel.handle}` : '';
     return `- ${channel.name}${handle} (id: ${channel.channelId}, ${channel.platform})`;
 }

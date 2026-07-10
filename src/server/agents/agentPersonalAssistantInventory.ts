@@ -29,7 +29,7 @@ type InventoryAgentMutationKind =
 
 export interface InventoryAgentMutation {
     kind: InventoryAgentMutationKind;
-    // Item id for item/reprice mutations; service-entry id / item-file id for
+    // AdminInventoryItem id for item/reprice mutations; service-entry id / item-file id for
     // the others.
     id: string;
     // Best-effort label for the orchestrator's user-facing narration.

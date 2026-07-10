@@ -1,14 +1,14 @@
 import { asc, desc, sql } from 'drizzle-orm';
 import { shows } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSSession, GqlSShow } from '../graphql/generated';
-import { toGqlShow } from '../mappers/toGqlShow';
+import type { GqlSSession, GqlSAdminMediaShow } from '../graphql/generated';
+import { toGqlAdminMediaShow } from '../mappers/toGqlAdminMediaShow';
 
 // Lists every TV series the admin tracks. Same status-bucket ordering as
 // `adminMediaMovieFindMany` so the Serien tab streams Watching → Watchlist →
 // Watched → Dropped without a client-side re-sort. See
 // `docs/features/workspace-media.md`.
-export async function adminMediaShowFindMany(requestingSession: GqlSSession, serverRuntime: ServerRuntime): Promise<GqlSShow[]> {
+export async function adminMediaShowFindMany(requestingSession: GqlSSession, serverRuntime: ServerRuntime): Promise<GqlSAdminMediaShow[]> {
     try {
         const rows = await serverRuntime.db
             .select()
@@ -24,7 +24,7 @@ export async function adminMediaShowFindMany(requestingSession: GqlSSession, ser
                 desc(shows.updatedAt),
                 asc(shows.showId),
             );
-        return rows.map(toGqlShow);
+        return rows.map(toGqlAdminMediaShow);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

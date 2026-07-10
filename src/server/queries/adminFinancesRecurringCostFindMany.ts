@@ -1,8 +1,8 @@
 import { asc } from 'drizzle-orm';
 import { financeRecurringCosts } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSFinanceRecurringCost, GqlSSession } from '../graphql/generated';
-import { toGqlFinanceRecurringCost } from '../mappers/toGqlFinanceRecurringCost';
+import type { GqlSAdminFinancesRecurringCost, GqlSSession } from '../graphql/generated';
+import { toGqlAdminFinancesRecurringCost } from '../mappers/toGqlAdminFinancesRecurringCost';
 
 // Lists every recurring cost (active and inactive). The page groups by
 // `categoryKey` on render, so ordering by category first keeps the list
@@ -11,13 +11,13 @@ import { toGqlFinanceRecurringCost } from '../mappers/toGqlFinanceRecurringCost'
 export async function adminFinancesRecurringCostFindMany(
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSFinanceRecurringCost[]> {
+): Promise<GqlSAdminFinancesRecurringCost[]> {
     try {
         const rows = await serverRuntime.db
             .select()
             .from(financeRecurringCosts)
             .orderBy(asc(financeRecurringCosts.categoryKey), asc(financeRecurringCosts.name));
-        return rows.map(toGqlFinanceRecurringCost);
+        return rows.map(toGqlAdminFinancesRecurringCost);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

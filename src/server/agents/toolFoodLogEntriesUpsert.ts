@@ -1,22 +1,22 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { foodLogEntriesUpsert } from '../commands/foodLogEntriesUpsert';
+import { adminNutritionFoodLogEntriesUpsert } from '../commands/adminNutritionFoodLogEntriesUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSFoodLogKindSchema, GqlSMealTypeSchema } from '../graphql/generated';
-import type { GqlSFoodLogEntryInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminNutritionFoodLogKindSchema, GqlSAdminNutritionMealTypeSchema } from '../graphql/generated';
+import type { GqlSAdminNutritionFoodLogEntryInput, GqlSSession } from '../graphql/generated';
 import type { NutritionAgentMutationLog } from './agentPersonalAssistantNutrition';
 import { requireAdminUserId } from './requireAdminUserId';
 
 // Batch create-or-edit of food/drink diary entries. Hand-built item schema —
 // `consumedAt` is a `DateTime` scalar (`z.date()`), which Gemini's structured
 // output rejects, so it rides the wire as an ISO string and `execute` converts
-// with `new Date(...)`. The `MealType` / `FoodLogKind` enum schemas are reused.
+// with `new Date(...)`. The `AdminNutritionMealType` / `AdminNutritionFoodLogKind` enum schemas are reused.
 
 const foodLogItemSchema = z.object({
     logId: z.uuid().nullish().describe('Omit (or null) to create a new entry. Pass an existing id to edit.'),
     consumedAt: z.string().describe('ISO-8601 timestamp of when it was eaten/drunk. Use the current time if Cem does not say.'),
-    mealType: GqlSMealTypeSchema.describe('breakfast | lunch | dinner | snack | other'),
-    kind: GqlSFoodLogKindSchema.describe('food | drink'),
+    mealType: GqlSAdminNutritionMealTypeSchema.describe('breakfast | lunch | dinner | snack | other'),
+    kind: GqlSAdminNutritionFoodLogKindSchema.describe('food | drink'),
     description: z.string().min(1).max(2000).describe('What was eaten or drunk.'),
     recipeId: z.uuid().nullish().describe('Optional: link to a cookbook recipe.'),
     notes: z.string().max(2000).nullish(),
@@ -42,7 +42,7 @@ export function toolFoodLogEntriesUpsert({ serverRuntime, session, mutations }: 
         ].join(' '),
         inputSchema: toolFoodLogEntriesUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSFoodLogEntryInput[] = input.foodLogEntries.map((entry) => ({
+            const inputs: GqlSAdminNutritionFoodLogEntryInput[] = input.foodLogEntries.map((entry) => ({
                 logId: entry.logId ?? null,
                 consumedAt: new Date(entry.consumedAt),
                 mealType: entry.mealType,
@@ -51,7 +51,7 @@ export function toolFoodLogEntriesUpsert({ serverRuntime, session, mutations }: 
                 recipeId: entry.recipeId ?? null,
                 notes: entry.notes ?? null,
             }));
-            const result = await foodLogEntriesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminNutritionFoodLogEntriesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.foodLogEntries.forEach((entry, index) => {
                 mutations.push({

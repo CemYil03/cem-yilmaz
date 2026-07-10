@@ -439,12 +439,12 @@ type Admin {
     #
     # The returned `Chat` shells carry an empty `messages` array — fetch
     # the transcript with `adminChatFindOne(chatId)` when the user opens
-    # one. Pair with `adminChatCount(query)` to drive "Show more" (server
+    # one. Pair with `adminChatCount(query)` to drive "AdminMediaShow more" (server
     # does not return a page-size + hasMore combo).
     adminChatFindMany(limit: Int, offset: Int, query: String): [Chat!]!
     # Total number of admin chats matching the same optional `query` as
     # `adminChatFindMany(...)`. The client subtracts `offset + items.length`
-    # to decide whether "Show more" is still meaningful.
+    # to decide whether "AdminMediaShow more" is still meaningful.
     adminChatCount(query: String): Int!
     # A single admin chat by id. Rejects `scope = 'public'` chats.
     adminChatFindOne(chatId: ID!): Chat!
@@ -871,19 +871,19 @@ input CvHobbyInput {
     position: Int!
 }
 
-# --- Projects, Tasks, Project requests ---------------------------------------
+# --- Projects, Tasks, AdminProject requests ---------------------------------------
 #
-# Workspace projects surface: incoming visitor `ProjectRequest`s plus
-# admin-only `Project` and `Task` rows. Single-language (no `*De` / `*En`
+# Workspace projects surface: incoming visitor `AdminProjectRequest`s plus
+# admin-only `AdminProject` and `AdminProjectTask` rows. Single-language (no `*De` / `*En`
 # pairs — never surfaced publicly). See `docs/features/projects-workspace.md`.
 
-enum ProjectRequestStatus {
+enum AdminProjectRequestStatus {
     pendingOtp
     emailVerified
     archived
 }
 
-enum ProjectRequestType {
+enum AdminProjectRequestType {
     webApp
     mobile
     consulting
@@ -895,27 +895,27 @@ enum ProjectRequestType {
 # Inbox tab once `status = emailVerified`. The `otpHash` / `otpSalt`
 # columns are deliberately not exposed — the GraphQL surface is read-only
 # triage, not OTP introspection.
-type ProjectRequest {
+type AdminProjectRequest {
     projectRequestId: ID!
     chatId: ID
     name: String!
     email: String!
     company: String
-    projectType: ProjectRequestType!
+    projectType: AdminProjectRequestType!
     description: String!
     budget: String
     timeline: String
-    status: ProjectRequestStatus!
+    status: AdminProjectRequestStatus!
     verifiedAt: DateTime
     createdAt: DateTime!
     updatedAt: DateTime!
-    # Project this request was converted into, if any. Lets the Inbox row
-    # render a "Converted →" backlink. Set when `projectsUpsert` creates a
+    # AdminProject this request was converted into, if any. Lets the Inbox row
+    # render a "Converted →" backlink. Set when `adminProjectsUpsert` creates a
     # project with `sourceRequestId` pointing at this row; null otherwise.
-    convertedProject: Project
+    convertedProject: AdminProject
 }
 
-enum ProjectStatus {
+enum AdminProjectStatus {
     idea
     planning
     active
@@ -924,38 +924,38 @@ enum ProjectStatus {
     archived
 }
 
-type Project {
+type AdminProject {
     projectId: ID!
     title: String!
     description: String
     notes: String
-    status: ProjectStatus!
+    status: AdminProjectStatus!
     position: Int!
     # Source visitor request this project was created from, when applicable.
     # Null for hand-created projects.
-    sourceRequest: ProjectRequest
+    sourceRequest: AdminProjectRequest
     startedAt: DateTime
     completedAt: DateTime
     createdAt: DateTime!
     updatedAt: DateTime!
-    # Project-bound tasks, ordered by `position` within their status bucket.
-    tasks: [Task!]!
+    # AdminProject-bound tasks, ordered by `position` within their status bucket.
+    tasks: [AdminProjectTask!]!
     # Timeline of events and work sessions, newest first.
-    activities: [ProjectActivity!]!
+    activities: [AdminProjectActivity!]!
     # Sum of `durationSec` across `kind = work` activities, in seconds.
     # Zero when no timer has ever run against the project.
     totalWorkSec: Int!
     # All link resources hanging off the project, newest first. The detail
     # page's "Links" tab renders this full list; the project header surfaces
     # the subset where `pinned = true`.
-    links: [ProjectLink!]!
+    links: [AdminProjectLink!]!
     # All file resources hanging off the project, newest first. Same
     # rendering split as `links` — Files tab shows everything; the header
     # surfaces pinned only.
-    files: [ProjectFile!]!
+    files: [AdminProjectFile!]!
 }
 
-enum TaskStatus {
+enum AdminProjectTaskStatus {
     todo
     doing
     done
@@ -964,7 +964,7 @@ enum TaskStatus {
 # Perceived weight of a task — quick / focused / deep. Drives the left-edge
 # color strip on the todo row card. Nullable; unclassified rows render
 # without a strip.
-enum TaskEffort {
+enum AdminProjectTaskEffort {
     quick
     focused
     deep
@@ -973,34 +973,34 @@ enum TaskEffort {
 # When the user intends to act on the task, independent of any due date.
 # A due date says "must be done by"; the bucket says "I want to do this".
 # Nullable; a null row floats in the general list.
-enum TaskWhenBucket {
+enum AdminProjectTaskWhenBucket {
     today
     week
     someday
     waiting
 }
 
-type Task {
+type AdminProjectTask {
     taskId: ID!
     # Owning project. Null = standalone todo (surfaced on the Todos tab).
     projectId: ID
     title: String!
     notes: String
-    status: TaskStatus!
+    status: AdminProjectTaskStatus!
     position: Int!
     dueAt: DateTime
     completedAt: DateTime
     # Perceived weight — quick / focused / deep. Optional.
-    effort: TaskEffort
+    effort: AdminProjectTaskEffort
     # When the user intends to act. Independent of `dueAt`. Optional.
-    whenBucket: TaskWhenBucket
+    whenBucket: AdminProjectTaskWhenBucket
     createdAt: DateTime!
     updatedAt: DateTime!
 }
 
 # Categorizes an entry on the project timeline. `clientContact` and
 # `meeting` carry a `channel`; the others omit it.
-enum ProjectActivityKind {
+enum AdminProjectActivityKind {
     clientContact
     meeting
     work
@@ -1011,7 +1011,7 @@ enum ProjectActivityKind {
 
 # How the contact / meeting happened. Only meaningful on
 # `clientContact` / `meeting` rows.
-enum ProjectActivityChannel {
+enum AdminProjectActivityChannel {
     malt
     email
     phone
@@ -1025,7 +1025,7 @@ enum ProjectActivityChannel {
 # project detail page — `outgoing` rows render right-aligned (from Cem),
 # `incoming` rows left-aligned (from the client), `internal` rows render as
 # centered system markers (work sessions, freeform notes, milestones).
-enum ProjectActivityDirection {
+enum AdminProjectActivityDirection {
     outgoing
     incoming
     internal
@@ -1034,17 +1034,17 @@ enum ProjectActivityDirection {
 # A single entry on a project's timeline. Covers both logged events
 # (call, email, offer sent) and timed work sessions — the latter populate
 # `startedAt` / `endedAt` and have `kind = work`.
-type ProjectActivity {
+type AdminProjectActivity {
     activityId: ID!
     projectId: ID!
     # Optional task this activity is attached to. Lets totals roll up per
     # task without forcing every activity to pick one.
     taskId: ID
-    kind: ProjectActivityKind!
-    channel: ProjectActivityChannel
+    kind: AdminProjectActivityKind!
+    channel: AdminProjectActivityChannel
     # Sidedness of the row — drives the chat-style timeline layout. Always
     # set; defaults to `internal` for `work` / `note` / `milestone` kinds.
-    direction: ProjectActivityDirection!
+    direction: AdminProjectActivityDirection!
     title: String!
     notes: String
     # When the event happened. Equals `startedAt` on timer rows.
@@ -1059,20 +1059,20 @@ type ProjectActivity {
     # Offer-row fields. Meaningful only when `kind = offer`. `amountCents`
     # is integer cents in EUR; the editor formats and parses.
     amountCents: Int
-    offerStatus: ProjectOfferStatus
+    offerStatus: AdminProjectOfferStatus
     createdAt: DateTime!
     updatedAt: DateTime!
     # Links and files born from this activity (i.e. attached at the moment
     # the activity was logged). Pinned status lives on the resource row,
     # not the activity — the same link / file shows up under the project's
     # `links` / `files` lists too.
-    links: [ProjectLink!]!
-    files: [ProjectFile!]!
+    links: [AdminProjectLink!]!
+    files: [AdminProjectFile!]!
 }
 
 # Lifecycle of an offer row. Only meaningful when the parent activity has
 # `kind = offer`. A withdrawn offer keeps the row for history.
-enum ProjectOfferStatus {
+enum AdminProjectOfferStatus {
     sent
     accepted
     rejected
@@ -1081,7 +1081,7 @@ enum ProjectOfferStatus {
 
 # Categorizes an external URL attached to a project. Drives the icon /
 # label fallback on the link card.
-enum ProjectLinkKind {
+enum AdminProjectLinkKind {
     github
     malt
     figma
@@ -1096,7 +1096,7 @@ enum ProjectLinkKind {
 # activity entry (`activityId` non-null) and optionally pinned to the
 # project header's rail (`pinned = true`). The Links tab on the detail
 # route renders the full list regardless of `pinned`.
-type ProjectLink {
+type AdminProjectLink {
     projectLinkId: ID!
     projectId: ID!
     # Activity this link was logged against, when applicable. Null for
@@ -1105,7 +1105,7 @@ type ProjectLink {
     url: String!
     # Free-form label. Falls back to the URL host when empty.
     label: String
-    kind: ProjectLinkKind!
+    kind: AdminProjectLinkKind!
     # True surfaces this link in the project header's pinned rail.
     pinned: Boolean!
     createdAt: DateTime!
@@ -1114,7 +1114,7 @@ type ProjectLink {
 
 # Categorizes a file attached to a project. Drives the badge on the
 # file card and the default folder grouping on the Files tab.
-enum ProjectFileKind {
+enum AdminProjectFileKind {
     offer
     invoice
     contract
@@ -1126,13 +1126,13 @@ enum ProjectFileKind {
 # `FileUpload` store with project-level metadata (kind, pin state, source
 # activity). The `fileUpload.url` field is the download path the UI links
 # to; the underlying bytes are served by `/api/file-uploads/:id`.
-type ProjectFile {
+type AdminProjectFile {
     projectFileId: ID!
     projectId: ID!
     activityId: ID
     fileUpload: FileUpload!
     label: String
-    kind: ProjectFileKind!
+    kind: AdminProjectFileKind!
     pinned: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -1144,7 +1144,7 @@ extend type Admin {
     # Incoming visitor project briefs, newest first. The `status` argument
     # filters server-side; omit to return every state (including the
     # half-baked `pendingOtp` rows, mostly useful for debugging).
-    adminProjectRequestFindMany(status: ProjectRequestStatus): [ProjectRequest!]!
+    adminProjectRequestFindMany(status: AdminProjectRequestStatus): [AdminProjectRequest!]!
     # Lightweight count of verified-and-untriaged requests. Drives the
     # inbox badge on the workspace hub. Equivalent to
     # `adminProjectRequestFindMany(status: emailVerified)` minus rows already
@@ -1153,15 +1153,15 @@ extend type Admin {
     adminProjectRequestInboxCount: Int!
     # All projects, ordered by status then `position`. The board groups
     # client-side by status. `status` argument narrows server-side when set.
-    adminProjectFindMany(status: ProjectStatus): [Project!]!
+    adminProjectFindMany(status: AdminProjectStatus): [AdminProject!]!
     # Single project by id, loaded fully (tasks, activities, links, files,
     # source request). Powers the `/workspace/projects/$projectId` detail
     # route. Raises `notFound` when the id does not exist.
-    adminProjectFindOne(projectId: ID!): Project!
-    # Standalone todos: rows with `projectId IS NULL`. Project-bound tasks
-    # are reached through `Project.tasks` so `/workspace/todos` and the
+    adminProjectFindOne(projectId: ID!): AdminProject!
+    # Standalone todos: rows with `projectId IS NULL`. AdminProject-bound tasks
+    # are reached through `AdminProject.tasks` so `/workspace/todos` and the
     # project board don't fight over the same list.
-    adminStandaloneTaskFindMany: [Task!]!
+    adminStandaloneTaskFindMany: [AdminProjectTask!]!
     # Count of standalone todos in an open state (`todo` or `doing`).
     # Drives the Todos badge on the workspace hub. `done` rows are
     # excluded so the badge tracks "still to do" and not lifetime volume.
@@ -1170,7 +1170,7 @@ extend type Admin {
     # header badge and per-project timer pill. At most one row exists with
     # `endedAt IS NULL AND kind = 'work'` — the DB enforces this via a
     # partial unique index.
-    adminProjectActiveTimerFindOne: ProjectActivity
+    adminProjectActiveTimerFindOne: AdminProjectActivity
     # CV editor read namespace — mounts the same `CvQuery` shape the public
     # `/cv` and `/about` surfaces consume, but reached through `User.admin`
     # so the workspace CV page can seed-and-subscribe under `userUpdates`
@@ -1180,18 +1180,18 @@ extend type Admin {
     adminCvFindOne: CvQuery!
 }
 
-input ProjectCreate {
+input AdminProjectCreate {
     projectId: ID
     title: String!
     description: String
     notes: String
-    status: ProjectStatus!
+    status: AdminProjectStatus!
     # Optional on create — when omitted, the server appends the new row to
     # the end of the `planning` column (max(position) + 1). Required on
     # update; the editor always knows the board state and passes it back.
     position: Int
     # When set on a create, the new project is the conversion of an
-    # `emailVerified` `ProjectRequest`. `projectsUpsert` validates the
+    # `emailVerified` `AdminProjectRequest`. `adminProjectsUpsert` validates the
     # request is in that state and archives it in the same transaction
     # as the project insert. Ignored on update.
     sourceRequestId: ID
@@ -1199,17 +1199,17 @@ input ProjectCreate {
     completedAt: DateTime
 }
 
-input TaskCreate {
+input AdminProjectTaskCreate {
     taskId: ID
     projectId: ID
     title: String!
     notes: String
-    status: TaskStatus!
+    status: AdminProjectTaskStatus!
     position: Int!
     dueAt: DateTime
     completedAt: DateTime
-    effort: TaskEffort
-    whenBucket: TaskWhenBucket
+    effort: AdminProjectTaskEffort
+    whenBucket: AdminProjectTaskWhenBucket
 }
 
 # Activity create / update payload. `activityId` toggles upsert mode.
@@ -1218,72 +1218,72 @@ input TaskCreate {
 # `endedAt` null; the timer mutations write those columns directly.
 #
 # `attachLink*` and `attachFile*` are optional one-shot extensions: when
-# present on a create, the server inserts a matching `ProjectLink` /
-# `ProjectFile` in the same transaction with `activityId` pointing at the
+# present on a create, the server inserts a matching `AdminProjectLink` /
+# `AdminProjectFile` in the same transaction with `activityId` pointing at the
 # new activity. Lets the editor say "log offer + attach PDF" without two
 # round-trips. Ignored on update — edit the resource rows directly through
 # their own mutations.
-input ProjectActivityCreate {
+input AdminProjectActivityCreate {
     activityId: ID
     projectId: ID!
     taskId: ID
-    kind: ProjectActivityKind!
-    channel: ProjectActivityChannel
+    kind: AdminProjectActivityKind!
+    channel: AdminProjectActivityChannel
     # Sidedness override. The command normalizes this — `work` / `note` /
     # `milestone` are always stored as `internal` regardless of what the
     # client sends. For `clientContact` / `meeting` / `offer` the field is
     # respected; when omitted the command picks a kind-appropriate default
     # (`clientContact` → `incoming`, `meeting` / `offer` → `outgoing`).
-    direction: ProjectActivityDirection
+    direction: AdminProjectActivityDirection
     title: String!
     notes: String
     occurredAt: DateTime!
     durationSec: Int
     amountCents: Int
-    offerStatus: ProjectOfferStatus
+    offerStatus: AdminProjectOfferStatus
     attachLinkUrl: String
-    attachLinkKind: ProjectLinkKind
+    attachLinkKind: AdminProjectLinkKind
     attachLinkLabel: String
     attachLinkPinned: Boolean
     attachFileUploadId: ID
-    attachFileKind: ProjectFileKind
+    attachFileKind: AdminProjectFileKind
     attachFileLabel: String
     attachFilePinned: Boolean
 }
 
-# Project-link create / update payload. `projectLinkId` toggles upsert
+# AdminProject-link create / update payload. `projectLinkId` toggles upsert
 # mode. `activityId` may only be set on a create — once a link is born
 # from an activity, the link survives the activity's deletion (the FK
 # cascade-set-nulls).
-input ProjectLinkUpsert {
+input AdminProjectLinkUpsert {
     projectLinkId: ID
     projectId: ID!
     activityId: ID
     url: String!
     label: String
-    kind: ProjectLinkKind!
+    kind: AdminProjectLinkKind!
     pinned: Boolean
 }
 
-# Project-file create / update payload. Same shape as `ProjectLinkUpsert`
+# AdminProject-file create / update payload. Same shape as `AdminProjectLinkUpsert`
 # but referencing an already-uploaded `FileUpload` by id. The client first
 # uploads the file via `POST /api/file-uploads`, then calls this mutation
 # with the returned `fileUploadId`.
-input ProjectFileUpsert {
+input AdminProjectFileUpsert {
     projectFileId: ID
     projectId: ID!
     activityId: ID
     fileUploadId: ID!
     label: String
-    kind: ProjectFileKind!
+    kind: AdminProjectFileKind!
     pinned: Boolean
 }
 
-# One work-timer start. `projectTimersStart` processes a batch of these
+# One work-timer start. `adminProjectTimersStart` processes a batch of these
 # sequentially inside one transaction — each element stops any open timer
 # then inserts its own running row, so a multi-element batch ends with only
 # the last row open. In practice the UI passes a one-element array.
-input ProjectTimerStartInput {
+input AdminProjectTimerStartInput {
     projectId: ID!
     taskId: ID
     title: String
@@ -1349,54 +1349,54 @@ extend type AdminMutation {
     # --- Workspace projects -------------------------------------------------
     # Archive an incoming request without converting it to a project. Flips
     # `status = archived` so the Inbox tab can hide it by default.
-    projectRequestArchive(projectRequestId: ID!): MutationResult!
+    adminProjectRequestArchive(projectRequestId: ID!): MutationResult!
     # Permanent delete. Use for spam that survived OTP verification.
-    projectRequestDelete(projectRequestId: ID!): MutationResult!
+    adminProjectRequestDelete(projectRequestId: ID!): MutationResult!
     # Batch create-or-update of projects. Every row with a `projectId` is
     # updated; every row without one is inserted. Conversion of a verified
-    # `ProjectRequest` is the same call with `sourceRequestId` set on a
+    # `AdminProjectRequest` is the same call with `sourceRequestId` set on a
     # create — the server validates the request is `emailVerified`, links
     # the new project to it, and archives the request in the same
     # transaction. `referenceIds` echoes the row id per input in input order.
-    projectsUpsert(projects: [ProjectCreate!]!): MutationResult!
-    projectsDelete(projectIds: [ID!]!): MutationResult!
-    projectReorder(orderedIds: [ID!]!): MutationResult!
+    adminProjectsUpsert(projects: [AdminProjectCreate!]!): MutationResult!
+    adminProjectsDelete(projectIds: [ID!]!): MutationResult!
+    adminProjectReorder(orderedIds: [ID!]!): MutationResult!
 
-    tasksUpsert(tasks: [TaskCreate!]!): MutationResult!
-    tasksDelete(taskIds: [ID!]!): MutationResult!
+    adminProjectTasksUpsert(tasks: [AdminProjectTaskCreate!]!): MutationResult!
+    adminProjectTasksDelete(taskIds: [ID!]!): MutationResult!
     # Rewrite `position` on the given task ids in array order. Caller scopes
     # the list to a single `(projectId, status)` bucket — the server does
     # not enforce membership in one bucket, but mixing buckets in one call
     # is meaningless.
-    taskReorder(orderedIds: [ID!]!): MutationResult!
-    # --- Project activities & timer ----------------------------------------
+    adminProjectTaskReorder(orderedIds: [ID!]!): MutationResult!
+    # --- AdminProject activities & timer ----------------------------------------
     # Batch create-or-update of activity rows (call logged, email sent,
     # offer drafted, freeform note). `kind = work` rows are reserved for the
     # timer mutations and rejected here. `referenceIds` echoes the row id
     # per input in input order.
 
-    projectActivitiesUpsert(projectActivities: [ProjectActivityCreate!]!): MutationResult!
-    projectActivitiesDelete(activityIds: [ID!]!): MutationResult!
+    adminProjectActivitiesUpsert(projectActivities: [AdminProjectActivityCreate!]!): MutationResult!
+    adminProjectActivitiesDelete(activityIds: [ID!]!): MutationResult!
 
     # Start work timers. Each input atomically stops the currently-running
     # timer (if any) before inserting its new row, so the one-active-timer
     # invariant holds even across a multi-element batch (each start closes
     # the prior). `title` defaults to "Work session" when omitted.
     # `referenceIds` carries the new `activityId` per input in input order.
-    projectTimersStart(inputs: [ProjectTimerStartInput!]!): MutationResult!
+    adminProjectTimersStart(inputs: [AdminProjectTimerStartInput!]!): MutationResult!
     # Stamp `endedAt = now` and write `durationSec` on the running timers.
     # Idempotent per id on an already-stopped row (left untouched); throws
     # if an id does not exist. `referenceIds` echoes the input `activityIds`.
-    projectTimersStop(activityIds: [ID!]!): MutationResult!
+    adminProjectTimersStop(activityIds: [ID!]!): MutationResult!
 
-    # --- Project links & files ---------------------------------------------
+    # --- AdminProject links & files ---------------------------------------------
     # Batch create-or-update of external links associated with a project.
     # `activityId` may only be set on create; once linked, the resource
     # survives activity deletion (FK cascade-set-null). Pin toggles ride
     # this same mutation — pass the existing row with `pinned` flipped.
     # `referenceIds` echoes the row id per input in input order.
-    projectLinksUpsert(projectLinks: [ProjectLinkUpsert!]!): MutationResult!
-    projectLinksDelete(projectLinkIds: [ID!]!): MutationResult!
+    adminProjectLinksUpsert(projectLinks: [AdminProjectLinkUpsert!]!): MutationResult!
+    adminProjectLinksDelete(projectLinkIds: [ID!]!): MutationResult!
 
     # Batch create-or-update of file resources. The caller uploads each file
     # first via `POST /api/file-uploads` and passes the returned
@@ -1404,8 +1404,8 @@ extend type AdminMutation {
     # upload blob stays (cleaned up by the user-row cascade later). Pin
     # toggles ride this same mutation — pass the existing row with `pinned`
     # flipped. `referenceIds` echoes the row id per input in input order.
-    projectFilesUpsert(projectFiles: [ProjectFileUpsert!]!): MutationResult!
-    projectFilesDelete(projectFileIds: [ID!]!): MutationResult!
+    adminProjectFilesUpsert(projectFiles: [AdminProjectFileUpsert!]!): MutationResult!
+    adminProjectFilesDelete(projectFileIds: [ID!]!): MutationResult!
 }
 
 # --- Admin chat config -------------------------------------------------------
@@ -1488,19 +1488,19 @@ extend type AdminMutation {
 # channels. Admin-only, `noindex`; the CV/public split doesn't apply, so no
 # `*De`/`*En` pairs (matches Projects / Tasks). `topics` is the clustering
 # axis on both entities: a free-form `text[]` whose *known* vocabulary is the
-# `MediaTopic` enum below — new values can be added without a schema change.
+# `AdminMediaTopic` enum below — new values can be added without a schema change.
 # `/workspace/software` filters channels via `Admin.media.channelsByTopic("tech")`
 # for its "favourite tech YouTubers" section. See
 # `docs/features/workspace-media.md`.
 
-enum MovieStatus {
+enum AdminMediaMovieStatus {
     watchlist
     watching
     watched
     dropped
 }
 
-enum MediaPlatform {
+enum AdminMediaPlatform {
     youtube
     twitch
     podcast
@@ -1511,7 +1511,7 @@ enum MediaPlatform {
 # ad-hoc topics work; this enum drives the UI autocomplete and typed writes.
 # Adding a value is a one-line change here plus mirroring in
 # `mediaTopics` (`src/server/db/schema.ts`).
-enum MediaTopic {
+enum AdminMediaTopic {
     tech
     ai
     software
@@ -1533,7 +1533,7 @@ enum MediaTopic {
 # the TMDB search flow — the poster / release / overview fields are cached
 # from TMDB and refresh on re-add. Manually-entered rows carry a null
 # `tmdbId` and whatever the admin typed. `rating` is 1..10 (admin's own).
-type Movie {
+type AdminMediaMovie {
     movieId: ID!
     title: String!
     tmdbId: Int
@@ -1542,7 +1542,7 @@ type Movie {
     releaseDate: Date
     runtimeMinutes: Int
     overview: String
-    status: MovieStatus!
+    status: AdminMediaMovieStatus!
     rating: Int
     watchedAt: DateTime
     notes: String
@@ -1550,12 +1550,12 @@ type Movie {
     updatedAt: DateTime!
 }
 
-# A TV series Cem tracks. Same watch-status vocabulary as `Movie`, plus
+# A TV series Cem tracks. Same watch-status vocabulary as `AdminMediaMovie`, plus
 # series-specific fields: `isCompleted` (show has ended) and next-season
 # timing — exact `nextSeasonReleaseDate` and/or free-form
 # `nextSeasonReleaseRough` ("Fall 2026"). `tmdbId` is unique-nullable like
 # movies. See `docs/features/workspace-media.md`.
-type Show {
+type AdminMediaShow {
     showId: ID!
     title: String!
     tmdbId: Int
@@ -1563,7 +1563,7 @@ type Show {
     backdropUrl: String
     firstAirDate: Date
     overview: String
-    status: MovieStatus!
+    status: AdminMediaMovieStatus!
     rating: Int
     notes: String
     topics: [String!]!
@@ -1577,11 +1577,11 @@ type Show {
 # for the media page (grouped rows) and for cross-view reads
 # (`Admin.media.channelsByTopic`). `priority` orders channels within a topic
 # section — reorder rewrites priorities in a single txn (see
-# `mediaChannelReorder`), matching the CV reorder pattern.
-type MediaChannel {
+# `adminMediaChannelReorder`), matching the CV reorder pattern.
+type AdminMediaChannel {
     channelId: ID!
     name: String!
-    platform: MediaPlatform!
+    platform: AdminMediaPlatform!
     url: String!
     handle: String
     avatarUrl: String
@@ -1595,7 +1595,7 @@ type MediaChannel {
 # One TMDB movie search hit. `posterUrl` is already a fully-qualified
 # `image.tmdb.org` URL (the TMDB client resolves the CDN prefix so the
 # client doesn't need TMDB configuration details).
-type TmdbMovieResult {
+type AdminMediaTmdbMovieResult {
     tmdbId: Int!
     title: String!
     releaseDate: Date
@@ -1603,9 +1603,9 @@ type TmdbMovieResult {
     overview: String
 }
 
-# One TMDB TV search hit. Same shape as `TmdbMovieResult` but uses
+# One TMDB TV search hit. Same shape as `AdminMediaTmdbMovieResult` but uses
 # `firstAirDate` (TMDB's TV field) instead of `releaseDate`.
-type TmdbTvResult {
+type AdminMediaTmdbTvResult {
     tmdbId: Int!
     title: String!
     firstAirDate: Date
@@ -1616,8 +1616,8 @@ type TmdbTvResult {
 # One YouTube channel search hit. `canonicalUrl` is pre-composed
 # server-side (prefers the `@handle` form when present, falls back to the
 # stable `/channel/<id>` form) so the client can drop it straight into
-# `MediaChannelInput.url` without knowing YouTube's URL rules.
-type YoutubeChannelResult {
+# `AdminMediaChannelInput.url` without knowing YouTube's URL rules.
+type AdminMediaYoutubeChannelResult {
     channelId: String!
     title: String!
     handle: String
@@ -1631,32 +1631,32 @@ type YoutubeChannelResult {
 # gated once at the `Query.admin` boundary by the resolver chain on
 # `User.admin`. Nothing here is public.
 type AdminMediaQuery {
-    adminMediaMovieFindMany: [Movie!]!
-    adminMediaShowFindMany: [Show!]!
+    adminMediaMovieFindMany: [AdminMediaMovie!]!
+    adminMediaShowFindMany: [AdminMediaShow!]!
     # `topic` filters to channels whose `topics` array contains it
     # (case-sensitive). Omit or pass `null` to return every channel.
     # `/workspace/software` reads this with `topic: "tech"` to render its
     # "favourite tech YouTubers" section without duplicating channel data.
-    adminMediaChannelFindMany(topic: String): [MediaChannel!]!
+    adminMediaChannelFindMany(topic: String): [AdminMediaChannel!]!
     # Live TMDB movie search — returns at most 10 results. Empty list when
     # `TMDB_API_KEY` is unset, when TMDB is unreachable, or when `query`
     # trims to empty; the media page treats "empty" as a cue to offer the
     # manual-entry dialog.
-    adminMediaTmdbFindMany(query: String!): [TmdbMovieResult!]!
+    adminMediaTmdbFindMany(query: String!): [AdminMediaTmdbMovieResult!]!
     # Live TMDB TV search — same empty-fallback semantics as
     # `adminMediaTmdbFindMany`.
-    adminMediaTmdbTvFindMany(query: String!): [TmdbTvResult!]!
+    adminMediaTmdbTvFindMany(query: String!): [AdminMediaTmdbTvResult!]!
     # Live YouTube channel search — returns at most 10 results, each
     # enriched with handle + subscriber count. Same empty-fallback
     # semantics as `adminMediaTmdbFindMany`.
-    adminMediaYoutubeFindMany(query: String!): [YoutubeChannelResult!]!
+    adminMediaYoutubeFindMany(query: String!): [AdminMediaYoutubeChannelResult!]!
 }
 
 extend type Admin {
     adminMediaFindOne: AdminMediaQuery!
 }
 
-input MovieInput {
+input AdminMediaMovieInput {
     movieId: ID
     title: String!
     tmdbId: Int
@@ -1665,14 +1665,14 @@ input MovieInput {
     releaseDate: Date
     runtimeMinutes: Int
     overview: String
-    status: MovieStatus!
+    status: AdminMediaMovieStatus!
     rating: Int
     watchedAt: DateTime
     notes: String
     topics: [String!]!
 }
 
-input ShowInput {
+input AdminMediaShowInput {
     showId: ID
     title: String!
     tmdbId: Int
@@ -1680,7 +1680,7 @@ input ShowInput {
     backdropUrl: String
     firstAirDate: Date
     overview: String
-    status: MovieStatus!
+    status: AdminMediaMovieStatus!
     rating: Int
     notes: String
     topics: [String!]!
@@ -1689,10 +1689,10 @@ input ShowInput {
     nextSeasonReleaseRough: String
 }
 
-input MediaChannelInput {
+input AdminMediaChannelInput {
     channelId: ID
     name: String!
-    platform: MediaPlatform!
+    platform: AdminMediaPlatform!
     url: String!
     handle: String
     avatarUrl: String
@@ -1702,15 +1702,15 @@ input MediaChannelInput {
 }
 
 # One TMDB add request — resolves to a new (or deduped) `Movies` row.
-input MovieAddFromTmdbInput {
+input AdminMediaMovieAddFromTmdbInput {
     tmdbId: Int!
-    status: MovieStatus
+    status: AdminMediaMovieStatus
 }
 
 # One TMDB add request — resolves to a new (or deduped) `Shows` row.
-input ShowAddFromTmdbInput {
+input AdminMediaShowAddFromTmdbInput {
     tmdbId: Int!
-    status: MovieStatus
+    status: AdminMediaMovieStatus
 }
 
 extend type AdminMutation {
@@ -1718,33 +1718,33 @@ extend type AdminMutation {
     # every row without one is inserted. `referenceIds` echoes the id per
     # input row (in input order). To mark a movie watched, upsert the row with
     # `status: watched` and `watchedAt` set.
-    moviesUpsert(movies: [MovieInput!]!): MutationResult!
-    moviesDelete(movieIds: [ID!]!): MutationResult!
+    adminMediaMoviesUpsert(movies: [AdminMediaMovieInput!]!): MutationResult!
+    adminMediaMoviesDelete(movieIds: [ID!]!): MutationResult!
     # Batch add movies by TMDB id (poster / release / runtime / overview
     # auto-filled). Rows with a matching `tmdbId` are refreshed rather than
     # duplicated. `referenceIds` echoes the resolved `movieId` per input in
     # input order. Falls back to a title-only insert when TMDB is unreachable.
-    moviesAddFromTmdb(inputs: [MovieAddFromTmdbInput!]!): MutationResult!
+    adminMediaMoviesAddFromTmdb(inputs: [AdminMediaMovieAddFromTmdbInput!]!): MutationResult!
 
-    # Batch create-or-edit of TV series. Same shape as `moviesUpsert`.
-    showsUpsert(shows: [ShowInput!]!): MutationResult!
-    showsDelete(showIds: [ID!]!): MutationResult!
+    # Batch create-or-edit of TV series. Same shape as `adminMediaMoviesUpsert`.
+    adminMediaShowsUpsert(shows: [AdminMediaShowInput!]!): MutationResult!
+    adminMediaShowsDelete(showIds: [ID!]!): MutationResult!
     # Batch add series by TMDB id. Seeds `isCompleted` /
     # `nextSeasonReleaseDate` from TMDB when available; `nextSeasonReleaseRough`
     # stays admin-authored. `referenceIds` echoes the resolved `showId` per
     # input in input order.
-    showsAddFromTmdb(inputs: [ShowAddFromTmdbInput!]!): MutationResult!
+    adminMediaShowsAddFromTmdb(inputs: [AdminMediaShowAddFromTmdbInput!]!): MutationResult!
 
     # Batch create-or-edit of favourite channels. `referenceIds` echoes the
     # id per input row in input order.
-    mediaChannelsUpsert(mediaChannels: [MediaChannelInput!]!): MutationResult!
-    mediaChannelsDelete(channelIds: [ID!]!): MutationResult!
+    adminMediaChannelsUpsert(mediaChannels: [AdminMediaChannelInput!]!): MutationResult!
+    adminMediaChannelsDelete(channelIds: [ID!]!): MutationResult!
     # Rewrite `priority` on the given channel ids in array order. Callers
     # scope the list to a single topic bucket — the server does not enforce
     # single-topic membership (a channel with multiple topics is reorderable
     # under each topic section independently, and the last write wins on
     # `priority`). Matches the CV reorder shape.
-    mediaChannelReorder(orderedIds: [ID!]!): MutationResult!
+    adminMediaChannelReorder(orderedIds: [ID!]!): MutationResult!
 }
 
 # --- Medical -----------------------------------------------------------------
@@ -1753,18 +1753,18 @@ extend type AdminMutation {
 # Admin-only, `noindex`; no `*De`/`*En` pairs (matches Media / Inventory).
 # Two surfaces backed by two tables plus a `FileUploads` join:
 #
-#   - `MedicalRecord` — a chat-authored writeup ("red patch on forearm, four
+#   - `AdminMedicalRecord` — a chat-authored writeup ("red patch on forearm, four
 #     days, itching"). The medical sub-agent asks clarifiers and files these
 #     from the workspace assistant chat. Optionally carries photo attachments
 #     (`MedicalRecordFiles` → `FileUploads`, same wire as inventory receipts).
-#   - `MedicalAppointment` — scheduled or completed visits with a provider.
+#   - `AdminMedicalAppointment` — scheduled or completed visits with a provider.
 #     Grouped by `category`. "When is my next dentist visit?" reads
 #     `nextDueAt ?? lastCompletedAt + defaultCadence`; the cadence lives as
 #     a static config server-side, not a table.
 #
 # See `docs/features/workspace-medical.md`.
 
-enum MedicalCategory {
+enum AdminMedicalCategory {
     dentist
     gp
     dermatology
@@ -1775,14 +1775,14 @@ enum MedicalCategory {
     other
 }
 
-enum MedicalAppointmentStatus {
+enum AdminMedicalAppointmentStatus {
     scheduled
     completed
     cancelled
     missed
 }
 
-enum MedicalRecordSeverity {
+enum AdminMedicalRecordSeverity {
     info
     mild
     moderate
@@ -1793,16 +1793,16 @@ enum MedicalRecordSeverity {
 # `MedicalProvider` table in v1). `scheduledAt` is the intended time,
 # `completedAt` stamps when the visit actually happened. `nextDueAt`
 # overrides the category cadence when the doctor sets a specific follow-up.
-type MedicalAppointment {
+type AdminMedicalAppointment {
     appointmentId: ID!
-    category: MedicalCategory!
+    category: AdminMedicalCategory!
     providerName: String
     title: String!
     notes: String
     scheduledAt: DateTime!
     completedAt: DateTime
     nextDueAt: DateTime
-    status: MedicalAppointmentStatus!
+    status: AdminMedicalAppointmentStatus!
     topics: [String!]!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -1810,8 +1810,8 @@ type MedicalAppointment {
 
 # A file attached to a medical record. Same two-step wire as inventory
 # receipts: client `POST /api/file-uploads` → gets a `fileUploadId` → calls
-# `medicalRecordFileAttach` (or passes it inline via `MedicalRecordInput.fileUploadIds`).
-type MedicalRecordFile {
+# `medicalRecordFileAttach` (or passes it inline via `AdminMedicalRecordInput.fileUploadIds`).
+type AdminMedicalRecordFile {
     recordFileId: ID!
     recordId: ID!
     fileUpload: FileUpload!
@@ -1825,71 +1825,71 @@ type MedicalRecordFile {
 # writeup. `symptoms` / `bodyAreas` are free-form so the vocabulary can grow
 # without migrations. `appointmentId` optionally links the record to the
 # visit that produced it or a follow-up.
-type MedicalRecord {
+type AdminMedicalRecord {
     recordId: ID!
-    category: MedicalCategory!
+    category: AdminMedicalCategory!
     title: String!
     summary: String!
-    severity: MedicalRecordSeverity
+    severity: AdminMedicalRecordSeverity
     symptoms: [String!]!
     bodyAreas: [String!]!
     occurredAt: DateTime
     resolvedAt: DateTime
     appointmentId: ID
     topics: [String!]!
-    files: [MedicalRecordFile!]!
+    files: [AdminMedicalRecordFile!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
 
-# One row per `MedicalCategory` for the Overview tab. `defaultCadenceMonths`
+# One row per `AdminMedicalCategory` for the Overview tab. `defaultCadenceMonths`
 # is the static config; `lastCompletedAt` is the most recent `completed`
 # appointment in that category; `nextDueAt` prefers the explicit override on
 # the last completed appointment and falls back to
 # `lastCompletedAt + defaultCadence`; `isOverdue = nextDueAt < now`.
 # `upcoming` lists the near-term scheduled visits; `recentRecords` lists the
 # last handful of records so the overview card previews recent history.
-type MedicalCategoryOverview {
-    category: MedicalCategory!
+type AdminMedicalCategoryOverview {
+    category: AdminMedicalCategory!
     defaultCadenceMonths: Int
     lastCompletedAt: DateTime
     nextDueAt: DateTime
     isOverdue: Boolean!
-    upcoming: [MedicalAppointment!]!
-    recentRecords: [MedicalRecord!]!
+    upcoming: [AdminMedicalAppointment!]!
+    recentRecords: [AdminMedicalRecord!]!
 }
 
 # Read namespace mounted under `Admin`. Gated once at the `Query.admin`
 # boundary by the resolver chain on `User.admin`.
 type AdminMedicalQuery {
-    adminMedicalAppointmentFindMany: [MedicalAppointment!]!
-    adminMedicalRecordFindMany: [MedicalRecord!]!
-    adminMedicalCategoryOverviewFindMany: [MedicalCategoryOverview!]!
+    adminMedicalAppointmentFindMany: [AdminMedicalAppointment!]!
+    adminMedicalRecordFindMany: [AdminMedicalRecord!]!
+    adminMedicalCategoryOverviewFindMany: [AdminMedicalCategoryOverview!]!
 }
 
 extend type Admin {
     adminMedicalFindOne: AdminMedicalQuery!
 }
 
-input MedicalAppointmentInput {
+input AdminMedicalAppointmentInput {
     appointmentId: ID
-    category: MedicalCategory!
+    category: AdminMedicalCategory!
     providerName: String
     title: String!
     notes: String
     scheduledAt: DateTime!
     completedAt: DateTime
     nextDueAt: DateTime
-    status: MedicalAppointmentStatus!
+    status: AdminMedicalAppointmentStatus!
     topics: [String!]!
 }
 
-input MedicalRecordInput {
+input AdminMedicalRecordInput {
     recordId: ID
-    category: MedicalCategory!
+    category: AdminMedicalCategory!
     title: String!
     summary: String!
-    severity: MedicalRecordSeverity
+    severity: AdminMedicalRecordSeverity
     symptoms: [String!]!
     bodyAreas: [String!]!
     occurredAt: DateTime
@@ -1904,8 +1904,8 @@ input MedicalRecordInput {
 }
 
 # `medicalRecordFileAttach` payload. Same two-step upload contract as
-# `itemFilesAttach`: client uploads bytes → gets `fileUploadId` → calls this.
-input MedicalRecordFileAttachInput {
+# `adminInventoryItemFilesAttach`: client uploads bytes → gets `fileUploadId` → calls this.
+input AdminMedicalRecordFileAttachInput {
     recordId: ID!
     fileUploadId: ID!
     label: String
@@ -1913,14 +1913,14 @@ input MedicalRecordFileAttachInput {
 }
 
 extend type AdminMutation {
-    medicalAppointmentsUpsert(medicalAppointments: [MedicalAppointmentInput!]!): MutationResult!
-    medicalAppointmentsDelete(appointmentIds: [ID!]!): MutationResult!
+    adminMedicalAppointmentsUpsert(medicalAppointments: [AdminMedicalAppointmentInput!]!): MutationResult!
+    adminMedicalAppointmentsDelete(appointmentIds: [ID!]!): MutationResult!
 
-    medicalRecordsUpsert(medicalRecords: [MedicalRecordInput!]!): MutationResult!
-    medicalRecordsDelete(recordIds: [ID!]!): MutationResult!
+    adminMedicalRecordsUpsert(medicalRecords: [AdminMedicalRecordInput!]!): MutationResult!
+    adminMedicalRecordsDelete(recordIds: [ID!]!): MutationResult!
 
-    medicalRecordFilesAttach(inputs: [MedicalRecordFileAttachInput!]!): MutationResult!
-    medicalRecordFilesDelete(recordFileIds: [ID!]!): MutationResult!
+    adminMedicalRecordFilesAttach(inputs: [AdminMedicalRecordFileAttachInput!]!): MutationResult!
+    adminMedicalRecordFilesDelete(recordFileIds: [ID!]!): MutationResult!
 }
 
 # --- Inventory ---------------------------------------------------------------
@@ -1934,7 +1934,7 @@ extend type AdminMutation {
 # Category taxonomy is hard-coded; new values add here + in `itemCategories`
 # in `src/server/db/schema.ts`. Elevate to a table only if categories ever
 # need to be user-editable.
-enum ItemCategory {
+enum AdminInventoryItemCategory {
     electronics
     appliance
     kitchen
@@ -1946,7 +1946,7 @@ enum ItemCategory {
     other
 }
 
-enum ItemCondition {
+enum AdminInventoryItemCondition {
     new
     likeNew
     good
@@ -1954,7 +1954,7 @@ enum ItemCondition {
     poor
 }
 
-enum ItemDisposalState {
+enum AdminInventoryItemDisposalState {
     owned
     sold
     gifted
@@ -1962,14 +1962,14 @@ enum ItemDisposalState {
     disposed
 }
 
-enum ItemServiceKind {
+enum AdminInventoryItemServiceKind {
     service
     repair
     replacement
     other
 }
 
-enum ItemFileKind {
+enum AdminInventoryItemFileKind {
     photo
     receipt
     warranty
@@ -1979,7 +1979,7 @@ enum ItemFileKind {
 }
 
 # One tracked possession. `currentValueCents` is the cached snapshot of the
-# most recent `ItemValuation` — the `itemsReprice` mutation writes the journal
+# most recent `AdminInventoryItemValuation` — the `adminInventoryItemsReprice` mutation writes the journal
 # row and this cached column in one transaction, so the list surface and
 # `materialNetWorthCents` never need to `MAX(valuedAt)` at read time.
 #
@@ -1988,9 +1988,9 @@ enum ItemFileKind {
 # list they resolve to `[]` — mirrors how `adminProjectFindMany` returns projects
 # without their tasks and `adminProjectFindOne` returns them with. Detail-view
 # callers use the singular query.
-type Item {
+type AdminInventoryItem {
     itemId: ID!
-    categoryKey: ItemCategory!
+    categoryKey: AdminInventoryItemCategory!
     name: String!
     brand: String
     model: String
@@ -1998,16 +1998,16 @@ type Item {
     purchasedAt: Date
     purchasePriceCents: Int
     currentValueCents: Int
-    condition: ItemCondition
-    disposalState: ItemDisposalState!
+    condition: AdminInventoryItemCondition
+    disposalState: AdminInventoryItemDisposalState!
     disposedAt: DateTime
     warrantyEndsAt: Date
     warrantyProvider: String
     warrantyNotes: String
     notes: String
-    valuations: [ItemValuation!]!
-    serviceEntries: [ItemServiceEntry!]!
-    files: [ItemFile!]!
+    valuations: [AdminInventoryItemValuation!]!
+    serviceEntries: [AdminInventoryItemServiceEntry!]!
+    files: [AdminInventoryItemFile!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -2015,7 +2015,7 @@ type Item {
 # One repricing entry in the item's journal. `valuedAt` defaults to insert
 # time but is settable so a back-dated appraisal reads correctly on the
 # sparkline. Ordered `valuedAt DESC` on read.
-type ItemValuation {
+type AdminInventoryItemValuation {
     valuationId: ID!
     valueCents: Int!
     valuedAt: DateTime!
@@ -2025,18 +2025,18 @@ type ItemValuation {
 # One service / repair / replacement event on an item. `nextDueAt` powers the
 # "next service due" reminder — independent of warranty (which lives on the
 # item itself).
-type ItemServiceEntry {
+type AdminInventoryItemServiceEntry {
     serviceEntryId: ID!
-    kind: ItemServiceKind!
+    kind: AdminInventoryItemServiceKind!
     performedAt: Date!
     vendor: String
     costCents: Int
     notes: String
     nextDueAt: Date
     # Files attached specifically to this entry (e.g. the invoice). The
-    # broader `Item.files` list also contains these — this field is the
+    # broader `AdminInventoryItem.files` list also contains these — this field is the
     # scoped view.
-    files: [ItemFile!]!
+    files: [AdminInventoryItemFile!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -2044,13 +2044,13 @@ type ItemServiceEntry {
 # A file attached to an item. Wraps the shared `FileUpload` store with
 # inventory metadata (kind, pin state, optional service-entry link). The
 # `fileUpload.url` field is the download path.
-type ItemFile {
+type AdminInventoryItemFile {
     itemFileId: ID!
     itemId: ID!
     serviceEntryId: ID
     fileUpload: FileUpload!
     label: String
-    kind: ItemFileKind!
+    kind: AdminInventoryItemFileKind!
     pinned: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -2062,10 +2062,10 @@ type AdminInventoryQuery {
     # All tracked items. Disposed / sold / gifted / lost rows are hidden by
     # default so the list surface stays focused on currently-owned things;
     # `includeDisposed: true` returns the full history for the "All" filter.
-    adminInventoryItemFindMany(includeDisposed: Boolean = false): [Item!]!
+    adminInventoryItemFindMany(includeDisposed: Boolean = false): [AdminInventoryItem!]!
     # Single item by id, loaded fully (valuations, service entries, files).
     # Null when the id does not exist.
-    adminInventoryItemFindOne(itemId: ID!): Item
+    adminInventoryItemFindOne(itemId: ID!): AdminInventoryItem
     # Sum of `currentValueCents` over items with `disposalState = 'owned'`.
     # Drives the overview strip and the future finances-page cross-reference
     # tile. Nullable columns count as 0.
@@ -2073,23 +2073,23 @@ type AdminInventoryQuery {
     # Items whose warranty ends within the given window. Ordered
     # `warrantyEndsAt ASC` so the soonest expirations sit on top of the
     # overview list.
-    adminInventoryItemUpcomingWarrantyFindMany(withinDays: Int = 90): [Item!]!
+    adminInventoryItemUpcomingWarrantyFindMany(withinDays: Int = 90): [AdminInventoryItem!]!
 }
 
 extend type Admin {
     adminInventoryFindOne: AdminInventoryQuery!
 }
 
-input ItemInput {
+input AdminInventoryItemInput {
     itemId: ID
-    categoryKey: ItemCategory!
+    categoryKey: AdminInventoryItemCategory!
     name: String!
     brand: String
     model: String
     serialNumber: String
     purchasedAt: Date
     purchasePriceCents: Int
-    condition: ItemCondition
+    condition: AdminInventoryItemCondition
     warrantyEndsAt: Date
     warrantyProvider: String
     warrantyNotes: String
@@ -2100,14 +2100,14 @@ input ItemInput {
     # is `owned`, so reverting a disposed item clears its stamp. A plain
     # field edit preserves the current state because the caller spreads the
     # existing row (which carries `disposalState` + `disposedAt`).
-    disposalState: ItemDisposalState
+    disposalState: AdminInventoryItemDisposalState
     disposedAt: DateTime
 }
 
-input ItemServiceEntryInput {
+input AdminInventoryItemServiceEntryInput {
     serviceEntryId: ID
     itemId: ID!
-    kind: ItemServiceKind!
+    kind: AdminInventoryItemServiceKind!
     performedAt: Date!
     vendor: String
     costCents: Int
@@ -2115,54 +2115,54 @@ input ItemServiceEntryInput {
     nextDueAt: Date
 }
 
-# One repricing instruction for `itemsReprice`. Kept separate from
-# `ItemInput` because a reprice is more than a field-set — it appends an
+# One repricing instruction for `adminInventoryItemsReprice`. Kept separate from
+# `AdminInventoryItemInput` because a reprice is more than a field-set — it appends an
 # `ItemValuations` journal row and updates the cached `currentValueCents` in
 # one transaction. `valuedAt` defaults to now when omitted.
-input ItemRepriceInput {
+input AdminInventoryItemRepriceInput {
     itemId: ID!
     valueCents: Int!
     valuedAt: DateTime
     note: String
 }
 
-# `itemFilesAttach` payload. The client first uploads bytes via
+# `adminInventoryItemFilesAttach` payload. The client first uploads bytes via
 # `POST /api/file-uploads`, then calls this mutation with the returned
-# `fileUploadId` — same two-step shape as `projectFilesUpsert`.
-input ItemFileAttachInput {
+# `fileUploadId` — same two-step shape as `adminProjectFilesUpsert`.
+input AdminInventoryItemFileAttachInput {
     itemId: ID!
     serviceEntryId: ID
     fileUploadId: ID!
     label: String
-    kind: ItemFileKind!
+    kind: AdminInventoryItemFileKind!
     pinned: Boolean
 }
 
-# Edit-only payload for `itemFilesUpsert`. Every input targets an existing
+# Edit-only payload for `adminInventoryItemFilesUpsert`. Every input targets an existing
 # item-file row by `itemFileId` — this mutation never creates rows (use
-# `itemFilesAttach` for that). The pin toggle in the UI collapses into this:
+# `adminInventoryItemFilesAttach` for that). The pin toggle in the UI collapses into this:
 # pass the existing row's id with the flipped `pinned`.
-input ItemFileUpsert {
+input AdminInventoryItemFileUpsert {
     itemFileId: ID!
     label: String
     pinned: Boolean
 }
 
 extend type AdminMutation {
-    itemsUpsert(items: [ItemInput!]!): MutationResult!
-    itemsDelete(itemIds: [ID!]!): MutationResult!
+    adminInventoryItemsUpsert(items: [AdminInventoryItemInput!]!): MutationResult!
+    adminInventoryItemsDelete(itemIds: [ID!]!): MutationResult!
     # Journal a new valuation and update the cached `currentValueCents` per
     # input, all in one transaction. `referenceIds` echoes the `itemId` per
     # input in input order.
-    itemsReprice(inputs: [ItemRepriceInput!]!): MutationResult!
+    adminInventoryItemsReprice(inputs: [AdminInventoryItemRepriceInput!]!): MutationResult!
 
-    itemServiceEntriesUpsert(itemServiceEntries: [ItemServiceEntryInput!]!): MutationResult!
-    itemServiceEntriesDelete(serviceEntryIds: [ID!]!): MutationResult!
+    adminInventoryItemServiceEntriesUpsert(itemServiceEntries: [AdminInventoryItemServiceEntryInput!]!): MutationResult!
+    adminInventoryItemServiceEntriesDelete(serviceEntryIds: [ID!]!): MutationResult!
 
-    itemFilesAttach(inputs: [ItemFileAttachInput!]!): MutationResult!
-    itemFilesDelete(itemFileIds: [ID!]!): MutationResult!
+    adminInventoryItemFilesAttach(inputs: [AdminInventoryItemFileAttachInput!]!): MutationResult!
+    adminInventoryItemFilesDelete(itemFileIds: [ID!]!): MutationResult!
     # Edit existing item-file rows (label / pin state). Never creates.
-    itemFilesUpsert(itemFiles: [ItemFileUpsert!]!): MutationResult!
+    adminInventoryItemFilesUpsert(itemFiles: [AdminInventoryItemFileUpsert!]!): MutationResult!
 }
 
 # --- Travel -----------------------------------------------------------------
@@ -2343,7 +2343,7 @@ extend type AdminMutation {
 # Yearly toggle on the page is a deterministic projection over the same rows
 # (no dated transactions in v1). See `docs/features/workspace-finances.md`.
 
-enum FinanceRecurringCostCategory {
+enum AdminFinancesRecurringCostCategory {
     housing
     connectivity
     transport
@@ -2358,7 +2358,7 @@ enum FinanceRecurringCostCategory {
     other
 }
 
-enum FinanceCadence {
+enum AdminFinancesCadence {
     monthly
     yearly
 }
@@ -2367,12 +2367,12 @@ enum FinanceCadence {
 # the totals without deleting the history (paused subscription, sold car).
 # `startsOn` / `endsOn` are informational for v1 and do not participate in
 # any projection.
-type FinanceRecurringCost {
+type AdminFinancesRecurringCost {
     costId: ID!
     name: String!
-    categoryKey: FinanceRecurringCostCategory!
+    categoryKey: AdminFinancesRecurringCostCategory!
     amountCents: Int!
-    cadence: FinanceCadence!
+    cadence: AdminFinancesCadence!
     currency: String!
     notes: String
     active: Boolean!
@@ -2387,7 +2387,7 @@ type FinanceRecurringCost {
 # aggregates are computed in the resolver from the active recurring costs
 # — the Sankey and the overview strip both read them directly.
 type AdminFinancesQuery {
-    adminFinancesRecurringCostFindMany: [FinanceRecurringCost!]!
+    adminFinancesRecurringCostFindMany: [AdminFinancesRecurringCost!]!
     adminFinancesMonthlyNetIncomeCentsFindOne: Int
     adminFinancesMonthlyExpensesCentsFindOne: Int!
     adminFinancesYearlyExpensesCentsFindOne: Int!
@@ -2397,12 +2397,12 @@ extend type Admin {
     adminFinancesFindOne: AdminFinancesQuery!
 }
 
-input FinanceRecurringCostInput {
+input AdminFinancesRecurringCostInput {
     costId: ID
     name: String!
-    categoryKey: FinanceRecurringCostCategory!
+    categoryKey: AdminFinancesRecurringCostCategory!
     amountCents: Int!
-    cadence: FinanceCadence!
+    cadence: AdminFinancesCadence!
     currency: String
     notes: String
     active: Boolean
@@ -2416,25 +2416,25 @@ extend type AdminMutation {
     # id per input row in input order. Single-item edits (the dialog) pass a
     # one-element array. Pausing a cost rides this same upsert — pass the row
     # back with `active` flipped.
-    financeRecurringCostsUpsert(financeRecurringCosts: [FinanceRecurringCostInput!]!): MutationResult!
-    financeRecurringCostsDelete(costIds: [ID!]!): MutationResult!
+    adminFinancesRecurringCostsUpsert(financeRecurringCosts: [AdminFinancesRecurringCostInput!]!): MutationResult!
+    adminFinancesRecurringCostsDelete(costIds: [ID!]!): MutationResult!
     # Singleton setter — one settings row per admin. Pass `amountCents: null`
     # to clear the baseline. The `userUpdates` subscription re-renders the
     # totals; there is nothing to batch here.
-    financeMonthlyNetIncomeSet(amountCents: Int): MutationResult!
+    adminFinancesMonthlyNetIncomeSet(amountCents: Int): MutationResult!
 }
 
 # --- Nutrition --------------------------------------------------------------
 #
-# `/workspace/nutrition` — a cookbook (`Recipe`), a *soft* weekly meal plan
-# (`MealPlanEntry` — only filled slots exist), and a food/drink diary
-# (`FoodLogEntry`) the page rolls up into an end-of-week overview. Admin-only,
+# `/workspace/nutrition` — a cookbook (`AdminNutritionRecipe`), a *soft* weekly meal plan
+# (`AdminNutritionMealPlanEntry` — only filled slots exist), and a food/drink diary
+# (`AdminNutritionFoodLogEntry`) the page rolls up into an end-of-week overview. Admin-only,
 # `noindex`; no `*De`/`*En`. See `docs/features/workspace-nutrition.md`.
 
 # When a dish is eaten, planned, or logged. Shared across all three nutrition
 # entities so the assistant's "snack idea" ask, the plan grid, and the diary
 # speak one vocabulary.
-enum MealType {
+enum AdminNutritionMealType {
     breakfast
     lunch
     dinner
@@ -2444,7 +2444,7 @@ enum MealType {
 
 # Distinguishes something eaten from something drunk so the weekly overview
 # can split intake.
-enum FoodLogKind {
+enum AdminNutritionFoodLogKind {
     food
     drink
 }
@@ -2452,10 +2452,10 @@ enum FoodLogKind {
 # One cookbook entry. `isFavorite` + `lastMadeAt` are what let the nutrition
 # sub-agent suggest a dish Cem likes and hasn't made recently. `ingredients`
 # and `tags` are free-form arrays. `rating` is 1..10.
-type Recipe {
+type AdminNutritionRecipe {
     recipeId: ID!
     title: String!
-    mealType: MealType!
+    mealType: AdminNutritionMealType!
     ingredients: [String!]!
     steps: String
     tags: [String!]!
@@ -2473,11 +2473,11 @@ type Recipe {
 # One soft-plan slot: a `(date, mealType)` cell that either references a
 # `recipe` or carries a free-text `customText` idea. `recipe` is null when the
 # planned dish is not in the cookbook (or was deleted).
-type MealPlanEntry {
+type AdminNutritionMealPlanEntry {
     entryId: ID!
     date: Date!
-    mealType: MealType!
-    recipe: Recipe
+    mealType: AdminNutritionMealType!
+    recipe: AdminNutritionRecipe
     customText: String
     notes: String
     createdAt: DateTime!
@@ -2486,23 +2486,23 @@ type MealPlanEntry {
 
 # One diary row: something eaten or drunk at `consumedAt`. `recipe` optionally
 # links back to a cooked dish.
-type FoodLogEntry {
+type AdminNutritionFoodLogEntry {
     logId: ID!
     consumedAt: DateTime!
-    mealType: MealType!
-    kind: FoodLogKind!
+    mealType: AdminNutritionMealType!
+    kind: AdminNutritionFoodLogKind!
     description: String!
-    recipe: Recipe
+    recipe: AdminNutritionRecipe
     notes: String
     createdAt: DateTime!
     updatedAt: DateTime!
 }
 
 # One tracked supplement. The exact per-serving composition lives in `nutrients`
-# — filled by the `supplementResearch` action (grounded web search) and
+# — filled by the `adminNutritionSupplementResearch` action (grounded web search) and
 # confirmed by Cem before saving. `researchedAt` is set when the composition
 # came from that AI fill; `sourceUrl` is the product page it was read from.
-type Supplement {
+type AdminNutritionSupplement {
     supplementId: ID!
     name: String!
     brand: String
@@ -2513,14 +2513,14 @@ type Supplement {
     notes: String
     researchedAt: DateTime
     # Per-serving composition, ordered as on the label (`sortOrder`).
-    nutrients: [SupplementNutrient!]!
+    nutrients: [AdminNutritionSupplementNutrient!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
 
 # One nutrient line on a supplement's facts panel. `amount` is a string so it
 # tolerates "<1", "trace", and ranges printed verbatim on the label.
-type SupplementNutrient {
+type AdminNutritionSupplementNutrient {
     nutrientId: ID!
     name: String!
     amount: String
@@ -2529,23 +2529,23 @@ type SupplementNutrient {
     sortOrder: Int!
 }
 
-# The proposed composition returned by `supplementResearch`. Non-persisted — the
+# The proposed composition returned by `adminNutritionSupplementResearch`. Non-persisted — the
 # dialog (or the sub-agent) reviews it and feeds the confirmed values into
-# `supplementsUpsert`. `found` is false when the product could not be
+# `adminNutritionSupplementsUpsert`. `found` is false when the product could not be
 # identified; in that case `nutrients` is empty and no amounts are invented.
-type SupplementResearchResult {
+type AdminNutritionSupplementResearchResult {
     found: Boolean!
     brand: String
     servingSize: String
     servingsPerContainer: Int
     sourceUrl: String
     notes: String
-    nutrients: [SupplementNutrientProposal!]!
+    nutrients: [AdminNutritionSupplementNutrientProposal!]!
     # One-line note on what was found (or why nothing was), for the UI / agent.
     summary: String!
 }
 
-type SupplementNutrientProposal {
+type AdminNutritionSupplementNutrientProposal {
     name: String!
     amount: String
     unit: String
@@ -2560,26 +2560,26 @@ type SupplementNutrientProposal {
 type AdminNutritionQuery {
     # Cookbook. Optional filters: `mealType` narrows to one meal, `favorite`
     # to starred recipes. Ordered `isFavorite DESC, title ASC`.
-    adminNutritionRecipeFindMany(mealType: MealType, favorite: Boolean): [Recipe!]!
+    adminNutritionRecipeFindMany(mealType: AdminNutritionMealType, favorite: Boolean): [AdminNutritionRecipe!]!
     # Every soft-plan slot, ordered `date ASC, mealType`. The page filters to
     # the selected week.
-    adminNutritionMealPlanFindMany: [MealPlanEntry!]!
+    adminNutritionMealPlanFindMany: [AdminNutritionMealPlanEntry!]!
     # Every diary entry, newest first (`consumedAt DESC`). The page filters to
     # the selected week and rolls up the end-of-week overview.
-    adminNutritionFoodLogFindMany: [FoodLogEntry!]!
+    adminNutritionFoodLogFindMany: [AdminNutritionFoodLogEntry!]!
     # Every tracked supplement, ordered `name ASC`, each with its per-serving
     # nutrient rows ordered by `sortOrder`.
-    adminNutritionSupplementFindMany: [Supplement!]!
+    adminNutritionSupplementFindMany: [AdminNutritionSupplement!]!
 }
 
 extend type Admin {
     adminNutritionFindOne: AdminNutritionQuery!
 }
 
-input RecipeInput {
+input AdminNutritionRecipeInput {
     recipeId: ID
     title: String!
-    mealType: MealType!
+    mealType: AdminNutritionMealType!
     ingredients: [String!]
     steps: String
     tags: [String!]
@@ -2594,28 +2594,28 @@ input RecipeInput {
     lastMadeAt: DateTime
 }
 
-input MealPlanEntryInput {
+input AdminNutritionMealPlanEntryInput {
     entryId: ID
     date: Date!
-    mealType: MealType!
+    mealType: AdminNutritionMealType!
     # Reference an existing cookbook recipe, or leave null and use `customText`.
     recipeId: ID
     customText: String
     notes: String
 }
 
-input FoodLogEntryInput {
+input AdminNutritionFoodLogEntryInput {
     logId: ID
     # ISO-8601 timestamp of when it was consumed.
     consumedAt: DateTime!
-    mealType: MealType!
-    kind: FoodLogKind!
+    mealType: AdminNutritionMealType!
+    kind: AdminNutritionFoodLogKind!
     description: String!
     recipeId: ID
     notes: String
 }
 
-input SupplementNutrientInput {
+input AdminNutritionSupplementNutrientInput {
     name: String!
     amount: String
     unit: String
@@ -2624,7 +2624,7 @@ input SupplementNutrientInput {
     sortOrder: Int
 }
 
-input SupplementInput {
+input AdminNutritionSupplementInput {
     supplementId: ID
     name: String!
     brand: String
@@ -2637,7 +2637,7 @@ input SupplementInput {
     researchedAt: DateTime
 }
 
-input SupplementResearchInput {
+input AdminNutritionSupplementResearchInput {
     name: String!
     brand: String
 }
@@ -2647,43 +2647,43 @@ extend type AdminMutation {
     # one is inserted. `referenceIds` echoes the id per input row in input
     # order. Single-item edits (dialogs, the diary composer) pass a one-element
     # array — there is no parallel singular path.
-    recipesUpsert(recipes: [RecipeInput!]!): MutationResult!
-    recipesDelete(recipeIds: [ID!]!): MutationResult!
+    adminNutritionRecipesUpsert(recipes: [AdminNutritionRecipeInput!]!): MutationResult!
+    adminNutritionRecipesDelete(recipeIds: [ID!]!): MutationResult!
 
-    mealPlanEntriesUpsert(mealPlanEntries: [MealPlanEntryInput!]!): MutationResult!
-    mealPlanEntriesDelete(entryIds: [ID!]!): MutationResult!
+    adminNutritionMealPlanEntriesUpsert(mealPlanEntries: [AdminNutritionMealPlanEntryInput!]!): MutationResult!
+    adminNutritionMealPlanEntriesDelete(entryIds: [ID!]!): MutationResult!
 
-    foodLogEntriesUpsert(foodLogEntries: [FoodLogEntryInput!]!): MutationResult!
-    foodLogEntriesDelete(logIds: [ID!]!): MutationResult!
+    adminNutritionFoodLogEntriesUpsert(foodLogEntries: [AdminNutritionFoodLogEntryInput!]!): MutationResult!
+    adminNutritionFoodLogEntriesDelete(logIds: [ID!]!): MutationResult!
 
     # Batch create-or-edit of supplements. Every row with a `supplementId` is
     # updated; every row without one is inserted. `referenceIds` echoes the
     # supplement id per input row in input order, so the caller can pass a new
-    # id straight into `supplementNutrientsReplace`. Nutrient rows are written
+    # id straight into `adminNutritionSupplementNutrientsReplace`. Nutrient rows are written
     # separately (see below) — a supplement and its composition are two calls,
     # mirroring the parent/child split used by travel and inventory.
-    supplementsUpsert(supplements: [SupplementInput!]!): MutationResult!
-    supplementsDelete(supplementIds: [ID!]!): MutationResult!
+    adminNutritionSupplementsUpsert(supplements: [AdminNutritionSupplementInput!]!): MutationResult!
+    adminNutritionSupplementsDelete(supplementIds: [ID!]!): MutationResult!
 
     # Replace one supplement's entire per-serving composition with `nutrients`
     # (pass [] to clear it). `sortOrder` defaults to array position when omitted.
-    supplementNutrientsReplace(supplementId: ID!, nutrients: [SupplementNutrientInput!]!): MutationResult!
+    adminNutritionSupplementNutrientsReplace(supplementId: ID!, nutrients: [AdminNutritionSupplementNutrientInput!]!): MutationResult!
 
     # AI web-research action. Grounded search for the named product's official
     # supplement facts, returning a proposed composition for review. Persists
-    # NOTHING — the caller confirms and then calls `supplementsUpsert` +
-    # `supplementNutrientsReplace`.
-    supplementResearch(input: SupplementResearchInput!): SupplementResearchResult!
+    # NOTHING — the caller confirms and then calls `adminNutritionSupplementsUpsert` +
+    # `adminNutritionSupplementNutrientsReplace`.
+    adminNutritionSupplementResearch(input: AdminNutritionSupplementResearchInput!): AdminNutritionSupplementResearchResult!
 }
 
 # --- Fitness ----------------------------------------------------------------
 #
-# `/workspace/fitness` — an exercise catalog (`Exercise`), reusable routines
-# (`WorkoutRoutine` + `WorkoutRoutineItem`), and the gym log (`WorkoutSession`
-# + `WorkoutSet`, weight × reps per set). Admin-only, `noindex`; no `*De`/`*En`.
+# `/workspace/fitness` — an exercise catalog (`AdminFitnessExercise`), reusable routines
+# (`AdminFitnessWorkoutRoutine` + `AdminFitnessWorkoutRoutineItem`), and the gym log (`AdminFitnessWorkoutSession`
+# + `AdminFitnessWorkoutSet`, weight × reps per set). Admin-only, `noindex`; no `*De`/`*En`.
 # See `docs/features/workspace-fitness.md`.
 
-enum MuscleGroup {
+enum AdminFitnessMuscleGroup {
     chest
     back
     legs
@@ -2695,7 +2695,7 @@ enum MuscleGroup {
     other
 }
 
-enum EquipmentType {
+enum AdminFitnessEquipmentType {
     barbell
     dumbbell
     machine
@@ -2706,11 +2706,11 @@ enum EquipmentType {
 }
 
 # One movement in the catalog. Sessions and routines reference it.
-type Exercise {
+type AdminFitnessExercise {
     exerciseId: ID!
     name: String!
-    muscleGroup: MuscleGroup!
-    equipment: EquipmentType
+    muscleGroup: AdminFitnessMuscleGroup!
+    equipment: AdminFitnessEquipmentType
     notes: String
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -2719,10 +2719,10 @@ type Exercise {
 # One planned exercise within a routine, with optional targets. `exercise`
 # resolves the referenced catalog row; `items` on a routine are ordered by
 # `position` ascending.
-type WorkoutRoutineItem {
+type AdminFitnessWorkoutRoutineItem {
     routineItemId: ID!
     routineId: ID!
-    exercise: Exercise!
+    exercise: AdminFitnessExercise!
     position: Int!
     targetSets: Int
     targetReps: Int
@@ -2734,22 +2734,22 @@ type WorkoutRoutineItem {
 
 # A reusable workout template ("Push day"). Starting a session from it seeds
 # `WorkoutSets` from the routine's items.
-type WorkoutRoutine {
+type AdminFitnessWorkoutRoutine {
     routineId: ID!
     name: String!
     notes: String
     position: Int!
-    items: [WorkoutRoutineItem!]!
+    items: [AdminFitnessWorkoutRoutineItem!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
 
 # One logged set: `weight` × `reps`, optional `rpe`, and an `isWarmup` flag so
 # warmups don't pollute PR math. `exercise` resolves the catalog row.
-type WorkoutSet {
+type AdminFitnessWorkoutSet {
     setId: ID!
     sessionId: ID!
-    exercise: Exercise!
+    exercise: AdminFitnessExercise!
     position: Int!
     weight: Float
     reps: Int
@@ -2763,14 +2763,14 @@ type WorkoutSet {
 # One gym session. `routineId` links the routine it was seeded from (null when
 # ad-hoc, or if that routine was later deleted). `sets` are ordered by
 # `position` ascending.
-type WorkoutSession {
+type AdminFitnessWorkoutSession {
     sessionId: ID!
     date: Date!
     title: String
     routineId: ID
     durationMinutes: Int
     notes: String
-    sets: [WorkoutSet!]!
+    sets: [AdminFitnessWorkoutSet!]!
     createdAt: DateTime!
     updatedAt: DateTime!
 }
@@ -2778,34 +2778,34 @@ type WorkoutSession {
 # Read namespace mounted under `Admin`. Gated once at the `Query.admin`
 # boundary by the resolver chain on `User.admin`.
 type AdminFitnessQuery {
-    # Exercise catalog, ordered `muscleGroup, name ASC`.
-    adminFitnessExerciseFindMany: [Exercise!]!
+    # AdminFitnessExercise catalog, ordered `muscleGroup, name ASC`.
+    adminFitnessExerciseFindMany: [AdminFitnessExercise!]!
     # All routines with their items pre-joined, ordered `position ASC`.
-    adminFitnessRoutineFindMany: [WorkoutRoutine!]!
+    adminFitnessRoutineFindMany: [AdminFitnessWorkoutRoutine!]!
     # Sessions with their sets pre-joined, ordered `date DESC, createdAt DESC`.
-    adminFitnessSessionFindMany: [WorkoutSession!]!
+    adminFitnessSessionFindMany: [AdminFitnessWorkoutSession!]!
 }
 
 extend type Admin {
     adminFitnessFindOne: AdminFitnessQuery!
 }
 
-input ExerciseInput {
+input AdminFitnessExerciseInput {
     exerciseId: ID
     name: String!
-    muscleGroup: MuscleGroup!
-    equipment: EquipmentType
+    muscleGroup: AdminFitnessMuscleGroup!
+    equipment: AdminFitnessEquipmentType
     notes: String
 }
 
-input WorkoutRoutineInput {
+input AdminFitnessWorkoutRoutineInput {
     routineId: ID
     name: String!
     notes: String
     position: Int
 }
 
-input WorkoutRoutineItemInput {
+input AdminFitnessWorkoutRoutineItemInput {
     routineItemId: ID
     routineId: ID!
     exerciseId: ID!
@@ -2816,7 +2816,7 @@ input WorkoutRoutineItemInput {
     notes: String
 }
 
-input WorkoutSessionInput {
+input AdminFitnessWorkoutSessionInput {
     sessionId: ID
     date: Date!
     title: String
@@ -2825,7 +2825,7 @@ input WorkoutSessionInput {
     notes: String
 }
 
-input WorkoutSetInput {
+input AdminFitnessWorkoutSetInput {
     setId: ID
     sessionId: ID!
     exerciseId: ID!
@@ -2840,21 +2840,21 @@ input WorkoutSetInput {
 extend type AdminMutation {
     # Batch create-or-edit. Every row with an id is updated; every row without
     # one is inserted. `referenceIds` echoes the id per input row in input
-    # order — logging a workout is `workoutSessionsUpsert` (one session) then
-    # `workoutSetsUpsert` (every set) using the session's `referenceIds` as the
+    # order — logging a workout is `adminFitnessWorkoutSessionsUpsert` (one session) then
+    # `adminFitnessWorkoutSetsUpsert` (every set) using the session's `referenceIds` as the
     # parent id. Single-item edits pass a one-element array.
-    exercisesUpsert(exercises: [ExerciseInput!]!): MutationResult!
-    exercisesDelete(exerciseIds: [ID!]!): MutationResult!
+    adminFitnessExercisesUpsert(exercises: [AdminFitnessExerciseInput!]!): MutationResult!
+    adminFitnessExercisesDelete(exerciseIds: [ID!]!): MutationResult!
 
-    workoutRoutinesUpsert(workoutRoutines: [WorkoutRoutineInput!]!): MutationResult!
-    workoutRoutinesDelete(routineIds: [ID!]!): MutationResult!
+    adminFitnessWorkoutRoutinesUpsert(workoutRoutines: [AdminFitnessWorkoutRoutineInput!]!): MutationResult!
+    adminFitnessWorkoutRoutinesDelete(routineIds: [ID!]!): MutationResult!
 
-    workoutRoutineItemsUpsert(workoutRoutineItems: [WorkoutRoutineItemInput!]!): MutationResult!
-    workoutRoutineItemsDelete(routineItemIds: [ID!]!): MutationResult!
+    adminFitnessWorkoutRoutineItemsUpsert(workoutRoutineItems: [AdminFitnessWorkoutRoutineItemInput!]!): MutationResult!
+    adminFitnessWorkoutRoutineItemsDelete(routineItemIds: [ID!]!): MutationResult!
 
-    workoutSessionsUpsert(workoutSessions: [WorkoutSessionInput!]!): MutationResult!
-    workoutSessionsDelete(sessionIds: [ID!]!): MutationResult!
+    adminFitnessWorkoutSessionsUpsert(workoutSessions: [AdminFitnessWorkoutSessionInput!]!): MutationResult!
+    adminFitnessWorkoutSessionsDelete(sessionIds: [ID!]!): MutationResult!
 
-    workoutSetsUpsert(workoutSets: [WorkoutSetInput!]!): MutationResult!
-    workoutSetsDelete(setIds: [ID!]!): MutationResult!
+    adminFitnessWorkoutSetsUpsert(workoutSets: [AdminFitnessWorkoutSetInput!]!): MutationResult!
+    adminFitnessWorkoutSetsDelete(setIds: [ID!]!): MutationResult!
 }

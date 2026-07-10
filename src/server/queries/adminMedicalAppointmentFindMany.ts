@@ -1,8 +1,8 @@
 import { asc, desc, sql } from 'drizzle-orm';
 import { medicalAppointments } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMedicalAppointment, GqlSSession } from '../graphql/generated';
-import { toGqlMedicalAppointment } from '../mappers/toGqlMedicalAppointment';
+import type { GqlSAdminMedicalAppointment, GqlSSession } from '../graphql/generated';
+import { toGqlAdminMedicalAppointment } from '../mappers/toGqlAdminMedicalAppointment';
 
 // Lists every appointment. Ordered so upcoming visits float to the top
 // (scheduled ASC by `scheduledAt` — the soonest future date first),
@@ -12,7 +12,7 @@ import { toGqlMedicalAppointment } from '../mappers/toGqlMedicalAppointment';
 export async function adminMedicalAppointmentFindMany(
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSMedicalAppointment[]> {
+): Promise<GqlSAdminMedicalAppointment[]> {
     try {
         const rows = await serverRuntime.db
             .select()
@@ -30,7 +30,7 @@ export async function adminMedicalAppointmentFindMany(
                 desc(medicalAppointments.scheduledAt),
                 asc(medicalAppointments.appointmentId),
             );
-        return rows.map(toGqlMedicalAppointment);
+        return rows.map(toGqlAdminMedicalAppointment);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

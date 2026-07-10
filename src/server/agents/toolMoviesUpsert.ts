@@ -1,9 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { moviesUpsert } from '../commands/moviesUpsert';
+import { adminMediaMoviesUpsert } from '../commands/adminMediaMoviesUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMovieStatusSchema } from '../graphql/generated';
-import type { GqlSMovieInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminMediaMovieStatusSchema } from '../graphql/generated';
+import type { GqlSAdminMediaMovieInput, GqlSSession } from '../graphql/generated';
 import type { MediaAgentMutationLog } from './agentPersonalAssistantMedia';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -15,19 +15,19 @@ import { requireAdminUserId } from './requireAdminUserId';
 // Hand-built item schema — same rationale as `toolProjectUpsert.ts`: Gemini's
 // structured output rejects `z.date()`, so `watchedAt` rides the wire as an
 // ISO string and the `execute` converts with `new Date(...)`. Only the
-// GraphQL enum schema (`GqlSMovieStatusSchema`) is reused so a future status
+// GraphQL enum schema (`GqlSAdminMediaMovieStatusSchema`) is reused so a future status
 // addition surfaces as a TS error here rather than a runtime mismatch.
 
 const movieItemSchema = z.object({
     movieId: z.uuid().nullish().describe('Omit (or null) to create a new movie. Pass an existing id to edit.'),
-    title: z.string().min(1).max(300).describe('Movie title.'),
+    title: z.string().min(1).max(300).describe('AdminMediaMovie title.'),
     tmdbId: z.number().int().min(1).nullish().describe('Optional TMDB reference id.'),
     posterUrl: z.url().nullish().describe('Poster image URL. Typically from TMDB.'),
     backdropUrl: z.url().nullish(),
     releaseDate: z.string().nullish().describe('ISO date `YYYY-MM-DD`. Optional.'),
     runtimeMinutes: z.number().int().min(1).max(1000).nullish(),
     overview: z.string().max(4000).nullish(),
-    status: GqlSMovieStatusSchema.describe('watchlist | watching | watched | dropped'),
+    status: GqlSAdminMediaMovieStatusSchema.describe('watchlist | watching | watched | dropped'),
     rating: z.number().int().min(1).max(10).nullish().describe("Cem's rating out of 10."),
     watchedAt: z.string().nullish().describe('ISO-8601 timestamp when Cem watched it. Only set for `status: watched`.'),
     notes: z.string().max(4000).nullish(),
@@ -56,7 +56,7 @@ export function toolMoviesUpsert({ serverRuntime, session, mutations }: MediaAge
         ].join(' '),
         inputSchema: toolMoviesUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSMovieInput[] = input.movies.map((movie) => ({
+            const inputs: GqlSAdminMediaMovieInput[] = input.movies.map((movie) => ({
                 movieId: movie.movieId ?? null,
                 title: movie.title,
                 tmdbId: movie.tmdbId ?? null,
@@ -71,7 +71,7 @@ export function toolMoviesUpsert({ serverRuntime, session, mutations }: MediaAge
                 notes: movie.notes ?? null,
                 topics: movie.topics,
             }));
-            const result = await moviesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminMediaMoviesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.movies.forEach((movie, index) => {
                 mutations.push({

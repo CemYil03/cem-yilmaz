@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { adminTravelTripDays, adminTravelTrips } from '../db/schema';
+import { tripDays, trips } from '../db/schema';
 import type { AdminTravelTripDayCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminTravelTripDayInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -37,10 +37,7 @@ export async function adminTravelTripDaysUpsert(
         const parentTripIds = Array.from(new Set(rows.map((row) => row.tripId)));
         const updateIds = rows.filter((row) => row.isUpdate).map((row) => row.tripDayId);
         await serverRuntime.db.transaction(async (transaction) => {
-            const parents = await transaction
-                .select({ tripId: adminTravelTrips.tripId })
-                .from(adminTravelTrips)
-                .where(inArray(adminTravelTrips.tripId, parentTripIds));
+            const parents = await transaction.select({ tripId: trips.tripId }).from(trips).where(inArray(trips.tripId, parentTripIds));
             if (parents.length !== parentTripIds.length) {
                 const found = new Set(parents.map((row) => row.tripId));
                 const missing = parentTripIds.filter((id) => !found.has(id));
@@ -48,9 +45,9 @@ export async function adminTravelTripDaysUpsert(
             }
             if (updateIds.length > 0) {
                 const existing = await transaction
-                    .select({ tripDayId: adminTravelTripDays.tripDayId })
-                    .from(adminTravelTripDays)
-                    .where(inArray(adminTravelTripDays.tripDayId, updateIds));
+                    .select({ tripDayId: tripDays.tripDayId })
+                    .from(tripDays)
+                    .where(inArray(tripDays.tripDayId, updateIds));
                 if (existing.length !== updateIds.length) {
                     const found = new Set(existing.map((row) => row.tripDayId));
                     const missing = updateIds.filter((id) => !found.has(id));
@@ -59,9 +56,9 @@ export async function adminTravelTripDaysUpsert(
             }
             for (const row of rows) {
                 if (row.isUpdate) {
-                    await transaction.update(adminTravelTripDays).set(row.payload).where(eq(adminTravelTripDays.tripDayId, row.tripDayId));
+                    await transaction.update(tripDays).set(row.payload).where(eq(tripDays.tripDayId, row.tripDayId));
                 } else {
-                    await transaction.insert(adminTravelTripDays).values(row.payload);
+                    await transaction.insert(tripDays).values(row.payload);
                 }
             }
         });

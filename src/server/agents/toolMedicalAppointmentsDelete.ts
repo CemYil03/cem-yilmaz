@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { medicalAppointmentsDelete } from '../commands/medicalAppointmentsDelete';
+import { adminMedicalAppointmentsDelete } from '../commands/adminMedicalAppointmentsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { MedicalAgentMutationLog } from './agentPersonalAssistantMedical';
@@ -28,7 +28,7 @@ export function toolMedicalAppointmentsDelete({ serverRuntime, session, mutation
         ].join(' '),
         inputSchema: toolMedicalAppointmentsDeleteInputSchema,
         execute: async (input) => {
-            const result = await medicalAppointmentsDelete(requireAdminUserId(session), input.appointmentIds, session, serverRuntime);
+            const result = await adminMedicalAppointmentsDelete(requireAdminUserId(session), input.appointmentIds, session, serverRuntime);
             for (const appointmentId of input.appointmentIds) mutations.push({ kind: 'appointmentDelete', id: appointmentId });
             return result;
         },

@@ -4,7 +4,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { adminNutritionSupplementFindMany } from '../queries/adminNutritionSupplementFindMany';
 
-// Supplement read tool. The system-prompt snapshot already lists every
+// AdminNutritionSupplement read tool. The system-prompt snapshot already lists every
 // supplement with its id inline; use this only to read a supplement's full
 // per-serving nutrient breakdown before editing it.
 

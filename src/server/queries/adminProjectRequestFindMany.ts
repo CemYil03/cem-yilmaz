@@ -1,9 +1,9 @@
 import { desc, eq } from 'drizzle-orm';
 import { projectRequests, projects } from '../db/schema';
-import type { Project, ProjectRequest } from '../db/schema';
+import type { AdminProject, AdminProjectRequest } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSProjectRequest, GqlSProjectRequestStatus, GqlSSession } from '../graphql/generated';
-import { toGqlProjectRequest } from '../mappers/toGqlProjectRequest';
+import type { GqlSAdminProjectRequest, GqlSAdminProjectRequestStatus, GqlSSession } from '../graphql/generated';
+import { toGqlAdminProjectRequest } from '../mappers/toGqlAdminProjectRequest';
 
 // Lists project requests, optionally narrowed by status. The Inbox tab on
 // `/workspace/projects` calls this with `emailVerified` to surface only
@@ -12,13 +12,13 @@ import { toGqlProjectRequest } from '../mappers/toGqlProjectRequest';
 // audit). Newest first — visitors care about recent submissions.
 //
 // `convertedProject` is built from a left join on `Projects.sourceRequestId`.
-// The full row is dropped into `toGqlProjectRequest`, which only emits a
+// The full row is dropped into `toGqlAdminProjectRequest`, which only emits a
 // shallow project shape (no nested tasks) to keep the payload bounded.
 export async function adminProjectRequestFindMany(
-    status: GqlSProjectRequestStatus | null,
+    status: GqlSAdminProjectRequestStatus | null,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSProjectRequest[]> {
+): Promise<GqlSAdminProjectRequest[]> {
     try {
         const rows = await serverRuntime.db
             .select({ request: projectRequests, convertedProject: projects })
@@ -26,8 +26,8 @@ export async function adminProjectRequestFindMany(
             .leftJoin(projects, eq(projects.sourceRequestId, projectRequests.projectRequestId))
             .where(status ? eq(projectRequests.status, status) : undefined)
             .orderBy(desc(projectRequests.createdAt));
-        return rows.map((row: { request: ProjectRequest; convertedProject: Project | null }) =>
-            toGqlProjectRequest(row.request, row.convertedProject),
+        return rows.map((row: { request: AdminProjectRequest; convertedProject: AdminProject | null }) =>
+            toGqlAdminProjectRequest(row.request, row.convertedProject),
         );
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

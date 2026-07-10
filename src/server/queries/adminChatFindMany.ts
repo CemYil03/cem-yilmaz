@@ -27,7 +27,7 @@ import { buildSearchCondition, MAX_LIMIT } from './chatSearchCondition';
 //   the chat where I said X" — a model's paraphrase of the same idea
 //   should not eclipse the user's own words in the results.
 //
-// Pair with `adminChatCount(query)` to drive "Show more" pagination.
+// Pair with `adminChatCount(query)` to drive "AdminMediaShow more" pagination.
 export async function adminChatFindMany(
     args: GqlSAdminAdminChatFindManyArgs,
     requestingSession: GqlSSession,

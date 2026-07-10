@@ -49,7 +49,7 @@ type ProjectsAgentMutationKind =
 
 export interface ProjectsAgentMutation {
     kind: ProjectsAgentMutationKind;
-    // Project id or task id depending on `kind`.
+    // AdminProject id or task id depending on `kind`.
     id: string;
     // Best-effort label for the orchestrator's user-facing narration. Mutation
     // tools fill this from the GraphQL result (create/update) or the input

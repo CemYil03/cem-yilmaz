@@ -1,19 +1,19 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { projectLinksUpsert } from '../commands/projectLinksUpsert';
+import { adminProjectLinksUpsert } from '../commands/adminProjectLinksUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSProjectLinkUpsertSchema } from '../graphql/generated';
-import type { GqlSProjectLinkUpsert, GqlSSession } from '../graphql/generated';
+import { GqlSAdminProjectLinkUpsertSchema } from '../graphql/generated';
+import type { GqlSAdminProjectLinkUpsert, GqlSSession } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 import { requireAdminUserId } from './requireAdminUserId';
 
 // Batch attach of external URLs to projects or edit of existing links. Each
-// item is the generated `GqlSProjectLinkUpsertSchema()` — same shape the
+// item is the generated `GqlSAdminProjectLinkUpsertSchema()` — same shape the
 // GraphQL resolver validates, no hand-built duplicate. Gemini-safe: no
 // `DateTime` fields, enum reused via the generated schema. See
 // `docs/architecture/agent-delegation.md`.
 //
-// The `rawInput.projectLinks as GqlSProjectLinkUpsert[]` cast is the same
+// The `rawInput.projectLinks as GqlSAdminProjectLinkUpsert[]` cast is the same
 // workaround the travel tools use: the codegen output types the ZodObject as
 // `ZodObject<Properties<T>>`, which `z.infer` cannot round-trip back to the
 // concrete input type. The runtime schema DOES validate; the cast just
@@ -21,7 +21,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 
 const toolProjectLinksUpsertInputSchema = z.object({
     projectLinks: z
-        .array(GqlSProjectLinkUpsertSchema())
+        .array(GqlSAdminProjectLinkUpsertSchema())
         .min(1)
         .describe('One or more links to create or edit. Pass a one-element array for a single link.'),
 });
@@ -44,8 +44,8 @@ export function toolProjectLinksUpsert({ serverRuntime, session, mutations }: Pr
         ].join(' '),
         inputSchema: toolProjectLinksUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.projectLinks as GqlSProjectLinkUpsert[];
-            const result = await projectLinksUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.projectLinks as GqlSAdminProjectLinkUpsert[];
+            const result = await adminProjectLinksUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((link, index) => {
                 mutations.push({

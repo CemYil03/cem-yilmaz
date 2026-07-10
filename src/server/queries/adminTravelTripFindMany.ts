@@ -1,5 +1,5 @@
 import { asc, desc, inArray, sql } from 'drizzle-orm';
-import { adminTravelTripActivities, adminTravelTripDays, adminTravelTripPackingItems, adminTravelTrips } from '../db/schema';
+import { tripActivities, tripDays, tripPackingItems, trips } from '../db/schema';
 import type { AdminTravelTripActivity, AdminTravelTripPackingItem } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminTravelTrip, GqlSAdminTravelTripDay, GqlSSession } from '../graphql/generated';
@@ -21,30 +21,26 @@ export async function adminTravelTripFindMany(
     try {
         const rows = await serverRuntime.db
             .select()
-            .from(adminTravelTrips)
-            .orderBy(sql`${adminTravelTrips.startsOn} DESC NULLS LAST`, desc(adminTravelTrips.createdAt), asc(adminTravelTrips.tripId));
+            .from(trips)
+            .orderBy(sql`${trips.startsOn} DESC NULLS LAST`, desc(trips.createdAt), asc(trips.tripId));
         if (rows.length === 0) return [];
 
         const tripIds = rows.map((r) => r.tripId);
 
         const dayRows = await serverRuntime.db
             .select()
-            .from(adminTravelTripDays)
-            .where(inArray(adminTravelTripDays.tripId, tripIds))
-            .orderBy(asc(adminTravelTripDays.tripId), asc(adminTravelTripDays.dayNumber));
+            .from(tripDays)
+            .where(inArray(tripDays.tripId, tripIds))
+            .orderBy(asc(tripDays.tripId), asc(tripDays.dayNumber));
 
         let activityRows: AdminTravelTripActivity[] = [];
         if (dayRows.length > 0) {
             const dayIds = dayRows.map((d) => d.tripDayId);
             activityRows = await serverRuntime.db
                 .select()
-                .from(adminTravelTripActivities)
-                .where(inArray(adminTravelTripActivities.tripDayId, dayIds))
-                .orderBy(
-                    asc(adminTravelTripActivities.tripDayId),
-                    asc(adminTravelTripActivities.position),
-                    asc(adminTravelTripActivities.tripActivityId),
-                );
+                .from(tripActivities)
+                .where(inArray(tripActivities.tripDayId, dayIds))
+                .orderBy(asc(tripActivities.tripDayId), asc(tripActivities.position), asc(tripActivities.tripActivityId));
         }
 
         const activitiesByDayId = new Map<string, GqlSAdminTravelTripDay['activities']>();
@@ -63,13 +59,13 @@ export async function adminTravelTripFindMany(
 
         const packingRows: AdminTravelTripPackingItem[] = await serverRuntime.db
             .select()
-            .from(adminTravelTripPackingItems)
-            .where(inArray(adminTravelTripPackingItems.tripId, tripIds))
+            .from(tripPackingItems)
+            .where(inArray(tripPackingItems.tripId, tripIds))
             .orderBy(
-                asc(adminTravelTripPackingItems.tripId),
-                asc(adminTravelTripPackingItems.category),
-                asc(adminTravelTripPackingItems.position),
-                asc(adminTravelTripPackingItems.tripPackingItemId),
+                asc(tripPackingItems.tripId),
+                asc(tripPackingItems.category),
+                asc(tripPackingItems.position),
+                asc(tripPackingItems.tripPackingItemId),
             );
 
         const packingByTripId = new Map<string, ReturnType<typeof toGqlAdminTravelTripPackingItem>[]>();

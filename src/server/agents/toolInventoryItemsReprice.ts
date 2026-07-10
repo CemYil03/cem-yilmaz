@@ -1,8 +1,8 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { itemsReprice } from '../commands/itemsReprice';
+import { adminInventoryItemsReprice } from '../commands/adminInventoryItemsReprice';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSItemRepriceInput, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminInventoryItemRepriceInput, GqlSSession } from '../graphql/generated';
 import type { InventoryAgentMutationLog } from './agentPersonalAssistantInventory';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -11,7 +11,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 // an `ItemValuations` journal row AND updates the cached current value in one
 // transaction, so the valuations sparkline stays honest.
 //
-// Hand-built row schema because `ItemRepriceInput.valuedAt` is a `DateTime`
+// Hand-built row schema because `AdminInventoryItemRepriceInput.valuedAt` is a `DateTime`
 // scalar the codegen emits as `z.date()`, which Gemini's constrained decoding
 // rejects. `valuedAt` rides the wire as an ISO string and `execute` converts
 // with `new Date(...)`. See `docs/architecture/agent-delegation.md#tool-input-schemas`.
@@ -43,13 +43,13 @@ export function toolInventoryItemsReprice({ serverRuntime, session, mutations }:
         ].join(' '),
         inputSchema: toolInventoryItemsRepriceInputSchema,
         execute: async (input) => {
-            const inputs: GqlSItemRepriceInput[] = input.inputs.map((reprice) => ({
+            const inputs: GqlSAdminInventoryItemRepriceInput[] = input.inputs.map((reprice) => ({
                 itemId: reprice.itemId,
                 valueCents: reprice.valueCents,
                 valuedAt: reprice.valuedAt ? new Date(reprice.valuedAt) : null,
                 note: reprice.note ?? null,
             }));
-            const result = await itemsReprice(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminInventoryItemsReprice(requireAdminUserId(session), inputs, session, serverRuntime);
             for (const reprice of input.inputs) {
                 mutations.push({ kind: 'reprice', id: reprice.itemId });
             }

@@ -13,7 +13,7 @@ interface NutritionAgentReadContext {
 }
 
 const supplementResearchInputSchema = z.object({
-    name: z.string().min(1).describe('Supplement / product name to look up, e.g. "Creatine Monohydrate".'),
+    name: z.string().min(1).describe('AdminNutritionSupplement / product name to look up, e.g. "Creatine Monohydrate".'),
     brand: z.string().nullish().describe('Optional brand / manufacturer to disambiguate the exact product.'),
 });
 

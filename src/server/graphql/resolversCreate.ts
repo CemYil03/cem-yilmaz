@@ -18,26 +18,26 @@ import { cvHobbyReorder } from '../commands/cvHobbyReorder';
 import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillsDelete } from '../commands/cvSkillsDelete';
 import { cvSkillsUpsert } from '../commands/cvSkillsUpsert';
-import { itemsDelete } from '../commands/itemsDelete';
-import { itemFilesAttach } from '../commands/itemFilesAttach';
-import { itemFilesDelete } from '../commands/itemFilesDelete';
-import { itemFilesUpsert } from '../commands/itemFilesUpsert';
-import { itemsReprice } from '../commands/itemsReprice';
-import { itemServiceEntriesDelete } from '../commands/itemServiceEntriesDelete';
-import { itemServiceEntriesUpsert } from '../commands/itemServiceEntriesUpsert';
-import { itemsUpsert } from '../commands/itemsUpsert';
-import { financeMonthlyNetIncomeSet } from '../commands/financeMonthlyNetIncomeSet';
-import { financeRecurringCostsDelete } from '../commands/financeRecurringCostsDelete';
-import { financeRecurringCostsUpsert } from '../commands/financeRecurringCostsUpsert';
-import { mediaChannelsDelete } from '../commands/mediaChannelsDelete';
-import { mediaChannelReorder } from '../commands/mediaChannelReorder';
-import { mediaChannelsUpsert } from '../commands/mediaChannelsUpsert';
-import { medicalAppointmentsDelete } from '../commands/medicalAppointmentsDelete';
-import { medicalAppointmentsUpsert } from '../commands/medicalAppointmentsUpsert';
-import { medicalRecordFilesAttach } from '../commands/medicalRecordFilesAttach';
-import { medicalRecordFilesDelete } from '../commands/medicalRecordFilesDelete';
-import { medicalRecordsDelete } from '../commands/medicalRecordsDelete';
-import { medicalRecordsUpsert } from '../commands/medicalRecordsUpsert';
+import { adminInventoryItemsDelete } from '../commands/adminInventoryItemsDelete';
+import { adminInventoryItemFilesAttach } from '../commands/adminInventoryItemFilesAttach';
+import { adminInventoryItemFilesDelete } from '../commands/adminInventoryItemFilesDelete';
+import { adminInventoryItemFilesUpsert } from '../commands/adminInventoryItemFilesUpsert';
+import { adminInventoryItemsReprice } from '../commands/adminInventoryItemsReprice';
+import { adminInventoryItemServiceEntriesDelete } from '../commands/adminInventoryItemServiceEntriesDelete';
+import { adminInventoryItemServiceEntriesUpsert } from '../commands/adminInventoryItemServiceEntriesUpsert';
+import { adminInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert';
+import { adminFinancesMonthlyNetIncomeSet } from '../commands/adminFinancesMonthlyNetIncomeSet';
+import { adminFinancesRecurringCostsDelete } from '../commands/adminFinancesRecurringCostsDelete';
+import { adminFinancesRecurringCostsUpsert } from '../commands/adminFinancesRecurringCostsUpsert';
+import { adminMediaChannelsDelete } from '../commands/adminMediaChannelsDelete';
+import { adminMediaChannelReorder } from '../commands/adminMediaChannelReorder';
+import { adminMediaChannelsUpsert } from '../commands/adminMediaChannelsUpsert';
+import { adminMedicalAppointmentsDelete } from '../commands/adminMedicalAppointmentsDelete';
+import { adminMedicalAppointmentsUpsert } from '../commands/adminMedicalAppointmentsUpsert';
+import { adminMedicalRecordFilesAttach } from '../commands/adminMedicalRecordFilesAttach';
+import { adminMedicalRecordFilesDelete } from '../commands/adminMedicalRecordFilesDelete';
+import { adminMedicalRecordsDelete } from '../commands/adminMedicalRecordsDelete';
+import { adminMedicalRecordsUpsert } from '../commands/adminMedicalRecordsUpsert';
 import { adminTravelTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
 import { adminTravelTripActivitiesUpsert } from '../commands/adminTravelTripActivitiesUpsert';
 import { adminTravelTripDaysDelete } from '../commands/adminTravelTripDaysDelete';
@@ -46,32 +46,32 @@ import { adminTravelTripPackingItemsDelete } from '../commands/adminTravelTripPa
 import { adminTravelTripPackingItemsUpsert } from '../commands/adminTravelTripPackingItemsUpsert';
 import { adminTravelTripsDelete } from '../commands/adminTravelTripsDelete';
 import { adminTravelTripsUpsert } from '../commands/adminTravelTripsUpsert';
-import { recipesUpsert } from '../commands/recipesUpsert';
-import { recipesDelete } from '../commands/recipesDelete';
-import { mealPlanEntriesUpsert } from '../commands/mealPlanEntriesUpsert';
-import { mealPlanEntriesDelete } from '../commands/mealPlanEntriesDelete';
-import { foodLogEntriesUpsert } from '../commands/foodLogEntriesUpsert';
-import { foodLogEntriesDelete } from '../commands/foodLogEntriesDelete';
-import { supplementsUpsert } from '../commands/supplementsUpsert';
-import { supplementsDelete } from '../commands/supplementsDelete';
-import { supplementNutrientsReplace } from '../commands/supplementNutrientsReplace';
+import { adminNutritionRecipesUpsert } from '../commands/adminNutritionRecipesUpsert';
+import { adminNutritionRecipesDelete } from '../commands/adminNutritionRecipesDelete';
+import { adminNutritionMealPlanEntriesUpsert } from '../commands/adminNutritionMealPlanEntriesUpsert';
+import { adminNutritionMealPlanEntriesDelete } from '../commands/adminNutritionMealPlanEntriesDelete';
+import { adminNutritionFoodLogEntriesUpsert } from '../commands/adminNutritionFoodLogEntriesUpsert';
+import { adminNutritionFoodLogEntriesDelete } from '../commands/adminNutritionFoodLogEntriesDelete';
+import { adminNutritionSupplementsUpsert } from '../commands/adminNutritionSupplementsUpsert';
+import { adminNutritionSupplementsDelete } from '../commands/adminNutritionSupplementsDelete';
+import { adminNutritionSupplementNutrientsReplace } from '../commands/adminNutritionSupplementNutrientsReplace';
 import { supplementCompositionResearch } from '../agents/supplementCompositionResearch';
-import { exercisesUpsert } from '../commands/exercisesUpsert';
-import { exercisesDelete } from '../commands/exercisesDelete';
-import { workoutRoutinesUpsert } from '../commands/workoutRoutinesUpsert';
-import { workoutRoutinesDelete } from '../commands/workoutRoutinesDelete';
-import { workoutRoutineItemsUpsert } from '../commands/workoutRoutineItemsUpsert';
-import { workoutRoutineItemsDelete } from '../commands/workoutRoutineItemsDelete';
-import { workoutSessionsUpsert } from '../commands/workoutSessionsUpsert';
-import { workoutSessionsDelete } from '../commands/workoutSessionsDelete';
-import { workoutSetsUpsert } from '../commands/workoutSetsUpsert';
-import { workoutSetsDelete } from '../commands/workoutSetsDelete';
-import { moviesAddFromTmdb } from '../commands/moviesAddFromTmdb';
-import { moviesDelete } from '../commands/moviesDelete';
-import { moviesUpsert } from '../commands/moviesUpsert';
-import { showsAddFromTmdb } from '../commands/showsAddFromTmdb';
-import { showsDelete } from '../commands/showsDelete';
-import { showsUpsert } from '../commands/showsUpsert';
+import { adminFitnessExercisesUpsert } from '../commands/adminFitnessExercisesUpsert';
+import { adminFitnessExercisesDelete } from '../commands/adminFitnessExercisesDelete';
+import { adminFitnessWorkoutRoutinesUpsert } from '../commands/adminFitnessWorkoutRoutinesUpsert';
+import { adminFitnessWorkoutRoutinesDelete } from '../commands/adminFitnessWorkoutRoutinesDelete';
+import { adminFitnessWorkoutRoutineItemsUpsert } from '../commands/adminFitnessWorkoutRoutineItemsUpsert';
+import { adminFitnessWorkoutRoutineItemsDelete } from '../commands/adminFitnessWorkoutRoutineItemsDelete';
+import { adminFitnessWorkoutSessionsUpsert } from '../commands/adminFitnessWorkoutSessionsUpsert';
+import { adminFitnessWorkoutSessionsDelete } from '../commands/adminFitnessWorkoutSessionsDelete';
+import { adminFitnessWorkoutSetsUpsert } from '../commands/adminFitnessWorkoutSetsUpsert';
+import { adminFitnessWorkoutSetsDelete } from '../commands/adminFitnessWorkoutSetsDelete';
+import { adminMediaMoviesAddFromTmdb } from '../commands/adminMediaMoviesAddFromTmdb';
+import { adminMediaMoviesDelete } from '../commands/adminMediaMoviesDelete';
+import { adminMediaMoviesUpsert } from '../commands/adminMediaMoviesUpsert';
+import { adminMediaShowsAddFromTmdb } from '../commands/adminMediaShowsAddFromTmdb';
+import { adminMediaShowsDelete } from '../commands/adminMediaShowsDelete';
+import { adminMediaShowsUpsert } from '../commands/adminMediaShowsUpsert';
 import { compassObservationDismiss } from '../commands/compassObservationDismiss';
 import { compassSynthesizeRequest } from '../commands/compassSynthesizeRequest';
 import { compassInterviewStart } from '../commands/compassInterviewStart';
@@ -80,22 +80,22 @@ import { compassInterviewEnd } from '../commands/compassInterviewEnd';
 import { compassInterviewSkip } from '../commands/compassInterviewSkip';
 import { compassInterviewStartNow } from '../commands/compassInterviewStartNow';
 import { compassScheduledInterviewDismiss } from '../commands/compassScheduledInterviewDismiss';
-import { projectActivitiesDelete } from '../commands/projectActivitiesDelete';
-import { projectActivitiesUpsert } from '../commands/projectActivitiesUpsert';
-import { projectFilesDelete } from '../commands/projectFilesDelete';
-import { projectFilesUpsert } from '../commands/projectFilesUpsert';
-import { projectLinksDelete } from '../commands/projectLinksDelete';
-import { projectLinksUpsert } from '../commands/projectLinksUpsert';
-import { projectRequestArchive } from '../commands/projectRequestArchive';
-import { projectRequestDelete } from '../commands/projectRequestDelete';
-import { projectReorder } from '../commands/projectReorder';
-import { projectTimersStart } from '../commands/projectTimersStart';
-import { projectTimersStop } from '../commands/projectTimersStop';
-import { projectsDelete } from '../commands/projectsDelete';
-import { projectsUpsert } from '../commands/projectsUpsert';
-import { tasksDelete } from '../commands/tasksDelete';
-import { taskReorder } from '../commands/taskReorder';
-import { tasksUpsert } from '../commands/tasksUpsert';
+import { adminProjectActivitiesDelete } from '../commands/adminProjectActivitiesDelete';
+import { adminProjectActivitiesUpsert } from '../commands/adminProjectActivitiesUpsert';
+import { adminProjectFilesDelete } from '../commands/adminProjectFilesDelete';
+import { adminProjectFilesUpsert } from '../commands/adminProjectFilesUpsert';
+import { adminProjectLinksDelete } from '../commands/adminProjectLinksDelete';
+import { adminProjectLinksUpsert } from '../commands/adminProjectLinksUpsert';
+import { adminProjectRequestArchive } from '../commands/adminProjectRequestArchive';
+import { adminProjectRequestDelete } from '../commands/adminProjectRequestDelete';
+import { adminProjectReorder } from '../commands/adminProjectReorder';
+import { adminProjectTimersStart } from '../commands/adminProjectTimersStart';
+import { adminProjectTimersStop } from '../commands/adminProjectTimersStop';
+import { adminProjectsDelete } from '../commands/adminProjectsDelete';
+import { adminProjectsUpsert } from '../commands/adminProjectsUpsert';
+import { adminProjectTasksDelete } from '../commands/adminProjectTasksDelete';
+import { adminProjectTaskReorder } from '../commands/adminProjectTaskReorder';
+import { adminProjectTasksUpsert } from '../commands/adminProjectTasksUpsert';
 import { userSessionTerminateMany } from '../commands/userSessionTerminateMany';
 import { userUpdate } from '../commands/userUpdate';
 import type { ServerRuntime } from '../domain/ServerRuntime';
@@ -181,23 +181,23 @@ import type {
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillsDeleteArgs,
     GqlSAdminMutationCvSkillsUpsertArgs,
-    GqlSAdminMutationItemsDeleteArgs,
-    GqlSAdminMutationItemFilesAttachArgs,
-    GqlSAdminMutationItemFilesDeleteArgs,
-    GqlSAdminMutationItemFilesUpsertArgs,
-    GqlSAdminMutationItemsRepriceArgs,
-    GqlSAdminMutationItemServiceEntriesDeleteArgs,
-    GqlSAdminMutationItemServiceEntriesUpsertArgs,
-    GqlSAdminMutationItemsUpsertArgs,
-    GqlSAdminMutationMediaChannelsDeleteArgs,
-    GqlSAdminMutationMediaChannelReorderArgs,
-    GqlSAdminMutationMediaChannelsUpsertArgs,
-    GqlSAdminMutationMedicalAppointmentsDeleteArgs,
-    GqlSAdminMutationMedicalAppointmentsUpsertArgs,
-    GqlSAdminMutationMedicalRecordFilesAttachArgs,
-    GqlSAdminMutationMedicalRecordFilesDeleteArgs,
-    GqlSAdminMutationMedicalRecordsDeleteArgs,
-    GqlSAdminMutationMedicalRecordsUpsertArgs,
+    GqlSAdminMutationAdminInventoryItemsDeleteArgs,
+    GqlSAdminMutationAdminInventoryItemFilesAttachArgs,
+    GqlSAdminMutationAdminInventoryItemFilesDeleteArgs,
+    GqlSAdminMutationAdminInventoryItemFilesUpsertArgs,
+    GqlSAdminMutationAdminInventoryItemsRepriceArgs,
+    GqlSAdminMutationAdminInventoryItemServiceEntriesDeleteArgs,
+    GqlSAdminMutationAdminInventoryItemServiceEntriesUpsertArgs,
+    GqlSAdminMutationAdminInventoryItemsUpsertArgs,
+    GqlSAdminMutationAdminMediaChannelsDeleteArgs,
+    GqlSAdminMutationAdminMediaChannelReorderArgs,
+    GqlSAdminMutationAdminMediaChannelsUpsertArgs,
+    GqlSAdminMutationAdminMedicalAppointmentsDeleteArgs,
+    GqlSAdminMutationAdminMedicalAppointmentsUpsertArgs,
+    GqlSAdminMutationAdminMedicalRecordFilesAttachArgs,
+    GqlSAdminMutationAdminMedicalRecordFilesDeleteArgs,
+    GqlSAdminMutationAdminMedicalRecordsDeleteArgs,
+    GqlSAdminMutationAdminMedicalRecordsUpsertArgs,
     GqlSAdminMutationAdminTravelTripActivitiesDeleteArgs,
     GqlSAdminMutationAdminTravelTripActivitiesUpsertArgs,
     GqlSAdminMutationAdminTravelTripDaysDeleteArgs,
@@ -206,20 +206,20 @@ import type {
     GqlSAdminMutationAdminTravelTripPackingItemsUpsertArgs,
     GqlSAdminMutationAdminTravelTripsDeleteArgs,
     GqlSAdminMutationAdminTravelTripsUpsertArgs,
-    GqlSAdminMutationMoviesAddFromTmdbArgs,
-    GqlSAdminMutationMoviesDeleteArgs,
-    GqlSAdminMutationMoviesUpsertArgs,
-    GqlSAdminMutationShowsAddFromTmdbArgs,
-    GqlSAdminMutationShowsDeleteArgs,
-    GqlSAdminMutationShowsUpsertArgs,
+    GqlSAdminMutationAdminMediaMoviesAddFromTmdbArgs,
+    GqlSAdminMutationAdminMediaMoviesDeleteArgs,
+    GqlSAdminMutationAdminMediaMoviesUpsertArgs,
+    GqlSAdminMutationAdminMediaShowsAddFromTmdbArgs,
+    GqlSAdminMutationAdminMediaShowsDeleteArgs,
+    GqlSAdminMutationAdminMediaShowsUpsertArgs,
     GqlSAdminInventoryQuery,
     GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs,
     GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
     GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
     GqlSAdminFinancesQuery,
-    GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs,
-    GqlSAdminMutationFinanceRecurringCostsDeleteArgs,
-    GqlSAdminMutationFinanceRecurringCostsUpsertArgs,
+    GqlSAdminMutationAdminFinancesMonthlyNetIncomeSetArgs,
+    GqlSAdminMutationAdminFinancesRecurringCostsDeleteArgs,
+    GqlSAdminMutationAdminFinancesRecurringCostsUpsertArgs,
     GqlSAdminMediaQuery,
     GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
     GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
@@ -231,26 +231,26 @@ import type {
     GqlSAdminNutritionQuery,
     GqlSAdminNutritionQueryAdminNutritionRecipeFindManyArgs,
     GqlSAdminFitnessQuery,
-    GqlSAdminMutationRecipesUpsertArgs,
-    GqlSAdminMutationRecipesDeleteArgs,
-    GqlSAdminMutationMealPlanEntriesUpsertArgs,
-    GqlSAdminMutationMealPlanEntriesDeleteArgs,
-    GqlSAdminMutationFoodLogEntriesUpsertArgs,
-    GqlSAdminMutationFoodLogEntriesDeleteArgs,
-    GqlSAdminMutationSupplementsUpsertArgs,
-    GqlSAdminMutationSupplementsDeleteArgs,
-    GqlSAdminMutationSupplementNutrientsReplaceArgs,
-    GqlSAdminMutationSupplementResearchArgs,
-    GqlSAdminMutationExercisesUpsertArgs,
-    GqlSAdminMutationExercisesDeleteArgs,
-    GqlSAdminMutationWorkoutRoutinesUpsertArgs,
-    GqlSAdminMutationWorkoutRoutinesDeleteArgs,
-    GqlSAdminMutationWorkoutRoutineItemsUpsertArgs,
-    GqlSAdminMutationWorkoutRoutineItemsDeleteArgs,
-    GqlSAdminMutationWorkoutSessionsUpsertArgs,
-    GqlSAdminMutationWorkoutSessionsDeleteArgs,
-    GqlSAdminMutationWorkoutSetsUpsertArgs,
-    GqlSAdminMutationWorkoutSetsDeleteArgs,
+    GqlSAdminMutationAdminNutritionRecipesUpsertArgs,
+    GqlSAdminMutationAdminNutritionRecipesDeleteArgs,
+    GqlSAdminMutationAdminNutritionMealPlanEntriesUpsertArgs,
+    GqlSAdminMutationAdminNutritionMealPlanEntriesDeleteArgs,
+    GqlSAdminMutationAdminNutritionFoodLogEntriesUpsertArgs,
+    GqlSAdminMutationAdminNutritionFoodLogEntriesDeleteArgs,
+    GqlSAdminMutationAdminNutritionSupplementsUpsertArgs,
+    GqlSAdminMutationAdminNutritionSupplementsDeleteArgs,
+    GqlSAdminMutationAdminNutritionSupplementNutrientsReplaceArgs,
+    GqlSAdminMutationAdminNutritionSupplementResearchArgs,
+    GqlSAdminMutationAdminFitnessExercisesUpsertArgs,
+    GqlSAdminMutationAdminFitnessExercisesDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutinesUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutinesDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutineItemsUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutineItemsDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSessionsUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSessionsDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSetsUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSetsDeleteArgs,
     GqlSAdminMutationCompassObservationDismissArgs,
     GqlSAdminMutationCompassInterviewStartArgs,
     GqlSAdminMutationCompassInterviewMessageSendArgs,
@@ -258,22 +258,22 @@ import type {
     GqlSAdminMutationCompassInterviewSkipArgs,
     GqlSAdminMutationCompassInterviewStartNowArgs,
     GqlSAdminCompassAdminCompassInterviewFindOneArgs,
-    GqlSAdminMutationProjectActivitiesDeleteArgs,
-    GqlSAdminMutationProjectActivitiesUpsertArgs,
-    GqlSAdminMutationProjectFilesDeleteArgs,
-    GqlSAdminMutationProjectFilesUpsertArgs,
-    GqlSAdminMutationProjectLinksDeleteArgs,
-    GqlSAdminMutationProjectLinksUpsertArgs,
-    GqlSAdminMutationProjectReorderArgs,
-    GqlSAdminMutationProjectRequestArchiveArgs,
-    GqlSAdminMutationProjectRequestDeleteArgs,
-    GqlSAdminMutationProjectTimersStartArgs,
-    GqlSAdminMutationProjectTimersStopArgs,
-    GqlSAdminMutationProjectsDeleteArgs,
-    GqlSAdminMutationProjectsUpsertArgs,
-    GqlSAdminMutationTasksDeleteArgs,
-    GqlSAdminMutationTaskReorderArgs,
-    GqlSAdminMutationTasksUpsertArgs,
+    GqlSAdminMutationAdminProjectActivitiesDeleteArgs,
+    GqlSAdminMutationAdminProjectActivitiesUpsertArgs,
+    GqlSAdminMutationAdminProjectFilesDeleteArgs,
+    GqlSAdminMutationAdminProjectFilesUpsertArgs,
+    GqlSAdminMutationAdminProjectLinksDeleteArgs,
+    GqlSAdminMutationAdminProjectLinksUpsertArgs,
+    GqlSAdminMutationAdminProjectReorderArgs,
+    GqlSAdminMutationAdminProjectRequestArchiveArgs,
+    GqlSAdminMutationAdminProjectRequestDeleteArgs,
+    GqlSAdminMutationAdminProjectTimersStartArgs,
+    GqlSAdminMutationAdminProjectTimersStopArgs,
+    GqlSAdminMutationAdminProjectsDeleteArgs,
+    GqlSAdminMutationAdminProjectsUpsertArgs,
+    GqlSAdminMutationAdminProjectTasksDeleteArgs,
+    GqlSAdminMutationAdminProjectTaskReorderArgs,
+    GqlSAdminMutationAdminProjectTasksUpsertArgs,
     GqlSAdminCompass,
     GqlSAdminCompassAdminCompassObservationFindManyArgs,
     GqlSAdminAdminProjectFindOneArgs,
@@ -823,89 +823,117 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             compassScheduledInterviewDismiss({ userId }: GqlSAdminMutation, __: any, requestingSession: GqlSSession) {
                 return compassScheduledInterviewDismiss(userId, requestingSession, serverRuntime);
             },
-            projectRequestArchive(
+            adminProjectRequestArchive(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectRequestArchiveArgs,
+                args: GqlSAdminMutationAdminProjectRequestArchiveArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectRequestArchive(userId, args, requestingSession, serverRuntime);
+                return adminProjectRequestArchive(userId, args, requestingSession, serverRuntime);
             },
-            projectRequestDelete(
+            adminProjectRequestDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectRequestDeleteArgs,
+                args: GqlSAdminMutationAdminProjectRequestDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectRequestDelete(userId, args, requestingSession, serverRuntime);
+                return adminProjectRequestDelete(userId, args, requestingSession, serverRuntime);
             },
-            projectsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectsUpsertArgs, requestingSession: GqlSSession) {
-                return projectsUpsert(userId, args.projects, requestingSession, serverRuntime);
-            },
-            projectsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectsDeleteArgs, requestingSession: GqlSSession) {
-                return projectsDelete(userId, args.projectIds, requestingSession, serverRuntime);
-            },
-            projectReorder({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectReorderArgs, requestingSession: GqlSSession) {
-                return projectReorder(userId, args, requestingSession, serverRuntime);
-            },
-            tasksUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTasksUpsertArgs, requestingSession: GqlSSession) {
-                return tasksUpsert(userId, args.tasks, requestingSession, serverRuntime);
-            },
-            tasksDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTasksDeleteArgs, requestingSession: GqlSSession) {
-                return tasksDelete(userId, args.taskIds, requestingSession, serverRuntime);
-            },
-            taskReorder({ userId }: GqlSAdminMutation, args: GqlSAdminMutationTaskReorderArgs, requestingSession: GqlSSession) {
-                return taskReorder(userId, args, requestingSession, serverRuntime);
-            },
-            projectActivitiesUpsert(
+            adminProjectsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectActivitiesUpsertArgs,
+                args: GqlSAdminMutationAdminProjectsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectActivitiesUpsert(userId, args.projectActivities, requestingSession, serverRuntime);
+                return adminProjectsUpsert(userId, args.projects, requestingSession, serverRuntime);
             },
-            projectActivitiesDelete(
+            adminProjectsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectActivitiesDeleteArgs,
+                args: GqlSAdminMutationAdminProjectsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectActivitiesDelete(userId, args.activityIds, requestingSession, serverRuntime);
+                return adminProjectsDelete(userId, args.projectIds, requestingSession, serverRuntime);
             },
-            projectTimersStart(
+            adminProjectReorder(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectTimersStartArgs,
+                args: GqlSAdminMutationAdminProjectReorderArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectTimersStart(userId, args.inputs, requestingSession, serverRuntime);
+                return adminProjectReorder(userId, args, requestingSession, serverRuntime);
             },
-            projectTimersStop({ userId }: GqlSAdminMutation, args: GqlSAdminMutationProjectTimersStopArgs, requestingSession: GqlSSession) {
-                return projectTimersStop(userId, args.activityIds, requestingSession, serverRuntime);
-            },
-            projectLinksUpsert(
+            adminProjectTasksUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectLinksUpsertArgs,
+                args: GqlSAdminMutationAdminProjectTasksUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectLinksUpsert(userId, args.projectLinks, requestingSession, serverRuntime);
+                return adminProjectTasksUpsert(userId, args.tasks, requestingSession, serverRuntime);
             },
-            projectLinksDelete(
+            adminProjectTasksDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectLinksDeleteArgs,
+                args: GqlSAdminMutationAdminProjectTasksDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectLinksDelete(userId, args.projectLinkIds, requestingSession, serverRuntime);
+                return adminProjectTasksDelete(userId, args.taskIds, requestingSession, serverRuntime);
             },
-            projectFilesUpsert(
+            adminProjectTaskReorder(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectFilesUpsertArgs,
+                args: GqlSAdminMutationAdminProjectTaskReorderArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectFilesUpsert(userId, args.projectFiles, requestingSession, serverRuntime);
+                return adminProjectTaskReorder(userId, args, requestingSession, serverRuntime);
             },
-            projectFilesDelete(
+            adminProjectActivitiesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationProjectFilesDeleteArgs,
+                args: GqlSAdminMutationAdminProjectActivitiesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return projectFilesDelete(userId, args.projectFileIds, requestingSession, serverRuntime);
+                return adminProjectActivitiesUpsert(userId, args.projectActivities, requestingSession, serverRuntime);
+            },
+            adminProjectActivitiesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminProjectActivitiesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectActivitiesDelete(userId, args.activityIds, requestingSession, serverRuntime);
+            },
+            adminProjectTimersStart(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminProjectTimersStartArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectTimersStart(userId, args.inputs, requestingSession, serverRuntime);
+            },
+            adminProjectTimersStop(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminProjectTimersStopArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectTimersStop(userId, args.activityIds, requestingSession, serverRuntime);
+            },
+            adminProjectLinksUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminProjectLinksUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectLinksUpsert(userId, args.projectLinks, requestingSession, serverRuntime);
+            },
+            adminProjectLinksDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminProjectLinksDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectLinksDelete(userId, args.projectLinkIds, requestingSession, serverRuntime);
+            },
+            adminProjectFilesUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminProjectFilesUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectFilesUpsert(userId, args.projectFiles, requestingSession, serverRuntime);
+            },
+            adminProjectFilesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminProjectFilesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminProjectFilesDelete(userId, args.projectFileIds, requestingSession, serverRuntime);
             },
             chatConfigDefaultModelSet(
                 { userId }: GqlSAdminMutation,
@@ -914,118 +942,166 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             ) {
                 return adminChatConfigDefaultModelSet(userId, args, requestingSession, serverRuntime);
             },
-            moviesUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMoviesUpsertArgs, requestingSession: GqlSSession) {
-                return moviesUpsert(userId, args.movies, requestingSession, serverRuntime);
-            },
-            moviesDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMoviesDeleteArgs, requestingSession: GqlSSession) {
-                return moviesDelete(userId, args.movieIds, requestingSession, serverRuntime);
-            },
-            moviesAddFromTmdb({ userId }: GqlSAdminMutation, args: GqlSAdminMutationMoviesAddFromTmdbArgs, requestingSession: GqlSSession) {
-                return moviesAddFromTmdb(userId, args.inputs, requestingSession, serverRuntime);
-            },
-            showsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationShowsUpsertArgs, requestingSession: GqlSSession) {
-                return showsUpsert(userId, args.shows, requestingSession, serverRuntime);
-            },
-            showsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationShowsDeleteArgs, requestingSession: GqlSSession) {
-                return showsDelete(userId, args.showIds, requestingSession, serverRuntime);
-            },
-            showsAddFromTmdb({ userId }: GqlSAdminMutation, args: GqlSAdminMutationShowsAddFromTmdbArgs, requestingSession: GqlSSession) {
-                return showsAddFromTmdb(userId, args.inputs, requestingSession, serverRuntime);
-            },
-            mediaChannelsUpsert(
+            adminMediaMoviesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMediaChannelsUpsertArgs,
+                args: GqlSAdminMutationAdminMediaMoviesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return mediaChannelsUpsert(userId, args.mediaChannels, requestingSession, serverRuntime);
+                return adminMediaMoviesUpsert(userId, args.movies, requestingSession, serverRuntime);
             },
-            mediaChannelsDelete(
+            adminMediaMoviesDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMediaChannelsDeleteArgs,
+                args: GqlSAdminMutationAdminMediaMoviesDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return mediaChannelsDelete(userId, args.channelIds, requestingSession, serverRuntime);
+                return adminMediaMoviesDelete(userId, args.movieIds, requestingSession, serverRuntime);
             },
-            mediaChannelReorder(
+            adminMediaMoviesAddFromTmdb(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMediaChannelReorderArgs,
+                args: GqlSAdminMutationAdminMediaMoviesAddFromTmdbArgs,
                 requestingSession: GqlSSession,
             ) {
-                return mediaChannelReorder(userId, args, requestingSession, serverRuntime);
+                return adminMediaMoviesAddFromTmdb(userId, args.inputs, requestingSession, serverRuntime);
             },
-            medicalAppointmentsUpsert(
+            adminMediaShowsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMedicalAppointmentsUpsertArgs,
+                args: GqlSAdminMutationAdminMediaShowsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return medicalAppointmentsUpsert(userId, args.medicalAppointments, requestingSession, serverRuntime);
+                return adminMediaShowsUpsert(userId, args.shows, requestingSession, serverRuntime);
             },
-            medicalAppointmentsDelete(
+            adminMediaShowsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMedicalAppointmentsDeleteArgs,
+                args: GqlSAdminMutationAdminMediaShowsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return medicalAppointmentsDelete(userId, args.appointmentIds, requestingSession, serverRuntime);
+                return adminMediaShowsDelete(userId, args.showIds, requestingSession, serverRuntime);
             },
-            medicalRecordsUpsert(
+            adminMediaShowsAddFromTmdb(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMedicalRecordsUpsertArgs,
+                args: GqlSAdminMutationAdminMediaShowsAddFromTmdbArgs,
                 requestingSession: GqlSSession,
             ) {
-                return medicalRecordsUpsert(userId, args.medicalRecords, requestingSession, serverRuntime);
+                return adminMediaShowsAddFromTmdb(userId, args.inputs, requestingSession, serverRuntime);
             },
-            medicalRecordsDelete(
+            adminMediaChannelsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMedicalRecordsDeleteArgs,
+                args: GqlSAdminMutationAdminMediaChannelsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return medicalRecordsDelete(userId, args.recordIds, requestingSession, serverRuntime);
+                return adminMediaChannelsUpsert(userId, args.mediaChannels, requestingSession, serverRuntime);
             },
-            medicalRecordFilesAttach(
+            adminMediaChannelsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMedicalRecordFilesAttachArgs,
+                args: GqlSAdminMutationAdminMediaChannelsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return medicalRecordFilesAttach(userId, args.inputs, requestingSession, serverRuntime);
+                return adminMediaChannelsDelete(userId, args.channelIds, requestingSession, serverRuntime);
             },
-            medicalRecordFilesDelete(
+            adminMediaChannelReorder(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMedicalRecordFilesDeleteArgs,
+                args: GqlSAdminMutationAdminMediaChannelReorderArgs,
                 requestingSession: GqlSSession,
             ) {
-                return medicalRecordFilesDelete(userId, args.recordFileIds, requestingSession, serverRuntime);
+                return adminMediaChannelReorder(userId, args, requestingSession, serverRuntime);
             },
-            itemsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemsUpsertArgs, requestingSession: GqlSSession) {
-                return itemsUpsert(userId, args.items, requestingSession, serverRuntime);
-            },
-            itemsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemsDeleteArgs, requestingSession: GqlSSession) {
-                return itemsDelete(userId, args.itemIds, requestingSession, serverRuntime);
-            },
-            itemsReprice({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemsRepriceArgs, requestingSession: GqlSSession) {
-                return itemsReprice(userId, args.inputs, requestingSession, serverRuntime);
-            },
-            itemServiceEntriesUpsert(
+            adminMedicalAppointmentsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationItemServiceEntriesUpsertArgs,
+                args: GqlSAdminMutationAdminMedicalAppointmentsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return itemServiceEntriesUpsert(userId, args.itemServiceEntries, requestingSession, serverRuntime);
+                return adminMedicalAppointmentsUpsert(userId, args.medicalAppointments, requestingSession, serverRuntime);
             },
-            itemServiceEntriesDelete(
+            adminMedicalAppointmentsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationItemServiceEntriesDeleteArgs,
+                args: GqlSAdminMutationAdminMedicalAppointmentsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return itemServiceEntriesDelete(userId, args.serviceEntryIds, requestingSession, serverRuntime);
+                return adminMedicalAppointmentsDelete(userId, args.appointmentIds, requestingSession, serverRuntime);
             },
-            itemFilesAttach({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFilesAttachArgs, requestingSession: GqlSSession) {
-                return itemFilesAttach(userId, args.inputs, requestingSession, serverRuntime);
+            adminMedicalRecordsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminMedicalRecordsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminMedicalRecordsUpsert(userId, args.medicalRecords, requestingSession, serverRuntime);
             },
-            itemFilesDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFilesDeleteArgs, requestingSession: GqlSSession) {
-                return itemFilesDelete(userId, args.itemFileIds, requestingSession, serverRuntime);
+            adminMedicalRecordsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminMedicalRecordsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminMedicalRecordsDelete(userId, args.recordIds, requestingSession, serverRuntime);
             },
-            itemFilesUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationItemFilesUpsertArgs, requestingSession: GqlSSession) {
-                return itemFilesUpsert(userId, args.itemFiles, requestingSession, serverRuntime);
+            adminMedicalRecordFilesAttach(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminMedicalRecordFilesAttachArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminMedicalRecordFilesAttach(userId, args.inputs, requestingSession, serverRuntime);
+            },
+            adminMedicalRecordFilesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminMedicalRecordFilesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminMedicalRecordFilesDelete(userId, args.recordFileIds, requestingSession, serverRuntime);
+            },
+            adminInventoryItemsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemsUpsert(userId, args.items, requestingSession, serverRuntime);
+            },
+            adminInventoryItemsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemsDelete(userId, args.itemIds, requestingSession, serverRuntime);
+            },
+            adminInventoryItemsReprice(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemsRepriceArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemsReprice(userId, args.inputs, requestingSession, serverRuntime);
+            },
+            adminInventoryItemServiceEntriesUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemServiceEntriesUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemServiceEntriesUpsert(userId, args.itemServiceEntries, requestingSession, serverRuntime);
+            },
+            adminInventoryItemServiceEntriesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemServiceEntriesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemServiceEntriesDelete(userId, args.serviceEntryIds, requestingSession, serverRuntime);
+            },
+            adminInventoryItemFilesAttach(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemFilesAttachArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemFilesAttach(userId, args.inputs, requestingSession, serverRuntime);
+            },
+            adminInventoryItemFilesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemFilesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemFilesDelete(userId, args.itemFileIds, requestingSession, serverRuntime);
+            },
+            adminInventoryItemFilesUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminInventoryItemFilesUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminInventoryItemFilesUpsert(userId, args.itemFiles, requestingSession, serverRuntime);
             },
             adminTravelTripsUpsert(
                 { userId }: GqlSAdminMutation,
@@ -1083,130 +1159,168 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             ) {
                 return adminTravelTripPackingItemsDelete(userId, args.tripPackingItemIds, requestingSession, serverRuntime);
             },
-            recipesUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationRecipesUpsertArgs, requestingSession: GqlSSession) {
-                return recipesUpsert(userId, args.recipes, requestingSession, serverRuntime);
-            },
-            recipesDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationRecipesDeleteArgs, requestingSession: GqlSSession) {
-                return recipesDelete(userId, args.recipeIds, requestingSession, serverRuntime);
-            },
-            mealPlanEntriesUpsert(
+            adminNutritionRecipesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMealPlanEntriesUpsertArgs,
+                args: GqlSAdminMutationAdminNutritionRecipesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return mealPlanEntriesUpsert(userId, args.mealPlanEntries, requestingSession, serverRuntime);
+                return adminNutritionRecipesUpsert(userId, args.recipes, requestingSession, serverRuntime);
             },
-            mealPlanEntriesDelete(
+            adminNutritionRecipesDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationMealPlanEntriesDeleteArgs,
+                args: GqlSAdminMutationAdminNutritionRecipesDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return mealPlanEntriesDelete(userId, args.entryIds, requestingSession, serverRuntime);
+                return adminNutritionRecipesDelete(userId, args.recipeIds, requestingSession, serverRuntime);
             },
-            foodLogEntriesUpsert(
+            adminNutritionMealPlanEntriesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationFoodLogEntriesUpsertArgs,
+                args: GqlSAdminMutationAdminNutritionMealPlanEntriesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return foodLogEntriesUpsert(userId, args.foodLogEntries, requestingSession, serverRuntime);
+                return adminNutritionMealPlanEntriesUpsert(userId, args.mealPlanEntries, requestingSession, serverRuntime);
             },
-            foodLogEntriesDelete(
+            adminNutritionMealPlanEntriesDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationFoodLogEntriesDeleteArgs,
+                args: GqlSAdminMutationAdminNutritionMealPlanEntriesDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return foodLogEntriesDelete(userId, args.logIds, requestingSession, serverRuntime);
+                return adminNutritionMealPlanEntriesDelete(userId, args.entryIds, requestingSession, serverRuntime);
             },
-            supplementsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationSupplementsUpsertArgs, requestingSession: GqlSSession) {
-                return supplementsUpsert(userId, args.supplements, requestingSession, serverRuntime);
-            },
-            supplementsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationSupplementsDeleteArgs, requestingSession: GqlSSession) {
-                return supplementsDelete(userId, args.supplementIds, requestingSession, serverRuntime);
-            },
-            supplementNutrientsReplace(
+            adminNutritionFoodLogEntriesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationSupplementNutrientsReplaceArgs,
+                args: GqlSAdminMutationAdminNutritionFoodLogEntriesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return supplementNutrientsReplace(userId, args.supplementId, args.nutrients, requestingSession, serverRuntime);
+                return adminNutritionFoodLogEntriesUpsert(userId, args.foodLogEntries, requestingSession, serverRuntime);
             },
-            supplementResearch(_parent: GqlSAdminMutation, args: GqlSAdminMutationSupplementResearchArgs) {
+            adminNutritionFoodLogEntriesDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminNutritionFoodLogEntriesDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminNutritionFoodLogEntriesDelete(userId, args.logIds, requestingSession, serverRuntime);
+            },
+            adminNutritionSupplementsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminNutritionSupplementsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminNutritionSupplementsUpsert(userId, args.supplements, requestingSession, serverRuntime);
+            },
+            adminNutritionSupplementsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminNutritionSupplementsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminNutritionSupplementsDelete(userId, args.supplementIds, requestingSession, serverRuntime);
+            },
+            adminNutritionSupplementNutrientsReplace(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminNutritionSupplementNutrientsReplaceArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminNutritionSupplementNutrientsReplace(
+                    userId,
+                    args.supplementId,
+                    args.nutrients,
+                    requestingSession,
+                    serverRuntime,
+                );
+            },
+            adminNutritionSupplementResearch(_parent: GqlSAdminMutation, args: GqlSAdminMutationAdminNutritionSupplementResearchArgs) {
                 return supplementCompositionResearch({ name: args.input.name, brand: args.input.brand ?? null }, serverRuntime);
             },
-            exercisesUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationExercisesUpsertArgs, requestingSession: GqlSSession) {
-                return exercisesUpsert(userId, args.exercises, requestingSession, serverRuntime);
-            },
-            exercisesDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationExercisesDeleteArgs, requestingSession: GqlSSession) {
-                return exercisesDelete(userId, args.exerciseIds, requestingSession, serverRuntime);
-            },
-            workoutRoutinesUpsert(
+            adminFitnessExercisesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationWorkoutRoutinesUpsertArgs,
+                args: GqlSAdminMutationAdminFitnessExercisesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return workoutRoutinesUpsert(userId, args.workoutRoutines, requestingSession, serverRuntime);
+                return adminFitnessExercisesUpsert(userId, args.exercises, requestingSession, serverRuntime);
             },
-            workoutRoutinesDelete(
+            adminFitnessExercisesDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationWorkoutRoutinesDeleteArgs,
+                args: GqlSAdminMutationAdminFitnessExercisesDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return workoutRoutinesDelete(userId, args.routineIds, requestingSession, serverRuntime);
+                return adminFitnessExercisesDelete(userId, args.exerciseIds, requestingSession, serverRuntime);
             },
-            workoutRoutineItemsUpsert(
+            adminFitnessWorkoutRoutinesUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationWorkoutRoutineItemsUpsertArgs,
+                args: GqlSAdminMutationAdminFitnessWorkoutRoutinesUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return workoutRoutineItemsUpsert(userId, args.workoutRoutineItems, requestingSession, serverRuntime);
+                return adminFitnessWorkoutRoutinesUpsert(userId, args.workoutRoutines, requestingSession, serverRuntime);
             },
-            workoutRoutineItemsDelete(
+            adminFitnessWorkoutRoutinesDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationWorkoutRoutineItemsDeleteArgs,
+                args: GqlSAdminMutationAdminFitnessWorkoutRoutinesDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return workoutRoutineItemsDelete(userId, args.routineItemIds, requestingSession, serverRuntime);
+                return adminFitnessWorkoutRoutinesDelete(userId, args.routineIds, requestingSession, serverRuntime);
             },
-            workoutSessionsUpsert(
+            adminFitnessWorkoutRoutineItemsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationWorkoutSessionsUpsertArgs,
+                args: GqlSAdminMutationAdminFitnessWorkoutRoutineItemsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return workoutSessionsUpsert(userId, args.workoutSessions, requestingSession, serverRuntime);
+                return adminFitnessWorkoutRoutineItemsUpsert(userId, args.workoutRoutineItems, requestingSession, serverRuntime);
             },
-            workoutSessionsDelete(
+            adminFitnessWorkoutRoutineItemsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationWorkoutSessionsDeleteArgs,
+                args: GqlSAdminMutationAdminFitnessWorkoutRoutineItemsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return workoutSessionsDelete(userId, args.sessionIds, requestingSession, serverRuntime);
+                return adminFitnessWorkoutRoutineItemsDelete(userId, args.routineItemIds, requestingSession, serverRuntime);
             },
-            workoutSetsUpsert({ userId }: GqlSAdminMutation, args: GqlSAdminMutationWorkoutSetsUpsertArgs, requestingSession: GqlSSession) {
-                return workoutSetsUpsert(userId, args.workoutSets, requestingSession, serverRuntime);
-            },
-            workoutSetsDelete({ userId }: GqlSAdminMutation, args: GqlSAdminMutationWorkoutSetsDeleteArgs, requestingSession: GqlSSession) {
-                return workoutSetsDelete(userId, args.setIds, requestingSession, serverRuntime);
-            },
-            financeRecurringCostsUpsert(
+            adminFitnessWorkoutSessionsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationFinanceRecurringCostsUpsertArgs,
+                args: GqlSAdminMutationAdminFitnessWorkoutSessionsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return financeRecurringCostsUpsert(userId, args.financeRecurringCosts, requestingSession, serverRuntime);
+                return adminFitnessWorkoutSessionsUpsert(userId, args.workoutSessions, requestingSession, serverRuntime);
             },
-            financeRecurringCostsDelete(
+            adminFitnessWorkoutSessionsDelete(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationFinanceRecurringCostsDeleteArgs,
+                args: GqlSAdminMutationAdminFitnessWorkoutSessionsDeleteArgs,
                 requestingSession: GqlSSession,
             ) {
-                return financeRecurringCostsDelete(userId, args.costIds, requestingSession, serverRuntime);
+                return adminFitnessWorkoutSessionsDelete(userId, args.sessionIds, requestingSession, serverRuntime);
             },
-            financeMonthlyNetIncomeSet(
+            adminFitnessWorkoutSetsUpsert(
                 { userId }: GqlSAdminMutation,
-                args: GqlSAdminMutationFinanceMonthlyNetIncomeSetArgs,
+                args: GqlSAdminMutationAdminFitnessWorkoutSetsUpsertArgs,
                 requestingSession: GqlSSession,
             ) {
-                return financeMonthlyNetIncomeSet(userId, args, requestingSession, serverRuntime);
+                return adminFitnessWorkoutSetsUpsert(userId, args.workoutSets, requestingSession, serverRuntime);
+            },
+            adminFitnessWorkoutSetsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminFitnessWorkoutSetsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminFitnessWorkoutSetsDelete(userId, args.setIds, requestingSession, serverRuntime);
+            },
+            adminFinancesRecurringCostsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminFinancesRecurringCostsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminFinancesRecurringCostsUpsert(userId, args.financeRecurringCosts, requestingSession, serverRuntime);
+            },
+            adminFinancesRecurringCostsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminFinancesRecurringCostsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminFinancesRecurringCostsDelete(userId, args.costIds, requestingSession, serverRuntime);
+            },
+            adminFinancesMonthlyNetIncomeSet(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminFinancesMonthlyNetIncomeSetArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminFinancesMonthlyNetIncomeSet(userId, args, requestingSession, serverRuntime);
             },
         },
         Query: {

@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { workoutRoutineItemsDelete } from '../commands/workoutRoutineItemsDelete';
+import { adminFitnessWorkoutRoutineItemsDelete } from '../commands/adminFitnessWorkoutRoutineItemsDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { FitnessAgentMutationLog } from './agentPersonalAssistantFitness';
@@ -21,7 +21,12 @@ export function toolWorkoutRoutineItemsDelete({ serverRuntime, session, mutation
         description: 'Remove one or more exercises from a routine. Use when Cem wants to drop an exercise from a template.',
         inputSchema: workoutRoutineItemsDeleteInputSchema,
         execute: async (input) => {
-            const result = await workoutRoutineItemsDelete(requireAdminUserId(session), input.routineItemIds, session, serverRuntime);
+            const result = await adminFitnessWorkoutRoutineItemsDelete(
+                requireAdminUserId(session),
+                input.routineItemIds,
+                session,
+                serverRuntime,
+            );
             for (const routineItemId of input.routineItemIds) mutations.push({ kind: 'routineItemDelete', id: routineItemId });
             return result;
         },

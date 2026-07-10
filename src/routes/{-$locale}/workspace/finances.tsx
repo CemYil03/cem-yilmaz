@@ -46,8 +46,8 @@ import type { FinancesSankeyInputLink, FinancesSankeyInputNode } from '../../../
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCFinanceCadence,
-    GqlCFinanceRecurringCostCategory,
+    GqlCAdminFinancesCadence,
+    GqlCAdminFinancesRecurringCostCategory,
     GqlCWorkspaceFinancesPageUpdatesSubscription,
     GqlCWorkspaceFinancesPageUserFragment,
 } from '../../../web/graphql/generated';
@@ -75,7 +75,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 const title = { de: 'Finanzen', en: 'Finances' };
 const description = { de: 'Laufende Kosten und ein Sankey deiner Ausgaben.', en: 'Recurring costs and a Sankey of where the money goes.' };
 
-const CATEGORY_ORDER: ReadonlyArray<GqlCFinanceRecurringCostCategory> = [
+const CATEGORY_ORDER: ReadonlyArray<GqlCAdminFinancesRecurringCostCategory> = [
     'housing',
     'connectivity',
     'transport',
@@ -89,7 +89,7 @@ const CATEGORY_ORDER: ReadonlyArray<GqlCFinanceRecurringCostCategory> = [
     'savingsVacation',
     'other',
 ];
-const CATEGORY_LABELS: Record<GqlCFinanceRecurringCostCategory, { de: string; en: string }> = {
+const CATEGORY_LABELS: Record<GqlCAdminFinancesRecurringCostCategory, { de: string; en: string }> = {
     housing: { de: 'Wohnen', en: 'Housing' },
     connectivity: { de: 'Kommunikation', en: 'Connectivity' },
     transport: { de: 'Verkehr', en: 'Transport' },
@@ -103,7 +103,7 @@ const CATEGORY_LABELS: Record<GqlCFinanceRecurringCostCategory, { de: string; en
     savingsVacation: { de: 'Sparen (Urlaub)', en: 'Savings (Vacation)' },
     other: { de: 'Sonstiges', en: 'Other' },
 };
-const CATEGORY_ICONS: Record<GqlCFinanceRecurringCostCategory, LucideIcon> = {
+const CATEGORY_ICONS: Record<GqlCAdminFinancesRecurringCostCategory, LucideIcon> = {
     housing: HomeIcon,
     connectivity: SmartphoneIcon,
     transport: CarIcon,
@@ -118,7 +118,7 @@ const CATEGORY_ICONS: Record<GqlCFinanceRecurringCostCategory, LucideIcon> = {
     other: LayersIcon,
 };
 
-const CADENCE_LABELS: Record<GqlCFinanceCadence, { de: string; en: string }> = {
+const CADENCE_LABELS: Record<GqlCAdminFinancesCadence, { de: string; en: string }> = {
     monthly: { de: 'monatlich', en: 'monthly' },
     yearly: { de: 'jährlich', en: 'yearly' },
 };
@@ -400,7 +400,7 @@ function GroupedList({
     onDelete: (cost: CostRow) => void;
 }) {
     const groups = useMemo(() => {
-        const byCategory = new Map<GqlCFinanceRecurringCostCategory, CostRow[]>();
+        const byCategory = new Map<GqlCAdminFinancesRecurringCostCategory, CostRow[]>();
         for (const row of costs) {
             const list = byCategory.get(row.categoryKey) ?? [];
             list.push(row);
@@ -528,9 +528,9 @@ function CostCard({
 type FormState = {
     costId: string | null;
     name: string;
-    categoryKey: GqlCFinanceRecurringCostCategory;
+    categoryKey: GqlCAdminFinancesRecurringCostCategory;
     amountEuros: string;
-    cadence: GqlCFinanceCadence;
+    cadence: GqlCAdminFinancesCadence;
     notes: string;
     active: boolean;
 };
@@ -599,7 +599,7 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                     <Field label={{ de: 'Kategorie', en: 'Category' }[locale]}>
                         <Select
                             value={state.categoryKey}
-                            onValueChange={(v) => setState((s) => ({ ...s, categoryKey: v as GqlCFinanceRecurringCostCategory }))}
+                            onValueChange={(v) => setState((s) => ({ ...s, categoryKey: v as GqlCAdminFinancesRecurringCostCategory }))}
                         >
                             <SelectTrigger>
                                 <SelectValue />
@@ -622,7 +622,10 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                         />
                     </Field>
                     <Field label={{ de: 'Turnus', en: 'Cadence' }[locale]}>
-                        <Select value={state.cadence} onValueChange={(v) => setState((s) => ({ ...s, cadence: v as GqlCFinanceCadence }))}>
+                        <Select
+                            value={state.cadence}
+                            onValueChange={(v) => setState((s) => ({ ...s, cadence: v as GqlCAdminFinancesCadence }))}
+                        >
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
@@ -791,7 +794,7 @@ function EmptyState({ locale, onNew }: { locale: Locale; onNew: () => void }) {
 
 // --- Helpers ----------------------------------------------------------------
 
-// Project a row's cents amount into the requested period.
+// AdminProject a row's cents amount into the requested period.
 // `amountCents` on the row is per its own `cadence`.
 function projectedCents(row: CostRow, period: PeriodFilter): number {
     if (row.cadence === period) return row.amountCents;
@@ -821,7 +824,7 @@ function buildSankey(
         sublabel: incomeCents != null ? formatCurrency(incomeCents, locale) : formatCurrency(totalCents, locale),
     });
 
-    const byCategory = new Map<GqlCFinanceRecurringCostCategory, { total: number; rows: CostRow[] }>();
+    const byCategory = new Map<GqlCAdminFinancesRecurringCostCategory, { total: number; rows: CostRow[] }>();
     for (const row of costs) {
         const entry = byCategory.get(row.categoryKey) ?? { total: 0, rows: [] };
         entry.total += projectedCents(row, period);

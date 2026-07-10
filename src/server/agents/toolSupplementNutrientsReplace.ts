@@ -1,8 +1,8 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { supplementNutrientsReplace } from '../commands/supplementNutrientsReplace';
+import { adminNutritionSupplementNutrientsReplace } from '../commands/adminNutritionSupplementNutrientsReplace';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSSupplementNutrientInput, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminNutritionSupplementNutrientInput, GqlSSession } from '../graphql/generated';
 import type { NutritionAgentMutationLog } from './agentPersonalAssistantNutrition';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -40,14 +40,14 @@ export function toolSupplementNutrientsReplace({ serverRuntime, session, mutatio
         ].join(' '),
         inputSchema: toolSupplementNutrientsReplaceInputSchema,
         execute: async (input) => {
-            const nutrients: GqlSSupplementNutrientInput[] = input.nutrients.map((nutrient, index) => ({
+            const nutrients: GqlSAdminNutritionSupplementNutrientInput[] = input.nutrients.map((nutrient, index) => ({
                 name: nutrient.name,
                 amount: nutrient.amount ?? null,
                 unit: nutrient.unit ?? null,
                 percentDailyValue: nutrient.percentDailyValue ?? null,
                 sortOrder: index,
             }));
-            const result = await supplementNutrientsReplace(
+            const result = await adminNutritionSupplementNutrientsReplace(
                 requireAdminUserId(session),
                 input.supplementId,
                 nutrients,

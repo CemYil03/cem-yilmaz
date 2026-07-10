@@ -80,20 +80,21 @@ to whatever order Postgres chose, which is acceptable for the row counts here.
 ## When a DB-backed list skips bilingual columns
 
 The `*De` / `*En` column pair is the rule for surfaces visitors render — the visitor's locale picks the half they see. **Admin-only**
-surfaces drop the pair. The workspace projects feature is the canonical example: `Projects` and `Tasks` are never rendered to the public
-site (the page is `noindex` and the data feeds nothing on the visitor surface in Phase 1–2), so paired columns would cost typing without
-buying anything. The schema uses single `title` / `description` / `notes` text columns; the GraphQL types do the same. The CV tables stay
-bilingual because their rows feed `/cv` and `/about` directly. See [features/workspace-projects.md](../features/workspace-projects.md).
+surfaces drop the pair. The workspace projects feature is the canonical example: `AdminProject` and `AdminProjectTask` are never rendered to
+the public site (the page is `noindex` and the data feeds nothing on the visitor surface in Phase 1–2), so paired columns would cost typing
+without buying anything. The schema uses single `title` / `description` / `notes` text columns; the GraphQL types do the same. The CV tables
+stay bilingual because their rows feed `/cv` and `/about` directly. See [features/workspace-projects.md](../features/workspace-projects.md).
 
-The Media (`Movies` / `Shows` / `MediaChannels`) and Inventory (`Items` / `ItemValuations` / `ItemServiceEntries` / `ItemFiles`) tables
-follow the same admin-only, no-`*De`/`*En` posture. Inventory reuses the shared `FileUploads` table for receipts / warranty PDFs / photos
-through an `ItemFiles` join, mirroring how `ProjectFiles` handles project attachments — the bytes never live on the domain table, only on
-`FileUploads`. See [features/workspace-inventory.md](../features/workspace-inventory.md).
+The Media (`AdminMediaMovie` / `AdminMediaShow` / `AdminMediaChannel`) and Inventory (`AdminInventoryItem` / `AdminInventoryItemValuation` /
+`AdminInventoryItemServiceEntry` / `AdminInventoryItemFile`) tables follow the same admin-only, no-`*De`/`*En` posture. Inventory reuses the
+shared `FileUploads` table for receipts / warranty PDFs / photos through an `AdminInventoryItemFile` join, mirroring how `AdminProjectFile`
+handles project attachments — the bytes never live on the domain table, only on `FileUploads`. See
+[features/workspace-inventory.md](../features/workspace-inventory.md).
 
 ## Tasks: added columns
 
-Beyond the base task shape (title, notes, status, position, dueAt, completedAt), the `Tasks` table carries two optional enum columns that
-drive the redesigned todos experience:
+Beyond the base task shape (title, notes, status, position, dueAt, completedAt), the `AdminProjectTask` table carries two optional enum
+columns that drive the redesigned todos experience:
 
 - `effort` (`quick` / `focused` / `deep`, nullable) — perceived weight, drives the left-edge color strip on the row card and the composer's
   default-effort picker.

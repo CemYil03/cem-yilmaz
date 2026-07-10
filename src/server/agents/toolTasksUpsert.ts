@@ -1,9 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { tasksUpsert } from '../commands/tasksUpsert';
+import { adminProjectTasksUpsert } from '../commands/adminProjectTasksUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSTaskStatusSchema } from '../graphql/generated';
-import type { GqlSSession, GqlSTaskCreate } from '../graphql/generated';
+import { GqlSAdminProjectTaskStatusSchema } from '../graphql/generated';
+import type { GqlSSession, GqlSAdminProjectTaskCreate } from '../graphql/generated';
 import type { ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -13,7 +13,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 // in the bucket) when creating; on update, echo the row's current position
 // back unless the user is reordering.
 //
-// Hand-built item schema (not derived from `GqlSTaskCreateSchema()`) for the
+// Hand-built item schema (not derived from `GqlSAdminProjectTaskCreateSchema()`) for the
 // same reason as `toolProjectsUpsert`: the generated schema declares
 // `dueAt` / `completedAt` as `z.date()`, which the AI SDK cannot render
 // cleanly into JSON Schema for Gemini's `structuredOutputs` constrained
@@ -30,9 +30,9 @@ const taskItemSchema = z.object({
         .describe(
             'Parent project id. `null` (or omit) creates a standalone todo on the Todos tab. Pass the existing id to leave the row where it is, or a new id to move it.',
         ),
-    title: z.string().min(1).max(200).describe('Task title.'),
+    title: z.string().min(1).max(200).describe('AdminProjectTask title.'),
     notes: z.string().max(5000).nullish().describe('Optional longer-form notes.'),
-    status: GqlSTaskStatusSchema.describe('Task status. Use `todo` for new captures.'),
+    status: GqlSAdminProjectTaskStatusSchema.describe('AdminProjectTask status. Use `todo` for new captures.'),
     position: z.number().int().min(0).describe('Within-bucket ordering. For new rows pick the bucket size as the tail-append value.'),
     dueAt: z.string().nullish().describe('Optional ISO-8601 due timestamp. Omit when the user has not specified one.'),
     completedAt: z
@@ -64,7 +64,7 @@ export function toolTasksUpsert({ serverRuntime, session, mutations }: ProjectsA
         ].join(' '),
         inputSchema: toolTasksUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSTaskCreate[] = input.tasks.map((task) => ({
+            const inputs: GqlSAdminProjectTaskCreate[] = input.tasks.map((task) => ({
                 taskId: task.taskId ?? null,
                 projectId: task.projectId ?? null,
                 title: task.title,
@@ -76,7 +76,7 @@ export function toolTasksUpsert({ serverRuntime, session, mutations }: ProjectsA
                 effort: null,
                 whenBucket: null,
             }));
-            const result = await tasksUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminProjectTasksUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.tasks.forEach((task, index) => {
                 mutations.push({

@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { workoutRoutinesDelete } from '../commands/workoutRoutinesDelete';
+import { adminFitnessWorkoutRoutinesDelete } from '../commands/adminFitnessWorkoutRoutinesDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { FitnessAgentMutationLog } from './agentPersonalAssistantFitness';
@@ -24,7 +24,7 @@ export function toolWorkoutRoutinesDelete({ serverRuntime, session, mutations }:
         description: 'Delete one or more routines and their items. Logged workouts are kept. Use only when Cem explicitly says to delete.',
         inputSchema: workoutRoutinesDeleteInputSchema,
         execute: async (input) => {
-            const result = await workoutRoutinesDelete(requireAdminUserId(session), input.routineIds, session, serverRuntime);
+            const result = await adminFitnessWorkoutRoutinesDelete(requireAdminUserId(session), input.routineIds, session, serverRuntime);
             for (const routineId of input.routineIds) mutations.push({ kind: 'routineDelete', id: routineId });
             return result;
         },

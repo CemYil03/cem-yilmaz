@@ -1,15 +1,15 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { showsAddFromTmdb } from '../commands/showsAddFromTmdb';
+import { adminMediaShowsAddFromTmdb } from '../commands/adminMediaShowsAddFromTmdb';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSMovieStatusSchema } from '../graphql/generated';
-import type { GqlSSession, GqlSShowAddFromTmdbInput } from '../graphql/generated';
+import { GqlSAdminMediaMovieStatusSchema } from '../graphql/generated';
+import type { GqlSSession, GqlSAdminMediaShowAddFromTmdbInput } from '../graphql/generated';
 import type { MediaAgentMutationLog } from './agentPersonalAssistantMedia';
 import { requireAdminUserId } from './requireAdminUserId';
 
 const showAddItemSchema = z.object({
     tmdbId: z.number().int().min(1).describe('TMDB TV id, from an earlier `tmdbTvSearch` result.'),
-    status: GqlSMovieStatusSchema.optional().describe(
+    status: GqlSAdminMediaMovieStatusSchema.optional().describe(
         'Starting status for the new series. Defaults to `watchlist`. Use `watching` when Cem is mid-season.',
     ),
 });
@@ -34,11 +34,11 @@ export function toolShowsAddFromTmdb({ serverRuntime, session, mutations }: Medi
         ].join(' '),
         inputSchema: toolShowsAddFromTmdbInputSchema,
         execute: async (input) => {
-            const inputs: GqlSShowAddFromTmdbInput[] = input.inputs.map((entry) => ({
+            const inputs: GqlSAdminMediaShowAddFromTmdbInput[] = input.inputs.map((entry) => ({
                 tmdbId: entry.tmdbId,
                 status: entry.status ?? null,
             }));
-            const result = await showsAddFromTmdb(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminMediaShowsAddFromTmdb(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.inputs.forEach((_entry, index) => {
                 mutations.push({ kind: 'showAdd', id: referenceIds[index] ?? '' });

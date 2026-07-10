@@ -517,7 +517,7 @@ function PackingPanel({ trip, locale }: { trip: TripDetail; locale: Locale }) {
                 </h2>
                 <Button size="sm" variant="ghost" onClick={() => setEditing('new')}>
                     <PlusIcon className="size-4" />
-                    {{ de: 'Item', en: 'Item' }[locale]}
+                    {{ de: 'AdminInventoryItem', en: 'AdminInventoryItem' }[locale]}
                 </Button>
             </div>
             {total === 0 ? (
@@ -957,7 +957,9 @@ function EditPackingItemDialog({
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {isNew ? { de: 'Packlisten-Item', en: 'Packing item' }[locale] : { de: 'Item bearbeiten', en: 'Edit item' }[locale]}
+                        {isNew
+                            ? { de: 'Packlisten-AdminInventoryItem', en: 'Packing item' }[locale]
+                            : { de: 'AdminInventoryItem bearbeiten', en: 'Edit item' }[locale]}
                     </DialogTitle>
                 </DialogHeader>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1061,7 +1063,7 @@ function DeletePackingItemAlert({ item, locale, onClose }: { item: PackingRow; l
         <AlertDialog open onOpenChange={(open) => (open ? undefined : onClose())}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{{ de: 'Item löschen?', en: 'Delete item?' }[locale]}</AlertDialogTitle>
+                    <AlertDialogTitle>{{ de: 'AdminInventoryItem löschen?', en: 'Delete item?' }[locale]}</AlertDialogTitle>
                     <AlertDialogDescription>„{item.label}“</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

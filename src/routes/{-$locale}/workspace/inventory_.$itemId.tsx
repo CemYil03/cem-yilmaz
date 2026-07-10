@@ -41,9 +41,9 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCItemDisposalState,
-    GqlCItemFileKind,
-    GqlCItemServiceKind,
+    GqlCAdminInventoryItemDisposalState,
+    GqlCAdminInventoryItemFileKind,
+    GqlCAdminInventoryItemServiceKind,
     GqlCWorkspaceInventoryDetailUpdatesSubscription,
     GqlCWorkspaceInventoryDetailUserFragment,
 } from '../../../web/graphql/generated';
@@ -79,14 +79,14 @@ type Valuation = ItemDetail['valuations'][number];
 type ServiceEntry = ItemDetail['serviceEntries'][number];
 type ItemFileRow = ItemDetail['files'][number];
 
-const SERVICE_KIND_LABELS: Record<GqlCItemServiceKind, { de: string; en: string }> = {
+const SERVICE_KIND_LABELS: Record<GqlCAdminInventoryItemServiceKind, { de: string; en: string }> = {
     service: { de: 'Wartung', en: 'Service' },
     repair: { de: 'Reparatur', en: 'Repair' },
     replacement: { de: 'Austausch', en: 'Replacement' },
     other: { de: 'Sonstiges', en: 'Other' },
 };
 
-const DISPOSAL_LABELS: Record<GqlCItemDisposalState, { de: string; en: string }> = {
+const DISPOSAL_LABELS: Record<GqlCAdminInventoryItemDisposalState, { de: string; en: string }> = {
     owned: { de: 'Im Besitz', en: 'Owned' },
     sold: { de: 'Verkauft', en: 'Sold' },
     gifted: { de: 'Verschenkt', en: 'Gifted' },
@@ -94,7 +94,7 @@ const DISPOSAL_LABELS: Record<GqlCItemDisposalState, { de: string; en: string }>
     disposed: { de: 'Entsorgt', en: 'Disposed' },
 };
 
-const FILE_KIND_LABELS: Record<GqlCItemFileKind, { de: string; en: string }> = {
+const FILE_KIND_LABELS: Record<GqlCAdminInventoryItemFileKind, { de: string; en: string }> = {
     photo: { de: 'Foto', en: 'Photo' },
     receipt: { de: 'Quittung', en: 'Receipt' },
     warranty: { de: 'Garantie', en: 'Warranty' },
@@ -109,7 +109,7 @@ export const Route = createFileRoute('/{-$locale}/workspace/inventory_/$itemId')
     head: ({ params }) => {
         const locale = localeFromParam(params);
         return seoMeta({
-            title: { de: 'Eintrag', en: 'Item' }[locale],
+            title: { de: 'Eintrag', en: 'AdminInventoryItem' }[locale],
             description: { de: 'Inventar-Detail', en: 'Inventory item detail' }[locale],
             path: `/workspace/inventory/${params.itemId}`,
             locale,
@@ -441,7 +441,7 @@ function ServiceEntryCard({
 
 function FilesSection({ item, locale }: { item: ItemDetail; locale: Locale }) {
     const [uploading, setUploading] = useState(false);
-    const [attachKind, setAttachKind] = useState<GqlCItemFileKind>('receipt');
+    const [attachKind, setAttachKind] = useState<GqlCAdminInventoryItemFileKind>('receipt');
     const [error, setError] = useState<string | null>(null);
     const [, attach] = useMutation(WorkspaceItemFilesAttachDocument);
     const [, togglePin] = useMutation(WorkspaceItemFilesUpsertDocument);
@@ -481,12 +481,12 @@ function FilesSection({ item, locale }: { item: ItemDetail; locale: Locale }) {
                     {{ de: 'Dateien', en: 'Files' }[locale]}
                 </h2>
                 <div className="flex items-center gap-2">
-                    <Select value={attachKind} onValueChange={(v) => setAttachKind(v as GqlCItemFileKind)}>
+                    <Select value={attachKind} onValueChange={(v) => setAttachKind(v as GqlCAdminInventoryItemFileKind)}>
                         <SelectTrigger className="w-36 h-8 text-xs">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {(Object.keys(FILE_KIND_LABELS) as GqlCItemFileKind[]).map((k) => (
+                            {(Object.keys(FILE_KIND_LABELS) as GqlCAdminInventoryItemFileKind[]).map((k) => (
                                 <SelectItem key={k} value={k}>
                                     {FILE_KIND_LABELS[k][locale]}
                                 </SelectItem>
@@ -650,7 +650,7 @@ function RepriceDialog({ item, locale, onClose }: { item: ItemDetail; locale: Lo
 }
 
 function DisposeDialog({ item, locale, onClose }: { item: ItemDetail; locale: Locale; onClose: () => void }) {
-    const [state, setState] = useState<GqlCItemDisposalState>(item.disposalState);
+    const [state, setState] = useState<GqlCAdminInventoryItemDisposalState>(item.disposalState);
     const [submitting, setSubmitting] = useState(false);
     const [, upsert] = useMutation(WorkspaceItemsUpsertDocument);
     const submit = async () => {
@@ -692,12 +692,12 @@ function DisposeDialog({ item, locale, onClose }: { item: ItemDetail; locale: Lo
                 <DialogHeader>
                     <DialogTitle>{{ de: 'Status ändern', en: 'Change status' }[locale]}</DialogTitle>
                 </DialogHeader>
-                <Select value={state} onValueChange={(v) => setState(v as GqlCItemDisposalState)}>
+                <Select value={state} onValueChange={(v) => setState(v as GqlCAdminInventoryItemDisposalState)}>
                     <SelectTrigger className="w-full">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        {(Object.keys(DISPOSAL_LABELS) as GqlCItemDisposalState[]).map((k) => (
+                        {(Object.keys(DISPOSAL_LABELS) as GqlCAdminInventoryItemDisposalState[]).map((k) => (
                             <SelectItem key={k} value={k}>
                                 {DISPOSAL_LABELS[k][locale]}
                             </SelectItem>
@@ -728,7 +728,7 @@ function ServiceEntryDialog({
     locale: Locale;
     onClose: () => void;
 }) {
-    const [kind, setKind] = useState<GqlCItemServiceKind>(initial?.kind ?? 'service');
+    const [kind, setKind] = useState<GqlCAdminInventoryItemServiceKind>(initial?.kind ?? 'service');
     const [performedAt, setPerformedAt] = useState<Date | undefined>(initial?.performedAt ? parseISO(initial.performedAt) : new Date());
     const [vendor, setVendor] = useState(initial?.vendor ?? '');
     const [cost, setCost] = useState(initial?.costCents != null ? (initial.costCents / 100).toFixed(2) : '');
@@ -774,12 +774,12 @@ function ServiceEntryDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="flex flex-col gap-1.5 text-sm sm:col-span-2">
                         <span className="text-xs font-medium text-muted-foreground">{{ de: 'Art', en: 'Kind' }[locale]}</span>
-                        <Select value={kind} onValueChange={(v) => setKind(v as GqlCItemServiceKind)}>
+                        <Select value={kind} onValueChange={(v) => setKind(v as GqlCAdminInventoryItemServiceKind)}>
                             <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {(Object.keys(SERVICE_KIND_LABELS) as GqlCItemServiceKind[]).map((k) => (
+                                {(Object.keys(SERVICE_KIND_LABELS) as GqlCAdminInventoryItemServiceKind[]).map((k) => (
                                     <SelectItem key={k} value={k}>
                                         {SERVICE_KIND_LABELS[k][locale]}
                                     </SelectItem>

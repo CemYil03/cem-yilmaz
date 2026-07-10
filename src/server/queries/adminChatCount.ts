@@ -6,7 +6,7 @@ import { buildSearchCondition } from './chatSearchCondition';
 
 // Total number of admin chats matching the same optional `query` as
 // `adminChatFindMany(...)`. The client subtracts `offset + items.length` to
-// decide whether "Show more" is still meaningful.
+// decide whether "AdminMediaShow more" is still meaningful.
 export async function adminChatCount(
     args: GqlSAdminAdminChatCountArgs,
     requestingSession: GqlSSession,

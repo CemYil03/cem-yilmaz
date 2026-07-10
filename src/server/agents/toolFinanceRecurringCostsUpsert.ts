@@ -1,20 +1,20 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { financeRecurringCostsUpsert } from '../commands/financeRecurringCostsUpsert';
+import { adminFinancesRecurringCostsUpsert } from '../commands/adminFinancesRecurringCostsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSFinanceRecurringCostInputSchema } from '../graphql/generated';
-import type { GqlSFinanceRecurringCostInput, GqlSSession } from '../graphql/generated';
+import { GqlSAdminFinancesRecurringCostInputSchema } from '../graphql/generated';
+import type { GqlSAdminFinancesRecurringCostInput, GqlSSession } from '../graphql/generated';
 import type { FinanceAgentMutationLog } from './agentPersonalAssistantFinances';
 import { requireAdminUserId } from './requireAdminUserId';
 
 // Batch create-or-edit of recurring costs. Each row is
-// `GqlSFinanceRecurringCostInputSchema()` — the same shape the resolver
-// validates. Gemini-safe: `FinanceRecurringCostInput`'s only date fields
+// `GqlSAdminFinancesRecurringCostInputSchema()` — the same shape the resolver
+// validates. Gemini-safe: `AdminFinancesRecurringCostInput`'s only date fields
 // (`startsOn` / `endsOn`) are `Date` scalars the codegen emits as
 // `z.string()`, not `DateTime` (`z.date()`), so no hand-built duplicate is
 // needed. See `docs/architecture/agent-delegation.md#tool-input-schemas`.
 const toolFinanceRecurringCostsUpsertInputSchema = z.object({
-    financeRecurringCosts: z.array(GqlSFinanceRecurringCostInputSchema()).min(1),
+    financeRecurringCosts: z.array(GqlSAdminFinancesRecurringCostInputSchema()).min(1),
 });
 
 interface FinanceAgentMutationContext {
@@ -43,8 +43,8 @@ export function toolFinanceRecurringCostsUpsert({ serverRuntime, session, mutati
         ].join(' '),
         inputSchema: toolFinanceRecurringCostsUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.financeRecurringCosts as GqlSFinanceRecurringCostInput[];
-            const result = await financeRecurringCostsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.financeRecurringCosts as GqlSAdminFinancesRecurringCostInput[];
+            const result = await adminFinancesRecurringCostsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((cost, index) => {
                 mutations.push({

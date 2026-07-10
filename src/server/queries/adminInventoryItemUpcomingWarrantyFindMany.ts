@@ -1,8 +1,8 @@
 import { and, asc, eq, isNotNull, lte } from 'drizzle-orm';
 import { items } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSItem, GqlSSession } from '../graphql/generated';
-import { toGqlItem } from '../mappers/toGqlItem';
+import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';
+import { toGqlAdminInventoryItem } from '../mappers/toGqlAdminInventoryItem';
 
 // Items whose warranty ends within the given window (default 90 days),
 // ordered so the soonest expirations come first. Scoped to currently-owned
@@ -14,7 +14,7 @@ export async function adminInventoryItemUpcomingWarrantyFindMany(
     withinDays: number,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSItem[]> {
+): Promise<GqlSAdminInventoryItem[]> {
     try {
         const cutoff = new Date();
         cutoff.setUTCHours(23, 59, 59, 999);
@@ -25,7 +25,7 @@ export async function adminInventoryItemUpcomingWarrantyFindMany(
             .from(items)
             .where(and(eq(items.disposalState, 'owned'), isNotNull(items.warrantyEndsAt), lte(items.warrantyEndsAt, cutoffIso)))
             .orderBy(asc(items.warrantyEndsAt));
-        return rows.map(toGqlItem);
+        return rows.map(toGqlAdminInventoryItem);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

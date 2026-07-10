@@ -1,5 +1,5 @@
 import { desc, eq, inArray } from 'drizzle-orm';
-import { adminTravelTripActivities, adminTravelTripDays } from '../db/schema';
+import { tripActivities, tripDays } from '../db/schema';
 import type { AdminTravelTripActivityCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminTravelTripActivityInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -33,9 +33,9 @@ export async function adminTravelTripActivitiesUpsert(
 
         await serverRuntime.db.transaction(async (transaction) => {
             const parents = await transaction
-                .select({ tripDayId: adminTravelTripDays.tripDayId })
-                .from(adminTravelTripDays)
-                .where(inArray(adminTravelTripDays.tripDayId, parentDayIds));
+                .select({ tripDayId: tripDays.tripDayId })
+                .from(tripDays)
+                .where(inArray(tripDays.tripDayId, parentDayIds));
             if (parents.length !== parentDayIds.length) {
                 const found = new Set(parents.map((row) => row.tripDayId));
                 const missing = parentDayIds.filter((id) => !found.has(id));
@@ -43,9 +43,9 @@ export async function adminTravelTripActivitiesUpsert(
             }
             if (updateIds.length > 0) {
                 const existing = await transaction
-                    .select({ tripActivityId: adminTravelTripActivities.tripActivityId })
-                    .from(adminTravelTripActivities)
-                    .where(inArray(adminTravelTripActivities.tripActivityId, updateIds));
+                    .select({ tripActivityId: tripActivities.tripActivityId })
+                    .from(tripActivities)
+                    .where(inArray(tripActivities.tripActivityId, updateIds));
                 if (existing.length !== updateIds.length) {
                     const found = new Set(existing.map((row) => row.tripActivityId));
                     const missing = updateIds.filter((id) => !found.has(id));
@@ -60,10 +60,10 @@ export async function adminTravelTripActivitiesUpsert(
                     const cached = tailByDay.get(activity.tripDayId);
                     if (cached === undefined) {
                         const [top] = await transaction
-                            .select({ position: adminTravelTripActivities.position })
-                            .from(adminTravelTripActivities)
-                            .where(eq(adminTravelTripActivities.tripDayId, activity.tripDayId))
-                            .orderBy(desc(adminTravelTripActivities.position))
+                            .select({ position: tripActivities.position })
+                            .from(tripActivities)
+                            .where(eq(tripActivities.tripDayId, activity.tripDayId))
+                            .orderBy(desc(tripActivities.position))
                             .limit(1);
                         position = top ? top.position + 1 : 0;
                     } else {
@@ -84,12 +84,9 @@ export async function adminTravelTripActivitiesUpsert(
                     updatedAt: now,
                 };
                 if (isUpdate) {
-                    await transaction
-                        .update(adminTravelTripActivities)
-                        .set(payload)
-                        .where(eq(adminTravelTripActivities.tripActivityId, tripActivityId));
+                    await transaction.update(tripActivities).set(payload).where(eq(tripActivities.tripActivityId, tripActivityId));
                 } else {
-                    await transaction.insert(adminTravelTripActivities).values(payload);
+                    await transaction.insert(tripActivities).values(payload);
                 }
             }
         });

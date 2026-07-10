@@ -1,8 +1,8 @@
 import { asc, sql } from 'drizzle-orm';
 import { mediaChannels } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMediaChannel, GqlSSession } from '../graphql/generated';
-import { toGqlMediaChannel } from '../mappers/toGqlMediaChannel';
+import type { GqlSAdminMediaChannel, GqlSSession } from '../graphql/generated';
+import { toGqlAdminMediaChannel } from '../mappers/toGqlAdminMediaChannel';
 
 // All favourite channels, or a filtered subset when `topic` is provided.
 //
@@ -18,7 +18,7 @@ export async function adminMediaChannelFindMany(
     topic: string | null | undefined,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSMediaChannel[]> {
+): Promise<GqlSAdminMediaChannel[]> {
     const trimmedTopic = topic?.trim() ?? '';
     try {
         const query = serverRuntime.db.select().from(mediaChannels);
@@ -26,7 +26,7 @@ export async function adminMediaChannelFindMany(
             ? query.where(sql`${trimmedTopic} = ANY(${mediaChannels.topics})`).orderBy(asc(mediaChannels.priority), asc(mediaChannels.name))
             : query.orderBy(asc(mediaChannels.priority), asc(mediaChannels.name));
         const rows = await ordered;
-        return rows.map(toGqlMediaChannel);
+        return rows.map(toGqlAdminMediaChannel);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

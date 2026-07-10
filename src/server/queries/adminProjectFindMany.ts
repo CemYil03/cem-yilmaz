@@ -1,9 +1,17 @@
 import { asc, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { fileUploads, projectActivities, projectFiles, projectLinks, projectRequests, projects, tasks } from '../db/schema';
-import type { FileUpload, Project, ProjectActivity, ProjectFile, ProjectLink, ProjectRequest, Task } from '../db/schema';
+import type {
+    FileUpload,
+    AdminProject,
+    AdminProjectActivity,
+    AdminProjectFile,
+    AdminProjectLink,
+    AdminProjectRequest,
+    AdminProjectTask,
+} from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSProject, GqlSProjectStatus, GqlSSession } from '../graphql/generated';
-import { toGqlProject } from '../mappers/toGqlProject';
+import type { GqlSAdminProject, GqlSAdminProjectStatus, GqlSSession } from '../graphql/generated';
+import { toGqlAdminProject } from '../mappers/toGqlAdminProject';
 
 // Lists every project (optionally narrowed by status) with its tasks,
 // activities, links, files and source request joined in. The board on
@@ -13,10 +21,10 @@ import { toGqlProject } from '../mappers/toGqlProject';
 // within the status — the client groups by status to render the
 // kanban-style columns.
 export async function adminProjectFindMany(
-    status: GqlSProjectStatus | null,
+    status: GqlSAdminProjectStatus | null,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSProject[]> {
+): Promise<GqlSAdminProject[]> {
     try {
         // Phase 1 — fetch projects + their (possibly null) source requests.
         const projectRows = await serverRuntime.db
@@ -34,7 +42,7 @@ export async function adminProjectFindMany(
         // projects in one query, bucket by projectId in memory. Cheaper
         // than N task queries; cheap to skip when no projects came back.
         const taskRows = await serverRuntime.db.select().from(tasks).where(isNotNull(tasks.projectId)).orderBy(asc(tasks.position));
-        const tasksByProject = new Map<string, Task[]>();
+        const tasksByProject = new Map<string, AdminProjectTask[]>();
         for (const task of taskRows) {
             if (!task.projectId) continue;
             const bucket = tasksByProject.get(task.projectId) ?? [];
@@ -53,7 +61,7 @@ export async function adminProjectFindMany(
             .from(projectActivities)
             .where(inArray(projectActivities.projectId, projectIds))
             .orderBy(desc(projectActivities.occurredAt));
-        const activitiesByProject = new Map<string, ProjectActivity[]>();
+        const activitiesByProject = new Map<string, AdminProjectActivity[]>();
         const totalWorkByProject = new Map<string, number>();
         for (const activity of activityRows) {
             const bucket = activitiesByProject.get(activity.projectId) ?? [];
@@ -71,7 +79,7 @@ export async function adminProjectFindMany(
             .from(projectLinks)
             .where(inArray(projectLinks.projectId, projectIds))
             .orderBy(desc(projectLinks.createdAt));
-        const linksByProject = new Map<string, ProjectLink[]>();
+        const linksByProject = new Map<string, AdminProjectLink[]>();
         for (const link of linkRows) {
             const bucket = linksByProject.get(link.projectId) ?? [];
             bucket.push(link);
@@ -87,7 +95,7 @@ export async function adminProjectFindMany(
             .from(projectFiles)
             .where(inArray(projectFiles.projectId, projectIds))
             .orderBy(desc(projectFiles.createdAt));
-        const filesByProject = new Map<string, ProjectFile[]>();
+        const filesByProject = new Map<string, AdminProjectFile[]>();
         const fileUploadsById = new Map<string, FileUpload>();
         if (fileRows.length > 0) {
             for (const file of fileRows) {
@@ -102,8 +110,8 @@ export async function adminProjectFindMany(
             }
         }
 
-        return projectRows.map((row: { project: Project; sourceRequest: ProjectRequest | null }) =>
-            toGqlProject(
+        return projectRows.map((row: { project: AdminProject; sourceRequest: AdminProjectRequest | null }) =>
+            toGqlAdminProject(
                 row.project,
                 tasksByProject.get(row.project.projectId) ?? [],
                 row.sourceRequest,

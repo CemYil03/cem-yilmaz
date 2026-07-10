@@ -1,8 +1,8 @@
 import { asc, desc, eq } from 'drizzle-orm';
 import { items } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSItem, GqlSSession } from '../graphql/generated';
-import { toGqlItem } from '../mappers/toGqlItem';
+import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';
+import { toGqlAdminInventoryItem } from '../mappers/toGqlAdminInventoryItem';
 
 // Lists every tracked item, most-recently-touched first. `valuations`,
 // `serviceEntries`, and `files` come back empty — the detail route uses
@@ -15,7 +15,7 @@ export async function adminInventoryItemFindMany(
     includeDisposed: boolean,
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSItem[]> {
+): Promise<GqlSAdminInventoryItem[]> {
     try {
         const rows = includeDisposed
             ? await serverRuntime.db.select().from(items).orderBy(desc(items.updatedAt), asc(items.itemId))
@@ -24,7 +24,7 @@ export async function adminInventoryItemFindMany(
                   .from(items)
                   .where(eq(items.disposalState, 'owned'))
                   .orderBy(desc(items.updatedAt), asc(items.itemId));
-        return rows.map(toGqlItem);
+        return rows.map(toGqlAdminInventoryItem);
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);
         throw error;

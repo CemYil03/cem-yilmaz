@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { itemServiceEntriesDelete } from '../commands/itemServiceEntriesDelete';
+import { adminInventoryItemServiceEntriesDelete } from '../commands/adminInventoryItemServiceEntriesDelete';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import type { InventoryAgentMutationLog } from './agentPersonalAssistantInventory';
@@ -22,7 +22,12 @@ export function toolInventoryServiceEntriesDelete({ serverRuntime, session, muta
             'Permanently delete one or more service-log entries. Use when Cem asks to remove a repair / service record he no longer wants.',
         inputSchema: toolInventoryServiceEntriesDeleteInputSchema,
         execute: async (input) => {
-            const result = await itemServiceEntriesDelete(requireAdminUserId(session), input.serviceEntryIds, session, serverRuntime);
+            const result = await adminInventoryItemServiceEntriesDelete(
+                requireAdminUserId(session),
+                input.serviceEntryIds,
+                session,
+                serverRuntime,
+            );
             for (const serviceEntryId of input.serviceEntryIds) mutations.push({ kind: 'serviceEntryDelete', id: serviceEntryId });
             return result;
         },

@@ -1,6 +1,6 @@
 # Workspace todos operations — co-located with the `/workspace/todos`
 # editor route. Reads and writes standalone tasks (rows with
-# `projectId IS NULL`). Project-bound tasks live on the project detail
+# `projectId IS NULL`). AdminProject-bound tasks live on the project detail
 # route and its own graphql file; the two surfaces stay disjoint so
 # neither has to filter the other out. See
 # `docs/features/todos.md` and
@@ -41,15 +41,15 @@ mutation WorkspaceTodoUpsert(
     $taskId: ID
     $title: String!
     $notes: String
-    $status: TaskStatus!
+    $status: AdminProjectTaskStatus!
     $position: Int!
     $dueAt: DateTime
     $completedAt: DateTime
-    $effort: TaskEffort
-    $whenBucket: TaskWhenBucket
+    $effort: AdminProjectTaskEffort
+    $whenBucket: AdminProjectTaskWhenBucket
 ) {
     admin {
-        tasksUpsert(
+        adminProjectTasksUpsert(
             tasks: [
                 {
                     taskId: $taskId
@@ -73,7 +73,7 @@ mutation WorkspaceTodoUpsert(
 
 mutation WorkspaceTodoDelete($taskId: ID!) {
     admin {
-        tasksDelete(taskIds: [$taskId]) {
+        adminProjectTasksDelete(taskIds: [$taskId]) {
             success
         }
     }

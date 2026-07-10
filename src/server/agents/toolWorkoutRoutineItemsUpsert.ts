@@ -1,9 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { workoutRoutineItemsUpsert } from '../commands/workoutRoutineItemsUpsert';
+import { adminFitnessWorkoutRoutineItemsUpsert } from '../commands/adminFitnessWorkoutRoutineItemsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { GqlSWorkoutRoutineItemInputSchema } from '../graphql/generated';
-import type { GqlSSession, GqlSWorkoutRoutineItemInput } from '../graphql/generated';
+import { GqlSAdminFitnessWorkoutRoutineItemInputSchema } from '../graphql/generated';
+import type { GqlSSession, GqlSAdminFitnessWorkoutRoutineItemInput } from '../graphql/generated';
 import type { FitnessAgentMutationLog } from './agentPersonalAssistantFitness';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -11,7 +11,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 // row). Every row needs a parent `routineId` and an `exerciseId`.
 
 const toolWorkoutRoutineItemsUpsertInputSchema = z.object({
-    workoutRoutineItems: z.array(GqlSWorkoutRoutineItemInputSchema()).min(1),
+    workoutRoutineItems: z.array(GqlSAdminFitnessWorkoutRoutineItemInputSchema()).min(1),
 });
 
 interface FitnessAgentMutationContext {
@@ -30,8 +30,8 @@ export function toolWorkoutRoutineItemsUpsert({ serverRuntime, session, mutation
         ].join(' '),
         inputSchema: toolWorkoutRoutineItemsUpsertInputSchema,
         execute: async (rawInput) => {
-            const inputs = rawInput.workoutRoutineItems as GqlSWorkoutRoutineItemInput[];
-            const result = await workoutRoutineItemsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const inputs = rawInput.workoutRoutineItems as GqlSAdminFitnessWorkoutRoutineItemInput[];
+            const result = await adminFitnessWorkoutRoutineItemsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             inputs.forEach((item, index) => {
                 mutations.push({

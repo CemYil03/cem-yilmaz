@@ -1,10 +1,10 @@
 import { asc, desc, inArray } from 'drizzle-orm';
 import { fileUploads, medicalRecordFiles, medicalRecords } from '../db/schema';
-import type { FileUpload, MedicalRecordFile } from '../db/schema';
+import type { FileUpload, AdminMedicalRecordFile } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMedicalRecord, GqlSSession } from '../graphql/generated';
-import { toGqlMedicalRecord } from '../mappers/toGqlMedicalRecord';
-import { toGqlMedicalRecordFile } from '../mappers/toGqlMedicalRecordFile';
+import type { GqlSAdminMedicalRecord, GqlSSession } from '../graphql/generated';
+import { toGqlAdminMedicalRecord } from '../mappers/toGqlAdminMedicalRecord';
+import { toGqlAdminMedicalRecordFile } from '../mappers/toGqlAdminMedicalRecordFile';
 
 // Lists every medical record with its attached files. Ordered by
 // `occurredAt` (falling back to `createdAt`) descending — the most recent
@@ -13,7 +13,7 @@ import { toGqlMedicalRecordFile } from '../mappers/toGqlMedicalRecordFile';
 export async function adminMedicalRecordFindMany(
     requestingSession: GqlSSession,
     serverRuntime: ServerRuntime,
-): Promise<GqlSMedicalRecord[]> {
+): Promise<GqlSAdminMedicalRecord[]> {
     try {
         const rows = await serverRuntime.db
             .select()
@@ -36,7 +36,7 @@ export async function adminMedicalRecordFindMany(
             for (const u of uploadRows) uploadsById.set(u.fileUploadId, u);
         }
 
-        const filesByRecordId = new Map<string, MedicalRecordFile[]>();
+        const filesByRecordId = new Map<string, AdminMedicalRecordFile[]>();
         for (const f of fileRows) {
             const list = filesByRecordId.get(f.recordId) ?? [];
             list.push(f);
@@ -49,10 +49,10 @@ export async function adminMedicalRecordFindMany(
             const files = (filesByRecordId.get(row.recordId) ?? [])
                 .map((f) => {
                     const upload = uploadsById.get(f.fileUploadId);
-                    return upload ? toGqlMedicalRecordFile(f, upload) : null;
+                    return upload ? toGqlAdminMedicalRecordFile(f, upload) : null;
                 })
                 .filter((f): f is NonNullable<typeof f> => f !== null);
-            return toGqlMedicalRecord(row, files);
+            return toGqlAdminMedicalRecord(row, files);
         });
     } catch (error) {
         serverRuntime.log.error(error, requestingSession);

@@ -1,8 +1,8 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { supplementsUpsert } from '../commands/supplementsUpsert';
+import { adminNutritionSupplementsUpsert } from '../commands/adminNutritionSupplementsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSSupplementInput, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminNutritionSupplementInput, GqlSSession } from '../graphql/generated';
 import type { NutritionAgentMutationLog } from './agentPersonalAssistantNutrition';
 import { requireAdminUserId } from './requireAdminUserId';
 
@@ -13,7 +13,7 @@ import { requireAdminUserId } from './requireAdminUserId';
 
 const supplementItemSchema = z.object({
     supplementId: z.uuid().nullish().describe('Omit (or null) to create a new supplement. Pass an existing id to edit.'),
-    name: z.string().min(1).max(300).describe('Supplement / product name.'),
+    name: z.string().min(1).max(300).describe('AdminNutritionSupplement / product name.'),
     brand: z.string().max(300).nullish().describe('Manufacturer / brand.'),
     servingSize: z.string().max(300).nullish().describe('Serving size as printed, e.g. "2 capsules" or "1 scoop (5 g)".'),
     servingsPerContainer: z.number().int().min(0).max(100000).nullish(),
@@ -47,7 +47,7 @@ export function toolSupplementsUpsert({ serverRuntime, session, mutations }: Nut
         ].join(' '),
         inputSchema: toolSupplementsUpsertInputSchema,
         execute: async (input) => {
-            const inputs: GqlSSupplementInput[] = input.supplements.map((supplement) => ({
+            const inputs: GqlSAdminNutritionSupplementInput[] = input.supplements.map((supplement) => ({
                 supplementId: supplement.supplementId ?? null,
                 name: supplement.name,
                 brand: supplement.brand ?? null,
@@ -57,7 +57,7 @@ export function toolSupplementsUpsert({ serverRuntime, session, mutations }: Nut
                 notes: supplement.notes ?? null,
                 researchedAt: supplement.researchedAt ? new Date(supplement.researchedAt) : null,
             }));
-            const result = await supplementsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+            const result = await adminNutritionSupplementsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
             const referenceIds = result.referenceIds ?? [];
             input.supplements.forEach((supplement, index) => {
                 mutations.push({

@@ -51,7 +51,7 @@ type FitnessAgentMutationKind =
 
 export interface FitnessAgentMutation {
     kind: FitnessAgentMutationKind;
-    // Exercise / routine / routine-item / session / set id depending on `kind`.
+    // AdminFitnessExercise / routine / routine-item / session / set id depending on `kind`.
     id: string;
     // Best-effort label for the orchestrator's user-facing narration.
     title?: string;
