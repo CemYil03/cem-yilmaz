@@ -118,6 +118,30 @@ the raw JSON available only in the inspector dialog (`ToolArgumentsButton`, Argu
 on the `ChatMessageToolCall` GraphQL type and selected in the shared `ChatMessageFields` fragment, so it rides both the initial query and
 the `chatUpdates` subscription (the streaming append swaps in the persisted row with its result, keyed on the same id — no flash).
 
+## Internal vs external links
+
+Assistant messages render markdown through `AssistantMarkdown.tsx` (Streamdown). The default Streamdown anchor routes **every** href —
+relative ones included — through its own "you're about to visit an external website" modal and always opens a new tab. That is wrong for
+links to pages on this site: the assistant is prompted to point visitors at `/cv`, `/projects`, etc., and those should feel like normal
+in-app navigation. So the renderer overrides the `a` component with a custom `MarkdownAnchor` that splits three ways:
+
+- **Incomplete** (`streamdown:incomplete-link`, emitted mid-stream) → styled but inert, so a half-streamed link isn't clickable.
+- **Internal** (`isInternalHref` — a single leading slash, not the `//host` protocol-relative form) → a plain same-tab `<a>` whose click is
+  intercepted for `router.navigate({ href })` (SPA, no reload, no interstitial). The path is locale-prefixed to match the route the visitor
+  is on: `localeFromPathname(router.state.location.pathname)` reads the current locale and `localizeInternalHref` turns `/cv` into `/en/cv`
+  on an English page (and leaves an already-prefixed path alone). Modified clicks (⌘/Ctrl/Shift/Alt, non-primary button) fall through to the
+  browser so "open in new tab" still works. Streamdown's injected `target`/`rel` are stripped on this branch.
+- **External** → preserves the per-surface behaviour encoded by `ExternalLinkConfirmationProvider` (see below).
+
+`ExternalLinkConfirmationProvider` gates only **external** links. The public visitor chat leaves it at the default (`enabled: true`) so
+off-site links get a bilingual confirmation `AlertDialog` before opening in a new tab; the workspace assistant wraps its transcript with
+`enabled={false}` (in `WorkspaceAssistantChatBody.tsx`) so its links to trusted surfaces open directly. Internal links ignore this flag
+entirely — they always navigate in-app.
+
+`useRouter({ warn: false })` is used (not `useParams`) so the anchor degrades to a plain anchor outside a `RouterProvider` (Storybook, SSR)
+instead of throwing. Behaviour is locked down in `AssistantMarkdown.test.tsx` (internal same-tab + locale prefixing; external confirm vs
+direct per surface) plus unit tests for the three pure helpers.
+
 ## What was intentionally not adopted
 
 - **`Bubble`.** Assistant markdown in this app is not bubbled — the assistant text renders flush in the row so long-form markdown and code

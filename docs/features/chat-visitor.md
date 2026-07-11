@@ -68,6 +68,21 @@ Surface-specific extras still plug into the wrapper's `addonStart` slot — the 
 chat" button (plus icon) that calls `resetChat()` on the provider and drops the sheet back into its empty state. The button is disabled
 while a turn is generating; the empty state's own composer creates a fresh chat on first send, just like opening the sheet from the header.
 
+## Site map
+
+The agent's system prompt carries a **site map** — the list of public pages it can point visitors to — built in `agentVisitor.ts`
+(`siteMapBlock`). The paths are iterated from `SITEMAP_PATHS` (`src/web/seo/sitemapRoutes.ts`), the same source of truth `/sitemap.xml`
+uses, so the two can't drift: add an indexable route there and the agent learns about it automatically. A per-path description lives in a
+small `PAGE_DESCRIPTIONS` record beside the builder; a path with no description still gets listed by its bare path.
+
+The block also tells the agent, once, that its replies render as full Markdown — clickable links (relative, e.g. `[Lebenslauf](/cv)`),
+tables, lists — and to only link to the listed paths. It is deliberately informational, not a script of "when asked X, answer Y".
+
+This fixes the failure where the agent, never having been told the routes exist, insisted it "cannot provide links or has no access to URLs"
+when a visitor asked where the CV was. Internal links the agent emits (`/cv`, `/projects`, …) navigate in-app — same tab, no interstitial,
+and locale-prefixed to the route the visitor is on (`/cv` becomes `/en/cv` on an English page). That behaviour lives in the shared markdown
+anchor; see [architecture/chat-transcript.md](../architecture/chat-transcript.md#internal-vs-external-links).
+
 ## Page context
 
 Every `chatMessageCreate` carries a `currentPagePath` argument — the route the visitor was on when they hit Send (`/`, `/projects`,

@@ -3,6 +3,7 @@ import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
 import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
+import { SITEMAP_PATHS } from '../../web/seo/sitemapRoutes';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { cvSummaryForAgent } from './cvSummaryForAgent';
@@ -57,6 +58,35 @@ export type ChatAgentFactory = (options: AgentChatOptions) => Promise<{
     generate: (...args: any[]) => any;
 }>;
 
+// One line per public route, keyed by the locale-less path. Paired with
+// `SITEMAP_PATHS` (the source of truth for indexable routes) so the agent's
+// site map can't drift from what actually exists — `siteMapBlock` iterates
+// `SITEMAP_PATHS`, and a new route with no description here still gets listed
+// by its bare path. See `src/web/seo/sitemapRoutes.ts`.
+const PAGE_DESCRIPTIONS: Record<string, string> = {
+    '/': 'Startseite / portfolio landing.',
+    '/about': 'About Cem — bio, skills, hobbies, contact.',
+    '/cv': 'Lebenslauf / CV — work experience and education timelines.',
+    '/projects': "Projects — showcase of Cem's work.",
+    '/impressum': 'Impressum (imprint, TMG §5).',
+    '/datenschutz': 'Datenschutzerklärung (privacy notice, GDPR).',
+};
+
+// The site map the agent gets in its system prompt: the public pages it can
+// link visitors to, plus a note that its replies render as Markdown. Purely
+// informational — no scripted "when asked X, answer Y" — so the model routes
+// on its own. Fixes the failure where the agent, never told the routes exist,
+// claimed it "cannot provide links or URLs" when asked for the CV.
+function siteMapBlock(): string[] {
+    return [
+        'Public pages on this site (link to them with relative paths):',
+        ...SITEMAP_PATHS.map(({ path }) => `- \`${path}\` — ${PAGE_DESCRIPTIONS[path] ?? ''}`.trimEnd()),
+        '',
+        'Your replies render as full Markdown — use clickable links (e.g. `[Lebenslauf](/cv)`),',
+        'tables, and lists where they help. Only link to the paths listed above; do not invent routes.',
+    ];
+}
+
 // System prompt scaffold for the public visitor chat ("Ask me anything") on
 // cem-yilmaz.de. The "About Cem" block is rebuilt from the DB on every turn
 // (`cvSummaryForAgent`) so admin edits at `/workspace/cv` land in the
@@ -76,6 +106,8 @@ function buildSystemPrompt(cvSummary: string, currentPagePath: string | null): s
         currentDateForAgent(),
         '',
         cvSummary,
+        '',
+        ...siteMapBlock(),
         '',
     ];
     if (currentPagePath) {
