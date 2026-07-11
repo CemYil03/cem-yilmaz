@@ -273,7 +273,9 @@ function CollectionFooter({
     return (
         <div className="mt-1 flex items-center gap-1 text-[11px] opacity-70">
             {state === 'answered' ? <CheckIcon className="size-3" aria-hidden /> : null}
-            <span>{state === 'answered' ? { de: 'Beantwortet', en: 'Answered' }[locale] : { de: 'Übersprungen', en: 'Skipped' }[locale]}</span>
+            <span>
+                {state === 'answered' ? { de: 'Beantwortet', en: 'Answered' }[locale] : { de: 'Übersprungen', en: 'Skipped' }[locale]}
+            </span>
             <span aria-hidden>·</span>
             <Timestamp iso={iso} className="mt-0" />
         </div>

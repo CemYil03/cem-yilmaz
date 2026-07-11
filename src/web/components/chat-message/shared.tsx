@@ -1,12 +1,25 @@
 import * as React from 'react';
 import { format, parseISO } from 'date-fns';
-import { BracesIcon, CheckIcon, CopyIcon, Loader2Icon, PauseIcon, PlayIcon, SquareIcon, Volume2Icon } from 'lucide-react';
+import {
+    AlertTriangleIcon,
+    BracesIcon,
+    CheckIcon,
+    ChevronDownIcon,
+    CopyIcon,
+    Loader2Icon,
+    PauseIcon,
+    PlayIcon,
+    SquareIcon,
+    Volume2Icon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocale } from '../../hooks/useLocale';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { cn } from '../../utils/cn';
 import { markdownToPlainText } from '../../utils/markdownToPlainText';
 import { toolDisplay } from '../../chat/toolDisplay';
+import { interpretToolResult } from '../../chat/toolResult';
+import type { ToolStatus } from '../../chat/toolResult';
 import { Button } from '../base/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../base/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../base/tooltip';
@@ -45,37 +58,88 @@ export function Bubble({ tone, children }: { tone: 'user' | 'assistant'; childre
     );
 }
 
+// Small status glyph for a tool row: spinner while a call is in flight, a muted
+// check once it lands, an alert triangle on a failed result. Kept next to the
+// tool's own domain icon so the row's identity (which tool) doesn't flicker as
+// the status resolves. Shared by the top-level pill and the child rows.
+export function ToolStatusIcon({ status, className }: { status: ToolStatus; className?: string }) {
+    if (status === 'inProgress') return <Loader2Icon aria-hidden className={cn('animate-spin', className)} />;
+    if (status === 'failed') return <AlertTriangleIcon aria-hidden className={cn('text-destructive', className)} />;
+    return <CheckIcon aria-hidden className={cn('opacity-70', className)} />;
+}
+
 // Left-aligned pill for a single tool call. Shared by the top-level tool-call
 // row and any surface that needs to show "the assistant used a tool". While the
 // turn is still in flight (`active`), the label carries the `shimmer` sweep —
 // the same live "working on it" signal `AssistantMarkdown` uses for its
 // Thinking… placeholder, not a decorative loop (see docs/styles/motion.md).
 // Once the turn settles, the shimmer is dropped and the row reads as a record.
+//
+// When the tool returned a `{ status, summary }` result, the pill grows a
+// status glyph and an expandable one-line summary beneath it; the full raw
+// result stays in the args inspector's Result section. See docs/styles/chat.md.
 export function ToolRowShell({
     toolName,
     args,
+    result,
     createdAt,
     active = false,
 }: {
     toolName: string;
     args: unknown;
+    result?: unknown;
     createdAt: string;
     active?: boolean;
 }) {
     const locale = useLocale();
     const { Icon, label } = toolDisplay(toolName);
+    const { status, summary } = interpretToolResult(result, active);
     const text = active ? { de: `${label.de}…`, en: `${label.en}…` }[locale] : label[locale];
     return (
-        <div
-            data-slot="chat-message-tool-call-pill"
-            data-active={active}
-            className="inline-flex items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-xs text-muted-foreground"
-        >
-            <Icon aria-hidden className="size-3.5 shrink-0" />
-            <span className={cn(active && 'shimmer')}>{text}</span>
-            <ToolArgumentsButton toolName={toolName} args={args} />
-            <Timestamp iso={createdAt} className="mt-0" />
+        <div data-slot="chat-message-tool-call-shell" className="flex max-w-full flex-col items-start gap-1">
+            <div
+                data-slot="chat-message-tool-call-pill"
+                data-active={active}
+                data-status={status}
+                className="inline-flex max-w-full items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-xs text-muted-foreground"
+            >
+                <Icon aria-hidden className="size-3.5 shrink-0" />
+                <span className={cn('truncate', active && 'shimmer')}>{text}</span>
+                <ToolStatusIcon status={status} className="size-3.5 shrink-0" />
+                <ToolArgumentsButton toolName={toolName} args={args} result={result} />
+                <Timestamp iso={createdAt} className="mt-0" />
+            </div>
+            {summary ? <ToolResultSummary summary={summary} failed={status === 'failed'} /> : null}
         </div>
+    );
+}
+
+// Collapsed one-line summary under a tool pill with a click-to-expand
+// disclosure. No base `Collapsible` primitive exists, so this is a local toggle
+// with `aria-expanded`; the height change is a plain clamp swap (no motion, so
+// it's reduced-motion-safe by construction).
+function ToolResultSummary({ summary, failed }: { summary: string; failed: boolean }) {
+    const locale = useLocale();
+    const [expanded, setExpanded] = React.useState(false);
+    const label = expanded ? { de: 'Weniger anzeigen', en: 'Show less' }[locale] : { de: 'Mehr anzeigen', en: 'Show more' }[locale];
+    return (
+        <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={label}
+            className={cn(
+                'group/summary ml-1 flex max-w-full items-start gap-1 rounded text-left text-xs',
+                'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                failed ? 'text-destructive/90' : 'text-muted-foreground',
+            )}
+        >
+            <ChevronDownIcon
+                aria-hidden
+                className={cn('mt-0.5 size-3 shrink-0 transition-transform motion-reduce:transition-none', expanded && 'rotate-180')}
+            />
+            <span className={cn('min-w-0 whitespace-pre-wrap wrap-break-word', !expanded && 'line-clamp-1')}>{summary}</span>
+        </button>
     );
 }
 
@@ -238,11 +302,19 @@ export function SpeakButton({ text }: { text: string }) {
 }
 
 // Small affordance shown next to a tool name. Hidden by default behind an
-// icon-only button; clicking opens a dialog with the call's arguments
-// pretty-printed. The args come over the wire as the GraphQL `JSON` scalar
-// (typed `unknown` client-side), so we serialize defensively.
-export function ToolArgumentsButton({ toolName, args }: { toolName: string; args: unknown }) {
-    const formatted = React.useMemo(() => formatToolArguments(args), [args]);
+// icon-only button; clicking opens a dialog with the call's arguments — and,
+// when present, its result — pretty-printed. Both come over the wire as the
+// GraphQL `JSON` scalar (typed `unknown` client-side), so we serialize
+// defensively. The inline summary under the pill is the headline; this dialog
+// is the full payload.
+export function ToolArgumentsButton({ toolName, args, result }: { toolName: string; args: unknown; result?: unknown }) {
+    const locale = useLocale();
+    const formattedArgs = React.useMemo(() => formatToolJson(args), [args]);
+    const hasResult = result !== null && result !== undefined;
+    const formattedResult = React.useMemo(() => (hasResult ? formatToolJson(result) : ''), [result, hasResult]);
+    const openLabel = { de: 'Details anzeigen', en: 'Show details' }[locale];
+    const argsLabel = { de: 'Argumente', en: 'Arguments' }[locale];
+    const resultLabel = { de: 'Ergebnis', en: 'Result' }[locale];
     return (
         <Dialog>
             <Tooltip>
@@ -252,39 +324,59 @@ export function ToolArgumentsButton({ toolName, args }: { toolName: string; args
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            aria-label="Show arguments"
+                            aria-label={openLabel}
                             className="opacity-70 hover:opacity-100"
                         >
                             <BracesIcon aria-hidden />
                         </Button>
                     </DialogTrigger>
                 </TooltipTrigger>
-                <TooltipContent>Show arguments</TooltipContent>
+                <TooltipContent>{openLabel}</TooltipContent>
             </Tooltip>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-sm">
                         <BracesIcon aria-hidden />
-                        Arguments for <code className="font-mono">{toolName}</code>
+                        <code className="font-mono">{toolName}</code>
                     </DialogTitle>
-                    <DialogDescription>The arguments the assistant supplied for this tool call.</DialogDescription>
+                    <DialogDescription>
+                        {
+                            {
+                                de: 'Argumente und Ergebnis dieses Tool-Aufrufs.',
+                                en: 'The arguments and result for this tool call.',
+                            }[locale]
+                        }
+                    </DialogDescription>
                 </DialogHeader>
-                <pre className="max-h-[60vh] overflow-auto rounded-md bg-muted p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap wrap-break-word">
-                    {formatted}
-                </pre>
+                <div className="grid gap-4">
+                    <section className="grid gap-1.5">
+                        <h3 className="text-xs font-medium text-muted-foreground">{argsLabel}</h3>
+                        <pre className="max-h-[40vh] overflow-auto rounded-md bg-muted p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap wrap-break-word">
+                            {formattedArgs}
+                        </pre>
+                    </section>
+                    {hasResult ? (
+                        <section className="grid gap-1.5">
+                            <h3 className="text-xs font-medium text-muted-foreground">{resultLabel}</h3>
+                            <pre className="max-h-[40vh] overflow-auto rounded-md bg-muted p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap wrap-break-word">
+                                {formattedResult}
+                            </pre>
+                        </section>
+                    ) : null}
+                </div>
             </DialogContent>
         </Dialog>
     );
 }
 
 // `JSON.stringify` throws on cycles and silently drops `undefined` / functions.
-// Tool args coming from the LLM are plain JSON in practice, but the column is
-// `unknown` so we still guard — a malformed payload should render as a human
+// Tool payloads coming from the LLM are plain JSON in practice, but the column
+// is `unknown` so we still guard — a malformed payload should render as a human
 // note, not crash the dialog.
-function formatToolArguments(args: unknown): string {
+function formatToolJson(value: unknown): string {
     try {
-        return JSON.stringify(args, null, 2);
+        return JSON.stringify(value, null, 2);
     } catch {
-        return '// Could not format arguments as JSON.';
+        return '// Could not format as JSON.';
     }
 }

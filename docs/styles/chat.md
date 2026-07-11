@@ -106,6 +106,9 @@ The rule now lives in `ChatTranscriptShell` so a new surface inherits it automat
 | **System rows (tool calls, approval request/response) are left-aligned**, not centred                | `MessageRow side="system"` → `justify-start` (`chat-message/shared.tsx`)                             |
 | Tool rows show a **friendly, bilingual tool label** — never the raw tool id                          | `toolDisplay()` (`src/web/chat/toolDisplay.ts`); raw id stays in the args inspector                  |
 | The **trailing tool row shimmers "working on it"** while the turn is in flight, then settles         | `ToolRowShell active` (`chat-message/shared.tsx`), driven by `ChatTranscript isGenerating`           |
+| Tool rows carry a **status glyph** — spinner (in progress) / check (done) / alert (failed)           | `ToolStatusIcon` + `interpretToolResult()` (`src/web/chat/toolResult.ts`)                            |
+| Tool rows show an **expandable one-line result summary** when the tool returns one                   | `ToolRowShell` (parent, expandable) / clamped one-liner on child rows                                |
+| The **full args + result JSON** live behind the row's inspector dialog, never inline                 | `ToolArgumentsButton` (Arguments + Result sections)                                                  |
 | **No avatars** on any variant                                                                        | —                                                                                                    |
 | Every assistant text row ships **timestamp, TTS, copy** — in that order, on one row beneath the body | `Timestamp` + `SpeakButton` + `CopyButton` (`chat-message/shared.tsx`)                               |
 | Copy button copies **raw markdown**, not rendered text; flashes check for **1.5 s**                  | `CopyButton`                                                                                         |
@@ -129,6 +132,20 @@ The only genuinely-live tool state is "the turn is still going and hasn't starte
 (`isGenerating` from `useChatLiveUpdates`). The transcript shimmers exactly the trailing tool row under that condition, matching
 `AssistantMarkdown`'s "Thinking…" sweep. A continuous shimmer on every settled tool row would be a decorative loop — forbidden by
 [motion.md](./motion.md). The label also gains a trailing `…` while active, so state is conveyed by text too, not motion alone.
+
+**Why the result is a summary + status, not inline JSON.** A tool's return value is the same category as its `args` — a per-tool-typed
+internal blob. Dumping it into the transcript competes with the assistant's reply (whose job is to _summarize_ that result) and reads as a
+wall of JSON. Instead: the `delegateTo*` tools already return `{ status, summary }` (see
+[agent-delegation.md](../architecture/agent-delegation.md)), so the row shows the tool's own `summary` as a collapsed one-liner (expandable
+on the parent pill, clamped on child rows) and derives a **status glyph** from `status` — spinner while in progress, a muted check when
+done, an alert when `status: 'failed'` (or a top-level `error`). `interpretToolResult()` (`src/web/chat/toolResult.ts`) is the single
+defensive reader; tools that don't follow the convention degrade to a neutral "done" with no inline summary. The full args + result JSON is
+always one click away in the row's inspector dialog (`ToolArgumentsButton`, Arguments + Result sections) — the inline summary is only the
+headline.
+
+**Why "in progress" isn't stored.** A persisted tool row always carries its result (the runner writes call + result together), so
+`inProgress` is not a value on the wire — it's the same turn-level signal that drives the shimmer (trailing row + `isGenerating` + no
+streaming text yet). The spinner therefore only ever shows on the live trailing row, never on historical rows. Correct by construction.
 
 **Why no per-slot type headline.** The earlier collection card printed an icon + kind label (`Date`, `Text`, `Choose one`) above every slot.
 It was redundant: the slot's own `prompt` says what it wants, and the control (calendar, OTP boxes, Yes/No pair) signals the kind. Dropping
@@ -244,6 +261,7 @@ Before writing a new chat-shaped anything, check whether one of these already co
 | `AssistantMarkdown`                                                                                     | `src/web/components/AssistantMarkdown.tsx`          | Rendering AI-produced markdown (streaming or persisted). Handles partial fences/tables via `parseIncompleteMarkdown`. External-link confirmation defaults on (visitor chat); wrap a transcript in `ExternalLinkConfirmationProvider enabled={false}` to suppress the interstitial where links are trusted (workspace assistant). |
 | `MessageRow`, `Bubble`, `Timestamp`, `CopyButton`, `SpeakButton`, `ToolArgumentsButton`, `ToolRowShell` | `src/web/components/chat-message/shared.tsx`        | Row-level atoms shared by every message variant. Reaching past these into raw JSX is a review-time reject. `ToolRowShell` is the left-aligned tool-call pill (friendly label + args + timestamp + `active` shimmer).                                                                                                             |
 | `toolDisplay` / `toolDisplayLabel`                                                                      | `src/web/chat/toolDisplay.ts`                       | Map a raw tool id to a friendly bilingual label + icon. Use anywhere a tool name is shown to a human.                                                                                                                                                                                                                            |
+| `interpretToolResult`                                                                                   | `src/web/chat/toolResult.ts`                        | Read a tool's `toolResult` JSON into `{ status, summary }` for the row's status glyph + inline summary. Defensive against arbitrary shapes.                                                                                                                                                                                      |
 | `useChatLiveUpdates`                                                                                    | `src/web/chat/useChatLiveUpdates.tsx`               | `ChatMessage`-union surfaces subscribe to `chatUpdates` here. Owns `beginTurn` / `endTurn`. Its `isGenerating` also drives the trailing tool row's shimmer via `ChatTranscript`.                                                                                                                                                 |
 | `useCompassInterviewLiveUpdates`                                                                        | `src/web/chat/useCompassInterviewLiveUpdates.tsx`   | Interview subscription — parallel to `useChatLiveUpdates` because its wire type is different.                                                                                                                                                                                                                                    |
 

@@ -94,10 +94,11 @@ The utility CSS lives in `shadcn/tailwind.css`, imported at the top of `src/styl
 | `shimmer` utility                                                                 | shipped by `shadcn/tailwind.css`               | The `Thinking…` placeholder in `AssistantMarkdown.tsx` while a streaming buffer is empty.                                                                                 |
 | `scroll-fade` utilities                                                           | shipped by `shadcn/tailwind.css`               | `scroll-fade-y` on the sidebar's chat browser list, `scroll-fade-b` on the transcript viewport (via `MessageScrollerViewport`), `scroll-fade-x` inside `AttachmentGroup`. |
 
-## Tool-row shimmer — the "working on it" signal
+## Tool-row shimmer, status, and result — the "working on it" signal
 
 Tool-call rows sit on the left rail (`MessageRow side="system"` → `justify-start`) and render through `ToolRowShell`
-(`src/web/components/chat-message/shared.tsx`): a friendly bilingual tool label (from `toolDisplay()`), the args inspector, and a timestamp.
+(`src/web/components/chat-message/shared.tsx`): a friendly bilingual tool label (from `toolDisplay()`), a **status glyph**, the args/result
+inspector, a timestamp, and — when the tool returned a summary — an **expandable one-line result summary** beneath the pill.
 
 A persisted `ChatMessageToolCall` already carries its `toolResult` — it is a record of a completed step, not a live thing. The only live
 state worth signalling is "the turn is still going and hasn't started streaming text yet." That is a **turn-level** signal, so it is not on
@@ -108,6 +109,14 @@ the wire per row: `ChatTranscript` takes an `isGenerating` prop (passed from eac
 This keeps the shimmer a live signal (matching `AssistantMarkdown`'s `Thinking…` sweep) rather than a decorative loop on every settled row —
 the distinction [`docs/styles/motion.md`](../styles/motion.md) draws. Under `prefers-reduced-motion` the shadcn `shimmer` utility degrades
 to static text automatically, and the trailing `…` still conveys the state without motion.
+
+**Result → status + summary.** `interpretToolResult(result, active)` (`src/web/chat/toolResult.ts`) collapses the row's `toolResult` into a
+`{ status, summary }` view. `active` short-circuits to `inProgress` (spinner). Otherwise it reads the `delegateTo*` convention —
+`{ status: 'completed' | 'partial' | 'needsMoreInfo' | 'noOp' | 'failed', summary }` — flagging `failed` (spinner→alert, destructive tint)
+on an explicit `status: 'failed'` or a top-level `error`, and surfacing the `summary` string inline. Anything else is a neutral "done" with
+the raw JSON available only in the inspector dialog (`ToolArgumentsButton`, Arguments + Result sections). The `toolResult` field is exposed
+on the `ChatMessageToolCall` GraphQL type and selected in the shared `ChatMessageFields` fragment, so it rides both the initial query and
+the `chatUpdates` subscription (the streaming append swaps in the persisted row with its result, keyed on the same id — no flash).
 
 ## What was intentionally not adopted
 

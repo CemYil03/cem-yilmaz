@@ -2097,6 +2097,7 @@ export interface GqlSChatMessageToolCall {
     generation?: Maybe<GqlSChatMessageGeneration>;
     parentChatMessageId?: Maybe<Scalars['ID']['output']>;
     toolName: Scalars['String']['output'];
+    toolResult?: Maybe<Scalars['JSON']['output']>;
 }
 
 export interface GqlSChatMessageUser {
@@ -4831,6 +4832,7 @@ export type GqlSChatMessageToolCallResolvers<
     generation?: Resolver<Maybe<GqlSResolversTypes['ChatMessageGeneration']>, ParentType, ContextType>;
     parentChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
     toolName?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    toolResult?: Resolver<Maybe<GqlSResolversTypes['JSON']>, ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

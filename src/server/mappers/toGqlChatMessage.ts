@@ -112,6 +112,10 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
                 // `toolArgs` is JSONB (unknown shape per tool); the GraphQL
                 // `JSON` scalar passes it through verbatim.
                 args: variant.toolArgs,
+                // The tool's return value, JSONB — passed through verbatim like
+                // `args`. Null for void tools or a call still in flight. See
+                // docs/styles/chat.md for how the UI reads it.
+                toolResult: variant.toolResult,
                 // Children of a sub-agent delegation point at the delegate
                 // row; top-level orchestrator tool calls are null. See
                 // `docs/architecture/agent-delegation.md` ("Nested tool calls").

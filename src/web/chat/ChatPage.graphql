@@ -49,6 +49,7 @@ fragment ChatMessageFields on ChatMessage {
         chatMessageId
         toolName
         args
+        toolResult
         parentChatMessageId
         createdAt
     }

@@ -90,6 +90,12 @@ type ChatMessageToolCall {
     # for top-level tool calls. See `docs/architecture/agent-delegation.md`
     # ("Nested tool calls").
     parentChatMessageId: ID
+    # The tool's return value, opaque JSON (same rationale as `args`). Null
+    # while a call is still in flight or for tools that return void. The UI
+    # reads a `{ status, summary }` convention when present (the `delegateTo*`
+    # tools follow it) to drive the row's status indicator + inline summary,
+    # and otherwise shows the raw JSON in the inspector. See docs/styles/chat.md.
+    toolResult: JSON
     generation: ChatMessageGeneration
     createdAt: DateTime!
 }
