@@ -620,7 +620,7 @@ type Mutation {
     user: UserMutation!
     # --- Visitor chat ---------------------------------------------------------
     # The three mutations below operate on `scope = 'public'` chats and
-    # dispatch to the visitor agent (`agentVisitorAboutCem`). The agent
+    # dispatch to the visitor agent (`agentVisitor`). The agent
     # factory is selected by the access path — the resolver wires it in;
     # callers do NOT pass it. Mismatched scope (e.g. an admin chatId reaching
     # this namespace) is rejected by the command.

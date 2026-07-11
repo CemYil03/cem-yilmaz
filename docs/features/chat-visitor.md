@@ -1,8 +1,8 @@
 # Visitor chat
 
-The visitor chat is the "Ask me anything" surface mounted on the public site. It's a right-side **Sheet** hosted at the root layout so any
-public page can open it — the landing-page hero composer, suggestion chips, and the chat icon in the site header all funnel into the same
-component.
+The visitor chat is the "Ask me anything" surface mounted on the public site. The assistant persona is named **Eida** (see `agentVisitor`).
+It's a right-side **Sheet** hosted at the root layout so any public page can open it — the landing-page hero composer, suggestion chips, and
+the chat icon in the site header all funnel into the same component.
 
 See also:
 
@@ -53,7 +53,7 @@ The visitor side uses `<VisitorChatComposer />` (`src/web/chat/VisitorChatCompos
 and they see the busy / sent micro-states on the input they actually typed in) and inside the sheet (empty + loaded views). The wrapper:
 
 - Pre-wires the visitor `ChatMessageCreate` mutation and its result extractor (`data.chatMessageCreate`), so the server dispatches to
-  `agentVisitorAboutCem`.
+  `agentVisitor`.
 - **Renders the rate-limit quota chip in the bottom-left addon slot, always visible.** The composer runs its own `VisitorChatQuota` query
   (`cache-and-network`) so every visitor surface that mounts it sees the current allowance — even on the first send of the day. The visible
   chip is the bare ratio (`5 / 10`); hovering on desktop or tapping on mobile pops a `HoverCard` with the full sentence ("5 of 10 messages
@@ -73,8 +73,8 @@ while a turn is generating; the empty state's own composer creates a fresh chat 
 Every `chatMessageCreate` carries a `currentPagePath` argument — the route the visitor was on when they hit Send (`/`, `/projects`,
 `/en/cv`, `/about`, …). The sheet reads it once with `useLocation().pathname` and threads it down through `<VisitorChatComposer />` →
 `<ChatComposer />`, where it rides the mutation alongside the message body. Server-side, `chatMessageCreate` forwards the value into
-`chatAssistantTurnRunDetached({ …, currentPagePath })` and the agent factory inlines it into `agentVisitorAboutCem`'s system prompt for that
-turn only. Nothing is persisted — the path is a per-turn signal.
+`chatAssistantTurnRunDetached({ …, currentPagePath })` and the agent factory inlines it into `agentVisitor`'s system prompt for that turn
+only. Nothing is persisted — the path is a per-turn signal.
 
 The motivating behaviour is "the visitor just scrolled through my projects page and asks 'tell me more'." Without the path, the agent has to
 guess; with it, the agent can anchor the answer to the route the visitor was probably reading on. The prompt explicitly tells the agent that

@@ -100,7 +100,7 @@ are also validated at the mutation `chatConfigDefaultModelSet` write site, so a 
 ## Visitor firewall
 
 The visitor mutation (`Mutation.chatMessageCreate`, public scope) also accepts `assistantOptions.modelId` at the GraphQL level (the input
-type is shared with the admin mutation), but the visitor agent (`agentVisitorAboutCem`) never reads it — it calls
+type is shared with the admin mutation), but the visitor agent (`agentVisitor`) never reads it — it calls
 `serverRuntime.ai.userConversationModel()` with no argument, getting the catalog fallback. A visitor smuggling a `modelId` therefore has
 zero effect; the field is admin-only by code, not just by schema.
 

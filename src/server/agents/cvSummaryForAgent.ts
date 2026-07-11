@@ -11,7 +11,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 //
 // The summary is German-first because the existing visitor prompt is German;
 // the agent itself replies in whatever language the user wrote in. See
-// `agentVisitorAboutCem.ts`.
+// `agentVisitor.ts`.
 export async function cvSummaryForAgent(serverRuntime: ServerRuntime): Promise<string> {
     const [experiences, educations, skills, hobbies] = await Promise.all([
         // Experience is intrinsically chronological — ongoing roles first,

@@ -18,7 +18,7 @@ import { z } from 'zod';
 // `chatMessagesAssistantInputCollection` row (assigning each slot a fresh
 // `inputId`) instead of a generic tool-call row, so the UI renders the form
 // directly. The agent loop is also configured to stop on this tool call —
-// see `agentVisitorAboutCem.stopWhen` — because the next turn-taker is the
+// see `agentVisitor.stopWhen` — because the next turn-taker is the
 // human, not the LLM.
 //
 // Schema shape: a flat object per slot with a `kind` enum, NOT a Zod

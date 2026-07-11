@@ -92,6 +92,6 @@ most ~3-5 simple emails or ~2-3 project requests in 24 hours before the chat its
 | Email-to-cem job          | `src/server/jobs/handlers/emailToCemSend.ts`                                                         |
 | OTP send job              | `src/server/jobs/handlers/projectRequestOtpSend.ts`                                                  |
 | Notify job                | `src/server/jobs/handlers/projectRequestNotifySend.ts`                                               |
-| Agent wiring + prompt     | `src/server/agents/agentVisitorAboutCem.ts`                                                          |
+| Agent wiring + prompt     | `src/server/agents/agentVisitor.ts`                                                                  |
 | `Otp` slot kind           | `src/server/agents/toolPromptUserForInput.ts` (Zod enum); GraphQL `ChatAssistantInputOtp` type       |
 | OTP UI                    | `src/web/components/base/input-otp.tsx` + render branch in `ChatMessageAssistantInputCollection.tsx` |

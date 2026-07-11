@@ -1,6 +1,6 @@
 import type { JSONValue, LanguageModelUsage, ModelMessage } from 'ai';
 import { eq } from 'drizzle-orm';
-import type { ChatAgentFactory } from '../agents/agentVisitorAboutCem';
+import type { ChatAgentFactory } from '../agents/agentVisitor';
 import { chatAssistantInputCollectionInputSchema } from '../agents/toolPromptUserForInput';
 import type { ChatAssistantInputCollectionInput } from '../agents/toolPromptUserForInput';
 import type { ChatAssistantInputSlot } from '../db/chatPayloadTypes';
@@ -300,7 +300,7 @@ interface ChatAssistantTurnRunOptions {
     serverRuntime: ServerRuntime;
     // Agent to drive this turn. Picked by the dispatching mutation
     // resolver based on the access path — visitor mutations pass
-    // `agentVisitorAboutCem`, admin mutations pass `agentPersonalAssistant`.
+    // `agentVisitor`, admin mutations pass `agentPersonalAssistant`.
     // See `docs/architecture/multi-agent-chat.md`.
     agentFactory: ChatAgentFactory;
     // Pathname the client was on when the user sent the message
@@ -501,7 +501,7 @@ async function runAgentTurn({
 
     // Suppress the trailing assistant-text row when the turn ended on a
     // `promptUserForInput` tool call. The model is coached (in
-    // `agentVisitorAboutCem.buildSystemPrompt`) to narrate briefly before
+    // `agentVisitor.buildSystemPrompt`) to narrate briefly before
     // calling the tool, and Gemini emits a few words of preamble in practice.
     // Persisting that preamble would push the freshly-inserted
     // `chatMessagesAssistantInputCollection` row out of the transcript tail,

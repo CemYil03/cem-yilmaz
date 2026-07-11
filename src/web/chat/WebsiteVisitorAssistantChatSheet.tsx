@@ -30,7 +30,7 @@ import { Button } from '../components/base/button';
 // duplicating the sheet tree. The route under `/workspace/assistant` is a
 // distinct surface that talks to the personal-assistant agent through the
 // `admin.*` namespace — this sheet uses the visitor (non-admin) GraphQL ops
-// so the server dispatches to `agentVisitorAboutCem`. See
+// so the server dispatches to `agentVisitor`. See
 // `docs/features/chat-visitor.md`.
 //
 // The sheet reads its open state from `useVisitorChat()`. The `intent`

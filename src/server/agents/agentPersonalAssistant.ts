@@ -1,5 +1,5 @@
 import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
-import type { AgentChatOptions } from './agentVisitorAboutCem';
+import type { AgentChatOptions } from './agentVisitor';
 import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 import { compassSummaryFindOne } from '../queries/compassSummaryFindOne';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';

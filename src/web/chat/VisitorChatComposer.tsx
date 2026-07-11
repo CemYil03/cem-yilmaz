@@ -11,7 +11,7 @@ import type { Locale } from '../utils/locale';
 
 // Visitor-facing chat composer. Wraps `<ChatComposer />` and pre-wires the
 // visitor `chatMessageCreate` mutation + its result extractor so the server
-// dispatches to `agentVisitorAboutCem`. Mirrors `<WorkspaceChatComposer />`
+// dispatches to `agentVisitor`. Mirrors `<WorkspaceChatComposer />`
 // in shape but with none of the admin-only controls (model dropdown,
 // approval-mode selector, file attachments).
 //

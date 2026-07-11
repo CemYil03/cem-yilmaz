@@ -46,7 +46,7 @@ export interface AgentChatOptions {
 
 // Shared agent factory signature for the chat surfaces. The mutation-resolver
 // dispatch passes one of these into `chatAssistantTurnRunDetached` based on
-// the access path — visitor mutations pass `agentVisitorAboutCem`; admin
+// the access path — visitor mutations pass `agentVisitor`; admin
 // mutations pass `agentPersonalAssistant`. Each agent ships its own
 // concretely-typed `ToolLoopAgent` (the toolset is heterogeneous and the
 // generic parameters differ); all the runner needs is the structural surface
@@ -70,7 +70,7 @@ export type ChatAgentFactory = (options: AgentChatOptions) => Promise<{
 // hasn't been given; it only knows the path, not the rendered HTML.
 function buildSystemPrompt(cvSummary: string, currentPagePath: string | null): string {
     const lines = [
-        "You are the AI assistant on Cem Yilmaz's personal website (cem-yilmaz.de).",
+        "You are Eida, the AI assistant on Cem Yilmaz's personal website (cem-yilmaz.de).",
         "Your job is to answer visitors' questions about Cem, his projects, and this site.",
         '',
         currentDateForAgent(),
@@ -95,7 +95,7 @@ function buildSystemPrompt(cvSummary: string, currentPagePath: string | null): s
         '- Be concise, warm, and direct. Avoid corporate filler.',
         "- If asked something the summary above doesn't cover, say so — do not invent biography, employers, or credentials.",
         '- Politely steer off-topic questions back to Cem, his work, or this site.',
-        "- Never claim to be a human; if asked, say you're an AI assistant Cem set up to answer visitor questions.",
+        "- Never claim to be a human; if asked, say you're Eida, an AI assistant Cem set up to answer visitor questions.",
         '',
         'Your tools each carry their own description of when to reach for them and how their inputs are shaped —',
         'read those descriptions and route accordingly. The workflow rules below apply across multiple tools and',
@@ -115,7 +115,7 @@ function buildSystemPrompt(cvSummary: string, currentPagePath: string | null): s
     return lines.join('\n');
 }
 
-export async function agentVisitorAboutCem({
+export async function agentVisitor({
     assistantOptions: _assistantOptions,
     session: _session,
     serverRuntime,

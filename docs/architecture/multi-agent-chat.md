@@ -15,7 +15,7 @@ NOTIFY/LISTEN), and the same UI primitives. They differ in **agent definition** 
 
 **Two parallel mutation namespaces.** Visitor mutations live on the top-level `Mutation` type and are guarded by the cookie session.
 Workspace mutations live on a new `AdminMutation` type, gated by `guardAdminMutation`. The agent factory used for an assistant turn is
-decided **implicitly by the access path** — the visitor namespace dispatches to `agentVisitorAboutCem`, the admin namespace dispatches to
+decided **implicitly by the access path** — the visitor namespace dispatches to `agentVisitor`, the admin namespace dispatches to
 `agentPersonalAssistant`. There is no enum field at the call boundary deciding which agent runs.
 
 **One scope discriminator on `chats`.** Each chat row carries `scope: 'public' | 'admin'`, stamped by the command that created it. The
@@ -110,7 +110,7 @@ Existing rows get `'public'` by the column default — Phase 1 only ever wrote v
 
 Replace `agentUserConversation.ts` with two siblings:
 
-- `src/server/agents/agentVisitorAboutCem.ts` — visitor system prompt, three transactional tools (`sendEmailToCem`, `submitProjectRequest`,
+- `src/server/agents/agentVisitor.ts` — visitor system prompt, three transactional tools (`sendEmailToCem`, `submitProjectRequest`,
   `verifyProjectRequestOtp`) plus `promptUserForInput`. The tools have `execute` functions whose return values land in
   `chatMessagesToolCall.toolResult` via the existing runner branch — no approval gating because the side effects are bounded by the existing
   visitor rate-limit + OTP firewall. See [features/chat-email-tools.md](../features/chat-email-tools.md).
@@ -146,7 +146,7 @@ Mutation: {
     chatMessageCreate(_, args, session) {
         return chatMessageCreate(args, session, serverRuntime, {
             scope: 'public',
-            agentFactory: agentVisitorAboutCem,
+            agentFactory: agentVisitor,
         });
     },
     // …
@@ -214,8 +214,8 @@ inside the runner. The command stamps the chat row's `scope` on insert (for new 
   operations drop the `user { … }` wrapper.
 - `Session.chat(chatId)` is removed. `Session.visitorChatFindOne(chatId)` replaces it for visitor reads (scope + session-ownership check);
   `sessionFindOne.user.admin.adminChatFindOne(chatId)` / `adminPublicChatFindOne(chatId)` for admin reads.
-- `agentUserConversation.ts` is renamed to `agentVisitorAboutCem.ts`. `agentPersonalAssistant.ts` lands as a Phase-2-stub sibling with the
-  workspace system prompt.
+- `agentUserConversation.ts` is renamed to `agentVisitor.ts` (originally landed as `agentVisitorAboutCem.ts`, later shortened once the agent
+  gained the "Eida" persona name). `agentPersonalAssistant.ts` lands as a Phase-2-stub sibling with the workspace system prompt.
 - The chat-related architecture docs (`chat.md`, `chat-persistence.md`) keep their links to this doc; the dispatch model described here
   supersedes the older `agentKind`-driven sketch.
 

@@ -47,10 +47,10 @@ matches the single-brief shape today and needs no renderer changes.
 
 ## Scope
 
-**Admin only.** The visitor agent (`agentVisitorAboutCem`) is deliberately scoped to answering about Cem and to the three transactional
-email-shaped tools. Adding web search there would turn the visitor chat from "Ask me anything about Cem" into a general-purpose chatbot,
-which dilutes the product, expands the moderation surface, and invites quota burn from anonymous traffic. If a real visitor use case emerges
-later (e.g. "find recent press about Cem"), we can revisit with a narrower, allowlisted variant.
+**Admin only.** The visitor agent (`agentVisitor`) is deliberately scoped to answering about Cem and to the three transactional email-shaped
+tools. Adding web search there would turn the visitor chat from "Ask me anything about Cem" into a general-purpose chatbot, which dilutes
+the product, expands the moderation surface, and invites quota burn from anonymous traffic. If a real visitor use case emerges later (e.g.
+"find recent press about Cem"), we can revisit with a narrower, allowlisted variant.
 
 ## Why Google's grounding tool
 
@@ -87,7 +87,7 @@ orchestrator's tool map contains only function tools. The sub-agent's tool map c
 | `src/server/agents/agentPersonalAssistant.ts`          | Registers `delegateToWebSearch: toolDelegateToWebSearch(...)` in `tools:` and teaches the system prompt when to use / when to skip it.                                                                                                                                                                                                                                                       |
 | `src/server/test/commandTestUtils.ts`                  | Stubs `webSearchTool` on the mock `ServerRuntime` so command tests keep building without hitting Gemini.                                                                                                                                                                                                                                                                                     |
 
-The visitor agent (`agentVisitorAboutCem`) is not touched.
+The visitor agent (`agentVisitor`) is not touched.
 
 ## Why wrapped in a sub-agent
 

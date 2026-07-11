@@ -20,11 +20,10 @@ loop. There is no queue, no separate session, no extra HTTP hop.
 
 ### Why in-process and not a sibling factory
 
-The two existing chat agents (`agentVisitorAboutCem`, `agentPersonalAssistant`) sit at the same level: dispatched by access path, each with
-its own `onStepEnd` plumbing, each persisting chat-message rows. Adding more siblings means every domain agent has to manage that plumbing
-too, and every cross-domain turn requires multiple top-level dispatches stitched together by the client. In-process delegation keeps the
-user-visible chat at a single turn even when several domains are touched, and the sub-agents stay small because they own no chat
-persistence.
+The two existing chat agents (`agentVisitor`, `agentPersonalAssistant`) sit at the same level: dispatched by access path, each with its own
+`onStepEnd` plumbing, each persisting chat-message rows. Adding more siblings means every domain agent has to manage that plumbing too, and
+every cross-domain turn requires multiple top-level dispatches stitched together by the client. In-process delegation keeps the user-visible
+chat at a single turn even when several domains are touched, and the sub-agents stay small because they own no chat persistence.
 
 ### What the sub-agent can and cannot do
 

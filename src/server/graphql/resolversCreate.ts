@@ -1,7 +1,7 @@
 import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
 import { ADMIN_CHAT_MODELS } from '../agents/adminChatModels';
 import { agentPersonalAssistant } from '../agents/agentPersonalAssistant';
-import { agentVisitorAboutCem } from '../agents/agentVisitorAboutCem';
+import { agentVisitor } from '../agents/agentVisitor';
 import { adminChatConfigDefaultModelSet } from '../commands/adminChatConfigDefaultModelSet';
 import { chatInputCollectionRespond } from '../commands/chatInputCollectionRespond';
 import type { ChatMutationDispatch } from '../commands/chatMessageCreate';
@@ -330,7 +330,7 @@ import type { CompassInterviewUpdateWirePayload } from './compassInterviewUpdate
 // scope and the agent factory change. Pinning these once keeps the resolver
 // wiring symmetric and makes the access-path → agent dispatch obvious.
 // See `docs/architecture/multi-agent-chat.md`.
-const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitorAboutCem };
+const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitor };
 const ADMIN_DISPATCH: ChatMutationDispatch = { scope: 'admin', agentFactory: agentPersonalAssistant };
 
 export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {

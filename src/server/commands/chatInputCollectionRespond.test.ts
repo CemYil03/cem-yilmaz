@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 
-import { agentVisitorAboutCem } from '../agents/agentVisitorAboutCem';
+import { agentVisitor } from '../agents/agentVisitor';
 import { chatMessages, chatMessagesAssistantInputCollection, chatMessagesUserInput, chats } from '../db/schema';
 import { commandSetup, testDb } from '../test/commandTestUtils';
 import type { GqlSChatAssistantOptions } from '../graphql/generated';
@@ -20,7 +20,7 @@ const streamingAssistantOptions: GqlSChatAssistantOptions = {
     requireToolCallApprovals: false,
 };
 
-const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitorAboutCem };
+const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitor };
 
 interface CollectionInputSeed {
     inputId: string;

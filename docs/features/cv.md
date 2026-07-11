@@ -193,8 +193,8 @@ is `noindex` and stays out of the sitemap.
 ### AI agent integration
 
 `src/server/agents/cvSummaryForAgent.ts` queries the four CV tables and renders a compact German markdown summary. The summary is
-re-rendered on every visitor chat turn (cheap — four indexed selects), then embedded into the system prompt for `agentVisitorAboutCem`. This
-is the deliberately-simple path; a `toolCvSearch` tool is conceivable but unnecessary for the current row count.
+re-rendered on every visitor chat turn (cheap — four indexed selects), then embedded into the system prompt for `agentVisitor`. This is the
+deliberately-simple path; a `toolCvSearch` tool is conceivable but unnecessary for the current row count.
 
 ### Identity facts (static)
 

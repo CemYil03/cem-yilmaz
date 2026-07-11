@@ -1,7 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
 import { chatMessageAppend } from './chatMessageAppend';
-import type { ChatAgentFactory } from '../agents/agentVisitorAboutCem';
+import type { ChatAgentFactory } from '../agents/agentVisitor';
 import type {
     ChatCreate,
     ChatMessage,
@@ -21,7 +21,7 @@ import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 
 // Dispatch context the resolver passes in. The mutation namespace decides the
 // values: visitor mutations pass `{ scope: 'public', agentFactory:
-// agentVisitorAboutCem }`; admin mutations pass `{ scope: 'admin',
+// agentVisitor }`; admin mutations pass `{ scope: 'admin',
 // agentFactory: agentPersonalAssistant }`. The command stamps `scope` on new
 // chats and rejects an existing `chatId` whose scope doesn't match — a stolen
 // id can't slip from one namespace to the other. See

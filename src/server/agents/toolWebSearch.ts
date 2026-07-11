@@ -14,7 +14,7 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 // `docs/features/chat-web-search.md`.
 //
 // Only `agentPersonalAssistant` (admin workspace) registers this tool. The
-// visitor agent (`agentVisitorAboutCem`) is deliberately kept narrow to
+// visitor agent (`agentVisitor`) is deliberately kept narrow to
 // answering about Cem — see the "Scope" section in
 // `docs/features/chat-web-search.md`.
 //
