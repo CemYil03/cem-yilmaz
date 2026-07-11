@@ -17,6 +17,7 @@ import type { TranscriptMessage } from './chatTranscript';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from './WorkspaceChatComposer';
 import { bucketChatsByDay } from './workspaceChatListBuckets';
+import { ExternalLinkConfirmationProvider } from '../components/AssistantMarkdown';
 import { Button } from '../components/base/button';
 import { Input } from '../components/base/input';
 import { useSidebar } from '../components/base/sidebar';
@@ -446,13 +447,19 @@ export function WorkspaceAssistantChatTranscript({
              *  the shared `ChatTranscriptShell` — every surface inherits them
              *  so a new transcript can't accidentally paint the scrollbar over
              *  the rightmost bubbles. See docs/styles/chat.md. */}
-            <ChatTranscript
-                messages={messages}
-                streamingTexts={streamingTexts}
-                onCollectionSubmit={onCollectionSubmit}
-                onApprovalRespond={onApprovalRespond}
-                jumpToLatestLabel={jumpToLatestLabel[locale]}
-            />
+            {/* The workspace assistant links only to the admin's own trusted
+             *  surfaces, so external-link confirmation is off here — see
+             *  `ExternalLinkConfirmationProvider` in `AssistantMarkdown.tsx`. */}
+            <ExternalLinkConfirmationProvider enabled={false}>
+                <ChatTranscript
+                    messages={messages}
+                    streamingTexts={streamingTexts}
+                    onCollectionSubmit={onCollectionSubmit}
+                    onApprovalRespond={onApprovalRespond}
+                    jumpToLatestLabel={jumpToLatestLabel[locale]}
+                    isGenerating={live.isGenerating}
+                />
+            </ExternalLinkConfirmationProvider>
         </div>
     );
 }

@@ -2,46 +2,16 @@
 // component, the user-input answer view, and the route's submit-flatten helper
 // all read from this file so adding a new slot kind touches one entry.
 //
-// Two registries:
 // - INPUT_VALUE_REGISTRY — keyed by `ChatAssistantInputValue.__typename`. Owns
 //   the human-readable formatter (used by `<ChatMessageUserInput>`) and the
 //   GraphQL flat-`kind` input shaper (used by the route's submit handler).
-// - INPUT_SLOT_REGISTRY — keyed by `ChatAssistantInput.__typename`. Owns the
-//   slot's display Icon + label (used by `<ChatMessageAssistantInputCollection>`).
 //
 // Drafts (the per-slot in-progress UI state) are a discriminated union keyed
 // by slot kind — see `SlotDraft` below — so each control gets a precisely
 // typed `value` without ad-hoc type guards.
 
 import { format, parseISO } from 'date-fns';
-import { CalendarIcon, CalendarRangeIcon, ClockIcon, KeyRoundIcon, ListChecksIcon, ListIcon, ToggleLeftIcon, TypeIcon } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import type { GqlCChatAssistantInput, GqlCChatAssistantInputValue, GqlCChatMessageUserInputAnswerCreate } from '../graphql/generated';
-
-// --- Slot kinds (matches `ChatAssistantInput` GraphQL union) ----------------
-
-type SlotTypename = NonNullable<GqlCChatAssistantInput['__typename']>;
-
-export interface InputSlotEntry {
-    Icon: LucideIcon;
-    label: string;
-}
-
-const INPUT_SLOT_REGISTRY: Record<SlotTypename, InputSlotEntry> = {
-    ChatAssistantInputDate: { Icon: CalendarIcon, label: 'Date' },
-    ChatAssistantInputDateRange: { Icon: CalendarRangeIcon, label: 'Date range' },
-    ChatAssistantInputDateTime: { Icon: CalendarIcon, label: 'Date & time' },
-    ChatAssistantInputTime: { Icon: ClockIcon, label: 'Time' },
-    ChatAssistantInputSingleSelect: { Icon: ListIcon, label: 'Choose one' },
-    ChatAssistantInputMultiSelect: { Icon: ListChecksIcon, label: 'Choose any' },
-    ChatAssistantInputBoolean: { Icon: ToggleLeftIcon, label: 'Yes / no' },
-    ChatAssistantInputText: { Icon: TypeIcon, label: 'Text' },
-    ChatAssistantInputOtp: { Icon: KeyRoundIcon, label: 'Verification code' },
-};
-
-export function describeInputSlot(slot: GqlCChatAssistantInput): InputSlotEntry {
-    return slot.__typename ? INPUT_SLOT_REGISTRY[slot.__typename] : INPUT_SLOT_REGISTRY.ChatAssistantInputText;
-}
+import type { GqlCChatAssistantInputValue, GqlCChatMessageUserInputAnswerCreate } from '../graphql/generated';
 
 // --- Drafts (per-slot in-progress UI state) ---------------------------------
 

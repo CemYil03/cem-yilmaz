@@ -7,6 +7,7 @@ import { toFlatAnswerInput } from '../../../web/chat/chatAssistantInputKinds';
 import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from '../../../web/chat/WorkspaceChatComposer';
+import { ExternalLinkConfirmationProvider } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import type { GqlCChatAssistantInputValue, GqlCWorkspaceChatPageQuery } from '../../../web/graphql/generated';
 import {
@@ -153,13 +154,19 @@ function WorkspaceAssistantPage({
     return (
         <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-3xl flex-col gap-4 sm:p-6 px-2">
             <div className="relative flex-1 min-h-0 min-w-0">
-                <ChatTranscript
-                    messages={messages}
-                    streamingTexts={live.streamingTexts}
-                    onCollectionSubmit={onCollectionSubmit}
-                    onApprovalRespond={onApprovalRespond}
-                    jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
-                />
+                {/* Workspace assistant links to the admin's own trusted
+                 *  surfaces, so external-link confirmation is off here — see
+                 *  `ExternalLinkConfirmationProvider` in `AssistantMarkdown.tsx`. */}
+                <ExternalLinkConfirmationProvider enabled={false}>
+                    <ChatTranscript
+                        messages={messages}
+                        streamingTexts={live.streamingTexts}
+                        onCollectionSubmit={onCollectionSubmit}
+                        onApprovalRespond={onApprovalRespond}
+                        jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
+                        isGenerating={live.isGenerating}
+                    />
+                </ExternalLinkConfirmationProvider>
             </div>
             <WorkspaceChatComposer
                 chatId={chat.chatId}

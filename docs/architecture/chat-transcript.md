@@ -94,6 +94,21 @@ The utility CSS lives in `shadcn/tailwind.css`, imported at the top of `src/styl
 | `shimmer` utility                                                                 | shipped by `shadcn/tailwind.css`               | The `Thinking…` placeholder in `AssistantMarkdown.tsx` while a streaming buffer is empty.                                                                                 |
 | `scroll-fade` utilities                                                           | shipped by `shadcn/tailwind.css`               | `scroll-fade-y` on the sidebar's chat browser list, `scroll-fade-b` on the transcript viewport (via `MessageScrollerViewport`), `scroll-fade-x` inside `AttachmentGroup`. |
 
+## Tool-row shimmer — the "working on it" signal
+
+Tool-call rows sit on the left rail (`MessageRow side="system"` → `justify-start`) and render through `ToolRowShell`
+(`src/web/components/chat-message/shared.tsx`): a friendly bilingual tool label (from `toolDisplay()`), the args inspector, and a timestamp.
+
+A persisted `ChatMessageToolCall` already carries its `toolResult` — it is a record of a completed step, not a live thing. The only live
+state worth signalling is "the turn is still going and hasn't started streaming text yet." That is a **turn-level** signal, so it is not on
+the wire per row: `ChatTranscript` takes an `isGenerating` prop (passed from each surface's `useChatLiveUpdates().isGenerating`) and, when
+`isGenerating && streamingTexts` is empty, marks the **last top-level tool-call message** `active`. `ToolRowShell` then adds the shadcn
+`shimmer` class to the label and a trailing `…`. Once a streaming text buffer opens or the turn ends, `active` drops and the pill settles.
+
+This keeps the shimmer a live signal (matching `AssistantMarkdown`'s `Thinking…` sweep) rather than a decorative loop on every settled row —
+the distinction [`docs/styles/motion.md`](../styles/motion.md) draws. Under `prefers-reduced-motion` the shadcn `shimmer` utility degrades
+to static text automatically, and the trailing `…` still conveys the state without motion.
+
 ## What was intentionally not adopted
 
 - **`Bubble`.** Assistant markdown in this app is not bubbled — the assistant text renders flush in the row so long-form markdown and code

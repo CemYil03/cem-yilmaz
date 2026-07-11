@@ -341,6 +341,7 @@ function ChatLoaded({
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
                 fetching={fetching}
+                isGenerating={live.isGenerating}
                 jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
             />
             <VisitorChatComposer
@@ -377,6 +378,7 @@ function ChatTranscript({
     onCollectionSubmit,
     onApprovalRespond,
     fetching,
+    isGenerating,
     jumpToLatestLabel,
 }: {
     chat: NonNullable<GqlCChatPageQuery['sessionFindOne']['visitorChatFindOne']>;
@@ -388,6 +390,7 @@ function ChatTranscript({
     ) => void;
     onApprovalRespond: (approvalId: string, approved: boolean, reason?: string) => void;
     fetching: boolean;
+    isGenerating: boolean;
     jumpToLatestLabel: string;
 }) {
     const allMessages = mergeTranscriptMessages(chat.messages, appendedMessages);
@@ -400,6 +403,7 @@ function ChatTranscript({
                 onApprovalRespond={onApprovalRespond}
                 jumpToLatestLabel={jumpToLatestLabel}
                 initialFetching={fetching}
+                isGenerating={isGenerating}
             />
         </div>
     );

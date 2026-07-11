@@ -6,6 +6,7 @@ import { useLocale } from '../../hooks/useLocale';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { cn } from '../../utils/cn';
 import { markdownToPlainText } from '../../utils/markdownToPlainText';
+import { toolDisplay } from '../../chat/toolDisplay';
 import { Button } from '../base/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../base/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../base/tooltip';
@@ -13,12 +14,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../base/tooltip';
 // Bits shared across the chat-message variants. Kept variant-agnostic — anything
 // specific to a single message type lives next to that variant's view file.
 
+// `system` rows (tool calls, approval request/response) sit on the left rail —
+// the same side as the assistant — so they read as the assistant's own actions
+// rather than centred "system announcements". Only `user` rows push right. See
+// docs/styles/chat.md ("Message rendering").
 export function MessageRow({ side, children }: { side: 'user' | 'assistant' | 'system'; children: React.ReactNode }) {
     return (
         <div
             data-slot="chat-message-row"
             data-side={side}
-            className={cn('flex w-full gap-3', side === 'user' && 'justify-end', side === 'system' && 'justify-center')}
+            className={cn('flex w-full gap-3', side === 'user' && 'justify-end', side === 'system' && 'justify-start')}
         >
             {children}
         </div>
@@ -36,6 +41,40 @@ export function Bubble({ tone, children }: { tone: 'user' | 'assistant'; childre
             )}
         >
             {children}
+        </div>
+    );
+}
+
+// Left-aligned pill for a single tool call. Shared by the top-level tool-call
+// row and any surface that needs to show "the assistant used a tool". While the
+// turn is still in flight (`active`), the label carries the `shimmer` sweep —
+// the same live "working on it" signal `AssistantMarkdown` uses for its
+// Thinking… placeholder, not a decorative loop (see docs/styles/motion.md).
+// Once the turn settles, the shimmer is dropped and the row reads as a record.
+export function ToolRowShell({
+    toolName,
+    args,
+    createdAt,
+    active = false,
+}: {
+    toolName: string;
+    args: unknown;
+    createdAt: string;
+    active?: boolean;
+}) {
+    const locale = useLocale();
+    const { Icon, label } = toolDisplay(toolName);
+    const text = active ? { de: `${label.de}…`, en: `${label.en}…` }[locale] : label[locale];
+    return (
+        <div
+            data-slot="chat-message-tool-call-pill"
+            data-active={active}
+            className="inline-flex items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-xs text-muted-foreground"
+        >
+            <Icon aria-hidden className="size-3.5 shrink-0" />
+            <span className={cn(active && 'shimmer')}>{text}</span>
+            <ToolArgumentsButton toolName={toolName} args={args} />
+            <Timestamp iso={createdAt} className="mt-0" />
         </div>
     );
 }

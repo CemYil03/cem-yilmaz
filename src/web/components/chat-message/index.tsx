@@ -42,6 +42,10 @@ interface ChatMessageProps {
      *  children today). See `docs/architecture/agent-delegation.md`
      *  ("Nested tool calls"). */
     children?: ReadonlyArray<GqlCChatMessage>;
+    /** True only for the trailing tool-call row while the turn is still in
+     *  flight — drives the "working on it" shimmer on that pill. Consumed only
+     *  by the `ChatMessageToolCall` branch. See docs/architecture/chat-transcript.md. */
+    activeToolCall?: boolean;
 }
 
 export function ChatMessage({
@@ -51,6 +55,7 @@ export function ChatMessage({
     onCollectionSubmit,
     onApprovalRespond,
     children,
+    activeToolCall = false,
 }: ChatMessageProps) {
     switch (message.__typename) {
         case 'ChatMessageUser':
@@ -58,7 +63,7 @@ export function ChatMessage({
         case 'ChatMessageAssistantText':
             return <ChatMessageAssistantTextView message={message} />;
         case 'ChatMessageToolCall':
-            return <ChatMessageToolCallView message={message} childMessages={children} />;
+            return <ChatMessageToolCallView message={message} childMessages={children} active={activeToolCall} />;
         case 'ChatMessageToolApprovalRequest':
             return <ChatMessageToolApprovalRequestView message={message} onRespond={onApprovalRespond} />;
         case 'ChatMessageToolApprovalResponse':

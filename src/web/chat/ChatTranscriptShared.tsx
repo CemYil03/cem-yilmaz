@@ -56,6 +56,11 @@ export interface ChatTranscriptProps {
      *  messages yet. Renders a centred spinner in place of the empty scroller
      *  so the visitor sheet's open transition doesn't flash empty. */
     initialFetching?: boolean;
+    /** True while a turn is in flight. Used to shimmer the trailing tool-call
+     *  row ("working on it") until the assistant streams text or the turn ends.
+     *  Optional — surfaces that don't pass it get no shimmer, which is correct
+     *  for a settled transcript. */
+    isGenerating?: boolean;
     /** Extra className applied to the outer `MessageScroller`. Surfaces set
      *  this to control the outer scroll container's flex / min-height rails
      *  where their layout differs. */
@@ -75,6 +80,7 @@ export function ChatTranscript({
     onApprovalRespond,
     jumpToLatestLabel,
     initialFetching = false,
+    isGenerating = false,
     className,
     viewportClassName,
 }: ChatTranscriptProps) {
@@ -87,6 +93,19 @@ export function ChatTranscript({
     const { topLevel, childrenByParentId } = partitionByParent(messages);
     const groupedMessages = groupMessagesByDate(topLevel);
     const streamingEntries = Object.entries(streamingTexts);
+
+    // The trailing tool call shimmers "working on it" only while the turn is in
+    // flight AND no streaming text has started yet — once the assistant begins
+    // emitting a reply (or the turn ends), the tool step is done and the pill
+    // settles to a static record. Keyed on the last top-level tool-call id in
+    // wire order.
+    const activeToolCallId =
+        isGenerating && streamingEntries.length === 0
+            ? topLevel.reduce<string | null>(
+                  (acc, message) => (message.__typename === 'ChatMessageToolCall' ? message.chatMessageId : acc),
+                  null,
+              )
+            : null;
 
     // Every persisted message and every in-flight streaming buffer becomes
     // its own scroll anchor — MessageScroller uses these to decide "start a
@@ -134,6 +153,7 @@ export function ChatTranscript({
                                     onCollectionSubmit={onCollectionSubmit}
                                     onApprovalRespond={approvalRespondHandler}
                                     children={children}
+                                    activeToolCall={message.chatMessageId === activeToolCallId}
                                 />
                             </MessageScrollerItem>
                         );

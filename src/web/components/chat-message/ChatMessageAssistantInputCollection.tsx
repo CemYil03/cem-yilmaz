@@ -9,7 +9,7 @@ import type {
     GqlCChatMessageUserInput,
 } from '../../graphql/generated';
 import type { DateTimeDraft, SlotDraft, SlotDraftOf } from '../../chat/chatAssistantInputKinds';
-import { describeInputSlot, formatAnswerValue, serializeSlotAnswer } from '../../chat/chatAssistantInputKinds';
+import { formatAnswerValue, serializeSlotAnswer } from '../../chat/chatAssistantInputKinds';
 import { cn } from '../../utils/cn';
 import { DATE_FNS_LOCALE } from '../../utils/dateFnsLocale';
 import { useLocale } from '../../hooks/useLocale';
@@ -56,6 +56,7 @@ export function ChatMessageAssistantInputCollectionView({
      *  empty-answers row), not through this callback. */
     onSubmit?: (collectionMessageId: string, answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>) => void;
 }) {
+    const locale = useLocale();
     const state = deriveState(userInput);
     const [drafts, setDrafts] = React.useState<SlotDrafts>({});
 
@@ -119,7 +120,7 @@ export function ChatMessageAssistantInputCollectionView({
                     {state !== 'pending' ? <CollectionAnswerSummary inputs={message.inputs} answersByInputId={answersByInputId} /> : null}
                     {state === 'pending' && message.mode !== 'StepThrough' && isInteractive && onSubmit ? (
                         <Button size="sm" onClick={() => onSubmit(message.chatMessageId, collectAnswers())} className="justify-self-start">
-                            Submit
+                            {{ de: 'Absenden', en: 'Submit' }[locale]}
                         </Button>
                     ) : null}
                     <CollectionFooter state={state} promptedAt={message.createdAt} respondedAt={userInput?.createdAt} />
@@ -179,6 +180,7 @@ function CollectionStepThrough({
     isInteractive: boolean;
     onSubmit: () => void;
 }) {
+    const locale = useLocale();
     const [stepIndex, setStepIndex] = React.useState(0);
     // Clamp on input-list changes (e.g. live update arrives mid-wizard) so
     // we don't index past the end.
@@ -216,7 +218,7 @@ function CollectionStepThrough({
     return (
         <div className="grid gap-3">
             <div role="status" aria-live="polite" className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                Step {safeIndex + 1} / {inputs.length}
+                {{ de: `Schritt ${safeIndex + 1} / ${inputs.length}`, en: `Step ${safeIndex + 1} / ${inputs.length}` }[locale]}
             </div>
             <div ref={slotRef}>
                 <ChatAssistantInputSlotView
@@ -233,18 +235,18 @@ function CollectionStepThrough({
                 // Next right).
                 <div className="flex items-center justify-end gap-2">
                     <Button type="button" size="sm" onClick={advance} className="order-3">
-                        {isLast ? 'Submit' : 'Next'}
+                        {isLast ? { de: 'Absenden', en: 'Submit' }[locale] : { de: 'Weiter', en: 'Next' }[locale]}
                         {!isLast ? <ChevronRightIcon aria-hidden /> : null}
                     </Button>
                     {!isLast ? (
                         <Button type="button" variant="outline" size="sm" onClick={advance} className="order-2">
-                            Skip
+                            {{ de: 'Überspringen', en: 'Skip' }[locale]}
                         </Button>
                     ) : null}
                     {!isFirst ? (
                         <Button type="button" variant="ghost" size="sm" onClick={goBack} className="order-1 mr-auto">
                             <ChevronLeftIcon aria-hidden />
-                            Back
+                            {{ de: 'Zurück', en: 'Back' }[locale]}
                         </Button>
                     ) : null}
                 </div>
@@ -265,12 +267,13 @@ function CollectionFooter({
     promptedAt: string;
     respondedAt: string | undefined;
 }) {
+    const locale = useLocale();
     if (state === 'pending') return <Timestamp iso={promptedAt} />;
     const iso = respondedAt ?? promptedAt;
     return (
         <div className="mt-1 flex items-center gap-1 text-[11px] opacity-70">
             {state === 'answered' ? <CheckIcon className="size-3" aria-hidden /> : null}
-            <span>{state === 'answered' ? 'Answered' : 'Skipped'}</span>
+            <span>{state === 'answered' ? { de: 'Beantwortet', en: 'Answered' }[locale] : { de: 'Übersprungen', en: 'Skipped' }[locale]}</span>
             <span aria-hidden>·</span>
             <Timestamp iso={iso} className="mt-0" />
         </div>
@@ -290,17 +293,15 @@ function ChatAssistantInputSlotView({
     draft: SlotDraft | undefined;
     onChange: (next: SlotDraft) => void;
 }) {
-    const { Icon, label } = describeInputSlot(slot);
+    // No type headline (Date / Text / Choose one…) above the control: the
+    // slot's own `prompt` already says what it wants, and the control itself
+    // (calendar, OTP boxes, Yes/No pair) signals the kind. See docs/styles/chat.md.
     return (
         <div
             data-slot="chat-assistant-input-slot"
             data-kind={slot.__typename}
             className="grid gap-2 rounded-md border bg-background/50 p-3"
         >
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Icon aria-hidden />
-                <span>{label}</span>
-            </div>
             <div className="text-sm">{slot.prompt}</div>
             <ChatAssistantInputControl slot={slot} draft={draft} onChange={onChange} />
         </div>
@@ -470,11 +471,12 @@ function MultiSelectControl({
     onChange: (next: ReadonlyArray<string>) => void;
 }) {
     const selected = React.useMemo(() => new Set(value), [value]);
+    const locale = useLocale();
     // Toggle chips beat a Radix DropdownMenu here: the option count is small,
     // chat density is tight, and selection is visible at a glance without an
     // extra open/close interaction.
     return (
-        <ul className="flex flex-wrap gap-1.5" role="group" aria-label="Choose any">
+        <ul className="flex flex-wrap gap-1.5" role="group" aria-label={{ de: 'Beliebige auswählen', en: 'Choose any' }[locale]}>
             {options.map((option) => {
                 const isSelected = selected.has(option);
                 return (
@@ -524,18 +526,35 @@ function DateTimeControl({ value, onChange }: { value: DateTimeDraft | undefined
                 value={value?.time ?? ''}
                 onChange={(event) => onChange({ date: value?.date, time: event.target.value || undefined })}
                 className="w-30"
-                aria-label="Time"
+                aria-label={{ de: 'Uhrzeit', en: 'Time' }[locale]}
             />
         </div>
     );
 }
 
 function TimeControl({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-    return <Input type="time" value={value} onChange={(event) => onChange(event.target.value)} className="w-full" aria-label="Time" />;
+    const locale = useLocale();
+    return (
+        <Input
+            type="time"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="w-full"
+            aria-label={{ de: 'Uhrzeit', en: 'Time' }[locale]}
+        />
+    );
 }
 
 function TextControl({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-    return <Textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder="Type your answer…" rows={2} />;
+    const locale = useLocale();
+    return (
+        <Textarea
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={{ de: 'Antwort eingeben…', en: 'Type your answer…' }[locale]}
+            rows={2}
+        />
+    );
 }
 
 /** Six-digit OTP entry, used for verifying ownership of an email after
@@ -546,8 +565,16 @@ function TextControl({ value, onChange }: { value: string; onChange: (next: stri
  *  enforced both visually (digit-only input mode) and at serialize time
  *  with `/^\d{6}$/`. */
 function OtpControl({ value, onChange }: { value: string; onChange: (next: string) => void }) {
+    const locale = useLocale();
     return (
-        <InputOTP maxLength={6} value={value} onChange={onChange} pattern="^[0-9]*$" inputMode="numeric" aria-label="Verification code">
+        <InputOTP
+            maxLength={6}
+            value={value}
+            onChange={onChange}
+            pattern="^[0-9]*$"
+            inputMode="numeric"
+            aria-label={{ de: 'Bestätigungscode', en: 'Verification code' }[locale]}
+        >
             <InputOTPGroup>
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
@@ -569,8 +596,9 @@ function OtpControl({ value, onChange }: { value: string; onChange: (next: strin
  *  user clicks one, both stay outlined — that's the "no draft yet" state
  *  `serializeSlotAnswer` reads as `null`. */
 function BooleanControl({ value, onChange }: { value: boolean | undefined; onChange: (next: boolean) => void }) {
+    const locale = useLocale();
     return (
-        <div className="flex gap-2" role="radiogroup" aria-label="Yes or no">
+        <div className="flex gap-2" role="radiogroup" aria-label={{ de: 'Ja oder nein', en: 'Yes or no' }[locale]}>
             <Button
                 type="button"
                 role="radio"
@@ -580,7 +608,7 @@ function BooleanControl({ value, onChange }: { value: boolean | undefined; onCha
                 className="flex-1"
                 onClick={() => onChange(true)}
             >
-                Yes
+                {{ de: 'Ja', en: 'Yes' }[locale]}
             </Button>
             <Button
                 type="button"
@@ -591,7 +619,7 @@ function BooleanControl({ value, onChange }: { value: boolean | undefined; onCha
                 className="flex-1"
                 onClick={() => onChange(false)}
             >
-                No
+                {{ de: 'Nein', en: 'No' }[locale]}
             </Button>
         </div>
     );

@@ -1,6 +1,8 @@
 import { ShieldCheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { GqlCChatMessageToolApprovalRequest } from '../../graphql/generated';
+import { useLocale } from '../../hooks/useLocale';
+import { toolDisplayLabel } from '../../chat/toolDisplay';
 import { Button } from '../base/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../base/card';
 import { Textarea } from '../base/textarea';
@@ -13,6 +15,7 @@ export function ChatMessageToolApprovalRequestView({
     message: GqlCChatMessageToolApprovalRequest;
     onRespond?: (approvalId: string, approved: boolean, reason?: string) => void;
 }) {
+    const locale = useLocale();
     // Two-step Decline: first click reveals the optional-reason textarea,
     // second click commits with `approved: false` and the typed reason (or
     // `undefined` for an empty draft). Approve stays one click — the SDK
@@ -39,7 +42,12 @@ export function ChatMessageToolApprovalRequestView({
                 <CardContent className="grid gap-2">
                     <p className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>
-                            The assistant wants to call <code className="font-mono">{message.toolName}</code>.
+                            {
+                                {
+                                    de: `Der Assistent möchte „${toolDisplayLabel(message.toolName, locale)}“ ausführen.`,
+                                    en: `The assistant wants to run “${toolDisplayLabel(message.toolName, locale)}”.`,
+                                }[locale]
+                            }
                         </span>
                         <ToolArgumentsButton toolName={message.toolName} args={message.args} />
                     </p>
