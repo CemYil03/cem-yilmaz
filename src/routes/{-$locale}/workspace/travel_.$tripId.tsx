@@ -318,7 +318,7 @@ function DayBlock({
                     <div className="flex items-baseline gap-2 flex-wrap">
                         <span className="text-sm font-semibold">{{ de: `Tag ${day.dayNumber}`, en: `Day ${day.dayNumber}` }[locale]}</span>
                         {day.date ? (
-                            <span className="text-xs text-muted-foreground tabular-nums">{formatDate(day.date, locale)}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">{formatDayDate(day.date, locale)}</span>
                         ) : null}
                         {day.title ? <span className="text-sm text-muted-foreground">· {day.title}</span> : null}
                     </div>
@@ -1105,6 +1105,17 @@ function formatDate(iso: string | null | undefined, locale: Locale): string {
     if (!iso) return '—';
     try {
         return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
+    } catch {
+        return iso;
+    }
+}
+
+// Day headers lead with the weekday name — "day N" alone gives no calendar
+// orientation, so "Mon, 5 Aug 2025" beats a bare number.
+function formatDayDate(iso: string | null | undefined, locale: Locale): string {
+    if (!iso) return '—';
+    try {
+        return format(parseISO(iso), 'EEEE, PP', { locale: DATE_FNS_LOCALE[locale] });
     } catch {
         return iso;
     }

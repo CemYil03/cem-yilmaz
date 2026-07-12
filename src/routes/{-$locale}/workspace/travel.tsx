@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
 import { CalendarDaysIcon, LuggageIcon, MapPinIcon, PencilIcon, PlaneIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
@@ -16,7 +17,7 @@ import {
     AlertDialogTitle,
 } from '../../../web/components/base/alert-dialog';
 import { Button } from '../../../web/components/base/button';
-import { DatePicker } from '../../../web/components/base/date-picker';
+import { DateRangePicker } from '../../../web/components/base/date-range-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../web/components/base/dialog';
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
@@ -75,10 +76,11 @@ const TRANSPORT_LABELS: Record<GqlCTransportMode, { de: string; en: string }> = 
     mixed: { de: 'Mehrere', en: 'Mixed' },
 };
 
-type TripTab = 'upcoming' | 'past';
-const TAB_ORDER: ReadonlyArray<TripTab> = ['upcoming', 'past'];
+type TripTab = 'current' | 'planned' | 'past';
+const TAB_ORDER: ReadonlyArray<TripTab> = ['current', 'planned', 'past'];
 const TAB_LABELS: Record<TripTab, { de: string; en: string }> = {
-    upcoming: { de: 'Anstehend', en: 'Upcoming' },
+    current: { de: 'Unterwegs', en: 'Current' },
+    planned: { de: 'Geplant', en: 'Planned' },
     past: { de: 'Vergangen', en: 'Past' },
 };
 
@@ -115,21 +117,24 @@ function TravelArea() {
     const admin = user?.admin;
     const travel = admin?.adminTravelFindOne;
 
-    const tab: TripTab = search.tab ?? 'upcoming';
+    const trips = travel?.adminTravelTripFindMany;
+    const counts = useMemo(() => (trips ? countTabs(trips) : null), [trips]);
+    // Current trips are the headline — default to them if any are underway,
+    // otherwise fall back to planned so the eye lands on something useful.
+    const defaultTab: TripTab = counts && counts.current > 0 ? 'current' : 'planned';
+    const tab: TripTab = search.tab ?? defaultTab;
     const [editing, setEditing] = useState<TripRow | 'new' | null>(null);
     const [deleting, setDeleting] = useState<TripRow | null>(null);
 
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
-    if (!travel) return null;
+    if (!travel || !trips || !counts) return null;
 
-    const filtered = travel.adminTravelTripFindMany.filter((row) => tripBelongsInTab(row, tab));
+    const filtered = trips.filter((row) => tripBelongsInTab(row, tab));
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
-            <p className="text-sm text-muted-foreground">{description[locale]}</p>
-
-            <div className="mt-10 flex flex-wrap items-end justify-between gap-4 border-b border-border/60">
-                <TabChips tab={tab} locale={locale} counts={countTabs(travel.adminTravelTripFindMany)} />
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60">
+                <TabChips tab={tab} locale={locale} counts={counts} defaultTab={defaultTab} />
                 <Button size="sm" onClick={() => setEditing('new')} className="mb-1">
                     <PlusIcon className="size-4" />
                     {{ de: 'Neue Reise', en: 'New trip' }[locale]}
@@ -154,7 +159,17 @@ function TravelArea() {
 
 // --- Tab switcher -----------------------------------------------------------
 
-function TabChips({ tab, locale, counts }: { tab: TripTab; locale: Locale; counts: Record<TripTab, number> }) {
+function TabChips({
+    tab,
+    locale,
+    counts,
+    defaultTab,
+}: {
+    tab: TripTab;
+    locale: Locale;
+    counts: Record<TripTab, number>;
+    defaultTab: TripTab;
+}) {
     return (
         <nav
             className="flex gap-1 overflow-x-auto overflow-y-hidden no-scrollbar scroll-fade-x"
@@ -167,9 +182,9 @@ function TabChips({ tab, locale, counts }: { tab: TripTab; locale: Locale; count
                         key={key}
                         to="/{-$locale}/workspace/travel"
                         from="/{-$locale}/workspace/travel"
-                        // Default tab (`upcoming`) drops the key so the
-                        // canonical URL has no `?tab=`.
-                        search={(prev) => ({ ...prev, tab: key === 'upcoming' ? undefined : key })}
+                        // The default tab drops the key so its canonical URL
+                        // has no `?tab=`.
+                        search={(prev) => ({ ...prev, tab: key === defaultTab ? undefined : key })}
                         replace
                         className={cn(
                             '-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
@@ -332,8 +347,7 @@ type FormState = {
     tripId: string | null;
     title: string;
     destination: string;
-    startsOn: Date | undefined;
-    endsOn: Date | undefined;
+    dates: DateRange | undefined;
     status: GqlCTripStatus;
     transportMode: GqlCTransportMode | 'none';
     accommodation: string;
@@ -346,8 +360,10 @@ function EditTripDialog({ initial, locale, onClose }: { initial: TripRow | null;
         tripId: initial?.tripId ?? null,
         title: initial?.title ?? '',
         destination: initial?.destination ?? '',
-        startsOn: initial?.startsOn ? parseISO(initial.startsOn) : undefined,
-        endsOn: initial?.endsOn ? parseISO(initial.endsOn) : undefined,
+        dates: {
+            from: initial?.startsOn ? parseISO(initial.startsOn) : undefined,
+            to: initial?.endsOn ? parseISO(initial.endsOn) : undefined,
+        },
         status: initial?.status ?? 'draft',
         transportMode: initial?.transportMode ?? 'none',
         accommodation: initial?.accommodation ?? '',
@@ -365,8 +381,8 @@ function EditTripDialog({ initial, locale, onClose }: { initial: TripRow | null;
                         tripId: state.tripId,
                         title: state.title.trim(),
                         destination: state.destination.trim(),
-                        startsOn: state.startsOn ? dateToIso(state.startsOn) : null,
-                        endsOn: state.endsOn ? dateToIso(state.endsOn) : null,
+                        startsOn: state.dates?.from ? dateToIso(state.dates.from) : null,
+                        endsOn: state.dates?.to ? dateToIso(state.dates.to) : null,
                         status: state.status,
                         transportMode: state.transportMode === 'none' ? null : state.transportMode,
                         accommodation: state.accommodation.trim() || null,
@@ -404,20 +420,14 @@ function EditTripDialog({ initial, locale, onClose }: { initial: TripRow | null;
                     <Field label={{ de: 'Ziel', en: 'Destination' }[locale]} required>
                         <Input value={state.destination} onChange={(e) => setState((s) => ({ ...s, destination: e.target.value }))} />
                     </Field>
-                    <Field label={{ de: 'Abreise', en: 'Departs' }[locale]}>
-                        <DatePicker
-                            value={state.startsOn}
-                            onValueChange={(d) => setState((s) => ({ ...s, startsOn: d }))}
+                    <Field label={{ de: 'Reisezeitraum', en: 'Dates' }[locale]} className="sm:col-span-2">
+                        <DateRangePicker
+                            value={state.dates}
+                            onValueChange={(range) => setState((s) => ({ ...s, dates: range }))}
                             locale={DATE_FNS_LOCALE[locale]}
                             captionLayout="dropdown"
-                        />
-                    </Field>
-                    <Field label={{ de: 'Rückkehr', en: 'Returns' }[locale]}>
-                        <DatePicker
-                            value={state.endsOn}
-                            onValueChange={(d) => setState((s) => ({ ...s, endsOn: d }))}
-                            locale={DATE_FNS_LOCALE[locale]}
-                            captionLayout="dropdown"
+                            placeholder={{ de: 'Zeitraum wählen', en: 'Pick dates' }[locale]}
+                            className="w-full"
                         />
                     </Field>
                     <Field label={{ de: 'Status', en: 'Status' }[locale]}>
@@ -550,6 +560,13 @@ function EmptyState({ locale, tab, onNew }: { locale: Locale; tab: TripTab; onNe
             </GlassCard>
         );
     }
+    if (tab === 'current') {
+        return (
+            <GlassCard className="px-6 py-10 text-center text-sm text-muted-foreground">
+                {{ de: 'Gerade keine Reise unterwegs.', en: 'No trip underway right now.' }[locale]}
+            </GlassCard>
+        );
+    }
     return (
         <GlassCard className="px-6 py-10 text-center">
             <PlaneIcon className="mx-auto size-8 text-muted-foreground/60" aria-hidden />
@@ -574,12 +591,15 @@ function EmptyState({ locale, tab, onNew }: { locale: Locale; tab: TripTab; onNe
 
 function tripBelongsInTab(trip: TripRow, tab: TripTab): boolean {
     if (tab === 'past') return trip.status === 'completed' || trip.status === 'cancelled';
-    return !(trip.status === 'completed' || trip.status === 'cancelled');
+    if (tab === 'current') return trip.status === 'active';
+    // `planned` holds everything upcoming that isn't yet underway or finished.
+    return trip.status === 'draft' || trip.status === 'planned';
 }
 
 function countTabs(trips: ReadonlyArray<TripRow>): Record<TripTab, number> {
     return {
-        upcoming: trips.filter((t) => tripBelongsInTab(t, 'upcoming')).length,
+        current: trips.filter((t) => tripBelongsInTab(t, 'current')).length,
+        planned: trips.filter((t) => tripBelongsInTab(t, 'planned')).length,
         past: trips.filter((t) => tripBelongsInTab(t, 'past')).length,
     };
 }

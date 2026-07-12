@@ -21,18 +21,21 @@ rename later.
 ## User Behavior
 
 `/workspace/travel` is the list surface. Cards show one trip each with destination, dates, status, day count, and packing progress
-(`x/y packed`). Two tabs — **Upcoming** (default) and **Past** — group by status; upcoming holds anything not `completed` / `cancelled`,
-past holds the rest. A "New trip" button opens the base-facts dialog (title, destination, dates, status, transport, accommodation, notes).
+(`x/y packed`). Three tabs — **Current** (`active`), **Planned** (`draft` / `planned`), and **Past** (`completed` / `cancelled`) — group by
+status. The default tab is **Current** whenever any trip is underway, otherwise **Planned**, so the eye always lands on something useful;
+the default tab's URL carries no `?tab=`. A "New trip" button opens the base-facts dialog (title, destination, dates as a single
+`DateRangePicker`, status, transport, accommodation, notes).
 
 `/workspace/travel/<tripId>` is the per-trip detail. Header renders the trip's facts; below it two side-by-side sections:
 
-- **Itinerary** — one collapsible block per `AdminTravelTripDay` (labeled "Day N · date · title"). Inside each day is an ordered list of
-  `AdminTravelTripActivity` rows with time, title, location, url, notes. Add / edit / delete affordances at both levels. Each activity also
-  carries a **move-to-next-day** button (calendar-arrow icon) — one click retargets the activity onto the following day, appended to its
-  tail. The button is hidden on the trip's last day (no later day to move onto). This is a client-only affordance: the detail page already
-  holds every day with its activities, so it computes the next day's tail `position` and reuses the `adminTravelTripActivitiesUpsert`
-  mutation with the new `tripDayId` — no new mutation. Because the id is kept, the server treats it as an update and honours the passed
-  `position` rather than recomputing a tail default.
+- **Itinerary** — one collapsible block per `AdminTravelTripDay` (labeled "Day N · weekday, date · title" — the day header leads with the
+  weekday name so a plan reads as calendar dates, not bare "day N" numbers). Inside each day is an ordered list of `AdminTravelTripActivity`
+  rows with time, title, location, url, notes. Add / edit / delete affordances at both levels. Each activity also carries a
+  **move-to-next-day** button (calendar-arrow icon) — one click retargets the activity onto the following day, appended to its tail. The
+  button is hidden on the trip's last day (no later day to move onto). This is a client-only affordance: the detail page already holds every
+  day with its activities, so it computes the next day's tail `position` and reuses the `adminTravelTripActivitiesUpsert` mutation with the
+  new `tripDayId` — no new mutation. Because the id is kept, the server treats it as an update and honours the passed `position` rather than
+  recomputing a tail default.
 - **Packing list** — checkbox rows grouped by free-text `category` (Documents / Dokumente, Electronics / Elektronik, …). Each row shows
   quantity when > 1 and a notes preview. Checking the box calls the `adminTravelTripPackingItemsUpsert` mutation with a one-element array
   flipping `packed`. The add/edit dialog suggests locale-matched defaults via a shadcn `Popover`-backed combobox (Documents, Electronics,
@@ -150,7 +153,8 @@ array. There is no separate singular path.
 ### Route
 
 `src/routes/{-$locale}/workspace/travel.tsx` — list surface. Loader hits `WorkspaceTravelPageDocument`; the page seeds-and-subscribes via
-`useWorkspaceTravelLiveUser`. `?tab=` in the search schema chooses upcoming vs past. `noindex: true`, not in `SITEMAP_PATHS`.
+`useWorkspaceTravelLiveUser`. `?tab=` in the search schema chooses current / planned / past; the default tab (current if any trip is
+`active`, else planned) drops the key. `noindex: true`, not in `SITEMAP_PATHS`.
 
 `src/routes/{-$locale}/workspace/travel_.$tripId.tsx` — per-trip detail. Loader hits `WorkspaceTravelDetailDocument` with `tripId` from the
 route params; the page seeds-and-subscribes via `useWorkspaceTravelDetailLiveUser(seed, tripId)`. Sections are two-column on `xl+` screens,
