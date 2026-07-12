@@ -127,8 +127,8 @@ function AboutPage() {
     const locale = useLocale();
     const data = Route.useLoaderData();
     const portraitAlt = {
-        de: 'Porträt von Cem Yilmaz',
-        en: 'Portrait of Cem Yilmaz',
+        de: 'Porträt von Cem Yilmaz, aufgenommen im September 2025 in der Elbphilharmonie in Hamburg',
+        en: 'Portrait of Cem Yilmaz, taken in September 2025 at the Elbphilharmonie in Hamburg',
     }[locale];
     // Admin-only "Workspace" entry in the header — non-admins (including
     // anonymous visitors) get `user.admin = null` and never see it. Same

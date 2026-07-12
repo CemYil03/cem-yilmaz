@@ -155,8 +155,8 @@ function HomePage() {
 
 function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: string) => void }) {
     const portraitAlt = {
-        de: 'Porträt von Cem Yilmaz',
-        en: 'Portrait of Cem Yilmaz',
+        de: 'Porträt von Cem Yilmaz, aufgenommen im September 2025 in der Elbphilharmonie in Hamburg',
+        en: 'Portrait of Cem Yilmaz, taken in September 2025 at the Elbphilharmonie in Hamburg',
     }[locale];
 
     // The hero's composer is the same `<VisitorChatComposer />` the sheet
