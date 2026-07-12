@@ -156,7 +156,10 @@ function TravelArea() {
 
 function TabChips({ tab, locale, counts }: { tab: TripTab; locale: Locale; counts: Record<TripTab, number> }) {
     return (
-        <nav className="flex gap-1 overflow-x-auto no-scrollbar scroll-fade-x" aria-label={{ de: 'Filter', en: 'Filters' }[locale]}>
+        <nav
+            className="flex gap-1 overflow-x-auto overflow-y-hidden no-scrollbar scroll-fade-x"
+            aria-label={{ de: 'Filter', en: 'Filters' }[locale]}
+        >
             {TAB_ORDER.map((key) => {
                 const isActive = tab === key;
                 return (

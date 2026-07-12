@@ -274,7 +274,7 @@ function TabStrip({ locale, active, hasPendingInterview }: { locale: Locale; act
     ];
     return (
         <nav
-            className="flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
+            className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border/60 no-scrollbar scroll-fade-x"
             aria-label={{ de: 'Kompass-Sicht', en: 'Compass view' }[locale]}
         >
             {tabs.map((t) => {

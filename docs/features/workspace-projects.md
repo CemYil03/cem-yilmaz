@@ -222,7 +222,8 @@ search param (list is the default → the key drops from the URL). This secondar
   target column (`position = max + 1`, collision-free with the single-task upsert), and dropping onto **Done** stamps `completedAt` (cleared
   when dragged back off Done). The move is optimistic locally, then reconciled by the `userUpdates` subscription via an
   `(id, status, position)` signature check. Empty columns show a dashed "Drop here" placeholder. Drag feedback is opacity + a ring on the
-  hovered column — no motion-required animation.
+  hovered column — no motion-required animation. The card stays intentionally minimal — no grip icon, no hover edit/delete buttons; a plain
+  **click (or Enter/Space) opens the inline edit form** (`role="button"`), which is where edit and delete live.
 
 ### Empty states
 

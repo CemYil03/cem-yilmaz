@@ -7,7 +7,6 @@ import {
     ExternalLinkIcon,
     FileIcon,
     FlagIcon,
-    GripVerticalIcon,
     HandshakeIcon,
     KanbanIcon,
     LayoutDashboardIcon,
@@ -422,7 +421,7 @@ function WorkspaceProjectDetail() {
              * user meets. Canonical underlined-tab pattern (see
              * `docs/conventions.md` — "Top-of-page sub-view switcher"). */}
             <nav
-                className="flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
+                className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border/60 no-scrollbar scroll-fade-x"
                 aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
             >
                 {TABS.map((t) => {
@@ -1397,7 +1396,7 @@ function TasksKanban({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskRo
     };
 
     return (
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-2 scroll-fade-x">
+        <div className="mt-4 flex gap-3 overflow-x-auto px-0.5 py-1 scroll-fade-x">
             {TASK_STATUS_ORDER.map((status) => {
                 const bucket = localTasks.filter((t) => t.status === status);
                 const isOver = overStatus === status && draggingId !== null;
@@ -1487,7 +1486,6 @@ function KanbanCard({
     onDragStart: () => void;
     onDragEnd: () => void;
 }) {
-    const [, del] = useMutation(WorkspaceProjectDetailDeleteTaskDocument);
     const [editing, setEditing] = useState(false);
 
     if (editing) {
@@ -1511,9 +1509,21 @@ function KanbanCard({
         task.dueAt ? `${{ de: 'fällig', en: 'due' }[locale]} ${format(parseISO(task.dueAt as unknown as string), 'dd.MM.')}` : null,
     ].filter(Boolean);
 
+    // The whole card is the affordance: click (or Enter/Space) opens the edit
+    // form; the card itself is draggable to move it between columns. Edit and
+    // delete live inside that form, so the kanban surface stays uncluttered.
     return (
         <div
+            role="button"
+            tabIndex={0}
             draggable
+            onClick={() => setEditing(true)}
+            onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setEditing(true);
+                }
+            }}
             onDragStart={(event) => {
                 onDragStart();
                 event.dataTransfer.effectAllowed = 'move';
@@ -1522,48 +1532,24 @@ function KanbanCard({
             }}
             onDragEnd={onDragEnd}
             aria-grabbed={isDragging}
+            aria-label={{ de: 'Aufgabe bearbeiten', en: 'Edit task' }[locale]}
             className={cn(
-                'group relative overflow-hidden rounded-lg border border-border/50 bg-background/60 pl-2 pr-2 py-2 shadow-sm transition-opacity',
+                'relative cursor-pointer overflow-hidden rounded-lg border border-border/50 bg-background/60 px-2 py-2 shadow-sm transition-[opacity,border-color] hover:border-border',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                 isDragging && 'opacity-50',
             )}
         >
             <span aria-hidden className={cn('absolute inset-y-0 left-0 w-0.5', effortBar)} />
-            <div className="flex items-start gap-1.5 pl-1.5">
-                <GripVerticalIcon
-                    className="mt-0.5 size-3.5 shrink-0 cursor-grab text-muted-foreground/50 active:cursor-grabbing"
-                    aria-hidden
-                />
-                <div className="min-w-0 flex-1">
-                    <div className={cn('text-sm', done && 'text-muted-foreground line-through')}>{task.title}</div>
-                    {meta.length > 0 || task.notes ? (
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-                            {meta.map((m, i) => (
-                                <span key={i}>{m}</span>
-                            ))}
-                            {task.notes ? <span className="line-clamp-1 max-w-full">{task.notes}</span> : null}
-                        </div>
-                    ) : null}
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                    <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
-                        onClick={() => setEditing(true)}
-                    >
-                        <PencilIcon />
-                    </Button>
-                    <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
-                        onClick={async () => {
-                            await del({ taskId: task.taskId });
-                        }}
-                    >
-                        <Trash2Icon />
-                    </Button>
-                </div>
+            <div className="pl-1.5">
+                <div className={cn('text-sm', done && 'text-muted-foreground line-through')}>{task.title}</div>
+                {meta.length > 0 || task.notes ? (
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                        {meta.map((m, i) => (
+                            <span key={i}>{m}</span>
+                        ))}
+                        {task.notes ? <span className="line-clamp-1 max-w-full">{task.notes}</span> : null}
+                    </div>
+                ) : null}
             </div>
         </div>
     );

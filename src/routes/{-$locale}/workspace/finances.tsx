@@ -318,7 +318,10 @@ function OverviewStrip({
 // See `docs/conventions.md` — "Top-of-page sub-view switcher".
 function PeriodChips({ period, locale }: { period: PeriodFilter; locale: Locale }) {
     return (
-        <nav className="flex gap-1 overflow-x-auto no-scrollbar scroll-fade-x" aria-label={{ de: 'Zeitraum', en: 'Period' }[locale]}>
+        <nav
+            className="flex gap-1 overflow-x-auto overflow-y-hidden no-scrollbar scroll-fade-x"
+            aria-label={{ de: 'Zeitraum', en: 'Period' }[locale]}
+        >
             {PERIOD_FILTERS.map((key) => {
                 const isActive = period === key;
                 const Icon = PERIOD_ICONS[key];

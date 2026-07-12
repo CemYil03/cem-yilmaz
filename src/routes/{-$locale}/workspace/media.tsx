@@ -271,7 +271,7 @@ function WorkspaceMedia() {
             <p className="text-sm text-muted-foreground">{pageDescription[locale]}</p>
 
             <nav
-                className="mt-8 flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
+                className="mt-8 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border/60 no-scrollbar scroll-fade-x"
                 aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
             >
                 {TABS.map((t) => {

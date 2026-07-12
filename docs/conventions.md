@@ -220,12 +220,14 @@ switcher affordance — don't invent segmented controls, pill chips, or dropdown
 
 Rules:
 
-- Wrapper: `<nav aria-label="Sections" className="flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x">`. Never
-  `role="tablist"` — these are section links, not ARIA tab panels. The row scrolls horizontally when the tabs outgrow a narrow viewport:
-  `overflow-x-auto` enables the scroll, `no-scrollbar` (shadcn utility — the only real one; `scrollbar-none` is **not** defined) hides the
-  bar, and `scroll-fade-x` masks the overflowing edge so it's obvious more tabs exist off-screen. This horizontal-scroll row is the default;
-  a row that carries a section action alongside the tabs (see the last rule) may `flex-wrap` inside its shared border container instead, so
-  the action stays reachable without a nested scroll region.
+- Wrapper:
+  `<nav aria-label="Sections" className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border/60 no-scrollbar scroll-fade-x">`.
+  Never `role="tablist"` — these are section links, not ARIA tab panels. The row scrolls horizontally when the tabs outgrow a narrow
+  viewport: `overflow-x-auto` enables the scroll, `overflow-y-hidden` keeps it **horizontal-only** (a non-`visible` value on one axis
+  otherwise promotes the other axis to `auto`, so the row would also scroll vertically and clip the underline), `no-scrollbar` (shadcn
+  utility — the only real one; `scrollbar-none` is **not** defined) hides the bar, and `scroll-fade-x` masks the overflowing edge so it's
+  obvious more tabs exist off-screen. This horizontal-scroll row is the default; a row that carries a section action alongside the tabs (see
+  the last rule) may `flex-wrap` inside its shared border container instead, so the action stays reachable without a nested scroll region.
 - Item: TanStack Router `<Link>` — never a bare `<button>` with imperative `navigate()`. Reload and back must Just Work.
 - Class list on each item:
   `-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors`, plus the

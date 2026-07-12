@@ -261,7 +261,7 @@ function TaxArea() {
                     <OverviewStrip year={activeYear} locale={locale} />
 
                     <nav
-                        className="mt-8 flex gap-1 overflow-x-auto no-scrollbar scroll-fade-x border-b border-border/60"
+                        className="mt-8 flex gap-1 overflow-x-auto overflow-y-hidden no-scrollbar scroll-fade-x border-b border-border/60"
                         aria-label={{ de: 'Bereich', en: 'Section' }[locale]}
                     >
                         {TABS.map((t) => {
@@ -310,7 +310,7 @@ function TaxArea() {
 function YearSwitcher({ years, activeYear, locale }: { years: ReadonlyArray<YearRow>; activeYear: number; locale: Locale }) {
     return (
         <nav
-            className="mt-8 flex gap-1 overflow-x-auto no-scrollbar scroll-fade-x"
+            className="mt-8 flex gap-1 overflow-x-auto overflow-y-hidden no-scrollbar scroll-fade-x"
             aria-label={{ de: 'Steuerjahr', en: 'Tax year' }[locale]}
         >
             {years.map((y) => {

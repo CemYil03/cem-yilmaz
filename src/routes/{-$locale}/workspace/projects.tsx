@@ -222,7 +222,7 @@ function WorkspaceProjects() {
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <nav
-                className="flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
+                className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border/60 no-scrollbar scroll-fade-x"
                 aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
             >
                 {TABS.map((t) => {
