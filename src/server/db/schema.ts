@@ -1049,7 +1049,12 @@ export const projects = pgTable(
 export type AdminProject = typeof projects.$inferSelect;
 export type AdminProjectCreate = typeof projects.$inferInsert;
 
-export const taskStatuses = ['todo', 'doing', 'done'] as const;
+// Task lifecycle. `backlog` is the not-yet-committed holding column; `blocked`
+// is work that can't progress until something external clears. Stored as a
+// plain `varchar` (not a Postgres enum), so adding a value needs no migration —
+// existing rows keep whatever string they held. UI display order lives at the
+// call sites, not here.
+export const taskStatuses = ['backlog', 'todo', 'doing', 'blocked', 'done'] as const;
 export type AdminProjectTaskStatus = (typeof taskStatuses)[number];
 
 // Weight of a task — how much focus it costs to make progress. Optional; a

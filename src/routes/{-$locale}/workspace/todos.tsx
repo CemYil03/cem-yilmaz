@@ -69,10 +69,12 @@ import { todoParse } from '../../../web/utils/todoParse';
 // is noindex and reachable only via the hub tile, the header breadcrumb,
 // or a chat deep-link (`/workspace/todos?focus=<taskId>`).
 
-const TASK_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectTaskStatus> = ['todo', 'doing', 'done'];
+const TASK_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectTaskStatus> = ['backlog', 'blocked', 'todo', 'doing', 'done'];
 const TASK_STATUS_LABELS: Record<GqlCAdminProjectTaskStatus, { de: string; en: string }> = {
+    backlog: { de: 'Backlog', en: 'Backlog' },
     todo: { de: 'Offen', en: 'To do' },
     doing: { de: 'Aktiv', en: 'Doing' },
+    blocked: { de: 'Blockiert', en: 'Blocked' },
     done: { de: 'Erledigt', en: 'Done' },
 };
 

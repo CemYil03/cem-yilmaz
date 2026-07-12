@@ -1609,7 +1609,7 @@ export type GqlSAdminProjectTaskCreate = {
 
 export type GqlSAdminProjectTaskEffort = 'deep' | 'focused' | 'quick';
 
-export type GqlSAdminProjectTaskStatus = 'doing' | 'done' | 'todo';
+export type GqlSAdminProjectTaskStatus = 'backlog' | 'blocked' | 'doing' | 'done' | 'todo';
 
 export type GqlSAdminProjectTaskWhenBucket = 'someday' | 'today' | 'waiting' | 'week';
 
@@ -5541,11 +5541,10 @@ export const GqlSAdminProjectTaskEffortSchema: z.ZodType<'deep' | 'focused' | 'q
     'quick',
 ]);
 
-export const GqlSAdminProjectTaskStatusSchema: z.ZodType<'doing' | 'done' | 'todo', 'doing' | 'done' | 'todo'> = z.enum([
-    'doing',
-    'done',
-    'todo',
-]);
+export const GqlSAdminProjectTaskStatusSchema: z.ZodType<
+    'backlog' | 'blocked' | 'doing' | 'done' | 'todo',
+    'backlog' | 'blocked' | 'doing' | 'done' | 'todo'
+> = z.enum(['backlog', 'blocked', 'doing', 'done', 'todo']);
 
 export const GqlSAdminProjectTaskWhenBucketSchema: z.ZodType<
     'someday' | 'today' | 'waiting' | 'week',

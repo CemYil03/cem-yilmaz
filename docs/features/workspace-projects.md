@@ -78,7 +78,7 @@ is admin-only and never surfaced publicly, so the `*De` / `*En` pairing the CV u
 - `taskId uuid PK`
 - `projectId uuid` FK → `AdminProject.projectId`, `ON DELETE CASCADE` — nullable for standalone todos
 - `title varchar`, `notes text`
-- `status varchar` (`todo | doing | done`), default `todo`
+- `status varchar` (`backlog | blocked | todo | doing | done`), default `todo`
 - `position int` per `(projectId, status)` bucket
 - `dueAt`, `completedAt` nullable `timestamptz`
 - `createdAt`, `updatedAt`
@@ -133,10 +133,11 @@ single-item edit passes a one-element array — there is no parallel singular pa
 
 ## Out of scope (v1)
 
-- **Drag reorder.** Cards use status select; task position adjusts via the underlying mutation when a task is created but no visual drag
-  handle. The `*Reorder` mutations exist and are tested — wiring the same drag affordance the CV page uses is a follow-up.
+- **Drag reorder on the projects board.** Project _tiles_ use a status select; project position adjusts via the underlying mutation but has
+  no visual drag handle. (Task cards on the detail route's Tasks tab **do** support drag-and-drop between status columns — see
+  [Tasks tab](#tasks-tab).) The `*Reorder` mutations exist and are tested — wiring drag on the project board is a follow-up.
 - **AI summarization** of an Inbox request before conversion. Phase-2 candidate for the personal-assistant agent.
-- **Cross-status drag** on the projects board.
+- **Cross-status drag** on the projects board (moving a _project_ between status groups by drag).
 - **Public `/projects/$id`** detail pages — separate Phase 3 deliverable.
 
 ## Detail route
@@ -146,27 +147,50 @@ The kanban board lives at `/workspace/projects`; clicking a tile opens `/workspa
 source-request backlink, task counter, total-work label, and a live-timer badge when this project owns the running timer. All other actions
 (edit / delete / start-stop timer / task management / activity log) live on the detail page.
 
-The detail route has its own search-param schema (`?tab=overview|tasks|activity|notes|links|files&focus=<id>`) and a single GraphQL query
-(`WorkspaceProjectDetail`) co-located in `projects_.$projectId.graphql`. The query mirrors the board's nested shape but adds `links` /
-`files` per project and per activity, the new offer columns (`amountCents`, `offerStatus`), and is fetched by
+The detail route has its own search-param schema (`?tab=overview|tasks|activity|notes|links|files&focus=<id>&taskView=kanban|list`) and a
+single GraphQL query (`WorkspaceProjectDetail`) co-located in `projects_.$projectId.graphql`. The query mirrors the board's nested shape but
+adds `links` / `files` per project and per activity, the new offer columns (`amountCents`, `offerStatus`), and is fetched by
 `admin.project(projectId: ID!)` — a new single-entity counterpart to `admin.projects`. The board page's own GraphQL file no longer needs to
 ship the per-project activity-edit mutations (the detail page owns those); only `adminProjectTimersStart` / `adminProjectTimersStop` and the
 project-level CRUD stayed.
 
 ### Layout
 
-The page is a two-column grid on `lg+` (`minmax(0,1fr) 320px`); both columns stack on smaller widths. A `ProjectTitleBlock` spans both
-columns at the top: large display title, status pill underneath, and the source-request chip alongside.
-
-The **left column** holds the description followed by the section-tab bar and the active tab's body, sitting flat on the page (no wrapping
-`GlassCard` — the underlined switcher spans the section, matching the workspace's canonical top-of-page pattern; see
-[conventions.md](../conventions.md#top-of-page-sub-view-switcher)). Description renders through `AssistantMarkdown`
-(`src/web/components/AssistantMarkdown.tsx`) so paragraphs, lists, and emphasis are visible — no wall of text. A ghost `Edit` button reveals
-on hover at the top-right of the description; clicking swaps the block to an in-place `Textarea` + Save / Cancel. The tab strip has six
-entries with **Overview as the default** (visiting `/workspace/projects/<id>` with no `?tab` lands there):
+The page is a **full-width single column**. The section-tab bar is the **first thing on the page** — title, status, description, and the
+timer/metadata rail all moved _inside_ the Overview tab, so the tab strip is the primary switcher and every tab body spans the full width.
+The tab strip uses the canonical underlined-tab pattern (see [conventions.md](../conventions.md#top-of-page-sub-view-switcher)). The tab
+strip has six entries with **Overview as the default** (visiting `/workspace/projects/<id>` with no `?tab` lands there):
 `overview · tasks · activity · notes · links · files`.
 
-The **right column** is a sticky rail (`lg:sticky lg:top-24`) wrapped in `GlassCard`. From top to bottom:
+### Status pill
+
+The pill is a `DropdownMenu` trigger styled per status — six color classes covering both themes (idea → muted, planning → amber, active →
+emerald, paused → secondary, done → primary, archived → muted/strikethrough). The menu items call the same `adminProjectsUpsert` mutation
+the former `Select` did (a one-element array). Source of truth lives in `PROJECT_STATUS_TINTS` at the top of the route file.
+
+### Overview tab
+
+The Overview tab is the project's **cockpit** — identity chrome plus the timer, laid out so the most-used affordances are one glance away:
+
+- **Title block** — large display title, status pill underneath (see [Status pill](#status-pill)), source-request chip alongside. Moved here
+  from the old full-width header.
+- **Description** — renders through `AssistantMarkdown` (`src/web/components/AssistantMarkdown.tsx`) so paragraphs, lists, and emphasis are
+  visible. A ghost `Edit` button reveals on hover at the top-right; clicking swaps the block to an in-place `Textarea` + Save / Cancel.
+- Below that, a two-column grid on `lg+` (`minmax(0,1fr) 320px`, stacking on mobile): the **glance column** on the left and the **timer /
+  metadata rail** on the right (`lg:sticky lg:top-24`). The rail lives **only** on Overview now — every other tab is full-width.
+
+The **glance column** surfaces only sections that have content (never a wall of empty states):
+
+- **Up next** — top 3 open tasks (todo first, then doing, sorted by `dueAt nulls last`). Clicking a row deep-links to the Tasks tab with
+  `?focus=<taskId>`.
+- **Letzte Aktivität / Recent activity** — last 5 entries with their kind icons. The header has a `Verlauf ansehen →` deep-link.
+- **Angepinnt / Pinned** — the pinned links and files chips.
+- **Notizen** — first 400 chars of `notes` rendered through `AssistantMarkdown` (clamped to 4 lines).
+
+A truly empty project shows a single welcoming card with two CTAs (`Aufgabe anlegen` / `Verlauf öffnen`) in the glance column instead of the
+sections above; the title block and rail still render.
+
+The **rail** (`ProjectRail`, wrapped in `GlassCard`), top to bottom:
 
 1. **Primary action** — full-width Start / Stop / Switch timer button. While running, the button becomes a single chip showing the live
    `HH:MM:SS` counter plus a "Stopp" affordance.
@@ -178,24 +202,27 @@ The **right column** is a sticky rail (`lg:sticky lg:top-24`) wrapped in `GlassC
 4. **Source-request panel** — only present when the project was converted from an inbox brief. Name, email (mailto), company, type, budget,
    timeline as compact label / value rows.
 
-### Status pill
+### Tasks tab
 
-The pill is a `DropdownMenu` trigger styled per status — six color classes covering both themes (idea → muted, planning → amber, active →
-emerald, paused → secondary, done → primary, archived → muted/strikethrough). The menu items call the same `adminProjectsUpsert` mutation
-the former `Select` did (a one-element array). Source of truth lives in `PROJECT_STATUS_TINTS` at the top of the route file.
+Tasks carry a five-value status, displayed left→right as `backlog · blocked · todo · doing · done`
+(`Backlog · Blockiert · Offen · Aktiv · Erledigt`). `backlog` is the not-yet-committed holding column; `blocked` is work waiting on
+something external. The enum is a plain `varchar` (see [content-model](../architecture/content-model.md)), so adding these two values needed
+no migration — only the `taskStatuses` const in `schema.ts`, the GraphQL enum, a codegen run, and the exhaustive `TASK_STATUS_*` maps in the
+detail page and the shared [todos](./workspace-todos.md) page.
 
-### Overview tab
+The tab offers **two views**, toggled by a compact list/kanban button group next to "Add task" and persisted in a `?taskView=kanban|list`
+search param (list is the default → the key drops from the URL). This secondary control is a two-button group, not another underlined
+`<nav>` — the tab strip is the page's single top-of-page switcher (see [conventions.md](../conventions.md#top-of-page-sub-view-switcher)).
 
-The Overview tab is the glance surface — it surfaces only sections that have content (never a wall of empty states):
-
-- **Up next** — top 3 open tasks (todo first, then doing, sorted by `dueAt nulls last`). Clicking a row deep-links to the Tasks tab with
-  `?focus=<taskId>`.
-- **Letzte Aktivität / Recent activity** — last 5 entries with their kind icons. The header has a `Verlauf ansehen →` deep-link.
-- **Angepinnt / Pinned** — the pinned links and files chips that used to sit above the tab strip. They now have a home; the pre-tab pinned
-  rail is gone.
-- **Notizen** — first 400 chars of `notes` rendered through `AssistantMarkdown` (clamped to 4 lines).
-
-A truly empty project gets a single welcoming card with two CTAs (`Aufgabe anlegen` / `Verlauf öffnen`) instead of all of the above.
+- **List view** (`TasksList`) — the classic status-grouped stacks, iterating all five statuses; a bucket renders only when non-empty, with a
+  colored status dot and count in its heading. Rows reuse `TaskRow` (three-state checkbox cycle, inline edit/delete).
+- **Kanban view** (`TasksKanban`) — one droppable column per status, left→right in `TASK_STATUS_ORDER`, each with a tinted header chip and
+  count. Cards are **draggable** (native HTML5 drag — same primitives as the CV reorder list in `cv.tsx`, no DnD library). Dropping a card
+  on a column moves it to that status via the existing `WorkspaceProjectDetailUpsertTask` mutation: the card appends to the end of the
+  target column (`position = max + 1`, collision-free with the single-task upsert), and dropping onto **Done** stamps `completedAt` (cleared
+  when dragged back off Done). The move is optimistic locally, then reconciled by the `userUpdates` subscription via an
+  `(id, status, position)` signature check. Empty columns show a dashed "Drop here" placeholder. Drag feedback is opacity + a ring on the
+  hovered column — no motion-required animation.
 
 ### Empty states
 
@@ -317,7 +344,9 @@ history.
 
 ## Out of scope (still v1.x)
 
-- **Drag reorder** on the kanban board.
+- **Drag reorder of the project tiles** on the projects board (moving a project between status groups by drag). Task cards on the detail
+  route's Tasks-tab kanban **are** draggable between status columns; only fine-grained _within-column_ ordering (a dropped card appends to
+  the column's end) remains a follow-up.
 - **AI summarization** of an Inbox request before conversion.
 - **Cross-status drag** on the projects board.
 - **Public `/projects/$id`** detail pages — separate Phase 3 deliverable. The workspace detail route (admin-only, noindex) is unrelated.

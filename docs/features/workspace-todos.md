@@ -180,8 +180,8 @@ other's rows, but nothing in the client asks it to.
 Read namespace (under `Admin`):
 
 - `adminStandaloneTaskFindMany: [AdminProjectTask!]!` — full list of `projectId IS NULL` rows, ordered by `position`.
-- `adminStandaloneTaskOpenCount: Int!` — `count(*)` of `projectId IS NULL AND status IN ('todo','doing')`. Drives the Todos tile badge on
-  the workspace hub.
+- `adminStandaloneTaskOpenCount: Int!` — `count(*)` of `projectId IS NULL AND status <> 'done'` (every non-done status — `backlog`, `todo`,
+  `doing`, `blocked` — counts as open). Drives the Todos tile badge on the workspace hub.
 
 Write namespace (under `AdminMutation`, gated by `guardAdminMutation`):
 

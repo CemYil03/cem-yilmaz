@@ -7,9 +7,12 @@ import {
     ExternalLinkIcon,
     FileIcon,
     FlagIcon,
+    GripVerticalIcon,
     HandshakeIcon,
+    KanbanIcon,
     LayoutDashboardIcon,
     LinkIcon,
+    ListIcon,
     ListTodoIcon,
     MailIcon,
     MoreHorizontalIcon,
@@ -148,11 +151,33 @@ const PROJECT_STATUS_TINTS: Record<GqlCAdminProjectStatus, string> = {
     archived: 'bg-muted/60 text-muted-foreground/70',
 };
 
-const TASK_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectTaskStatus> = ['todo', 'doing', 'done'];
+const TASK_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectTaskStatus> = ['backlog', 'blocked', 'todo', 'doing', 'done'];
 const TASK_STATUS_LABELS: Record<GqlCAdminProjectTaskStatus, { de: string; en: string }> = {
+    backlog: { de: 'Backlog', en: 'Backlog' },
     todo: { de: 'Offen', en: 'To do' },
     doing: { de: 'Aktiv', en: 'Doing' },
+    blocked: { de: 'Blockiert', en: 'Blocked' },
     done: { de: 'Erledigt', en: 'Done' },
+};
+
+// Column tint per task status — background + foreground in one class string,
+// mirroring PROJECT_STATUS_TINTS. Drives the kanban column header chip and the
+// list-group heading dot so a status reads as a state at a glance.
+const TASK_STATUS_TINTS: Record<GqlCAdminProjectTaskStatus, string> = {
+    backlog: 'bg-muted text-muted-foreground',
+    todo: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    doing: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    blocked: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+    done: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+};
+
+// Small status dot color used alongside a column/group label.
+const TASK_STATUS_DOTS: Record<GqlCAdminProjectTaskStatus, string> = {
+    backlog: 'bg-muted-foreground/50',
+    todo: 'bg-sky-500',
+    doing: 'bg-amber-500',
+    blocked: 'bg-rose-500',
+    done: 'bg-emerald-500',
 };
 
 // AdminProjectTask effort / when-bucket labels — kept in sync with the standalone
@@ -303,11 +328,15 @@ function formatAbsolute(iso: string, locale: Locale): string {
     return format(parseISO(iso), locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: DATE_FNS_LOCALE[locale] });
 }
 
-// URL state — `tab` selects the section, `focus` lights up a child row.
+// URL state — `tab` selects the section, `focus` lights up a child row,
+// `taskView` picks the Tasks-tab layout (list is the default → key dropped).
 const detailSearchSchema = z.object({
     tab: z.enum(TABS).optional(),
     focus: z.string().optional(),
+    taskView: z.enum(['kanban', 'list']).optional(),
 });
+
+type TaskView = 'kanban' | 'list';
 
 export const Route = createFileRoute('/{-$locale}/workspace/projects_/$projectId')({
     validateSearch: detailSearchSchema,
@@ -334,6 +363,7 @@ function WorkspaceProjectDetail() {
     const navigate = Route.useNavigate();
     const { projectId } = Route.useParams();
     const tab: DetailTab = search.tab ?? 'overview';
+    const taskView: TaskView = search.taskView ?? 'list';
 
     // Server-authoritative state: seed once from the route loader, then let
     // the `userUpdates` subscription replace it on every server push. Every
@@ -386,71 +416,59 @@ function WorkspaceProjectDetail() {
 
     return (
         <main className="mx-auto w-full max-w-8xl px-4 py-8 leading-relaxed md:px-8 md:py-10 lg:px-12 lg:py-12">
-            <ProjectTitleBlock project={project} locale={locale} />
+            {/* Tab strip at the very top — the page's primary switcher. Title,
+             * status, description, and the timer/metadata rail all live inside
+             * the Overview tab now, so the section nav is the first thing the
+             * user meets. Canonical underlined-tab pattern (see
+             * `docs/conventions.md` — "Top-of-page sub-view switcher"). */}
+            <nav
+                className="flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
+                aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
+            >
+                {TABS.map((t) => {
+                    const Icon = TAB_ICONS[t];
+                    const isActive = tab === t;
+                    return (
+                        <Link
+                            key={t}
+                            to="/{-$locale}/workspace/projects/$projectId"
+                            params={{ projectId: project.projectId }}
+                            search={(): { tab?: DetailTab } => (t === 'overview' ? {} : { tab: t })}
+                            replace
+                            className={cn(
+                                '-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                                isActive
+                                    ? 'border-primary text-foreground'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground',
+                            )}
+                            aria-current={isActive ? 'page' : undefined}
+                        >
+                            <Icon className="size-4" />
+                            {TAB_LABELS[t][locale]}
+                        </Link>
+                    );
+                })}
+            </nav>
 
-            <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-                {/* Main content column. The section switcher sits above the tab body
-                 * on the flat page background — same shape as `/workspace/inventory`
-                 * and the other workspace pages. Wrapping the switcher inside a
-                 * `GlassCard` used to leave the underline floating mid-card, which
-                 * broke the "underlined tabs span the section" convention (see
-                 * `docs/conventions.md` — "Top-of-page sub-view switcher"). */}
-                <div className="min-w-0">
-                    <ProjectDescription project={project} locale={locale} />
-
-                    <nav
-                        className="mt-6 flex gap-1 overflow-x-auto border-b border-border/60 no-scrollbar scroll-fade-x"
-                        aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
-                    >
-                        {TABS.map((t) => {
-                            const Icon = TAB_ICONS[t];
-                            const isActive = tab === t;
-                            return (
-                                <Link
-                                    key={t}
-                                    to="/{-$locale}/workspace/projects/$projectId"
-                                    params={{ projectId: project.projectId }}
-                                    search={(): { tab?: DetailTab } => (t === 'overview' ? {} : { tab: t })}
-                                    replace
-                                    className={cn(
-                                        '-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
-                                        isActive
-                                            ? 'border-primary text-foreground'
-                                            : 'border-transparent text-muted-foreground hover:text-foreground',
-                                    )}
-                                    aria-current={isActive ? 'page' : undefined}
-                                >
-                                    <Icon className="size-4" />
-                                    {TAB_LABELS[t][locale]}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-
-                    <div className="mt-6">
-                        {tab === 'overview' ? (
-                            <OverviewSection project={project} pinnedLinks={pinnedLinks} pinnedFiles={pinnedFiles} locale={locale} />
-                        ) : null}
-                        {tab === 'tasks' ? <TasksSection tasks={project.tasks} projectId={project.projectId} locale={locale} /> : null}
-                        {tab === 'activity' ? (
-                            <ActivitySection
-                                activities={project.activities}
-                                tasks={project.tasks}
-                                projectId={project.projectId}
-                                locale={locale}
-                            />
-                        ) : null}
-                        {tab === 'notes' ? <NotesSection project={project} locale={locale} /> : null}
-                        {tab === 'links' ? <LinksSection links={project.links} projectId={project.projectId} locale={locale} /> : null}
-                        {tab === 'files' ? <FilesSection files={project.files} projectId={project.projectId} locale={locale} /> : null}
-                    </div>
-                </div>
-
-                {/* Right rail — sticky on lg+, stacks under content on mobile (grid handles
-                    the stacking; the rail itself doesn't try to be sticky on mobile). */}
-                <div className="lg:sticky lg:top-24">
-                    <ProjectRail project={project} activeTimer={activeTimer} locale={locale} />
-                </div>
+            <div className="mt-6">
+                {tab === 'overview' ? (
+                    <OverviewSection
+                        project={project}
+                        activeTimer={activeTimer}
+                        pinnedLinks={pinnedLinks}
+                        pinnedFiles={pinnedFiles}
+                        locale={locale}
+                    />
+                ) : null}
+                {tab === 'tasks' ? (
+                    <TasksSection tasks={project.tasks} projectId={project.projectId} taskView={taskView} locale={locale} />
+                ) : null}
+                {tab === 'activity' ? (
+                    <ActivitySection activities={project.activities} tasks={project.tasks} projectId={project.projectId} locale={locale} />
+                ) : null}
+                {tab === 'notes' ? <NotesSection project={project} locale={locale} /> : null}
+                {tab === 'links' ? <LinksSection links={project.links} projectId={project.projectId} locale={locale} /> : null}
+                {tab === 'files' ? <FilesSection files={project.files} projectId={project.projectId} locale={locale} /> : null}
             </div>
         </main>
     );
@@ -829,11 +847,13 @@ function EmptyState({ icon: Icon, line, cta, onAction }: { icon: LucideIcon; lin
 
 function OverviewSection({
     project,
+    activeTimer,
     pinnedLinks,
     pinnedFiles,
     locale,
 }: {
     project: ProjectRow;
+    activeTimer: ActiveTimer;
     pinnedLinks: ReadonlyArray<LinkRow>;
     pinnedFiles: ReadonlyArray<FileRow>;
     locale: Locale;
@@ -857,49 +877,48 @@ function OverviewSection({
 
     const recentActivity = useMemo(() => project.activities.slice(0, 5), [project.activities]);
 
-    const isEmpty =
+    const glanceEmpty =
         upNext.length === 0 && recentActivity.length === 0 && pinnedLinks.length === 0 && pinnedFiles.length === 0 && !project.notes;
 
-    if (isEmpty) {
-        return (
-            <div className="rounded-md border border-dashed border-border/50 px-6 py-12 text-center">
-                <SparklesIcon className="mx-auto size-8 text-muted-foreground/40" aria-hidden />
-                <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
+    // The glance column — "what's the state of this project" at a look. When
+    // nothing has been captured yet it's a single welcoming card; otherwise
+    // it's the up-next / recent / pinned / notes stack.
+    const glance = glanceEmpty ? (
+        <div className="rounded-md border border-dashed border-border/50 px-6 py-12 text-center">
+            <SparklesIcon className="mx-auto size-8 text-muted-foreground/40" aria-hidden />
+            <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
+                {
                     {
-                        {
-                            de: 'Noch nichts zu zeigen. Leg eine erste Aufgabe an oder halte fest, was als nächstes ansteht.',
-                            en: "Nothing to show yet. Add a first task or jot down what's next.",
-                        }[locale]
-                    }
-                </p>
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    <Button asChild size="sm">
-                        <Link
-                            to="/{-$locale}/workspace/projects/$projectId"
-                            params={{ projectId: project.projectId }}
-                            search={{ tab: 'tasks' }}
-                            replace
-                        >
-                            <PlusIcon />
-                            {{ de: 'Aufgabe anlegen', en: 'Add a task' }[locale]}
-                        </Link>
-                    </Button>
-                    <Button asChild size="sm" variant="ghost">
-                        <Link
-                            to="/{-$locale}/workspace/projects/$projectId"
-                            params={{ projectId: project.projectId }}
-                            search={{ tab: 'activity' }}
-                            replace
-                        >
-                            {{ de: 'Verlauf öffnen', en: 'Open activity' }[locale]}
-                        </Link>
-                    </Button>
-                </div>
+                        de: 'Noch nichts zu zeigen. Leg eine erste Aufgabe an oder halte fest, was als nächstes ansteht.',
+                        en: "Nothing to show yet. Add a first task or jot down what's next.",
+                    }[locale]
+                }
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Button asChild size="sm">
+                    <Link
+                        to="/{-$locale}/workspace/projects/$projectId"
+                        params={{ projectId: project.projectId }}
+                        search={{ tab: 'tasks' }}
+                        replace
+                    >
+                        <PlusIcon />
+                        {{ de: 'Aufgabe anlegen', en: 'Add a task' }[locale]}
+                    </Link>
+                </Button>
+                <Button asChild size="sm" variant="ghost">
+                    <Link
+                        to="/{-$locale}/workspace/projects/$projectId"
+                        params={{ projectId: project.projectId }}
+                        search={{ tab: 'activity' }}
+                        replace
+                    >
+                        {{ de: 'Verlauf öffnen', en: 'Open activity' }[locale]}
+                    </Link>
+                </Button>
             </div>
-        );
-    }
-
-    return (
+        </div>
+    ) : (
         <div className="flex flex-col gap-6">
             {upNext.length > 0 ? (
                 <Reveal as="section">
@@ -970,6 +989,23 @@ function OverviewSection({
                     </div>
                 </Reveal>
             ) : null}
+        </div>
+    );
+
+    // Overview is the project's cockpit: the identity chrome (title, status,
+    // description) sits at the top, then the glance column and the timer /
+    // metadata rail sit side-by-side on lg+ and stack on smaller widths. The
+    // rail lives only here now — the page's other tabs are full-width.
+    return (
+        <div className="flex flex-col gap-6">
+            <ProjectTitleBlock project={project} locale={locale} />
+            <ProjectDescription project={project} locale={locale} />
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                <div className="min-w-0">{glance}</div>
+                <div className="lg:sticky lg:top-24">
+                    <ProjectRail project={project} activeTimer={activeTimer} locale={locale} />
+                </div>
+            </div>
         </div>
     );
 }
@@ -1196,16 +1232,62 @@ function FileChip({ file, locale }: { file: FileRow; locale: Locale }) {
 
 // --- Tasks tab ---------------------------------------------------------------
 
-function TasksSection({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskRow>; projectId: string; locale: Locale }) {
+function TasksSection({
+    tasks,
+    projectId,
+    taskView,
+    locale,
+}: {
+    tasks: ReadonlyArray<TaskRow>;
+    projectId: string;
+    taskView: TaskView;
+    locale: Locale;
+}) {
+    const navigate = Route.useNavigate();
     const [adding, setAdding] = useState(false);
+
+    const setView = (view: TaskView) => {
+        // List is the default → drop the key so the canonical URL stays clean.
+        void navigate({ search: (prev) => ({ ...prev, taskView: view === 'list' ? undefined : view }), replace: true });
+    };
+
     return (
         <section>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold">{{ de: 'Aufgaben', en: 'Tasks' }[locale]}</h2>
-                <Button size="sm" variant="ghost" onClick={() => setAdding(true)} disabled={adding}>
-                    <PlusIcon />
-                    {{ de: 'Aufgabe hinzufügen', en: 'Add task' }[locale]}
-                </Button>
+                <div className="flex items-center gap-2">
+                    {/* In-section view toggle. The top-of-page switcher is reserved for
+                     * the tab strip (see docs/conventions.md), so this secondary control
+                     * is a compact two-button group, not another underlined <nav>. */}
+                    <div
+                        className="flex items-center rounded-md border border-border/60 p-0.5"
+                        role="group"
+                        aria-label={{ de: 'Ansicht', en: 'View' }[locale]}
+                    >
+                        <Button
+                            size="icon-sm"
+                            variant={taskView === 'list' ? 'secondary' : 'ghost'}
+                            aria-label={{ de: 'Listenansicht', en: 'List view' }[locale]}
+                            aria-pressed={taskView === 'list'}
+                            onClick={() => setView('list')}
+                        >
+                            <ListIcon />
+                        </Button>
+                        <Button
+                            size="icon-sm"
+                            variant={taskView === 'kanban' ? 'secondary' : 'ghost'}
+                            aria-label={{ de: 'Kanban-Ansicht', en: 'Kanban view' }[locale]}
+                            aria-pressed={taskView === 'kanban'}
+                            onClick={() => setView('kanban')}
+                        >
+                            <KanbanIcon />
+                        </Button>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setAdding(true)} disabled={adding}>
+                        <PlusIcon />
+                        {{ de: 'Aufgabe hinzufügen', en: 'Add task' }[locale]}
+                    </Button>
+                </div>
             </div>
             {adding ? (
                 <TaskForm
@@ -1219,13 +1301,37 @@ function TasksSection({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskR
                     }}
                 />
             ) : null}
+
+            {tasks.length === 0 && !adding ? (
+                <EmptyState
+                    icon={ListTodoIcon}
+                    line={{ de: 'Was ist der nächste konkrete Schritt?', en: "What's the next concrete step?" }[locale]}
+                    cta={{ de: 'Erste Aufgabe', en: 'First task' }[locale]}
+                    onAction={() => setAdding(true)}
+                />
+            ) : taskView === 'kanban' ? (
+                <TasksKanban tasks={tasks} projectId={projectId} locale={locale} />
+            ) : (
+                <TasksList tasks={tasks} projectId={projectId} locale={locale} />
+            )}
+        </section>
+    );
+}
+
+// List view — the classic status-grouped stacks. Iterates the full 5-entry
+// status order; a bucket renders only when it has rows.
+function TasksList({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskRow>; projectId: string; locale: Locale }) {
+    return (
+        <>
             {TASK_STATUS_ORDER.map((status) => {
                 const bucket = tasks.filter((t) => t.status === status);
                 if (bucket.length === 0) return null;
                 return (
                     <div key={status} className="mt-4">
-                        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            <span aria-hidden className={cn('size-1.5 rounded-full', TASK_STATUS_DOTS[status])} />
                             {TASK_STATUS_LABELS[status][locale]}
+                            <span className="text-muted-foreground/60">· {bucket.length}</span>
                         </h3>
                         <ul className="mt-2 flex flex-col gap-1">
                             {bucket.map((task) => (
@@ -1237,15 +1343,229 @@ function TasksSection({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskR
                     </div>
                 );
             })}
-            {tasks.length === 0 && !adding ? (
-                <EmptyState
-                    icon={ListTodoIcon}
-                    line={{ de: 'Was ist der nächste konkrete Schritt?', en: "What's the next concrete step?" }[locale]}
-                    cta={{ de: 'Erste Aufgabe', en: 'First task' }[locale]}
-                    onAction={() => setAdding(true)}
+        </>
+    );
+}
+
+// Kanban view — one droppable column per status. Drag a card onto a column to
+// move it there; the card appends to the end of the target column (position =
+// global max + 1, collision-free with the single-task upsert). Native HTML5
+// drag, same primitives as the CV reorder list (`cv.tsx`) — no DnD library.
+// Local optimistic state moves the card immediately; the `userUpdates`
+// subscription then replaces it, and a signature check re-adopts the server
+// ordering.
+function TasksKanban({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskRow>; projectId: string; locale: Locale }) {
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
+    const [localTasks, setLocalTasks] = useState<ReadonlyArray<TaskRow>>(tasks);
+    const [draggingId, setDraggingId] = useState<string | null>(null);
+    const [overStatus, setOverStatus] = useState<GqlCAdminProjectTaskStatus | null>(null);
+
+    // Re-adopt the upstream ordering whenever the server's (id, status)
+    // signature changes — same cheap-string-compare trick as useReorderableList.
+    const signature = tasks.map((t) => `${t.taskId}:${t.status}:${t.position}`).join('|');
+    const lastSignatureRef = useRef(signature);
+    useEffect(() => {
+        if (lastSignatureRef.current !== signature) {
+            lastSignatureRef.current = signature;
+            setLocalTasks(tasks);
+        }
+    }, [signature, tasks]);
+
+    const move = (taskId: string, toStatus: GqlCAdminProjectTaskStatus) => {
+        const task = localTasks.find((t) => t.taskId === taskId);
+        if (!task || task.status === toStatus) return;
+        const nextPosition = localTasks.reduce((max, t) => Math.max(max, t.position), 0) + 1;
+        const completedAt = toStatus === 'done' ? (task.completedAt ?? new Date().toISOString()) : null;
+
+        // Optimistic move — reflect it locally before the round-trip.
+        setLocalTasks((prev) =>
+            prev.map((t) => (t.taskId === taskId ? { ...t, status: toStatus, position: nextPosition, completedAt } : t)),
+        );
+
+        void upsert({
+            taskId: task.taskId,
+            projectId: task.projectId,
+            title: task.title,
+            notes: task.notes,
+            status: toStatus,
+            position: nextPosition,
+            dueAt: task.dueAt,
+            completedAt,
+            effort: task.effort ?? null,
+            whenBucket: task.whenBucket ?? null,
+        });
+    };
+
+    return (
+        <div className="mt-4 flex gap-3 overflow-x-auto pb-2 scroll-fade-x">
+            {TASK_STATUS_ORDER.map((status) => {
+                const bucket = localTasks.filter((t) => t.status === status);
+                const isOver = overStatus === status && draggingId !== null;
+                return (
+                    <div
+                        key={status}
+                        onDragOver={(event) => {
+                            if (!draggingId) return;
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = 'move';
+                            if (overStatus !== status) setOverStatus(status);
+                        }}
+                        onDragLeave={(event) => {
+                            // Only clear when the cursor actually leaves the column, not when
+                            // it crosses a child element.
+                            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                                setOverStatus((prev) => (prev === status ? null : prev));
+                            }
+                        }}
+                        onDrop={(event) => {
+                            if (!draggingId) return;
+                            event.preventDefault();
+                            move(draggingId, status);
+                            setDraggingId(null);
+                            setOverStatus(null);
+                        }}
+                        className={cn(
+                            'flex w-72 shrink-0 flex-col rounded-lg border bg-card/20 transition-colors',
+                            isOver ? 'border-primary/60 bg-primary/5 ring-2 ring-primary/40' : 'border-border/50',
+                        )}
+                    >
+                        <div className="flex items-center justify-between gap-2 px-3 py-2">
+                            <span
+                                className={cn(
+                                    'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium',
+                                    TASK_STATUS_TINTS[status],
+                                )}
+                            >
+                                {TASK_STATUS_LABELS[status][locale]}
+                            </span>
+                            <span className="text-xs tabular-nums text-muted-foreground">{bucket.length}</span>
+                        </div>
+                        <ul className="flex min-h-16 flex-col gap-2 px-2 pb-2">
+                            {bucket.map((task) => (
+                                <li key={task.taskId} data-row-id={task.taskId}>
+                                    <KanbanCard
+                                        task={task}
+                                        projectId={projectId}
+                                        locale={locale}
+                                        isDragging={draggingId === task.taskId}
+                                        onDragStart={() => setDraggingId(task.taskId)}
+                                        onDragEnd={() => {
+                                            setDraggingId(null);
+                                            setOverStatus(null);
+                                        }}
+                                    />
+                                </li>
+                            ))}
+                            {bucket.length === 0 ? (
+                                <li className="rounded-md border border-dashed border-border/40 px-2 py-4 text-center text-[11px] text-muted-foreground/60">
+                                    {{ de: 'Hierher ziehen', en: 'Drop here' }[locale]}
+                                </li>
+                            ) : null}
+                        </ul>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// A single kanban card. Draggable as a whole; a grip handle signals the
+// affordance (mirrors the CV DraggableItem). Reuses the same edit / delete
+// surface as the list row via an inline TaskForm swap, but renders compactly.
+function KanbanCard({
+    task,
+    projectId,
+    locale,
+    isDragging,
+    onDragStart,
+    onDragEnd,
+}: {
+    task: TaskRow;
+    projectId: string;
+    locale: Locale;
+    isDragging: boolean;
+    onDragStart: () => void;
+    onDragEnd: () => void;
+}) {
+    const [, del] = useMutation(WorkspaceProjectDetailDeleteTaskDocument);
+    const [editing, setEditing] = useState(false);
+
+    if (editing) {
+        return (
+            <TaskForm
+                task={task}
+                projectId={projectId}
+                nextPosition={task.position}
+                locale={locale}
+                onClose={() => setEditing(false)}
+                onSaved={() => setEditing(false)}
+            />
+        );
+    }
+
+    const effortBar = task.effort ? TASK_EFFORT_BAR[task.effort] : 'bg-muted-foreground/25';
+    const done = task.status === 'done';
+    const meta = [
+        task.effort ? TASK_EFFORT_LABELS[task.effort][locale] : null,
+        task.whenBucket ? TASK_WHEN_LABELS[task.whenBucket][locale] : null,
+        task.dueAt ? `${{ de: 'fällig', en: 'due' }[locale]} ${format(parseISO(task.dueAt as unknown as string), 'dd.MM.')}` : null,
+    ].filter(Boolean);
+
+    return (
+        <div
+            draggable
+            onDragStart={(event) => {
+                onDragStart();
+                event.dataTransfer.effectAllowed = 'move';
+                // Firefox refuses to start a drag without payload data.
+                event.dataTransfer.setData('text/plain', task.taskId);
+            }}
+            onDragEnd={onDragEnd}
+            aria-grabbed={isDragging}
+            className={cn(
+                'group relative overflow-hidden rounded-lg border border-border/50 bg-background/60 pl-2 pr-2 py-2 shadow-sm transition-opacity',
+                isDragging && 'opacity-50',
+            )}
+        >
+            <span aria-hidden className={cn('absolute inset-y-0 left-0 w-0.5', effortBar)} />
+            <div className="flex items-start gap-1.5 pl-1.5">
+                <GripVerticalIcon
+                    className="mt-0.5 size-3.5 shrink-0 cursor-grab text-muted-foreground/50 active:cursor-grabbing"
+                    aria-hidden
                 />
-            ) : null}
-        </section>
+                <div className="min-w-0 flex-1">
+                    <div className={cn('text-sm', done && 'text-muted-foreground line-through')}>{task.title}</div>
+                    {meta.length > 0 || task.notes ? (
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+                            {meta.map((m, i) => (
+                                <span key={i}>{m}</span>
+                            ))}
+                            {task.notes ? <span className="line-clamp-1 max-w-full">{task.notes}</span> : null}
+                        </div>
+                    ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                        onClick={() => setEditing(true)}
+                    >
+                        <PencilIcon />
+                    </Button>
+                    <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
+                        onClick={async () => {
+                            await del({ taskId: task.taskId });
+                        }}
+                    >
+                        <Trash2Icon />
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -1280,8 +1600,9 @@ function TaskRow({ task, projectId, locale }: { task: TaskRow; projectId: string
     ].filter(Boolean);
 
     const toggle = async () => {
-        // Same three-state cycle as before, plus the completion ritual
-        // hook when we land on `done`.
+        // Checkbox advances the row: todo → doing → done → todo. Any other
+        // status (backlog / blocked) advances to todo — clicking "commits" or
+        // "unblocks" it. Landing on done fires the completion ritual.
         const next: GqlCAdminProjectTaskStatus = task.status === 'todo' ? 'doing' : task.status === 'doing' ? 'done' : 'todo';
         if (next === 'done') setCompleting(true);
         await upsert({

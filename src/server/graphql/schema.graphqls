@@ -962,8 +962,10 @@ type AdminProject {
 }
 
 enum AdminProjectTaskStatus {
+    backlog
     todo
     doing
+    blocked
     done
 }
 

@@ -32,7 +32,9 @@ const taskItemSchema = z.object({
         ),
     title: z.string().min(1).max(200).describe('AdminProjectTask title.'),
     notes: z.string().max(5000).nullish().describe('Optional longer-form notes.'),
-    status: GqlSAdminProjectTaskStatusSchema.describe('AdminProjectTask status. Use `todo` for new captures.'),
+    status: GqlSAdminProjectTaskStatusSchema.describe(
+        'AdminProjectTask status: `backlog` (not yet committed), `todo` (open), `doing` (in progress), `blocked` (waiting on something external), `done`. Use `todo` for new captures unless the user says otherwise.',
+    ),
     position: z.number().int().min(0).describe('Within-bucket ordering. For new rows pick the bucket size as the tail-append value.'),
     dueAt: z.string().nullish().describe('Optional ISO-8601 due timestamp. Omit when the user has not specified one.'),
     completedAt: z

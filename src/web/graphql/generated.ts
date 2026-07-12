@@ -1612,7 +1612,7 @@ export type GqlCAdminProjectTaskCreate = {
 
 export type GqlCAdminProjectTaskEffort = 'deep' | 'focused' | 'quick';
 
-export type GqlCAdminProjectTaskStatus = 'doing' | 'done' | 'todo';
+export type GqlCAdminProjectTaskStatus = 'backlog' | 'blocked' | 'doing' | 'done' | 'todo';
 
 export type GqlCAdminProjectTaskWhenBucket = 'someday' | 'today' | 'waiting' | 'week';
 
