@@ -1,6 +1,6 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
-import { toolTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
+import { toolAdminTravelTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
 import { toolTripActivitiesUpsert } from '../commands/adminTravelTripActivitiesUpsert';
 import { toolTripDaysDelete } from '../commands/adminTravelTripDaysDelete';
 import { toolTripDaysUpsert } from '../commands/adminTravelTripDaysUpsert';
@@ -103,7 +103,7 @@ export async function agentPersonalAssistantTravel({ session, serverRuntime, onS
             tripDaysUpsert: toolTripDaysUpsert(toolContext),
             tripDaysDelete: toolTripDaysDelete(toolContext),
             tripActivitiesUpsert: toolTripActivitiesUpsert(toolContext),
-            tripActivitiesDelete: toolTripActivitiesDelete(toolContext),
+            tripActivitiesDelete: toolAdminTravelTripActivitiesDelete(toolContext),
             tripPackingItemsUpsert: toolTripPackingItemsUpsert(toolContext),
             tripPackingItemsDelete: toolTripPackingItemsDelete(toolContext),
         },

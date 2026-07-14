@@ -31,19 +31,17 @@ export async function adminTravelTripActivitiesDelete(
     }
 }
 
-const tripActivitiesDeleteInputSchema = z.object({
-    tripActivityIds: z.array(z.uuid()).min(1).describe('Activity row ids to delete.'),
-});
-
 interface TravelAgentToolContext {
     serverRuntime: ServerRuntime;
     session: GqlSSession;
 }
 
-export function toolTripActivitiesDelete({ serverRuntime, session }: TravelAgentToolContext) {
+export function toolAdminTravelTripActivitiesDelete({ serverRuntime, session }: TravelAgentToolContext) {
     return tool({
         description: 'Delete one or more activities across trip days.',
-        inputSchema: tripActivitiesDeleteInputSchema,
+        inputSchema: z.object({
+            tripActivityIds: z.array(z.uuid()).min(1).describe('Activity row ids to delete.'),
+        }),
         execute: async (input) => {
             return adminTravelTripActivitiesDelete(requireAdminUserId(session), input.tripActivityIds, session, serverRuntime);
         },

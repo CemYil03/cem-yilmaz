@@ -101,10 +101,6 @@ export async function adminTravelTripPackingItemsUpsert(
     }
 }
 
-const toolTripPackingItemsUpsertInputSchema = z.object({
-    tripPackingItems: z.array(GqlSAdminTravelTripPackingItemInputSchema()).min(1),
-});
-
 interface TravelAgentToolContext {
     serverRuntime: ServerRuntime;
     session: GqlSSession;
@@ -117,7 +113,9 @@ export function toolTripPackingItemsUpsert({ serverRuntime, session }: TravelAge
             'updated; every row without one is inserted. Also the "mark X as packed / unpacked" surface — pass',
             'the existing row plus `packed: true|false` in a one-element array.',
         ].join(' '),
-        inputSchema: toolTripPackingItemsUpsertInputSchema,
+        inputSchema: z.object({
+            tripPackingItems: z.array(GqlSAdminTravelTripPackingItemInputSchema()).min(1),
+        }),
         execute: async (rawInput) => {
             const inputs = rawInput.tripPackingItems as GqlSAdminTravelTripPackingItemInput[];
             return adminTravelTripPackingItemsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);

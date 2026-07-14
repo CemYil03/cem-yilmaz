@@ -102,10 +102,6 @@ export async function adminTravelTripActivitiesUpsert(
     }
 }
 
-const toolTripActivitiesUpsertInputSchema = z.object({
-    tripActivities: z.array(GqlSAdminTravelTripActivityInputSchema()).min(1),
-});
-
 interface TravelAgentToolContext {
     serverRuntime: ServerRuntime;
     session: GqlSSession;
@@ -119,7 +115,9 @@ export function toolTripActivitiesUpsert({ serverRuntime, session }: TravelAgent
             'updated; every row without one is inserted. Times are wall-clock strings `HH:MM` / `HH:MM:SS` in',
             'the local time at the destination — never a timezone offset.',
         ].join(' '),
-        inputSchema: toolTripActivitiesUpsertInputSchema,
+        inputSchema: z.object({
+            tripActivities: z.array(GqlSAdminTravelTripActivityInputSchema()).min(1),
+        }),
         execute: async (rawInput) => {
             const inputs = rawInput.tripActivities as GqlSAdminTravelTripActivityInput[];
             return adminTravelTripActivitiesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);

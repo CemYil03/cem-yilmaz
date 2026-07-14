@@ -34,13 +34,6 @@ export async function adminTravelTripsDelete(
     }
 }
 
-const tripsDeleteInputSchema = z.object({
-    tripIds: z
-        .array(z.uuid())
-        .min(1)
-        .describe('Trip row ids to delete. FK cascade removes each trip’s days, activities, and packing items.'),
-});
-
 interface TravelAgentToolContext {
     serverRuntime: ServerRuntime;
     session: GqlSSession;
@@ -49,7 +42,12 @@ interface TravelAgentToolContext {
 export function toolTripsDelete({ serverRuntime, session }: TravelAgentToolContext) {
     return tool({
         description: 'Permanently delete one or more trips and everything under them. Use only when Cem explicitly says to delete.',
-        inputSchema: tripsDeleteInputSchema,
+        inputSchema: z.object({
+            tripIds: z
+                .array(z.uuid())
+                .min(1)
+                .describe('Trip row ids to delete. FK cascade removes each trip’s days, activities, and packing items.'),
+        }),
         execute: async (input) => {
             return adminTravelTripsDelete(requireAdminUserId(session), input.tripIds, session, serverRuntime);
         },

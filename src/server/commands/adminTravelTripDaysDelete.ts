@@ -31,10 +31,6 @@ export async function adminTravelTripDaysDelete(
     }
 }
 
-const tripDaysDeleteInputSchema = z.object({
-    tripDayIds: z.array(z.uuid()).min(1).describe('Trip-day row ids to delete. Cascade removes the activities on those days.'),
-});
-
 interface TravelAgentToolContext {
     serverRuntime: ServerRuntime;
     session: GqlSSession;
@@ -43,7 +39,9 @@ interface TravelAgentToolContext {
 export function toolTripDaysDelete({ serverRuntime, session }: TravelAgentToolContext) {
     return tool({
         description: 'Delete one or more days of a trip. Activities on those days cascade.',
-        inputSchema: tripDaysDeleteInputSchema,
+        inputSchema: z.object({
+            tripDayIds: z.array(z.uuid()).min(1).describe('Trip-day row ids to delete. Cascade removes the activities on those days.'),
+        }),
         execute: async (input) => {
             return adminTravelTripDaysDelete(requireAdminUserId(session), input.tripDayIds, session, serverRuntime);
         },

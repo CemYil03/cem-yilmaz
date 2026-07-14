@@ -68,10 +68,6 @@ export async function adminTravelTripsUpsert(
     }
 }
 
-const toolTripsUpsertInputSchema = z.object({
-    trips: z.array(GqlSAdminTravelTripInputSchema()).min(1),
-});
-
 interface TravelAgentToolContext {
     serverRuntime: ServerRuntime;
     session: GqlSSession;
@@ -86,7 +82,9 @@ export function toolTripsUpsert({ serverRuntime, session }: TravelAgentToolConte
             'in input order — the id of every row you touched, ready to use as parent ids when calling',
             '`tripDaysUpsert` / `tripPackingItemsUpsert` in the same turn.',
         ].join(' '),
-        inputSchema: toolTripsUpsertInputSchema,
+        inputSchema: z.object({
+            trips: z.array(GqlSAdminTravelTripInputSchema()).min(1),
+        }),
         execute: async (rawInput) => {
             const inputs = rawInput.trips as GqlSAdminTravelTripInput[];
             return adminTravelTripsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);

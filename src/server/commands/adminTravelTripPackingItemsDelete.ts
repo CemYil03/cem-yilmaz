@@ -31,10 +31,6 @@ export async function adminTravelTripPackingItemsDelete(
     }
 }
 
-const tripPackingItemsDeleteInputSchema = z.object({
-    tripPackingItemIds: z.array(z.uuid()).min(1).describe('Packing-item row ids to delete.'),
-});
-
 interface TravelAgentToolContext {
     serverRuntime: ServerRuntime;
     session: GqlSSession;
@@ -43,7 +39,9 @@ interface TravelAgentToolContext {
 export function toolTripPackingItemsDelete({ serverRuntime, session }: TravelAgentToolContext) {
     return tool({
         description: 'Delete one or more packing-list items from a trip.',
-        inputSchema: tripPackingItemsDeleteInputSchema,
+        inputSchema: z.object({
+            tripPackingItemIds: z.array(z.uuid()).min(1).describe('Packing-item row ids to delete.'),
+        }),
         execute: async (input) => {
             return adminTravelTripPackingItemsDelete(requireAdminUserId(session), input.tripPackingItemIds, session, serverRuntime);
         },
