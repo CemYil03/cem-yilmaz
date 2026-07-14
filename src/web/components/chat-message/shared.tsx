@@ -101,7 +101,7 @@ export function ToolRowShell({
                 data-slot="chat-message-tool-call-pill"
                 data-active={active}
                 data-status={status}
-                className="inline-flex max-w-full items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-xs text-muted-foreground"
+                className="group/tool-row inline-flex max-w-full items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-xs text-muted-foreground"
             >
                 <Icon aria-hidden className="size-3.5 shrink-0" />
                 <span className={cn('truncate', active && 'shimmer')}>{text}</span>
@@ -325,7 +325,7 @@ export function ToolArgumentsButton({ toolName, args, result }: { toolName: stri
                             variant="ghost"
                             size="icon-xs"
                             aria-label={openLabel}
-                            className="opacity-70 hover:opacity-100"
+                            className="opacity-70 transition-opacity hover:opacity-100 pointer-fine:opacity-0 pointer-fine:group-hover/tool-row:opacity-70 pointer-fine:group-hover/tool-row:hover:opacity-100 pointer-fine:focus-visible:opacity-100"
                         >
                             <BracesIcon aria-hidden />
                         </Button>

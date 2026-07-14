@@ -10,7 +10,9 @@ import type { GqlCChatUpdatesSubscription } from '../graphql/generated';
 // - `isGenerating` — true while a turn is in flight; the composer should
 //   treat this as "lock me until the server signals TurnEnded".
 // - `appendedMessages` — every `ChatUpdateMessageAppended` that has arrived
-//   for the active turn, deduped by `chatMessageId`. Survives the
+//   for the active turn, keyed by `chatMessageId` (a republished id — e.g.
+//   a delegate row swapping its `toolResult: null` for the settled batch —
+//   replaces the earlier copy in place rather than being dropped). Survives the
 //   empty→loaded route handoff because the listener mounts inside the hook,
 //   above the page-shape components that swap out. Cleared whenever the
 //   surface transitions away from a previously-defined chatId — otherwise
@@ -80,7 +82,20 @@ export function useChatLiveUpdates(chatId: string | undefined): ChatLiveUpdates 
     const handleUpdate = useCallback((update: ChatUpdate) => {
         if (update.__typename === 'ChatUpdateMessageAppended') {
             const incoming = update.message;
-            setAppendedMessages((prev) => (prev.some((m) => m.chatMessageId === incoming.chatMessageId) ? prev : [...prev, incoming]));
+            // Upsert by id, don't ignore repeats. A delegate tool
+            // (`delegateToWebSearch`, `delegateToProjects`, …) pre-writes its
+            // tool-call row with `toolResult: null`, then republishes the same
+            // id once the sub-agent batch settles — that second publish carries
+            // the real result. Replacing in place lets the completed card swap
+            // in live; a plain "already seen → drop" left the null-result row
+            // stuck until a page reload (see docs/architecture/agent-delegation.md).
+            setAppendedMessages((prev) => {
+                const index = prev.findIndex((m) => m.chatMessageId === incoming.chatMessageId);
+                if (index === -1) return [...prev, incoming];
+                const next = prev.slice();
+                next[index] = incoming;
+                return next;
+            });
             // Drop any streaming row whose id matches the persisted row — the
             // assistant text just arrived in its final form.
             if (incoming.__typename === 'ChatMessageAssistantText') {

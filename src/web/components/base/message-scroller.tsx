@@ -59,7 +59,16 @@ function MessageScrollerItem({ className, scrollAnchor = false, ...props }: Reac
         <MessageScrollerPrimitive.Item
             data-slot="message-scroller-item"
             scrollAnchor={scrollAnchor}
-            className={cn('min-w-0 shrink-0 [contain-intrinsic-size:auto_10rem] [content-visibility:auto]', className)}
+            // `content-visibility:auto` skips rendering off-screen rows, but it
+            // also forces `contain:paint` while the row IS on screen — which
+            // clips every descendant to the item box. Without room to bleed,
+            // card shadows (`shadow-sm`) and outset focus rings (`ring-[3px]`)
+            // get sheared at the edge. `p-1` opens 4px of paint room inside the
+            // clip edge; `-my-1` cancels it on the scroll axis so the parent's
+            // `gap` between turns stays exact. The horizontal 4px is left as a
+            // plain inset (no negative margin) so the item can't grow wider than
+            // the viewport and trip its overflow-x.
+            className={cn('min-w-0 shrink-0 -my-1 p-1 [contain-intrinsic-size:auto_10rem] [content-visibility:auto]', className)}
             {...props}
         />
     );

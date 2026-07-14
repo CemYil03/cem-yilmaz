@@ -67,7 +67,7 @@ function ChildToolRow({ child }: { child: GqlCChatMessageToolCall }) {
     const { status, summary } = interpretToolResult(child.toolResult, false);
     return (
         <li className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-            <div className="inline-flex max-w-full items-center gap-2">
+            <div className="group/tool-row inline-flex max-w-full items-center gap-2">
                 <Icon aria-hidden className="size-3 shrink-0" />
                 <span className="truncate">{label[locale]}</span>
                 <ToolStatusIcon status={status} className="size-3 shrink-0" />

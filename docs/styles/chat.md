@@ -143,6 +143,13 @@ defensive reader; tools that don't follow the convention degrade to a neutral "d
 always one click away in the row's inspector dialog (`ToolArgumentsButton`, Arguments + Result sections) — the inline summary is only the
 headline.
 
+**Why the inspector button is hover-only on desktop.** The braces "Show details" button (`ToolArgumentsButton`) is a power-user affordance,
+not a primary action — the inline summary + status glyph already tell the visitor what happened. On fine-pointer (desktop) devices it stays
+hidden (`pointer-fine:opacity-0`) until the row is hovered or the button is keyboard-focused, so the tool pill reads as a calm record rather
+than a cluster of controls. On touch (coarse-pointer) devices it's always visible — hover-only actions are hostile with no pointer, the same
+rule that keeps timestamp + TTS + copy always visible. The reveal is driven by a `group/tool-row` on each row (the top-level pill in
+`ToolRowShell` and the child row in `ChildToolRow`).
+
 **Why "in progress" isn't stored.** A persisted tool row always carries its result (the runner writes call + result together), so
 `inProgress` is not a value on the wire — it's the same turn-level signal that drives the shimmer (trailing row + `isGenerating` + no
 streaming text yet). The spinner therefore only ever shows on the live trailing row, never on historical rows. Correct by construction.
@@ -289,6 +296,11 @@ The list below names things that are tempting but wrong here. They are not allow
 - **Composer that doesn't wrap `MessageComposer`.** Raw `<textarea>` inside a chat surface is always a review-time reject.
 - **Per-surface `viewportClassName` that redeclares `scrollbar-gutter:stable`.** The shell already reserves the lane. Redeclaring it in
   every surface is how the deep-link route silently dropped the rule and painted the scrollbar over a bubble in the first place.
+- **Dropping the `-my-1 p-1` bleed room on `MessageScrollerItem`.** Each row carries `content-visibility:auto`, which forces `contain:paint`
+  while on screen — that clips every descendant to the item box, shearing card shadows (`shadow-sm`) and outset focus rings (`ring-[3px]`)
+  at the edge. `p-1` opens 4px of paint room inside the clip edge; `-my-1` cancels it on the scroll axis so the documented `gap-4` between
+  turns stays exact (horizontal stays a plain inset so the item can't grow past the viewport and trip its overflow-x). Removing it re-clips
+  every card-based row (input collections, approval requests) and every focus ring.
 
 ## How to add a new chat surface
 
