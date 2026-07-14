@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { items } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -30,4 +33,31 @@ export async function adminInventoryItemsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolInventoryItemsDeleteInputSchema = z.object({
+    itemIds: z
+        .array(z.uuid())
+        .min(1)
+        .describe('AdminInventoryItem row ids to permanently delete (also removes their valuations, service log, and file links).'),
+});
+
+interface InventoryAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolInventoryItemsDelete({ serverRuntime, session }: InventoryAgentToolContext) {
+    return tool({
+        description: [
+            'Permanently delete one or more items along with their valuation history, service log, and file links.',
+            'Use only when Cem explicitly says to delete / remove an item for good. If he sold / gave away / lost the',
+            'item but wants the history kept, prefer setting `disposalState` via `inventoryItemsUpsert` instead — that',
+            'keeps the row so material net worth stays reconcilable.',
+        ].join(' '),
+        inputSchema: toolInventoryItemsDeleteInputSchema,
+        execute: async (input) => {
+            return adminInventoryItemsDelete(requireAdminUserId(session), input.itemIds, session, serverRuntime);
+        },
+    });
 }

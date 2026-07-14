@@ -1,20 +1,20 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolMediaChannelsDelete } from '../commands/adminMediaChannelsDelete';
+import { toolMediaChannelsUpsert } from '../commands/adminMediaChannelsUpsert';
+import { toolMoviesAddFromTmdb } from '../commands/adminMediaMoviesAddFromTmdb';
+import { toolMoviesDelete } from '../commands/adminMediaMoviesDelete';
+import { toolMoviesUpsert } from '../commands/adminMediaMoviesUpsert';
+import { toolShowsAddFromTmdb } from '../commands/adminMediaShowsAddFromTmdb';
+import { toolShowsDelete } from '../commands/adminMediaShowsDelete';
+import { toolShowsUpsert } from '../commands/adminMediaShowsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
 import { mediaSnapshotForAgent } from './mediaSnapshotForAgent';
-import { toolMediaChannelsDelete } from './toolMediaChannelsDelete';
-import { toolMediaChannelsUpsert } from './toolMediaChannelsUpsert';
 import { toolMediaChannelsList } from './toolMediaChannelsList';
-import { toolMoviesAddFromTmdb } from './toolMoviesAddFromTmdb';
-import { toolMoviesDelete } from './toolMoviesDelete';
-import { toolMoviesUpsert } from './toolMoviesUpsert';
 import { toolMoviesList } from './toolMoviesList';
-import { toolShowsAddFromTmdb } from './toolShowsAddFromTmdb';
-import { toolShowsDelete } from './toolShowsDelete';
-import { toolShowsUpsert } from './toolShowsUpsert';
 import { toolShowsList } from './toolShowsList';
 import { toolTmdbSearch } from './toolTmdbSearch';
 import { toolTmdbTvSearch } from './toolTmdbTvSearch';
@@ -24,37 +24,15 @@ import { toolYoutubeSearch } from './toolYoutubeSearch';
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
 // `toolDelegateToMedia`'s `execute`, receives an `onStepEnd` from the
 // delegate tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON
-// sentinel) plus a structured `mutations` log.
+// sentinel). When it creates or changes a row Cem may want to open, it names
+// that row's id in its final summary so the orchestrator can deep-link it.
 //
 // Same rules as `agentPersonalAssistantProjects`: no `promptUserForInput`
-// (the orchestrator owns the back-and-forth), no `chatId` visibility, the
-// mutation log stays closure-shared with the delegate tool.
-
-type MediaAgentMutationKind =
-    | 'movieAdd'
-    | 'movieUpdate'
-    | 'movieDelete'
-    | 'showAdd'
-    | 'showUpdate'
-    | 'showDelete'
-    | 'mediaChannelAdd'
-    | 'mediaChannelUpdate'
-    | 'mediaChannelDelete';
-
-export interface MediaAgentMutation {
-    kind: MediaAgentMutationKind;
-    // AdminMediaMovie / show / channel id depending on `kind`.
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration.
-    title?: string;
-}
-
-export type MediaAgentMutationLog = MediaAgentMutation[];
+// (the orchestrator owns the back-and-forth), no `chatId` visibility.
 
 export interface MediaAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: MediaAgentMutationLog;
     onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
@@ -70,7 +48,9 @@ function buildSystemPrompt(snapshot: string): string {
         '',
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
-        '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences.',
+        '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences. When you',
+        '  add or change a movie / series / channel Cem may want to open, name its id in your summary so the',
+        '  orchestrator can build a deep-link.',
         '- Never invent an id. Use ids from the snapshot below, from a prior tool result’s `referenceIds` (in',
         '  input order) earlier in this turn, or a TMDB id returned by `tmdbSearch` / `tmdbTvSearch`.',
         '- Batch every same-shape write together — one `moviesUpsert` for all of them, not N calls. Same for',
@@ -104,10 +84,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantMedia({ session, serverRuntime, mutations, onStepEnd }: MediaAgentOptions) {
+export async function agentPersonalAssistantMedia({ session, serverRuntime, onStepEnd }: MediaAgentOptions) {
     const snapshot = await mediaSnapshotForAgent(serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(modelId),
@@ -119,20 +98,20 @@ export async function agentPersonalAssistantMedia({ session, serverRuntime, muta
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            moviesList: toolMoviesList(readContext),
-            showsList: toolShowsList(readContext),
-            mediaChannelsList: toolMediaChannelsList(readContext),
-            tmdbSearch: toolTmdbSearch(readContext),
-            tmdbTvSearch: toolTmdbTvSearch(readContext),
-            youtubeSearch: toolYoutubeSearch(readContext),
-            moviesAddFromTmdb: toolMoviesAddFromTmdb(mutationContext),
-            moviesUpsert: toolMoviesUpsert(mutationContext),
-            moviesDelete: toolMoviesDelete(mutationContext),
-            showsAddFromTmdb: toolShowsAddFromTmdb(mutationContext),
-            showsUpsert: toolShowsUpsert(mutationContext),
-            showsDelete: toolShowsDelete(mutationContext),
-            mediaChannelsUpsert: toolMediaChannelsUpsert(mutationContext),
-            mediaChannelsDelete: toolMediaChannelsDelete(mutationContext),
+            moviesList: toolMoviesList(toolContext),
+            showsList: toolShowsList(toolContext),
+            mediaChannelsList: toolMediaChannelsList(toolContext),
+            tmdbSearch: toolTmdbSearch(toolContext),
+            tmdbTvSearch: toolTmdbTvSearch(toolContext),
+            youtubeSearch: toolYoutubeSearch(toolContext),
+            moviesAddFromTmdb: toolMoviesAddFromTmdb(toolContext),
+            moviesUpsert: toolMoviesUpsert(toolContext),
+            moviesDelete: toolMoviesDelete(toolContext),
+            showsAddFromTmdb: toolShowsAddFromTmdb(toolContext),
+            showsUpsert: toolShowsUpsert(toolContext),
+            showsDelete: toolShowsDelete(toolContext),
+            mediaChannelsUpsert: toolMediaChannelsUpsert(toolContext),
+            mediaChannelsDelete: toolMediaChannelsDelete(toolContext),
         },
     });
 }

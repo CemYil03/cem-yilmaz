@@ -1,8 +1,12 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { exercises } from '../db/schema';
 import type { AdminFitnessExerciseCreate } from '../db/schema';
-import type { GqlSAdminFitnessExerciseInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminFitnessExerciseInputSchema } from '../graphql/generated';
+import type { GqlSAdminFitnessExerciseInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of catalog exercises. Every row with an `exerciseId` is
 // updated; every row without one is inserted.
@@ -55,4 +59,28 @@ export async function adminFitnessExercisesUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolExercisesUpsertInputSchema = z.object({
+    exercises: z.array(GqlSAdminFitnessExerciseInputSchema()).min(1),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolExercisesUpsert({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of catalog exercises (name + muscle group + equipment). Add an exercise here',
+            'before logging sets against it if it does not exist yet. Every row with an `exerciseId` is updated;',
+            'every row without one is inserted. Returns `referenceIds` in input order.',
+        ].join(' '),
+        inputSchema: toolExercisesUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.exercises as GqlSAdminFitnessExerciseInput[];
+            return adminFitnessExercisesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

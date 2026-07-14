@@ -15,7 +15,7 @@ Separate server-side logic into three directories:
 
 ### Commands
 
-Each file exports a single async function that performs a write operation. Commands may:
+Each file exports an async function that performs a write operation. Commands may:
 
 - Insert, update, or delete database records
 - Call AI agents from `src/server/agents/`
@@ -23,6 +23,10 @@ Each file exports a single async function that performs a write operation. Comma
 - Return GraphQL types (using mappers for the transformation)
 
 Example: `sessionUpsert.ts` creates or updates a session and returns `GqlSSession`.
+
+A command file may additionally export the AI-SDK `tool()` factory that exposes the command to the personal-assistant sub-agents — colocated
+below the command function and named `tool<Domain><Action>`. The factory is a thin wrapper: validate input, call the local command, return
+its result. See [`docs/architecture/agent-delegation.md`](./agent-delegation.md) for the sub-agent tooling pattern.
 
 ### Queries
 

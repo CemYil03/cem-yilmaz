@@ -9,7 +9,6 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import type { FinanceAgentMutation, FinanceAgentMutationLog } from './agentPersonalAssistantFinances';
 import { agentPersonalAssistantFinances } from './agentPersonalAssistantFinances';
 
 // Orchestrator-side tool that delegates a recurring-cost / income brief to
@@ -62,15 +61,14 @@ export function toolDelegateToFinances({ serverRuntime, session, chatId, generat
             'natural language including the amount and period the user named. This is the durable path: the sub-agent',
             'writes to Postgres so the finances page and totals update. Do NOT try to "note" a cost in plain chat and',
             'expect it to persist — always delegate.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields` (most often the',
             'amount), then call this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
             'reply or another tool.',
-            'On `completed`, narrate `summary` and (optionally) the `mutations` list back to the user.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message',
-            '(`mutations` lists any writes that landed before the throw). Tell Cem plainly what failed; do NOT retry',
-            'automatically and do NOT confabulate softer phrasings.',
+            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
+            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
+            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
         ].join(' '),
         inputSchema: delegateToFinancesInputSchema,
         execute: async (input, { toolCallId }) => {
@@ -97,7 +95,6 @@ export function toolDelegateToFinances({ serverRuntime, session, chatId, generat
             });
             preWrittenToolCallIds.add(toolCallId);
 
-            const mutations: FinanceAgentMutationLog = [];
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {
                 chatId,
@@ -110,16 +107,15 @@ export function toolDelegateToFinances({ serverRuntime, session, chatId, generat
             const agent = await agentPersonalAssistantFinances({
                 session,
                 serverRuntime,
-                mutations,
                 onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
             });
 
             let toolResult:
-                | { status: 'completed'; summary: string; mutations: FinanceAgentMutation[] }
-                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: FinanceAgentMutation[] }
-                | { status: 'failed'; summary: string; mutations: FinanceAgentMutation[] };
+                | { status: 'completed'; summary: string }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[] }
+                | { status: 'failed'; summary: string };
             try {
                 const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
@@ -129,19 +125,16 @@ export function toolDelegateToFinances({ serverRuntime, session, chatId, generat
                           status: sentinel.status,
                           summary: sentinel.summary,
                           missingFields: sentinel.missingFields,
-                          mutations,
                       }
                     : {
                           status: 'completed',
                           summary: text,
-                          mutations,
                       };
             } catch (error) {
                 serverRuntime.log.error(error, session);
                 toolResult = {
                     status: 'failed',
                     summary: summarizeError(error),
-                    mutations,
                 };
             }
 

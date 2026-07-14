@@ -9,7 +9,6 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import type { InventoryAgentMutation, InventoryAgentMutationLog } from './agentPersonalAssistantInventory';
 import { agentPersonalAssistantInventory } from './agentPersonalAssistantInventory';
 
 // Orchestrator-side tool that delegates an inventory brief to
@@ -69,15 +68,14 @@ export function toolDelegateToInventory({
             'language including any price or value the user named. This is the durable path: the sub-agent writes to',
             'Postgres so the inventory page and material net worth update. Do NOT try to "note" an item in plain chat',
             'and expect it to persist — always delegate.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields` (most often',
             'which item is meant), then call this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
             'reply or another tool.',
-            'On `completed`, narrate `summary` and (optionally) the `mutations` list back to the user.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message',
-            '(`mutations` lists any writes that landed before the throw). Tell Cem plainly what failed; do NOT retry',
-            'automatically and do NOT confabulate softer phrasings.',
+            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
+            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
+            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
         ].join(' '),
         inputSchema: delegateToInventoryInputSchema,
         execute: async (input, { toolCallId }) => {
@@ -104,7 +102,6 @@ export function toolDelegateToInventory({
             });
             preWrittenToolCallIds.add(toolCallId);
 
-            const mutations: InventoryAgentMutationLog = [];
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {
                 chatId,
@@ -117,16 +114,15 @@ export function toolDelegateToInventory({
             const agent = await agentPersonalAssistantInventory({
                 session,
                 serverRuntime,
-                mutations,
                 onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
             });
 
             let toolResult:
-                | { status: 'completed'; summary: string; mutations: InventoryAgentMutation[] }
-                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: InventoryAgentMutation[] }
-                | { status: 'failed'; summary: string; mutations: InventoryAgentMutation[] };
+                | { status: 'completed'; summary: string }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[] }
+                | { status: 'failed'; summary: string };
             try {
                 const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
@@ -136,19 +132,16 @@ export function toolDelegateToInventory({
                           status: sentinel.status,
                           summary: sentinel.summary,
                           missingFields: sentinel.missingFields,
-                          mutations,
                       }
                     : {
                           status: 'completed',
                           summary: text,
-                          mutations,
                       };
             } catch (error) {
                 serverRuntime.log.error(error, session);
                 toolResult = {
                     status: 'failed',
                     summary: summarizeError(error),
-                    mutations,
                 };
             }
 

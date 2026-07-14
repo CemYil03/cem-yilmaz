@@ -13,7 +13,7 @@ This doc covers the pattern. The sub-agents built on it are `agentPersonalAssist
 
 **The orchestrator is a router with one `delegateTo<Domain>` tool per focus area.** Each delegate tool's `execute` builds the matching
 domain sub-agent in-process, calls `agent.generate({ messages })` with the user's brief as a single user message, and returns a structured
-summary plus a mutation log. The orchestrator narrates the result back to the user.
+summary. The orchestrator narrates the result back to the user.
 
 The domain sub-agent runs **synchronously inside the orchestrator's tool turn** — same process, same database connection, same Node event
 loop. There is no queue, no separate session, no extra HTTP hop.
@@ -28,9 +28,10 @@ chat at a single turn even when several domains are touched, and the sub-agents 
 ### What the sub-agent can and cannot do
 
 - ✅ Read any data via its read tools and via inline snapshots in its system prompt.
-- ✅ Mutate the DB via wrapped `commands/*.ts` — the same commands the GraphQL resolvers use, called directly. Authorization continues to
-  flow through the resolver namespace at the call boundary (`AdminMutation` is `guardAdminMutation`-gated); inside that boundary every
-  command runs with the same admin session.
+- ✅ Mutate the DB via wrapped `commands/*.ts` — the same commands the GraphQL resolvers use, called directly. The AI-SDK `tool()` wrapper
+  that exposes a command to sub-agents lives **in the command file itself** (colocated below the command function), not in a separate
+  `agents/toolX.ts`. Authorization continues to flow through the resolver namespace at the call boundary (`AdminMutation` is
+  `guardAdminMutation`-gated); inside that boundary every command runs with the same admin session.
 - ✅ Run multiple tool calls in sequence — the `ToolLoopAgent` loop works the same way as on the orchestrator.
 - ✅ Persist tool-call rows. The sub-agent now receives an `onStepEnd` from the delegate tool; every tool call lands in
   `chatMessagesToolCall` with `parentChatMessageId` pointing at the delegate row's id, and the transcript renders them indented under the
@@ -48,23 +49,23 @@ FK to the single pre-written delegate row (flat under one parent — no new nest
 `toolResult` carries a per-brief `{ brief, status, summary }` array plus an aggregated batch `status` of `completed` / `partial` / `failed`.
 
 Web search is the only delegate that fans out. The sub-agent is stateless and provider-executed (Gemini owns the search round-trip), so N
-concurrent instances are safe. `delegateToProjects` and `delegateToMedia` stay 1:1: they carry mutation logs and issue DB writes, and
-running parallel copies of one domain sub-agent would race on the same tables and shared `ProjectsAgentMutationLog` closure. If a future
-read-only domain sub-agent shows up (pure lookups, no writes, no shared log), the fan-out shape can be reused; anything with a mutation log
-stays 1:1.
+concurrent instances are safe. `delegateToProjects` and `delegateToMedia` stay 1:1: they issue DB writes, and running parallel copies of one
+domain sub-agent would race on the same tables. If a future read-only domain sub-agent shows up (pure lookups, no writes), the fan-out shape
+can be reused; anything that writes stays 1:1.
 
-### Mutation log
+### Surfacing ids for deep-linking
 
-Each mutation tool the sub-agent calls pushes onto a closure-shared `ProjectsAgentMutationLog` — a plain `MutationRecord[]` allocated fresh
-inside the delegate tool's `execute`. After `agent.generate(...)` resolves, the delegate tool returns the log alongside the sub-agent's
-final-text summary:
+The sub-agent has no machine-readable mutation log. Instead, its system prompt tells it to **name the ids of any rows it created or
+changed** in its final-text `summary` (it sees each command's `referenceIds` in the tool result during its turn). The delegate returns that
+summary to the orchestrator:
 
 ```ts
-{ status: 'completed', summary: '...', mutations: [{ kind: 'projectCreate', id: '...', title: '...' }, ...] }
+{ status: 'completed', summary: 'Created project "Acme rebuild" (4f2a…) and added three tasks.' }
 ```
 
-This gives the orchestrator concrete facts to narrate ("Created project X and added three tasks") without re-querying. The log is also the
-only artifact in the chat transcript that reflects what the sub-agent actually changed — debug it from there.
+The orchestrator's system prompt turns those ids into deep-links (`[Acme rebuild](/workspace/projects?…&focus=4f2a…)`). The authoritative
+record of what the sub-agent actually changed is the set of persisted `chatMessagesToolCall` child rows (see
+[Nested tool calls](#nested-tool-calls)) — one row per DB write, visible in the transcript.
 
 ### The `needsMoreInfo`, `noOp`, and `failed` sentinels
 
@@ -85,12 +86,12 @@ The parser accepts a bare object or a fenced ` ```json ` block defensively — G
 There is a third terminal status, **`failed`**, that the sub-agent never emits itself — the delegate tool's `execute` synthesizes it. The
 sub-agent run (the `agent.generate` call inside `toolDelegateToProjects.execute`) is wrapped in a `try/catch`; any throw — provider error,
 schema-decode error, command exception — is caught there, logged via `serverRuntime.log.error`, and turned into
-`{ status: 'failed', summary: '<one-line error message>', mutations: [...any writes that landed before the throw] }`. The orchestrator's
-system prompt instructs it to narrate the failure verbatim and **not** to confabulate softer phrasings ("the tool is unreachable") or
-silently retry. Without this catch the AI SDK wraps the exception as an inert `tool-error` content part on the next step — the orchestrator
-sees only the error envelope, no log entry exists at the delegate layer, and the model invents an apology. The catch closes that gap; the
-same gap is also covered defensively by `chatPersistStep`'s Phase A pass over `tool-error` parts (see
-[Server-side error surfacing](#server-side-error-surfacing) below).
+`{ status: 'failed', summary: '<one-line error message>' }`. The orchestrator's system prompt instructs it to narrate the failure verbatim
+and **not** to confabulate softer phrasings ("the tool is unreachable") or silently retry. Any writes that DID land before the throw are
+still visible as persisted `chatMessagesToolCall` child rows. Without this catch the AI SDK wraps the exception as an inert `tool-error`
+content part on the next step — the orchestrator sees only the error envelope, no log entry exists at the delegate layer, and the model
+invents an apology. The catch closes that gap; the same gap is also covered defensively by `chatPersistStep`'s Phase A pass over
+`tool-error` parts (see [Server-side error surfacing](#server-side-error-surfacing) below).
 
 ### Step budget
 
@@ -111,8 +112,8 @@ What this means concretely:
 - The user sees `Called delegateToProjects` followed by `Called adminProjectFindMany`, `Called adminProjectsUpsert`,
   `Called adminProjectTasksUpsert`, `Called adminProjectActivitiesUpsert`, `Called adminProjectLinksUpsert`, `Called projectFileCreate` …
   indented under the parent — an honest record of which DB writes happened, not a single opaque pill.
-- The `delegateToProjects` row's `toolResult` still carries the structured `{ status, summary, mutations }` payload the orchestrator uses
-  for its narration. That payload is what the LLM sees on replay; the indented child rows are user-facing additional context.
+- The `delegateToProjects` row's `toolResult` still carries the structured `{ status, summary }` payload the orchestrator uses for its
+  narration. That payload is what the LLM sees on replay; the indented child rows are user-facing additional context.
 - `toModelMessages` does NOT look at `parentChatMessageId`. Each child is replayed as an ordinary `tool-call`/`tool-result` pair, so the
   AI-SDK contract stays intact and the LLM gets one extra source of context (it can read what the sub-agent actually did).
 
@@ -137,10 +138,10 @@ read `focus` from their `validateSearch` schema and scroll-into-view + flash the
 ~1500ms before dropping the param via a replace-navigate so a refresh doesn't re-flash. The flash animation is `@keyframes focus-flash` in
 `src/styles.css`, respecting `prefers-reduced-motion`.
 
-The orchestrator gets the ids it needs from the `mutations` array returned by every `delegateToProjects` call (each entry is
-`{ kind, id, title }`); the sub-agent doesn't bother emitting links itself because its `summary` is consumed by the orchestrator, not the
-user. Routes that wire this today: `/workspace/projects` (`?tab=…&focus=<projectId | projectRequestId | taskId>`) and the visitor-chats
-review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to their search schema and the same `useEffect` shape.
+The orchestrator gets the ids it needs from the sub-agent's `summary`, which names the id of every row it created or changed; the
+orchestrator's prompt turns those into deep-links. Routes that wire this today: `/workspace/projects`
+(`?tab=…&focus=<projectId | projectRequestId | taskId>`) and the visitor-chats review page (`?chatId=<chatId>`). Future routes hook in by
+adding `focus` to their search schema and the same `useEffect` shape.
 
 ## Alternatives Considered
 
@@ -155,11 +156,13 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 
 ## Consequences
 
-- **One file per sub-agent, one file per tool.** The convention is `src/server/agents/agentPersonalAssistant<Domain>.ts` for the sub-agent,
-  one `src/server/agents/tool<Domain><Action>.ts` per tool. Top-level under `agents/` — no subfolder yet. Matches the visitor-agent shape.
-- **Tools are thin wrappers around existing `commands/`+`queries/`.** CQRS already gave us single-purpose units. A tool file is mostly the
-  Zod input schema, the closure-bound dependencies (`serverRuntime`, `session`, optional `mutations`), and 5–10 lines of `execute` that maps
-  to the command's args shape and pushes onto the mutation log on success.
+- **One file per sub-agent; write tools are colocated with their command.** The convention is
+  `src/server/agents/agentPersonalAssistant<Domain>.ts` for the sub-agent. A tool that wraps a `commands/` write lives **in that command
+  file** (the factory is appended below the command function and exported as `tool<Domain><Action>`). Read-only tools that wrap `queries/`
+  or external APIs still live as their own `src/server/agents/tool<X>.ts`. Top-level under `agents/` — no subfolder yet.
+- **Tools are thin wrappers around existing `commands/`+`queries/`.** CQRS already gave us single-purpose units. A tool factory is mostly
+  the Zod input schema, the closure-bound dependencies (`serverRuntime`, `session`), and 5–10 lines of `execute` that maps to the command's
+  args shape and returns its result.
 - <a id="tool-input-schemas"></a>**The default input schema is the generated `GqlS<X>InputSchema()` from
   `src/server/graphql/generated.ts`.** Same shape the resolver validates, no hand-built duplicate to drift out of sync as the SDL evolves.
   `typescript-validation-schema` (see [`codegen.ts`](../../codegen.ts) and [api-layer.md](./api-layer.md#code-generation)) emits both the
@@ -211,8 +214,8 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 
 - **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
   `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via
-  `serverRuntime.log.error` and returned as `{ status: 'failed', summary, mutations }`. The orchestrator's system prompt tells it to narrate
-  the failure verbatim instead of inventing a softer phrasing. Without this catch the AI SDK quietly wraps the exception as an inert
+  `serverRuntime.log.error` and returned as `{ status: 'failed', summary }`. The orchestrator's system prompt tells it to narrate the
+  failure verbatim instead of inventing a softer phrasing. Without this catch the AI SDK quietly wraps the exception as an inert
   `tool-error` content part and no log entry exists at the delegate layer — every project-create failure used to look like "the tool is
   unreachable" with no server-side trace.
 
@@ -246,7 +249,7 @@ review page (`?chatId=<chatId>`). Future routes hook in by adding `focus` to the
 | Projects sub-agent factory                          | `src/server/agents/agentPersonalAssistantProjects.ts`                                                                                                                                                                                                                                                                                                                                 |
 | Inline board snapshot for the projects sub-agent    | `src/server/agents/projectsSnapshotForAgent.ts`                                                                                                                                                                                                                                                                                                                                       |
 | Projects read tools                                 | `src/server/agents/toolProjectsList.ts`, `toolStandaloneTasksList.ts`                                                                                                                                                                                                                                                                                                                 |
-| Projects mutation tools                             | `src/server/agents/toolProjectsUpsert.ts`, `toolProjectsDelete.ts`, `toolTasksUpsert.ts`, `toolTasksDelete.ts`, `toolProjectActivitiesUpsert.ts`, `toolProjectLinksUpsert.ts`                                                                                                                                                                                                         |
+| Projects write tools (colocated with command)       | `src/server/commands/adminProjectsUpsert.ts`, `adminProjectsDelete.ts`, `adminProjectTasksUpsert.ts`, `adminProjectTasksDelete.ts`, `adminProjectActivitiesUpsert.ts`, `adminProjectLinksUpsert.ts`, `projectFileCreateFromMarkdown.ts`                                                                                                                                               |
 | Projects delegate tool (orchestrator-side)          | `src/server/agents/toolDelegateToProjects.ts`                                                                                                                                                                                                                                                                                                                                         |
 | Web-search sub-agent factory                        | `src/server/agents/agentPersonalAssistantWebSearch.ts`                                                                                                                                                                                                                                                                                                                                |
 | Web-search provider tool wrapper (sub-agent-only)   | `src/server/agents/toolWebSearch.ts`                                                                                                                                                                                                                                                                                                                                                  |

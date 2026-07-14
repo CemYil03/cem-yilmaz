@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { tripDays } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -26,4 +29,23 @@ export async function adminTravelTripDaysDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const tripDaysDeleteInputSchema = z.object({
+    tripDayIds: z.array(z.uuid()).min(1).describe('Trip-day row ids to delete. Cascade removes the activities on those days.'),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripDaysDelete({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: 'Delete one or more days of a trip. Activities on those days cascade.',
+        inputSchema: tripDaysDeleteInputSchema,
+        execute: async (input) => {
+            return adminTravelTripDaysDelete(requireAdminUserId(session), input.tripDayIds, session, serverRuntime);
+        },
+    });
 }

@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { mealPlanEntries, recipes } from '../db/schema';
 import type { AdminNutritionMealPlanEntryCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminNutritionMealPlanEntryInputSchema } from '../graphql/generated';
 import type { GqlSAdminNutritionMealPlanEntryInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of soft-plan slots. Every row with an `entryId` is updated;
@@ -71,4 +75,33 @@ export async function adminNutritionMealPlanEntriesUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+// Batch create-or-edit of soft-plan slots. Reuses the generated input schema —
+// `AdminNutritionMealPlanEntryInput.date` is a `Date` scalar (a `YYYY-MM-DD` string), so the
+// schema is Gemini-safe (no `z.date()`).
+
+const toolMealPlanEntriesUpsertInputSchema = z.object({
+    mealPlanEntries: z.array(GqlSAdminNutritionMealPlanEntryInputSchema()).min(1),
+});
+
+interface NutritionAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolMealPlanEntriesUpsert({ serverRuntime, session }: NutritionAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of soft meal-plan slots. Each slot is a `(date, mealType)` cell that references a',
+            'recipe (`recipeId`) or carries a free-text idea (`customText`). `date` is `YYYY-MM-DD`. Plan only the',
+            'slots Cem actually wants — empty cells need no row. Every row with an `entryId` is updated; every row',
+            'without one is inserted. Batch a whole week into one call. Returns `referenceIds` in input order.',
+        ].join(' '),
+        inputSchema: toolMealPlanEntriesUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.mealPlanEntries as GqlSAdminNutritionMealPlanEntryInput[];
+            return adminNutritionMealPlanEntriesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

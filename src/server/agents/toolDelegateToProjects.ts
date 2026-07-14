@@ -9,15 +9,13 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import type { ProjectsAgentMutation, ProjectsAgentMutationLog } from './agentPersonalAssistantProjects';
 import { agentPersonalAssistantProjects } from './agentPersonalAssistantProjects';
 
 // Orchestrator-side tool that delegates a project/task brief to
 // `agentPersonalAssistantProjects`. Runs the sub-agent in-process inside
-// `execute`, returns its summary plus a structured mutation log the
-// orchestrator narrates back to the user. See
-// `docs/architecture/agent-delegation.md` for the pattern, the trade-offs,
-// and the `needsMoreInfo` sentinel contract.
+// `execute`, returns its summary the orchestrator narrates back to the user.
+// See `docs/architecture/agent-delegation.md` for the pattern, the
+// trade-offs, and the `needsMoreInfo` sentinel contract.
 //
 // As of the "Nested tool calls" change, the sub-agent's intermediate tool
 // calls DO land in the chat transcript: this tool pre-writes its own
@@ -82,16 +80,15 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
             'workspace projects board or its tasks — listing, creating, updating, archiving, deleting, summarizing',
             'progress, moving tasks between projects. Pass the brief in natural language; the sub-agent has its own',
             'tools and a live snapshot of the board.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
             'reply or another tool.',
-            'On `completed`, narrate `summary` and (optionally) the `mutations` list back to the user.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message',
-            '(`mutations` lists any writes that did land before the throw). Tell Cem plainly what failed and what',
-            'did or did not persist; do NOT retry the same brief automatically and do NOT invent a softer phrasing',
-            'like "the tool is unreachable" — the failure is real and the message in `summary` is the truth of it.',
+            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
+            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
+            'Tell Cem plainly what failed; do NOT retry the same brief automatically and do NOT confabulate softer',
+            'phrasings like "the tool is unreachable" — the failure is real and the message in `summary` is the truth of it.',
         ].join(' '),
         inputSchema: delegateToProjectsInputSchema,
         execute: async (input, { toolCallId }) => {
@@ -128,7 +125,7 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
             // `chatPersistStep` helper does the work; we just bind the
             // context. The sub-agent doesn't include `promptUserForInput`,
             // so the `endedOnPromptForInput` slot is intentionally absent.
-            const mutations: ProjectsAgentMutationLog = [];
+            //
             // Sub-agent tool calls are siblings within this delegation —
             // nothing in this nested scope is "pre-written" by anyone else.
             const childPreWrittenToolCallIds: Set<string> = new Set();
@@ -143,7 +140,6 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
             const agent = await agentPersonalAssistantProjects({
                 session,
                 serverRuntime,
-                mutations,
                 onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
@@ -159,9 +155,9 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
             // this layer — see `docs/architecture/agent-delegation.md`
             // ("Sub-agent failure isolates to its turn").
             let toolResult:
-                | { status: 'completed'; summary: string; mutations: ProjectsAgentMutation[] }
-                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: ProjectsAgentMutation[] }
-                | { status: 'failed'; summary: string; mutations: ProjectsAgentMutation[] };
+                | { status: 'completed'; summary: string }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[] }
+                | { status: 'failed'; summary: string };
             try {
                 const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
@@ -172,19 +168,16 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
                           status: sentinel.status,
                           summary: sentinel.summary,
                           missingFields: sentinel.missingFields,
-                          mutations,
                       }
                     : {
                           status: 'completed',
                           summary: text,
-                          mutations,
                       };
             } catch (error) {
                 serverRuntime.log.error(error, session);
                 toolResult = {
                     status: 'failed',
                     summary: summarizeError(error),
-                    mutations,
                 };
             }
 

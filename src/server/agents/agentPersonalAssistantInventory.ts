@@ -1,47 +1,33 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolInventoryFilesDelete } from '../commands/adminInventoryItemFilesDelete';
+import { toolInventoryFilesUpsert } from '../commands/adminInventoryItemFilesUpsert';
+import { toolInventoryServiceEntriesDelete } from '../commands/adminInventoryItemServiceEntriesDelete';
+import { toolInventoryServiceEntriesUpsert } from '../commands/adminInventoryItemServiceEntriesUpsert';
+import { toolInventoryItemsDelete } from '../commands/adminInventoryItemsDelete';
+import { toolInventoryItemsReprice } from '../commands/adminInventoryItemsReprice';
+import { toolInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { inventorySnapshotForAgent } from './inventorySnapshotForAgent';
-import { toolInventoryFilesDelete } from './toolInventoryFilesDelete';
-import { toolInventoryFilesUpsert } from './toolInventoryFilesUpsert';
-import { toolInventoryItemsDelete } from './toolInventoryItemsDelete';
 import { toolInventoryItemsList } from './toolInventoryItemsList';
-import { toolInventoryItemsReprice } from './toolInventoryItemsReprice';
-import { toolInventoryItemsUpsert } from './toolInventoryItemsUpsert';
-import { toolInventoryServiceEntriesDelete } from './toolInventoryServiceEntriesDelete';
-import { toolInventoryServiceEntriesUpsert } from './toolInventoryServiceEntriesUpsert';
 
 // Inventory domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
 // `toolDelegateToInventory`'s `execute`, receives an `onStepEnd` from the
 // delegate tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON
-// sentinel) plus a structured `mutations` log.
+// sentinel). When it creates or changes a row Cem may want to open, it names
+// that row's id in its final summary so the orchestrator can deep-link it.
 //
 // The domain is material belongings — what Cem owns, what each is worth today,
 // how it's been serviced, and its disposal state — the data behind
 // `/workspace/inventory`. See `docs/features/workspace-inventory.md`.
 
-type InventoryAgentMutationKind =
-    'itemAdd' | 'itemUpdate' | 'itemDelete' | 'reprice' | 'serviceEntryUpsert' | 'serviceEntryDelete' | 'fileEdit' | 'fileDelete';
-
-export interface InventoryAgentMutation {
-    kind: InventoryAgentMutationKind;
-    // AdminInventoryItem id for item/reprice mutations; service-entry id / item-file id for
-    // the others.
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration.
-    title?: string;
-}
-
-export type InventoryAgentMutationLog = InventoryAgentMutation[];
-
 export interface InventoryAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: InventoryAgentMutationLog;
     onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
@@ -87,10 +73,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantInventory({ session, serverRuntime, mutations, onStepEnd }: InventoryAgentOptions) {
+export async function agentPersonalAssistantInventory({ session, serverRuntime, onStepEnd }: InventoryAgentOptions) {
     const snapshot = await inventorySnapshotForAgent(session, serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(modelId),
@@ -101,14 +86,14 @@ export async function agentPersonalAssistantInventory({ session, serverRuntime, 
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            inventoryItemsList: toolInventoryItemsList(readContext),
-            inventoryItemsUpsert: toolInventoryItemsUpsert(mutationContext),
-            inventoryItemsDelete: toolInventoryItemsDelete(mutationContext),
-            inventoryItemsReprice: toolInventoryItemsReprice(mutationContext),
-            inventoryServiceEntriesUpsert: toolInventoryServiceEntriesUpsert(mutationContext),
-            inventoryServiceEntriesDelete: toolInventoryServiceEntriesDelete(mutationContext),
-            inventoryFilesUpsert: toolInventoryFilesUpsert(mutationContext),
-            inventoryFilesDelete: toolInventoryFilesDelete(mutationContext),
+            inventoryItemsList: toolInventoryItemsList(toolContext),
+            inventoryItemsUpsert: toolInventoryItemsUpsert(toolContext),
+            inventoryItemsDelete: toolInventoryItemsDelete(toolContext),
+            inventoryItemsReprice: toolInventoryItemsReprice(toolContext),
+            inventoryServiceEntriesUpsert: toolInventoryServiceEntriesUpsert(toolContext),
+            inventoryServiceEntriesDelete: toolInventoryServiceEntriesDelete(toolContext),
+            inventoryFilesUpsert: toolInventoryFilesUpsert(toolContext),
+            inventoryFilesDelete: toolInventoryFilesDelete(toolContext),
         },
     });
 }

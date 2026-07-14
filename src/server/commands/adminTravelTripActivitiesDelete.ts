@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { tripActivities } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -26,4 +29,23 @@ export async function adminTravelTripActivitiesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const tripActivitiesDeleteInputSchema = z.object({
+    tripActivityIds: z.array(z.uuid()).min(1).describe('Activity row ids to delete.'),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripActivitiesDelete({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: 'Delete one or more activities across trip days.',
+        inputSchema: tripActivitiesDeleteInputSchema,
+        execute: async (input) => {
+            return adminTravelTripActivitiesDelete(requireAdminUserId(session), input.tripActivityIds, session, serverRuntime);
+        },
+    });
 }

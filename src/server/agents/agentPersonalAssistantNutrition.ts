@@ -1,30 +1,31 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolFoodLogEntriesDelete } from '../commands/adminNutritionFoodLogEntriesDelete';
+import { toolFoodLogEntriesUpsert } from '../commands/adminNutritionFoodLogEntriesUpsert';
+import { toolMealPlanEntriesDelete } from '../commands/adminNutritionMealPlanEntriesDelete';
+import { toolMealPlanEntriesUpsert } from '../commands/adminNutritionMealPlanEntriesUpsert';
+import { toolRecipesDelete } from '../commands/adminNutritionRecipesDelete';
+import { toolRecipesUpsert } from '../commands/adminNutritionRecipesUpsert';
+import { toolSupplementNutrientsReplace } from '../commands/adminNutritionSupplementNutrientsReplace';
+import { toolSupplementsDelete } from '../commands/adminNutritionSupplementsDelete';
+import { toolSupplementsUpsert } from '../commands/adminNutritionSupplementsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { nutritionSnapshotForAgent } from './nutritionSnapshotForAgent';
-import { toolFoodLogEntriesDelete } from './toolFoodLogEntriesDelete';
-import { toolFoodLogEntriesUpsert } from './toolFoodLogEntriesUpsert';
 import { toolFoodLogList } from './toolFoodLogList';
-import { toolMealPlanEntriesDelete } from './toolMealPlanEntriesDelete';
-import { toolMealPlanEntriesUpsert } from './toolMealPlanEntriesUpsert';
 import { toolMealPlanList } from './toolMealPlanList';
-import { toolRecipesDelete } from './toolRecipesDelete';
 import { toolRecipesList } from './toolRecipesList';
-import { toolRecipesUpsert } from './toolRecipesUpsert';
-import { toolSupplementNutrientsReplace } from './toolSupplementNutrientsReplace';
 import { toolSupplementResearch } from './toolSupplementResearch';
-import { toolSupplementsDelete } from './toolSupplementsDelete';
 import { toolSupplementsList } from './toolSupplementsList';
-import { toolSupplementsUpsert } from './toolSupplementsUpsert';
 
 // Nutrition domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
 // `toolDelegateToNutrition`'s `execute`, receives an `onStepEnd` from the
 // delegate tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON
-// sentinel) plus a structured `mutations` log.
+// sentinel). When it creates or changes a row Cem may want to open, it names
+// that row's id in its final summary so the orchestrator can deep-link it.
 //
 // It owns three surfaces: the cookbook (`Recipes`), the soft weekly plan
 // (`MealPlanEntries`), and the food/drink diary (`FoodLogEntries`). The
@@ -32,34 +33,9 @@ import { toolSupplementsUpsert } from './toolSupplementsUpsert';
 // the snapshot pre-computes favourites and last-made dates so the agent can
 // rank without a list call.
 
-type NutritionAgentMutationKind =
-    | 'recipeAdd'
-    | 'recipeUpdate'
-    | 'recipeDelete'
-    | 'mealPlanAdd'
-    | 'mealPlanUpdate'
-    | 'mealPlanDelete'
-    | 'foodLogAdd'
-    | 'foodLogUpdate'
-    | 'foodLogDelete'
-    | 'supplementAdd'
-    | 'supplementUpdate'
-    | 'supplementDelete';
-
-export interface NutritionAgentMutation {
-    kind: NutritionAgentMutationKind;
-    // AdminNutritionRecipe / meal-plan-entry / diary-entry id depending on `kind`.
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration.
-    title?: string;
-}
-
-export type NutritionAgentMutationLog = NutritionAgentMutation[];
-
 export interface NutritionAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: NutritionAgentMutationLog;
     onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
@@ -92,7 +68,9 @@ function buildSystemPrompt(snapshot: string): string {
         '',
         'General rules:',
         '- Reply in the language the user wrote in (German or English).',
-        '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences.',
+        '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences summarizing',
+        '  what you did. When you create or change a recipe / meal-plan slot / diary entry / supplement Cem may want',
+        '  to open, name its id in your summary so the orchestrator can build a deep-link.',
         '- Never invent an id. Use ids from the snapshot below, from an upsert result’s `referenceIds` earlier in',
         '  this turn (in input order), or omit the id entirely to insert a new row.',
         '- Only ask for clarification when a required field is genuinely missing (nothing to log, no idea what to',
@@ -107,10 +85,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantNutrition({ session, serverRuntime, mutations, onStepEnd }: NutritionAgentOptions) {
+export async function agentPersonalAssistantNutrition({ session, serverRuntime, onStepEnd }: NutritionAgentOptions) {
     const snapshot = await nutritionSnapshotForAgent(serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(modelId),
@@ -119,20 +96,20 @@ export async function agentPersonalAssistantNutrition({ session, serverRuntime, 
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            recipesList: toolRecipesList(readContext),
-            mealPlanList: toolMealPlanList(readContext),
-            foodLogList: toolFoodLogList(readContext),
-            recipesUpsert: toolRecipesUpsert(mutationContext),
-            recipesDelete: toolRecipesDelete(mutationContext),
-            mealPlanEntriesUpsert: toolMealPlanEntriesUpsert(mutationContext),
-            mealPlanEntriesDelete: toolMealPlanEntriesDelete(mutationContext),
-            foodLogEntriesUpsert: toolFoodLogEntriesUpsert(mutationContext),
-            foodLogEntriesDelete: toolFoodLogEntriesDelete(mutationContext),
-            supplementsList: toolSupplementsList(readContext),
-            supplementResearch: toolSupplementResearch(readContext),
-            supplementsUpsert: toolSupplementsUpsert(mutationContext),
-            supplementNutrientsReplace: toolSupplementNutrientsReplace(mutationContext),
-            supplementsDelete: toolSupplementsDelete(mutationContext),
+            recipesList: toolRecipesList(toolContext),
+            mealPlanList: toolMealPlanList(toolContext),
+            foodLogList: toolFoodLogList(toolContext),
+            recipesUpsert: toolRecipesUpsert(toolContext),
+            recipesDelete: toolRecipesDelete(toolContext),
+            mealPlanEntriesUpsert: toolMealPlanEntriesUpsert(toolContext),
+            mealPlanEntriesDelete: toolMealPlanEntriesDelete(toolContext),
+            foodLogEntriesUpsert: toolFoodLogEntriesUpsert(toolContext),
+            foodLogEntriesDelete: toolFoodLogEntriesDelete(toolContext),
+            supplementsList: toolSupplementsList(toolContext),
+            supplementResearch: toolSupplementResearch(toolContext),
+            supplementsUpsert: toolSupplementsUpsert(toolContext),
+            supplementNutrientsReplace: toolSupplementNutrientsReplace(toolContext),
+            supplementsDelete: toolSupplementsDelete(toolContext),
         },
     });
 }

@@ -9,7 +9,6 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import type { FitnessAgentMutation, FitnessAgentMutationLog } from './agentPersonalAssistantFitness';
 import { agentPersonalAssistantFitness } from './agentPersonalAssistantFitness';
 
 // Orchestrator-side tool that delegates a fitness brief to
@@ -59,12 +58,12 @@ export function toolDelegateToFitness({ serverRuntime, session, chatId, generati
             'Hand a fitness instruction to the fitness sub-agent. Use for ANY ask that touches training — logging a',
             'workout (sessions and sets), answering progression questions ("what did I bench last time?"), managing',
             'the exercise catalog, and building or editing reusable routines. Pass the brief in natural language.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
             'reply or another tool.',
-            'On `completed`, narrate `summary` and (optionally) the `mutations` list back to the user.',
+            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
             'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
             'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
         ].join(' '),
@@ -93,7 +92,6 @@ export function toolDelegateToFitness({ serverRuntime, session, chatId, generati
             });
             preWrittenToolCallIds.add(toolCallId);
 
-            const mutations: FitnessAgentMutationLog = [];
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {
                 chatId,
@@ -106,26 +104,25 @@ export function toolDelegateToFitness({ serverRuntime, session, chatId, generati
             const agent = await agentPersonalAssistantFitness({
                 session,
                 serverRuntime,
-                mutations,
                 onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
             });
 
             let toolResult:
-                | { status: 'completed'; summary: string; mutations: FitnessAgentMutation[] }
-                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: FitnessAgentMutation[] }
-                | { status: 'failed'; summary: string; mutations: FitnessAgentMutation[] };
+                | { status: 'completed'; summary: string }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[] }
+                | { status: 'failed'; summary: string };
             try {
                 const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
                 const sentinel = tryParseSentinel(text);
                 toolResult = sentinel
-                    ? { status: sentinel.status, summary: sentinel.summary, missingFields: sentinel.missingFields, mutations }
-                    : { status: 'completed', summary: text, mutations };
+                    ? { status: sentinel.status, summary: sentinel.summary, missingFields: sentinel.missingFields }
+                    : { status: 'completed', summary: text };
             } catch (error) {
                 serverRuntime.log.error(error, session);
-                toolResult = { status: 'failed', summary: summarizeError(error), mutations };
+                toolResult = { status: 'failed', summary: summarizeError(error) };
             }
 
             await db

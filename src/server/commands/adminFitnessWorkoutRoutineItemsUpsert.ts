@@ -1,6 +1,10 @@
+import { tool } from 'ai';
 import { desc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { exercises, workoutRoutineItems, workoutRoutines } from '../db/schema';
 import type { AdminFitnessWorkoutRoutineItemCreate } from '../db/schema';
+import { GqlSAdminFitnessWorkoutRoutineItemInputSchema } from '../graphql/generated';
 import type { GqlSMutationResult, GqlSSession, GqlSAdminFitnessWorkoutRoutineItemInput } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
@@ -101,4 +105,29 @@ export async function adminFitnessWorkoutRoutineItemsUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolWorkoutRoutineItemsUpsertInputSchema = z.object({
+    workoutRoutineItems: z.array(GqlSAdminFitnessWorkoutRoutineItemInputSchema()).min(1),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolWorkoutRoutineItemsUpsert({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of routine items — the exercises inside a routine, each with optional target sets,',
+            'reps, and weight. Every row needs a parent `routineId` (from the snapshot or a prior',
+            '`workoutRoutinesUpsert` result) and an `exerciseId`. Batch all of a routine’s exercises into one call.',
+            'Every row with a `routineItemId` is updated; every row without one is inserted.',
+        ].join(' '),
+        inputSchema: toolWorkoutRoutineItemsUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.workoutRoutineItems as GqlSAdminFitnessWorkoutRoutineItemInput[];
+            return adminFitnessWorkoutRoutineItemsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

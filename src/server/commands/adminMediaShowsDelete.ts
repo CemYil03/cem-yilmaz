@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { shows } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -28,4 +31,23 @@ export async function adminMediaShowsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolShowsDeleteInputSchema = z.object({
+    showIds: z.array(z.uuid()).min(1).describe('Ids of the series to delete.'),
+});
+
+interface MediaAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolShowsDelete({ serverRuntime, session }: MediaAgentToolContext) {
+    return tool({
+        description: 'Permanently delete one or more TV series from the library. Irreversible — confirm intent before calling.',
+        inputSchema: toolShowsDeleteInputSchema,
+        execute: async (input) => {
+            return adminMediaShowsDelete(requireAdminUserId(session), input.showIds, session, serverRuntime);
+        },
+    });
 }

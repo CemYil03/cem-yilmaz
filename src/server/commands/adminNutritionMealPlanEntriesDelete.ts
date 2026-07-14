@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { mealPlanEntries } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -26,4 +29,23 @@ export async function adminNutritionMealPlanEntriesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const mealPlanEntriesDeleteInputSchema = z.object({
+    entryIds: z.array(z.uuid()).min(1).describe('Meal-plan slot ids to clear.'),
+});
+
+interface NutritionAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolMealPlanEntriesDelete({ serverRuntime, session }: NutritionAgentToolContext) {
+    return tool({
+        description: 'Clear one or more soft-plan slots. Use when Cem wants to remove a planned meal.',
+        inputSchema: mealPlanEntriesDeleteInputSchema,
+        execute: async (input) => {
+            return adminNutritionMealPlanEntriesDelete(requireAdminUserId(session), input.entryIds, session, serverRuntime);
+        },
+    });
 }

@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { tripDays, trips } from '../db/schema';
 import type { AdminTravelTripDayCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminTravelTripDayInputSchema } from '../graphql/generated';
 import type { GqlSAdminTravelTripDayInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of trip days. Every row with a `tripDayId` is updated; every
@@ -68,4 +72,29 @@ export async function adminTravelTripDaysUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolTripDaysUpsertInputSchema = z.object({
+    tripDays: z.array(GqlSAdminTravelTripDayInputSchema()).min(1),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripDaysUpsert({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of trip days. Days are the buckets activities live under. Pass all the days',
+            'of a plan in one call — `dayNumber` is 1-based and unique per trip. Every row with a `tripDayId`',
+            'is updated; every row without one is inserted. Returns `referenceIds` in input order — use those',
+            'as the parent `tripDayId` when calling `tripActivitiesUpsert` in the same turn.',
+        ].join(' '),
+        inputSchema: toolTripDaysUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.tripDays as GqlSAdminTravelTripDayInput[];
+            return adminTravelTripDaysUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { shows } from '../db/schema';
 import type { AdminMediaShowCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminMediaShowInputSchema } from '../graphql/generated';
 import type { GqlSMutationResult, GqlSSession, GqlSAdminMediaShowInput } from '../graphql/generated';
 
 // Batch upsert of TV series. Every input with a `showId` is updated; every
@@ -68,4 +72,34 @@ export async function adminMediaShowsUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+// Batch create-or-edit of TV series. Each row is `GqlSAdminMediaShowInputSchema()` —
+// same shape the resolver validates against. Gemini-safe because `AdminMediaShowInput`
+// uses `Date` scalars (codegen emits `z.string()`) and no `DateTime` fields.
+const toolShowsUpsertInputSchema = z.object({
+    shows: z.array(GqlSAdminMediaShowInputSchema()).min(1),
+});
+
+interface MediaAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolShowsUpsert({ serverRuntime, session }: MediaAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of TV series. For NEW series, prefer `showsAddFromTmdb` — it auto-fills poster,',
+            'first-air date, overview, completed flag and next-season date from TMDB. Use this tool for: (a) edits',
+            'to existing rows (rating, notes, topics, completed / next-season fields), (b) manual entries when TMDB',
+            'has no match. Every row with a `showId` is updated; every row without one is inserted. When marking a',
+            'series completed, set `isCompleted: true` (next-season fields clear automatically). Batch same-shape',
+            'writes into one call. Returns `referenceIds` in input order.',
+        ].join(' '),
+        inputSchema: toolShowsUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.shows as GqlSAdminMediaShowInput[];
+            return adminMediaShowsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

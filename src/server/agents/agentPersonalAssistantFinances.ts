@@ -1,20 +1,21 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolFinanceMonthlyNetIncomeSet } from '../commands/adminFinancesMonthlyNetIncomeSet';
+import { toolFinanceRecurringCostsDelete } from '../commands/adminFinancesRecurringCostsDelete';
+import { toolFinanceRecurringCostsUpsert } from '../commands/adminFinancesRecurringCostsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { financesSnapshotForAgent } from './financesSnapshotForAgent';
-import { toolFinanceMonthlyNetIncomeSet } from './toolFinanceMonthlyNetIncomeSet';
-import { toolFinanceRecurringCostsDelete } from './toolFinanceRecurringCostsDelete';
 import { toolFinanceRecurringCostsList } from './toolFinanceRecurringCostsList';
-import { toolFinanceRecurringCostsUpsert } from './toolFinanceRecurringCostsUpsert';
 
 // Finances domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
 // `toolDelegateToFinances`'s `execute`, receives an `onStepEnd` from the
 // delegate tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON
-// sentinel) plus a structured `mutations` log.
+// sentinel). When it creates or changes a row Cem may want to open, it names
+// that row's id in its final summary so the orchestrator can deep-link it.
 //
 // The domain today is recurring costs (rent, insurance, subscriptions, …) plus
 // the monthly net-income baseline — the data behind `/workspace/finances`.
@@ -22,22 +23,9 @@ import { toolFinanceRecurringCostsUpsert } from './toolFinanceRecurringCostsUpse
 // recurring cost when it repeats and is a no-op otherwise. See
 // `docs/features/workspace-finances.md`.
 
-type FinanceAgentMutationKind = 'recurringCostAdd' | 'recurringCostUpdate' | 'recurringCostDelete' | 'monthlyNetIncomeSet';
-
-export interface FinanceAgentMutation {
-    kind: FinanceAgentMutationKind;
-    // Recurring-cost id, or the settings row's userId for `monthlyNetIncomeSet`.
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration.
-    title?: string;
-}
-
-export type FinanceAgentMutationLog = FinanceAgentMutation[];
-
 export interface FinanceAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: FinanceAgentMutationLog;
     onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
@@ -55,7 +43,8 @@ function buildSystemPrompt(snapshot: string): string {
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences summarizing',
-        '  what you did, quoting the amount and cadence you recorded.',
+        '  what you did, quoting the amount and cadence you recorded. When you create or change a recurring cost or',
+        '  income baseline Cem may want to open, name its id in your summary so the orchestrator can build a deep-link.',
         '- Money is stored in CENTS. Convert what Cem says: "25,95 im Monat" → `amountCents: 2595, cadence: "monthly"`;',
         '  "120 € pro Jahr" → `amountCents: 12000, cadence: "yearly"`. Default to monthly when the period is unstated.',
         '- "Add this to my expenses / costs / subscriptions" means create a recurring cost. There is NO dated',
@@ -77,10 +66,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantFinances({ session, serverRuntime, mutations, onStepEnd }: FinanceAgentOptions) {
+export async function agentPersonalAssistantFinances({ session, serverRuntime, onStepEnd }: FinanceAgentOptions) {
     const snapshot = await financesSnapshotForAgent(session, serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(modelId),
@@ -91,10 +79,10 @@ export async function agentPersonalAssistantFinances({ session, serverRuntime, m
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            financeRecurringCostsList: toolFinanceRecurringCostsList(readContext),
-            financeRecurringCostsUpsert: toolFinanceRecurringCostsUpsert(mutationContext),
-            financeRecurringCostsDelete: toolFinanceRecurringCostsDelete(mutationContext),
-            financeMonthlyNetIncomeSet: toolFinanceMonthlyNetIncomeSet(mutationContext),
+            financeRecurringCostsList: toolFinanceRecurringCostsList(toolContext),
+            financeRecurringCostsUpsert: toolFinanceRecurringCostsUpsert(toolContext),
+            financeRecurringCostsDelete: toolFinanceRecurringCostsDelete(toolContext),
+            financeMonthlyNetIncomeSet: toolFinanceMonthlyNetIncomeSet(toolContext),
         },
     });
 }

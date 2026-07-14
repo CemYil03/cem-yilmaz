@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { itemServiceEntries } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -30,4 +33,24 @@ export async function adminInventoryItemServiceEntriesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolInventoryServiceEntriesDeleteInputSchema = z.object({
+    serviceEntryIds: z.array(z.uuid()).min(1).describe('Service-log entry ids to permanently delete.'),
+});
+
+interface InventoryAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolInventoryServiceEntriesDelete({ serverRuntime, session }: InventoryAgentToolContext) {
+    return tool({
+        description:
+            'Permanently delete one or more service-log entries. Use when Cem asks to remove a repair / service record he no longer wants.',
+        inputSchema: toolInventoryServiceEntriesDeleteInputSchema,
+        execute: async (input) => {
+            return adminInventoryItemServiceEntriesDelete(requireAdminUserId(session), input.serviceEntryIds, session, serverRuntime);
+        },
+    });
 }

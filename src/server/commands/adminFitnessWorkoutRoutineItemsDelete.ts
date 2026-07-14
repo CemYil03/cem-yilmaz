@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { workoutRoutineItems } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -26,4 +29,23 @@ export async function adminFitnessWorkoutRoutineItemsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const workoutRoutineItemsDeleteInputSchema = z.object({
+    routineItemIds: z.array(z.uuid()).min(1).describe('Routine item ids to remove.'),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolWorkoutRoutineItemsDelete({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: 'Remove one or more exercises from a routine. Use when Cem wants to drop an exercise from a template.',
+        inputSchema: workoutRoutineItemsDeleteInputSchema,
+        execute: async (input) => {
+            return adminFitnessWorkoutRoutineItemsDelete(requireAdminUserId(session), input.routineItemIds, session, serverRuntime);
+        },
+    });
 }

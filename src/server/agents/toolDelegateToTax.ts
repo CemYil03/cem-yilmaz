@@ -9,7 +9,6 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import type { TaxAgentMutation, TaxAgentMutationLog } from './agentPersonalAssistantTax';
 import { agentPersonalAssistantTax } from './agentPersonalAssistantTax';
 
 // Orchestrator-side tool that delegates a tax brief to
@@ -63,11 +62,11 @@ export function toolDelegateToTax({ serverRuntime, session, chatId, generationId
             'so the tax page updates. Do NOT try to "note" something in plain chat and expect it to persist — delegate.',
             'The sub-agent is a documentarian, not a tax advisor: it records and organises but never gives binding',
             'Steuerberatung, and will remind Cem to confirm uncertain deductibility with a professional.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields` (most often the',
             'amount), then call this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain reply or another tool.',
-            'On `completed`, narrate `summary` and (optionally) the `mutations` list back to the user.',
+            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
             'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message. Tell',
             'Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
         ].join(' '),
@@ -96,7 +95,6 @@ export function toolDelegateToTax({ serverRuntime, session, chatId, generationId
             });
             preWrittenToolCallIds.add(toolCallId);
 
-            const mutations: TaxAgentMutationLog = [];
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {
                 chatId,
@@ -109,26 +107,25 @@ export function toolDelegateToTax({ serverRuntime, session, chatId, generationId
             const agent = await agentPersonalAssistantTax({
                 session,
                 serverRuntime,
-                mutations,
                 onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
             });
 
             let toolResult:
-                | { status: 'completed'; summary: string; mutations: TaxAgentMutation[] }
-                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: TaxAgentMutation[] }
-                | { status: 'failed'; summary: string; mutations: TaxAgentMutation[] };
+                | { status: 'completed'; summary: string }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[] }
+                | { status: 'failed'; summary: string };
             try {
                 const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
                 const sentinel = tryParseSentinel(text);
                 toolResult = sentinel
-                    ? { status: sentinel.status, summary: sentinel.summary, missingFields: sentinel.missingFields, mutations }
-                    : { status: 'completed', summary: text, mutations };
+                    ? { status: sentinel.status, summary: sentinel.summary, missingFields: sentinel.missingFields }
+                    : { status: 'completed', summary: text };
             } catch (error) {
                 serverRuntime.log.error(error, session);
-                toolResult = { status: 'failed', summary: summarizeError(error), mutations };
+                toolResult = { status: 'failed', summary: summarizeError(error) };
             }
 
             await db

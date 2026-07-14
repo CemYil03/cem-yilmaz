@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { desc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { tripActivities, tripDays } from '../db/schema';
 import type { AdminTravelTripActivityCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminTravelTripActivityInputSchema } from '../graphql/generated';
 import type { GqlSAdminTravelTripActivityInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of trip activities. Every row with a `tripActivityId` is
@@ -96,4 +100,29 @@ export async function adminTravelTripActivitiesUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolTripActivitiesUpsertInputSchema = z.object({
+    tripActivities: z.array(GqlSAdminTravelTripActivityInputSchema()).min(1),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripActivitiesUpsert({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of activities across one or many trip days (bookings, sightseeing, meals,',
+            'transfers …). Pass every activity of a plan in one call. Every row with a `tripActivityId` is',
+            'updated; every row without one is inserted. Times are wall-clock strings `HH:MM` / `HH:MM:SS` in',
+            'the local time at the destination — never a timezone offset.',
+        ].join(' '),
+        inputSchema: toolTripActivitiesUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.tripActivities as GqlSAdminTravelTripActivityInput[];
+            return adminTravelTripActivitiesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

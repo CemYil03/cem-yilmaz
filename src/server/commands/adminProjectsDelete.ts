@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { projects } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -30,4 +33,27 @@ export async function adminProjectsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolProjectsDeleteInputSchema = z.object({
+    projectIds: z.array(z.uuid()).min(1).describe('AdminProject ids from the system-prompt snapshot or a prior list call.'),
+});
+
+interface ProjectsAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolProjectsDelete({ serverRuntime, session }: ProjectsAgentToolContext) {
+    return tool({
+        description: [
+            'Permanently delete one or more projects. Every task under each project is cascaded away in the same',
+            'transaction. Standalone todos (no parent project) are unaffected. Use this only when the user is',
+            'unambiguously asking for a delete; for soft-archive, prefer `projectsUpsert` with `status: "archived"`.',
+        ].join(' '),
+        inputSchema: toolProjectsDeleteInputSchema,
+        execute: async (input) => {
+            return adminProjectsDelete(requireAdminUserId(session), input.projectIds, session, serverRuntime);
+        },
+    });
 }

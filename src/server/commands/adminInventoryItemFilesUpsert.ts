@@ -1,6 +1,10 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { itemFiles } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminInventoryItemFileUpsertSchema } from '../graphql/generated';
 import type { GqlSAdminInventoryItemFileUpsert, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch edit of existing item-file rows — label and pin state only. This
@@ -51,4 +55,36 @@ export async function adminInventoryItemFilesUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+// Edit-only update of item-file rows (rename / pin toggle). Each row is
+// `GqlSAdminInventoryItemFileUpsertSchema()` — the same shape the resolver validates, no date
+// fields so Gemini-safe. This tool NEVER creates file rows: attaching a new
+// file requires uploading bytes via `POST /api/file-uploads` first, which a
+// chat sub-agent cannot do — the agent's system prompt tells it to point Cem
+// at the item detail page to upload. See
+// `docs/features/workspace-inventory.md` (Assistant integration).
+const toolInventoryFilesUpsertInputSchema = z.object({
+    itemFiles: z.array(GqlSAdminInventoryItemFileUpsertSchema()).min(1),
+});
+
+interface InventoryAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolInventoryFilesUpsert({ serverRuntime, session }: InventoryAgentToolContext) {
+    return tool({
+        description: [
+            'Edit existing item-file rows — rename a file (`label`) or pin / unpin it (`pinned`). This does NOT attach',
+            'new files: uploading bytes happens on the item detail page, not from chat, so if Cem wants to add a',
+            'receipt / manual / photo, tell him to open the item and use its Files section. Every input targets an',
+            'existing row by `itemFileId`.',
+        ].join(' '),
+        inputSchema: toolInventoryFilesUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.itemFiles as GqlSAdminInventoryItemFileUpsert[];
+            return adminInventoryItemFilesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

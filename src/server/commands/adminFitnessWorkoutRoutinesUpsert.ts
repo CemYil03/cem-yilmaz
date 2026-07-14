@@ -1,6 +1,10 @@
+import { tool } from 'ai';
 import { desc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { workoutRoutines } from '../db/schema';
 import type { AdminFitnessWorkoutRoutineCreate } from '../db/schema';
+import { GqlSAdminFitnessWorkoutRoutineInputSchema } from '../graphql/generated';
 import type { GqlSMutationResult, GqlSSession, GqlSAdminFitnessWorkoutRoutineInput } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
@@ -73,4 +77,28 @@ export async function adminFitnessWorkoutRoutinesUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolWorkoutRoutinesUpsertInputSchema = z.object({
+    workoutRoutines: z.array(GqlSAdminFitnessWorkoutRoutineInputSchema()).min(1),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolWorkoutRoutinesUpsert({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of workout routines (reusable templates like "Push day"). This writes the routine',
+            'header only — add its exercises with `workoutRoutineItemsUpsert` using the returned `referenceIds` as',
+            'the parent `routineId`. Every row with a `routineId` is updated; every row without one is inserted.',
+        ].join(' '),
+        inputSchema: toolWorkoutRoutinesUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.workoutRoutines as GqlSAdminFitnessWorkoutRoutineInput[];
+            return adminFitnessWorkoutRoutinesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

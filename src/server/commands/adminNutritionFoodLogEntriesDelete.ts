@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { foodLogEntries } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -26,4 +29,23 @@ export async function adminNutritionFoodLogEntriesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const foodLogEntriesDeleteInputSchema = z.object({
+    logIds: z.array(z.uuid()).min(1).describe('Diary entry ids to delete.'),
+});
+
+interface NutritionAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolFoodLogEntriesDelete({ serverRuntime, session }: NutritionAgentToolContext) {
+    return tool({
+        description: 'Delete one or more diary entries. Use when Cem wants to remove something he logged.',
+        inputSchema: foodLogEntriesDeleteInputSchema,
+        execute: async (input) => {
+            return adminNutritionFoodLogEntriesDelete(requireAdminUserId(session), input.logIds, session, serverRuntime);
+        },
+    });
 }

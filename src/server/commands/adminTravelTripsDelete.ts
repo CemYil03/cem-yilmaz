@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { trips } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -29,4 +32,26 @@ export async function adminTravelTripsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const tripsDeleteInputSchema = z.object({
+    tripIds: z
+        .array(z.uuid())
+        .min(1)
+        .describe('Trip row ids to delete. FK cascade removes each trip’s days, activities, and packing items.'),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripsDelete({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: 'Permanently delete one or more trips and everything under them. Use only when Cem explicitly says to delete.',
+        inputSchema: tripsDeleteInputSchema,
+        execute: async (input) => {
+            return adminTravelTripsDelete(requireAdminUserId(session), input.tripIds, session, serverRuntime);
+        },
+    });
 }

@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { recipes } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -27,4 +30,26 @@ export async function adminNutritionRecipesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const recipesDeleteInputSchema = z.object({
+    recipeIds: z
+        .array(z.uuid())
+        .min(1)
+        .describe('AdminNutritionRecipe ids to delete. Referencing plan slots / diary entries survive as free text (FK sets null).'),
+});
+
+interface NutritionAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolRecipesDelete({ serverRuntime, session }: NutritionAgentToolContext) {
+    return tool({
+        description: 'Permanently delete one or more recipes. Use only when Cem explicitly says to delete.',
+        inputSchema: recipesDeleteInputSchema,
+        execute: async (input) => {
+            return adminNutritionRecipesDelete(requireAdminUserId(session), input.recipeIds, session, serverRuntime);
+        },
+    });
 }

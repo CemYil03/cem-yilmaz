@@ -1,6 +1,10 @@
+import { tool } from 'ai';
 import { desc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { exercises, workoutSessions, workoutSets } from '../db/schema';
 import type { AdminFitnessWorkoutSetCreate } from '../db/schema';
+import { GqlSAdminFitnessWorkoutSetInputSchema } from '../graphql/generated';
 import type { GqlSMutationResult, GqlSSession, GqlSAdminFitnessWorkoutSetInput } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
@@ -102,4 +106,30 @@ export async function adminFitnessWorkoutSetsUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolWorkoutSetsUpsertInputSchema = z.object({
+    workoutSets: z.array(GqlSAdminFitnessWorkoutSetInputSchema()).min(1),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolWorkoutSetsUpsert({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of logged sets — `weight` × `reps` per set. Every row needs a parent `sessionId`',
+            '(from the snapshot or a prior `workoutSessionsUpsert` result) and an `exerciseId`. Logging "5×5 squats',
+            'at 100kg" is ONE call carrying five rows (same exercise, weight 100, reps 5). Set `isWarmup` for warmup',
+            'sets so they do not count toward PRs. Every row with a `setId` is updated; every row without one is',
+            'inserted.',
+        ].join(' '),
+        inputSchema: toolWorkoutSetsUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.workoutSets as GqlSAdminFitnessWorkoutSetInput[];
+            return adminFitnessWorkoutSetsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

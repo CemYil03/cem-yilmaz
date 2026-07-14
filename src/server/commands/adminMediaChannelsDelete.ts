@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { mediaChannels } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -28,4 +31,23 @@ export async function adminMediaChannelsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolMediaChannelsDeleteInputSchema = z.object({
+    channelIds: z.array(z.uuid()).min(1).describe('Channel row ids to delete.'),
+});
+
+interface MediaAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolMediaChannelsDelete({ serverRuntime, session }: MediaAgentToolContext) {
+    return tool({
+        description: 'Permanently delete one or more channels from the favourites list. No soft-delete.',
+        inputSchema: toolMediaChannelsDeleteInputSchema,
+        execute: async (input) => {
+            return adminMediaChannelsDelete(requireAdminUserId(session), input.channelIds, session, serverRuntime);
+        },
+    });
 }

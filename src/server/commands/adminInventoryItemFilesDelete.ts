@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { itemFiles } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -29,4 +32,30 @@ export async function adminInventoryItemFilesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolInventoryFilesDeleteInputSchema = z.object({
+    itemFileIds: z
+        .array(z.uuid())
+        .min(1)
+        .describe('AdminInventoryItem-file row ids to detach. Removes the link only; the uploaded file itself is kept.'),
+});
+
+interface InventoryAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolInventoryFilesDelete({ serverRuntime, session }: InventoryAgentToolContext) {
+    return tool({
+        description: [
+            'Detach one or more files from an item — removes the link between the item and the uploaded file. The',
+            'upload itself is preserved (it belongs to Cem). Use when he wants a receipt / manual / photo removed from',
+            'an item.',
+        ].join(' '),
+        inputSchema: toolInventoryFilesDeleteInputSchema,
+        execute: async (input) => {
+            return adminInventoryItemFilesDelete(requireAdminUserId(session), input.itemFileIds, session, serverRuntime);
+        },
+    });
 }

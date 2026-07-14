@@ -1,18 +1,18 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
+import { toolTripActivitiesUpsert } from '../commands/adminTravelTripActivitiesUpsert';
+import { toolTripDaysDelete } from '../commands/adminTravelTripDaysDelete';
+import { toolTripDaysUpsert } from '../commands/adminTravelTripDaysUpsert';
+import { toolTripPackingItemsDelete } from '../commands/adminTravelTripPackingItemsDelete';
+import { toolTripPackingItemsUpsert } from '../commands/adminTravelTripPackingItemsUpsert';
+import { toolTripsDelete } from '../commands/adminTravelTripsDelete';
+import { toolTripsUpsert } from '../commands/adminTravelTripsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
-import { toolTripActivitiesDelete } from './toolTripActivitiesDelete';
-import { toolTripActivitiesUpsert } from './toolTripActivitiesUpsert';
-import { toolTripDaysDelete } from './toolTripDaysDelete';
-import { toolTripDaysUpsert } from './toolTripDaysUpsert';
 import { toolTripGet } from './toolTripGet';
-import { toolTripPackingItemsDelete } from './toolTripPackingItemsDelete';
-import { toolTripPackingItemsUpsert } from './toolTripPackingItemsUpsert';
-import { toolTripsDelete } from './toolTripsDelete';
-import { toolTripsUpsert } from './toolTripsUpsert';
 import { toolTripsList } from './toolTripsList';
 import { travelSnapshotForAgent } from './travelSnapshotForAgent';
 
@@ -20,7 +20,8 @@ import { travelSnapshotForAgent } from './travelSnapshotForAgent';
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
 // `toolDelegateToTravel`'s `execute`, receives an `onStepEnd` from the
 // delegate tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON
-// sentinel) plus a structured `mutations` log.
+// sentinel). When it creates or changes a row Cem may want to open, it names
+// that row's id in its final summary so the orchestrator can deep-link it.
 //
 // The whole point of this agent is durable trip planning: it persists the
 // day-by-day itinerary and packing list to Postgres so a fresh chat session
@@ -31,34 +32,9 @@ import { travelSnapshotForAgent } from './travelSnapshotForAgent';
 // all days) → `tripPackingItemsUpsert` (K items) — four tool calls total,
 // safely under `isStepCount(10)`.
 
-type TravelAgentMutationKind =
-    | 'tripAdd'
-    | 'tripUpdate'
-    | 'tripDelete'
-    | 'tripDayAdd'
-    | 'tripDayUpdate'
-    | 'tripDayDelete'
-    | 'tripActivityAdd'
-    | 'tripActivityUpdate'
-    | 'tripActivityDelete'
-    | 'tripPackingItemAdd'
-    | 'tripPackingItemUpdate'
-    | 'tripPackingItemDelete';
-
-export interface TravelAgentMutation {
-    kind: TravelAgentMutationKind;
-    // Trip / day / activity / packing-item id depending on `kind`.
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration.
-    title?: string;
-}
-
-export type TravelAgentMutationLog = TravelAgentMutation[];
-
 export interface TravelAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: TravelAgentMutationLog;
     onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
@@ -77,7 +53,8 @@ function buildSystemPrompt(snapshot: string): string {
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences summarizing',
-        '  what you did.',
+        '  what you did. When you create or change a trip / day / activity / packing item Cem may want to open,',
+        '  name its id in your summary so the orchestrator can build a deep-link.',
         '- Never invent an id. Use ids from the snapshot below, from an upsert result’s `referenceIds` earlier',
         '  in this turn (in input order), or omit the id entirely to insert a new row.',
         '- Batch every same-shape write together. A whole plan is FOUR tool calls: `tripsUpsert` (one trip),',
@@ -103,10 +80,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantTravel({ session, serverRuntime, mutations, onStepEnd }: TravelAgentOptions) {
+export async function agentPersonalAssistantTravel({ session, serverRuntime, onStepEnd }: TravelAgentOptions) {
     const snapshot = await travelSnapshotForAgent(serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(modelId),
@@ -120,16 +96,16 @@ export async function agentPersonalAssistantTravel({ session, serverRuntime, mut
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            tripsList: toolTripsList(readContext),
-            tripGet: toolTripGet(readContext),
-            tripsUpsert: toolTripsUpsert(mutationContext),
-            tripsDelete: toolTripsDelete(mutationContext),
-            tripDaysUpsert: toolTripDaysUpsert(mutationContext),
-            tripDaysDelete: toolTripDaysDelete(mutationContext),
-            tripActivitiesUpsert: toolTripActivitiesUpsert(mutationContext),
-            tripActivitiesDelete: toolTripActivitiesDelete(mutationContext),
-            tripPackingItemsUpsert: toolTripPackingItemsUpsert(mutationContext),
-            tripPackingItemsDelete: toolTripPackingItemsDelete(mutationContext),
+            tripsList: toolTripsList(toolContext),
+            tripGet: toolTripGet(toolContext),
+            tripsUpsert: toolTripsUpsert(toolContext),
+            tripsDelete: toolTripsDelete(toolContext),
+            tripDaysUpsert: toolTripDaysUpsert(toolContext),
+            tripDaysDelete: toolTripDaysDelete(toolContext),
+            tripActivitiesUpsert: toolTripActivitiesUpsert(toolContext),
+            tripActivitiesDelete: toolTripActivitiesDelete(toolContext),
+            tripPackingItemsUpsert: toolTripPackingItemsUpsert(toolContext),
+            tripPackingItemsDelete: toolTripPackingItemsDelete(toolContext),
         },
     });
 }

@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { and, desc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { tripPackingItems, trips } from '../db/schema';
 import type { AdminTravelTripPackingItemCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminTravelTripPackingItemInputSchema } from '../graphql/generated';
 import type { GqlSAdminTravelTripPackingItemInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of trip packing items. Every row with a `tripPackingItemId`
@@ -95,4 +99,28 @@ export async function adminTravelTripPackingItemsUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolTripPackingItemsUpsertInputSchema = z.object({
+    tripPackingItems: z.array(GqlSAdminTravelTripPackingItemInputSchema()).min(1),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripPackingItemsUpsert({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of packing-list items for a trip. Every row with a `tripPackingItemId` is',
+            'updated; every row without one is inserted. Also the "mark X as packed / unpacked" surface — pass',
+            'the existing row plus `packed: true|false` in a one-element array.',
+        ].join(' '),
+        inputSchema: toolTripPackingItemsUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.tripPackingItems as GqlSAdminTravelTripPackingItemInput[];
+            return adminTravelTripPackingItemsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

@@ -1,6 +1,10 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { workoutRoutines, workoutSessions } from '../db/schema';
 import type { AdminFitnessWorkoutSessionCreate } from '../db/schema';
+import { GqlSAdminFitnessWorkoutSessionInputSchema } from '../graphql/generated';
 import type { GqlSMutationResult, GqlSSession, GqlSAdminFitnessWorkoutSessionInput } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
@@ -70,4 +74,29 @@ export async function adminFitnessWorkoutSessionsUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolWorkoutSessionsUpsertInputSchema = z.object({
+    workoutSessions: z.array(GqlSAdminFitnessWorkoutSessionInputSchema()).min(1),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolWorkoutSessionsUpsert({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of gym sessions (the workout header: date, title, duration). Logging a workout is',
+            'this call (one session) followed by `workoutSetsUpsert` (every set) using the returned `referenceIds`',
+            'as the parent `sessionId`. `date` is `YYYY-MM-DD` — use today unless Cem says otherwise. Every row with',
+            'a `sessionId` is updated; every row without one is inserted.',
+        ].join(' '),
+        inputSchema: toolWorkoutSessionsUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.workoutSessions as GqlSAdminFitnessWorkoutSessionInput[];
+            return adminFitnessWorkoutSessionsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

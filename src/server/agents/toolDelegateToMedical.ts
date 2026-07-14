@@ -9,7 +9,6 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import type { MedicalAgentMutation, MedicalAgentMutationLog } from './agentPersonalAssistantMedical';
 import { agentPersonalAssistantMedical } from './agentPersonalAssistantMedical';
 
 // Orchestrator-side tool that delegates a health / appointment brief to
@@ -84,16 +83,15 @@ export function toolDelegateToMedical({ serverRuntime, session, chatId, generati
             'their message this turn AND the conversation is health-related, pass the `fileUploadIds` through — the',
             'sub-agent will attach them to the record it files. You MAY briefly describe what the photo shows in',
             '`brief` (the sub-agent does not see the bytes; you do).',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
             'reply or another tool.',
-            'On `completed`, narrate `summary` and (optionally) the `mutations` list back to Cem. IMPORTANT: the',
-            'sub-agent is a documentarian, not a doctor — do NOT enrich its response with your own medical opinion.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message',
-            '(`mutations` lists any writes that did land before the throw). Tell Cem plainly what failed; do NOT',
-            'retry automatically.',
+            'On `completed`, narrate `summary` back to Cem; it names the ids of any rows worth deep-linking. IMPORTANT:',
+            'the sub-agent is a documentarian, not a doctor — do NOT enrich its response with your own medical opinion.',
+            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
+            'Tell Cem plainly what failed; do NOT retry automatically.',
         ].join(' '),
         inputSchema: delegateToMedicalInputSchema,
         execute: async (input, { toolCallId }) => {
@@ -120,7 +118,6 @@ export function toolDelegateToMedical({ serverRuntime, session, chatId, generati
             });
             preWrittenToolCallIds.add(toolCallId);
 
-            const mutations: MedicalAgentMutationLog = [];
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {
                 chatId,
@@ -133,7 +130,6 @@ export function toolDelegateToMedical({ serverRuntime, session, chatId, generati
             const agent = await agentPersonalAssistantMedical({
                 session,
                 serverRuntime,
-                mutations,
                 onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
@@ -149,9 +145,9 @@ export function toolDelegateToMedical({ serverRuntime, session, chatId, generati
                     : input.brief;
 
             let toolResult:
-                | { status: 'completed'; summary: string; mutations: MedicalAgentMutation[] }
-                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: MedicalAgentMutation[] }
-                | { status: 'failed'; summary: string; mutations: MedicalAgentMutation[] };
+                | { status: 'completed'; summary: string }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[] }
+                | { status: 'failed'; summary: string };
             try {
                 const result = await agent.generate({ messages: [{ role: 'user', content: enrichedBrief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
@@ -162,19 +158,16 @@ export function toolDelegateToMedical({ serverRuntime, session, chatId, generati
                           status: sentinel.status,
                           summary: sentinel.summary,
                           missingFields: sentinel.missingFields,
-                          mutations,
                       }
                     : {
                           status: 'completed',
                           summary: text,
-                          mutations,
                       };
             } catch (error) {
                 serverRuntime.log.error(error, session);
                 toolResult = {
                     status: 'failed',
                     summary: summarizeError(error),
-                    mutations,
                 };
             }
 

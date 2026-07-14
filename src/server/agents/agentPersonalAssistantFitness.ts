@@ -1,29 +1,30 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolExercisesDelete } from '../commands/adminFitnessExercisesDelete';
+import { toolExercisesUpsert } from '../commands/adminFitnessExercisesUpsert';
+import { toolWorkoutRoutineItemsDelete } from '../commands/adminFitnessWorkoutRoutineItemsDelete';
+import { toolWorkoutRoutineItemsUpsert } from '../commands/adminFitnessWorkoutRoutineItemsUpsert';
+import { toolWorkoutRoutinesDelete } from '../commands/adminFitnessWorkoutRoutinesDelete';
+import { toolWorkoutRoutinesUpsert } from '../commands/adminFitnessWorkoutRoutinesUpsert';
+import { toolWorkoutSessionsDelete } from '../commands/adminFitnessWorkoutSessionsDelete';
+import { toolWorkoutSessionsUpsert } from '../commands/adminFitnessWorkoutSessionsUpsert';
+import { toolWorkoutSetsDelete } from '../commands/adminFitnessWorkoutSetsDelete';
+import { toolWorkoutSetsUpsert } from '../commands/adminFitnessWorkoutSetsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { fitnessSnapshotForAgent } from './fitnessSnapshotForAgent';
-import { toolExercisesDelete } from './toolExercisesDelete';
 import { toolExercisesList } from './toolExercisesList';
-import { toolExercisesUpsert } from './toolExercisesUpsert';
 import { toolRoutinesList } from './toolRoutinesList';
-import { toolWorkoutRoutineItemsDelete } from './toolWorkoutRoutineItemsDelete';
-import { toolWorkoutRoutineItemsUpsert } from './toolWorkoutRoutineItemsUpsert';
-import { toolWorkoutRoutinesDelete } from './toolWorkoutRoutinesDelete';
-import { toolWorkoutRoutinesUpsert } from './toolWorkoutRoutinesUpsert';
-import { toolWorkoutSessionsDelete } from './toolWorkoutSessionsDelete';
 import { toolWorkoutSessionsList } from './toolWorkoutSessionsList';
-import { toolWorkoutSessionsUpsert } from './toolWorkoutSessionsUpsert';
-import { toolWorkoutSetsDelete } from './toolWorkoutSetsDelete';
-import { toolWorkoutSetsUpsert } from './toolWorkoutSetsUpsert';
 
 // Fitness domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
 // `toolDelegateToFitness`'s `execute`, receives an `onStepEnd` from the
 // delegate tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON
-// sentinel) plus a structured `mutations` log.
+// sentinel). When it creates or changes a row Cem may want to open, it names
+// that row's id in its final summary so the orchestrator can deep-link it.
 //
 // It owns three surfaces: the exercise catalog (`Exercises`), reusable
 // routines (`WorkoutRoutines` + items), and the gym log (`WorkoutSessions` +
@@ -32,37 +33,9 @@ import { toolWorkoutSetsUpsert } from './toolWorkoutSetsUpsert';
 // snapshot pre-computes each exercise's last and best working set so the agent
 // answers without a list call.
 
-type FitnessAgentMutationKind =
-    | 'exerciseAdd'
-    | 'exerciseUpdate'
-    | 'exerciseDelete'
-    | 'routineAdd'
-    | 'routineUpdate'
-    | 'routineDelete'
-    | 'routineItemAdd'
-    | 'routineItemUpdate'
-    | 'routineItemDelete'
-    | 'sessionAdd'
-    | 'sessionUpdate'
-    | 'sessionDelete'
-    | 'setAdd'
-    | 'setUpdate'
-    | 'setDelete';
-
-export interface FitnessAgentMutation {
-    kind: FitnessAgentMutationKind;
-    // AdminFitnessExercise / routine / routine-item / session / set id depending on `kind`.
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration.
-    title?: string;
-}
-
-export type FitnessAgentMutationLog = FitnessAgentMutation[];
-
 export interface FitnessAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: FitnessAgentMutationLog;
     onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
@@ -89,7 +62,9 @@ function buildSystemPrompt(snapshot: string): string {
         '',
         'General rules:',
         '- Reply in the language the user wrote in (German or English).',
-        '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences.',
+        '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences. When you',
+        '  create or change an exercise / routine / workout Cem may want to open, name its id in your summary so',
+        '  the orchestrator can build a deep-link.',
         '- Never invent an id. Use ids from the snapshot below, from an upsert result’s `referenceIds` earlier in',
         '  this turn (in input order), or omit the id entirely to insert a new row.',
         '- Weights are in kilograms unless Cem says otherwise. Half-kg increments are fine.',
@@ -105,10 +80,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantFitness({ session, serverRuntime, mutations, onStepEnd }: FitnessAgentOptions) {
+export async function agentPersonalAssistantFitness({ session, serverRuntime, onStepEnd }: FitnessAgentOptions) {
     const snapshot = await fitnessSnapshotForAgent(serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(modelId),
@@ -117,19 +91,19 @@ export async function agentPersonalAssistantFitness({ session, serverRuntime, mu
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            exercisesList: toolExercisesList(readContext),
-            routinesList: toolRoutinesList(readContext),
-            workoutSessionsList: toolWorkoutSessionsList(readContext),
-            exercisesUpsert: toolExercisesUpsert(mutationContext),
-            exercisesDelete: toolExercisesDelete(mutationContext),
-            workoutRoutinesUpsert: toolWorkoutRoutinesUpsert(mutationContext),
-            workoutRoutinesDelete: toolWorkoutRoutinesDelete(mutationContext),
-            workoutRoutineItemsUpsert: toolWorkoutRoutineItemsUpsert(mutationContext),
-            workoutRoutineItemsDelete: toolWorkoutRoutineItemsDelete(mutationContext),
-            workoutSessionsUpsert: toolWorkoutSessionsUpsert(mutationContext),
-            workoutSessionsDelete: toolWorkoutSessionsDelete(mutationContext),
-            workoutSetsUpsert: toolWorkoutSetsUpsert(mutationContext),
-            workoutSetsDelete: toolWorkoutSetsDelete(mutationContext),
+            exercisesList: toolExercisesList(toolContext),
+            routinesList: toolRoutinesList(toolContext),
+            workoutSessionsList: toolWorkoutSessionsList(toolContext),
+            exercisesUpsert: toolExercisesUpsert(toolContext),
+            exercisesDelete: toolExercisesDelete(toolContext),
+            workoutRoutinesUpsert: toolWorkoutRoutinesUpsert(toolContext),
+            workoutRoutinesDelete: toolWorkoutRoutinesDelete(toolContext),
+            workoutRoutineItemsUpsert: toolWorkoutRoutineItemsUpsert(toolContext),
+            workoutRoutineItemsDelete: toolWorkoutRoutineItemsDelete(toolContext),
+            workoutSessionsUpsert: toolWorkoutSessionsUpsert(toolContext),
+            workoutSessionsDelete: toolWorkoutSessionsDelete(toolContext),
+            workoutSetsUpsert: toolWorkoutSetsUpsert(toolContext),
+            workoutSetsDelete: toolWorkoutSetsDelete(toolContext),
         },
     });
 }

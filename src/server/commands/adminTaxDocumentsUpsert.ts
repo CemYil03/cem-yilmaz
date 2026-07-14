@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { taxDocuments } from '../db/schema';
 import type { AdminTaxDocumentCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminTaxDocumentInputSchema } from '../graphql/generated';
 import type { GqlSAdminTaxDocumentInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of checklist documents. Rows with a `documentId` update (this
@@ -59,4 +63,33 @@ export async function adminTaxDocumentsUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+// Batch create-or-edit of checklist documents. Each row is
+// `GqlSAdminTaxDocumentInputSchema()` — no date fields, Gemini-safe verbatim.
+// See `docs/architecture/agent-delegation.md#tool-input-schemas`.
+const toolTaxDocumentsUpsertInputSchema = z.object({
+    taxDocuments: z.array(GqlSAdminTaxDocumentInputSchema()).min(1),
+});
+
+interface TaxAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTaxDocumentsUpsert({ serverRuntime, session }: TaxAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of checklist documents within a tax year. Every row with a `documentId` is updated —',
+            'this is how you tick a document off: upsert the existing row with `status: "received"`. Every row without',
+            'an id is inserted. Each row needs a `taxYearId`, a `kind`, and a `title`. Use to add a document Cem needs',
+            'to collect, or to mark one received / notApplicable. You CANNOT attach the scan file here — tell Cem to',
+            'add it in the Documents section of the tax page. Returns `referenceIds` in input order.',
+        ].join(' '),
+        inputSchema: toolTaxDocumentsUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.taxDocuments as GqlSAdminTaxDocumentInput[];
+            return adminTaxDocumentsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

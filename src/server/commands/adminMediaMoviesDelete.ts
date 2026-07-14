@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { movies } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -28,4 +31,24 @@ export async function adminMediaMoviesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolMoviesDeleteInputSchema = z.object({
+    movieIds: z.array(z.uuid()).min(1).describe('AdminMediaMovie row ids to delete.'),
+});
+
+interface MediaAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolMoviesDelete({ serverRuntime, session }: MediaAgentToolContext) {
+    return tool({
+        description:
+            'Permanently delete one or more movies from the library. There is no soft-delete. Prefer `moviesUpsert` with `status: dropped` if Cem is only losing interest.',
+        inputSchema: toolMoviesDeleteInputSchema,
+        execute: async (input) => {
+            return adminMediaMoviesDelete(requireAdminUserId(session), input.movieIds, session, serverRuntime);
+        },
+    });
 }

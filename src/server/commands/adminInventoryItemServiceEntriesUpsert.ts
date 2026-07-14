@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { itemServiceEntries } from '../db/schema';
 import type { AdminInventoryItemServiceEntryCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminInventoryItemServiceEntryInputSchema } from '../graphql/generated';
 import type { GqlSAdminInventoryItemServiceEntryInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of service entries. Every input with a `serviceEntryId` is
@@ -67,4 +71,37 @@ export async function adminInventoryItemServiceEntriesUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+// Batch create-or-edit of service-log entries (repairs, services,
+// replacements) on an item. Each row is `GqlSAdminInventoryItemServiceEntryInputSchema()` —
+// the same shape the resolver validates. Gemini-safe: the only date fields
+// (`performedAt` / `nextDueAt`) are `Date` scalars the codegen emits as
+// `z.string()`, not `DateTime` (`z.date()`), so no hand-built duplicate is
+// needed. See `docs/architecture/agent-delegation.md#tool-input-schemas`.
+const toolInventoryServiceEntriesUpsertInputSchema = z.object({
+    itemServiceEntries: z.array(GqlSAdminInventoryItemServiceEntryInputSchema()).min(1),
+});
+
+interface InventoryAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolInventoryServiceEntriesUpsert({ serverRuntime, session }: InventoryAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of service-log entries on an item — repairs, routine services, part replacements,',
+            'and other maintenance events. Use when Cem says he had something serviced or repaired ("got the car',
+            'serviced yesterday, 180 €"). Each row needs the `itemId` it belongs to, a `kind` (repair | service |',
+            'replacement | other), and `performedAt` (ISO date). `costCents` is in CENTS. Set `nextDueAt` for the next',
+            'service so it surfaces as a reminder. Every row with a `serviceEntryId` is updated; every row without one',
+            'is inserted. Returns `referenceIds` in input order.',
+        ].join(' '),
+        inputSchema: toolInventoryServiceEntriesUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.itemServiceEntries as GqlSAdminInventoryItemServiceEntryInput[];
+            return adminInventoryItemServiceEntriesUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { trips } from '../db/schema';
 import type { AdminTravelTripCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminTravelTripInputSchema } from '../graphql/generated';
 import type { GqlSAdminTravelTripInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of trips. Every row with a `tripId` is updated; every row
@@ -62,4 +66,30 @@ export async function adminTravelTripsUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const toolTripsUpsertInputSchema = z.object({
+    trips: z.array(GqlSAdminTravelTripInputSchema()).min(1),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripsUpsert({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: [
+            'Batch create-or-edit of trips — trip roots only (title, destination, dates, status, transport,',
+            'accommodation, notes). Every row with a `tripId` is updated; every row without one is inserted.',
+            'Pass a single-element array for a one-off edit; pass many for bulk work. Returns `referenceIds`',
+            'in input order — the id of every row you touched, ready to use as parent ids when calling',
+            '`tripDaysUpsert` / `tripPackingItemsUpsert` in the same turn.',
+        ].join(' '),
+        inputSchema: toolTripsUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.trips as GqlSAdminTravelTripInput[];
+            return adminTravelTripsUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

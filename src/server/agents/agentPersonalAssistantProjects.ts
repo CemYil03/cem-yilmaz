@@ -1,19 +1,19 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolProjectActivitiesUpsert } from '../commands/adminProjectActivitiesUpsert';
+import { toolProjectLinksUpsert } from '../commands/adminProjectLinksUpsert';
+import { toolProjectsDelete } from '../commands/adminProjectsDelete';
+import { toolProjectsUpsert } from '../commands/adminProjectsUpsert';
+import { toolTasksDelete } from '../commands/adminProjectTasksDelete';
+import { toolTasksUpsert } from '../commands/adminProjectTasksUpsert';
+import { toolProjectFileCreate } from '../commands/projectFileCreateFromMarkdown';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
-import { toolProjectActivitiesUpsert } from './toolProjectActivitiesUpsert';
-import { toolProjectFileCreate } from './toolProjectFileCreate';
-import { toolProjectLinksUpsert } from './toolProjectLinksUpsert';
-import { toolProjectsDelete } from './toolProjectsDelete';
 import { toolProjectsList } from './toolProjectsList';
-import { toolProjectsUpsert } from './toolProjectsUpsert';
 import { toolStandaloneTasksList } from './toolStandaloneTasksList';
-import { toolTasksDelete } from './toolTasksDelete';
-import { toolTasksUpsert } from './toolTasksUpsert';
 
 // First domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside the
@@ -34,38 +34,9 @@ import { toolTasksUpsert } from './toolTasksUpsert';
 // sentinel and the orchestrator owns the back-and-forth via its own
 // `promptUserForInput` tool.
 
-type ProjectsAgentMutationKind =
-    | 'projectCreate'
-    | 'projectUpdate'
-    | 'projectDelete'
-    | 'taskCreate'
-    | 'taskUpdate'
-    | 'taskDelete'
-    | 'activityCreate'
-    | 'activityUpdate'
-    | 'linkCreate'
-    | 'linkUpdate'
-    | 'fileCreate';
-
-export interface ProjectsAgentMutation {
-    kind: ProjectsAgentMutationKind;
-    // AdminProject id or task id depending on `kind`.
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration. Mutation
-    // tools fill this from the GraphQL result (create/update) or the input
-    // (delete, where the row is already gone by the time we look).
-    title?: string;
-}
-
-// Mutable list shared between the delegate tool and each mutation tool's
-// `execute`. Allocated fresh in `toolDelegateToProjects` per delegation —
-// never module-scoped (would leak across turns).
-export type ProjectsAgentMutationLog = ProjectsAgentMutation[];
-
 export interface ProjectsAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: ProjectsAgentMutationLog;
     // Plumbed through from the delegate tool. Receives every step the
     // sub-agent takes and writes each tool call as a `chatMessagesToolCall`
     // row stamped with the delegate row's id as `parentChatMessageId`. The
@@ -87,7 +58,8 @@ function buildSystemPrompt(snapshot: string): string {
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to the user. One or two sentences naming',
-        '  what you did. No prose preamble.',
+        '  what you did. When you create or change a project / task / activity / link / file Cem may want to open,',
+        '  name its id in your summary so the orchestrator can build a deep-link.',
         '- Batch every same-shape write into one call — one `tasksUpsert` for all of them, not N calls. Same for',
         '  `projectsUpsert`, `projectActivitiesUpsert`, and `projectLinksUpsert`.',
         '- Never invent an id. Use ids from the snapshot below or from a prior tool result’s `referenceIds` (in',
@@ -108,10 +80,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantProjects({ session, serverRuntime, mutations, onStepEnd }: ProjectsAgentOptions) {
+export async function agentPersonalAssistantProjects({ session, serverRuntime, onStepEnd }: ProjectsAgentOptions) {
     const snapshot = await projectsSnapshotForAgent(serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     // Sub-agent always runs on the catalog fallback (Flash) — it does not see
     // the orchestrator's per-turn model pick. Resolved here so the same id
     // binds both the model and the Flash-specific provider options.
@@ -122,19 +93,19 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, m
         providerOptions: googleAgentProviderOptionsFor(modelId),
         // Tight ceiling — the sub-agent should rarely need more than a list +
         // a few mutations + a final text. If it runs out of steps, the
-        // delegate tool surfaces the partial mutation log to the orchestrator.
+        // delegate tool surfaces the partial result to the orchestrator.
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            projectsList: toolProjectsList(readContext),
-            standaloneTasksList: toolStandaloneTasksList(readContext),
-            projectsUpsert: toolProjectsUpsert(mutationContext),
-            projectsDelete: toolProjectsDelete(mutationContext),
-            tasksUpsert: toolTasksUpsert(mutationContext),
-            tasksDelete: toolTasksDelete(mutationContext),
-            projectActivitiesUpsert: toolProjectActivitiesUpsert(mutationContext),
-            projectLinksUpsert: toolProjectLinksUpsert(mutationContext),
-            projectFileCreate: toolProjectFileCreate(mutationContext),
+            projectsList: toolProjectsList(toolContext),
+            standaloneTasksList: toolStandaloneTasksList(toolContext),
+            projectsUpsert: toolProjectsUpsert(toolContext),
+            projectsDelete: toolProjectsDelete(toolContext),
+            tasksUpsert: toolTasksUpsert(toolContext),
+            tasksDelete: toolTasksDelete(toolContext),
+            projectActivitiesUpsert: toolProjectActivitiesUpsert(toolContext),
+            projectLinksUpsert: toolProjectLinksUpsert(toolContext),
+            projectFileCreate: toolProjectFileCreate(toolContext),
         },
     });
 }

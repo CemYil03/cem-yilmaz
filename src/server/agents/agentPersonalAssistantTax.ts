@@ -1,21 +1,22 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
 import { ToolLoopAgent, isStepCount } from 'ai';
+import { toolTaxDocumentsUpsert } from '../commands/adminTaxDocumentsUpsert';
+import { toolTaxExpensesUpsert } from '../commands/adminTaxExpensesUpsert';
+import { toolTaxIncomeSourcesUpsert } from '../commands/adminTaxIncomeSourcesUpsert';
+import { toolTaxYearsUpsert } from '../commands/adminTaxYearsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { taxSnapshotForAgent } from './taxSnapshotForAgent';
-import { toolTaxDocumentsUpsert } from './toolTaxDocumentsUpsert';
-import { toolTaxExpensesUpsert } from './toolTaxExpensesUpsert';
-import { toolTaxIncomeSourcesUpsert } from './toolTaxIncomeSourcesUpsert';
 import { toolTaxYearsList } from './toolTaxYearsList';
-import { toolTaxYearsUpsert } from './toolTaxYearsUpsert';
 
 // Tax domain sub-agent under the orchestrator pattern documented in
 // `docs/architecture/agent-delegation.md`. Runs in-process inside
 // `toolDelegateToTax`'s `execute`, receives an `onStepEnd` from the delegate
-// tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON sentinel)
-// plus a structured `mutations` log.
+// tool, and returns a final text (or `needsMoreInfo` / `noOp` JSON sentinel).
+// When it creates or changes a row Cem may want to open, it names that row's
+// id in its final summary so the orchestrator can deep-link it.
 //
 // The domain is a German tax return: tax years, income sources (one per
 // Anlage), deductible expenses, and a document checklist — the data behind
@@ -23,29 +24,9 @@ import { toolTaxYearsUpsert } from './toolTaxYearsUpsert';
 // organises, and never gives binding Steuerberatung. See
 // `docs/features/workspace-tax.md`.
 
-type TaxAgentMutationKind =
-    | 'taxYearAdd'
-    | 'taxYearUpdate'
-    | 'incomeSourceAdd'
-    | 'incomeSourceUpdate'
-    | 'expenseAdd'
-    | 'expenseUpdate'
-    | 'documentAdd'
-    | 'documentUpdate';
-
-export interface TaxAgentMutation {
-    kind: TaxAgentMutationKind;
-    id: string;
-    // Best-effort label for the orchestrator's user-facing narration.
-    title?: string;
-}
-
-export type TaxAgentMutationLog = TaxAgentMutation[];
-
 export interface TaxAgentOptions {
     session: GqlSSession;
     serverRuntime: ServerRuntime;
-    mutations: TaxAgentMutationLog;
     onStepEnd?: GenerateTextOnStepEndCallback<any>;
 }
 
@@ -72,7 +53,9 @@ function buildSystemPrompt(snapshot: string): string {
         'Rules:',
         '- Reply in the language the user wrote in (German or English).',
         '- Be concise: your final text becomes the orchestrator narration to Cem. One or two sentences summarizing',
-        '  what you recorded, quoting the amount and category.',
+        '  what you recorded, quoting the amount and category. When you create or change a tax year / income source /',
+        '  expense / document Cem may want to open, name its id in your summary so the orchestrator can build a',
+        '  deep-link.',
         '- Money is stored in CENTS. Convert what Cem says: "899 €" → `amountCents: 89900`; "1.250,50" → `125050`.',
         '- Dates are ISO strings (yyyy-mm-dd). Resolve relative dates ("letzten Monat", "im März") against today.',
         '- Expenses attach to a tax year (`taxYearId`) and optionally to an income source. Pick `categoryKey` from the',
@@ -96,10 +79,9 @@ function buildSystemPrompt(snapshot: string): string {
     ].join('\n');
 }
 
-export async function agentPersonalAssistantTax({ session, serverRuntime, mutations, onStepEnd }: TaxAgentOptions) {
+export async function agentPersonalAssistantTax({ session, serverRuntime, onStepEnd }: TaxAgentOptions) {
     const snapshot = await taxSnapshotForAgent(session, serverRuntime);
-    const readContext = { serverRuntime, session };
-    const mutationContext = { serverRuntime, session, mutations };
+    const toolContext = { serverRuntime, session };
     const modelId = ADMIN_CHAT_MODEL_FALLBACK_ID;
     return new ToolLoopAgent({
         model: serverRuntime.ai.userConversationModel(modelId),
@@ -110,11 +92,11 @@ export async function agentPersonalAssistantTax({ session, serverRuntime, mutati
         stopWhen: [isStepCount(10)],
         instructions: buildSystemPrompt(snapshot),
         tools: {
-            taxYearsList: toolTaxYearsList(readContext),
-            taxYearsUpsert: toolTaxYearsUpsert(mutationContext),
-            taxIncomeSourcesUpsert: toolTaxIncomeSourcesUpsert(mutationContext),
-            taxExpensesUpsert: toolTaxExpensesUpsert(mutationContext),
-            taxDocumentsUpsert: toolTaxDocumentsUpsert(mutationContext),
+            taxYearsList: toolTaxYearsList(toolContext),
+            taxYearsUpsert: toolTaxYearsUpsert(toolContext),
+            taxIncomeSourcesUpsert: toolTaxIncomeSourcesUpsert(toolContext),
+            taxExpensesUpsert: toolTaxExpensesUpsert(toolContext),
+            taxDocumentsUpsert: toolTaxDocumentsUpsert(toolContext),
         },
     });
 }

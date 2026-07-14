@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { workoutRoutines } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -28,4 +31,26 @@ export async function adminFitnessWorkoutRoutinesDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const workoutRoutinesDeleteInputSchema = z.object({
+    routineIds: z
+        .array(z.uuid())
+        .min(1)
+        .describe('Routine ids to delete. FK cascade removes their items; logged sessions survive (routineId nulled).'),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolWorkoutRoutinesDelete({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: 'Delete one or more routines and their items. Logged workouts are kept. Use only when Cem explicitly says to delete.',
+        inputSchema: workoutRoutinesDeleteInputSchema,
+        execute: async (input) => {
+            return adminFitnessWorkoutRoutinesDelete(requireAdminUserId(session), input.routineIds, session, serverRuntime);
+        },
+    });
 }

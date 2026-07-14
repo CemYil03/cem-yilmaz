@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { workoutSets } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -26,4 +29,23 @@ export async function adminFitnessWorkoutSetsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const workoutSetsDeleteInputSchema = z.object({
+    setIds: z.array(z.uuid()).min(1).describe('Logged set ids to delete.'),
+});
+
+interface FitnessAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolWorkoutSetsDelete({ serverRuntime, session }: FitnessAgentToolContext) {
+    return tool({
+        description: 'Delete one or more logged sets. Use when Cem wants to remove a set he logged.',
+        inputSchema: workoutSetsDeleteInputSchema,
+        execute: async (input) => {
+            return adminFitnessWorkoutSetsDelete(requireAdminUserId(session), input.setIds, session, serverRuntime);
+        },
+    });
 }

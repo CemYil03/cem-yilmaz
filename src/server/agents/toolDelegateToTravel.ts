@@ -9,7 +9,6 @@ import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCrea
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import type { TravelAgentMutation, TravelAgentMutationLog } from './agentPersonalAssistantTravel';
 import { agentPersonalAssistantTravel } from './agentPersonalAssistantTravel';
 
 // Orchestrator-side tool that delegates a trip / itinerary / packing brief
@@ -61,15 +60,14 @@ export function toolDelegateToTravel({ serverRuntime, session, chatId, generatio
             'checklist, marking items packed. Pass the brief in natural language. This is the durable-plan path: the',
             'sub-agent writes the itinerary to Postgres so a future chat can read it back without replaying this',
             'conversation. Do NOT try to draft an itinerary in plain chat and expect it to persist — always delegate.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, mutations? }`.",
+            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
             'this tool again with the brief enriched by their answers.',
             'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
             'reply or another tool.',
-            'On `completed`, narrate `summary` and (optionally) the `mutations` list back to the user.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message',
-            '(`mutations` lists any writes that landed before the throw). Tell Cem plainly what failed; do NOT retry',
-            'automatically and do NOT confabulate softer phrasings.',
+            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
+            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
+            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
         ].join(' '),
         inputSchema: delegateToTravelInputSchema,
         execute: async (input, { toolCallId }) => {
@@ -96,7 +94,6 @@ export function toolDelegateToTravel({ serverRuntime, session, chatId, generatio
             });
             preWrittenToolCallIds.add(toolCallId);
 
-            const mutations: TravelAgentMutationLog = [];
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {
                 chatId,
@@ -109,16 +106,15 @@ export function toolDelegateToTravel({ serverRuntime, session, chatId, generatio
             const agent = await agentPersonalAssistantTravel({
                 session,
                 serverRuntime,
-                mutations,
                 onStepEnd: async (step: OnStepEndStep) => {
                     await chatPersistStep(step, childOnStepContext);
                 },
             });
 
             let toolResult:
-                | { status: 'completed'; summary: string; mutations: TravelAgentMutation[] }
-                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[]; mutations: TravelAgentMutation[] }
-                | { status: 'failed'; summary: string; mutations: TravelAgentMutation[] };
+                | { status: 'completed'; summary: string }
+                | { status: 'needsMoreInfo' | 'noOp'; summary: string; missingFields: string[] }
+                | { status: 'failed'; summary: string };
             try {
                 const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
@@ -128,19 +124,16 @@ export function toolDelegateToTravel({ serverRuntime, session, chatId, generatio
                           status: sentinel.status,
                           summary: sentinel.summary,
                           missingFields: sentinel.missingFields,
-                          mutations,
                       }
                     : {
                           status: 'completed',
                           summary: text,
-                          mutations,
                       };
             } catch (error) {
                 serverRuntime.log.error(error, session);
                 toolResult = {
                     status: 'failed',
                     summary: summarizeError(error),
-                    mutations,
                 };
             }
 

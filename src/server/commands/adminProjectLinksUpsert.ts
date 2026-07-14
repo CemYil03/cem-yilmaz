@@ -1,7 +1,11 @@
+import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { projectLinks } from '../db/schema';
 import type { AdminProjectLinkCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { GqlSAdminProjectLinkUpsertSchema } from '../graphql/generated';
 import type { GqlSMutationResult, GqlSAdminProjectLinkUpsert, GqlSSession } from '../graphql/generated';
 
 // Batch create-or-update of project links. Every input with a `projectLinkId`
@@ -79,4 +83,45 @@ export async function adminProjectLinksUpsert(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+// Each item is the generated `GqlSAdminProjectLinkUpsertSchema()` — same shape
+// the GraphQL resolver validates, no hand-built duplicate. Gemini-safe: no
+// `DateTime` fields, enum reused via the generated schema. See
+// `docs/architecture/agent-delegation.md`.
+//
+// The `rawInput.projectLinks as GqlSAdminProjectLinkUpsert[]` cast is the same
+// workaround the travel tools use: the codegen output types the ZodObject as
+// `ZodObject<Properties<T>>`, which `z.infer` cannot round-trip back to the
+// concrete input type. The runtime schema DOES validate; the cast just
+// recovers TS inference at the boundary.
+
+const toolProjectLinksUpsertInputSchema = z.object({
+    projectLinks: z
+        .array(GqlSAdminProjectLinkUpsertSchema())
+        .min(1)
+        .describe('One or more links to create or edit. Pass a one-element array for a single link.'),
+});
+
+interface ProjectsAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolProjectLinksUpsert({ serverRuntime, session }: ProjectsAgentToolContext) {
+    return tool({
+        description: [
+            'Batch attach external URLs to a project, or edit existing links.',
+            'Use this when the user names a repo, mission, Figma file, drive folder, invoice link, etc. The link',
+            'lives at project level by default; the detail page surfaces pinned links on the header rail and the full list',
+            'on the Links tab. Pass `activityId` only when the link is conceptually tied to a specific activity row.',
+            'Omit `projectLinkId` to create; pass an existing id to edit. `pinned` defaults to false, `label` defaults to the URL host.',
+            'Batch same-shape writes into one call. Returns `referenceIds` in input order.',
+        ].join(' '),
+        inputSchema: toolProjectLinksUpsertInputSchema,
+        execute: async (rawInput) => {
+            const inputs = rawInput.projectLinks as GqlSAdminProjectLinkUpsert[];
+            return adminProjectLinksUpsert(requireAdminUserId(session), inputs, session, serverRuntime);
+        },
+    });
 }

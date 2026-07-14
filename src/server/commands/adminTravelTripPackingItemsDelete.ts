@@ -1,4 +1,7 @@
+import { tool } from 'ai';
 import { inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { tripPackingItems } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
@@ -26,4 +29,23 @@ export async function adminTravelTripPackingItemsDelete(
         serverRuntime.log.error(error, requestingSession);
         throw error;
     }
+}
+
+const tripPackingItemsDeleteInputSchema = z.object({
+    tripPackingItemIds: z.array(z.uuid()).min(1).describe('Packing-item row ids to delete.'),
+});
+
+interface TravelAgentToolContext {
+    serverRuntime: ServerRuntime;
+    session: GqlSSession;
+}
+
+export function toolTripPackingItemsDelete({ serverRuntime, session }: TravelAgentToolContext) {
+    return tool({
+        description: 'Delete one or more packing-list items from a trip.',
+        inputSchema: tripPackingItemsDeleteInputSchema,
+        execute: async (input) => {
+            return adminTravelTripPackingItemsDelete(requireAdminUserId(session), input.tripPackingItemIds, session, serverRuntime);
+        },
+    });
 }
