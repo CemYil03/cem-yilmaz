@@ -7,7 +7,7 @@ import { jobEnqueue, jobsActiveCount } from '../jobs/boss';
 import { emailServiceCreate } from '../services/emailServiceCreate';
 import { tmdbClientCreate } from '../services/tmdbClientCreate';
 import { youtubeClientCreate } from '../services/youtubeClientCreate';
-import { browserCapture } from '../utils/browserCapture';
+import { browserCapture, browserCapturePdf } from '../utils/browserCapture';
 import { loggerCreate } from '../utils/loggerCreate';
 import type { ServerRuntime } from './ServerRuntime';
 
@@ -96,9 +96,10 @@ export function serverRuntimeCreate(): ServerRuntime {
         browser: {
             // The renderer is a long-lived singleton inside `browserCapture`;
             // `serverRuntimeCreate` just exposes the entry point. Tests build
-            // a `ServerRuntime` directly and stub `browser.capture` — they
-            // never launch a real Chromium.
+            // a `ServerRuntime` directly and stub `browser.capture` /
+            // `browser.capturePdf` — they never launch a real Chromium.
             capture: browserCapture,
+            capturePdf: browserCapturePdf,
         },
         // Email transport for the visitor chat's email-shaped tools. The
         // factory itself is cheap — the Resend client is only constructed

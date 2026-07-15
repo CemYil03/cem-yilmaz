@@ -1,4 +1,4 @@
-import { XIcon } from 'lucide-react';
+import { DownloadIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
@@ -27,6 +27,7 @@ const copy = {
     saving: { de: 'Speichern…', en: 'Saving…' },
     saved: { de: 'Gespeichert', en: 'Saved' },
     saveFailed: { de: 'Speichern fehlgeschlagen', en: 'Save failed' },
+    downloadPdf: { de: 'Als PDF herunterladen', en: 'Download PDF' },
     close: { de: 'Schließen', en: 'Close' },
     notFound: { de: 'Dokument nicht gefunden.', en: 'Document not found.' },
     editPlaceholder: { de: 'Markdown eingeben…', en: 'Write markdown…' },
@@ -73,6 +74,20 @@ export function WorkspaceFileEditor({
     const title = file?.label ?? file?.filename ?? '';
     const isDirty = file !== null && draft !== null && draft !== file.content;
 
+    // Download the server-rendered PDF. It's generated from the persisted
+    // document, so the button is disabled while there are unsaved edits (mirrors
+    // the Save-when-dirty gate). A hidden anchor with `download` triggers the
+    // browser's own download of the same-origin, cookie-authenticated route.
+    const onDownloadPdf = () => {
+        if (!file || isDirty) return;
+        const anchor = document.createElement('a');
+        anchor.href = `/api/workspace-files/${workspaceFileId}/pdf`;
+        anchor.download = '';
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+    };
+
     const onSave = async () => {
         if (!file || draft === null || !isDirty) return;
         setSaving(true);
@@ -100,6 +115,16 @@ export function WorkspaceFileEditor({
                     <ModeButton active={mode === 'preview'} onClick={() => setMode('preview')} label={copy.preview[locale]} />
                     <ModeButton active={mode === 'edit'} onClick={() => setMode('edit')} label={copy.edit[locale]} />
                 </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onDownloadPdf}
+                    disabled={!file || isDirty || saving}
+                    title={copy.downloadPdf[locale]}
+                >
+                    <DownloadIcon />
+                    <span className="hidden sm:inline">PDF</span>
+                </Button>
                 <Button size="sm" onClick={onSave} disabled={!isDirty || saving}>
                     {saving ? <Spinner className="size-4" /> : null}
                     {saving ? copy.saving[locale] : copy.save[locale]}

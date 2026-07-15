@@ -95,3 +95,64 @@ export async function browserCapture(options: BrowserCaptureOptions): Promise<Bu
         await page.close();
     }
 }
+
+export interface BrowserCapturePdfOptions {
+    /**
+     * Absolute URL the browser navigates to. Same construction as
+     * `BrowserCaptureOptions.url` — typically
+     * `${baseUrl}/server/${path}?token=${createServerToken(...)}`.
+     */
+    url: string;
+    /** Optional CSS selector to wait for before printing. */
+    waitForSelector?: string;
+    /** Navigation + selector wait timeout. Default 15 s. */
+    timeoutMs?: number;
+    /** Page format. Default `A4`. */
+    format?: 'A4' | 'Letter';
+    /** Page margins. Default 15 mm all round. */
+    margin?: { top?: string; right?: string; bottom?: string; left?: string };
+}
+
+/**
+ * Renders `options.url` to a PDF using the same long-lived headless
+ * Chromium as `browserCapture`. `page.pdf()` is Chromium-headless-only —
+ * which is exactly what `getBrowser()` launches — so it needs no separate
+ * browser process.
+ *
+ * `printBackground: true` so the print stylesheet's backgrounds/colors
+ * survive into the PDF. The render route is expected to ship its own
+ * print-oriented layout (light background, readable body type) rather than
+ * the app's on-screen theme — see the `/server/*` route that consumes this.
+ */
+export async function browserCapturePdf(options: BrowserCapturePdfOptions): Promise<Buffer> {
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+
+    try {
+        const timeout = options.timeoutMs ?? 15_000;
+
+        await page.goto(options.url, {
+            waitUntil: 'domcontentloaded',
+            timeout,
+        });
+
+        if (options.waitForSelector) {
+            await page.waitForSelector(options.waitForSelector, { timeout });
+        } else {
+            await page.waitForTimeout(200);
+        }
+
+        // `print` media so the route's `@media print` rules (and Streamdown's
+        // print-friendly defaults) apply, matching what a browser's own
+        // "Save as PDF" would produce.
+        await page.emulateMedia({ media: 'print' });
+
+        return await page.pdf({
+            format: options.format ?? 'A4',
+            printBackground: true,
+            margin: options.margin ?? { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' },
+        });
+    } finally {
+        await page.close();
+    }
+}

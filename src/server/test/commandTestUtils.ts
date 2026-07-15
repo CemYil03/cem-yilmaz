@@ -86,6 +86,9 @@ function serverRuntimeStubCreate(): ServerRuntime {
             capture: vi.fn<ServerRuntime['browser']['capture']>(() => {
                 throw new Error('browser.capture not used');
             }),
+            capturePdf: vi.fn<ServerRuntime['browser']['capturePdf']>(() => {
+                throw new Error('browser.capturePdf not used');
+            }),
         },
         // Email is wired through pg-boss jobs, so the chat commands themselves
         // never touch it — only the job handlers do. Throw to surface a test

@@ -11,7 +11,6 @@
         "src/server/graphql/server.ts",
         "src/server/jobs/index.ts",
         "src/server/jobs/types.ts",
-        "src/server/utils/serverToken.ts",
         "src/web/components/base/**/*.tsx",
         "scripts/seedCv.ts",
         "scripts/captureProjectScreenshots.ts",

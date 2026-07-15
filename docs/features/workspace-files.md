@@ -26,6 +26,13 @@ transcript or lived nowhere durable. This feature adds a standalone document tha
   provider state (`openFileId`) and expands the sidebar if it was collapsed — no navigation, no separate panel.
 - **Save** rewrites the document. The assistant can `workspaceFileGet` to read Cem's latest edits and `workspaceFileUpdate` to overwrite the
   body on request.
+- **Download PDF** renders the document to a clean, A4 print layout (like [markdowntopdf.com](https://www.markdowntopdf.com/)) and downloads
+  it. The button sits next to **Save** and is **disabled while there are unsaved edits** — the PDF is generated server-side from the
+  persisted document, so Cem saves first, then downloads (the disabled state mirrors the Save-when-dirty gate; no confirm dialog).
+- Asking the assistant a **question** about a document ("what did you write in X?", "summarize the plan") makes it `workspaceFileGet` the
+  latest body and answer in the **same turn**. The tool description and the orchestrator system prompt both spell out that reading a file is
+  never the end of the turn — the written reply is — so the model doesn't stop after the read and wait for a nudge. `workspaceFileUpdate` is
+  only chained when Cem actually asked to change the document.
 
 ## Options Considered
 
@@ -102,10 +109,31 @@ are reachable via the chat attachment cards. A browser can be added later withou
   mounted (visitor sheet) the card renders inert.
 - `src/web/components/chat-message/ChatMessageToolCall.tsx` — renders the `Attachment` card (`WorkspaceFileAttachment`) beneath the normal
   pill for `workspaceFileCreate`, wired to `openDocument`.
-- `src/web/chat/WorkspaceFileEditor.tsx` — the editor body (fetch, preview/edit toggle, dirty-guarded save, close).
+- `src/web/chat/WorkspaceFileEditor.tsx` — the editor body (fetch, preview/edit toggle, dirty-guarded save, close, **Download PDF**).
 - `src/web/chat/WorkspaceAssistantChatSidebar.tsx` — the file-display content state: renders `WorkspaceFileEditor` in place of the
   transcript when `openFileId` is set (and self-expands the sidebar so a card clicked from the full-page route is visible).
 - `src/web/chat/toolDisplay.ts` — labels + `FileTextIcon` for the three tools.
+
+### PDF export
+
+The **Download PDF** button renders the document to a clean A4 PDF using the template's server-side rendering pipeline (see
+`docs/architecture/server-side-rendering.md`) — this is that pipeline's **first consumer** (`/server/*` had no route until now).
+
+- `src/server/utils/browserCapture.ts` — `browserCapturePdf()` sits beside `browserCapture()`, reusing the same singleton headless Chromium
+  but calling `page.pdf()` (`format: 'A4'`, `printBackground: true`, 15 mm margins, `print` media emulation) instead of `page.screenshot()`.
+  Exposed as `serverRuntime.browser.capturePdf`.
+- `src/routes/server.workspace-file-pdf.$workspaceFileId.tsx` — the `/server/*` print surface Chromium navigates to. Authenticates by the
+  short-lived HMAC `token` search param (bound to the file id, minted by the download route), **not** a session cookie. Renders the same
+  `AssistantMarkdown` component as the on-screen preview inside a forced-light, A4-oriented sheet with no app chrome; a `[data-pdf-ready]`
+  hook is what the capture waits for. Invalid/expired token → 404.
+- `src/server/queries/workspaceFilePdfContentLoad.ts` — server-only loader for that route: verifies the token, loads the row + upload bytes.
+  Not `userId`-scoped (there's no session on the headless request) — the token is proof the owner-checked download route minted it.
+- `src/routes/api/workspace-files_.$workspaceFileId.pdf.ts` — `GET /api/workspace-files/:id/pdf`. Session-cookie auth + ownership-scoped
+  lookup (guessed/foreign id → 404, mirroring the file-uploads route), mints `createServerToken(id)`, calls `browser.capturePdf` against the
+  `/server/*` route, and streams the bytes back as `application/pdf` with a `.pdf`-suffixed `attachment` filename.
+- Client: the editor's **Download PDF** button is disabled while `isDirty || saving || !file` (the PDF comes from the persisted document),
+  and triggers the browser download via a hidden `<a download>` at `/api/workspace-files/:id/pdf` — same-origin, cookie rides automatically,
+  no GraphQL.
 
 ## Deferred: docx
 

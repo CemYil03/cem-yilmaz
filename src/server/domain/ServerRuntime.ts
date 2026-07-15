@@ -6,7 +6,7 @@ import type { QueuedJobDefinition } from '../jobs/types';
 import type { EmailService } from '../services/emailServiceCreate';
 import type { TmdbClient } from '../services/tmdbClientCreate';
 import type { YoutubeClient } from '../services/youtubeClientCreate';
-import type { BrowserCaptureOptions } from '../utils/browserCapture';
+import type { BrowserCaptureOptions, BrowserCapturePdfOptions } from '../utils/browserCapture';
 import type { Logger } from '../utils/loggerCreate';
 
 export interface ServerRuntime {
@@ -86,11 +86,12 @@ export interface ServerRuntime {
     };
     // Server-side rendering capability — drives a singleton headless
     // Chromium against an internal `/server/*` route to produce an image
-    // of the rendered React UI. See
+    // (`capture`) or a PDF (`capturePdf`) of the rendered React UI. See
     // `docs/architecture/server-side-rendering.md`. Tests inject a stub
     // that returns a fixed `Buffer` and never launch a real browser.
     browser: {
         capture: (options: BrowserCaptureOptions) => Promise<Buffer>;
+        capturePdf: (options: BrowserCapturePdfOptions) => Promise<Buffer>;
     };
     // Transactional email transport. Lazy: the underlying Resend client is
     // only constructed when a tool actually fires a send, so test runtimes

@@ -127,14 +127,17 @@ const workspaceFileGetInputSchema = z.object({
 });
 
 // Reads the current contents of a document, including any edits Cem made in the
-// editor after it was created. Call this before rewriting so you work from the
-// latest version.
+// editor after it was created. Use it both to answer questions about a document
+// and as the read-before-write step for a revision.
 export function toolWorkspaceFileGet({ serverRuntime, session }: WorkspaceFilesAgentToolContext) {
     return tool({
         description: [
             'Fetch the current contents of a markdown document by id, including any edits Cem made in the editor',
-            'since it was created. Use this when he asks about, references, or wants you to revise an existing',
-            'document — read the latest version first so you are not working from a stale copy.',
+            'since it was created. Use this whenever he asks about, references, quotes, or wants to revise an',
+            'existing document — read the latest version so you are not working from a stale copy. The returned',
+            '`content` is the full markdown body: after reading it you MUST answer Cem in chat (summarize it, quote',
+            'the part he asked about, or say what you see). Reading the file is NOT the end of the turn — your',
+            'written reply is. Only chain into `workspaceFileUpdate` when he actually asked you to change the document.',
         ].join(' '),
         inputSchema: workspaceFileGetInputSchema,
         execute: async (input) => adminWorkspaceFileFindOne(input.workspaceFileId, session, serverRuntime),

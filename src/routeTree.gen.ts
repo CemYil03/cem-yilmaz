@@ -41,11 +41,13 @@ import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './rout
 import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
 import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
 import { Route as Char123LocaleChar125WorkspaceCompassRouteImport } from './routes/{-$locale}/workspace/compass'
+import { Route as ServerWorkspaceFilePdfWorkspaceFileIdRouteImport } from './routes/server.workspace-file-pdf.$workspaceFileId'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
 import { Route as Char123LocaleChar125WorkspaceTravelTripIdRouteImport } from './routes/{-$locale}/workspace/travel_.$tripId'
 import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
 import { Route as Char123LocaleChar125WorkspaceInventoryItemIdRouteImport } from './routes/{-$locale}/workspace/inventory_.$itemId'
 import { Route as Char123LocaleChar125WorkspaceAssistantChatIdRouteImport } from './routes/{-$locale}/workspace/assistant.$chatId'
+import { Route as ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport } from './routes/api/workspace-files_.$workspaceFileId.pdf'
 
 const Char123LocaleChar125Route = Char123LocaleChar125RouteImport.update({
   id: '/{-$locale}',
@@ -229,6 +231,12 @@ const Char123LocaleChar125WorkspaceCompassRoute =
     path: '/compass',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
+const ServerWorkspaceFilePdfWorkspaceFileIdRoute =
+  ServerWorkspaceFilePdfWorkspaceFileIdRouteImport.update({
+    id: '/server/workspace-file-pdf/$workspaceFileId',
+    path: '/server/workspace-file-pdf/$workspaceFileId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiFileUploadsFileUploadIdRoute =
   ApiFileUploadsFileUploadIdRouteImport.update({
     id: '/api/file-uploads_/$fileUploadId',
@@ -259,6 +267,12 @@ const Char123LocaleChar125WorkspaceAssistantChatIdRoute =
     path: '/assistant/$chatId',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
+const ApiWorkspaceFilesWorkspaceFileIdPdfRoute =
+  ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport.update({
+    id: '/api/workspace-files_/$workspaceFileId/pdf',
+    path: '/api/workspace-files/$workspaceFileId/pdf',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/llms.txt': typeof LlmsDottxtRoute
@@ -278,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceRouteWithChildren
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
+  '/server/workspace-file-pdf/$workspaceFileId': typeof ServerWorkspaceFilePdfWorkspaceFileIdRoute
   '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
@@ -294,6 +309,7 @@ export interface FileRoutesByFullPath {
   '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/api/workspace-files/$workspaceFileId/pdf': typeof ApiWorkspaceFilesWorkspaceFileIdPdfRoute
   '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
@@ -315,6 +331,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/projects': typeof Char123LocaleChar125ProjectsRoute
   '/{-$locale}': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
+  '/server/workspace-file-pdf/$workspaceFileId': typeof ServerWorkspaceFilePdfWorkspaceFileIdRoute
   '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
@@ -331,6 +348,7 @@ export interface FileRoutesByTo {
   '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/api/workspace-files/$workspaceFileId/pdf': typeof ApiWorkspaceFilesWorkspaceFileIdPdfRoute
   '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
@@ -355,6 +373,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace': typeof Char123LocaleChar125WorkspaceRouteWithChildren
   '/{-$locale}/': typeof Char123LocaleChar125IndexRoute
   '/api/file-uploads_/$fileUploadId': typeof ApiFileUploadsFileUploadIdRoute
+  '/server/workspace-file-pdf/$workspaceFileId': typeof ServerWorkspaceFilePdfWorkspaceFileIdRoute
   '/{-$locale}/workspace/compass': typeof Char123LocaleChar125WorkspaceCompassRoute
   '/{-$locale}/workspace/cv': typeof Char123LocaleChar125WorkspaceCvRoute
   '/{-$locale}/workspace/finances': typeof Char123LocaleChar125WorkspaceFinancesRoute
@@ -371,6 +390,7 @@ export interface FileRoutesById {
   '/{-$locale}/workspace/travel': typeof Char123LocaleChar125WorkspaceTravelRoute
   '/{-$locale}/workspace/visitor-chats': typeof Char123LocaleChar125WorkspaceVisitorChatsRoute
   '/{-$locale}/workspace/': typeof Char123LocaleChar125WorkspaceIndexRoute
+  '/api/workspace-files_/$workspaceFileId/pdf': typeof ApiWorkspaceFilesWorkspaceFileIdPdfRoute
   '/{-$locale}/workspace/assistant/$chatId': typeof Char123LocaleChar125WorkspaceAssistantChatIdRoute
   '/{-$locale}/workspace/inventory_/$itemId': typeof Char123LocaleChar125WorkspaceInventoryItemIdRoute
   '/{-$locale}/workspace/projects_/$projectId': typeof Char123LocaleChar125WorkspaceProjectsProjectIdRoute
@@ -396,6 +416,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace'
     | '/{-$locale}/'
     | '/api/file-uploads/$fileUploadId'
+    | '/server/workspace-file-pdf/$workspaceFileId'
     | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
@@ -412,6 +433,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/api/workspace-files/$workspaceFileId/pdf'
     | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
@@ -433,6 +455,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/projects'
     | '/{-$locale}'
     | '/api/file-uploads/$fileUploadId'
+    | '/server/workspace-file-pdf/$workspaceFileId'
     | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
@@ -449,6 +472,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace'
+    | '/api/workspace-files/$workspaceFileId/pdf'
     | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory/$itemId'
     | '/{-$locale}/workspace/projects/$projectId'
@@ -472,6 +496,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace'
     | '/{-$locale}/'
     | '/api/file-uploads_/$fileUploadId'
+    | '/server/workspace-file-pdf/$workspaceFileId'
     | '/{-$locale}/workspace/compass'
     | '/{-$locale}/workspace/cv'
     | '/{-$locale}/workspace/finances'
@@ -488,6 +513,7 @@ export interface FileRouteTypes {
     | '/{-$locale}/workspace/travel'
     | '/{-$locale}/workspace/visitor-chats'
     | '/{-$locale}/workspace/'
+    | '/api/workspace-files_/$workspaceFileId/pdf'
     | '/{-$locale}/workspace/assistant/$chatId'
     | '/{-$locale}/workspace/inventory_/$itemId'
     | '/{-$locale}/workspace/projects_/$projectId'
@@ -505,6 +531,8 @@ export interface RootRouteChildren {
   ApiStreamRoute: typeof ApiStreamRoute
   ApiTtsRoute: typeof ApiTtsRoute
   ApiFileUploadsFileUploadIdRoute: typeof ApiFileUploadsFileUploadIdRoute
+  ServerWorkspaceFilePdfWorkspaceFileIdRoute: typeof ServerWorkspaceFilePdfWorkspaceFileIdRoute
+  ApiWorkspaceFilesWorkspaceFileIdPdfRoute: typeof ApiWorkspaceFilesWorkspaceFileIdPdfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -733,6 +761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceCompassRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
+    '/server/workspace-file-pdf/$workspaceFileId': {
+      id: '/server/workspace-file-pdf/$workspaceFileId'
+      path: '/server/workspace-file-pdf/$workspaceFileId'
+      fullPath: '/server/workspace-file-pdf/$workspaceFileId'
+      preLoaderRoute: typeof ServerWorkspaceFilePdfWorkspaceFileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/file-uploads_/$fileUploadId': {
       id: '/api/file-uploads_/$fileUploadId'
       path: '/api/file-uploads/$fileUploadId'
@@ -767,6 +802,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/{-$locale}/workspace/assistant/$chatId'
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceAssistantChatIdRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/api/workspace-files_/$workspaceFileId/pdf': {
+      id: '/api/workspace-files_/$workspaceFileId/pdf'
+      path: '/api/workspace-files/$workspaceFileId/pdf'
+      fullPath: '/api/workspace-files/$workspaceFileId/pdf'
+      preLoaderRoute: typeof ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -877,6 +919,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiStreamRoute: ApiStreamRoute,
   ApiTtsRoute: ApiTtsRoute,
   ApiFileUploadsFileUploadIdRoute: ApiFileUploadsFileUploadIdRoute,
+  ServerWorkspaceFilePdfWorkspaceFileIdRoute:
+    ServerWorkspaceFilePdfWorkspaceFileIdRoute,
+  ApiWorkspaceFilesWorkspaceFileIdPdfRoute:
+    ApiWorkspaceFilesWorkspaceFileIdPdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -90,8 +90,16 @@ is `SERVER_TOKEN_SECRET`. The token is **opaque to the client** — no browser c
 // src/server/domain/ServerRuntime.ts
 browser: {
   capture: (options: BrowserCaptureOptions) => Promise<Buffer>;
+  capturePdf: (options: BrowserCapturePdfOptions) => Promise<Buffer>;
 }
 ```
+
+`capture` screenshots (PNG/JPEG); `capturePdf` renders the page to a PDF via `page.pdf()` on the same singleton browser (`format: 'A4'`,
+`printBackground: true`, margins, `print` media emulation). Both take a caller-constructed absolute URL and reuse the singleton Chromium.
+
+The **first real consumer** of this pipeline is the workspace-files PDF export (`docs/features/workspace-files.md`): a `/server/*` print
+route (`src/routes/server.workspace-file-pdf.$workspaceFileId.tsx`) plus an authenticated download route that mints the token and calls
+`browser.capturePdf`. Before it, `/server/*` had no routes — the pipeline shipped in the template baseline unused.
 
 Wired in `serverRuntimeCreate.ts` to delegate to `browserCapture`. The capture pipeline does not know about the app's base URL or token
 format — callers construct the absolute URL (typically `${baseUrl}/server/${path}?token=${createServerToken(...)}`) and hand it in. Tests
