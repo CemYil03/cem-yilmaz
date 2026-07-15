@@ -2,6 +2,7 @@ import { asc, inArray } from 'drizzle-orm';
 import type { AdminTravelTrip, AdminTravelTripActivity, AdminTravelTripDay, AdminTravelTripPackingItem } from '../db/schema';
 import { tripActivities, tripDays, tripPackingItems, trips } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { deriveDayDate } from '../mappers/toGqlAdminTravelTripDay';
 
 // Compact text snapshot of every trip for embedding in the travel sub-agent's
 // system prompt. Same shape as `mediaSnapshotForAgent` /
@@ -45,7 +46,7 @@ export async function travelSnapshotForAgent(serverRuntime: ServerRuntime): Prom
         } else {
             lines.push('  - itinerary:');
             for (const day of days) {
-                lines.push(`    - ${dayHeader(day)}`);
+                lines.push(`    - ${dayHeader(day, trip.startsOn)}`);
                 const activities = activitiesByDayId.get(day.tripDayId) ?? [];
                 if (activities.length === 0) {
                     lines.push('      - (no activities)');
@@ -112,11 +113,29 @@ async function loadAll(
 function tripHeader(trip: AdminTravelTrip): string {
     const dates = trip.startsOn && trip.endsOn ? ` ${trip.startsOn} → ${trip.endsOn}` : trip.startsOn ? ` from ${trip.startsOn}` : '';
     const transport = trip.transportMode ? ` via ${trip.transportMode}` : '';
-    return `- ${trip.title} → ${trip.destination}${dates}${transport} [${trip.status}] (id: ${trip.tripId})`;
+    // Status is planning intent only; the time-phase word is derived so the
+    // agent reads the same "underway / upcoming / past" the UI shows.
+    const phase = trip.status === 'cancelled' ? '' : ` ${derivePhase(trip.startsOn, trip.endsOn)}`;
+    return `- ${trip.title} → ${trip.destination}${dates}${transport} [${trip.status}${phase}] (id: ${trip.tripId})`;
 }
 
-function dayHeader(day: AdminTravelTripDay): string {
-    const dateBit = day.date ? ` (${day.date})` : '';
+// Today as `yyyy-MM-dd` in UTC — the same basis `deriveDayDate` uses, so a
+// day's derived date and the phase comparison never straddle a tz boundary.
+function todayIso(): string {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function derivePhase(startsOn: string | null, endsOn: string | null): 'planning' | 'upcoming' | 'underway' | 'past' {
+    if (!startsOn) return 'planning';
+    const today = todayIso();
+    if (endsOn && endsOn < today) return 'past';
+    if (startsOn > today) return 'upcoming';
+    return 'underway';
+}
+
+function dayHeader(day: AdminTravelTripDay, tripStartsOn: string | null): string {
+    const derived = deriveDayDate(tripStartsOn, day.dayNumber);
+    const dateBit = derived ? ` (${derived})` : '';
     const titleBit = day.title ? ` — ${day.title}` : '';
     return `Day ${day.dayNumber}${dateBit}${titleBit} (id: ${day.tripDayId})`;
 }

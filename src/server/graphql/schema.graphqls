@@ -2213,11 +2213,13 @@ extend type AdminMutation {
 # transcript — the whole reason the feature exists. See
 # `docs/features/workspace-travel.md`.
 
+# Planning intent only. Whether a trip is upcoming / underway / past is NOT a
+# status value — it is derived from the `startsOn`/`endsOn` range so it can
+# never go stale. `draft` = still sketching, `planned` = confirmed it's
+# happening, `cancelled` = was going to happen, called off.
 enum AdminTravelTripStatus {
     draft
     planned
-    active
-    completed
     cancelled
 }
 
@@ -2248,9 +2250,11 @@ type AdminTravelTripActivity {
 }
 
 # One day of a trip. `dayNumber` is the 1-based ordinal the agent addresses
-# ("Day 3"). `date` is nullable — a draft trip may have days before the
-# calendar dates are settled. `summary` is the paragraph the agent writes to
-# frame the day; `activities` is ordered by position ascending.
+# ("Day 3") and the single ordering key. `date` is DERIVED and read-only —
+# the server computes it from the trip's `startsOn` plus `dayNumber`, so it is
+# null for a dateless trip and cannot be set through the input. `summary` is
+# the paragraph the agent writes to frame the day; `activities` is ordered by
+# position ascending.
 type AdminTravelTripDay {
     tripDayId: ID!
     tripId: ID!
@@ -2326,7 +2330,6 @@ input AdminTravelTripDayInput {
     tripDayId: ID
     tripId: ID!
     dayNumber: Int!
-    date: Date
     title: String
     summary: String
 }

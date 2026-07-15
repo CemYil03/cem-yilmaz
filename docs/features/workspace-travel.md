@@ -18,24 +18,54 @@ an existing area:
 A new category, scoped to `travel` from day one, gives room for the obvious near-term additions (bookings, transport, visas) without a
 rename later.
 
+## Trip shape (the datedness switch)
+
+The feature follows one rule: **derive, don't store, anything a stored field already implies.** Two facts are therefore _not_ columns — they
+are computed at read time — because storing them would let them drift out of sync with the trip's dates:
+
+- **A day's calendar date.** For a dated trip, "Day 3" _is_ `startsOn + 2`; storing a separate `date` would be a duplicate that can
+  disagree. So `dayNumber` (1-based) is the single ordering key, and the date is derived via `deriveDayDate(startsOn, dayNumber)`. A
+  dateless "sketch" trip has no date at all — `dayNumber` is all there is.
+- **The trip's time-phase (upcoming / underway / past).** These are pure functions of the `startsOn`/`endsOn` range against today. The old
+  `active` / `completed` statuses stored exactly this and went stale the moment a trip's dates passed. They're gone — `status` now carries
+  only **planning intent**: `draft` (still sketching), `planned` (confirmed it's happening), `cancelled` (called off). Dates can't express
+  intent, so intent is the one thing worth storing.
+
+`startsOn` / `endsOn` **stay stored** — they're the authoritative span, set on the trip, not derivable from anything else (a fresh "Rome Aug
+5–7" trip has a range before it has any day rows). Whether a trip is _dated_ (`startsOn` present) is the master switch that governs display:
+
+|                              | **Scheduled** (`startsOn` set)          | **Sketch** (no dates)       |
+| ---------------------------- | --------------------------------------- | --------------------------- |
+| Time-phase                   | derived from `startsOn`/`endsOn`        | N/A — just "planning"       |
+| Day label                    | derived weekday + calendar date         | "Day N"                     |
+| Ordering key                 | `dayNumber` (date is a projection)      | `dayNumber`                 |
+| Day-editor `dayNumber` field | hidden (position implied by start date) | shown                       |
+| Day-editor date picker       | removed (implied)                       | removed (nothing to pin to) |
+
 ## User Behavior
 
-`/workspace/travel` is the list surface. Cards show one trip each with destination, dates, status, day count, and packing progress
-(`x/y packed`). Three tabs — **Current** (`active`), **Planned** (`draft` / `planned`), and **Past** (`completed` / `cancelled`) — group by
-status. The default tab is **Current** whenever any trip is underway, otherwise **Planned**, so the eye always lands on something useful;
-the default tab's URL carries no `?tab=`. A "New trip" button opens the base-facts dialog (title, destination, dates as a single
+`/workspace/travel` is the list surface. Cards show one trip each with destination, dates, status (intent), day count, and packing progress
+(`x/y packed`). Three tabs — **Current**, **Planned**, and **Past** — group trips by their **derived time-phase**, not by a stored status:
+
+- **Past** — the trip is `cancelled`, or its `endsOn` is before today.
+- **Current** — not cancelled, fully dated, and today falls inside `startsOn … endsOn`.
+- **Planned** — everything else: drafts, undated sketches, and dated trips that haven't started.
+
+The default tab is **Current** whenever any trip is underway, otherwise **Planned**, so the eye always lands on something useful; the
+default tab's URL carries no `?tab=`. A "New trip" button opens the base-facts dialog (title, destination, dates as a single
 `DateRangePicker`, status, transport, accommodation, notes).
 
 `/workspace/travel/<tripId>` is the per-trip detail. Header renders the trip's facts; below it two side-by-side sections:
 
-- **Itinerary** — one collapsible block per `AdminTravelTripDay` (labeled "Day N · weekday, date · title" — the day header leads with the
-  weekday name so a plan reads as calendar dates, not bare "day N" numbers). Inside each day is an ordered list of `AdminTravelTripActivity`
-  rows with time, title, location, url, notes. Add / edit / delete affordances at both levels. Each activity also carries a
-  **move-to-next-day** button (calendar-arrow icon) — one click retargets the activity onto the following day, appended to its tail. The
-  button is hidden on the trip's last day (no later day to move onto). This is a client-only affordance: the detail page already holds every
-  day with its activities, so it computes the next day's tail `position` and reuses the `adminTravelTripActivitiesUpsert` mutation with the
-  new `tripDayId` — no new mutation. Because the id is kept, the server treats it as an update and honours the passed `position` rather than
-  recomputing a tail default.
+- **Itinerary** — one collapsible block per `AdminTravelTripDay`. A **dated** trip's day header leads with the derived weekday + calendar
+  date (so the plan reads as calendar dates); a **dateless** trip's header shows "Day N". Inside each day is an ordered list of
+  `AdminTravelTripActivity` rows with time, title, location, url, notes. Add / edit / delete affordances at both levels. The day editor
+  hides the day-number field for dated trips (position is implied by the start date) and carries no date picker in either mode — a day's
+  date is never set by hand. Each activity also carries a **move-to-next-day** button (calendar-arrow icon) — one click retargets the
+  activity onto the following day, appended to its tail. The button is hidden on the trip's last day (no later day to move onto). This is a
+  client-only affordance: the detail page already holds every day with its activities, so it computes the next day's tail `position` and
+  reuses the `adminTravelTripActivitiesUpsert` mutation with the new `tripDayId` — no new mutation. Because the id is kept, the server
+  treats it as an update and honours the passed `position` rather than recomputing a tail default.
 - **Packing list** — checkbox rows grouped by free-text `category` (Documents / Dokumente, Electronics / Elektronik, …). Each row shows
   quantity when > 1 and a notes preview. Checking the box calls the `adminTravelTripPackingItemsUpsert` mutation with a one-element array
   flipping `packed`. The add/edit dialog suggests locale-matched defaults via a shadcn `Popover`-backed combobox (Documents, Electronics,
@@ -61,6 +91,10 @@ The sub-agent's rules:
 - **Never invent ids.** Ids come from the snapshot or from a prior tool result's `referenceIds` (in input order) earlier in the same turn.
 - **Reply in the user's language** (German or English).
 - **Times are wall-clock strings** (`HH:MM` / `HH:MM:SS`). The trip is location-scoped; a timezone offset would be a lie.
+- **Status is intent only** — `draft` / `planned` / `cancelled`. The sub-agent never sets `active` or `completed`; a trip's upcoming /
+  underway / past phase is derived from its dates, and the snapshot already shows that phase word next to the status.
+- **Days carry no date.** The sub-agent sets `dayNumber` (1-based); the calendar date is derived from the trip's `startsOn`. To move a plan
+  in time it edits the trip's `startsOn`/`endsOn`, not the days.
 - **`needsMoreInfo` / `noOp` sentinels** for the two escape hatches — same shape as every other domain sub-agent (`agent-delegation.md`).
 
 The packing list is trip-scoped in v1: adding "Passport" to Rome doesn't touch Berlin. See _Future work_ for the reusable-template idea.
@@ -79,19 +113,21 @@ Four tables, admin-only convention — no `userId` on domain rows, no `*De`/`*En
 input carries the `AdminTravel` entity-access-path prefix so the physical table name equals its GraphQL type (see
 [`docs/conventions.md`](../conventions.md) → "Type & input naming"):
 
-- **`AdminTravelTrip`** — `tripId`, `title`, `destination`, `startsOn`, `endsOn`, `status` (`draft` | `planned` | `active` | `completed` |
-  `cancelled`, default `draft`), `transportMode` (`flight` | `train` | `car` | `ferry` | `mixed`, nullable), `accommodation`, `notes`,
-  timestamps.
-- **`AdminTravelTripDay`** — FK to `AdminTravelTrip` (cascade), `dayNumber` (1-based, unique per trip), `date` (nullable), `title`,
-  `summary`, timestamps.
+- **`AdminTravelTrip`** — `tripId`, `title`, `destination`, `startsOn`, `endsOn`, `status` (`draft` | `planned` | `cancelled`, default
+  `draft` — planning **intent** only; time-phase is derived from the dates, never stored), `transportMode` (`flight` | `train` | `car` |
+  `ferry` | `mixed`, nullable), `accommodation`, `notes`, timestamps.
+- **`AdminTravelTripDay`** — FK to `AdminTravelTrip` (cascade), `dayNumber` (1-based, unique per trip, the single ordering key), `title`,
+  `summary`, timestamps. **No stored date** — the GraphQL type exposes a read-only `date` field derived server-side by
+  `deriveDayDate(startsOn, dayNumber)` in `toGqlAdminTravelTripDay` (null for undated trips); the input type has no `date`.
 - **`AdminTravelTripActivity`** — FK to `AdminTravelTripDay` (cascade), `position` (int, indexed with `tripDayId`), `startsAt` / `endsAt`
   (wall-clock varchar), `title`, `location`, `url`, `notes`, timestamps.
 - **`AdminTravelTripPackingItem`** — FK to `AdminTravelTrip` (cascade), `category`, `label`, `quantity`, `packed`, `position`, `notes`,
   timestamps.
 
-Enum tuples exported as `adminTravelTripStatuses` and `adminTravelTransportModes`, mirrored in `schema.graphqls` as `AdminTravelTripStatus`
-/ `AdminTravelTransportMode`. The rename from the original `Trips` / `TripDays` / `TripActivities` / `TripPackingItems` tables ships as the
-hand-authored migration `drizzle/0027_travel_access_path_rename.sql` (`ALTER TABLE … RENAME`, preserving every row).
+Enum tuples exported as `tripStatuses` and `transportModes`, mirrored in `schema.graphqls` as `AdminTravelTripStatus` /
+`AdminTravelTransportMode`. The original access-path rename shipped as `drizzle/0027_travel_access_path_rename.sql`; the intent-only status
+plus dropped `AdminTravelTripDay.date` column ship as the hand-authored `drizzle/0031_worried_fixer.sql`, which first remaps any existing
+`active` / `completed` rows to `planned` (they were confirmed-and-happening trips) before dropping the column.
 
 ### CQRS wiring
 

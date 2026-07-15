@@ -28,7 +28,6 @@ export async function adminTravelTripDaysUpsert(
             tripDayId,
             tripId: day.tripId,
             dayNumber: day.dayNumber,
-            date: day.date ?? null,
             title: day.title ?? null,
             summary: day.summary ?? null,
             updatedAt: now,
@@ -83,9 +82,11 @@ export function toolTripDaysUpsert({ serverRuntime, session }: TravelAgentToolCo
     return tool({
         description: [
             'Batch create-or-edit of trip days. Days are the buckets activities live under. Pass all the days',
-            'of a plan in one call — `dayNumber` is 1-based and unique per trip. Every row with a `tripDayId`',
-            'is updated; every row without one is inserted. Returns `referenceIds` in input order — use those',
-            'as the parent `tripDayId` when calling `tripActivitiesUpsert` in the same turn.',
+            'of a plan in one call — `dayNumber` is 1-based, unique per trip, and the single ordering key. Do',
+            'NOT send a date: a day has no stored date — for a dated trip the calendar date is derived from the',
+            "trip's `startsOn` plus `dayNumber`. Every row with a `tripDayId` is updated; every row without one",
+            'is inserted. Returns `referenceIds` in input order — use those as the parent `tripDayId` when',
+            'calling `tripActivitiesUpsert` in the same turn.',
         ].join(' '),
         inputSchema: z.object({
             tripDays: z.array(GqlSAdminTravelTripDayInputSchema()).min(1),

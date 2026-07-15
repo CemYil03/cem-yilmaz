@@ -1864,7 +1864,6 @@ export interface GqlSAdminTravelTripDay {
 }
 
 export type GqlSAdminTravelTripDayInput = {
-    date?: InputMaybe<Scalars['Date']['input']>;
     dayNumber: Scalars['Int']['input'];
     summary?: InputMaybe<Scalars['String']['input']>;
     title?: InputMaybe<Scalars['String']['input']>;
@@ -1909,7 +1908,7 @@ export type GqlSAdminTravelTripPackingItemInput = {
     tripPackingItemId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type GqlSAdminTravelTripStatus = 'active' | 'cancelled' | 'completed' | 'draft' | 'planned';
+export type GqlSAdminTravelTripStatus = 'cancelled' | 'draft' | 'planned';
 
 export interface GqlSChat {
     __typename?: 'Chat';
@@ -5633,10 +5632,11 @@ export const GqlSAdminTravelTransportModeSchema: z.ZodType<
     'car' | 'ferry' | 'flight' | 'mixed' | 'train'
 > = z.enum(['car', 'ferry', 'flight', 'mixed', 'train']);
 
-export const GqlSAdminTravelTripStatusSchema: z.ZodType<
-    'active' | 'cancelled' | 'completed' | 'draft' | 'planned',
-    'active' | 'cancelled' | 'completed' | 'draft' | 'planned'
-> = z.enum(['active', 'cancelled', 'completed', 'draft', 'planned']);
+export const GqlSAdminTravelTripStatusSchema: z.ZodType<'cancelled' | 'draft' | 'planned', 'cancelled' | 'draft' | 'planned'> = z.enum([
+    'cancelled',
+    'draft',
+    'planned',
+]);
 
 export const GqlSChatAssistantInputValueKindSchema: z.ZodType<
     'Boolean' | 'Date' | 'DateRange' | 'DateTime' | 'String' | 'StringList' | 'Time',
@@ -6169,7 +6169,6 @@ export function GqlSAdminTravelTripActivityInputSchema(): z.ZodObject<Properties
 
 export function GqlSAdminTravelTripDayInputSchema(): z.ZodObject<Properties<GqlSAdminTravelTripDayInput>> {
     return z.object({
-        date: z.string().nullish(),
         dayNumber: z.number(),
         summary: z.string().nullish(),
         title: z.string().nullish(),

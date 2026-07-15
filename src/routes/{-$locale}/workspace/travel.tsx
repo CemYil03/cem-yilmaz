@@ -59,12 +59,13 @@ import { localeFromParam } from '../../../web/utils/locale';
 const title = { de: 'Reisen', en: 'Travel' };
 const description = { de: 'Reisen mit Tagesplan und Packliste.', en: 'Trips with day-by-day plans and packing lists.' };
 
-const STATUS_ORDER: ReadonlyArray<GqlCTripStatus> = ['active', 'planned', 'draft', 'completed', 'cancelled'];
+// `status` is planning intent only (`draft` / `planned` / `cancelled`).
+// Whether a trip is current / past is NOT a status — it is derived from its
+// date range in `tripBelongsInTab`, so it can never go stale.
+const STATUS_ORDER: ReadonlyArray<GqlCTripStatus> = ['planned', 'draft', 'cancelled'];
 const STATUS_LABELS: Record<GqlCTripStatus, { de: string; en: string }> = {
     draft: { de: 'Entwurf', en: 'Draft' },
     planned: { de: 'Geplant', en: 'Planned' },
-    active: { de: 'Unterwegs', en: 'Active' },
-    completed: { de: 'Abgeschlossen', en: 'Completed' },
     cancelled: { de: 'Abgesagt', en: 'Cancelled' },
 };
 
@@ -214,8 +215,8 @@ function TripGrid({
     onEdit: (trip: TripRow) => void;
     onDelete: (trip: TripRow) => void;
 }) {
-    // Group by status so the eye lands on active/planned first, drafts and
-    // done trips below. Same idiom as the projects board's status buckets.
+    // Within a tab, group by intent status so planned trips lead and drafts /
+    // cancelled follow. Same idiom as the projects board's status buckets.
     const groups = useMemo(() => {
         const byStatus = new Map<GqlCTripStatus, TripRow[]>();
         for (const row of trips) {
@@ -556,7 +557,7 @@ function EmptyState({ locale, tab, onNew }: { locale: Locale; tab: TripTab; onNe
     if (tab === 'past') {
         return (
             <GlassCard className="px-6 py-10 text-center text-sm text-muted-foreground">
-                {{ de: 'Noch keine abgeschlossenen Reisen.', en: 'No completed trips yet.' }[locale]}
+                {{ de: 'Noch keine vergangenen Reisen.', en: 'No past trips yet.' }[locale]}
             </GlassCard>
         );
     }
@@ -589,11 +590,23 @@ function EmptyState({ locale, tab, onNew }: { locale: Locale; tab: TripTab; onNe
 
 // --- Helpers ----------------------------------------------------------------
 
+// Tabs are DERIVED from the trip's date range plus its intent — never from a
+// stored "active"/"completed" status. `startsOn`/`endsOn` are `yyyy-MM-dd`,
+// so lexical string comparison against today is a correct date comparison.
+//   - past    = cancelled, or the range has ended
+//   - current = not cancelled and today falls inside a fully-dated range
+//   - planned = everything else (drafts, undated, not-yet-started)
 function tripBelongsInTab(trip: TripRow, tab: TripTab): boolean {
-    if (tab === 'past') return trip.status === 'completed' || trip.status === 'cancelled';
-    if (tab === 'current') return trip.status === 'active';
-    // `planned` holds everything upcoming that isn't yet underway or finished.
-    return trip.status === 'draft' || trip.status === 'planned';
+    const today = todayIso();
+    const ended = Boolean(trip.endsOn && trip.endsOn < today);
+    const underway = trip.status !== 'cancelled' && Boolean(trip.startsOn && trip.endsOn && trip.startsOn <= today && today <= trip.endsOn);
+    if (tab === 'past') return trip.status === 'cancelled' || ended;
+    if (tab === 'current') return underway;
+    return !underway && !ended && trip.status !== 'cancelled';
+}
+
+function todayIso(): string {
+    return dateToIso(new Date());
 }
 
 function countTabs(trips: ReadonlyArray<TripRow>): Record<TripTab, number> {

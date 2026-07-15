@@ -1867,7 +1867,6 @@ export interface GqlCAdminTravelTripDay {
 }
 
 export type GqlCAdminTravelTripDayInput = {
-    date?: InputMaybe<Scalars['Date']['input']>;
     dayNumber: Scalars['Int']['input'];
     summary?: InputMaybe<Scalars['String']['input']>;
     title?: InputMaybe<Scalars['String']['input']>;
@@ -1912,7 +1911,7 @@ export type GqlCAdminTravelTripPackingItemInput = {
     tripPackingItemId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type GqlCAdminTravelTripStatus = 'active' | 'cancelled' | 'completed' | 'draft' | 'planned';
+export type GqlCAdminTravelTripStatus = 'cancelled' | 'draft' | 'planned';
 
 export interface GqlCChat {
     __typename?: 'Chat';

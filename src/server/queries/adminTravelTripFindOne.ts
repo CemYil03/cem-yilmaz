@@ -43,7 +43,7 @@ export async function adminTravelTripFindOne(
             .where(eq(tripPackingItems.tripId, tripId))
             .orderBy(asc(tripPackingItems.category), asc(tripPackingItems.position), asc(tripPackingItems.tripPackingItemId));
 
-        const days = dayRows.map((d) => toGqlAdminTravelTripDay(d, activitiesByDayId.get(d.tripDayId) ?? []));
+        const days = dayRows.map((d) => toGqlAdminTravelTripDay(d, activitiesByDayId.get(d.tripDayId) ?? [], row.startsOn));
         const packingItems = packingRows.map(toGqlAdminTravelTripPackingItem);
         return toGqlAdminTravelTrip(row, days, packingItems);
     } catch (error) {

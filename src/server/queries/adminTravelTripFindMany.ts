@@ -50,10 +50,11 @@ export async function adminTravelTripFindMany(
             activitiesByDayId.set(a.tripDayId, list);
         }
 
+        const startsOnByTripId = new Map<string, string | null>(rows.map((r) => [r.tripId, r.startsOn]));
         const daysByTripId = new Map<string, GqlSAdminTravelTripDay[]>();
         for (const d of dayRows) {
             const list = daysByTripId.get(d.tripId) ?? [];
-            list.push(toGqlAdminTravelTripDay(d, activitiesByDayId.get(d.tripDayId) ?? []));
+            list.push(toGqlAdminTravelTripDay(d, activitiesByDayId.get(d.tripDayId) ?? [], startsOnByTripId.get(d.tripId) ?? null));
             daysByTripId.set(d.tripId, list);
         }
 

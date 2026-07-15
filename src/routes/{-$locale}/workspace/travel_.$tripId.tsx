@@ -27,7 +27,6 @@ import {
     AlertDialogTitle,
 } from '../../../web/components/base/alert-dialog';
 import { Button } from '../../../web/components/base/button';
-import { DatePicker } from '../../../web/components/base/date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../web/components/base/dialog';
 import { Input } from '../../../web/components/base/input';
 import { Popover, PopoverAnchor, PopoverContent } from '../../../web/components/base/popover';
@@ -74,8 +73,6 @@ type PackingRow = TripDetail['packingItems'][number];
 const STATUS_LABELS: Record<GqlCTripStatus, { de: string; en: string }> = {
     draft: { de: 'Entwurf', en: 'Draft' },
     planned: { de: 'Geplant', en: 'Planned' },
-    active: { de: 'Unterwegs', en: 'Active' },
-    completed: { de: 'Abgeschlossen', en: 'Completed' },
     cancelled: { de: 'Abgesagt', en: 'Cancelled' },
 };
 
@@ -203,16 +200,7 @@ function TripHeader({ trip, locale }: { trip: TripDetail; locale: Locale }) {
 }
 
 function StatusDot({ status }: { status: GqlCTripStatus }) {
-    const color =
-        status === 'active'
-            ? 'bg-emerald-500'
-            : status === 'planned'
-              ? 'bg-sky-500'
-              : status === 'draft'
-                ? 'bg-muted-foreground'
-                : status === 'completed'
-                  ? 'bg-muted-foreground/60'
-                  : 'bg-rose-500';
+    const color = status === 'planned' ? 'bg-sky-500' : status === 'draft' ? 'bg-muted-foreground' : 'bg-rose-500';
     return <span className={cn('inline-block size-2 rounded-full', color)} aria-hidden />;
 }
 
@@ -272,6 +260,7 @@ function ItineraryPanel({ trip, locale }: { trip: TripDetail; locale: Locale }) 
                     tripId={trip.tripId}
                     initial={editingDay === 'new' ? null : editingDay}
                     nextDayNumber={nextDayNumber}
+                    tripIsDated={Boolean(trip.startsOn)}
                     locale={locale}
                     onClose={() => setEditingDay(null)}
                 />
@@ -316,10 +305,17 @@ function DayBlock({
             <div className="flex items-start justify-between gap-3 group">
                 <div className="min-w-0">
                     <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className="text-sm font-semibold">{{ de: `Tag ${day.dayNumber}`, en: `Day ${day.dayNumber}` }[locale]}</span>
+                        {/* A dated trip leads with the derived calendar date (weekday +
+                            date) — "Day N" would be a competing, redundant label. A
+                            dateless sketch trip has no date, so the ordinal is all we
+                            can show. `day.date` arrives already derived from the server. */}
                         {day.date ? (
-                            <span className="text-xs text-muted-foreground tabular-nums">{formatDayDate(day.date, locale)}</span>
-                        ) : null}
+                            <span className="text-sm font-semibold tabular-nums">{formatDayDate(day.date, locale)}</span>
+                        ) : (
+                            <span className="text-sm font-semibold">
+                                {{ de: `Tag ${day.dayNumber}`, en: `Day ${day.dayNumber}` }[locale]}
+                            </span>
+                        )}
                         {day.title ? <span className="text-sm text-muted-foreground">· {day.title}</span> : null}
                     </div>
                     {day.summary ? <p className="mt-1 text-xs text-muted-foreground">{day.summary}</p> : null}
@@ -643,18 +639,19 @@ function EditDayDialog({
     tripId,
     initial,
     nextDayNumber,
+    tripIsDated,
     locale,
     onClose,
 }: {
     tripId: string;
     initial: DayRow | null;
     nextDayNumber: number;
+    tripIsDated: boolean;
     locale: Locale;
     onClose: () => void;
 }) {
     const isNew = initial === null;
     const [dayNumber, setDayNumber] = useState<number>(initial?.dayNumber ?? nextDayNumber);
-    const [date, setDate] = useState<Date | undefined>(initial?.date ? parseISO(initial.date) : undefined);
     const [title, setTitle] = useState(initial?.title ?? '');
     const [summary, setSummary] = useState(initial?.summary ?? '');
     const [, upsert] = useMutation(WorkspaceTripDaysUpsertDocument);
@@ -669,7 +666,6 @@ function EditDayDialog({
                         tripDayId: initial?.tripDayId ?? null,
                         tripId,
                         dayNumber,
-                        date: date ? dateToIso(date) : null,
                         title: title.trim() || null,
                         summary: summary.trim() || null,
                     },
@@ -693,23 +689,26 @@ function EditDayDialog({
                         {{ de: 'Tage sind die Buckets für Aktivitäten.', en: 'Days are the buckets activities live in.' }[locale]}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FieldWithLabel label={{ de: 'Tag Nr.', en: 'Day #' }[locale]} required>
-                        <Input
-                            type="number"
-                            min={1}
-                            max={365}
-                            value={dayNumber}
-                            onChange={(e) => setDayNumber(Number.parseInt(e.target.value, 10) || 1)}
-                        />
-                    </FieldWithLabel>
-                    <FieldWithLabel label={{ de: 'Datum', en: 'Date' }[locale]}>
-                        <DatePicker value={date} onValueChange={setDate} locale={DATE_FNS_LOCALE[locale]} captionLayout="dropdown" />
-                    </FieldWithLabel>
-                    <FieldWithLabel label={{ de: 'Titel', en: 'Title' }[locale]} className="sm:col-span-2">
+                <div className="grid grid-cols-1 gap-4">
+                    {/* Day # is the ordering key only when the trip has no dates. For a
+                        dated trip the position is implied by the trip's start date, so we
+                        hide the field entirely — the date shown on each card is derived
+                        from `startsOn + (dayNumber - 1)`, never edited here. */}
+                    {tripIsDated ? null : (
+                        <FieldWithLabel label={{ de: 'Tag Nr.', en: 'Day #' }[locale]} required>
+                            <Input
+                                type="number"
+                                min={1}
+                                max={365}
+                                value={dayNumber}
+                                onChange={(e) => setDayNumber(Number.parseInt(e.target.value, 10) || 1)}
+                            />
+                        </FieldWithLabel>
+                    )}
+                    <FieldWithLabel label={{ de: 'Titel', en: 'Title' }[locale]}>
                         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Colosseum + Trastevere" />
                     </FieldWithLabel>
-                    <FieldWithLabel label={{ de: 'Zusammenfassung', en: 'Summary' }[locale]} className="sm:col-span-2">
+                    <FieldWithLabel label={{ de: 'Zusammenfassung', en: 'Summary' }[locale]}>
                         <Textarea rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} />
                     </FieldWithLabel>
                 </div>
@@ -1138,13 +1137,6 @@ function normalizeTimeInput(value: string): string | null {
     const trimmed = value.trim();
     if (!trimmed) return null;
     return trimmed;
-}
-
-function dateToIso(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
 }
 
 // --- Live user hook ---------------------------------------------------------

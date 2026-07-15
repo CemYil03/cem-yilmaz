@@ -1886,8 +1886,18 @@ export type TtsAudioCacheCreate = typeof ttsAudioCache.$inferInsert;
 //
 // `AdminTravelTripPackingItem` rows are trip-scoped for v1. A reusable base
 // template is a follow-up — see the feature doc's Future Work.
+//
+// Two things are deliberately NOT stored, because they duplicate facts already
+// present and would drift (see the feature doc's "Trip shape" section):
+//   - A day's calendar date — derived from `startsOn + (dayNumber - 1)`, so
+//     `dayNumber` is the single ordering key and the date can never disagree
+//     with the trip's range.
+//   - The trip's time-phase (upcoming / underway / past) — derived from the
+//     stored `startsOn`/`endsOn` range. `status` therefore carries only
+//     planning intent (`draft` / `planned` / `cancelled`), not "active" or
+//     "completed", which were pure functions of the dates.
 
-export const tripStatuses = ['draft', 'planned', 'active', 'completed', 'cancelled'] as const;
+export const tripStatuses = ['draft', 'planned', 'cancelled'] as const;
 export type AdminTravelTripStatus = (typeof tripStatuses)[number];
 
 export const transportModes = ['flight', 'train', 'car', 'ferry', 'mixed'] as const;
@@ -1914,18 +1924,18 @@ export const trips = pgTable(
 export type AdminTravelTrip = typeof trips.$inferSelect;
 export type AdminTravelTripCreate = typeof trips.$inferInsert;
 
-// A day within a trip. `dayNumber` is the 1-based ordinal used by the agent
-// ("Day 3") and the UI; `date` is the calendar date once the trip has real
-// dates (nullable — a draft trip may have days without dates yet). `summary`
-// holds the AI-written paragraph describing the day at a glance; `title` is
-// a shorter label ("Colosseum + Trastevere").
+// A day within a trip. `dayNumber` is the 1-based ordinal and the single
+// ordering key ("Day 3"), used by the agent and the UI. There is no stored
+// calendar date: for a dated trip the date is derived from the trip's
+// `startsOn` plus this day's `dayNumber`; a dateless "sketch" trip has no
+// date at all. `summary` holds the AI-written paragraph describing the day at
+// a glance; `title` is a shorter label ("Colosseum + Trastevere").
 export const tripDays = pgTable(
     'AdminTravelTripDay',
     {
         tripDayId: uuid().primaryKey(),
         tripId: uuid().notNull(),
         dayNumber: integer().notNull(),
-        date: date(),
         title: varchar(),
         summary: text(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
@@ -1948,7 +1958,7 @@ export type AdminTravelTripDayCreate = typeof tripDays.$inferInsert;
 
 // An activity slotted into a `TripDay`. Times are stored as wall-clock only
 // (`time` — the trip is location-scoped, so a single tz would be a lie); the
-// UI joins them with the day's `date` for display. `position` orders
+// UI pairs them with the day's derived date for display. `position` orders
 // activities within a day when times are missing or equal.
 export const tripActivities = pgTable(
     'AdminTravelTripActivity',
