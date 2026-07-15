@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useMutation } from 'urql';
 import { ChatTranscript } from '../../../web/chat/ChatTranscriptShared';
 import { mergeTranscriptMessages } from '../../../web/chat/chatTranscript';
@@ -7,6 +7,7 @@ import { toFlatAnswerInput } from '../../../web/chat/chatAssistantInputKinds';
 import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from '../../../web/chat/WorkspaceChatComposer';
+import { DocumentPanelProvider } from '../../../web/chat/DocumentPanelProvider';
 import { ExternalLinkConfirmationProvider } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import type { GqlCChatAssistantInputValue, GqlCWorkspaceChatPageQuery } from '../../../web/graphql/generated';
@@ -136,6 +137,12 @@ function WorkspaceAssistantPage({
 
     const messages = mergeTranscriptMessages(chat.messages, live.appendedMessages);
 
+    // Clicking a document attachment opens the file in the assistant sidebar's
+    // file-display state (owned by the provider). `openFile` also expands the
+    // sidebar if it's collapsed. See `docs/features/workspace-files.md`.
+    const { openFile } = useWorkspaceAssistantChat();
+    const documentPanel = useMemo(() => ({ openDocument: openFile, canOpen: true }), [openFile]);
+
     // Standard chat layout — composer parks against the viewport bottom
     // and the transcript scrolls in between. The workspace layout wraps
     // the outlet in `flex min-h-screen flex-col`, so we give main a
@@ -152,20 +159,22 @@ function WorkspaceAssistantPage({
     // no "New chat" affordance either: the "Workspace" crumb links to
     // the hub, whose hero composer is where a fresh chat starts.
     return (
-        <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-3xl flex-col gap-4 sm:p-6 px-2">
-            <div className="relative flex-1 min-h-0 min-w-0">
+        <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-3xl flex-col gap-4 px-2 sm:p-6">
+            <div className="relative min-h-0 min-w-0 flex-1">
                 {/* Workspace assistant links to the admin's own trusted
                  *  surfaces, so external-link confirmation is off here — see
                  *  `ExternalLinkConfirmationProvider` in `AssistantMarkdown.tsx`. */}
                 <ExternalLinkConfirmationProvider enabled={false}>
-                    <ChatTranscript
-                        messages={messages}
-                        streamingTexts={live.streamingTexts}
-                        onCollectionSubmit={onCollectionSubmit}
-                        onApprovalRespond={onApprovalRespond}
-                        jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
-                        isGenerating={live.isGenerating}
-                    />
+                    <DocumentPanelProvider value={documentPanel}>
+                        <ChatTranscript
+                            messages={messages}
+                            streamingTexts={live.streamingTexts}
+                            onCollectionSubmit={onCollectionSubmit}
+                            onApprovalRespond={onApprovalRespond}
+                            jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
+                            isGenerating={live.isGenerating}
+                        />
+                    </DocumentPanelProvider>
                 </ExternalLinkConfirmationProvider>
             </div>
             <WorkspaceChatComposer

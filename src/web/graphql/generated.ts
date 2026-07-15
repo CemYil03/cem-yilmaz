@@ -45,6 +45,7 @@ export interface GqlCAdmin {
     adminStandaloneTaskOpenCount: Scalars['Int']['output'];
     adminTaxFindOne: GqlCAdminTaxQuery;
     adminTravelFindOne: GqlCAdminTravelQuery;
+    adminWorkspaceFileFindOne: GqlCWorkspaceFile;
 }
 
 export type GqlCAdminAdminChatCountArgs = {
@@ -81,6 +82,10 @@ export type GqlCAdminAdminProjectRequestFindManyArgs = {
 
 export type GqlCAdminAdminPublicChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlCAdminAdminWorkspaceFileFindOneArgs = {
+    workspaceFileId: Scalars['ID']['input'];
 };
 
 export interface GqlCAdminChatConfig {
@@ -811,6 +816,7 @@ export interface GqlCAdminMutation {
     adminTravelTripPackingItemsUpsert: GqlCMutationResult;
     adminTravelTripsDelete: GqlCMutationResult;
     adminTravelTripsUpsert: GqlCMutationResult;
+    adminWorkspaceFileUpdate: GqlCMutationResult;
     chatConfigDefaultModelSet: GqlCMutationResult;
     chatInputCollectionRespond?: Maybe<GqlCChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlCChatMessageCreateResult>;
@@ -1159,6 +1165,12 @@ export type GqlCAdminMutationAdminTravelTripsDeleteArgs = {
 
 export type GqlCAdminMutationAdminTravelTripsUpsertArgs = {
     trips: Array<GqlCAdminTravelTripInput>;
+};
+
+export type GqlCAdminMutationAdminWorkspaceFileUpdateArgs = {
+    content: Scalars['String']['input'];
+    label?: InputMaybe<Scalars['String']['input']>;
+    workspaceFileId: Scalars['ID']['input'];
 };
 
 export type GqlCAdminMutationChatConfigDefaultModelSetArgs = {
@@ -2458,6 +2470,17 @@ export interface GqlCVisitorChatQuota {
     limit: Scalars['Int']['output'];
     resetsAt?: Maybe<Scalars['DateTime']['output']>;
     used: Scalars['Int']['output'];
+}
+
+export interface GqlCWorkspaceFile {
+    __typename?: 'WorkspaceFile';
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlCFileUpload;
+    filename: Scalars['String']['output'];
+    label?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    workspaceFileId: Scalars['ID']['output'];
 }
 
 export type GqlCCvPageQueryVariables = Exact<{ [key: string]: never }>;
@@ -7128,6 +7151,40 @@ export type GqlCVisitorChatQuotaQueryVariables = Exact<{ [key: string]: never }>
 
 export type GqlCVisitorChatQuotaQuery = {
     sessionFindOne: { sessionId: string; visitorChatQuotaFindOne: { used: number; limit: number; resetsAt: string | null } };
+};
+
+export type GqlCWorkspaceFileQueryVariables = Exact<{
+    workspaceFileId: string;
+}>;
+
+export type GqlCWorkspaceFileQuery = {
+    sessionFindOne: {
+        sessionId: string;
+        user: {
+            userId: string;
+            admin: {
+                adminWorkspaceFileFindOne: {
+                    workspaceFileId: string;
+                    filename: string;
+                    label: string | null;
+                    content: string;
+                    createdAt: string;
+                    updatedAt: string;
+                    fileUpload: { fileUploadId: string; filename: string; mediaType: string; size: number; url: string };
+                };
+            } | null;
+        } | null;
+    };
+};
+
+export type GqlCWorkspaceFileUpdateMutationVariables = Exact<{
+    workspaceFileId: string;
+    content: string;
+    label?: string | null | undefined;
+}>;
+
+export type GqlCWorkspaceFileUpdateMutation = {
+    admin: { adminWorkspaceFileUpdate: { success: boolean; referenceIds: Array<string> | null } };
 };
 
 export const WorkspaceChatMessageGenerationFragmentDoc = {
@@ -25601,3 +25658,171 @@ export const VisitorChatQuotaDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCVisitorChatQuotaQuery, GqlCVisitorChatQuotaQueryVariables>;
+export const WorkspaceFileDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'query',
+            name: { kind: 'Name', value: 'WorkspaceFile' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'workspaceFileId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'sessionFindOne' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                { kind: 'Field', name: { kind: 'Name', value: 'sessionId' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'user' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'userId' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'admin' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        {
+                                                            kind: 'Field',
+                                                            name: { kind: 'Name', value: 'adminWorkspaceFileFindOne' },
+                                                            arguments: [
+                                                                {
+                                                                    kind: 'Argument',
+                                                                    name: { kind: 'Name', value: 'workspaceFileId' },
+                                                                    value: {
+                                                                        kind: 'Variable',
+                                                                        name: { kind: 'Name', value: 'workspaceFileId' },
+                                                                    },
+                                                                },
+                                                            ],
+                                                            selectionSet: {
+                                                                kind: 'SelectionSet',
+                                                                selections: [
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'workspaceFileId' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'filename' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'label' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'content' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                                    {
+                                                                        kind: 'Field',
+                                                                        name: { kind: 'Name', value: 'fileUpload' },
+                                                                        selectionSet: {
+                                                                            kind: 'SelectionSet',
+                                                                            selections: [
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'fileUploadId' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'filename' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'mediaType' },
+                                                                                },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'size' } },
+                                                                                { kind: 'Field', name: { kind: 'Name', value: 'url' } },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFileQuery, GqlCWorkspaceFileQueryVariables>;
+export const WorkspaceFileUpdateDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFileUpdate' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'workspaceFileId' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'content' } },
+                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                },
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminWorkspaceFileUpdate' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'workspaceFileId' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'workspaceFileId' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'content' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'content' } },
+                                        },
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'label' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'label' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFileUpdateMutation, GqlCWorkspaceFileUpdateMutationVariables>;

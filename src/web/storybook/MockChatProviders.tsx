@@ -62,6 +62,9 @@ export function MockWorkspaceAssistantChatProvider({ children }: { children: Rea
                 },
                 selectedModelId: 'gemini-pro',
                 onModelChange: () => {},
+                openFileId: null,
+                openFile: () => {},
+                closeFile: () => {},
             }}
         >
             {children}

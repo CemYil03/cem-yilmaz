@@ -95,6 +95,7 @@ import { adminProjectActivitiesDelete } from '../commands/adminProjectActivities
 import { adminProjectActivitiesUpsert } from '../commands/adminProjectActivitiesUpsert';
 import { adminProjectFilesDelete } from '../commands/adminProjectFilesDelete';
 import { adminProjectFilesUpsert } from '../commands/adminProjectFilesUpsert';
+import { adminWorkspaceFileUpdate } from '../commands/adminWorkspaceFileUpdate';
 import { adminProjectLinksDelete } from '../commands/adminProjectLinksDelete';
 import { adminProjectLinksUpsert } from '../commands/adminProjectLinksUpsert';
 import { adminProjectRequestArchive } from '../commands/adminProjectRequestArchive';
@@ -165,6 +166,7 @@ import { adminProjectRequestFindMany } from '../queries/adminProjectRequestFindM
 import { adminProjectRequestInboxCount } from '../queries/adminProjectRequestInboxCount';
 import { adminProjectFindMany } from '../queries/adminProjectFindMany';
 import { adminProjectFindOne } from '../queries/adminProjectFindOne';
+import { adminWorkspaceFileFindOne } from '../queries/adminWorkspaceFileFindOne';
 import { adminProjectActiveTimerFindOne } from '../queries/adminProjectActiveTimerFindOne';
 import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 import { sessionUserFindOne } from '../queries/sessionUserFindOne';
@@ -286,6 +288,7 @@ import type {
     GqlSAdminMutationAdminProjectActivitiesUpsertArgs,
     GqlSAdminMutationAdminProjectFilesDeleteArgs,
     GqlSAdminMutationAdminProjectFilesUpsertArgs,
+    GqlSAdminMutationAdminWorkspaceFileUpdateArgs,
     GqlSAdminMutationAdminProjectLinksDeleteArgs,
     GqlSAdminMutationAdminProjectLinksUpsertArgs,
     GqlSAdminMutationAdminProjectReorderArgs,
@@ -301,6 +304,7 @@ import type {
     GqlSAdminCompass,
     GqlSAdminCompassAdminCompassObservationFindManyArgs,
     GqlSAdminAdminProjectFindOneArgs,
+    GqlSAdminAdminWorkspaceFileFindOneArgs,
     GqlSAdminAdminProjectRequestFindManyArgs,
     GqlSAdminAdminProjectFindManyArgs,
     GqlSAdminAdminPublicChatFindOneArgs,
@@ -476,6 +480,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             // shell, identical to `Query.publicCvFindOne()` below.
             adminCvFindOne(): GqlSCvQuery {
                 return {} as GqlSCvQuery;
+            },
+            adminWorkspaceFileFindOne(_parent: GqlSAdmin, args: GqlSAdminAdminWorkspaceFileFindOneArgs, requestingSession: GqlSSession) {
+                return adminWorkspaceFileFindOne(args.workspaceFileId, requestingSession, serverRuntime);
             },
             // Media editor namespace — same shell pattern as `adminCvFindOne`
             // above. The per-field resolvers on `AdminMediaQuery` fan out to
@@ -969,6 +976,20 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return adminProjectFilesDelete(userId, args.projectFileIds, requestingSession, serverRuntime);
+            },
+            adminWorkspaceFileUpdate(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminWorkspaceFileUpdateArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminWorkspaceFileUpdate(
+                    userId,
+                    args.workspaceFileId,
+                    args.content,
+                    args.label ?? null,
+                    requestingSession,
+                    serverRuntime,
+                );
             },
             chatConfigDefaultModelSet(
                 { userId }: GqlSAdminMutation,

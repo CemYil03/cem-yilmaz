@@ -1,9 +1,39 @@
+import { FileTextIcon } from 'lucide-react';
 import type { GqlCChatMessage, GqlCChatMessageToolCall } from '../../graphql/generated';
 import { useLocale } from '../../hooks/useLocale';
 import { cn } from '../../utils/cn';
 import { toolDisplay } from '../../chat/toolDisplay';
 import { interpretToolResult } from '../../chat/toolResult';
+import { useDocumentPanel } from '../../chat/DocumentPanelProvider';
+import {
+    Attachment,
+    AttachmentContent,
+    AttachmentDescription,
+    AttachmentMedia,
+    AttachmentTitle,
+    AttachmentTrigger,
+} from '../base/attachment';
 import { MessageRow, Timestamp, ToolArgumentsButton, ToolRowShell, ToolStatusIcon } from './shared';
+
+// A `workspaceFileCreate` tool result carries the created file's id + names.
+// The column is the GraphQL `JSON` scalar (typed `unknown` on the client), so
+// we narrow defensively before rendering the attachment card.
+interface CreatedWorkspaceFile {
+    workspaceFileId: string;
+    filename: string;
+    label: string | null;
+}
+
+function createdWorkspaceFileFromResult(result: unknown): CreatedWorkspaceFile | null {
+    if (!result || typeof result !== 'object') return null;
+    const record = result as Record<string, unknown>;
+    if (typeof record.workspaceFileId !== 'string' || typeof record.filename !== 'string') return null;
+    return {
+        workspaceFileId: record.workspaceFileId,
+        filename: record.filename,
+        label: typeof record.label === 'string' ? record.label : null,
+    };
+}
 
 // Renders one tool-call row in the transcript. The base pill (friendly tool
 // label + status glyph + args/result inspector + timestamp, plus an expandable
@@ -31,6 +61,12 @@ export function ChatMessageToolCallView({
     active?: boolean;
 }) {
     const hasChildren = (childMessages?.length ?? 0) > 0;
+    // A completed `workspaceFileCreate` grows a clickable document attachment
+    // card beneath its normal tool pill — the pill keeps the turn's "the
+    // assistant used a tool" record intact, and the card is the affordance to
+    // open the file. While the call is still in flight (no result yet) the card
+    // is absent and only the shimmering pill shows; it appears once the id lands.
+    const createdFile = message.toolName === 'workspaceFileCreate' ? createdWorkspaceFileFromResult(message.toolResult) : null;
     return (
         <MessageRow side="system">
             <div data-slot="chat-message-tool-call" className="flex max-w-full flex-col items-stretch gap-1">
@@ -41,6 +77,7 @@ export function ChatMessageToolCallView({
                     createdAt={message.createdAt}
                     active={active}
                 />
+                {createdFile ? <WorkspaceFileAttachment file={createdFile} /> : null}
                 {hasChildren ? (
                     <ul
                         data-slot="chat-message-tool-call-children"
@@ -78,5 +115,29 @@ function ChildToolRow({ child }: { child: GqlCChatMessageToolCall }) {
                 <span className={cn('ml-5 line-clamp-1 min-w-0', status === 'failed' && 'text-destructive/90')}>{summary}</span>
             ) : null}
         </li>
+    );
+}
+
+// The document card shown beneath a `workspaceFileCreate` tool pill. Clicking
+// it opens the file in the assistant sidebar's file-display state via the
+// `DocumentPanel` context. When no panel is available (`canOpen` false, e.g.
+// the visitor sheet), the card renders inert so it never looks
+// clickable-but-dead.
+function WorkspaceFileAttachment({ file }: { file: CreatedWorkspaceFile }) {
+    const locale = useLocale();
+    const { openDocument, canOpen } = useDocumentPanel();
+    const title = file.label ?? file.filename;
+    const openLabel = { de: 'Dokument öffnen', en: 'Open document' }[locale];
+    return (
+        <Attachment orientation="horizontal" className={cn('max-w-full', canOpen && 'cursor-pointer')}>
+            <AttachmentMedia>
+                <FileTextIcon aria-hidden />
+            </AttachmentMedia>
+            <AttachmentContent>
+                <AttachmentTitle>{title}</AttachmentTitle>
+                <AttachmentDescription>{file.filename}</AttachmentDescription>
+            </AttachmentContent>
+            {canOpen ? <AttachmentTrigger aria-label={openLabel} onClick={() => openDocument(file.workspaceFileId)} /> : null}
+        </Attachment>
     );
 }

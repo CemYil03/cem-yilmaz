@@ -1,5 +1,5 @@
 import { PanelRightCloseIcon, SparklesIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { TranscriptMessage } from './chatTranscript';
 import { mergeTranscriptMessages } from './chatTranscript';
 import {
@@ -9,6 +9,7 @@ import {
     WorkspaceAssistantChatTranscript,
 } from './WorkspaceAssistantChatBody';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
+import { WorkspaceFileEditor } from './WorkspaceFileEditor';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from '../components/base/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/base/tooltip';
 import type { Locale } from '../utils/locale';
@@ -42,10 +43,6 @@ import type { Locale } from '../utils/locale';
 
 const collapseLabel = { de: 'Assistent ausblenden', en: 'Hide assistant' };
 const assistantLabel = { de: 'Persönlicher Assistent', en: 'Personal assistant' };
-const assistantSubtitle = {
-    de: 'Frag deinen Assistenten — der Chat läuft weiter, während du zwischen den Bereichen wechselst.',
-    en: 'Ask your assistant — the chat keeps running while you move between focus areas.',
-};
 const resizeLabel = { de: 'Breite anpassen', en: 'Resize' };
 
 interface WorkspaceAssistantChatSidebarProps {
@@ -59,8 +56,8 @@ interface WorkspaceAssistantChatSidebarProps {
 }
 
 export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, onWidthCommit }: WorkspaceAssistantChatSidebarProps) {
-    const { chatId, loadedMessages, live } = useWorkspaceAssistantChat();
-    const { toggleSidebar, isMobile } = useSidebar();
+    const { chatId, loadedMessages, live, openFileId, closeFile } = useWorkspaceAssistantChat();
+    const { toggleSidebar, isMobile, setOpen, setOpenMobile } = useSidebar();
 
     // `hasActiveChat` — the sidebar shows a transcript for any chat that
     // has been picked, is streaming, or has any live-appended messages.
@@ -69,6 +66,17 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
     // returning a chatId; `live.isGenerating` covers that gap.
     const allMessages = mergeTranscriptMessages(loadedMessages, live.appendedMessages as ReadonlyArray<TranscriptMessage>);
     const hasActiveChat = !!chatId || live.isGenerating || allMessages.length > 0;
+
+    // Opening a file from a transcript attachment sets `openFileId` on the
+    // provider. If the sidebar is collapsed (or its mobile sheet is shut),
+    // expand it so the file actually shows — the attachment click might have
+    // come from the full-page chat route, where the sidebar starts closed.
+    const showingFile = openFileId !== null;
+    useEffect(() => {
+        if (!showingFile) return;
+        if (isMobile) setOpenMobile(true);
+        else setOpen(true);
+    }, [showingFile, isMobile, setOpen, setOpenMobile]);
 
     return (
         <Sidebar
@@ -95,7 +103,6 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
                             <SparklesIcon className="size-4" />
                             <span className="text-sm font-semibold text-sidebar-foreground">{assistantLabel[locale]}</span>
                         </div>
-                        <p className="text-xs text-sidebar-foreground/60">{assistantSubtitle[locale]}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                         <Tooltip>
@@ -116,20 +123,34 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
             </SidebarHeader>
 
             <SidebarContent className="min-h-0 flex-1 overflow-hidden p-0">
-                <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pt-4 pb-0">
-                    {hasActiveChat ? (
-                        <>
-                            <WorkspaceAssistantChatLoadedHeader locale={locale} />
-                            <WorkspaceAssistantChatTranscript messages={allMessages} streamingTexts={live.streamingTexts} locale={locale} />
-                        </>
-                    ) : (
-                        <WorkspaceAssistantChatBrowser locale={locale} />
-                    )}
-                </div>
+                {showingFile ? (
+                    // File-display state: the editor fills the content area
+                    // (it brings its own header + padding). Takes precedence
+                    // over the transcript / browser; the composer footer is
+                    // hidden below since a file view isn't a chat turn.
+                    <WorkspaceFileEditor workspaceFileId={openFileId} onClose={closeFile} locale={locale} className="min-h-0 flex-1" />
+                ) : (
+                    <div className="flex min-h-0 flex-1 flex-col gap-1 px-4 pt-2 pb-0">
+                        {hasActiveChat ? (
+                            <>
+                                <WorkspaceAssistantChatLoadedHeader locale={locale} />
+                                <WorkspaceAssistantChatTranscript
+                                    messages={allMessages}
+                                    streamingTexts={live.streamingTexts}
+                                    locale={locale}
+                                />
+                            </>
+                        ) : (
+                            <WorkspaceAssistantChatBrowser locale={locale} />
+                        )}
+                    </div>
+                )}
             </SidebarContent>
-            <SidebarFooter className="border-t border-sidebar-border p-3">
-                <WorkspaceAssistantChatComposer locale={locale} />
-            </SidebarFooter>
+            {showingFile ? null : (
+                <SidebarFooter className="border-t border-sidebar-border p-3">
+                    <WorkspaceAssistantChatComposer locale={locale} />
+                </SidebarFooter>
+            )}
         </Sidebar>
     );
 }

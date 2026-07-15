@@ -95,6 +95,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 | Fitness               | Gym log (sessions → sets) + reusable routines + exercise catalog; sub-agent logs workouts from chat                                                                        | `docs/features/workspace-fitness.md`           |
 | Finances              | Recurring-cost tracker (income → categories → items Sankey); sub-agent adds/edits costs from chat                                                                          | `docs/features/workspace-finances.md`          |
 | Tax                   | German tax return organiser: tax year → income sources (Anlagen) → deductible expenses + receipts + seeded document checklist; documentarian sub-agent (no binding advice) | `docs/features/workspace-tax.md`               |
+| Workspace files       | Assistant-authored markdown docs (create/read/update tools on the orchestrator); attachment on the chat message opens a resizable editor panel with preview/edit/save      | `docs/features/workspace-files.md`             |
 
 ## How to Add Things
 

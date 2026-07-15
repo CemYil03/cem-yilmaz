@@ -17,6 +17,7 @@ import {
     AppleIcon,
     ClipboardListIcon,
     DumbbellIcon,
+    FileTextIcon,
     FilmIcon,
     FolderKanbanIcon,
     GlobeIcon,
@@ -50,6 +51,10 @@ const TOOL_DISPLAY: Record<string, ToolDisplay> = {
     delegateToFinances: { Icon: WalletIcon, label: { de: 'Finanzen', en: 'Finances' } },
     delegateToInventory: { Icon: PackageIcon, label: { de: 'Inventar', en: 'Inventory' } },
     delegateToTax: { Icon: ReceiptIcon, label: { de: 'Steuern', en: 'Tax' } },
+    // Document tools live directly on the orchestrator (no sub-agent hop).
+    workspaceFileCreate: { Icon: FileTextIcon, label: { de: 'Dokument erstellt', en: 'Created a document' } },
+    workspaceFileGet: { Icon: FileTextIcon, label: { de: 'Dokument gelesen', en: 'Read a document' } },
+    workspaceFileUpdate: { Icon: FileTextIcon, label: { de: 'Dokument aktualisiert', en: 'Updated a document' } },
     // Visitor agent tools.
     promptUserForInput: { Icon: MessageSquareIcon, label: { de: 'Eingabe angefordert', en: 'Requested your input' } },
     sendEmailToCem: { Icon: MailIcon, label: { de: 'E-Mail an Cem', en: 'Email to Cem' } },

@@ -42,6 +42,7 @@ export interface GqlSAdmin {
     adminStandaloneTaskOpenCount: Scalars['Int']['output'];
     adminTaxFindOne: GqlSAdminTaxQuery;
     adminTravelFindOne: GqlSAdminTravelQuery;
+    adminWorkspaceFileFindOne: GqlSWorkspaceFile;
 }
 
 export type GqlSAdminAdminChatCountArgs = {
@@ -78,6 +79,10 @@ export type GqlSAdminAdminProjectRequestFindManyArgs = {
 
 export type GqlSAdminAdminPublicChatFindOneArgs = {
     chatId: Scalars['ID']['input'];
+};
+
+export type GqlSAdminAdminWorkspaceFileFindOneArgs = {
+    workspaceFileId: Scalars['ID']['input'];
 };
 
 export interface GqlSAdminChatConfig {
@@ -808,6 +813,7 @@ export interface GqlSAdminMutation {
     adminTravelTripPackingItemsUpsert: GqlSMutationResult;
     adminTravelTripsDelete: GqlSMutationResult;
     adminTravelTripsUpsert: GqlSMutationResult;
+    adminWorkspaceFileUpdate: GqlSMutationResult;
     chatConfigDefaultModelSet: GqlSMutationResult;
     chatInputCollectionRespond?: Maybe<GqlSChatMessageCreateResult>;
     chatMessageCreate?: Maybe<GqlSChatMessageCreateResult>;
@@ -1156,6 +1162,12 @@ export type GqlSAdminMutationAdminTravelTripsDeleteArgs = {
 
 export type GqlSAdminMutationAdminTravelTripsUpsertArgs = {
     trips: Array<GqlSAdminTravelTripInput>;
+};
+
+export type GqlSAdminMutationAdminWorkspaceFileUpdateArgs = {
+    content: Scalars['String']['input'];
+    label?: InputMaybe<Scalars['String']['input']>;
+    workspaceFileId: Scalars['ID']['input'];
 };
 
 export type GqlSAdminMutationChatConfigDefaultModelSetArgs = {
@@ -2457,6 +2469,17 @@ export interface GqlSVisitorChatQuota {
     used: Scalars['Int']['output'];
 }
 
+export interface GqlSWorkspaceFile {
+    __typename?: 'WorkspaceFile';
+    content: Scalars['String']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    fileUpload: GqlSFileUpload;
+    filename: Scalars['String']['output'];
+    label?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+    workspaceFileId: Scalars['ID']['output'];
+}
+
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
 
@@ -2822,6 +2845,7 @@ export type GqlSResolversTypes = ResolversObject<{
     UserMutation: ResolverTypeWrapper<GqlSUserMutation>;
     UserUpdate: GqlSUserUpdate;
     VisitorChatQuota: ResolverTypeWrapper<GqlSVisitorChatQuota>;
+    WorkspaceFile: ResolverTypeWrapper<GqlSWorkspaceFile>;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -3010,6 +3034,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     UserMutation: GqlSUserMutation;
     UserUpdate: GqlSUserUpdate;
     VisitorChatQuota: GqlSVisitorChatQuota;
+    WorkspaceFile: GqlSWorkspaceFile;
 }>;
 
 export type GqlSAdminResolvers<
@@ -3065,6 +3090,12 @@ export type GqlSAdminResolvers<
     adminStandaloneTaskOpenCount?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminTaxFindOne?: Resolver<GqlSResolversTypes['AdminTaxQuery'], ParentType, ContextType>;
     adminTravelFindOne?: Resolver<GqlSResolversTypes['AdminTravelQuery'], ParentType, ContextType>;
+    adminWorkspaceFileFindOne?: Resolver<
+        GqlSResolversTypes['WorkspaceFile'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminAdminWorkspaceFileFindOneArgs, 'workspaceFileId'>
+    >;
 }>;
 
 export type GqlSAdminChatConfigResolvers<
@@ -4008,6 +4039,12 @@ export type GqlSAdminMutationResolvers<
         ParentType,
         ContextType,
         RequireFields<GqlSAdminMutationAdminTravelTripsUpsertArgs, 'trips'>
+    >;
+    adminWorkspaceFileUpdate?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminWorkspaceFileUpdateArgs, 'content' | 'workspaceFileId'>
     >;
     chatConfigDefaultModelSet?: Resolver<
         GqlSResolversTypes['MutationResult'],
@@ -5205,6 +5242,19 @@ export type GqlSVisitorChatQuotaResolvers<
     used?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
+export type GqlSWorkspaceFileResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['WorkspaceFile'] = GqlSResolversParentTypes['WorkspaceFile'],
+> = ResolversObject<{
+    content?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    fileUpload?: Resolver<GqlSResolversTypes['FileUpload'], ParentType, ContextType>;
+    filename?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    label?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    workspaceFileId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+}>;
+
 export type GqlSResolvers<ContextType = any> = ResolversObject<{
     Admin?: GqlSAdminResolvers<ContextType>;
     AdminChatConfig?: GqlSAdminChatConfigResolvers<ContextType>;
@@ -5320,6 +5370,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     User?: GqlSUserResolvers<ContextType>;
     UserMutation?: GqlSUserMutationResolvers<ContextType>;
     VisitorChatQuota?: GqlSVisitorChatQuotaResolvers<ContextType>;
+    WorkspaceFile?: GqlSWorkspaceFileResolvers<ContextType>;
 }>;
 
 type Properties<T> = {

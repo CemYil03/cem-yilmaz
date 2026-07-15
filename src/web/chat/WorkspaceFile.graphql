@@ -1,0 +1,41 @@
+# Operations for the workspace document editor panel — the half-screen sidebar
+# that opens when Cem clicks a file attachment on an assistant message. See
+# `docs/features/workspace-files.md`.
+#
+# Read + save only; files are created by the assistant's `workspaceFileCreate`
+# tool (server-side), not from the client.
+
+query WorkspaceFile($workspaceFileId: ID!) {
+    sessionFindOne {
+        sessionId
+        user {
+            userId
+            admin {
+                adminWorkspaceFileFindOne(workspaceFileId: $workspaceFileId) {
+                    workspaceFileId
+                    filename
+                    label
+                    content
+                    createdAt
+                    updatedAt
+                    fileUpload {
+                        fileUploadId
+                        filename
+                        mediaType
+                        size
+                        url
+                    }
+                }
+            }
+        }
+    }
+}
+
+mutation WorkspaceFileUpdate($workspaceFileId: ID!, $content: String!, $label: String) {
+    admin {
+        adminWorkspaceFileUpdate(workspaceFileId: $workspaceFileId, content: $content, label: $label) {
+            success
+            referenceIds
+        }
+    }
+}

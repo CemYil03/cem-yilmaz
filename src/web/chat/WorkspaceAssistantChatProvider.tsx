@@ -87,6 +87,16 @@ interface WorkspaceAssistantChatContextValue {
     /** Picks a new model: updates `selectedModelId` immediately and
      *  fire-and-forget persists it as the new default. */
     onModelChange: (modelId: string) => void;
+    /** The workspace file currently shown in the sidebar's file-display
+     *  state, or null when the sidebar is on the chat browser / transcript.
+     *  Opening a file attachment sets this; it takes visual precedence over
+     *  the transcript. See `docs/features/workspace-files.md`. */
+    openFileId: string | null;
+    /** Show a file in the sidebar (and open the sidebar if collapsed — the
+     *  opener handles that). */
+    openFile: (workspaceFileId: string) => void;
+    /** Return the sidebar from file-display to the transcript / browser. */
+    closeFile: () => void;
 }
 
 export const WorkspaceAssistantChatContext = createContext<WorkspaceAssistantChatContextValue | null>(null);
@@ -101,6 +111,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
     const [chatId, setChatId] = useState<string | undefined>(undefined);
     const [loadedMessages, setLoadedMessages] = useState<ReadonlyArray<TranscriptMessage>>([]);
     const [selectedModelId, setSelectedModelId] = useState(chatConfig.defaultModelId);
+    const [openFileId, setOpenFileId] = useState<string | null>(null);
     const live = useChatLiveUpdates(chatId);
     const [, setDefaultModel] = useMutation(WorkspaceChatConfigDefaultModelSetDocument);
     const urqlClient = useClient();
@@ -153,6 +164,9 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
         setLoadedMessages([]);
     }, []);
 
+    const openFile = useCallback((workspaceFileId: string) => setOpenFileId(workspaceFileId), []);
+    const closeFile = useCallback(() => setOpenFileId(null), []);
+
     const loadChat = useCallback(
         async (id: string) => {
             // Imperative URQL — same reasoning as `VisitorChatProvider` in
@@ -184,8 +198,24 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
             chatConfig,
             selectedModelId,
             onModelChange,
+            openFileId,
+            openFile,
+            closeFile,
         }),
-        [chatId, loadedMessages, live, setChatIdFromHub, resetChat, loadChat, chatConfig, selectedModelId, onModelChange],
+        [
+            chatId,
+            loadedMessages,
+            live,
+            setChatIdFromHub,
+            resetChat,
+            loadChat,
+            chatConfig,
+            selectedModelId,
+            onModelChange,
+            openFileId,
+            openFile,
+            closeFile,
+        ],
     );
 
     return (

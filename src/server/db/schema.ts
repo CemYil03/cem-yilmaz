@@ -1342,6 +1342,47 @@ export const projectFiles = pgTable(
 export type AdminProjectFile = typeof projectFiles.$inferSelect;
 export type AdminProjectFileCreate = typeof projectFiles.$inferInsert;
 
+// --- Workspace files ---------------------------------------------------------
+//
+// Standalone markdown documents the assistant drafts from chat and the admin
+// edits in the workspace document panel (Claude-artifact style). Unlike
+// `AdminProjectFile`, these are not tied to a project — they belong directly to
+// the user. The bytes live on the shared `fileUploads` table (markdown only);
+// this row carries the metadata + a stable `fileUploadId` (the update path
+// rewrites the upload's bytes in place so the download URL never changes). See
+// `docs/features/workspace-files.md`.
+export const workspaceFiles = pgTable(
+    'WorkspaceFile',
+    {
+        workspaceFileId: uuid().primaryKey(),
+        userId: uuid().notNull(),
+        fileUploadId: uuid().notNull(),
+        filename: varchar().notNull(),
+        label: varchar(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.userId],
+            foreignColumns: [users.userId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        foreignKey({
+            columns: [table.fileUploadId],
+            foreignColumns: [fileUploads.fileUploadId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('WorkspaceFile_userId_idx').on(table.userId),
+        index('WorkspaceFile_fileUploadId_idx').on(table.fileUploadId),
+    ],
+);
+
+export type WorkspaceFile = typeof workspaceFiles.$inferSelect;
+export type WorkspaceFileCreate = typeof workspaceFiles.$inferInsert;
+
 // --- Media -------------------------------------------------------------------
 //
 // `Movies`, `Shows`, and `MediaChannels` back `/workspace/media`. Admin-only,

@@ -15,6 +15,7 @@ import { toolDelegateToInventory } from './toolDelegateToInventory';
 import { toolDelegateToTax } from './toolDelegateToTax';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
+import { toolWorkspaceFileCreate, toolWorkspaceFileGet, toolWorkspaceFileUpdate } from '../commands/workspaceFileCreateFromMarkdown';
 
 // Personal-assistant agent for `/workspace/assistant`. This is the
 // orchestrator in the agent-delegation pattern: it owns the user-facing
@@ -59,6 +60,15 @@ const BASE_SYSTEM_PROMPT = [
     '  thread. For per-entry `failed`, tell Cem plainly which brief failed and quote its `summary`; do NOT retry',
     '  automatically. Do NOT search for things that live in this prompt or in the workspace data (facts about Cem in',
     '  the compass context, the projects board, arithmetic / reasoning / code questions you can answer directly).',
+    '',
+    'Documents (`workspaceFile*` tools): when Cem asks you to draft, write, or put together something he will want to',
+    'read and edit as a document — notes, a plan, a letter, a spec, an outline — call `workspaceFileCreate` instead of',
+    'dumping the whole thing into chat. It opens in an editable side panel. After creating it, still reply normally in',
+    'chat as you would after any tool call: a short sentence or two saying what you created and offering an obvious',
+    'next step ("Drafted a project brief — open it to review; want me to add a timeline section?"). Do NOT paste the',
+    'full document body back into the reply — the panel shows it. To revise a document, call `workspaceFileGet` first',
+    "(it returns Cem's latest edits) and then `workspaceFileUpdate` with the complete new body, then confirm the change",
+    'in a short reply. Prefer a plain chat reply for short answers, quick facts, or anything he just wants inline.',
     '',
     'Style:',
     '- Reply in the language Cem wrote in (German or English).',
@@ -178,6 +188,15 @@ export async function agentPersonalAssistant({
         instructions: buildSystemPrompt(compassSummary, currentPagePath),
         tools: {
             promptUserForInput: toolPromptUserForInput(),
+            // Standalone markdown documents Cem opens and edits in the
+            // workspace document panel. Unlike the `delegateTo*` tools these
+            // live directly on the orchestrator (no sub-agent hop) — creating a
+            // doc is a single write and the result carries the id the chat
+            // renders the attachment from. Create / read-latest / overwrite.
+            // See `docs/features/workspace-files.md`.
+            workspaceFileCreate: toolWorkspaceFileCreate({ serverRuntime, session }),
+            workspaceFileGet: toolWorkspaceFileGet({ serverRuntime, session }),
+            workspaceFileUpdate: toolWorkspaceFileUpdate({ serverRuntime, session }),
             // Delegate tool persists sub-agent tool calls under its own
             // pre-written row via the `chatId` + `preWrittenToolCallIds` it
             // receives here. See

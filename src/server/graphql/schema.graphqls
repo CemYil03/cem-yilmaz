@@ -1146,6 +1146,20 @@ type AdminProjectFile {
     updatedAt: DateTime!
 }
 
+# A standalone markdown document the assistant drafted from chat and the admin
+# edits in the workspace document panel. `content` is the decoded UTF-8 body of
+# the underlying upload; `fileUpload.url` still serves the raw bytes for
+# download. See `docs/features/workspace-files.md`.
+type WorkspaceFile {
+    workspaceFileId: ID!
+    filename: String!
+    label: String
+    content: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    fileUpload: FileUpload!
+}
+
 # Workspace projects read namespace — mounted under `Admin.adminProjectFindMany` so
 # the resolver chain on `User.admin` covers it.
 extend type Admin {
@@ -1186,6 +1200,10 @@ extend type Admin {
     # `AdminMutation.cv*` and continue to publish `userUpdates` after commit.
     # See `docs/architecture/state-synchronization.md`.
     adminCvFindOne: CvQuery!
+    # Single standalone workspace file (assistant-authored markdown) by id,
+    # with its decoded `content`. Powers the document editor panel. Raises
+    # `notFound` when the id does not exist or is not owned by the admin.
+    adminWorkspaceFileFindOne(workspaceFileId: ID!): WorkspaceFile!
 }
 
 input AdminProjectCreate {
@@ -1414,6 +1432,13 @@ extend type AdminMutation {
     # flipped. `referenceIds` echoes the row id per input in input order.
     adminProjectFilesUpsert(projectFiles: [AdminProjectFileUpsert!]!): MutationResult!
     adminProjectFilesDelete(projectFileIds: [ID!]!): MutationResult!
+
+    # Overwrite a standalone workspace file's markdown body (and optionally its
+    # label) in place. The underlying upload's bytes are rewritten so the
+    # `fileUpload.url` stays stable across edits. `referenceIds` echoes the
+    # `workspaceFileId`. Used by both the editor Save button and the assistant's
+    # `workspaceFileUpdate` tool.
+    adminWorkspaceFileUpdate(workspaceFileId: ID!, content: String!, label: String): MutationResult!
 }
 
 # --- Admin chat config -------------------------------------------------------

@@ -155,12 +155,29 @@ direct per surface) plus unit tests for the three pure helpers.
   timestamp — a distinct visual language from `Marker`'s full-width row with border/separator lines. Retaining the pill treatment keeps
   system rows visually distinct from date separators.
 
+## Document attachments and the editor panel
+
+A `workspaceFileCreate` tool call (the assistant drafting a markdown document) renders in the transcript as the usual tool pill **plus** a
+clickable **document attachment card** beneath it — `ChatMessageToolCall.tsx` reads `{ workspaceFileId, filename, label }` straight off
+`toolResult` (no schema field, no link table). Clicking the card opens the file in the assistant sidebar's **file-display state**.
+
+The card's behavior is injected via `DocumentPanelProvider` (`src/web/chat/DocumentPanelProvider.tsx`) — the same context pattern as
+`ExternalLinkConfirmationProvider`, so the card doesn't need a prop threaded through the transcript. Both assistant transcripts (the docked
+sidebar body and the full-page route) mount it wired to `WorkspaceAssistantChatProvider.openFile`, which flips the shared `openFileId`
+state; the sidebar frame renders `WorkspaceFileEditor` in place of the transcript and self-expands if collapsed. Surfaces with no provider
+(the public visitor sheet) leave the card inert (`canOpen` false). There is no separate panel, no `?doc` param, and no navigation — the
+editor is a third content state of the one existing sidebar.
+
+See [`docs/features/workspace-files.md`](../features/workspace-files.md) for the full feature.
+
 ## Key files
 
 - `src/web/chat/ChatTranscriptShared.tsx` — the shared transcript renderer.
 - `src/web/components/base/message-scroller.tsx` — shadcn primitive wrapper.
 - `src/web/components/base/marker.tsx` — shadcn primitive.
 - `src/web/components/base/attachment.tsx` — shadcn primitive.
+- `src/web/chat/DocumentPanelProvider.tsx` — per-surface `openDocument` context for the document card.
+- `src/web/chat/WorkspaceFileEditor.tsx` — the sidebar file-display editor body (preview/edit/save).
 - `src/web/chat/chatTranscript.ts` — union helpers (`groupMessagesByDate`, `partitionByParent`, `findLatestCollectionId`,
   `findPendingApprovalIds`, `findUserInputByCollectionId`, `mergeTranscriptMessages`). Unchanged by the refactor.
 - `src/styles.css` — imports `shadcn/tailwind.css` so the `shimmer` and `scroll-fade` utilities are available.

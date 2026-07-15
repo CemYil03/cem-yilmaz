@@ -14,6 +14,7 @@ import { useMutation, useQuery } from 'urql';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
 import { ChatTranscript } from './ChatTranscriptShared';
 import type { TranscriptMessage } from './chatTranscript';
+import { DocumentPanelProvider } from './DocumentPanelProvider';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from './WorkspaceChatComposer';
 import { bucketChatsByDay } from './workspaceChatListBuckets';
@@ -54,7 +55,7 @@ const noSearchResultsLabel = { de: 'Keine Treffer.', en: 'No results.' };
 const searchPlaceholderLabel = { de: 'Chats durchsuchen…', en: 'Search chats…' };
 const searchClearLabel = { de: 'Suche zurücksetzen', en: 'Clear search' };
 const showMoreLabel = { de: 'Mehr anzeigen', en: 'Show more' };
-const backToChatsLabel = { de: 'Zurück zu den Chats', en: 'Back to chats' };
+const backToChatsLabel = { de: 'Chats Übersicht', en: 'Chats Overview' };
 const openStandaloneLabel = { de: 'In eigener Seite öffnen', en: 'Open in its own page' };
 
 // Sidebar chat browser pages by ten. The server clamps aggressively so we
@@ -314,7 +315,7 @@ export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale 
                 type="button"
                 onClick={resetChat}
                 disabled={live.isGenerating}
-                className="inline-flex items-center gap-1 rounded-md px-1 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md px-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
                 <ChevronLeftIcon className="size-3.5" aria-hidden />
                 {backToChatsLabel[locale]}
@@ -409,9 +410,13 @@ export function WorkspaceAssistantChatTranscript({
     streamingTexts: Readonly<Record<string, string>>;
     locale: Locale;
 }) {
-    const { live } = useWorkspaceAssistantChat();
+    const { live, openFile } = useWorkspaceAssistantChat();
     const [, respondToCollection] = useMutation(WorkspaceChatInputCollectionRespondDocument);
     const [, respondToApproval] = useMutation(WorkspaceChatToolApprovalRespondDocument);
+    // Clicking a document attachment switches the sidebar to its file-display
+    // state (owned by the provider) — same surface, no navigation. See
+    // `docs/features/workspace-files.md`.
+    const documentPanel = useMemo(() => ({ openDocument: openFile, canOpen: true }), [openFile]);
 
     const onCollectionSubmit = useCallback(
         async (collectionMessageId: string, answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>) => {
@@ -451,14 +456,16 @@ export function WorkspaceAssistantChatTranscript({
              *  surfaces, so external-link confirmation is off here — see
              *  `ExternalLinkConfirmationProvider` in `AssistantMarkdown.tsx`. */}
             <ExternalLinkConfirmationProvider enabled={false}>
-                <ChatTranscript
-                    messages={messages}
-                    streamingTexts={streamingTexts}
-                    onCollectionSubmit={onCollectionSubmit}
-                    onApprovalRespond={onApprovalRespond}
-                    jumpToLatestLabel={jumpToLatestLabel[locale]}
-                    isGenerating={live.isGenerating}
-                />
+                <DocumentPanelProvider value={documentPanel}>
+                    <ChatTranscript
+                        messages={messages}
+                        streamingTexts={streamingTexts}
+                        onCollectionSubmit={onCollectionSubmit}
+                        onApprovalRespond={onApprovalRespond}
+                        jumpToLatestLabel={jumpToLatestLabel[locale]}
+                        isGenerating={live.isGenerating}
+                    />
+                </DocumentPanelProvider>
             </ExternalLinkConfirmationProvider>
         </div>
     );
