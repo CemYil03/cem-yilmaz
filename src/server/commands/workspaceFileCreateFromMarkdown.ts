@@ -140,7 +140,28 @@ export function toolWorkspaceFileGet({ serverRuntime, session }: WorkspaceFilesA
             'written reply is. Only chain into `workspaceFileUpdate` when he actually asked you to change the document.',
         ].join(' '),
         inputSchema: workspaceFileGetInputSchema,
-        execute: async (input) => adminWorkspaceFileFindOne(input.workspaceFileId, session, serverRuntime),
+        execute: async (input) => {
+            const file = await adminWorkspaceFileFindOne(input.workspaceFileId, session, serverRuntime);
+            // Return a JSON-safe, trimmed view. `adminWorkspaceFileFindOne`
+            // hands back the full `GqlSWorkspaceFile`, whose `createdAt` /
+            // `updatedAt` are JS `Date` objects and which nests a `fileUpload`.
+            // A `Date` is not a valid `JSONValue`: the AI SDK validates each
+            // tool result against `jsonValueSchema` before feeding it into the
+            // next model step, so returning the raw shape throws *after*
+            // `onStepEnd` has persisted the tool-call row but *before* any
+            // assistant text — the runner logs the error, emits `TurnEnded`,
+            // and the user sees the read happen with no answer. (Asking again
+            // "worked" only because the replayed result comes back through
+            // JSONB with the dates already stringified.) The agent only needs
+            // the body + identity to answer or to revise. See
+            // `docs/features/workspace-files.md`.
+            return {
+                workspaceFileId: file.workspaceFileId,
+                filename: file.filename,
+                label: file.label,
+                content: file.content,
+            };
+        },
     });
 }
 

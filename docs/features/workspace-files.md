@@ -31,8 +31,9 @@ transcript or lived nowhere durable. This feature adds a standalone document tha
   persisted document, so Cem saves first, then downloads (the disabled state mirrors the Save-when-dirty gate; no confirm dialog).
 - Asking the assistant a **question** about a document ("what did you write in X?", "summarize the plan") makes it `workspaceFileGet` the
   latest body and answer in the **same turn**. The tool description and the orchestrator system prompt both spell out that reading a file is
-  never the end of the turn — the written reply is — so the model doesn't stop after the read and wait for a nudge. `workspaceFileUpdate` is
-  only chained when Cem actually asked to change the document.
+  a step toward a written reply, not the end of the turn. `workspaceFileUpdate` is only chained when Cem actually asked to change the
+  document. (The tool result must be JSON-safe for the same-turn answer to happen at all — see the `toolWorkspaceFileGet` trimming note
+  under **Server**.)
 
 ## Options Considered
 
@@ -90,7 +91,13 @@ are reachable via the chat attachment cards. A browser can be added later withou
 
 - `src/server/commands/workspaceFileCreateFromMarkdown.ts` — create-from-markdown command **and** the three co-located agent tools
   (`toolWorkspaceFileCreate` / `toolWorkspaceFileGet` / `toolWorkspaceFileUpdate`). Modeled on `projectFileCreateFromMarkdown.ts`. The
-  create tool trims its result to `{ workspaceFileId, filename, label }`.
+  create tool trims its result to `{ workspaceFileId, filename, label }`. **`toolWorkspaceFileGet` must trim too**: it wraps
+  `adminWorkspaceFileFindOne`, which returns the full `GqlSWorkspaceFile` whose `createdAt` / `updatedAt` are JS `Date` objects. A `Date` is
+  not a valid `JSONValue`, and the AI SDK validates each tool result against `jsonValueSchema` before feeding it into the next model step —
+  so returning the raw shape throws _after_ the tool-call row is persisted but _before_ any assistant text, and the user sees the read
+  happen with no answer (asking a second time "worked" only because the replayed result comes back through JSONB with the dates already
+  stringified). The tool therefore returns `{ workspaceFileId, filename, label, content }` — JSON-safe and all the agent needs to answer or
+  revise.
 - `src/server/commands/adminWorkspaceFileUpdate.ts` — in-place byte rewrite in a transaction, ownership-checked; used by both the editor
   Save mutation and the agent's update tool.
 - `src/server/queries/adminWorkspaceFileFindOne.ts` — joins the row + its upload, decodes bytes to `content`, ownership-scoped.
