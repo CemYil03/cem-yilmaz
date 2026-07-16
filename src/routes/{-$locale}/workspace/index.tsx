@@ -229,67 +229,80 @@ function WorkspaceHub() {
         <>
             {/* The workspace `<Header />` (logo + breadcrumbs + assistant
              * button) is mounted once at the layout (`workspace.tsx`), so the
-             * hub renders only its own body content. */}
-            <main className="flex-1 px-6 md:px-10 lg:px-16 max-w-6xl mx-auto w-full pb-16">
-                <AssistantHero
-                    locale={locale}
-                    composer={
-                        <WorkspaceChatComposer
-                            locale={locale}
-                            isLocked={live.isGenerating}
-                            beginTurn={live.beginTurn}
-                            endTurn={live.endTurn}
-                            onMessageSent={(chatId) => {
-                                setChatIdFromHub(chatId);
-                                // Force the sidebar visible so the streaming
-                                // reply is in view. On `<md` shadcn renders the
-                                // sidebar as a Sheet, so we need the mobile
-                                // setter; on `md+` it's the cookie-backed open
-                                // state.
-                                if (isMobile) setOpenMobile(true);
-                                else setOpen(true);
-                            }}
-                            currentPagePath={pathname}
-                            autoFocus
-                        />
-                    }
-                />
-                <FocusAreaGrid locale={locale} badges={badges} />
+             * hub renders only its own body content.
+             *
+             * AI-app shell: the composer is parked at the viewport bottom and
+             * the focus tiles scroll in a region above it. `main` takes a
+             * definite height (`100dvh` minus the sticky header's ~5rem flow
+             * rail — the same figure `assistant.$chatId.tsx` uses) so the
+             * scroll region can be the `flex-1 min-h-0` child and the composer
+             * bar the fixed-height sibling below it. */}
+            <main className="flex h-[calc(100dvh-5rem)] w-full min-w-0 flex-col">
+                {/* Scroll region — the daily-use surface. The scroll container
+                 * itself is full-bleed (no horizontal padding, no max-width) so
+                 * its scrollbar sits flush against the inset's edge rather than
+                 * floating inside a gutter; the `max-w-6xl` reading column and
+                 * horizontal padding live on the inner content wrapper instead.
+                 * `scroll-fade-b` feathers content into the composer bar. Extra
+                 * top padding clears the floating (`sticky top-4`) header and
+                 * its progressive-blur strip so the quote isn't blurred behind
+                 * it on landing. */}
+                <div className="scroll-fade-b scrollbar-thin min-h-0 flex-1 overflow-y-auto pt-16 pb-4 md:pt-20">
+                    <div className="mx-auto w-full max-w-6xl px-6 md:px-10 lg:px-16">
+                        <h1 className="sr-only">{title[locale]}</h1>
+                        <HeroQuote locale={locale} />
+                        <FocusAreaGrid locale={locale} badges={badges} />
+                    </div>
+                </div>
+                {/* Composer bar — parked at the bottom, never scrolls. Keeps its
+                 * own horizontal padding now that `main` is full-bleed. */}
+                <div className="mx-auto w-full max-w-3xl shrink-0 px-6 pt-3 pb-4 md:px-10 lg:px-16">
+                    <WorkspaceChatComposer
+                        locale={locale}
+                        isLocked={live.isGenerating}
+                        beginTurn={live.beginTurn}
+                        endTurn={live.endTurn}
+                        onMessageSent={(chatId) => {
+                            setChatIdFromHub(chatId);
+                            // Force the sidebar visible so the streaming
+                            // reply is in view. On `<md` shadcn renders the
+                            // sidebar as a Sheet, so we need the mobile
+                            // setter; on `md+` it's the cookie-backed open
+                            // state.
+                            if (isMobile) setOpenMobile(true);
+                            else setOpen(true);
+                        }}
+                        currentPagePath={pathname}
+                        autoFocus
+                    />
+                </div>
             </main>
         </>
     );
 }
 
-function AssistantHero({ locale, composer }: { locale: Locale; composer: React.ReactNode }) {
+function HeroQuote({ locale }: { locale: Locale }) {
     // Rotates daily (UTC), not per render — see `workspaceQuotes.ts`. The
     // same quote on every navigation back to the hub on the same day is
     // intentional: the headline is decoration, not content the user is
     // here to read again.
     //
-    // The visible heading is a blockquote rather than an `<h1>` — wrapping
+    // The visible element is a blockquote rather than an `<h1>` — wrapping
     // a quote in h1 reads oddly to screen readers and pins our document
-    // outline to whatever motivational line landed today. The sr-only h1
-    // keeps the page semantically identifiable as "Workspace" without
-    // putting that string into the visual hierarchy.
+    // outline to whatever motivational line landed today. The `sr-only` h1
+    // (rendered by the caller, above the scroll region) keeps the page
+    // semantically identifiable as "Workspace" without putting that string
+    // into the visual hierarchy.
     //
-    // The composer sits *in-flow* below the quote (not pinned to the viewport
-    // bottom as it used to). On a single-screen-tall layout the composer is
-    // already visible without scrolling, and the previous sticky placement
-    // overlapped the last row of focus cards behind a progressive blur — the
-    // overlap read as "the input is parked on top of my last tile", which is
-    // worse than the few rows of scroll the in-flow version costs.
+    // The quote sits at the top of the scroll region and scrolls away with
+    // the tiles; the composer is pinned to the viewport bottom below the
+    // scroll region.
     const quote = workspaceQuotePick();
     return (
-        <section className="pt-8 md:pt-10 pb-10 md:pb-12 mx-auto max-w-3xl">
-            <h1 className="sr-only">{title[locale]}</h1>
-            <blockquote className="text-base md:text-lg leading-relaxed text-muted-foreground italic">
-                <p>“{quote[locale]}”</p>
-                {quote.attribution ? (
-                    <footer className="mt-2 text-sm not-italic text-muted-foreground/80">— {quote.attribution}</footer>
-                ) : null}
-            </blockquote>
-            <div className="mt-6 md:mt-8">{composer}</div>
-        </section>
+        <blockquote className="mx-auto mb-8 max-w-3xl text-base leading-relaxed text-muted-foreground italic md:mb-10 md:text-lg">
+            <p>“{quote[locale]}”</p>
+            {quote.attribution ? <footer className="mt-2 text-sm text-muted-foreground/80 not-italic">— {quote.attribution}</footer> : null}
+        </blockquote>
     );
 }
 

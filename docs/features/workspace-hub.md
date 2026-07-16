@@ -5,12 +5,15 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
 
 ## User Behavior
 
-- `/workspace` (DE) and `/en/workspace` (EN) render the hub: a slimmed-down workspace header (logo links home, a breadcrumb trail to the
-  right shows where you are inside the workspace, and the assistant chat button plus theme selector sit on the right — the language selector
-  is intentionally absent because the workspace is English-only), a small muted motivational quote (see "Hero quote" below), the
-  personal-assistant composer directly under the quote, and a **bento-style focus-area grid** below that. The composer scrolls with the page
-  — it is **not** pinned to the viewport bottom; on a typical desktop the composer is already on-screen at load, and pinning it overlapped
-  the last row of focus cards behind a progressive blur, which read as "the input is parked on top of my last tile."
+- `/workspace` (DE) and `/en/workspace` (EN) render the hub in an **AI-app shell**: a slimmed-down workspace header (logo links home, a
+  breadcrumb trail to the right shows where you are inside the workspace, and the assistant chat button plus theme selector sit on the right —
+  the language selector is intentionally absent because the workspace is English-only), then a **scroll region** holding a small muted
+  motivational quote (see "Hero quote" below) followed by the **focus-area grid**, and the personal-assistant composer **pinned to the
+  viewport bottom** below the scroll region. The tiles scroll behind the composer bar (with a `scroll-fade-b` feather into it); the composer
+  never scrolls. This mirrors the loaded chat surfaces (`/workspace/assistant/<chatId>`): a bounded-height `main`
+  (`h-[calc(100dvh-5rem)]` — the header's ~5rem flow rail subtracted), a `flex-1 min-h-0` scroll child, and the composer as the
+  fixed-height sibling under it. The earlier layout scrolled the composer with the page in normal flow; parking it at the bottom makes the
+  hub read like the rest of the assistant surfaces — the input is always reachable and the tiles are a scrollable catalogue above it.
 - Sending a message from the hub composer creates a new admin-scope chat and pops the workspace assistant sheet so the streaming response
   surfaces in context. The hub itself stays a hub — every visit lands on the empty composer again.
 - The focus-area cards are split into two subgroups:
@@ -55,16 +58,16 @@ putting that string into the visual hierarchy. The browser-tab title and `seoMet
 
 ## Personal-assistant composer
 
-The assistant composer sits **directly under** the hero quote, in normal page flow — not pinned to the bottom of the viewport. It is the
-shared `<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`) — the same composer the workspace assistant sheet and
-`/workspace/assistant` use — so the **full** admin composer kit is identical across every workspace surface: file attachments (with the
-active model gating the accepted media types), the model-selection dropdown (sticky default — picks both the model for the next send and
-updates `AdminChatConfig.defaultModelId`), and the tool-call approval-mode selector (Auto / Manual). The hub used to wrap a stripped-down
-`<MessageComposer />` that delegated to a provider-owned `openWithMessage(text)`, but that path couldn't carry attachments or a chosen model
-— the hub is the workspace's primary affordance, so it gets the same options as the dedicated route. On a typical desktop the quote +
-composer occupy the top half of the viewport, so the assistant is the first thing the user sees and the most prominent affordance. The
-composer is rendered with `autoFocus` so the textarea is the active element on landing — the user can start typing immediately without
-clicking.
+The assistant composer is **pinned to the bottom of the viewport**, below the scrollable focus-area grid — the AI-app shell described under
+"User Behavior". It is the shared `<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`) — the same composer the workspace
+assistant sheet and `/workspace/assistant` use — so the **full** admin composer kit is identical across every workspace surface: file
+attachments (with the active model gating the accepted media types), the model-selection dropdown (sticky default — picks both the model for
+the next send and updates `AdminChatConfig.defaultModelId`), and the tool-call approval-mode selector (Auto / Manual). The hub used to wrap a
+stripped-down `<MessageComposer />` that delegated to a provider-owned `openWithMessage(text)`, but that path couldn't carry attachments or a
+chosen model — the hub is the workspace's primary affordance, so it gets the same options as the dedicated route. Because the composer is
+always parked at the bottom, the assistant input is reachable without scrolling regardless of how far down the tile catalogue the user has
+scrolled. The composer is rendered with `autoFocus` so the textarea is the active element on landing — the user can start typing immediately
+without clicking.
 
 Submitting fires `WorkspaceChatMessageCreate` directly (no `chatId`, so the server allocates a fresh row). On the mutation's success the hub
 hands the freshly-allocated chatId to the workspace assistant chat provider via `setChatIdFromHub(chatId)` and pops the **workspace
@@ -173,7 +176,8 @@ The hub reuses the same primitives the landing page does:
 - `useChatLiveUpdates` from `src/web/chat/useChatLiveUpdates.tsx` (namespace-agnostic)
 
 The header is **not** invoked by the hub itself — it comes from `<WorkspaceHeader />` mounted at the layout (see "Workspace header" above).
-The hub's component body is only the assistant hero (quote + composer) and the focus-area grid.
+The hub's component body is a bounded-height `main` split into two children: a `flex-1 min-h-0` scroll region (the `sr-only` "Workspace" h1,
+the `HeroQuote`, and the focus-area grid) and a `shrink-0` composer bar pinned below it.
 
 A single `COPY` constant at the top of the file keys every visible string under `{ de, en }`. This follows the inline-bilingual-copy pattern
 from `docs/architecture/i18n.md` — no translation library.
