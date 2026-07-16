@@ -64,8 +64,8 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
     // Absent all of those, the browser takes over. Checking `chatId`
     // alone would flash the browser between a fresh send and the server
     // returning a chatId; `live.isGenerating` covers that gap.
-    const allMessages = mergeTranscriptMessages(loadedMessages, live.appendedMessages as ReadonlyArray<TranscriptMessage>);
-    const hasActiveChat = !!chatId || live.isGenerating || allMessages.length > 0;
+    const allMessages = mergeTranscriptMessages(loadedMessages, live.appendedMessagesFor(chatId) as ReadonlyArray<TranscriptMessage>);
+    const hasActiveChat = !!chatId || live.isGenerating(chatId) || allMessages.length > 0;
 
     // Opening a file from a transcript attachment sets `openFileId` on the
     // provider. If the sidebar is collapsed (or its mobile sheet is shut),
@@ -136,7 +136,7 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
                                 <WorkspaceAssistantChatLoadedHeader locale={locale} />
                                 <WorkspaceAssistantChatTranscript
                                     messages={allMessages}
-                                    streamingTexts={live.streamingTexts}
+                                    streamingTexts={live.streamingTextsFor(chatId)}
                                     locale={locale}
                                 />
                             </>

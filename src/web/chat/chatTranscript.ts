@@ -94,6 +94,28 @@ export function findPendingApprovalIds(messages: ReadonlyArray<TranscriptMessage
     return pending;
 }
 
+/** The trailing top-level tool-call row that should render its "working on
+ *  it" shimmer, or null. A tool call shimmers only while the turn is in flight
+ *  AND no assistant text has started streaming yet AND the row was emitted by
+ *  the CURRENT, still-running turn (its id is in `liveTurnMessageIds`). The
+ *  live-turn gate is what keeps a settled prior-turn tool call — or a tool
+ *  call in an unrelated, non-generating chat — from re-shimmering when a new
+ *  turn begins: those rows are never in the current turn's live set. */
+export function activeToolCallId(
+    topLevel: ReadonlyArray<TranscriptMessage>,
+    liveTurnMessageIds: ReadonlySet<string>,
+    isGenerating: boolean,
+    hasStreamingText: boolean,
+): string | null {
+    if (!isGenerating || hasStreamingText) return null;
+    for (let i = topLevel.length - 1; i >= 0; i -= 1) {
+        const message = topLevel[i]!;
+        if (message.__typename !== 'ChatMessageToolCall') continue;
+        return liveTurnMessageIds.has(message.chatMessageId) ? message.chatMessageId : null;
+    }
+    return null;
+}
+
 /** Group child tool-call rows by their `parentChatMessageId`. The transcript
  *  uses this to (a) filter children out of the top-level message list and (b)
  *  hand each parent's children to its `<ChatMessageToolCall>` render for

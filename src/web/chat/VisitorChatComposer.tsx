@@ -35,8 +35,9 @@ interface VisitorChatComposerProps {
      *  in flight. ORed with the at-limit gate to drive the composer's
      *  locked state. */
     isLocked: boolean;
-    beginTurn: () => string;
-    endTurn: () => void;
+    beginTurn: (chatId?: string) => string;
+    bindTurn: (generationId: string, chatId: string) => void;
+    endTurn: (generationId: string) => void;
     /** Localized placeholder. The two sheet surfaces use different copy
      *  ("Ask a question…" on the empty state, "Ask another question…"
      *  on the loaded view), so this is passed in rather than baked in. */
@@ -66,6 +67,7 @@ export function VisitorChatComposer({
     onMessageSent,
     isLocked,
     beginTurn,
+    bindTurn,
     endTurn,
     placeholder,
     autoFocus = false,
@@ -87,6 +89,7 @@ export function VisitorChatComposer({
             chatId={chatId}
             isLocked={isLocked || isAtLimit}
             beginTurn={beginTurn}
+            bindTurn={bindTurn}
             endTurn={endTurn}
             sendMutation={ChatMessageCreateDocument}
             extractResult={extractMessageCreateResult}

@@ -13,12 +13,15 @@ import { WorkspaceAssistantChatContext } from '../chat/WorkspaceAssistantChatPro
 // production app should reach for these.
 
 const noOpLive = {
-    isGenerating: false,
-    appendedMessages: [],
-    streamingTexts: {},
     beginTurn: () => 'storybook-generation-id',
+    bindTurn: () => {},
     endTurn: () => {},
-    listener: null,
+    forgetChat: () => {},
+    isGenerating: () => false,
+    appendedMessagesFor: () => [],
+    streamingTextsFor: () => ({}),
+    liveTurnMessageIdsFor: () => new Set<string>(),
+    listeners: null,
 } as const;
 
 export function MockVisitorChatProvider({ children, highlightSignal = 0 }: { children: ReactNode; highlightSignal?: number }) {

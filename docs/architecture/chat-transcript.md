@@ -102,9 +102,17 @@ inspector, a timestamp, and — when the tool returned a summary — an **expand
 
 A persisted `ChatMessageToolCall` already carries its `toolResult` — it is a record of a completed step, not a live thing. The only live
 state worth signalling is "the turn is still going and hasn't started streaming text yet." That is a **turn-level** signal, so it is not on
-the wire per row: `ChatTranscript` takes an `isGenerating` prop (passed from each surface's `useChatLiveUpdates().isGenerating`) and, when
-`isGenerating && streamingTexts` is empty, marks the **last top-level tool-call message** `active`. `ToolRowShell` then adds the shadcn
-`shimmer` class to the label and a trailing `…`. Once a streaming text buffer opens or the turn ends, `active` drops and the pill settles.
+the wire per row: `ChatTranscript` takes an `isGenerating` prop (from `useChatLiveUpdates().isGenerating(chatId)` — per chat, see below)
+plus a `liveTurnMessageIds` set (the ids the current, still-running turn has appended, from `liveTurnMessageIdsFor(chatId)`). When
+`isGenerating && streamingTexts` is empty, it marks the **last top-level tool-call message** `active` **only if that row's id is in
+`liveTurnMessageIds`**. `ToolRowShell` then adds the shadcn `shimmer` class to the label and a trailing `…`. Once a streaming text buffer
+opens or the turn ends, `active` drops and the pill settles.
+
+The `liveTurnMessageIds` gate is what keeps the shimmer honest across the two ways a stale row used to light up: (1) sending a **new**
+message in a chat that already has a completed tool call — the prior tool call is not in the new turn's live set, so it stays settled; (2)
+an **unrelated** chat that isn't generating — its live set is empty, so nothing shimmers. The derivation is the pure
+`activeToolCallId(topLevel, liveTurnMessageIds, isGenerating, hasStreamingText)` helper in `chatTranscript.ts` (unit-tested in
+`chatTranscript.test.ts`).
 
 This keeps the shimmer a live signal (matching `AssistantMarkdown`'s `Thinking…` sweep) rather than a decorative loop on every settled row —
 the distinction [`docs/styles/motion.md`](../styles/motion.md) draws. Under `prefers-reduced-motion` the shadcn `shimmer` utility degrades
@@ -179,5 +187,6 @@ See [`docs/features/workspace-files.md`](../features/workspace-files.md) for the
 - `src/web/chat/DocumentPanelProvider.tsx` — per-surface `openDocument` context for the document card.
 - `src/web/chat/WorkspaceFileEditor.tsx` — the sidebar file-display editor body (preview/edit/save).
 - `src/web/chat/chatTranscript.ts` — union helpers (`groupMessagesByDate`, `partitionByParent`, `findLatestCollectionId`,
-  `findPendingApprovalIds`, `findUserInputByCollectionId`, `mergeTranscriptMessages`). Unchanged by the refactor.
+  `findPendingApprovalIds`, `findUserInputByCollectionId`, `mergeTranscriptMessages`) plus `activeToolCallId` (the pure trailing-tool-call
+  shimmer derivation).
 - `src/styles.css` — imports `shadcn/tailwind.css` so the `shimmer` and `scroll-fade` utilities are available.

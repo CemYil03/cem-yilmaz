@@ -112,7 +112,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
     const [loadedMessages, setLoadedMessages] = useState<ReadonlyArray<TranscriptMessage>>([]);
     const [selectedModelId, setSelectedModelId] = useState(chatConfig.defaultModelId);
     const [openFileId, setOpenFileId] = useState<string | null>(null);
-    const live = useChatLiveUpdates(chatId);
+    const live = useChatLiveUpdates();
     const [, setDefaultModel] = useMutation(WorkspaceChatConfigDefaultModelSetDocument);
     const urqlClient = useClient();
 
@@ -156,13 +156,16 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
     }, []);
 
     const resetChat = useCallback(() => {
-        // Drop chatId + page-query rows. The chatId-change effect inside
-        // `useChatLiveUpdates` clears `appendedMessages` for us on the
-        // loaded→empty transition.
+        // Drop chatId + page-query rows and prune the just-left chat's finished
+        // live buffers so they don't linger in the store. An in-flight turn for
+        // that chat keeps streaming in the background — `forgetChat` only drops
+        // ended generations.
+        const leaving = chatIdRef.current;
         chatIdRef.current = undefined;
         setChatId(undefined);
         setLoadedMessages([]);
-    }, []);
+        if (leaving) live.forgetChat(leaving);
+    }, [live]);
 
     const openFile = useCallback((workspaceFileId: string) => setOpenFileId(workspaceFileId), []);
     const closeFile = useCallback(() => setOpenFileId(null), []);
@@ -177,12 +180,15 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
                 .toPromise();
             const chat = result.data?.sessionFindOne.user?.admin?.adminChatFindOne;
             if (result.error || !chat) {
-                live.endTurn();
                 return;
             }
             chatIdRef.current = chat.chatId;
             setChatId(chat.chatId);
             setLoadedMessages(chat.messages as ReadonlyArray<TranscriptMessage>);
+            // The fetched rows are authoritative — drop this chat's finished
+            // live buffers so a settled turn's appended rows don't double up
+            // with the query result. An in-flight turn keeps streaming.
+            live.forgetChat(chat.chatId);
         },
         [live, urqlClient],
     );
@@ -221,13 +227,14 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
     return (
         <WorkspaceAssistantChatContext.Provider value={value}>
             {children}
-            {/* The live-updates listener is rendered HERE — at the provider
-             *  root — so the SSE subscription survives the sidebar's
-             *  collapse/expand and the mobile sheet's open/close cycles.
-             *  Without this, those transitions during a streaming turn
-             *  would drop the subscription and we'd lose the rest of the
-             *  response. */}
-            {live.listener}
+            {/* The live-updates listeners are rendered HERE — at the provider
+             *  root — so the SSE subscriptions survive the sidebar's
+             *  collapse/expand and the mobile sheet's open/close cycles, and
+             *  so every concurrent turn keeps streaming even while the sidebar
+             *  shows a different chat. Without this, those transitions during a
+             *  streaming turn would drop the subscription and we'd lose the
+             *  rest of the response. */}
+            {live.listeners}
         </WorkspaceAssistantChatContext.Provider>
     );
 }

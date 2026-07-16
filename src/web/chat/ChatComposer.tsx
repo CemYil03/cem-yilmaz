@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Locale } from '../utils/locale';
 import type { ReactNode } from 'react';
 import type { TypedDocumentNode } from 'urql';
@@ -34,15 +34,21 @@ interface ChatComposerProps {
     /** Called with the chatId returned by the mutation. For an existing chat
      *  this is just `chatId`; for a new one it's the freshly-allocated id. */
     onMessageSent?: (chatId: string) => void;
-    /** True when a turn (this composer's own send, or another flow's submit)
-     *  is in flight. Locks the composer so two generations don't race. */
+    /** True when a turn for this composer's chat is in flight. Locks the
+     *  composer so two generations don't race on the same chat. From the
+     *  parent's `live.isGenerating(chatId)`. */
     isLocked: boolean;
     /** Allocate a `generationId` and mount the live-updates listener BEFORE
-     *  the mutation fires. From `useChatLiveUpdates`. */
-    beginTurn: () => string;
-    /** Tear down per-turn state if the mutation errors before the server
+     *  the mutation fires. Pass the current chatId (undefined on a fresh
+     *  send — the generation stays unbound until `bindTurn`). From
+     *  `useChatLiveUpdates`. */
+    beginTurn: (chatId?: string) => string;
+    /** Attach the just-started generation to the chatId the mutation
+     *  allocated. Called on send success. From `useChatLiveUpdates`. */
+    bindTurn: (generationId: string, chatId: string) => void;
+    /** Tear down the generation if the mutation errors before the server
      *  could publish anything. From `useChatLiveUpdates`. */
-    endTurn: () => void;
+    endTurn: (generationId: string) => void;
     /** Which `chatMessageCreate` mutation to send. Audience wrappers
      *  inject this — visitor passes `ChatMessageCreateDocument`, admin
      *  passes `WorkspaceChatMessageCreateDocument`. */
@@ -107,6 +113,7 @@ export function ChatComposer({
     onMessageSent,
     isLocked,
     beginTurn,
+    bindTurn,
     endTurn,
     sendMutation,
     extractResult,
@@ -120,6 +127,12 @@ export function ChatComposer({
     currentPagePath,
 }: ChatComposerProps) {
     const [draft, setDraft] = useState('');
+    // Guards the mutation `await` window. For a fresh send `chatId` is
+    // undefined, so `isLocked` (derived from the parent's per-chat
+    // `isGenerating`) doesn't yet cover this composer between `beginTurn()`
+    // and `bindTurn()` — this ref stops a double-submit landing in that gap
+    // and minting a second unbound generation.
+    const sendingRef = useRef(false);
     // Each composer attachment carries its upload lifecycle. Files are
     // uploaded as soon as they're attached so the eventual send is fast and
     // the per-tile UI shows real progress instead of a deceptive spinner on
@@ -184,21 +197,22 @@ export function ChatComposer({
         // Send is enabled when there's text OR an attachment — but we still
         // require at least one of those to fire a mutation (an empty send
         // makes no sense and the server would reject the empty body anyway).
-        // The `isLocked` prop already gates the composer once a turn is in
-        // flight (beginTurn synchronously sets generationId), so we don't
-        // need a separate inflight ref here — the only path back into this
-        // function while a turn is running would be a programmatic call
-        // bypassing the disabled UI, which we don't have.
+        // `isLocked` gates a same-chat re-send once a turn is in flight, but
+        // on a FRESH send the chat has no id yet so `isLocked` can't cover the
+        // `beginTurn`→`bindTurn` gap — `sendingRef` closes it.
+        if (sendingRef.current) return;
         const hasUploaded = attachments.some((a) => a.status === 'uploaded');
         if (!message && !hasUploaded) return;
 
-        // Lift the generationId BEFORE firing the mutation so the route's
-        // listener mounts and subscribes before any server-side publish can
-        // happen. The mutation now returns as soon as the user-side row is
-        // durable; the assistant turn runs detached and its `TurnEnded`
-        // event clears the generationId at the route level (which unlocks
-        // the composer).
-        const generationId = beginTurn();
+        sendingRef.current = true;
+        // Lift the generationId BEFORE firing the mutation so the listener
+        // mounts and subscribes before any server-side publish can happen. The
+        // generation starts unbound when `chatId` is undefined (fresh chat);
+        // `bindTurn` attaches it to the allocated id on success. The mutation
+        // returns as soon as the user-side row is durable; the assistant turn
+        // runs detached and its `TurnEnded` event ends the generation (which
+        // unlocks the composer for that chat).
+        const generationId = beginTurn(chatId);
         const sentAttachments = attachments;
         // Only forward successfully-uploaded ids — errored tiles are kept on
         // screen so the user can decide to retry-by-removal-and-re-add, but
@@ -219,21 +233,23 @@ export function ChatComposer({
             currentPagePath: currentPagePath ?? null,
         });
 
+        sendingRef.current = false;
         const created = result.data ? extractResult(result.data) : null;
         if (result.error || !created) {
             // Restore the draft so the user doesn't lose their text on a
             // transport failure. We restore the attachment tiles too — they
             // already point at server-side rows (the upload succeeded), so
             // resending after a transport blip is "press Send again", not a
-            // re-upload. Clear the generationId since no turn is actually
-            // running.
+            // re-upload. Drop the generation since no turn is actually running.
             setDraft(message);
             setAttachments(sentAttachments);
-            endTurn();
+            endTurn(generationId);
             return;
         }
-        // Don't clear `generationId` on success — the turn is still running
-        // detached on the server. The `TurnEnded` event clears it.
+        // Bind the generation to the allocated chatId so the surface can read
+        // its live rows by chat. Don't end it — the turn is still running
+        // detached on the server; its `TurnEnded` event ends it.
+        bindTurn(generationId, created.chatId);
         onMessageSent?.(created.chatId);
     }, [
         attachments,
@@ -242,6 +258,7 @@ export function ChatComposer({
         onMessageSent,
         sendMessage,
         beginTurn,
+        bindTurn,
         endTurn,
         extractResult,
         requireToolCallApprovals,

@@ -88,7 +88,7 @@ export function VisitorChatProvider({ children }: { children: ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const [chatId, setChatId] = useState<string | undefined>(undefined);
     const [highlightSignal, setHighlightSignal] = useState(0);
-    const live = useChatLiveUpdates(chatId);
+    const live = useChatLiveUpdates();
     const [, sendMutation] = useMutation(ChatMessageCreateDocument);
 
     // Mirror chatId into a ref so back-to-back sends (chip click → instant
@@ -145,7 +145,7 @@ export function VisitorChatProvider({ children }: { children: ReactNode }) {
             setIsOpen(true);
             // Lift the generationId BEFORE firing the mutation so the
             // listener mounts and subscribes before any server-side publish
-            // can happen.
+            // can happen. Fresh chat → unbound generation until `bindTurn`.
             const generationId = live.beginTurn();
             const result = await sendMutation({
                 chatId: undefined,
@@ -156,11 +156,12 @@ export function VisitorChatProvider({ children }: { children: ReactNode }) {
             });
             const created = result.data ? extractMessageCreateResult(result.data) : null;
             if (result.error || !created) {
-                live.endTurn();
+                live.endTurn(generationId);
                 return;
             }
             chatIdRef.current = created.chatId;
             setChatId(created.chatId);
+            live.bindTurn(generationId, created.chatId);
         },
         [live, sendMutation],
     );
@@ -185,12 +186,12 @@ export function VisitorChatProvider({ children }: { children: ReactNode }) {
     return (
         <VisitorChatContext.Provider value={value}>
             {children}
-            {/* Live-updates listener mounted HERE — above the sheet — so the
-             *  SSE subscription survives `Sheet` mount/unmount cycles.
+            {/* Live-updates listeners mounted HERE — above the sheet — so the
+             *  SSE subscriptions survive `Sheet` mount/unmount cycles.
              *  Without this, closing the sheet during a streaming turn
              *  would drop the subscription and we'd lose the rest of the
              *  response. */}
-            {live.listener}
+            {live.listeners}
         </VisitorChatContext.Provider>
     );
 }

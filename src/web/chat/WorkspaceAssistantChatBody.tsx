@@ -300,7 +300,7 @@ function useOpenChatStandalone() {
 }
 
 export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale }) {
-    const { chatId, resetChat, live } = useWorkspaceAssistantChat();
+    const { chatId, resetChat } = useWorkspaceAssistantChat();
     const openStandalone = useOpenChatStandalone();
 
     const onOpenStandalone = useCallback(() => {
@@ -314,8 +314,7 @@ export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale 
             <button
                 type="button"
                 onClick={resetChat}
-                disabled={live.isGenerating}
-                className="inline-flex items-center gap-1 rounded-md px-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md px-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
                 <ChevronLeftIcon className="size-3.5" aria-hidden />
                 {backToChatsLabel[locale]}
@@ -327,7 +326,6 @@ export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale 
                         variant="ghost"
                         size="icon-xs"
                         onClick={onOpenStandalone}
-                        disabled={live.isGenerating}
                         aria-label={openStandaloneLabel[locale]}
                     >
                         <ExternalLinkIcon />
@@ -363,8 +361,9 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
         <WorkspaceChatComposer
             locale={locale}
             chatId={chatId}
-            isLocked={live.isGenerating}
+            isLocked={live.isGenerating(chatId)}
             beginTurn={live.beginTurn}
+            bindTurn={live.bindTurn}
             endTurn={live.endTurn}
             onMessageSent={setChatIdFromHub}
             currentPagePath={pathname}
@@ -376,13 +375,7 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
                 hasChat ? (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                type="button"
-                                onClick={resetChat}
-                                disabled={live.isGenerating}
-                                aria-label={newChatLabel[locale]}
-                            >
+                            <Button variant="ghost" type="button" onClick={resetChat} aria-label={newChatLabel[locale]}>
                                 <MessageSquarePlusIcon className="size-4" />
                             </Button>
                         </TooltipTrigger>
@@ -410,7 +403,7 @@ export function WorkspaceAssistantChatTranscript({
     streamingTexts: Readonly<Record<string, string>>;
     locale: Locale;
 }) {
-    const { live, openFile } = useWorkspaceAssistantChat();
+    const { chatId, live, openFile } = useWorkspaceAssistantChat();
     const [, respondToCollection] = useMutation(WorkspaceChatInputCollectionRespondDocument);
     const [, respondToApproval] = useMutation(WorkspaceChatToolApprovalRespondDocument);
     // Clicking a document attachment switches the sidebar to its file-display
@@ -420,30 +413,32 @@ export function WorkspaceAssistantChatTranscript({
 
     const onCollectionSubmit = useCallback(
         async (collectionMessageId: string, answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>) => {
-            const generationId = live.beginTurn();
+            const generationId = live.beginTurn(chatId);
             const flatAnswers = answers.map((answer) => toFlatAnswerInput(answer.inputId, answer.value));
-            await respondToCollection({
+            const result = await respondToCollection({
                 collectionMessageId,
                 answers: flatAnswers,
                 generationId,
                 requireToolCallApprovals: false,
             });
+            if (result.error) live.endTurn(generationId);
         },
-        [respondToCollection, live],
+        [respondToCollection, live, chatId],
     );
 
     const onApprovalRespond = useCallback(
         async (approvalId: string, approved: boolean, reason?: string) => {
-            const generationId = live.beginTurn();
-            await respondToApproval({
+            const generationId = live.beginTurn(chatId);
+            const result = await respondToApproval({
                 approvalId,
                 approved,
                 reason,
                 generationId,
                 requireToolCallApprovals: true,
             });
+            if (result.error) live.endTurn(generationId);
         },
-        [respondToApproval, live],
+        [respondToApproval, live, chatId],
     );
 
     return (
@@ -463,7 +458,8 @@ export function WorkspaceAssistantChatTranscript({
                         onCollectionSubmit={onCollectionSubmit}
                         onApprovalRespond={onApprovalRespond}
                         jumpToLatestLabel={jumpToLatestLabel[locale]}
-                        isGenerating={live.isGenerating}
+                        isGenerating={live.isGenerating(chatId)}
+                        liveTurnMessageIds={live.liveTurnMessageIdsFor(chatId)}
                     />
                 </DocumentPanelProvider>
             </ExternalLinkConfirmationProvider>

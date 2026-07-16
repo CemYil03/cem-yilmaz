@@ -57,15 +57,14 @@ export const Route = createFileRoute('/{-$locale}/workspace/assistant/$chatId')(
         });
     },
     component() {
-        const { chatId } = Route.useParams();
         const data = Route.useLoaderData();
         const chat = data.sessionFindOne.user?.admin?.adminChatFindOne ?? null;
-        const live = useChatLiveUpdates(chatId);
+        const live = useChatLiveUpdates();
         const locale = useLocale();
         if (!chat) return <NotFound locale={locale} />;
         return (
             <>
-                {live.listener}
+                {live.listeners}
                 <WorkspaceAssistantPage chat={chat} live={live} locale={locale} />
             </>
         );
@@ -107,23 +106,24 @@ function WorkspaceAssistantPage({
 
     const onCollectionSubmit = useCallback(
         async (collectionMessageId: string, answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>) => {
-            const generationId = live.beginTurn();
+            const generationId = live.beginTurn(chat.chatId);
             const flatAnswers = answers.map((answer) => toFlatAnswerInput(answer.inputId, answer.value));
-            await respondToCollection({
+            const result = await respondToCollection({
                 collectionMessageId,
                 answers: flatAnswers,
                 generationId,
                 requireToolCallApprovals: false,
                 modelId: selectedModelId,
             });
+            if (result.error) live.endTurn(generationId);
         },
-        [respondToCollection, live, selectedModelId],
+        [respondToCollection, live, selectedModelId, chat.chatId],
     );
 
     const onApprovalRespond = useCallback(
         async (approvalId: string, approved: boolean, reason?: string) => {
-            const generationId = live.beginTurn();
-            await respondToApproval({
+            const generationId = live.beginTurn(chat.chatId);
+            const result = await respondToApproval({
                 approvalId,
                 approved,
                 reason,
@@ -131,11 +131,12 @@ function WorkspaceAssistantPage({
                 requireToolCallApprovals: true,
                 modelId: selectedModelId,
             });
+            if (result.error) live.endTurn(generationId);
         },
-        [respondToApproval, live, selectedModelId],
+        [respondToApproval, live, selectedModelId, chat.chatId],
     );
 
-    const messages = mergeTranscriptMessages(chat.messages, live.appendedMessages);
+    const messages = mergeTranscriptMessages(chat.messages, live.appendedMessagesFor(chat.chatId));
 
     // Clicking a document attachment opens the file in the assistant sidebar's
     // file-display state (owned by the provider). `openFile` also expands the
@@ -168,19 +169,21 @@ function WorkspaceAssistantPage({
                     <DocumentPanelProvider value={documentPanel}>
                         <ChatTranscript
                             messages={messages}
-                            streamingTexts={live.streamingTexts}
+                            streamingTexts={live.streamingTextsFor(chat.chatId)}
                             onCollectionSubmit={onCollectionSubmit}
                             onApprovalRespond={onApprovalRespond}
                             jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
-                            isGenerating={live.isGenerating}
+                            isGenerating={live.isGenerating(chat.chatId)}
+                            liveTurnMessageIds={live.liveTurnMessageIdsFor(chat.chatId)}
                         />
                     </DocumentPanelProvider>
                 </ExternalLinkConfirmationProvider>
             </div>
             <WorkspaceChatComposer
                 chatId={chat.chatId}
-                isLocked={live.isGenerating}
+                isLocked={live.isGenerating(chat.chatId)}
                 beginTurn={live.beginTurn}
+                bindTurn={live.bindTurn}
                 endTurn={live.endTurn}
                 locale={locale}
                 currentPagePath={pathname}

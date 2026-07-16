@@ -259,8 +259,9 @@ function WorkspaceHub() {
                 <div className="mx-auto w-full max-w-3xl shrink-0 px-6 pt-3 pb-4 md:px-10 lg:px-16">
                     <WorkspaceChatComposer
                         locale={locale}
-                        isLocked={live.isGenerating}
+                        isLocked={live.isGenerating(undefined)}
                         beginTurn={live.beginTurn}
+                        bindTurn={live.bindTurn}
                         endTurn={live.endTurn}
                         onMessageSent={(chatId) => {
                             setChatIdFromHub(chatId);

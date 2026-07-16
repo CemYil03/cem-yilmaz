@@ -219,8 +219,9 @@ function ChatEmptyState({ locale, innerClass, currentPagePath }: { locale: Local
             <VisitorChatComposer
                 locale={locale}
                 chatId={undefined}
-                isLocked={live.isGenerating}
+                isLocked={live.isGenerating(undefined)}
                 beginTurn={live.beginTurn}
+                bindTurn={live.bindTurn}
                 endTurn={live.endTurn}
                 placeholder={{ de: 'Stell eine Frage…', en: 'Ask a question…' }[locale]}
                 onMessageSent={setChatIdFromHero}
@@ -289,30 +290,32 @@ function ChatLoaded({
 
     const onCollectionSubmit = useCallback(
         async (collectionMessageId: string, answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>) => {
-            const generationId = live.beginTurn();
+            const generationId = live.beginTurn(chatId);
             const flatAnswers = answers.map((answer) => toFlatAnswerInput(answer.inputId, answer.value));
-            await respondToCollection({
+            const result = await respondToCollection({
                 collectionMessageId,
                 answers: flatAnswers,
                 generationId,
                 requireToolCallApprovals: false,
             });
+            if (result.error) live.endTurn(generationId);
         },
-        [respondToCollection, live],
+        [respondToCollection, live, chatId],
     );
 
     const onApprovalRespond = useCallback(
         async (approvalId: string, approved: boolean, reason?: string) => {
-            const generationId = live.beginTurn();
-            await respondToApproval({
+            const generationId = live.beginTurn(chatId);
+            const result = await respondToApproval({
                 approvalId,
                 approved,
                 reason,
                 generationId,
                 requireToolCallApprovals: true,
             });
+            if (result.error) live.endTurn(generationId);
         },
-        [respondToApproval, live],
+        [respondToApproval, live, chatId],
     );
 
     const chat = data?.sessionFindOne.visitorChatFindOne;
@@ -336,19 +339,21 @@ function ChatLoaded({
         <div className={innerClass}>
             <ChatTranscript
                 chat={chat}
-                appendedMessages={live.appendedMessages}
-                streamingTexts={live.streamingTexts}
+                appendedMessages={live.appendedMessagesFor(chat.chatId)}
+                streamingTexts={live.streamingTextsFor(chat.chatId)}
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
                 fetching={fetching}
-                isGenerating={live.isGenerating}
+                isGenerating={live.isGenerating(chat.chatId)}
+                liveTurnMessageIds={live.liveTurnMessageIdsFor(chat.chatId)}
                 jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
             />
             <VisitorChatComposer
                 chatId={chat.chatId}
-                isLocked={live.isGenerating}
+                isLocked={live.isGenerating(chat.chatId)}
                 locale={locale}
                 beginTurn={live.beginTurn}
+                bindTurn={live.bindTurn}
                 endTurn={live.endTurn}
                 placeholder={{ de: 'Stelle eine weitere Frage…', en: 'Ask another question…' }[locale]}
                 currentPagePath={currentPagePath}
@@ -356,7 +361,7 @@ function ChatLoaded({
                 // visitor can keep typing without reaching for the input.
                 autoFocus
                 addonStart={
-                    <Button onClick={resetChat} disabled={live.isGenerating} aria-label={newChatLabel[locale]} variant="ghost">
+                    <Button onClick={resetChat} aria-label={newChatLabel[locale]} variant="ghost">
                         <PlusIcon className="size-3.5" />
                         {newChatLabel[locale]}
                     </Button>
@@ -379,6 +384,7 @@ function ChatTranscript({
     onApprovalRespond,
     fetching,
     isGenerating,
+    liveTurnMessageIds,
     jumpToLatestLabel,
 }: {
     chat: NonNullable<GqlCChatPageQuery['sessionFindOne']['visitorChatFindOne']>;
@@ -391,6 +397,7 @@ function ChatTranscript({
     onApprovalRespond: (approvalId: string, approved: boolean, reason?: string) => void;
     fetching: boolean;
     isGenerating: boolean;
+    liveTurnMessageIds: ReadonlySet<string>;
     jumpToLatestLabel: string;
 }) {
     const allMessages = mergeTranscriptMessages(chat.messages, appendedMessages);
@@ -404,6 +411,7 @@ function ChatTranscript({
                 jumpToLatestLabel={jumpToLatestLabel}
                 initialFetching={fetching}
                 isGenerating={isGenerating}
+                liveTurnMessageIds={liveTurnMessageIds}
             />
         </div>
     );

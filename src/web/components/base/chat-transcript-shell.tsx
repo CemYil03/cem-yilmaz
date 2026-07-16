@@ -30,6 +30,13 @@ export interface ChatTranscriptShellProps {
 export function ChatTranscriptShell({ jumpToLatestLabel, className, viewportClassName, children }: ChatTranscriptShellProps) {
     return (
         <MessageScrollerProvider
+            // Follow the live edge as new messages / streamed chunks land, but
+            // only while the reader is AT the edge — the primitive stops
+            // following the moment they scroll up, select text, or open a link
+            // (gated by `scrollEdgeThreshold`). Off by default in the
+            // primitive, so it must be set explicitly or the transcript never
+            // sticks to the bottom during streaming. See docs/styles/chat.md.
+            autoScroll
             // `last-anchor` opens saved conversations at the last meaningful
             // turn (usually the last user message) — see docs/styles/chat.md
             // ("Opening a chat — anchor, don't dump").

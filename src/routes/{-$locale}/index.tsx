@@ -236,8 +236,9 @@ function Hero({ locale, onOpenChat }: { locale: Locale; onOpenChat: (text: strin
                         <VisitorChatComposer
                             locale={locale}
                             chatId={undefined}
-                            isLocked={live.isGenerating}
+                            isLocked={live.isGenerating(undefined)}
                             beginTurn={live.beginTurn}
+                            bindTurn={live.bindTurn}
                             endTurn={live.endTurn}
                             placeholder={{ de: 'Stelle deine Frage…', en: 'Ask your question…' }[locale]}
                             onMessageSent={(chatId) => {

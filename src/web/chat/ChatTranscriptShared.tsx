@@ -10,6 +10,7 @@ import { ChatMessage } from '../components/chat-message';
 import type { GqlCChatAssistantInputValue } from '../graphql/generated';
 import type { TranscriptMessage } from './chatTranscript';
 import {
+    activeToolCallId,
     findLatestCollectionId,
     findPendingApprovalIds,
     findUserInputByCollectionId,
@@ -61,6 +62,12 @@ export interface ChatTranscriptProps {
      *  Optional — surfaces that don't pass it get no shimmer, which is correct
      *  for a settled transcript. */
     isGenerating?: boolean;
+    /** Message ids emitted by the current, still-running turn for this chat.
+     *  The trailing tool-call shimmer is scoped to this set so a settled
+     *  prior-turn tool call never re-shimmers when a new turn begins, and a
+     *  tool call in an unrelated (non-generating) chat never shimmers. Empty
+     *  or omitted → nothing shimmers. */
+    liveTurnMessageIds?: ReadonlySet<string>;
     /** Extra className applied to the outer `MessageScroller`. Surfaces set
      *  this to control the outer scroll container's flex / min-height rails
      *  where their layout differs. */
@@ -73,6 +80,10 @@ export interface ChatTranscriptProps {
     viewportClassName?: string;
 }
 
+// Stable empty set so the `liveTurnMessageIds ?? …` fallback doesn't create a
+// new Set each render (which would defeat memo comparisons downstream).
+const EMPTY_LIVE_TURN_IDS: ReadonlySet<string> = new Set();
+
 export function ChatTranscript({
     messages,
     streamingTexts,
@@ -81,6 +92,7 @@ export function ChatTranscript({
     jumpToLatestLabel,
     initialFetching = false,
     isGenerating = false,
+    liveTurnMessageIds,
     className,
     viewportClassName,
 }: ChatTranscriptProps) {
@@ -95,17 +107,10 @@ export function ChatTranscript({
     const streamingEntries = Object.entries(streamingTexts);
 
     // The trailing tool call shimmers "working on it" only while the turn is in
-    // flight AND no streaming text has started yet — once the assistant begins
-    // emitting a reply (or the turn ends), the tool step is done and the pill
-    // settles to a static record. Keyed on the last top-level tool-call id in
-    // wire order.
-    const activeToolCallId =
-        isGenerating && streamingEntries.length === 0
-            ? topLevel.reduce<string | null>(
-                  (acc, message) => (message.__typename === 'ChatMessageToolCall' ? message.chatMessageId : acc),
-                  null,
-              )
-            : null;
+    // flight, no streaming text has started yet, AND the row belongs to the
+    // current turn (its id is in `liveTurnMessageIds`) — so a completed
+    // prior-turn tool call or another chat's tool call never re-shimmers.
+    const activeId = activeToolCallId(topLevel, liveTurnMessageIds ?? EMPTY_LIVE_TURN_IDS, isGenerating, streamingEntries.length > 0);
 
     // Every persisted message and every in-flight streaming buffer becomes
     // its own scroll anchor — MessageScroller uses these to decide "start a
@@ -153,7 +158,7 @@ export function ChatTranscript({
                                     onCollectionSubmit={onCollectionSubmit}
                                     onApprovalRespond={approvalRespondHandler}
                                     children={children}
-                                    activeToolCall={message.chatMessageId === activeToolCallId}
+                                    activeToolCall={message.chatMessageId === activeId}
                                 />
                             </MessageScrollerItem>
                         );

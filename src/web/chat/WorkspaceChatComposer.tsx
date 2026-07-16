@@ -43,8 +43,9 @@ interface WorkspaceChatComposerProps {
     /** Use the caller's `useChatLiveUpdates` handle (route composers) or
      *  the provider's (hub/sheet). Both expose the same shape. */
     isLocked: boolean;
-    beginTurn: () => string;
-    endTurn: () => void;
+    beginTurn: (chatId?: string) => string;
+    bindTurn: (generationId: string, chatId: string) => void;
+    endTurn: (generationId: string) => void;
     /** Forwarded to `ChatComposer` — fired with the chatId returned by
      *  the mutation. */
     onMessageSent?: (chatId: string) => void;
@@ -75,6 +76,7 @@ export function WorkspaceChatComposer({
     chatId,
     isLocked,
     beginTurn,
+    bindTurn,
     endTurn,
     onMessageSent,
     autoFocus = false,
@@ -90,6 +92,7 @@ export function WorkspaceChatComposer({
             chatId={chatId}
             isLocked={isLocked}
             beginTurn={beginTurn}
+            bindTurn={bindTurn}
             endTurn={endTurn}
             sendMutation={WorkspaceChatMessageCreateDocument}
             extractResult={extractMessageCreateResult}

@@ -47,10 +47,17 @@ Mounting the chat provider and `<SidebarProvider>` at `workspace.tsx` — one le
 
 - **The conversation survives navigation.** The user can ask a question on `/workspace/cv`, navigate to `/workspace/projects` to consult
   something, and come back with the transcript intact. `WorkspaceAssistantChatProvider` owns `chatId`, `loadedMessages`, and the
-  `useChatLiveUpdates` listener above the `Outlet`, so they survive child unmounts.
-- **The SSE subscription survives surface transitions.** The listener is rendered in the chat provider, not in the sidebar itself, so
+  `useChatLiveUpdates` listeners above the `Outlet`, so they survive child unmounts.
+- **The SSE subscriptions survive surface transitions.** The listeners are rendered in the chat provider, not in the sidebar itself, so
   collapsing the sidebar or dismissing the mobile Sheet mid-turn does not drop the streaming response. Reopening shows the now-buffered
   transcript.
+- **Turns run in parallel, keyed per chat.** `useChatLiveUpdates` holds a _set_ of concurrent generations, not one — so the user can start a
+  second chat (Back → new message) while the first is still streaming, and both stream at once. All live reads are scoped by `chatId`
+  (`isGenerating(chatId)`, `appendedMessagesFor(chatId)`, `streamingTextsFor(chatId)`, `liveTurnMessageIdsFor(chatId)`). The only thing a
+  running turn locks is _that same chat's_ composer; the Back / new-chat / open-standalone controls never lock, and one chat's turn never
+  makes another chat show loading or shimmer a settled tool call. A fresh send starts an _unbound_ generation (no chatId yet) whose deltas
+  buffer under its `generationId`; `bindTurn(generationId, chatId)` attaches it once the mutation returns the allocated id. See
+  [architecture/chat-transcript.md](../architecture/chat-transcript.md) for the tool-row shimmer scoping.
 - **Workspace-only.** Both providers only mount on `/workspace/*`. Public pages are unaffected; the public-visitor Sheet is a separate
   component on a separate provider.
 
@@ -73,15 +80,15 @@ sibling in the layout so `<SidebarInset>` reflows automatically as the sidebar c
 
 ## Surfaces
 
-| Entry point                                                                     | Behaviour                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` on the chat provider, then forces the sidebar open via `useSidebar().setOpen(true)` (or `setOpenMobile(true)` on `<md`). The user sees the streaming response without any extra navigation.                                                                                                   |
-| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useSidebar().toggleSidebar()`. On `md+` this flips the cookie-backed open state; on `<md` it opens/closes shadcn's internal Sheet. The button reads `open` / `openMobile` from `useSidebar` and surfaces the current state as `aria-pressed` so screen readers and the visual pressed style both reflect "the sidebar is here."                                    |
-| Sidebar chat browser row                                                        | User clicks a row in the sidebar's chat list; provider fires `loadChat(chatId)` which fetches the transcript and seeds `loadedMessages`. The sidebar's own `hasActiveChat` flag flips true so the transcript replaces the browser column in place.                                                                                                                  |
-| Sidebar chat browser row — hover "Open in its own page"                         | A hover-revealed `↗` icon on the right of every row hands off to the deep-link route directly, skipping the sidebar peek. Same sequence as the loaded-state affordance below: close the sidebar, `resetChat()`, navigate. The row reserves right-side padding so the icon has its own lane; `focus-visible` also reveals it so keyboard users can reach it via Tab. |
-| Sidebar loaded-state "Back to chats"                                            | Small in-transcript link that calls `resetChat()` on the provider. Drops `chatId + loadedMessages` and the browser reappears.                                                                                                                                                                                                                                       |
-| Sidebar loaded-state "Open in its own page"                                     | Closes the sidebar (mobile Sheet or desktop dock), resets the provider (`resetChat`) so the same conversation isn't showing in two places, then navigates to `/workspace/assistant/<chatId>`. Disabled while a turn is streaming — the deep-link route mounts its own `useChatLiveUpdates` on a fresh `generationId` and can't observe the in-flight sidebar turn.  |
-| Deep-link route `/workspace/assistant/<chatId>`                                 | URL-driven, bookmark-friendly view of one chat. Reads the chatId from the path, loads the transcript with `WorkspaceChatPage(chatId)`, renders a `max-w-3xl` reading column with the shared composer at the bottom. No landing/index page — a fresh chat starts from the hub composer.                                                                              |
+| Entry point                                                                     | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Workspace hub composer                                                          | Hub fires `WorkspaceChatMessageCreate`, then calls `setChatIdFromHub` on the chat provider, then forces the sidebar open via `useSidebar().setOpen(true)` (or `setOpenMobile(true)` on `<md`). The user sees the streaming response without any extra navigation.                                                                                                                                                        |
+| Header chat button (every workspace page, via the shared `<WorkspaceHeader />`) | `useSidebar().toggleSidebar()`. On `md+` this flips the cookie-backed open state; on `<md` it opens/closes shadcn's internal Sheet. The button reads `open` / `openMobile` from `useSidebar` and surfaces the current state as `aria-pressed` so screen readers and the visual pressed style both reflect "the sidebar is here."                                                                                         |
+| Sidebar chat browser row                                                        | User clicks a row in the sidebar's chat list; provider fires `loadChat(chatId)` which fetches the transcript and seeds `loadedMessages`. The sidebar's own `hasActiveChat` flag flips true so the transcript replaces the browser column in place.                                                                                                                                                                       |
+| Sidebar chat browser row — hover "Open in its own page"                         | A hover-revealed `↗` icon on the right of every row hands off to the deep-link route directly, skipping the sidebar peek. Same sequence as the loaded-state affordance below: close the sidebar, `resetChat()`, navigate. The row reserves right-side padding so the icon has its own lane; `focus-visible` also reveals it so keyboard users can reach it via Tab.                                                      |
+| Sidebar loaded-state "Back to chats"                                            | Small in-transcript link that calls `resetChat()` on the provider. Drops `chatId + loadedMessages` and the browser reappears.                                                                                                                                                                                                                                                                                            |
+| Sidebar loaded-state "Open in its own page"                                     | Closes the sidebar (mobile Sheet or desktop dock), resets the provider (`resetChat`) so the same conversation isn't showing in two places, then navigates to `/workspace/assistant/<chatId>`. Available even while a turn streams — the deep-link route mounts its own `useChatLiveUpdates` instance; an in-flight sidebar turn keeps streaming in the background and its rows are re-fetched by the route's page query. |
+| Deep-link route `/workspace/assistant/<chatId>`                                 | URL-driven, bookmark-friendly view of one chat. Reads the chatId from the path, loads the transcript with `WorkspaceChatPage(chatId)`, renders a `max-w-3xl` reading column with the shared composer at the bottom. No landing/index page — a fresh chat starts from the hub composer.                                                                                                                                   |
 
 The chat provider's API is `WorkspaceAssistantChatContextValue` in `src/web/chat/WorkspaceAssistantChatProvider.tsx`. It owns chat-layer
 state only — `chatId`, `loadedMessages`, `live`, the recent-chat resume helpers, the sticky model. Sidebar open/close/collapsed state lives
@@ -157,8 +164,9 @@ Clicking "Open in its own page" in the sidebar's loaded-state header dismisses t
 `resetChat()` on the provider before navigating to `/workspace/assistant/<chatId>`. Without that reset the same conversation would render
 twice — once in the docked column, once inline in the newly-mounted route — and returning to a workspace page later would silently restore
 the just-handed-off chat in the sidebar. From the click onward the URL is the source of truth; the sidebar is empty next time it opens. The
-button is **disabled while a turn is streaming** — the deep-link route mounts its own `useChatLiveUpdates(chatId)` on a fresh `generationId`
-and can't pick up the sidebar's in-flight stream, so we force the hand-off to a between-turn moment.
+button is **available even mid-stream**: the deep-link route mounts its own `useChatLiveUpdates` instance and re-fetches the chat's rows via
+its page query, and an in-flight sidebar turn simply keeps streaming in the background (turns are per-chat and parallel), so the hand-off no
+longer has to wait for a between-turn moment.
 
 ## Composer
 
@@ -256,8 +264,9 @@ bottom of the viewport, jump-to-latest pill) is delegated to shadcn's `MessageSc
 
 ## Anti-patterns avoided
 
-- **No second `useChatLiveUpdates` in the sidebar.** The listener lives once in the chat provider, not in the sidebar, so the SSE stream is
-  immune to the sidebar's collapse/expand and the mobile Sheet's open/close cycles.
+- **No second `useChatLiveUpdates` in the sidebar.** The listeners live once in the chat provider, not in the sidebar, so the SSE streams
+  are immune to the sidebar's collapse/expand and the mobile Sheet's open/close cycles. (The deep-link route `/workspace/assistant/<chatId>`
+  is a separate surface with its own instance — intentional, since it's reachable without the workspace provider in scope.)
 - **No `chatId` in the sidebar's URL.** The sidebar is an in-page surface; the URL is for routes. "Open in its own page" is the bridge — it
   closes the sidebar and resets the provider before navigating to `/workspace/assistant/<chatId>`, so the chat is only on screen in one
   place at a time.
