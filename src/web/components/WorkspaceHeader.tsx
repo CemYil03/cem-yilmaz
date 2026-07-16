@@ -1,5 +1,6 @@
 import { useLocation, useMatches } from '@tanstack/react-router';
 import {
+    BriefcaseIcon,
     CodeXmlIcon,
     CompassIcon,
     DumbbellIcon,
@@ -28,9 +29,12 @@ import { Header } from './Header';
 //   logo (links to `/{-$locale}`)  workspace / <icon> <where we are>           Assistant  Theme
 //
 // The trail is derived from the current pathname against the title map below;
-// the first crumb always links back to `/workspace`, the trailing crumb is
-// rendered as the current page (with its focus-area icon — the workspace pages
-// don't render an on-page title row, so the icon lives here instead).
+// on sub-pages the first crumb collapses to the briefcase icon-button (the
+// same one the public header shows admins) linking back to `/workspace`; the
+// trailing crumb is rendered as the current page (with its focus-area icon —
+// the workspace pages don't render an on-page title row, so the icon lives
+// here instead). On the hub itself the single crumb keeps the "Workspace"
+// text.
 // The language selector is hidden — the workspace is English-only — but the
 // theme selector stays so the dark/light/auto toggle is available on private
 // surfaces too.
@@ -107,7 +111,11 @@ function buildCrumbs(pathname: string, locale: Locale, trailing: TrailingLabel):
     }
     const segments = tail.split('/');
     return [
-        { label: workspaceLabel[locale], to: '/{-$locale}/workspace' },
+        // On sub-pages the leading `Workspace` crumb collapses to the same
+        // briefcase icon-button the public header uses for admins to reach the
+        // workspace — the label is kept for screen readers. The icon still
+        // links back to the hub.
+        { label: workspaceLabel[locale], to: '/{-$locale}/workspace', icon: BriefcaseIcon, iconOnly: true },
         ...segments.map((segment, index) => {
             const entry = WORKSPACE_TITLES[segment];
             const fallbackLabel = entry ? entry[locale] : segment;

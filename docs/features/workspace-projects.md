@@ -238,16 +238,51 @@ layout:
 
 - **`outgoing`** — right-aligned bubble with a primary tint. The default for `meeting` and `offer` rows; the typical "I sent this" turn.
 - **`incoming`** — left-aligned bubble with a neutral tint. The default for `clientContact` rows; the typical "client said this" turn.
-- **`internal`** — centered system row. Set by the server (regardless of what the client sent) for `work`, `note`, and `milestone` kinds.
-  Work-timer rows collapse to a single line ("Du hast 1 h 15 m gearbeitet · 14:30") with an expand-on-click chevron — they're measurements,
-  not turns, so they don't shout. Note and milestone rows render expanded.
+- **`internal`** — centered system row. Set by the server (regardless of what the client sent) for `work`, `note`, and `milestone` kinds,
+  **and for any row on the `videoCall` channel** — a video call is a shared moment that belongs to neither side, so it renders centered like
+  a note rather than picking a from-who side. Work-timer rows collapse to a single line ("Du hast 1 h 15 m gearbeitet · 14:30") with an
+  expand-on-click chevron — they're measurements, not turns, so they don't shout. Note and milestone rows render expanded.
 
-The feed reads newest-at-bottom (chat convention). A centered day-separator pill marks day boundaries (`Montag, 14. März 2026`). The
-composer sits below the feed, mirroring `/workspace/assistant`.
+The feed reads newest-at-bottom (chat convention). A centered day-separator pill marks day boundaries (`Montag, 14. März 2026`).
 
-The activity composer surfaces a **Richtung / Direction** picker only for `clientContact`, `meeting`, and `offer` — the kinds where
-direction is a real choice. Switching kind auto-snaps direction to the kind-appropriate default (`clientContact` → incoming, `meeting` /
-`offer` → outgoing); manual override sticks after that.
+#### No title — one free-form body
+
+There is **no title field**. Manual entries carry a single free-form summary that lands in `notes`; `AdminProjectActivity.title` is nullable
+(migration `drizzle/0032_mysterious_tyrannus.sql` drops the `NOT NULL`) and left null by the composer. Timer rows (`"Work session"`) and
+agent-authored rows may still set a title, and the edit form preserves an existing title untouched — it just isn't a manual concept. Rows
+render their `title` when present and fall back to the kind (or channel) label as the heading otherwise, so a titleless note still reads as
+something in glance views (`activityHeading()` in the route file).
+
+#### Sticky composer
+
+The composer is **pinned to the viewport bottom** (`sticky bottom-0`, blurred backdrop), mirroring `/workspace/assistant` — logging an entry
+never means scrolling back up past the feed. It reuses the shared `InputGroup` / `InputGroupTextarea` message-composer surface: a free-form
+textarea with **Enter to send** (Shift+Enter for a newline) and a `SendIcon` submit button. After a successful add it resets in place for
+the next entry. Editing an existing row still happens **inline** above the feed (the sticky composer is add-only); the inline form swaps the
+send button for Cancel / Save.
+
+Link and file attachments are **quiet icon buttons** in the composer's bottom addon (a `LinkIcon` toggles an inline URL field, a
+`PaperclipIcon` opens the file picker) rather than the full-width labelled panels they used to be. An attached file shows as a small
+removable chip in the composer's top addon. The `kind` selectors for link/file were dropped from the composer — attachments default to
+`other` and can be recategorised on the Links / Files tabs.
+
+#### Smart fields
+
+The composer only shows fields that make sense for the current selection:
+
+- **Channel** — only for `clientContact` / `meeting`.
+- **Direction** — only for `clientContact` / `meeting` / `offer`, and **hidden when the channel is `videoCall`** (shared → always
+  centered/internal, so there's no side to pick).
+- **Duration** — only for a live conversation with a length: `meeting`, or a channelled contact on `phone` / `videoCall` / `inPerson`. Async
+  channels (Malt messages, email, AI chat) hide it (`DURATION_CHANNELS` in the route file). So e.g. **Kundenkontakt → Malt** shows no
+  duration field.
+- **Amount / offer status** — only for `offer`.
+
+#### Date-time picker
+
+`occurredAt` is captured with a **`DateTimePicker`** (`src/web/components/base/date-time-picker.tsx`) — a popover calendar with a
+`<input type="time">` in the footer, so a single control captures the full timestamp (a call "started at 14:30 today"), not just the day.
+Selecting a day preserves the time-of-day and vice versa.
 
 The schema:
 
@@ -257,7 +292,8 @@ The schema:
 - Enum: `projectActivityDirections = ['outgoing', 'incoming', 'internal']` in `src/server/db/schema.ts`.
 - GraphQL: `enum AdminProjectActivityDirection` + `direction: AdminProjectActivityDirection!` on the type + optional `direction` on
   `AdminProjectActivityCreate`. The `adminProjectActivitiesUpsert` command normalizes `work` / `note` / `milestone` to `internal` regardless
-  of what the client sent.
+  of what the client sent, and also normalizes **any row on the `videoCall` channel** to `internal` (the shared-moment rule;
+  `resolveDirection` takes the channel as its second argument).
 
 ### Breadcrumb / chrome
 
@@ -394,7 +430,7 @@ One unified `AdminProjectActivity` table backs both shapes. The same row covers 
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `kind`        | `clientContact \| meeting \| work \| offer \| milestone \| note` — drives the icon, label, and timer ownership    |
 | `channel`     | nullable `malt \| email \| phone \| videoCall \| inPerson \| aiAssistant \| other` — only set for contact/meeting |
-| `title`       | one-line summary, always required                                                                                 |
+| `title`       | nullable one-line heading — set by timer / agent rows; manual entries leave it null and use `notes`               |
 | `notes`       | freeform                                                                                                          |
 | `occurredAt`  | when it happened; the timeline sorts on this column                                                               |
 | `startedAt`   | set on `kind = 'work'` rows; equals `occurredAt`                                                                  |
@@ -458,7 +494,8 @@ The activity-timeline strip and the start / stop / switch timer controls live on
 Files:
 
 - Table + types: `src/server/db/schema.ts` (`projectActivities`, `projectActivityKinds`, `projectActivityChannels`, `projectOfferStatuses`)
-- Migration: `drizzle/0005_chunky_switch.sql` (original); `drizzle/0007_fat_stature.sql` (links, files, offer columns)
+- Migration: `drizzle/0005_chunky_switch.sql` (original); `drizzle/0007_fat_stature.sql` (links, files, offer columns);
+  `drizzle/0032_mysterious_tyrannus.sql` (drops `title` `NOT NULL`)
 - Mapper: `src/server/mappers/toGqlAdminProjectActivity.ts`, `toGqlAdminProjectLink.ts`, `toGqlAdminProjectFile.ts`, `toGqlFileUpload.ts`,
   and the extended `toGqlAdminProject.ts`
 - Queries: `src/server/queries/adminProjectActiveTimerFindOne.ts`, `adminProjectFindOne.ts`; lists + totals + links + files are loaded by

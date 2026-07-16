@@ -226,7 +226,7 @@ mutation WorkspaceProjectDetailUpsertActivity(
     $kind: AdminProjectActivityKind!
     $channel: AdminProjectActivityChannel
     $direction: AdminProjectActivityDirection
-    $title: String!
+    $title: String
     $notes: String
     $occurredAt: DateTime!
     $durationSec: Int

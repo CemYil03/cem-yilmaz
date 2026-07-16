@@ -225,6 +225,13 @@
             "when": 1784124411073,
             "tag": "0031_worried_fixer",
             "breakpoints": true
+        },
+        {
+            "idx": 32,
+            "version": "7",
+            "when": 1784195210808,
+            "tag": "0032_mysterious_tyrannus",
+            "breakpoints": true
         }
     ]
 }

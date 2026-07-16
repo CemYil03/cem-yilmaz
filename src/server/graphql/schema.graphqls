@@ -1053,7 +1053,10 @@ type AdminProjectActivity {
     # Sidedness of the row — drives the chat-style timeline layout. Always
     # set; defaults to `internal` for `work` / `note` / `milestone` kinds.
     direction: AdminProjectActivityDirection!
-    title: String!
+    # Optional one-line heading. Timer rows and agent-authored entries set
+    # it; the manual composer leaves it null and puts the single free-form
+    # summary in `notes`.
+    title: String
     notes: String
     # When the event happened. Equals `startedAt` on timer rows.
     occurredAt: DateTime!
@@ -1261,7 +1264,7 @@ input AdminProjectActivityCreate {
     # respected; when omitted the command picks a kind-appropriate default
     # (`clientContact` → `incoming`, `meeting` / `offer` → `outgoing`).
     direction: AdminProjectActivityDirection
-    title: String!
+    title: String
     notes: String
     occurredAt: DateTime!
     durationSec: Int

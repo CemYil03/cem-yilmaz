@@ -162,10 +162,19 @@ export function Header({
                                             const collapseAncestor = !isLast && !!Icon;
                                             const labelNode = Icon ? (
                                                 crumb.iconOnly ? (
-                                                    <span className="flex shrink-0 items-center">
-                                                        <Icon className="size-4 text-primary" aria-hidden />
-                                                        <span className="sr-only">{crumb.label}</span>
-                                                    </span>
+                                                    // Collapsed crumb: just the icon, with the
+                                                    // label kept for screen readers and surfaced
+                                                    // as a tooltip on hover (desktop) so pointer
+                                                    // users can still recover the label.
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <span className="flex shrink-0 items-center">
+                                                                <Icon className="size-4 text-primary" aria-hidden />
+                                                                <span className="sr-only">{crumb.label}</span>
+                                                            </span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>{crumb.label}</TooltipContent>
+                                                    </Tooltip>
                                                 ) : (
                                                     <span
                                                         className={cn(

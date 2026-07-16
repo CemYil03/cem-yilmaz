@@ -1178,7 +1178,11 @@ export const projectActivities = pgTable(
         // milestone). Defaulted at the command layer so existing rows backfill
         // sensibly via the migration default.
         direction: varchar().$type<AdminProjectActivityDirection>().notNull().default('internal'),
-        title: varchar().notNull(),
+        // Optional one-line heading. Timer rows ("Work session") and
+        // agent-authored entries still set it; the manual composer leaves it
+        // null and writes the single free-form summary into `notes` instead
+        // (see docs/features/workspace-projects.md — "Activity timeline").
+        title: varchar(),
         notes: text(),
         // When the event happened (call start, email send). For timer rows
         // this equals `startedAt`. The timeline orders strictly on this column.

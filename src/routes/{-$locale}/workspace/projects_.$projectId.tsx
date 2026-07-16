@@ -22,6 +22,7 @@ import {
     PinOffIcon,
     PlayIcon,
     PlusIcon,
+    SendIcon,
     SparklesIcon,
     SquareIcon,
     StickyNoteIcon,
@@ -30,6 +31,7 @@ import {
     Trash2Icon,
     UploadIcon,
     VideoIcon,
+    XIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
@@ -46,6 +48,8 @@ import { Reveal } from '../../../web/components/Reveal';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
+import { DateTimePicker } from '../../../web/components/base/date-time-picker';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '../../../web/components/base/input-group';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -244,12 +248,31 @@ const ACTIVITY_DIRECTION_LABELS: Record<GqlCAdminProjectActivityDirection, { de:
     internal: { de: 'Intern', en: 'Internal' },
 };
 
-// Kind-aware default direction for the composer (matches `resolveDirection`
-// in the server command). The form pre-fills with this when adding a new row.
-function defaultDirectionForKind(kind: GqlCAdminProjectActivityKind): GqlCAdminProjectActivityDirection {
+// Kind + channel-aware default direction for the composer (matches
+// `resolveDirection` in the server command). The form pre-fills with this when
+// adding a new row. A video call is a shared moment — `internal`, centered like
+// a note — regardless of kind.
+function defaultDirectionForKind(
+    kind: GqlCAdminProjectActivityKind,
+    channel: GqlCAdminProjectActivityChannel | null,
+): GqlCAdminProjectActivityDirection {
     if (kind === 'work' || kind === 'note' || kind === 'milestone') return 'internal';
+    if (channel === 'videoCall') return 'internal';
     if (kind === 'clientContact') return 'incoming';
     return 'outgoing';
+}
+
+// Channels where a duration is meaningful (a live conversation has a length).
+// Async channels (Malt messages, email, AI chat) do not — the duration field
+// is hidden for those so the composer doesn't ask for a number that has no
+// answer.
+const DURATION_CHANNELS: ReadonlyArray<GqlCAdminProjectActivityChannel> = ['phone', 'videoCall', 'inPerson'];
+
+// The one-line heading shown for an activity row. Manual composer entries carry
+// no title (their whole body lives in `notes`); fall back to the kind label so
+// a titleless row still reads as something in glance views.
+function activityHeading(activity: ActivityRow, locale: Locale): string {
+    return activity.title ?? ACTIVITY_KIND_LABELS[activity.kind][locale];
 }
 
 const LINK_KIND_ORDER: ReadonlyArray<GqlCAdminProjectLinkKind> = [
@@ -1079,7 +1102,7 @@ function OverviewActivityRow({ activity, locale }: { activity: ActivityRow; loca
         <div className="flex w-full items-start gap-2 rounded-md border border-border/30 bg-card/10 p-2">
             <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-foreground">{activity.title}</div>
+                <div className="truncate font-medium text-foreground">{activityHeading(activity, locale)}</div>
                 <div className="text-[11px] text-muted-foreground">
                     {ACTIVITY_KIND_LABELS[activity.kind][locale]} · {formatRelative(activity.occurredAt as unknown as string, locale)}
                 </div>
@@ -1819,7 +1842,6 @@ function ActivitySection({
     projectId: string;
     locale: Locale;
 }) {
-    const [adding, setAdding] = useState(false);
     const [editing, setEditing] = useState<ActivityRow | null>(null);
     const [, del] = useMutation(WorkspaceProjectDetailDeleteActivityDocument);
 
@@ -1829,31 +1851,25 @@ function ActivitySection({
     const chronological = useMemo(() => activities.slice().reverse(), [activities]);
 
     return (
-        <section data-tab="activity">
-            <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold">{{ de: 'Verlauf', en: 'Activity' }[locale]}</h2>
-                <Button size="sm" variant="ghost" onClick={() => setAdding(true)} disabled={adding || editing !== null}>
-                    <PlusIcon />
-                    {{ de: 'Eintrag hinzufügen', en: 'Add entry' }[locale]}
-                </Button>
-            </div>
-
-            {activities.length === 0 && !adding ? (
-                <div className="mt-4">
-                    <EmptyState
-                        icon={TimerIcon}
-                        line={
-                            {
-                                de: 'Festhalten, was du gemacht hast — auch kleine Schritte zählen.',
-                                en: 'Capture what you did — small steps count too.',
-                            }[locale]
-                        }
-                        cta={{ de: 'Ersten Eintrag', en: 'First entry' }[locale]}
-                        onAction={() => setAdding(true)}
-                    />
-                </div>
+        <section data-tab="activity" className="flex flex-col">
+            {activities.length === 0 ? (
+                <EmptyState
+                    icon={TimerIcon}
+                    line={
+                        {
+                            de: 'Festhalten, was du gemacht hast — auch kleine Schritte zählen.',
+                            en: 'Capture what you did — small steps count too.',
+                        }[locale]
+                    }
+                    // No CTA button: the composer below is always present, so the
+                    // empty state is purely a prompt, not another affordance.
+                    cta={{ de: 'Unten schreiben', en: 'Write below' }[locale]}
+                    onAction={() => {
+                        document.querySelector<HTMLTextAreaElement>('[data-activity-composer] textarea')?.focus();
+                    }}
+                />
             ) : (
-                <ol className="mt-4 flex flex-col gap-3">
+                <ol className="flex flex-col gap-3">
                     {chronological.map((a, index) => {
                         const previous = index > 0 ? chronological[index - 1] : null;
                         const showDaySeparator =
@@ -1870,9 +1886,7 @@ function ActivitySection({
                                             tasks={tasks}
                                             locale={locale}
                                             onClose={() => setEditing(null)}
-                                            onSaved={() => {
-                                                setEditing(null);
-                                            }}
+                                            onSaved={() => setEditing(null)}
                                         />
                                     ) : (
                                         <ActivityMessage
@@ -1891,20 +1905,16 @@ function ActivitySection({
                 </ol>
             )}
 
-            {adding ? (
-                <div className="mt-4">
-                    <ActivityForm
-                        activity={null}
-                        projectId={projectId}
-                        tasks={tasks}
-                        locale={locale}
-                        onClose={() => setAdding(false)}
-                        onSaved={() => {
-                            setAdding(false);
-                        }}
-                    />
-                </div>
-            ) : null}
+            {/* Composer pinned to the viewport bottom — mirrors /workspace/assistant
+             * so logging an entry never means scrolling back up. Editing an existing
+             * row happens inline above; the sticky composer is add-only. A blurred
+             * background lets the feed scroll under it. */}
+            <div
+                data-activity-composer
+                className="sticky bottom-0 z-10 mt-4 -mx-4 border-t border-border/40 bg-background/80 px-4 py-3 backdrop-blur md:-mx-8 md:px-8"
+            >
+                <ActivityForm activity={null} projectId={projectId} tasks={tasks} locale={locale} onClose={() => {}} onSaved={() => {}} />
+            </div>
         </section>
     );
 }
@@ -1989,9 +1999,19 @@ function BubbleActivityRow({
                             : 'rounded-bl-md border-border/60 bg-card/60 text-foreground',
                     )}
                 >
-                    <div className="font-medium">{activity.title}</div>
+                    {activity.title ? <div className="font-medium">{activity.title}</div> : null}
                     {activity.notes ? (
-                        <div className="mt-1 whitespace-pre-line text-[13px] text-muted-foreground">{activity.notes}</div>
+                        <div
+                            className={cn(
+                                'whitespace-pre-line text-[13px]',
+                                activity.title ? 'mt-1 text-muted-foreground' : 'text-foreground',
+                            )}
+                        >
+                            {activity.notes}
+                        </div>
+                    ) : null}
+                    {!activity.title && !activity.notes ? (
+                        <div className="text-[13px] italic text-muted-foreground">{ACTIVITY_KIND_LABELS[activity.kind][locale]}</div>
                     ) : null}
                     {activity.kind === 'offer' && activity.amountCents != null ? (
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -2105,9 +2125,11 @@ function InternalActivityRow({
                 <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span className="font-medium">{activity.title}</span>
+                        {activity.title ? <span className="font-medium">{activity.title}</span> : null}
                         <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                            {ACTIVITY_KIND_LABELS[activity.kind][locale]}
+                            {activity.channel
+                                ? ACTIVITY_CHANNEL_LABELS[activity.channel][locale]
+                                : ACTIVITY_KIND_LABELS[activity.kind][locale]}
                         </span>
                         <span className="text-[11px] text-muted-foreground">· {time}</span>
                         {activity.durationSec ? (
@@ -2162,80 +2184,102 @@ function ActivityForm({
     onClose: () => void;
     onSaved: () => void;
 }) {
+    const isEdit = activity !== null;
     const [, upsert] = useMutation(WorkspaceProjectDetailUpsertActivityDocument);
-    const [kind, setKind] = useState<GqlCAdminProjectActivityKind>(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'note'));
+    const [kind, setKind] = useState<GqlCAdminProjectActivityKind>(
+        activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'clientContact'),
+    );
     const [channel, setChannel] = useState<GqlCAdminProjectActivityChannel | null>(activity?.channel ?? null);
     const [direction, setDirection] = useState<GqlCAdminProjectActivityDirection>(
-        activity?.direction ?? defaultDirectionForKind(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'note')),
+        activity?.direction ?? defaultDirectionForKind(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'clientContact'), null),
     );
-    const [title, setTitle] = useState(activity?.title ?? '');
-    const [notes, setNotes] = useState(activity?.notes ?? '');
+    // The single free-form body. Title is no longer a manual concept — a
+    // titleless row renders with the kind label as its heading. When editing a
+    // legacy / agent-authored row that carries a title, we preserve it as-is.
+    const [body, setBody] = useState(activity?.notes ?? '');
     const [occurredAt, setOccurredAt] = useState<Date>(activity ? parseISO(activity.occurredAt as unknown as string) : new Date());
     const [durationMin, setDurationMin] = useState<string>(activity?.durationSec ? String(Math.round(activity.durationSec / 60)) : '');
     const [taskId, setTaskId] = useState<string | null>(activity?.taskId ?? null);
     const [amountEur, setAmountEur] = useState<string>(activity?.amountCents != null ? String(activity.amountCents / 100) : '');
     const [offerStatus, setOfferStatus] = useState<GqlCAdminProjectOfferStatus | null>(activity?.offerStatus ?? null);
     const [attachLinkUrl, setAttachLinkUrl] = useState('');
-    const [attachLinkKind, setAttachLinkKind] = useState<GqlCAdminProjectLinkKind>('other');
+    const [linkOpen, setLinkOpen] = useState(false);
     const [attachFile, setAttachFile] = useState<{ fileUploadId: string; filename: string } | null>(null);
-    const [attachFileKind, setAttachFileKind] = useState<GqlCAdminProjectFileKind>('other');
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [busy, setBusy] = useState(false);
 
     const channelEnabled = kind === 'clientContact' || kind === 'meeting';
     const offerFieldsEnabled = kind === 'offer';
-    // Direction is only a meaningful choice for client-facing kinds. Work /
-    // note / milestone are always `internal` (the server enforces this too).
-    const directionEnabled = kind === 'clientContact' || kind === 'meeting' || kind === 'offer';
+    // A video call is a shared moment (centered like a note) — no direction to
+    // pick. Otherwise direction is a real choice only for client-facing kinds.
+    const directionEnabled = (kind === 'clientContact' || kind === 'meeting' || kind === 'offer') && channel !== 'videoCall';
+    // Duration only makes sense for a live conversation with a length. A
+    // meeting is live by nature; a channelled contact is live only on
+    // phone / video / in-person. Malt messages and email have no duration.
+    const durationEnabled = kind === 'meeting' || (channel != null && DURATION_CHANNELS.includes(channel));
+
+    const canSubmit =
+        !busy && !uploading && (body.trim().length > 0 || (!isEdit && (attachLinkUrl.trim().length > 0 || attachFile !== null)));
+
+    const submit = async () => {
+        if (!canSubmit) return;
+        setBusy(true);
+        const durationSec = durationEnabled && durationMin ? Math.max(0, Math.round(Number(durationMin) * 60)) : null;
+        const amountCents = offerFieldsEnabled && amountEur ? Math.round(Number(amountEur) * 100) : null;
+        await upsert({
+            activityId: activity?.activityId ?? null,
+            projectId,
+            taskId,
+            kind,
+            channel: channelEnabled ? channel : null,
+            direction: directionEnabled ? direction : null,
+            // Preserve an existing heading on edit; manual composer entries carry none.
+            title: activity?.title ?? null,
+            notes: body.trim() || null,
+            occurredAt: occurredAt.toISOString(),
+            durationSec,
+            amountCents: offerFieldsEnabled ? amountCents : null,
+            offerStatus: offerFieldsEnabled ? offerStatus : null,
+            attachLinkUrl: !isEdit && attachLinkUrl.trim() ? attachLinkUrl.trim() : null,
+            attachLinkKind: !isEdit && attachLinkUrl.trim() ? 'other' : null,
+            attachLinkLabel: null,
+            attachLinkPinned: false,
+            attachFileUploadId: !isEdit && attachFile ? attachFile.fileUploadId : null,
+            attachFileKind: !isEdit && attachFile ? 'other' : null,
+            attachFileLabel: !isEdit && attachFile ? attachFile.filename : null,
+            attachFilePinned: false,
+        });
+        setBusy(false);
+        // Reset the composer for the next entry (add mode); edit mode just closes.
+        if (!isEdit) {
+            setBody('');
+            setAttachLinkUrl('');
+            setLinkOpen(false);
+            setAttachFile(null);
+            setDurationMin('');
+        }
+        onSaved();
+    };
 
     return (
         <form
-            className="mt-2 grid gap-2 rounded-md border border-border/60 bg-card/40 p-3 text-xs"
-            onSubmit={async (e) => {
+            className="grid gap-2"
+            onSubmit={(e) => {
                 e.preventDefault();
-                if (busy) return;
-                setBusy(true);
-                const durationSec = durationMin ? Math.max(0, Math.round(Number(durationMin) * 60)) : null;
-                const amountCents = offerFieldsEnabled && amountEur ? Math.round(Number(amountEur) * 100) : null;
-                await upsert({
-                    activityId: activity?.activityId ?? null,
-                    projectId,
-                    taskId,
-                    kind,
-                    channel: channelEnabled ? channel : null,
-                    direction: directionEnabled ? direction : null,
-                    title: title.trim(),
-                    notes: notes.trim() || null,
-                    occurredAt: occurredAt.toISOString(),
-                    durationSec,
-                    amountCents: offerFieldsEnabled ? amountCents : null,
-                    offerStatus: offerFieldsEnabled ? offerStatus : null,
-                    attachLinkUrl: !activity && attachLinkUrl.trim() ? attachLinkUrl.trim() : null,
-                    attachLinkKind: !activity && attachLinkUrl.trim() ? attachLinkKind : null,
-                    attachLinkLabel: null,
-                    attachLinkPinned: false,
-                    attachFileUploadId: !activity && attachFile ? attachFile.fileUploadId : null,
-                    attachFileKind: !activity && attachFile ? attachFileKind : null,
-                    attachFileLabel: !activity && attachFile ? attachFile.filename : null,
-                    attachFilePinned: false,
-                });
-                setBusy(false);
-                onSaved();
+                void submit();
             }}
         >
-            <div className="flex flex-wrap gap-2">
+            {/* Control row — kind + context selectors. Compact, wraps on narrow. */}
+            <div className="flex flex-wrap items-center gap-1.5">
                 <Select
                     value={kind}
                     onValueChange={(v: GqlCAdminProjectActivityKind) => {
                         setKind(v);
-                        // Auto-snap direction to the kind-appropriate default so the
-                        // user doesn't have to re-pick it on every switch. Manual
-                        // override still works after this.
-                        setDirection(defaultDirectionForKind(v));
+                        setDirection(defaultDirectionForKind(v, channel));
                     }}
                 >
-                    <SelectTrigger className="h-8 w-[160px] text-xs">
+                    <SelectTrigger className="h-8 w-[150px] text-xs">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2249,9 +2293,13 @@ function ActivityForm({
                 {channelEnabled ? (
                     <Select
                         value={channel ?? '__none'}
-                        onValueChange={(v) => setChannel(v === '__none' ? null : (v as GqlCAdminProjectActivityChannel))}
+                        onValueChange={(v) => {
+                            const next = v === '__none' ? null : (v as GqlCAdminProjectActivityChannel);
+                            setChannel(next);
+                            setDirection(defaultDirectionForKind(kind, next));
+                        }}
                     >
-                        <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectTrigger className="h-8 w-[130px] text-xs">
                             <SelectValue placeholder={{ de: 'Kanal', en: 'Channel' }[locale]} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2266,7 +2314,7 @@ function ActivityForm({
                 ) : null}
                 {directionEnabled ? (
                     <Select value={direction} onValueChange={(v: GqlCAdminProjectActivityDirection) => setDirection(v)}>
-                        <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectTrigger className="h-8 w-[130px] text-xs">
                             <SelectValue placeholder={{ de: 'Richtung', en: 'Direction' }[locale]} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2275,10 +2323,27 @@ function ActivityForm({
                         </SelectContent>
                     </Select>
                 ) : null}
+                <DateTimePicker
+                    value={occurredAt}
+                    onValueChange={(d) => setOccurredAt(d)}
+                    locale={DATE_FNS_LOCALE[locale]}
+                    className="h-8 w-[210px] text-xs"
+                />
+                {durationEnabled ? (
+                    <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={durationMin}
+                        onChange={(e) => setDurationMin(e.target.value)}
+                        placeholder={{ de: 'Dauer (min)', en: 'Duration (min)' }[locale]}
+                        className="h-8 w-28 text-xs"
+                    />
+                ) : null}
                 {tasks.length > 0 ? (
                     <Select value={taskId ?? '__none'} onValueChange={(v) => setTaskId(v === '__none' ? null : v)}>
-                        <SelectTrigger className="h-8 w-[200px] text-xs">
-                            <SelectValue placeholder={{ de: 'Aufgabe (optional)', en: 'AdminProjectTask (optional)' }[locale]} />
+                        <SelectTrigger className="h-8 w-[170px] text-xs">
+                            <SelectValue placeholder={{ de: 'Aufgabe', en: 'Task' }[locale]} />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="__none">{{ de: 'Keine Aufgabe', en: 'No task' }[locale]}</SelectItem>
@@ -2291,27 +2356,9 @@ function ActivityForm({
                     </Select>
                 ) : null}
             </div>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={{ de: 'Titel', en: 'Title' }[locale]} required />
-            <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={{ de: 'Notizen', en: 'Notes' }[locale]}
-                rows={2}
-            />
-            <div className="flex flex-wrap gap-2">
-                <DatePicker value={occurredAt} onValueChange={(d) => setOccurredAt(d ?? new Date())} locale={DATE_FNS_LOCALE[locale]} />
-                <Input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={durationMin}
-                    onChange={(e) => setDurationMin(e.target.value)}
-                    placeholder={{ de: 'Dauer (min)', en: 'Duration (min)' }[locale]}
-                    className="w-32"
-                />
-            </div>
+
             {offerFieldsEnabled ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                     <Input
                         type="number"
                         min="0"
@@ -2319,13 +2366,13 @@ function ActivityForm({
                         value={amountEur}
                         onChange={(e) => setAmountEur(e.target.value)}
                         placeholder={{ de: 'Betrag (€)', en: 'Amount (€)' }[locale]}
-                        className="w-40"
+                        className="h-8 w-40 text-xs"
                     />
                     <Select
                         value={offerStatus ?? '__none'}
                         onValueChange={(v) => setOfferStatus(v === '__none' ? null : (v as GqlCAdminProjectOfferStatus))}
                     >
-                        <SelectTrigger className="h-8 w-[160px] text-xs">
+                        <SelectTrigger className="h-8 w-[150px] text-xs">
                             <SelectValue placeholder={{ de: 'Status', en: 'Status' }[locale]} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2339,87 +2386,125 @@ function ActivityForm({
                     </Select>
                 </div>
             ) : null}
-            {!activity ? (
-                <>
-                    <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-2">
-                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            {{ de: 'Link anhängen (optional)', en: 'Attach link (optional)' }[locale]}
-                        </span>
-                        <Input
-                            value={attachLinkUrl}
-                            onChange={(e) => setAttachLinkUrl(e.target.value)}
-                            placeholder="https://…"
-                            className="flex-1 min-w-[200px]"
-                        />
-                        <Select value={attachLinkKind} onValueChange={(v: GqlCAdminProjectLinkKind) => setAttachLinkKind(v)}>
-                            <SelectTrigger className="h-8 w-[120px] text-xs">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {LINK_KIND_ORDER.map((k) => (
-                                    <SelectItem key={k} value={k}>
-                                        {LINK_KIND_LABELS[k][locale]}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            {{ de: 'Datei anhängen (optional)', en: 'Attach file (optional)' }[locale]}
-                        </span>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                setUploading(true);
-                                try {
-                                    const uploaded = await uploadFile(file);
-                                    setAttachFile({ fileUploadId: uploaded.fileUploadId, filename: uploaded.filename });
-                                } catch (err) {
-                                    console.error(err);
-                                } finally {
-                                    setUploading(false);
-                                    if (fileInputRef.current) fileInputRef.current.value = '';
-                                }
-                            }}
-                        />
-                        <Button type="button" size="sm" variant="ghost" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-                            <UploadIcon />
-                            {uploading
-                                ? { de: 'Lädt…', en: 'Uploading…' }[locale]
-                                : attachFile
-                                  ? attachFile.filename
-                                  : { de: 'Datei wählen', en: 'Choose file' }[locale]}
-                        </Button>
-                        {attachFile ? (
-                            <Select value={attachFileKind} onValueChange={(v: GqlCAdminProjectFileKind) => setAttachFileKind(v)}>
-                                <SelectTrigger className="h-8 w-[120px] text-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {FILE_KIND_ORDER.map((k) => (
-                                        <SelectItem key={k} value={k}>
-                                            {FILE_KIND_LABELS[k][locale]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+
+            {/* Body composer — the message-composer surface. Attach affordances
+             * are quiet icon buttons in the bottom addon, not full-width panels. */}
+            <InputGroup className="bg-white dark:bg-black">
+                {!isEdit && (attachLinkUrl.trim().length > 0 || attachFile !== null || linkOpen) ? (
+                    <InputGroupAddon align="block-start" className="flex-wrap gap-1.5 py-2">
+                        {linkOpen ? (
+                            <Input
+                                value={attachLinkUrl}
+                                onChange={(e) => setAttachLinkUrl(e.target.value)}
+                                placeholder="https://…"
+                                className="h-7 flex-1 min-w-[180px] text-xs"
+                                autoFocus
+                            />
                         ) : null}
-                    </div>
-                </>
-            ) : null}
-            <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-                    {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
-                </Button>
-                <Button type="submit" size="sm" disabled={busy}>
-                    {{ de: 'Speichern', en: 'Save' }[locale]}
-                </Button>
-            </div>
+                        {attachFile ? (
+                            <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-[11px]">
+                                <PaperclipIcon className="size-3" />
+                                <span className="max-w-[160px] truncate">{attachFile.filename}</span>
+                                <button
+                                    type="button"
+                                    aria-label={{ de: 'Entfernen', en: 'Remove' }[locale]}
+                                    onClick={() => setAttachFile(null)}
+                                    className="text-muted-foreground hover:text-foreground"
+                                >
+                                    <XIcon className="size-3" />
+                                </button>
+                            </span>
+                        ) : null}
+                    </InputGroupAddon>
+                ) : null}
+
+                <InputGroupTextarea
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            void submit();
+                        }
+                    }}
+                    placeholder={
+                        isEdit
+                            ? { de: 'Eintrag bearbeiten …', en: 'Edit entry …' }[locale]
+                            : { de: 'Was ist passiert? (Enter zum Senden)', en: 'What happened? (Enter to send)' }[locale]
+                    }
+                    rows={2}
+                    className="field-sizing-content max-h-[40vh]"
+                    autoFocus={isEdit}
+                />
+
+                <InputGroupAddon align="block-end">
+                    {!isEdit ? (
+                        <>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                className="hidden"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    setUploading(true);
+                                    try {
+                                        const uploaded = await uploadFile(file);
+                                        setAttachFile({ fileUploadId: uploaded.fileUploadId, filename: uploaded.filename });
+                                    } catch (err) {
+                                        console.error(err);
+                                    } finally {
+                                        setUploading(false);
+                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                    }
+                                }}
+                            />
+                            <InputGroupButton
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                aria-label={{ de: 'Link anhängen', en: 'Attach link' }[locale]}
+                                aria-pressed={linkOpen}
+                                className={cn(linkOpen && 'text-foreground')}
+                                onClick={() => setLinkOpen((v) => !v)}
+                            >
+                                <LinkIcon />
+                            </InputGroupButton>
+                            <InputGroupButton
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                disabled={uploading}
+                                aria-label={{ de: 'Datei anhängen', en: 'Attach file' }[locale]}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <PaperclipIcon />
+                            </InputGroupButton>
+                        </>
+                    ) : null}
+                    {isEdit ? (
+                        <div className="ml-auto flex items-center gap-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+                                {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
+                            </Button>
+                            <Button type="submit" size="sm" disabled={!canSubmit}>
+                                {{ de: 'Speichern', en: 'Save' }[locale]}
+                            </Button>
+                        </div>
+                    ) : (
+                        <InputGroupButton
+                            type="submit"
+                            variant="default"
+                            size="icon-xs"
+                            className="ml-auto"
+                            disabled={!canSubmit}
+                            aria-label={{ de: 'Senden', en: 'Send' }[locale]}
+                        >
+                            <SendIcon />
+                        </InputGroupButton>
+                    )}
+                </InputGroupAddon>
+            </InputGroup>
         </form>
     );
 }

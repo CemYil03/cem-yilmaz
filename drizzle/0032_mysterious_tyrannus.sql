@@ -1,0 +1,1 @@
+ALTER TABLE "AdminProjectActivity" ALTER COLUMN "title" DROP NOT NULL;

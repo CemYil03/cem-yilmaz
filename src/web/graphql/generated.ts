@@ -1472,7 +1472,7 @@ export interface GqlCAdminProjectActivity {
     projectId: Scalars['ID']['output'];
     startedAt?: Maybe<Scalars['DateTime']['output']>;
     taskId?: Maybe<Scalars['ID']['output']>;
-    title: Scalars['String']['output'];
+    title?: Maybe<Scalars['String']['output']>;
     updatedAt: Scalars['DateTime']['output'];
 }
 
@@ -1498,7 +1498,7 @@ export type GqlCAdminProjectActivityCreate = {
     offerStatus?: InputMaybe<GqlCAdminProjectOfferStatus>;
     projectId: Scalars['ID']['input'];
     taskId?: InputMaybe<Scalars['ID']['input']>;
-    title: Scalars['String']['input'];
+    title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlCAdminProjectActivityDirection = 'incoming' | 'internal' | 'outgoing';
@@ -5318,7 +5318,7 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
                 taskId: string | null;
                 kind: Schema.GqlCAdminProjectActivityKind;
                 channel: Schema.GqlCAdminProjectActivityChannel | null;
-                title: string;
+                title: string | null;
                 notes: string | null;
                 occurredAt: string;
                 startedAt: string | null;
@@ -5332,7 +5332,7 @@ export type GqlCWorkspaceProjectsPageUserFragment = {
             projectId: string;
             taskId: string | null;
             kind: Schema.GqlCAdminProjectActivityKind;
-            title: string;
+            title: string | null;
             occurredAt: string;
             startedAt: string | null;
             endedAt: string | null;
@@ -5397,7 +5397,7 @@ export type GqlCWorkspaceProjectsPageQuery = {
                         taskId: string | null;
                         kind: Schema.GqlCAdminProjectActivityKind;
                         channel: Schema.GqlCAdminProjectActivityChannel | null;
-                        title: string;
+                        title: string | null;
                         notes: string | null;
                         occurredAt: string;
                         startedAt: string | null;
@@ -5411,7 +5411,7 @@ export type GqlCWorkspaceProjectsPageQuery = {
                     projectId: string;
                     taskId: string | null;
                     kind: Schema.GqlCAdminProjectActivityKind;
-                    title: string;
+                    title: string | null;
                     occurredAt: string;
                     startedAt: string | null;
                     endedAt: string | null;
@@ -5477,7 +5477,7 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                     taskId: string | null;
                     kind: Schema.GqlCAdminProjectActivityKind;
                     channel: Schema.GqlCAdminProjectActivityChannel | null;
-                    title: string;
+                    title: string | null;
                     notes: string | null;
                     occurredAt: string;
                     startedAt: string | null;
@@ -5491,7 +5491,7 @@ export type GqlCWorkspaceProjectsPageUpdatesSubscription = {
                 projectId: string;
                 taskId: string | null;
                 kind: Schema.GqlCAdminProjectActivityKind;
-                title: string;
+                title: string | null;
                 occurredAt: string;
                 startedAt: string | null;
                 endedAt: string | null;
@@ -5564,7 +5564,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
             projectId: string;
             taskId: string | null;
             kind: Schema.GqlCAdminProjectActivityKind;
-            title: string;
+            title: string | null;
             occurredAt: string;
             startedAt: string | null;
             endedAt: string | null;
@@ -5611,7 +5611,7 @@ export type GqlCWorkspaceProjectDetailUserFragment = {
                 kind: Schema.GqlCAdminProjectActivityKind;
                 channel: Schema.GqlCAdminProjectActivityChannel | null;
                 direction: Schema.GqlCAdminProjectActivityDirection;
-                title: string;
+                title: string | null;
                 notes: string | null;
                 occurredAt: string;
                 startedAt: string | null;
@@ -5674,7 +5674,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                     projectId: string;
                     taskId: string | null;
                     kind: Schema.GqlCAdminProjectActivityKind;
-                    title: string;
+                    title: string | null;
                     occurredAt: string;
                     startedAt: string | null;
                     endedAt: string | null;
@@ -5721,7 +5721,7 @@ export type GqlCWorkspaceProjectDetailQuery = {
                         kind: Schema.GqlCAdminProjectActivityKind;
                         channel: Schema.GqlCAdminProjectActivityChannel | null;
                         direction: Schema.GqlCAdminProjectActivityDirection;
-                        title: string;
+                        title: string | null;
                         notes: string | null;
                         occurredAt: string;
                         startedAt: string | null;
@@ -5785,7 +5785,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                 projectId: string;
                 taskId: string | null;
                 kind: Schema.GqlCAdminProjectActivityKind;
-                title: string;
+                title: string | null;
                 occurredAt: string;
                 startedAt: string | null;
                 endedAt: string | null;
@@ -5832,7 +5832,7 @@ export type GqlCWorkspaceProjectDetailUpdatesSubscription = {
                     kind: Schema.GqlCAdminProjectActivityKind;
                     channel: Schema.GqlCAdminProjectActivityChannel | null;
                     direction: Schema.GqlCAdminProjectActivityDirection;
-                    title: string;
+                    title: string | null;
                     notes: string | null;
                     occurredAt: string;
                     startedAt: string | null;
@@ -5934,7 +5934,7 @@ export type GqlCWorkspaceProjectDetailUpsertActivityMutationVariables = Exact<{
     kind: Schema.GqlCAdminProjectActivityKind;
     channel?: Schema.GqlCAdminProjectActivityChannel | null | undefined;
     direction?: Schema.GqlCAdminProjectActivityDirection | null | undefined;
-    title: string;
+    title?: string | null | undefined;
     notes?: string | null | undefined;
     occurredAt: string;
     durationSec?: number | null | undefined;
@@ -21217,7 +21217,7 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
                 {
                     kind: 'VariableDefinition',
                     variable: { kind: 'Variable', name: { kind: 'Name', value: 'title' } },
-                    type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
+                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
                 },
                 {
                     kind: 'VariableDefinition',

@@ -341,4 +341,46 @@ describe('adminProjectActivitiesUpsert — direction normalization', () => {
         const [offer] = await testDb.select().from(projectActivities).where(eq(projectActivities.activityId, result.referenceIds![1]!));
         expect(offer?.direction).toBe('outgoing');
     });
+
+    it('forces a videoCall to internal even when the client sends a direction, and stores a null title', async () => {
+        const { serverRuntime, requestingSession } = await commandSetup();
+        const projectId = await projectSeed();
+
+        const result = await adminProjectActivitiesUpsert(
+            requestingSession.userId!,
+            [
+                {
+                    activityId: null,
+                    projectId,
+                    taskId: null,
+                    kind: 'meeting',
+                    channel: 'videoCall',
+                    // A video call belongs to neither side — the command must
+                    // override an explicit direction to `internal`.
+                    direction: 'outgoing',
+                    title: null,
+                    notes: 'Kickoff call over Zoom',
+                    occurredAt: new Date(),
+                    durationSec: 1800,
+                    amountCents: null,
+                    offerStatus: null,
+                    attachLinkUrl: null,
+                    attachLinkKind: null,
+                    attachLinkLabel: null,
+                    attachLinkPinned: null,
+                    attachFileUploadId: null,
+                    attachFileKind: null,
+                    attachFileLabel: null,
+                    attachFilePinned: null,
+                },
+            ],
+            requestingSession,
+            serverRuntime,
+        );
+
+        const [row] = await testDb.select().from(projectActivities).where(eq(projectActivities.activityId, result.referenceIds![0]!));
+        expect(row?.direction).toBe('internal');
+        expect(row?.title).toBeNull();
+        expect(row?.notes).toBe('Kickoff call over Zoom');
+    });
 });

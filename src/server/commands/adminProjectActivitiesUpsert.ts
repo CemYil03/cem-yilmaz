@@ -3,7 +3,12 @@ import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { fileUploads, projectActivities, projectFiles, projectLinks } from '../db/schema';
-import type { AdminProjectActivityCreate, AdminProjectActivityDirection, AdminProjectActivityKind } from '../db/schema';
+import type {
+    AdminProjectActivityChannel,
+    AdminProjectActivityCreate,
+    AdminProjectActivityDirection,
+    AdminProjectActivityKind,
+} from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import {
     GqlSAdminProjectActivityChannelSchema,
@@ -16,15 +21,19 @@ import {
 import type { GqlSMutationResult, GqlSAdminProjectActivityCreate, GqlSSession } from '../graphql/generated';
 
 // Resolve the `direction` column for a non-timer activity. `work` / `note` /
-// `milestone` are always `internal` (they're not a turn in a dialogue); for
-// the client-facing kinds we respect what the client sent and fall back to a
-// kind-appropriate default: a logged client-contact row is most often
-// inbound, while meeting and offer rows are typically outbound from Cem.
+// `milestone` are always `internal` (they're not a turn in a dialogue). A
+// video call is a shared moment — it belongs to neither side — so any row on
+// the `videoCall` channel is `internal` too and renders centered like a note.
+// For the remaining client-facing kinds we respect what the client sent and
+// fall back to a kind-appropriate default: a logged client-contact row is most
+// often inbound, while meeting and offer rows are typically outbound from Cem.
 function resolveDirection(
     kind: AdminProjectActivityKind,
+    channel: AdminProjectActivityChannel | null | undefined,
     explicit: AdminProjectActivityDirection | null | undefined,
 ): AdminProjectActivityDirection {
     if (kind === 'work' || kind === 'note' || kind === 'milestone') return 'internal';
+    if (channel === 'videoCall') return 'internal';
     if (explicit) return explicit;
     if (kind === 'clientContact') return 'incoming';
     return 'outgoing';
@@ -72,8 +81,8 @@ export async function adminProjectActivitiesUpsert(
             taskId: input.taskId ?? null,
             kind: input.kind,
             channel: input.channel ?? null,
-            direction: resolveDirection(input.kind, input.direction),
-            title: input.title,
+            direction: resolveDirection(input.kind, input.channel, input.direction),
+            title: input.title ?? null,
             notes: input.notes ?? null,
             occurredAt: input.occurredAt,
             startedAt: null,
@@ -176,7 +185,12 @@ const projectActivityItemSchema = z.object({
     direction: GqlSAdminProjectActivityDirectionSchema.nullish().describe(
         'Direction of the interaction. Omit to let the command derive it from `kind` (clientContact → incoming, meeting/offer → outgoing, work/note/milestone → internal). Override only when the user explicitly says so.',
     ),
-    title: z.string().min(1).max(200).describe('One-line title for the timeline entry.'),
+    title: z
+        .string()
+        .min(1)
+        .max(200)
+        .nullish()
+        .describe('Optional one-line title for the timeline entry. Omit for a plain note-style row; put the body in `notes`.'),
     notes: z.string().max(10000).nullish().describe('Free-form notes. Optional.'),
     occurredAt: z
         .string()
@@ -256,7 +270,7 @@ export function toolProjectActivitiesUpsert({ serverRuntime, session }: Projects
                 kind: activity.kind,
                 channel: activity.channel ?? null,
                 direction: activity.direction ?? null,
-                title: activity.title,
+                title: activity.title ?? null,
                 notes: activity.notes ?? null,
                 occurredAt: new Date(activity.occurredAt),
                 durationSec: activity.durationSec ?? null,

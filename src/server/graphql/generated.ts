@@ -1469,7 +1469,7 @@ export interface GqlSAdminProjectActivity {
     projectId: Scalars['ID']['output'];
     startedAt?: Maybe<Scalars['DateTime']['output']>;
     taskId?: Maybe<Scalars['ID']['output']>;
-    title: Scalars['String']['output'];
+    title?: Maybe<Scalars['String']['output']>;
     updatedAt: Scalars['DateTime']['output'];
 }
 
@@ -1495,7 +1495,7 @@ export type GqlSAdminProjectActivityCreate = {
     offerStatus?: InputMaybe<GqlSAdminProjectOfferStatus>;
     projectId: Scalars['ID']['input'];
     taskId?: InputMaybe<Scalars['ID']['input']>;
-    title: Scalars['String']['input'];
+    title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlSAdminProjectActivityDirection = 'incoming' | 'internal' | 'outgoing';
@@ -4338,7 +4338,7 @@ export type GqlSAdminProjectActivityResolvers<
     projectId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     startedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
     taskId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
-    title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    title?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
 }>;
 
@@ -6013,7 +6013,7 @@ export function GqlSAdminProjectActivityCreateSchema(): z.ZodObject<Properties<G
         offerStatus: GqlSAdminProjectOfferStatusSchema.nullish(),
         projectId: z.string(),
         taskId: z.string().nullish(),
-        title: z.string(),
+        title: z.string().nullish(),
     });
 }
 
