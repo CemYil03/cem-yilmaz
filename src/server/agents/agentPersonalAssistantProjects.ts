@@ -12,6 +12,8 @@ import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
+import { toolProjectFileContentGet } from './toolProjectFileContentGet';
+import { toolProjectGet } from './toolProjectGet';
 import { toolProjectsList } from './toolProjectsList';
 import { toolStandaloneTasksList } from './toolStandaloneTasksList';
 
@@ -64,6 +66,11 @@ function buildSystemPrompt(snapshot: string): string {
         '  `projectsUpsert`, `projectActivitiesUpsert`, and `projectLinksUpsert`.',
         '- Never invent an id. Use ids from the snapshot below or from a prior tool result’s `referenceIds` (in',
         '  input order) earlier in this turn.',
+        "- The snapshot only lists projects and task counts. To answer about a project's activity timeline or its",
+        '  attached files, call `projectGet` with the project id — do NOT pull the whole board via `projectsList`',
+        '  for one project. Before you summarize, quote, or revise an attached document, call `projectFileContentGet`',
+        '  to read its body first; if it returns `readable: false`, tell Cem to open the file at the given `url`',
+        '  instead of trying to read it.',
         "- If the request is missing information you genuinely need (e.g. 'add a task' with no target project and",
         '  no title), do NOT guess. Stop calling tools and return EXACTLY this JSON as your final text, nothing',
         '  else (no code fence, no prose):',
@@ -98,6 +105,7 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, o
         instructions: buildSystemPrompt(snapshot),
         tools: {
             projectsList: toolProjectsList(toolContext),
+            projectGet: toolProjectGet(toolContext),
             standaloneTasksList: toolStandaloneTasksList(toolContext),
             projectsUpsert: toolProjectsUpsert(toolContext),
             projectsDelete: toolProjectsDelete(toolContext),
@@ -106,6 +114,7 @@ export async function agentPersonalAssistantProjects({ session, serverRuntime, o
             projectActivitiesUpsert: toolProjectActivitiesUpsert(toolContext),
             projectLinksUpsert: toolProjectLinksUpsert(toolContext),
             projectFileCreate: toolProjectFileCreate(toolContext),
+            projectFileContentGet: toolProjectFileContentGet(toolContext),
         },
     });
 }

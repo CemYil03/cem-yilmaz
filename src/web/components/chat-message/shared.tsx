@@ -29,28 +29,52 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../base/tooltip';
 
 // `system` rows (tool calls, approval request/response) sit on the left rail —
 // the same side as the assistant — so they read as the assistant's own actions
-// rather than centred "system announcements". Only `user` rows push right. See
-// docs/styles/chat.md ("Message rendering").
-export function MessageRow({ side, children }: { side: 'user' | 'assistant' | 'system'; children: React.ReactNode }) {
+// rather than centred "system announcements". `user` rows push right; `center`
+// is for rows that belong to neither side (e.g. a project's internal activity
+// markers). See docs/styles/chat.md ("Message rendering").
+export function MessageRow({ side, children }: { side: 'user' | 'assistant' | 'system' | 'center'; children: React.ReactNode }) {
     return (
         <div
             data-slot="chat-message-row"
             data-side={side}
-            className={cn('flex w-full gap-3', side === 'user' && 'justify-end', side === 'system' && 'justify-start')}
+            className={cn(
+                'flex w-full gap-3',
+                side === 'user' && 'justify-end',
+                side === 'system' && 'justify-start',
+                side === 'center' && 'justify-center',
+            )}
         >
             {children}
         </div>
     );
 }
 
-export function Bubble({ tone, children }: { tone: 'user' | 'assistant'; children: React.ReactNode }) {
+// `user` is the right-aligned brand bubble; `assistant` the left-aligned muted
+// one. `neutral` is an opaque muted bubble that stays readable over a tinted
+// backdrop (the assistant tone's translucency washes out on the workspace's
+// ambient orb); `outgoing` is a primary-tinted bubble for "from me" rows on
+// non-chat surfaces. `className` lets a caller round a specific corner or nudge
+// spacing without forking the component.
+export function Bubble({
+    tone,
+    className,
+    children,
+}: {
+    tone: 'user' | 'assistant' | 'neutral' | 'outgoing';
+    className?: string;
+    children: React.ReactNode;
+}) {
     return (
         <div
             data-slot="chat-message-bubble"
             data-tone={tone}
             className={cn(
                 'max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed shadow-sm',
-                tone === 'user' ? 'rounded-br-sm bg-brand text-brand-foreground' : 'rounded-bl-sm bg-muted text-foreground',
+                tone === 'user' && 'rounded-br-sm bg-brand text-brand-foreground',
+                tone === 'assistant' && 'rounded-bl-sm bg-muted text-foreground',
+                tone === 'neutral' && 'rounded-bl-sm border border-border/60 bg-muted text-foreground',
+                tone === 'outgoing' && 'rounded-br-sm border border-primary/20 bg-primary/15 text-foreground',
+                className,
             )}
         >
             {children}

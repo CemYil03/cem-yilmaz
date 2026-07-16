@@ -118,18 +118,18 @@ single-item edit passes a one-element array — there is no parallel singular pa
 
 ### Where things live
 
-| Concern         | File                                                                                                                                                                     |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                                       |
-| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                                      |
-| Mappers         | `src/server/mappers/toGqlAdminProjectRequest.ts`, `toGqlAdminProject.ts`, `toGqlAdminProjectTask.ts`                                                                     |
-| Queries         | `src/server/queries/adminProjectRequestFindMany.ts`, `adminProjectRequestInboxCount.ts`, `adminProjectFindMany.ts`, `adminStandaloneTaskFindMany.ts`                     |
-| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `projects{Upsert,Delete}.ts`, `adminProjectReorder.ts`, `tasks{Upsert,Delete}.ts`, `adminProjectTaskReorder.ts` |
-| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                                                  |
-| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                                           |
-| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                                       |
-| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                                            |
-| Tests           | `src/server/commands/adminProjectsUpsert.test.ts`, `adminProjectTaskReorder.test.ts`                                                                                     |
+| Concern         | File                                                                                                                                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tables + types  | `src/server/db/schema.ts` (`projects`, `tasks`, `project*Status*`, `task*Status*`)                                                                                                                                  |
+| Migration       | `drizzle/0004_secret_butterfly.sql`                                                                                                                                                                                 |
+| Mappers         | `src/server/mappers/toGqlAdminProjectRequest.ts`, `toGqlAdminProject.ts`, `toGqlAdminProjectTask.ts`                                                                                                                |
+| Queries         | `src/server/queries/adminProjectRequestFindMany.ts`, `adminProjectRequestInboxCount.ts`, `adminProjectFindMany.ts`, `adminProjectFindOne.ts`, `adminProjectFileContentFindOne.ts`, `adminStandaloneTaskFindMany.ts` |
+| Commands        | `src/server/commands/projectRequest{Archive,Delete}.ts`, `projects{Upsert,Delete}.ts`, `adminProjectReorder.ts`, `tasks{Upsert,Delete}.ts`, `adminProjectTaskReorder.ts`                                            |
+| Resolver wiring | `src/server/graphql/resolversCreate.ts`                                                                                                                                                                             |
+| Page (UI)       | `src/routes/{-$locale}/workspace/projects.tsx`                                                                                                                                                                      |
+| Client ops      | `src/routes/{-$locale}/workspace/projects.graphql`                                                                                                                                                                  |
+| Hub badge       | `src/routes/{-$locale}/workspace/index.tsx` + `index.graphql`                                                                                                                                                       |
+| Tests           | `src/server/commands/adminProjectsUpsert.test.ts`, `adminProjectTaskReorder.test.ts`                                                                                                                                |
 
 ## Out of scope (v1)
 
@@ -233,17 +233,26 @@ The Notes textarea is always rendered; its placeholder carries the welcoming lin
 
 ### Activity timeline (chat layout)
 
-The Activity tab renders as a chat-style timeline. Each row carries a `direction` column (`outgoing | incoming | internal`) that drives the
-layout:
+The Activity tab renders as a chat-style timeline in a **fixed-height pane** (`WorkspaceProjectActivityTimeline` in
+`src/web/components/WorkspaceProjectActivityTimeline.tsx`). Each row carries a `direction` column (`outgoing | incoming | internal`) that
+drives the layout:
 
-- **`outgoing`** — right-aligned bubble with a primary tint. The default for `meeting` and `offer` rows; the typical "I sent this" turn.
-- **`incoming`** — left-aligned bubble with a neutral tint. The default for `clientContact` rows; the typical "client said this" turn.
+- **`outgoing`** — right-aligned bubble with a primary tint (`Bubble tone="outgoing"`). The default for `meeting` and `offer` rows; the
+  typical "I sent this" turn.
+- **`incoming`** — left-aligned bubble with a neutral, **opaque** tint (`Bubble tone="neutral"` — opaque so it stays readable over the
+  workspace's ambient backdrop, where the assistant tone's translucency washed out). The default for `clientContact` rows; the typical
+  "client said this" turn.
 - **`internal`** — centered system row. Set by the server (regardless of what the client sent) for `work`, `note`, and `milestone` kinds,
   **and for any row on the `videoCall` channel** — a video call is a shared moment that belongs to neither side, so it renders centered like
   a note rather than picking a from-who side. Work-timer rows collapse to a single line ("Du hast 1 h 15 m gearbeitet · 14:30") with an
   expand-on-click chevron — they're measurements, not turns, so they don't shout. Note and milestone rows render expanded.
 
-The feed reads newest-at-bottom (chat convention). A centered day-separator pill marks day boundaries (`Montag, 14. März 2026`).
+The bubbles reuse the app's **shared chat primitives** (`MessageRow` / `Bubble` in `src/web/components/chat-message/shared.tsx`) rather than
+re-implementing message chrome — the same components the assistant and visitor transcripts use. `Bubble` gained an opaque `neutral` tone and
+a primary-tinted `outgoing` tone (plus an optional `className`), and `MessageRow` gained a `center` side, for exactly these rows.
+
+The feed reads newest-at-bottom (chat convention). A centered day-separator pill (`WorkspaceProjectActivityDaySeparator`) marks day
+boundaries (`Montag, 14. März 2026`).
 
 #### No title — one free-form body
 
@@ -253,18 +262,28 @@ agent-authored rows may still set a title, and the edit form preserves an existi
 render their `title` when present and fall back to the kind (or channel) label as the heading otherwise, so a titleless note still reads as
 something in glance views (`activityHeading()` in the route file).
 
-#### Sticky composer
+#### Fixed-height pane + bottom composer
 
-The composer is **pinned to the viewport bottom** (`sticky bottom-0`, blurred backdrop), mirroring `/workspace/assistant` — logging an entry
-never means scrolling back up past the feed. It reuses the shared `InputGroup` / `InputGroupTextarea` message-composer surface: a free-form
-textarea with **Enter to send** (Shift+Enter for a newline) and a `SendIcon` submit button. After a successful add it resets in place for
-the next entry. Editing an existing row still happens **inline** above the feed (the sticky composer is add-only); the inline form swaps the
-send button for Cancel / Save.
+The Activity tab is a **fixed-height chat pane**, mirroring `/workspace/assistant`: a `flex flex-col` column sized to the viewport
+(`h-[calc(100dvh-…)]`, the route drops the tab's bottom padding so the pane fits exactly). The **feed scrolls internally** through the
+shared `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`) — it inherits the anchor-at-bottom open position and the
+jump-to-latest pill for free — and the **composer parks as the non-scrolling bottom flex child**, so it can't drift on desktop or mobile the
+way the earlier `sticky bottom-0` version did.
+
+The composer (`WorkspaceProjectActivityComposer` in `src/web/components/WorkspaceProjectActivityComposer.tsx`) reuses the shared
+`InputGroup` / `InputGroupTextarea` message-composer surface: a free-form textarea with **Enter to send** (Shift+Enter for a newline) and a
+`SendIcon` submit button. After a successful add it resets in place for the next entry. Editing an existing row happens **inline** above the
+feed (the bottom composer is add-only); the inline form swaps the send button for Cancel / Save.
 
 Link and file attachments are **quiet icon buttons** in the composer's bottom addon (a `LinkIcon` toggles an inline URL field, a
 `PaperclipIcon` opens the file picker) rather than the full-width labelled panels they used to be. An attached file shows as a small
 removable chip in the composer's top addon. The `kind` selectors for link/file were dropped from the composer — attachments default to
 `other` and can be recategorised on the Links / Files tabs.
+
+The Activity cluster lives in its own prefixed component files under `src/web/components/` — `WorkspaceProjectActivityTimeline.tsx` (the
+pane + feed), `WorkspaceProjectActivityMessage.tsx` (the bubble / centered rows + day separator), `WorkspaceProjectActivityComposer.tsx`
+(the add/edit form), and `WorkspaceProjectActivityConstants.ts` (the activity labels, icons, and helpers, a few of which the route's
+Overview tab re-imports) — rather than inline in the route file.
 
 #### Smart fields
 
@@ -404,6 +423,23 @@ all of them, not N calls — and to source ids from the board snapshot in its sy
 input order) earlier in the same turn. There are no timer tools; the sub-agent does not run timers. See
 [architecture/agent-delegation.md](../architecture/agent-delegation.md).
 
+### Read tools
+
+The system prompt embeds a compact board snapshot (`projectsSnapshotForAgent.ts`) — projects grouped by status with per-project task counts,
+plus the standalone-todo list. That covers "what projects do I have?" without a tool call. Three read tools go deeper:
+
+- `projectsList` (`toolProjectsList.ts`, wraps `adminProjectFindMany`) — every project with its children joined. Used when the sub-agent
+  needs task ids/statuses across the board.
+- `projectGet` (`toolProjectGet.ts`, wraps `adminProjectFindOne`) — **one** project with its tasks, activity timeline, links, and file
+  metadata. This is how the sub-agent answers questions about a specific project's history or its attachments without pulling the whole
+  board. The snapshot has no activities, so this tool (or `projectsList`) is required to see them.
+- `projectFileContentGet` (`toolProjectFileContentGet.ts`, wraps `adminProjectFileContentFindOne`) — decodes an attached file's bytes to a
+  UTF-8 `content` string so the sub-agent can read a document body (offer, brief, note, contract) before summarizing or revising it. The
+  query scopes the join to the requesting admin's `fileUploads.userId`, so a guessed or other-user id reads as not-found. Text/markdown
+  files return `readable: true` + `content`; binary files (PDF, images) return `readable: false` + the download `url` — the agent points Cem
+  at the link rather than reading bytes. Mirrors the standalone-docs `workspaceFileGet` decode. There is no in-place file edit: to change a
+  markdown file the sub-agent reads it here, then re-creates it via `projectFileCreate`.
+
 ### Deep linking from the assistant
 
 The orchestrator formats every project / inbox row it names as a markdown link with a `?focus=<id>` search param —
@@ -498,17 +534,19 @@ Files:
   `drizzle/0032_mysterious_tyrannus.sql` (drops `title` `NOT NULL`)
 - Mapper: `src/server/mappers/toGqlAdminProjectActivity.ts`, `toGqlAdminProjectLink.ts`, `toGqlAdminProjectFile.ts`, `toGqlFileUpload.ts`,
   and the extended `toGqlAdminProject.ts`
-- Queries: `src/server/queries/adminProjectActiveTimerFindOne.ts`, `adminProjectFindOne.ts`; lists + totals + links + files are loaded by
-  `adminProjectFindMany.ts`
+- Queries: `src/server/queries/adminProjectActiveTimerFindOne.ts`, `adminProjectFindOne.ts`, `adminProjectFileContentFindOne.ts`; lists +
+  totals + links + files are loaded by `adminProjectFindMany.ts`
 - Commands: `src/server/commands/adminProjectActivitiesUpsert.ts` (with atomic attach), `adminProjectActivitiesDelete.ts`,
   `adminProjectTimersStart.ts`, `adminProjectTimersStop.ts`, `projectLinks{Upsert,Delete}.ts`, `projectFiles{Upsert,Delete}.ts`,
   `projectFileCreateFromMarkdown.ts` (the one intentional non-batch survivor — returns a hydrated entity for the sub-agent tool's mutation
   log), `projectFileCreateFromMarkdown.ts`
-- Agent tools: `src/server/agents/toolProject{sList,sUpsert,sDelete,LinksUpsert,ActivitiesUpsert,FileCreate}.ts`,
+- Agent tools: `src/server/agents/toolProject{Get,sList,sUpsert,sDelete,LinksUpsert,ActivitiesUpsert,FileCreate,FileContentGet}.ts`,
   `toolTasks{Upsert,Delete}.ts`, `toolStandaloneTasksList.ts`
 - Tests: `src/server/commands/adminProjectTimersStart.test.ts`, `adminProjectLinksUpsert.test.ts`, `adminProjectFilesUpsert.test.ts`,
   `projectFileCreateFromMarkdown.test.ts`, `adminProjectActivitiesUpsert.test.ts`, `adminProjectsUpsert.test.ts`
 - Resolver wiring: `src/server/graphql/resolversCreate.ts`
 - UI: board card in `src/routes/{-$locale}/workspace/projects.tsx`; detail route + tabs + pinned rail in
-  `src/routes/{-$locale}/workspace/projects_.$projectId.tsx`; operations in `projects.graphql` (board) and `projects_.$projectId.graphql`
+  `src/routes/{-$locale}/workspace/projects_.$projectId.tsx`; the Activity cluster in
+  `src/web/components/WorkspaceProjectActivity{Timeline,Message,Composer}.tsx` + `WorkspaceProjectActivityConstants.ts`; shared chat
+  primitives in `src/web/components/chat-message/shared.tsx`; operations in `projects.graphql` (board) and `projects_.$projectId.graphql`
   (detail)

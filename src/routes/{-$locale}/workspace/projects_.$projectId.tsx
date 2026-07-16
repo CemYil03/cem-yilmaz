@@ -2,12 +2,8 @@ import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { format, formatDistanceToNowStrict, parseISO } from 'date-fns';
 import {
     ChevronDownIcon,
-    ChevronUpIcon,
     CircleDotIcon,
-    ExternalLinkIcon,
     FileIcon,
-    FlagIcon,
-    HandshakeIcon,
     KanbanIcon,
     LayoutDashboardIcon,
     LinkIcon,
@@ -15,14 +11,11 @@ import {
     ListTodoIcon,
     MailIcon,
     MoreHorizontalIcon,
-    PaperclipIcon,
     PencilIcon,
-    PhoneCallIcon,
     PinIcon,
     PinOffIcon,
     PlayIcon,
     PlusIcon,
-    SendIcon,
     SparklesIcon,
     SquareIcon,
     StickyNoteIcon,
@@ -30,11 +23,9 @@ import {
     TimerIcon,
     Trash2Icon,
     UploadIcon,
-    VideoIcon,
-    XIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
@@ -46,10 +37,15 @@ import { ChatAttachmentPreviewDialog } from '../../../web/components/chat-messag
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
+import {
+    ACTIVITY_KIND_ICONS,
+    ACTIVITY_KIND_LABELS,
+    activityHeading,
+    formatDuration,
+} from '../../../web/components/WorkspaceProjectActivityConstants';
+import { WorkspaceProjectActivityTimeline } from '../../../web/components/WorkspaceProjectActivityTimeline';
 import { Button } from '../../../web/components/base/button';
 import { DatePicker } from '../../../web/components/base/date-picker';
-import { DateTimePicker } from '../../../web/components/base/date-time-picker';
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '../../../web/components/base/input-group';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -62,12 +58,8 @@ import { Checkbox } from '../../../web/components/base/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
 import type {
-    GqlCAdminProjectActivityChannel,
-    GqlCAdminProjectActivityDirection,
-    GqlCAdminProjectActivityKind,
     GqlCAdminProjectFileKind,
     GqlCAdminProjectLinkKind,
-    GqlCAdminProjectOfferStatus,
     GqlCAdminProjectStatus,
     GqlCAdminProjectTaskEffort,
     GqlCAdminProjectTaskStatus,
@@ -76,14 +68,12 @@ import type {
     GqlCWorkspaceProjectDetailUserFragment,
 } from '../../../web/graphql/generated';
 import {
-    WorkspaceProjectDetailDeleteActivityDocument,
     WorkspaceProjectDetailDeleteProjectDocument,
     WorkspaceProjectDetailDeleteTaskDocument,
     WorkspaceProjectDetailDocument,
     WorkspaceProjectDetailTimerStartDocument,
     WorkspaceProjectDetailTimerStopDocument,
     WorkspaceProjectDetailUpdatesDocument,
-    WorkspaceProjectDetailUpsertActivityDocument,
     WorkspaceProjectDetailUpsertProjectDocument,
     WorkspaceProjectDetailUpsertTaskDocument,
     WorkspaceProjectFileDeleteDocument,
@@ -203,78 +193,6 @@ const TASK_WHEN_LABELS: Record<GqlCAdminProjectTaskWhenBucket, { de: string; en:
     waiting: { de: 'blockiert', en: 'blocked' },
 };
 
-const ACTIVITY_KIND_ORDER: ReadonlyArray<GqlCAdminProjectActivityKind> = ['clientContact', 'meeting', 'work', 'offer', 'milestone', 'note'];
-const ACTIVITY_KIND_LABELS: Record<GqlCAdminProjectActivityKind, { de: string; en: string }> = {
-    clientContact: { de: 'Kundenkontakt', en: 'Client contact' },
-    meeting: { de: 'Meeting', en: 'Meeting' },
-    work: { de: 'Arbeit', en: 'Work' },
-    offer: { de: 'Angebot', en: 'Offer' },
-    milestone: { de: 'Meilenstein', en: 'Milestone' },
-    note: { de: 'Notiz', en: 'Note' },
-};
-const ACTIVITY_KIND_ICONS: Record<GqlCAdminProjectActivityKind, LucideIcon> = {
-    clientContact: PhoneCallIcon,
-    meeting: VideoIcon,
-    work: TimerIcon,
-    offer: HandshakeIcon,
-    milestone: FlagIcon,
-    note: StickyNoteIcon,
-};
-const ACTIVITY_CHANNEL_ORDER: ReadonlyArray<GqlCAdminProjectActivityChannel> = [
-    'malt',
-    'email',
-    'phone',
-    'videoCall',
-    'inPerson',
-    'aiAssistant',
-    'other',
-];
-const ACTIVITY_CHANNEL_LABELS: Record<GqlCAdminProjectActivityChannel, { de: string; en: string }> = {
-    malt: { de: 'Malt', en: 'Malt' },
-    email: { de: 'E-Mail', en: 'Email' },
-    phone: { de: 'Telefon', en: 'Phone' },
-    videoCall: { de: 'Videoanruf', en: 'Video call' },
-    inPerson: { de: 'Vor Ort', en: 'In person' },
-    aiAssistant: { de: 'KI-Assistent', en: 'AI assistant' },
-    other: { de: 'Sonstiges', en: 'Other' },
-};
-
-// Direction picker labels for the activity composer. `internal` is set by the
-// server for `work` / `note` / `milestone` rows and is not surfaced as a
-// choice in the picker.
-const ACTIVITY_DIRECTION_LABELS: Record<GqlCAdminProjectActivityDirection, { de: string; en: string }> = {
-    outgoing: { de: 'Von mir', en: 'From me' },
-    incoming: { de: 'Vom Kunden', en: 'From client' },
-    internal: { de: 'Intern', en: 'Internal' },
-};
-
-// Kind + channel-aware default direction for the composer (matches
-// `resolveDirection` in the server command). The form pre-fills with this when
-// adding a new row. A video call is a shared moment — `internal`, centered like
-// a note — regardless of kind.
-function defaultDirectionForKind(
-    kind: GqlCAdminProjectActivityKind,
-    channel: GqlCAdminProjectActivityChannel | null,
-): GqlCAdminProjectActivityDirection {
-    if (kind === 'work' || kind === 'note' || kind === 'milestone') return 'internal';
-    if (channel === 'videoCall') return 'internal';
-    if (kind === 'clientContact') return 'incoming';
-    return 'outgoing';
-}
-
-// Channels where a duration is meaningful (a live conversation has a length).
-// Async channels (Malt messages, email, AI chat) do not — the duration field
-// is hidden for those so the composer doesn't ask for a number that has no
-// answer.
-const DURATION_CHANNELS: ReadonlyArray<GqlCAdminProjectActivityChannel> = ['phone', 'videoCall', 'inPerson'];
-
-// The one-line heading shown for an activity row. Manual composer entries carry
-// no title (their whole body lives in `notes`); fall back to the kind label so
-// a titleless row still reads as something in glance views.
-function activityHeading(activity: ActivityRow, locale: Locale): string {
-    return activity.title ?? ACTIVITY_KIND_LABELS[activity.kind][locale];
-}
-
 const LINK_KIND_ORDER: ReadonlyArray<GqlCAdminProjectLinkKind> = [
     'github',
     'malt',
@@ -305,32 +223,11 @@ const FILE_KIND_LABELS: Record<GqlCAdminProjectFileKind, { de: string; en: strin
     other: { de: 'Sonstiges', en: 'Other' },
 };
 
-const OFFER_STATUS_ORDER: ReadonlyArray<GqlCAdminProjectOfferStatus> = ['sent', 'accepted', 'rejected', 'withdrawn'];
-const OFFER_STATUS_LABELS: Record<GqlCAdminProjectOfferStatus, { de: string; en: string }> = {
-    sent: { de: 'Gesendet', en: 'Sent' },
-    accepted: { de: 'Angenommen', en: 'Accepted' },
-    rejected: { de: 'Abgelehnt', en: 'Rejected' },
-    withdrawn: { de: 'Zurückgezogen', en: 'Withdrawn' },
-};
-
-function formatDuration(totalSec: number): string {
-    if (totalSec < 60) return `${totalSec}s`;
-    const hours = Math.floor(totalSec / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-    return `${minutes}m`;
-}
-
 function formatHms(totalSec: number): string {
     const hours = Math.floor(totalSec / 3600);
     const minutes = Math.floor((totalSec % 3600) / 60);
     const seconds = totalSec % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
-
-function formatEur(cents: number | null | undefined): string {
-    if (cents == null) return '';
-    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 }
 
 // "today" / "vor 3 Tagen" / "Mar 14" — relative when fresh enough to feel
@@ -437,7 +334,16 @@ function WorkspaceProjectDetail() {
     }
 
     return (
-        <main className="mx-auto w-full max-w-8xl px-4 py-8 leading-relaxed md:px-8 md:py-10 lg:px-12 lg:py-12">
+        <main
+            className={cn(
+                'mx-auto w-full max-w-8xl px-4 leading-relaxed md:px-8 lg:px-12',
+                // The Activity tab is a fixed-height chat pane that fills the
+                // viewport, so it drops the bottom padding (the pane's own
+                // `100dvh-…` calc reserves the space) and only keeps a small
+                // top gap. Every other tab keeps the normal page rhythm.
+                tab === 'activity' ? 'pt-4 pb-0 md:pt-6 lg:pt-6' : 'py-8 md:py-10 lg:py-12',
+            )}
+        >
             {/* Tab strip at the very top — the page's primary switcher. Title,
              * status, description, and the timer/metadata rail all live inside
              * the Overview tab now, so the section nav is the first thing the
@@ -472,7 +378,7 @@ function WorkspaceProjectDetail() {
                 })}
             </nav>
 
-            <div className="mt-6">
+            <div className={cn(tab === 'activity' ? 'mt-4' : 'mt-6')}>
                 {tab === 'overview' ? (
                     <OverviewSection
                         project={project}
@@ -486,7 +392,12 @@ function WorkspaceProjectDetail() {
                     <TasksSection tasks={project.tasks} projectId={project.projectId} taskView={taskView} locale={locale} />
                 ) : null}
                 {tab === 'activity' ? (
-                    <ActivitySection activities={project.activities} tasks={project.tasks} projectId={project.projectId} locale={locale} />
+                    <WorkspaceProjectActivityTimeline
+                        activities={project.activities}
+                        tasks={project.tasks}
+                        projectId={project.projectId}
+                        locale={locale}
+                    />
                 ) : null}
                 {tab === 'notes' ? <NotesSection project={project} locale={locale} /> : null}
                 {tab === 'links' ? <LinksSection links={project.links} projectId={project.projectId} locale={locale} /> : null}
@@ -1820,691 +1731,6 @@ function TaskForm({
                     {{ de: 'Speichern', en: 'Save' }[locale]}
                 </Button>
             </div>
-        </form>
-    );
-}
-
-// --- Activity tab ------------------------------------------------------------
-
-// Activity tab — a chat-style timeline. Outgoing rows (Cem) render
-// right-aligned, incoming rows (client) left-aligned, internal rows
-// (work / note / milestone) render as centered system markers. Read
-// bottom-to-top: newest at the bottom, composer below it, like every
-// chat UI. A date-separator system row marks day changes.
-function ActivitySection({
-    activities,
-    tasks,
-    projectId,
-    locale,
-}: {
-    activities: ReadonlyArray<ActivityRow>;
-    tasks: ReadonlyArray<TaskRow>;
-    projectId: string;
-    locale: Locale;
-}) {
-    const [editing, setEditing] = useState<ActivityRow | null>(null);
-    const [, del] = useMutation(WorkspaceProjectDetailDeleteActivityDocument);
-
-    // Server returns newest-first; chat UIs read newest-at-bottom. Reverse a copy
-    // (the prop is readonly), then walk in chronological order so the day-separator
-    // logic can compare each row to its predecessor without a second pass.
-    const chronological = useMemo(() => activities.slice().reverse(), [activities]);
-
-    return (
-        <section data-tab="activity" className="flex flex-col">
-            {activities.length === 0 ? (
-                <EmptyState
-                    icon={TimerIcon}
-                    line={
-                        {
-                            de: 'Festhalten, was du gemacht hast — auch kleine Schritte zählen.',
-                            en: 'Capture what you did — small steps count too.',
-                        }[locale]
-                    }
-                    // No CTA button: the composer below is always present, so the
-                    // empty state is purely a prompt, not another affordance.
-                    cta={{ de: 'Unten schreiben', en: 'Write below' }[locale]}
-                    onAction={() => {
-                        document.querySelector<HTMLTextAreaElement>('[data-activity-composer] textarea')?.focus();
-                    }}
-                />
-            ) : (
-                <ol className="flex flex-col gap-3">
-                    {chronological.map((a, index) => {
-                        const previous = index > 0 ? chronological[index - 1] : null;
-                        const showDaySeparator =
-                            !previous || !isSameDay(a.occurredAt as unknown as string, previous.occurredAt as unknown as string);
-                        const isEditingThis = editing?.activityId === a.activityId;
-                        return (
-                            <Fragment key={a.activityId}>
-                                {showDaySeparator ? <ChatDaySeparator iso={a.occurredAt as unknown as string} locale={locale} /> : null}
-                                <li data-row-id={a.activityId}>
-                                    {isEditingThis ? (
-                                        <ActivityForm
-                                            activity={a}
-                                            projectId={projectId}
-                                            tasks={tasks}
-                                            locale={locale}
-                                            onClose={() => setEditing(null)}
-                                            onSaved={() => setEditing(null)}
-                                        />
-                                    ) : (
-                                        <ActivityMessage
-                                            activity={a}
-                                            locale={locale}
-                                            onEdit={() => setEditing(a)}
-                                            onDelete={async () => {
-                                                await del({ activityId: a.activityId });
-                                            }}
-                                        />
-                                    )}
-                                </li>
-                            </Fragment>
-                        );
-                    })}
-                </ol>
-            )}
-
-            {/* Composer pinned to the viewport bottom — mirrors /workspace/assistant
-             * so logging an entry never means scrolling back up. Editing an existing
-             * row happens inline above; the sticky composer is add-only. A blurred
-             * background lets the feed scroll under it. */}
-            <div
-                data-activity-composer
-                className="sticky bottom-0 z-10 mt-4 -mx-4 border-t border-border/40 bg-background/80 px-4 py-3 backdrop-blur md:-mx-8 md:px-8"
-            >
-                <ActivityForm activity={null} projectId={projectId} tasks={tasks} locale={locale} onClose={() => {}} onSaved={() => {}} />
-            </div>
-        </section>
-    );
-}
-
-function isSameDay(aIso: string, bIso: string): boolean {
-    const a = parseISO(aIso);
-    const b = parseISO(bIso);
-    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-// Centered "Montag, 14. März" pill — anchors the chat in time without competing
-// with the bubbles. Repeats per day, not per row.
-function ChatDaySeparator({ iso, locale }: { iso: string; locale: Locale }) {
-    const formatted = format(parseISO(iso), locale === 'de' ? 'EEEE, d. MMMM yyyy' : 'EEEE, d MMMM yyyy', {
-        locale: DATE_FNS_LOCALE[locale],
-    });
-    return (
-        <li aria-hidden className="flex items-center justify-center py-1">
-            <span className="rounded-full bg-muted/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {formatted}
-            </span>
-        </li>
-    );
-}
-
-// Single activity rendered as a chat bubble or system row, picked by direction:
-//   - outgoing → right-aligned bubble, primary tint
-//   - incoming → left-aligned bubble, neutral tint
-//   - internal → centered card. Work-timer rows collapse to a single line
-//     ("Du hast 1 h 15 m gearbeitet · 14:30") with an expand-on-click chevron.
-function ActivityMessage({
-    activity,
-    locale,
-    onEdit,
-    onDelete,
-}: {
-    activity: ActivityRow;
-    locale: Locale;
-    onEdit: () => void;
-    onDelete: () => void;
-}) {
-    if (activity.direction === 'internal') {
-        return <InternalActivityRow activity={activity} locale={locale} onEdit={onEdit} onDelete={onDelete} />;
-    }
-    return <BubbleActivityRow activity={activity} locale={locale} onEdit={onEdit} onDelete={onDelete} />;
-}
-
-function BubbleActivityRow({
-    activity,
-    locale,
-    onEdit,
-    onDelete,
-}: {
-    activity: ActivityRow;
-    locale: Locale;
-    onEdit: () => void;
-    onDelete: () => void;
-}) {
-    const isOutgoing = activity.direction === 'outgoing';
-    const Icon = ACTIVITY_KIND_ICONS[activity.kind];
-    const time = format(parseISO(activity.occurredAt as unknown as string), 'HH:mm');
-
-    return (
-        <div className={cn('flex w-full', isOutgoing ? 'justify-end' : 'justify-start')}>
-            <div className={cn('group flex max-w-[min(36rem,90%)] flex-col gap-1', isOutgoing ? 'items-end' : 'items-start')}>
-                <div
-                    className={cn(
-                        'flex items-center gap-1.5 text-[11px] text-muted-foreground',
-                        isOutgoing ? 'flex-row-reverse' : 'flex-row',
-                    )}
-                >
-                    <Icon className="size-3" />
-                    <span>{ACTIVITY_KIND_LABELS[activity.kind][locale]}</span>
-                    {activity.channel ? <span>· {ACTIVITY_CHANNEL_LABELS[activity.channel][locale]}</span> : null}
-                    <span>· {time}</span>
-                </div>
-                <div
-                    className={cn(
-                        'relative rounded-2xl border px-3.5 py-2.5 text-sm shadow-sm',
-                        isOutgoing
-                            ? 'rounded-br-md border-primary/20 bg-primary/10 text-foreground'
-                            : 'rounded-bl-md border-border/60 bg-card/60 text-foreground',
-                    )}
-                >
-                    {activity.title ? <div className="font-medium">{activity.title}</div> : null}
-                    {activity.notes ? (
-                        <div
-                            className={cn(
-                                'whitespace-pre-line text-[13px]',
-                                activity.title ? 'mt-1 text-muted-foreground' : 'text-foreground',
-                            )}
-                        >
-                            {activity.notes}
-                        </div>
-                    ) : null}
-                    {!activity.title && !activity.notes ? (
-                        <div className="text-[13px] italic text-muted-foreground">{ACTIVITY_KIND_LABELS[activity.kind][locale]}</div>
-                    ) : null}
-                    {activity.kind === 'offer' && activity.amountCents != null ? (
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                            <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-                                {formatEur(activity.amountCents)}
-                            </span>
-                            {activity.offerStatus ? (
-                                <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground">
-                                    {OFFER_STATUS_LABELS[activity.offerStatus][locale]}
-                                </span>
-                            ) : null}
-                        </div>
-                    ) : null}
-                    {activity.durationSec ? (
-                        <div className="mt-1 text-[11px] text-muted-foreground">
-                            {{ de: 'Dauer', en: 'Duration' }[locale]}: {formatDuration(activity.durationSec)}
-                        </div>
-                    ) : null}
-                    {(activity.links.length > 0 || activity.files.length > 0) && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                            {activity.links.map((link) => (
-                                <a
-                                    key={link.projectLinkId}
-                                    href={link.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1 rounded border border-border/60 bg-background/40 px-1.5 py-0.5 text-[11px] hover:bg-muted"
-                                >
-                                    <ExternalLinkIcon className="size-2.5" />
-                                    {link.label || link.url.replace(/^https?:\/\//, '').slice(0, 40)}
-                                </a>
-                            ))}
-                            {activity.files.map((file) => (
-                                <a
-                                    key={file.projectFileId}
-                                    href={file.fileUpload.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1 rounded border border-border/60 bg-background/40 px-1.5 py-0.5 text-[11px] hover:bg-muted"
-                                >
-                                    <PaperclipIcon className="size-2.5" />
-                                    {file.label || file.fileUpload.filename}
-                                </a>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <div className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} onClick={onEdit}>
-                        <PencilIcon />
-                    </Button>
-                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Löschen', en: 'Delete' }[locale]} onClick={onDelete}>
-                        <Trash2Icon />
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function InternalActivityRow({
-    activity,
-    locale,
-    onEdit,
-    onDelete,
-}: {
-    activity: ActivityRow;
-    locale: Locale;
-    onEdit: () => void;
-    onDelete: () => void;
-}) {
-    // Work-timer rows are collapsed by default — they're measurements, not
-    // turns, and the timeline reads better when they don't shout. Note and
-    // milestone rows are short by nature; they render expanded.
-    const isWork = activity.kind === 'work';
-    const [expanded, setExpanded] = useState(!isWork);
-    const Icon = ACTIVITY_KIND_ICONS[activity.kind];
-    const isRunning = isWork && activity.endedAt === null;
-    const time = format(parseISO(activity.occurredAt as unknown as string), 'HH:mm');
-
-    if (isWork && !expanded) {
-        const summary = activity.durationSec
-            ? `${{ de: 'Du hast', en: 'You worked' }[locale]} ${formatDuration(activity.durationSec)} ${{ de: 'am Projekt gearbeitet', en: 'on the project' }[locale]}`
-            : isRunning
-              ? { de: 'Arbeit läuft …', en: 'Working …' }[locale]
-              : { de: 'Arbeitseintrag', en: 'Work entry' }[locale];
-        return (
-            <div className="flex items-center justify-center">
-                <button
-                    type="button"
-                    onClick={() => setExpanded(true)}
-                    className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-card/40 px-3 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-card/70 hover:text-foreground"
-                >
-                    <TimerIcon className="size-3" />
-                    <span>{summary}</span>
-                    <span className="opacity-60">· {time}</span>
-                    {isRunning ? (
-                        <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                            {{ de: 'läuft', en: 'running' }[locale]}
-                        </span>
-                    ) : null}
-                    <ChevronDownIcon className="size-3 opacity-60" />
-                </button>
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex w-full justify-center">
-            <div className="group flex w-full max-w-[min(40rem,95%)] items-start gap-2 rounded-lg border border-border/40 bg-card/30 px-3 py-2 text-sm">
-                <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        {activity.title ? <span className="font-medium">{activity.title}</span> : null}
-                        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                            {activity.channel
-                                ? ACTIVITY_CHANNEL_LABELS[activity.channel][locale]
-                                : ACTIVITY_KIND_LABELS[activity.kind][locale]}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">· {time}</span>
-                        {activity.durationSec ? (
-                            <span className="text-[11px] text-muted-foreground">· {formatDuration(activity.durationSec)}</span>
-                        ) : null}
-                        {isRunning ? (
-                            <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                                {{ de: 'läuft', en: 'running' }[locale]}
-                            </span>
-                        ) : null}
-                    </div>
-                    {activity.notes ? (
-                        <div className="mt-1 whitespace-pre-line text-[13px] text-muted-foreground">{activity.notes}</div>
-                    ) : null}
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
-                    {isWork ? (
-                        <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            aria-label={{ de: 'Einklappen', en: 'Collapse' }[locale]}
-                            onClick={() => setExpanded(false)}
-                        >
-                            <ChevronUpIcon />
-                        </Button>
-                    ) : (
-                        <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} onClick={onEdit}>
-                            <PencilIcon />
-                        </Button>
-                    )}
-                    <Button size="icon-sm" variant="ghost" aria-label={{ de: 'Löschen', en: 'Delete' }[locale]} onClick={onDelete}>
-                        <Trash2Icon />
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ActivityForm({
-    activity,
-    projectId,
-    tasks,
-    locale,
-    onClose,
-    onSaved,
-}: {
-    activity: ActivityRow | null;
-    projectId: string;
-    tasks: ReadonlyArray<TaskRow>;
-    locale: Locale;
-    onClose: () => void;
-    onSaved: () => void;
-}) {
-    const isEdit = activity !== null;
-    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertActivityDocument);
-    const [kind, setKind] = useState<GqlCAdminProjectActivityKind>(
-        activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'clientContact'),
-    );
-    const [channel, setChannel] = useState<GqlCAdminProjectActivityChannel | null>(activity?.channel ?? null);
-    const [direction, setDirection] = useState<GqlCAdminProjectActivityDirection>(
-        activity?.direction ?? defaultDirectionForKind(activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'clientContact'), null),
-    );
-    // The single free-form body. Title is no longer a manual concept — a
-    // titleless row renders with the kind label as its heading. When editing a
-    // legacy / agent-authored row that carries a title, we preserve it as-is.
-    const [body, setBody] = useState(activity?.notes ?? '');
-    const [occurredAt, setOccurredAt] = useState<Date>(activity ? parseISO(activity.occurredAt as unknown as string) : new Date());
-    const [durationMin, setDurationMin] = useState<string>(activity?.durationSec ? String(Math.round(activity.durationSec / 60)) : '');
-    const [taskId, setTaskId] = useState<string | null>(activity?.taskId ?? null);
-    const [amountEur, setAmountEur] = useState<string>(activity?.amountCents != null ? String(activity.amountCents / 100) : '');
-    const [offerStatus, setOfferStatus] = useState<GqlCAdminProjectOfferStatus | null>(activity?.offerStatus ?? null);
-    const [attachLinkUrl, setAttachLinkUrl] = useState('');
-    const [linkOpen, setLinkOpen] = useState(false);
-    const [attachFile, setAttachFile] = useState<{ fileUploadId: string; filename: string } | null>(null);
-    const [uploading, setUploading] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [busy, setBusy] = useState(false);
-
-    const channelEnabled = kind === 'clientContact' || kind === 'meeting';
-    const offerFieldsEnabled = kind === 'offer';
-    // A video call is a shared moment (centered like a note) — no direction to
-    // pick. Otherwise direction is a real choice only for client-facing kinds.
-    const directionEnabled = (kind === 'clientContact' || kind === 'meeting' || kind === 'offer') && channel !== 'videoCall';
-    // Duration only makes sense for a live conversation with a length. A
-    // meeting is live by nature; a channelled contact is live only on
-    // phone / video / in-person. Malt messages and email have no duration.
-    const durationEnabled = kind === 'meeting' || (channel != null && DURATION_CHANNELS.includes(channel));
-
-    const canSubmit =
-        !busy && !uploading && (body.trim().length > 0 || (!isEdit && (attachLinkUrl.trim().length > 0 || attachFile !== null)));
-
-    const submit = async () => {
-        if (!canSubmit) return;
-        setBusy(true);
-        const durationSec = durationEnabled && durationMin ? Math.max(0, Math.round(Number(durationMin) * 60)) : null;
-        const amountCents = offerFieldsEnabled && amountEur ? Math.round(Number(amountEur) * 100) : null;
-        await upsert({
-            activityId: activity?.activityId ?? null,
-            projectId,
-            taskId,
-            kind,
-            channel: channelEnabled ? channel : null,
-            direction: directionEnabled ? direction : null,
-            // Preserve an existing heading on edit; manual composer entries carry none.
-            title: activity?.title ?? null,
-            notes: body.trim() || null,
-            occurredAt: occurredAt.toISOString(),
-            durationSec,
-            amountCents: offerFieldsEnabled ? amountCents : null,
-            offerStatus: offerFieldsEnabled ? offerStatus : null,
-            attachLinkUrl: !isEdit && attachLinkUrl.trim() ? attachLinkUrl.trim() : null,
-            attachLinkKind: !isEdit && attachLinkUrl.trim() ? 'other' : null,
-            attachLinkLabel: null,
-            attachLinkPinned: false,
-            attachFileUploadId: !isEdit && attachFile ? attachFile.fileUploadId : null,
-            attachFileKind: !isEdit && attachFile ? 'other' : null,
-            attachFileLabel: !isEdit && attachFile ? attachFile.filename : null,
-            attachFilePinned: false,
-        });
-        setBusy(false);
-        // Reset the composer for the next entry (add mode); edit mode just closes.
-        if (!isEdit) {
-            setBody('');
-            setAttachLinkUrl('');
-            setLinkOpen(false);
-            setAttachFile(null);
-            setDurationMin('');
-        }
-        onSaved();
-    };
-
-    return (
-        <form
-            className="grid gap-2"
-            onSubmit={(e) => {
-                e.preventDefault();
-                void submit();
-            }}
-        >
-            {/* Control row — kind + context selectors. Compact, wraps on narrow. */}
-            <div className="flex flex-wrap items-center gap-1.5">
-                <Select
-                    value={kind}
-                    onValueChange={(v: GqlCAdminProjectActivityKind) => {
-                        setKind(v);
-                        setDirection(defaultDirectionForKind(v, channel));
-                    }}
-                >
-                    <SelectTrigger className="h-8 w-[150px] text-xs">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {ACTIVITY_KIND_ORDER.filter((k) => k !== 'work').map((k) => (
-                            <SelectItem key={k} value={k}>
-                                {ACTIVITY_KIND_LABELS[k][locale]}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                {channelEnabled ? (
-                    <Select
-                        value={channel ?? '__none'}
-                        onValueChange={(v) => {
-                            const next = v === '__none' ? null : (v as GqlCAdminProjectActivityChannel);
-                            setChannel(next);
-                            setDirection(defaultDirectionForKind(kind, next));
-                        }}
-                    >
-                        <SelectTrigger className="h-8 w-[130px] text-xs">
-                            <SelectValue placeholder={{ de: 'Kanal', en: 'Channel' }[locale]} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="__none">{{ de: 'Kein Kanal', en: 'No channel' }[locale]}</SelectItem>
-                            {ACTIVITY_CHANNEL_ORDER.map((c) => (
-                                <SelectItem key={c} value={c}>
-                                    {ACTIVITY_CHANNEL_LABELS[c][locale]}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                ) : null}
-                {directionEnabled ? (
-                    <Select value={direction} onValueChange={(v: GqlCAdminProjectActivityDirection) => setDirection(v)}>
-                        <SelectTrigger className="h-8 w-[130px] text-xs">
-                            <SelectValue placeholder={{ de: 'Richtung', en: 'Direction' }[locale]} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="outgoing">{ACTIVITY_DIRECTION_LABELS.outgoing[locale]}</SelectItem>
-                            <SelectItem value="incoming">{ACTIVITY_DIRECTION_LABELS.incoming[locale]}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                ) : null}
-                <DateTimePicker
-                    value={occurredAt}
-                    onValueChange={(d) => setOccurredAt(d)}
-                    locale={DATE_FNS_LOCALE[locale]}
-                    className="h-8 w-[210px] text-xs"
-                />
-                {durationEnabled ? (
-                    <Input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={durationMin}
-                        onChange={(e) => setDurationMin(e.target.value)}
-                        placeholder={{ de: 'Dauer (min)', en: 'Duration (min)' }[locale]}
-                        className="h-8 w-28 text-xs"
-                    />
-                ) : null}
-                {tasks.length > 0 ? (
-                    <Select value={taskId ?? '__none'} onValueChange={(v) => setTaskId(v === '__none' ? null : v)}>
-                        <SelectTrigger className="h-8 w-[170px] text-xs">
-                            <SelectValue placeholder={{ de: 'Aufgabe', en: 'Task' }[locale]} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="__none">{{ de: 'Keine Aufgabe', en: 'No task' }[locale]}</SelectItem>
-                            {tasks.map((t) => (
-                                <SelectItem key={t.taskId} value={t.taskId}>
-                                    {t.title}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                ) : null}
-            </div>
-
-            {offerFieldsEnabled ? (
-                <div className="flex flex-wrap gap-1.5">
-                    <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={amountEur}
-                        onChange={(e) => setAmountEur(e.target.value)}
-                        placeholder={{ de: 'Betrag (€)', en: 'Amount (€)' }[locale]}
-                        className="h-8 w-40 text-xs"
-                    />
-                    <Select
-                        value={offerStatus ?? '__none'}
-                        onValueChange={(v) => setOfferStatus(v === '__none' ? null : (v as GqlCAdminProjectOfferStatus))}
-                    >
-                        <SelectTrigger className="h-8 w-[150px] text-xs">
-                            <SelectValue placeholder={{ de: 'Status', en: 'Status' }[locale]} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="__none">{{ de: 'Kein Status', en: 'No status' }[locale]}</SelectItem>
-                            {OFFER_STATUS_ORDER.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                    {OFFER_STATUS_LABELS[s][locale]}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            ) : null}
-
-            {/* Body composer — the message-composer surface. Attach affordances
-             * are quiet icon buttons in the bottom addon, not full-width panels. */}
-            <InputGroup className="bg-white dark:bg-black">
-                {!isEdit && (attachLinkUrl.trim().length > 0 || attachFile !== null || linkOpen) ? (
-                    <InputGroupAddon align="block-start" className="flex-wrap gap-1.5 py-2">
-                        {linkOpen ? (
-                            <Input
-                                value={attachLinkUrl}
-                                onChange={(e) => setAttachLinkUrl(e.target.value)}
-                                placeholder="https://…"
-                                className="h-7 flex-1 min-w-[180px] text-xs"
-                                autoFocus
-                            />
-                        ) : null}
-                        {attachFile ? (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-[11px]">
-                                <PaperclipIcon className="size-3" />
-                                <span className="max-w-[160px] truncate">{attachFile.filename}</span>
-                                <button
-                                    type="button"
-                                    aria-label={{ de: 'Entfernen', en: 'Remove' }[locale]}
-                                    onClick={() => setAttachFile(null)}
-                                    className="text-muted-foreground hover:text-foreground"
-                                >
-                                    <XIcon className="size-3" />
-                                </button>
-                            </span>
-                        ) : null}
-                    </InputGroupAddon>
-                ) : null}
-
-                <InputGroupTextarea
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            void submit();
-                        }
-                    }}
-                    placeholder={
-                        isEdit
-                            ? { de: 'Eintrag bearbeiten …', en: 'Edit entry …' }[locale]
-                            : { de: 'Was ist passiert? (Enter zum Senden)', en: 'What happened? (Enter to send)' }[locale]
-                    }
-                    rows={2}
-                    className="field-sizing-content max-h-[40vh]"
-                    autoFocus={isEdit}
-                />
-
-                <InputGroupAddon align="block-end">
-                    {!isEdit ? (
-                        <>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                className="hidden"
-                                onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    setUploading(true);
-                                    try {
-                                        const uploaded = await uploadFile(file);
-                                        setAttachFile({ fileUploadId: uploaded.fileUploadId, filename: uploaded.filename });
-                                    } catch (err) {
-                                        console.error(err);
-                                    } finally {
-                                        setUploading(false);
-                                        if (fileInputRef.current) fileInputRef.current.value = '';
-                                    }
-                                }}
-                            />
-                            <InputGroupButton
-                                type="button"
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label={{ de: 'Link anhängen', en: 'Attach link' }[locale]}
-                                aria-pressed={linkOpen}
-                                className={cn(linkOpen && 'text-foreground')}
-                                onClick={() => setLinkOpen((v) => !v)}
-                            >
-                                <LinkIcon />
-                            </InputGroupButton>
-                            <InputGroupButton
-                                type="button"
-                                variant="ghost"
-                                size="icon-xs"
-                                disabled={uploading}
-                                aria-label={{ de: 'Datei anhängen', en: 'Attach file' }[locale]}
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <PaperclipIcon />
-                            </InputGroupButton>
-                        </>
-                    ) : null}
-                    {isEdit ? (
-                        <div className="ml-auto flex items-center gap-2">
-                            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-                                {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
-                            </Button>
-                            <Button type="submit" size="sm" disabled={!canSubmit}>
-                                {{ de: 'Speichern', en: 'Save' }[locale]}
-                            </Button>
-                        </div>
-                    ) : (
-                        <InputGroupButton
-                            type="submit"
-                            variant="default"
-                            size="icon-xs"
-                            className="ml-auto"
-                            disabled={!canSubmit}
-                            aria-label={{ de: 'Senden', en: 'Send' }[locale]}
-                        >
-                            <SendIcon />
-                        </InputGroupButton>
-                    )}
-                </InputGroupAddon>
-            </InputGroup>
         </form>
     );
 }
