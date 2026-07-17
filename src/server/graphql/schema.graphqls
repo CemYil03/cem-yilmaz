@@ -1215,9 +1215,10 @@ input AdminProjectCreate {
     description: String
     notes: String
     status: AdminProjectStatus!
-    # Optional on create — when omitted, the server appends the new row to
-    # the end of the `planning` column (max(position) + 1). Required on
-    # update; the editor always knows the board state and passes it back.
+    # Optional. On create — when omitted, the server appends the new row to
+    # the end of the `planning` column (max(position) + 1). On update it is
+    # written only when supplied, so a plain rename/notes edit leaves the
+    # card's existing ordering untouched.
     position: Int
     # When set on a create, the new project is the conversion of an
     # `emailVerified` `AdminProjectRequest`. `adminProjectsUpsert` validates the

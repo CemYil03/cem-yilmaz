@@ -23,8 +23,9 @@ import type { GqlSMutationResult, GqlSAdminProjectCreate, GqlSSession } from '..
 // tail of the `planning` column. The tail is read once before the loop and
 // incremented locally across new rows so a same-status batch lays out
 // contiguously without a per-row max query. On an update, `position` is
-// required and passed through. The whole batch runs inside a single
-// transaction so a partial failure rolls back to zero writes.
+// optional too: it is written only when supplied, so a plain rename/notes
+// edit leaves the row's existing ordering untouched. The whole batch runs
+// inside a single transaction so a partial failure rolls back to zero writes.
 // `referenceIds` echoes the id per input row (in input order).
 export async function adminProjectsUpsert(
     userId: string,
@@ -37,17 +38,11 @@ export async function adminProjectsUpsert(
     // Phase 1 — assign ids up front so the returned `referenceIds` echoes
     // input order (position defaults + source-request checks resolve in the
     // transaction).
-    const seeds = inputs.map((input) => {
-        const isUpdate = Boolean(input.projectId);
-        if (isUpdate && (input.position === null || input.position === undefined)) {
-            throw new Error('adminProjectsUpsert: position is required when updating an existing project');
-        }
-        return {
-            projectId: input.projectId ?? crypto.randomUUID(),
-            input,
-            isUpdate,
-        };
-    });
+    const seeds = inputs.map((input) => ({
+        projectId: input.projectId ?? crypto.randomUUID(),
+        input,
+        isUpdate: Boolean(input.projectId),
+    }));
 
     // Phase 2 — transactional execution.
     try {
@@ -107,22 +102,36 @@ export async function adminProjectsUpsert(
                     position = await planningTailNext();
                 }
 
-                const payload: AdminProjectCreate = {
-                    projectId,
-                    title: input.title,
-                    description: input.description ?? null,
-                    notes: input.notes ?? null,
-                    status: input.status,
-                    position: position ?? 0,
-                    sourceRequestId: input.sourceRequestId ?? null,
-                    startedAt: input.startedAt ?? null,
-                    completedAt: input.completedAt ?? null,
-                    updatedAt: now,
-                };
-
                 if (isUpdate) {
-                    await transaction.update(projects).set(payload).where(eq(projects.projectId, projectId));
+                    // Only touch `position` when the caller supplied one — a plain
+                    // rename/notes edit leaves the row's ordering untouched rather
+                    // than forcing the editor to restate the board state.
+                    const updatePayload: Partial<AdminProjectCreate> = {
+                        title: input.title,
+                        description: input.description ?? null,
+                        notes: input.notes ?? null,
+                        status: input.status,
+                        startedAt: input.startedAt ?? null,
+                        completedAt: input.completedAt ?? null,
+                        updatedAt: now,
+                    };
+                    if (position !== null) {
+                        updatePayload.position = position;
+                    }
+                    await transaction.update(projects).set(updatePayload).where(eq(projects.projectId, projectId));
                 } else {
+                    const payload: AdminProjectCreate = {
+                        projectId,
+                        title: input.title,
+                        description: input.description ?? null,
+                        notes: input.notes ?? null,
+                        status: input.status,
+                        position: position ?? 0,
+                        sourceRequestId: input.sourceRequestId ?? null,
+                        startedAt: input.startedAt ?? null,
+                        completedAt: input.completedAt ?? null,
+                        updatedAt: now,
+                    };
                     await transaction.insert(projects).values(payload);
                 }
 
@@ -169,7 +178,9 @@ const projectItemSchema = z.object({
         .int()
         .min(0)
         .nullish()
-        .describe('Within-status ordering. Required when updating; on create the server appends to the planning column if omitted.'),
+        .describe(
+            'Within-status ordering. Optional — omit to leave ordering unchanged on update, or to append to the planning column on create. Pass a value only when placing/reordering a card.',
+        ),
     startedAt: z
         .string()
         .nullish()
@@ -203,8 +214,9 @@ export function toolProjectsUpsert({ serverRuntime, session }: ProjectsAgentTool
         description: [
             'Batch create or update workspace projects.',
             'For a new project: omit `projectId` — the server allocates one. For an edit: pass the id from the',
-            'system-prompt snapshot or a prior `projectsList` call. `position` is required on edit and ignored on',
-            'create (the server appends to the planning column). Status `done` does not auto-stamp `completedAt`.',
+            'system-prompt snapshot or a prior `projectsList` call. `position` is optional: omit it to leave a',
+            "card's ordering untouched on edit (or to append to the planning column on create); pass it only when",
+            'placing or reordering a card. Status `done` does not auto-stamp `completedAt`.',
             'Batch same-shape writes into one call; every row with a `projectId` is updated, every row without one',
             'is inserted. Returns `referenceIds` in input order.',
         ].join(' '),

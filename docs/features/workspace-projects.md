@@ -111,7 +111,8 @@ single-item edit passes a one-element array — there is no parallel singular pa
   back via `sourceRequestId`, and flips the request to `archived`. The visitor's brief lives in `description` / `notes` because the inbox UI
   prefills the editor from the request before submit; no synthesis happens server-side. `position` is optional on create — when omitted the
   row lands at the end of the `planning` column. The planning tail is read once before the loop and incremented locally so a batch of
-  creates lays out contiguously.
+  creates lays out contiguously. `position` is also optional on update — it is written only when supplied, so a plain rename or notes edit
+  leaves the card's existing ordering untouched (the agent no longer has to restate board state to make an unrelated edit).
 - `adminProjectsDelete(projectIds: [ID!]!)`, `adminProjectReorder(orderedIds)`
 - `adminProjectTasksUpsert(tasks: [AdminProjectTaskCreate!]!)`, `adminProjectTasksDelete(taskIds: [ID!]!)`,
   `adminProjectTaskReorder(orderedIds)` — reorder is bucket-scoped at the call site (caller passes a single status column's worth of ids).
