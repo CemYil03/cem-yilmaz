@@ -32,13 +32,23 @@ ENV BUILD_SHA=$BUILD_SHA
 # Chromium build. The Debian-based `node:24-slim` base is required —
 # Chromium's prebuilt binaries are linked against glibc and will not run
 # on Alpine.
+#
+# `PLAYWRIGHT_BROWSERS_PATH` pins the browser install to a fixed,
+# user-independent location. The install steps below run as root (HOME
+# would be /root), but the container runs as `node` (HOME=/home/node) —
+# without a shared path, Chromium downloads into /root/.cache and the
+# runtime process searching /home/node/.cache finds nothing. Setting the
+# env once covers both install and runtime.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 COPY package.json package-lock.json ./
 RUN npm install -g "npm@$(node -p "require('./package.json').packageManager.split('@')[1]")"
 # Strip the `prepare` script (husky) before installing — husky is a
 # devDependency, so `--omit=dev` would cause `sh -c husky` to exit 127.
 RUN npm pkg delete scripts.prepare && npm ci --omit=dev
 RUN npx playwright install-deps chromium
-RUN npx playwright install chromium
+# Install into the shared path and make it readable by the `node` user
+# (root-created files are otherwise not guaranteed traversable by node).
+RUN npx playwright install chromium && chmod -R a+rX /ms-playwright
 
 COPY --from=build --chown=node:node /app/.output ./.output
 

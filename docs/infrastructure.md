@@ -26,6 +26,12 @@ Chromium needs (fonts, libnss, libatk, ...) and download the matching Chromium b
 `node:24-slim` base is required — Chromium's prebuilt binaries are linked against glibc and will not run on Alpine. See
 [architecture/server-side-rendering.md](./architecture/server-side-rendering.md) for the full design.
 
+The runtime stage sets `ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` **before** those install steps. Playwright resolves browser binaries
+relative to `$HOME/.cache/ms-playwright`, but the install runs as `root` while the container serves as `USER node` — leaving Chromium in
+`/root/.cache` where the `node`-owned runtime process (searching `/home/node/.cache`) can't find it, which surfaces as
+`browserType.launch: Executable doesn't exist at /home/node/.cache/ms-playwright/...`. The fixed path makes install-time and run-time agree,
+and a `chmod -R a+rX /ms-playwright` after install lets the `node` user read the root-created files.
+
 **`ffmpeg-static` is the other runtime dependency that ships a native binary via npm.** The read-aloud feature transcodes Gemini's PCM
 output into MP3 (see [chat.md#read-aloud](./features/chat.md#read-aloud)); the transcoder spawns the pinned `ffmpeg` binary that ships with
 `ffmpeg-static`. Because it's a plain npm package with a prebuilt binary, no `apt-get install ffmpeg` layer is needed and the same package

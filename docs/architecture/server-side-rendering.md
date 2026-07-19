@@ -116,12 +116,20 @@ artifact resolved relative to the install location of the npm package. Three pla
 3. **`Dockerfile`** — because Playwright is the only runtime dependency that cannot be inlined into the nitro bundle, the production stage
    must:
    - Use a Debian-based Node image (`node:24-bookworm-slim`), not Alpine — Chromium's prebuilt binaries are linked against glibc.
+   - Set `ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` to pin the browser install to a fixed, user-independent location.
    - Run `npx playwright install-deps chromium` to install the system libraries Chromium needs (fonts, libnss, libatk, etc.).
-   - Run `npx playwright install chromium` to download the matching Chromium build into the image.
+   - Run `npx playwright install chromium` to download the matching Chromium build into the image, then `chmod -R a+rX` it.
    - Install production `node_modules` so the runtime can resolve the externalized `playwright` import.
 
 The first two `RUN` steps are placed before the `COPY --from=builder` of `.output/` so they cache across application code changes — Chromium
 downloads dominate image build time and rarely change.
+
+**Why `PLAYWRIGHT_BROWSERS_PATH` matters.** Playwright resolves its browser binaries relative to `$HOME/.cache/ms-playwright` by default.
+The install steps run as `root` (HOME=`/root`), but the container drops to `USER node` (HOME=`/home/node`) before `CMD`. Without a shared
+path, Chromium downloads into `/root/.cache/ms-playwright` while the runtime process searches `/home/node/.cache/ms-playwright` and finds
+nothing — surfacing as `browserType.launch: Executable doesn't exist at /home/node/.cache/ms-playwright/...`. Pinning the env once (before the
+install steps) makes both the root-time install and the node-time launch agree on `/ms-playwright`. The `chmod -R a+rX` ensures the `node`
+user can traverse and read the root-created files.
 
 ## Alternatives Considered
 
