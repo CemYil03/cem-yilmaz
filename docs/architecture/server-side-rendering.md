@@ -127,9 +127,9 @@ downloads dominate image build time and rarely change.
 **Why `PLAYWRIGHT_BROWSERS_PATH` matters.** Playwright resolves its browser binaries relative to `$HOME/.cache/ms-playwright` by default.
 The install steps run as `root` (HOME=`/root`), but the container drops to `USER node` (HOME=`/home/node`) before `CMD`. Without a shared
 path, Chromium downloads into `/root/.cache/ms-playwright` while the runtime process searches `/home/node/.cache/ms-playwright` and finds
-nothing — surfacing as `browserType.launch: Executable doesn't exist at /home/node/.cache/ms-playwright/...`. Pinning the env once (before the
-install steps) makes both the root-time install and the node-time launch agree on `/ms-playwright`. The `chmod -R a+rX` ensures the `node`
-user can traverse and read the root-created files.
+nothing — surfacing as `browserType.launch: Executable doesn't exist at /home/node/.cache/ms-playwright/...`. Pinning the env once (before
+the install steps) makes both the root-time install and the node-time launch agree on `/ms-playwright`. The `chmod -R a+rX` ensures the
+`node` user can traverse and read the root-created files.
 
 ## Alternatives Considered
 
