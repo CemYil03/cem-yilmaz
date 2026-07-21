@@ -1,6 +1,6 @@
 # Workspace Finances
 
-Recurring-cost tracker for Cem: an admin editor at `/workspace/finances` with a Sankey chart that visualises where the money goes each
+Recurring-cost tracker for the admin: an admin editor at `/workspace/finances` with a Sankey chart that visualises where the money goes each
 period. This is the first iteration — a durable list of _what leaves the account on a schedule_ (rent, insurance, subscriptions, transport,
 …), scaled monthly or yearly on demand. Ledger-shaped concerns (individual transactions, holdings, trading, bank import) are out of scope
 until this base surface earns its keep.

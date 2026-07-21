@@ -52,7 +52,7 @@ export interface AgentChatOptions {
 // concretely-typed `ToolLoopAgent` (the toolset is heterogeneous and the
 // generic parameters differ); all the runner needs is the structural surface
 // (`stream`, `generate`, `onStepEnd`), so the runtime type stays wide.
-// See `docs/architecture/multi-agent-chat.md`.
+// See `docs/architecture/chat.md`.
 export type ChatAgentFactory = (options: AgentChatOptions) => Promise<{
     stream: (...args: any[]) => any;
     generate: (...args: any[]) => any;
@@ -88,9 +88,11 @@ function siteMapBlock(): string[] {
 }
 
 // System prompt scaffold for the public visitor chat ("Ask me anything") on
-// cem-yilmaz.de. The "About Cem" block is rebuilt from the DB on every turn
+// cem-yilmaz.de — Q&A about Cem plus OTP-verified project-request / contact
+// tools. The "About Cem" block is rebuilt from the DB on every turn
 // (`cvSummaryForAgent`) so admin edits at `/workspace/cv` land in the
-// agent's answers without a redeploy. See `docs/features/cv.md`.
+// agent's answers without a redeploy. See `docs/features/cv.md` and
+// `docs/features/project-requests.md`.
 //
 // `currentPagePath` is the route the visitor's client was on when this
 // message went out. We inline it (when present) so the agent can anchor

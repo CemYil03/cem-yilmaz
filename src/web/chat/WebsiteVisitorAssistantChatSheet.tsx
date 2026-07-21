@@ -374,7 +374,7 @@ function ChatLoaded({
 // --- Transcript --------------------------------------------------------------
 //
 // Thin wrapper over the shared `<ChatTranscript />` — same shape the workspace
-// surfaces use. See `docs/architecture/chat-transcript.md`.
+// surfaces use. See `docs/styles/chat.md`.
 
 function ChatTranscript({
     chat,

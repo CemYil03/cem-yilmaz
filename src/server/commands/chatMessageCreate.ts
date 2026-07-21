@@ -25,7 +25,7 @@ import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
 // agentFactory: agentPersonalAssistant }`. The command stamps `scope` on new
 // chats and rejects an existing `chatId` whose scope doesn't match — a stolen
 // id can't slip from one namespace to the other. See
-// `docs/architecture/multi-agent-chat.md`.
+// `docs/architecture/chat.md`.
 export interface ChatMutationDispatch {
     scope: 'public' | 'admin';
     agentFactory: ChatAgentFactory;
@@ -78,12 +78,11 @@ export async function chatMessageCreate(
         const userMessageId = crypto.randomUUID();
         const now = new Date();
         const { generationId } = assistantOptions;
-        // Cookie session is the only authentication today; the user-side row
-        // gets an `authorUserId` only when a registered user is on the
-        // session. Visitor chat allows anonymous sends — `authorUserId` stays
-        // null, but the message still persists. (When the workspace lands,
-        // admin chats will always have a userId because the OAuth login
-        // implies one.)
+        // Cookie session is the only authentication; the user-side row gets an
+        // `authorUserId` only when a registered user is on the session.
+        // Visitor chat allows anonymous sends — `authorUserId` stays null, but
+        // the message still persists. Admin chats always have a `userId`
+        // because `guardAdminMutation` requires one.
         const userId = requestingSession.userId ?? null;
         // Treat null/undefined the same as an empty list — the GraphQL field
         // is `[ID!]` (nullable list) so URQL emits `null` when the client
@@ -227,7 +226,7 @@ export async function chatMessageCreate(
         // turn kicks off — admin mutations fan out `userUpdates` so any
         // `User`-bound subscriber re-resolves. Visitor (public) sends stay
         // quiet: they own no `User` row to refresh. See
-        // `docs/architecture/workspace-access.md`.
+        // `docs/architecture/authorization-workspace.md`.
         if (adminUserId && dispatch.scope === 'admin') {
             await serverRuntime.publish.userUpdates({ userId: adminUserId });
         }

@@ -1,14 +1,13 @@
 # Admin chat config
 
-The workspace personal-assistant composer at `/workspace/assistant` exposes a model-selection dropdown so the admin (Cem) can pick which
-Gemini model answers the next turn. The picked model is **sticky**: changing the dropdown both selects for the current send AND persists as
-the new saved default. Future chats open with whatever was last picked.
+The workspace personal-assistant composer at `/workspace/assistant` exposes a model-selection dropdown so the admin can pick which Gemini
+model answers the next turn. The picked model is **sticky**: changing the dropdown both selects for the current send AND persists as the new
+saved default. Future chats open with whatever was last picked.
 
 See also:
 
-- [features/chat-workspace.md](./chat-workspace.md) — the workspace chat surface itself.
-- [architecture/multi-agent-chat.md](../architecture/multi-agent-chat.md) — how visitor and admin chats split, and how the picked `modelId`
-  flows through `ChatAssistantOptions` into the agent factory.
+- [features/chat-workspace.md](./chat-workspace.md) — the workspace chat surface itself (agent dispatch, model picker host).
+- [architecture/chat.md](../architecture/chat.md) — shared chat model; how admin sends plug in via `scope: 'admin'`.
 
 ## Why this exists
 

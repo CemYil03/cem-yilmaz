@@ -311,7 +311,7 @@ type User {
     # any future cross-user lookups. Lets surfaces like the public landing page
     # ask "is the current visitor an admin?" with a single nullable field check
     # instead of catching a `guardAdmin` exception. Mutations still live on
-    # `Mutation.admin`. See `docs/architecture/workspace-access.md`.
+    # `Mutation.admin`. See `docs/architecture/authorization-workspace.md`.
     admin: Admin
 }
 
@@ -331,7 +331,7 @@ type Session {
     # is correct. Admin reads still use
     # `sessionFindOne.user.admin.adminChatFindOne(...)` /
     # `sessionFindOne.user.admin.adminPublicChatFindOne(...)` instead. See
-    # `docs/architecture/multi-agent-chat.md`.
+    # `docs/architecture/chat.md`.
     visitorChatFindOne(chatId: ID!): Chat!
     # Rolling-24h cap on visitor-chat user messages from this requester.
     # Counted across (this session) OR (other sessions sharing this `ipHash`)

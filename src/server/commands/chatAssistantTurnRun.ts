@@ -301,7 +301,7 @@ interface ChatAssistantTurnRunOptions {
     // Agent to drive this turn. Picked by the dispatching mutation
     // resolver based on the access path — visitor mutations pass
     // `agentVisitor`, admin mutations pass `agentPersonalAssistant`.
-    // See `docs/architecture/multi-agent-chat.md`.
+    // See `docs/architecture/chat.md`.
     agentFactory: ChatAgentFactory;
     // Pathname the client was on when the user sent the message
     // (`/projects`, `/en/cv`, `/workspace/projects/abc`, …). Threaded into

@@ -61,8 +61,8 @@ The pieces:
 
 Classical SEO and AI-search optimisation overlap but reward different signals. The AI-search layer (robots.txt AI bot allowlist,
 `/llms.txt`, `ProfilePage` + `FAQPage` schemas, `?ask=…` chat deep-link, `dateModified` freshness) lives alongside the SEO building blocks
-and is documented in [ai-search.md](./ai-search.md). When adding a new public page, mirror the SEO checklist with the AI-search one — add a
-bullet to `/llms.txt` and consider whether the page warrants a `ProfilePage` / `FAQPage` schema.
+and is documented in [discovery-geo.md](./discovery-geo.md). When adding a new public page, mirror the SEO checklist with the AI-search one
+— add a bullet to `/llms.txt` and consider whether the page warrants a `ProfilePage` / `FAQPage` schema.
 
 ## Canonical URL strategy
 

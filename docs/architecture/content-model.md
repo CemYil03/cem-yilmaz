@@ -74,8 +74,8 @@ to whatever order Postgres chose, which is acceptable for the row counts here.
 
 ## When NOT to use static content
 
-- **Anything Cem will edit more than twice a year**. Static content edits ship through CI, with a commit log and review. That's the right
-  weight for a phone number, the wrong weight for a job entry.
+- **Anything an admin will edit more than twice a year**. Static content edits ship through CI, with a commit log and review. That's the
+  right weight for a phone number, the wrong weight for a job entry.
 
 ## When a DB-backed list skips bilingual columns
 

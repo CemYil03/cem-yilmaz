@@ -24,9 +24,8 @@ import {
 // `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`),
 // which pins the shadcn `MessageScroller` config in exactly one place —
 // `defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`, and the
-// jump-to-latest pill at the tail. See `docs/styles/chat.md` for the rules and
-// `docs/architecture/chat-transcript.md` for the "great streaming chat"
-// checklist we're honouring.
+// jump-to-latest pill at the tail. See `docs/styles/chat.md` for the desired
+// chat experience and the shared transcript composition rules.
 
 export interface ChatTranscriptProps {
     /** Every message that should render as a row in the transcript, in

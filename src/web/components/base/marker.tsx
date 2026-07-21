@@ -6,7 +6,7 @@ import { cn } from '../../utils/cn';
 
 // shadcn/ui `marker` — inline conversation status, bordered rows, and labeled
 // separators. Kept variant-agnostic; wire the right role (`status`, `separator`,
-// bare marker) at the call site. See docs/architecture/chat-transcript.md.
+// bare marker) at the call site. See docs/styles/chat.md.
 
 const markerVariants = cva(
     "group/marker relative flex min-h-4 w-full items-center gap-2 text-left text-sm text-muted-foreground [&_svg:not([class*='size-'])]:size-4 [a]:underline [a]:underline-offset-3 [a]:hover:text-foreground",

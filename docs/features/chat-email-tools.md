@@ -10,11 +10,11 @@ See also:
 
 ## The tools
 
-| Tool                      | When the agent calls it                                                                   | Side effect                                                                   | Returns                                                                                                                                |
-| ------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `sendEmailToCem`          | Visitor wants to contact Cem about something simple (question, hello, heads-up).          | Enqueues `emailToCemSend`; pg-boss handles retries.                           | `{ status: 'queued' }`                                                                                                                 |
-| `submitProjectRequest`    | Visitor describes a project, freelance gig, or business enquiry.                          | Inserts a `pendingOtp` row + enqueues `projectRequestOtpSend`.                | `{ status: 'otpSent', projectRequestId, emailMasked, expiresInMinutes }`                                                               |
-| `verifyProjectRequestOtp` | Always immediately after `submitProjectRequest` succeeded and the visitor entered a code. | On match: flips row to `emailVerified` + enqueues `projectRequestNotifySend`. | One of `verified` / `incorrect` (+ `attemptsRemaining`) / `expired` / `tooManyAttempts` / `alreadyVerified` / `archived` / `notFound`. |
+| Tool                      | When the agent calls it                                                                     | Side effect                                                                   | Returns                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `sendEmailToCem`          | Visitor wants to contact the site owner about something simple (question, hello, heads-up). | Enqueues `emailToCemSend`; pg-boss handles retries.                           | `{ status: 'queued' }`                                                                                                                 |
+| `submitProjectRequest`    | Visitor describes a project, freelance gig, or business enquiry.                            | Inserts a `pendingOtp` row + enqueues `projectRequestOtpSend`.                | `{ status: 'otpSent', projectRequestId, emailMasked, expiresInMinutes }`                                                               |
+| `verifyProjectRequestOtp` | Always immediately after `submitProjectRequest` succeeded and the visitor entered a code.   | On match: flips row to `emailVerified` + enqueues `projectRequestNotifySend`. | One of `verified` / `incorrect` (+ `attemptsRemaining`) / `expired` / `tooManyAttempts` / `alreadyVerified` / `archived` / `notFound`. |
 
 The system prompt mandates that the agent **always collect inputs via `promptUserForInput` before calling any of these** — no guessed
 addresses, no invented subjects. After `submitProjectRequest`, the agent must immediately surface a single-slot form of kind `Otp` to
@@ -56,9 +56,9 @@ gate on verification.
 
 All three jobs:
 
-- Set `to` to `personalInfo.contact.emails[0]` for outgoing notifications to Cem (single source of truth —
+- Set `to` to `personalInfo.contact.emails[0]` for outgoing notifications to the admin notification address (single source of truth —
   `src/web/content/personalInfo.ts`).
-- Set `replyTo` to the visitor's address so Cem can hit reply directly.
+- Set `replyTo` to the visitor's address so the admin can hit reply directly.
 - Default retry policy: 3 attempts, 60s backoff, 10-minute expiry.
 
 ## Email transport

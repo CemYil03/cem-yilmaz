@@ -1,9 +1,10 @@
 # Workspace media: Movies + Series + Channels
 
-`/workspace/media` is Cem's private library for three things: a **movie watchlist** (want-to-watch / watching / watched / dropped, with
-posters and ratings), a **TV series library** (same status vocabulary, plus completed / next-season tracking), and a **favourite-channels
-list** (YouTube / Twitch / podcast, filterable by topic and platform). The channels list is the single source of truth for cross-view reads
-— `/workspace/software` renders the subset tagged `tech` as its "Favourite tech channels" section without duplicating rows.
+`/workspace/media` is the admin's private library for three things: a **movie watchlist** (want-to-watch / watching / watched / dropped,
+with posters and ratings), a **TV series library** (same status vocabulary, plus completed / next-season tracking), and a
+**favourite-channels list** (YouTube / Twitch / podcast, filterable by topic and platform). The channels list is the single source of truth
+for cross-view reads — `/workspace/software` renders the subset tagged `tech` as its "Favourite tech channels" section without duplicating
+rows.
 
 See also:
 
@@ -37,12 +38,12 @@ matching card into view and highlights it for a moment — the assistant's deep-
   ms debounce), exactly like the movies / series TMDB search: suggestions drop down with avatar + handle + subscriber count, and **clicking
   one adds the channel directly** via `adminMediaChannelsUpsert` (identity fields — name / url / handle / avatar / description — filled from
   the API, `platform: youtube`, topics / notes left empty for later). There is **no manual identity entry on the add path** and no "New
-  channel" button — Cem never hand-adds a channel. Below the search bar, chip rows for platform and topic filter the grid (AND-composed,
-  local state). Each card shows avatar, name, handle, platform, topic chips, first-line notes preview, and an external-link affordance;
-  clicking the card opens the edit dialog. **Drag-reorder** (via the shared `useReorderableList` hook) is available when no filters are
-  active — filtered views hide the grip so priorities aren't rewritten from a partial list. **Editing** a channel opens a dialog with the
-  full manual form (name / platform / url / handle / avatar / description / topics / notes), so the YouTube fields the API can't infer, plus
-  any legacy Twitch / podcast / other rows, stay editable.
+  channel" button — the admin never hand-adds a channel. Below the search bar, chip rows for platform and topic filter the grid
+  (AND-composed, local state). Each card shows avatar, name, handle, platform, topic chips, first-line notes preview, and an external-link
+  affordance; clicking the card opens the edit dialog. **Drag-reorder** (via the shared `useReorderableList` hook) is available when no
+  filters are active — filtered views hide the grip so priorities aren't rewritten from a partial list. **Editing** a channel opens a dialog
+  with the full manual form (name / platform / url / handle / avatar / description / topics / notes), so the YouTube fields the API can't
+  infer, plus any legacy Twitch / podcast / other rows, stay editable.
 
 Topics on all three entities are a **chip input**: known topics (the `AdminMediaTopic` enum) come as suggested chips; free-form values work
 too (the column is a plain `text[]`, so ad-hoc topics can be added without a migration). Removing a chip removes it from the array. The
@@ -62,7 +63,7 @@ there is no free-text channel filter — the top-of-tab search box is the YouTub
 | Approach                                                                    | Why we picked / didn't                                                                                                                                                                                                                                  |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **One `Titles` table with a `kind` enum** (movie \| tv \| short)            | Cheapest schema on paper. Loses type-safe TV-specific tracking (completed / next-season fields) and forces every read to filter by `kind` even when the surface only cares about one shape. Dedicated `AdminMediaShow` table keeps the movie path lean. |
-| **Movies + TV shows both in this phase** (chosen for series)                | Series landed with the fields Cem actually needs (completed + next-season exact/rough) without a full seasons/episodes cascade. Episode-level tracking stays deferred.                                                                                  |
+| **Movies + TV shows both in this phase** (chosen for series)                | Series landed with the fields the admin actually needs (completed + next-season exact/rough) without a full seasons/episodes cascade. Episode-level tracking stays deferred.                                                                            |
 | **Local poster storage in `FileUploads`**                                   | Full control, but every add is a manual step and blob storage costs. TMDB's CDN URLs are stable and cache well; storing the URL as a `varchar` is one column instead of a join row.                                                                     |
 | **No third-party integration** (paste poster URLs by hand)                  | Zero dependencies, poor UX. TMDB gives release date, runtime, and overview for free — a two-keystroke add flow is worth one env var.                                                                                                                    |
 | **TMDB search + cached URL** (chosen)                                       | Server-side fetch at add-time, stores `tmdbId` + cached URLs + metadata. Cost: one optional env var; graceful degradation when unset (search returns empty, manual add still works).                                                                    |

@@ -1,8 +1,8 @@
 # Chat Persistence
 
-> **Phase 2 note:** the persistence model below is shared by the visitor chat and the (Phase 2) workspace personal assistant. Phase 2 adds
-> an `agentKind` discriminator on the `chats` row but keeps every message table untouched — see
-> [`multi-agent-chat.md`](./multi-agent-chat.md).
+> The persistence model below is shared by the [visitor chat](../features/chat-visitor.md) and the
+> [workspace personal assistant](../features/chat-workspace.md). Each stamps `chats.scope` (`public` / `admin`) on insert; message tables
+> stay identical.
 
 Companion to [Chat Foundation](./chat.md). That doc decides the shape of the GraphQL chat model; this one decides how those messages are
 stored and how they are replayed back to the LLM.

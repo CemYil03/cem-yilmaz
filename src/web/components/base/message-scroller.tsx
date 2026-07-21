@@ -15,7 +15,7 @@ import { Button } from './button';
 // stick-to-bottom follow, jump-to-latest, preserved position on prepended
 // history, and per-message anchoring. Wrap in `MessageScrollerProvider`
 // then compose `MessageScroller > MessageScrollerViewport > MessageScrollerContent`
-// with `MessageScrollerItem` per turn. See docs/architecture/chat-transcript.md.
+// with `MessageScrollerItem` per turn. See docs/styles/chat.md.
 
 function MessageScrollerProvider(props: React.ComponentProps<typeof MessageScrollerPrimitive.Provider>) {
     return <MessageScrollerPrimitive.Provider {...props} />;

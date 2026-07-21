@@ -77,11 +77,11 @@ export const Table: Story = {
         text: [
             'A small comparison table — the renderer disables copy/download/fullscreen for tables so they stay quiet inside chat bubbles:',
             '',
-            '| Phase | Status | Notes |',
-            '| ----- | ------ | ----- |',
-            '| Phase 1 — portfolio | ✅ Shipped | Landing, CV, projects, legal |',
-            '| Phase 2 — OAuth + dual agents | 🚧 In progress | Workspace gating |',
-            '| Phase 3 — DB-backed content | ⏳ Planned | Projects + tools + blog |',
+            '| Format | Status | Notes |',
+            '| ------ | ------ | ----- |',
+            '| Paragraphs | ✅ Ready | Inline marks + soft breaks |',
+            '| Tables | ✅ Ready | Quiet in chat bubbles |',
+            '| Math | ✅ Ready | KaTeX via remark-math |',
         ].join('\n'),
     },
 };

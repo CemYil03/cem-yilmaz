@@ -1,6 +1,6 @@
 # Workspace fitness: Gym log + routines + exercise catalog
 
-`/workspace/fitness` is Cem's private training surface: a **gym log** (sessions → sets, weight × reps), reusable **workout routines**
+`/workspace/fitness` is the admin's private training surface: a **gym log** (sessions → sets, weight × reps), reusable **workout routines**
 (templates like "Push day"), and an **exercise catalog** the other two draw from. The fitness sub-agent logs workouts from chat ("5×5 squats
 at 100kg today") and answers progression questions ("what did I bench last time?").
 

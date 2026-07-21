@@ -1,6 +1,6 @@
 # Workspace software
 
-`/workspace/software` is Cem's private software-development hub. It combines a static quick-link board for the core stack with the
+`/workspace/software` is the admin's private software-development hub. It combines a static quick-link board for the core stack with the
 cross-view "Favourite tech channels" section that reads media channels tagged `tech`.
 
 See also:

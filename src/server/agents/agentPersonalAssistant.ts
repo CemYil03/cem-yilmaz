@@ -22,7 +22,7 @@ import { toolWorkspaceFileCreate, toolWorkspaceFileGet, toolWorkspaceFileUpdate 
 // turn but does not directly own most domain tools. AdminProject/task work is
 // handed off to `agentPersonalAssistantProjects` via `delegateToProjects`;
 // future domains (calendar, notes, fitness, …) follow the same shape. See
-// `docs/architecture/agent-delegation.md` and `multi-agent-chat.md`.
+// `docs/architecture/agent-delegation.md` and `docs/features/chat-workspace.md`.
 //
 // The base prompt is rendered with a `{compass}` block at the end. On each
 // turn the agent reads `compass.summary` via `compassSummaryGet` and the

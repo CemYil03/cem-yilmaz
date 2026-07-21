@@ -392,7 +392,7 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
 // Thin wrapper over the shared `<ChatTranscript />` that wires in the admin
 // mutation handlers (tool-approval + input-collection responses). Every other
 // scrolling concern — stick-to-bottom, jump-to-latest, per-turn anchoring —
-// lives in the shared component. See `docs/architecture/chat-transcript.md`.
+// lives in the shared component. See `docs/styles/chat.md`.
 
 export function WorkspaceAssistantChatTranscript({
     messages,

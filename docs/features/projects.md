@@ -55,15 +55,15 @@ The landing page (`/`) links into the page from its section grid; before this ch
 
 ## Options Considered
 
-| Approach                                                        | Why we picked / didn't                                                                                                                                      |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Wait for Phase 3** — DB-backed projects + `/workspace` editor | Phase 3 is two phases out (after OAuth + dual-agent chat). Visitors would keep seeing the "coming soon" stub for months. Rejected.                          |
-| **DB-backed now**                                               | Three projects edited maybe twice a year doesn't justify a table, GraphQL types, mappers, an admin form, and migrations. Rejected.                          |
-| **Static config under `src/web/content/`** (chosen)             | Mirrors `personalInfo.ts`. PR-edited, no runtime cost, works exactly the way the static-vs-DB split in `docs/architecture/content-model.md` says it should. |
+| Approach                                                                 | Why we picked / didn't                                                                                                                                      |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Wait for a full CMS later** — DB-backed projects + `/workspace` editor | Would leave visitors on a "coming soon" stub indefinitely. Rejected.                                                                                        |
+| **DB-backed now**                                                        | Three projects edited maybe twice a year doesn't justify a table, GraphQL types, mappers, an admin form, and migrations. Rejected.                          |
+| **Static config under `src/web/content/`** (chosen)                      | Mirrors `personalInfo.ts`. PR-edited, no runtime cost, works exactly the way the static-vs-DB split in `docs/architecture/content-model.md` says it should. |
 
 ## Option Chosen
 
-Static content + plain route, replaced by Phase 3 when it lands.
+Static content + plain route. Revisit a DB-backed editor if the portfolio list outgrows PR edits.
 
 - **Data**: `src/web/content/portfolioProjects.ts` — typed `ReadonlyArray<PortfolioProject>` with `id`, `name`, optional `url` (omitted for
   showcase-only projects), optional `repoUrl`, paired `*De` / `*En` text fields, an optional `facts: string[]` array of chip-sized tags, a

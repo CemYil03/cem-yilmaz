@@ -22,8 +22,7 @@ import type { Locale } from '../../../web/utils/locale';
 // wrote via `serverRuntime.log.*`. Authorization is the `User.admin` resolver
 // chain on `currentSession.user.admin.logs` (returns null for non-admins);
 // the page falls back to `<WorkspaceUnauthorized />` when that chain resolves
-// null. The route itself is also `noindex` and (Phase 2) sits behind the
-// workspace OAuth gate.
+// null. The route itself is also `noindex`.
 //
 // Filters live in the URL so a deep link reproduces the exact view: `level`
 // narrows to one of the four levels, `search` is a case-insensitive

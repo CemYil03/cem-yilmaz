@@ -11,7 +11,7 @@ import type { Locale } from '../utils/locale';
 // non-nullable and `guardAdmin` threw on non-admins. With the read namespace
 // moved under `User.admin` (nullable), the field resolves cleanly and pages
 // can render a recognizable "not authorized" surface instead. See
-// `docs/architecture/workspace-access.md`.
+// `docs/architecture/authorization-workspace.md`.
 
 export function WorkspaceUnauthorized({ locale }: { locale: Locale }) {
     return (
@@ -26,8 +26,8 @@ export function WorkspaceUnauthorized({ locale }: { locale: Locale }) {
                 <p className="mt-3 text-sm text-foreground/70 leading-relaxed">
                     {
                         {
-                            de: 'Dieser Bereich ist persönlich für Cem. Wenn du das hier siehst und eigentlich Zugriff haben solltest, prüfe, ob deine Sitzung als Admin markiert ist.',
-                            en: "This area is personal to Cem. If you're seeing this and expected access, check whether your session is flagged as admin.",
+                            de: 'Dieser Bereich ist nur für Admin-Benutzer. Wenn du das hier siehst und eigentlich Zugriff haben solltest, prüfe, ob deine Sitzung als Admin markiert ist (`Users.isAdmin`).',
+                            en: 'This area is only for admin users. If you’re seeing this and expected access, check whether your session’s user is flagged `isAdmin`.',
                         }[locale]
                     }
                 </p>

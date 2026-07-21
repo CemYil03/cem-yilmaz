@@ -1,8 +1,8 @@
 # Workspace chat
 
 The workspace personal-assistant chat is the private counterpart to the public visitor chat. It is mounted once at the workspace layout
-(`src/routes/{-$locale}/workspace.tsx`) as a persistent right-side **sidebar** that lives **alongside** every workspace surface, so Cem can
-ask the assistant a question and keep editing/reading without dismissing anything.
+(`src/routes/{-$locale}/workspace.tsx`) as a persistent right-side **sidebar** that lives **alongside** every workspace surface, so the
+admin can ask the assistant a question and keep editing/reading without dismissing anything.
 
 The sidebar is built on shadcn's `<Sidebar collapsible="offcanvas" side="right">` primitive (`src/web/components/base/sidebar.tsx`). That
 primitive owns the responsive split, the cookie-backed open state, the keyboard shortcut, and — on `<md` viewports — an internal right-side
@@ -30,10 +30,37 @@ See also:
 
 - [features/chat-visitor.md](./chat-visitor.md) — the parallel public visitor chat. Different primitive (right-side Sheet), different agent.
 - [features/chat-web-search.md](./chat-web-search.md) — the admin assistant's Google Search grounding tool. Not on the visitor agent.
+- [features/admin-chat-config.md](./admin-chat-config.md) — per-turn model picker + sticky default.
 - [features/workspace-hub.md](./workspace-hub.md) — the hub composer that seeds the sidebar, plus the workspace navigation shell.
-- [features/chat.md](./chat.md) — the chat foundation (transcript, composer, live updates) shared by every surface.
-- [architecture/multi-agent-chat.md](../architecture/multi-agent-chat.md) — how visitor and admin chats split at the GraphQL namespace level
-  and which agent each one dispatches to.
+- [features/chat.md](./chat.md) — shared chat affordances (transcript, composer, live updates).
+- [architecture/chat.md](../architecture/chat.md) — shared message model; how this feature plugs in via `scope: 'admin'`.
+- [architecture/agent-delegation.md](../architecture/agent-delegation.md) — orchestrator → domain sub-agents.
+- [styles/chat.md](../styles/chat.md) — desired chat experience (scroll, composer, transcript composition, link behaviour).
+
+## Agent and GraphQL access
+
+Admin sends go through `Mutation.admin` (`guardAdminMutation` — see
+[authorization-workspace.md](../architecture/authorization-workspace.md)):
+
+- `AdminMutation.chatMessageCreate` / `chatInputCollectionRespond` / `chatToolApprovalRespond`
+- Resolver stamps `scope: 'admin'` and dispatches to `agentPersonalAssistant`.
+- Resolved chats must have `scope = 'admin'` — the namespace gate keeps non-admins out; the scope check stops an admin from posting into a
+  visitor chat by chatId.
+- Reads: `sessionFindOne.user.admin.adminChatFindMany` / `adminChatFindOne(chatId)` (and `adminPublicChatFind*` for reviewing visitor
+  chats).
+
+`agentPersonalAssistant` owns the user-facing turn and delegates domain work via `delegateTo…` tools — see
+[agent-delegation.md](../architecture/agent-delegation.md). It also registers Gemini's provider-executed `googleSearch` grounding tool
+([chat-web-search.md](./chat-web-search.md)). Shared scaffolding lives in `agentScaffolding.ts` (same helper as the visitor agent).
+
+**Compass injection.** Each admin turn prepends `compassSummaryFindOne`'s short summary to the system prompt (the only compass column that
+crosses into any agent). After the turn, `chatMessageCreate` enqueues `compassAnalyze`. The richer `prose` / `psychology` fields never reach
+this agent — see [workspace-compass.md](./workspace-compass.md).
+
+**Per-turn model selection.** The composer dropdown rides `ChatAssistantOptions.modelId`; sticky default via `AdminChatConfig` — see
+[admin-chat-config.md](./admin-chat-config.md).
+
+Optional `currentPagePath` on send is forwarded into the factory for that turn only — see [Page context](#page-context).
 
 ## Why a persistent sidebar
 
@@ -57,7 +84,7 @@ Mounting the chat provider and `<SidebarProvider>` at `workspace.tsx` — one le
   running turn locks is _that same chat's_ composer; the Back / new-chat / open-standalone controls never lock, and one chat's turn never
   makes another chat show loading or shimmer a settled tool call. A fresh send starts an _unbound_ generation (no chatId yet) whose deltas
   buffer under its `generationId`; `bindTurn(generationId, chatId)` attaches it once the mutation returns the allocated id. See
-  [architecture/chat-transcript.md](../architecture/chat-transcript.md) for the tool-row shimmer scoping.
+  [styles/chat.md](../styles/chat.md) for the tool-row shimmer scoping (`liveTurnMessageIds`).
 - **Workspace-only.** Both providers only mount on `/workspace/*`. Public pages are unaffected; the public-visitor Sheet is a separate
   component on a separate provider.
 
@@ -207,7 +234,7 @@ src/web/chat/
 ├── WorkspaceAssistantChatBody.tsx        Sidebar body — chat browser (search + paginated list), loaded-state header ("Back to chats" + "Open in its own page"), transcript, composer.
 ├── WorkspaceAssistantChatSidebar.tsx     The shadcn `<Sidebar collapsible="offcanvas" side="right">` frame.
 ├── WorkspaceChatComposer.tsx             Shared admin composer — wraps `<ChatComposer />` with the workspace mutation + provider-owned model selection.
-├── ChatTranscriptShared.tsx              Shared transcript renderer (MessageScroller-backed) — used here, in the deep-link route, and in the visitor sheet. See docs/architecture/chat-transcript.md.
+├── ChatTranscriptShared.tsx              Shared transcript renderer (MessageScroller-backed) — used here, in the deep-link route, and in the visitor sheet. See docs/styles/chat.md.
 └── workspaceChatListBuckets.ts           Day-bucketing helper (`Today` / `Yesterday` / `This week` / `Earlier`) used by the sidebar's chat browser.
 
 src/web/components/
@@ -257,10 +284,8 @@ Two surface-level conveniences flow from [`architecture/agent-delegation.md`](..
 ## Transcript scroll behaviour
 
 Every admin surface — the sidebar body, the deep-link route, and (with the visitor sheet) the public "Ask me anything" surface — renders its
-transcript through the shared `<ChatTranscript />` at `src/web/chat/ChatTranscriptShared.tsx`. The scroll behaviour (follow-only-while-
-at-the-live-edge, anchor new turns near the top of the viewport, reopen saved conversations at the last user message, edge fade on the
-bottom of the viewport, jump-to-latest pill) is delegated to shadcn's `MessageScroller` primitive. See
-[`architecture/chat-transcript.md`](../architecture/chat-transcript.md).
+transcript through the shared `<ChatTranscript />` at `src/web/chat/ChatTranscriptShared.tsx`. Scroll / streaming / composer experience
+rules are canonical in [`styles/chat.md`](../styles/chat.md).
 
 ## Anti-patterns avoided
 

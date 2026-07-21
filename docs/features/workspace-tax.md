@@ -1,9 +1,9 @@
 # Workspace Tax
 
-`/workspace/tax` organises Cem's German tax return end-to-end. A tax year (`AdminTaxYear`) is the container; under it live income sources
-(one per Anlage / employer), deductible expenses (with receipt files), and a document checklist. Built for Cem's first return — **employee
-(Anlage N) + self-employed (Anlage S / EÜR) + minijob** — it answers "what do I need, what have I got, what can I deduct, and when is it
-due?" without being a tax calculator.
+`/workspace/tax` organises the admin's German tax return end-to-end. A tax year (`AdminTaxYear`) is the container; under it live income
+sources (one per Anlage / employer), deductible expenses (with receipt files), and a document checklist. Built for a first return —
+**employee (Anlage N) + self-employed (Anlage S / EÜR) + minijob** — it answers "what do I need, what have I got, what can I deduct, and
+when is it due?" without being a tax calculator.
 
 **It is an organisation tool, not a tax advisor.** No liability figure is computed, and the AI sub-agent carries an explicit "no binding
 Steuerberatung" disclaimer (see [Assistant integration](#assistant-integration)).
@@ -18,7 +18,7 @@ documentarian sub-agent + disclaimer).
 
 - **Header + "New tax year"** — creating a year opens a small dialog (year + filing deadline via shared `DateField` / `DatePicker`). On
   insert the command seeds the default document checklist (see [`taxDefaultChecklist.ts`](../../src/server/commands/taxDefaultChecklist.ts))
-  so Cem starts with Anlage N / S-EÜR / minijob / Vorsorge rows to tick off.
+  so the admin starts with Anlage N / S-EÜR / minijob / Vorsorge rows to tick off.
 - **Year switcher** — pill row of every year; the selected year lives in the URL as `?year=2025` (default = newest, dropped from the URL).
 - **Overview strip** — three `GlassCard` tiles: filing deadline (with a live countdown; red **overdue** border when the deadline has passed
   and the year isn't submitted), total income (Σ gross across sources), total deductible (Σ deductible expenses).
@@ -48,12 +48,12 @@ Bilingual copy is inline `{ de, en }[locale]`. Enum labels (`INCOME_KIND_LABELS`
   `taxYearId` (always) plus optional `expenseId` / `documentId` covers year-level, receipt, and scan attachments with one table and one
   attach command. On expense/document delete the secondary link nulls (the file stays on the year); on upload delete the join cascades.
   Mirrors `AdminInventoryItemFile`. Chosen: **one join table**.
-- **Pre-seeded checklist vs. empty start.** Cem's Anlagen are known; seeding Anlage N / S-EÜR / minijob / Vorsorge on year insert means he
-  ticks off instead of typing. Chosen: **seed on insert** (a plain const list, easy to extend).
+- **Pre-seeded checklist vs. empty start.** The admin's Anlagen are known; seeding Anlage N / S-EÜR / minijob / Vorsorge on year insert
+  means they tick off instead of typing. Chosen: **seed on insert** (a plain const list, easy to extend).
 - **Documentarian sub-agent with disclaimer vs. no advice at all vs. full advice.** Full tax advice is out of scope and risky; a silent
-  documentarian reads as unhelpful. Chosen: **documentarian + disclaimer** — records everything, notes the common category, and reminds Cem
-  to confirm uncertain deductibility with a Steuerberater. Unlike medical's red-flag block, there is no "refuse to call any tool" case — tax
-  isn't safety-critical, so the disclaimer just rides along with the answer.
+  documentarian reads as unhelpful. Chosen: **documentarian + disclaimer** — records everything, notes the common category, and reminds the
+  admin to confirm uncertain deductibility with a Steuerberater. Unlike medical's red-flag block, there is no "refuse to call any tool" case
+  — tax isn't safety-critical, so the disclaimer just rides along with the answer.
 
 ## Implementation details
 
@@ -137,8 +137,8 @@ finances / inventory:
 - **Sub-agent** — `src/server/agents/agentPersonalAssistantTax.ts`. `ToolLoopAgent`, `stopWhen: [isStepCount(10)]`, model
   `ADMIN_CHAT_MODEL_FALLBACK_ID`. System prompt carries: the ROLE (documentarian, not advisor), the **"no binding Steuerberatung"
   disclaimer** (record uncertain items anyway + a short reminder to confirm with a Steuerberater / Finanzamt — no tool-refusal, unlike
-  medical's red-flag block), the cents/date-conversion rules, the "can't upload files → point Cem at the page" rule, and the `needsMoreInfo`
-  / `noOp` JSON sentinel contract.
+  medical's red-flag block), the cents/date-conversion rules, the "can't upload files → point the admin at the page" rule, and the
+  `needsMoreInfo` / `noOp` JSON sentinel contract.
 - **Snapshot** — `src/server/agents/taxSnapshotForAgent.ts`: per-year markdown with deadline + overdue context, income sources, expenses
   (with ids and file counts), and checklist status, so the sub-agent answers straight from its prompt.
 - **Tools** — thin wrappers over the same commands: `toolTaxYearsList` (read), `toolTaxYearsUpsert`, `toolTaxIncomeSourcesUpsert`,
@@ -146,8 +146,8 @@ finances / inventory:
   those inputs is a `Date` scalar (`z.string()`), not `DateTime`, so no hand-built duplicate is needed (see
   [agent-delegation.md#tool-input-schemas](../architecture/agent-delegation.md#tool-input-schemas)). Each write pushes a `TaxAgentMutation`
   into the shared log.
-- **No file-attach tool** — `adminTaxFilesAttach` needs a browser byte-upload first, which a chat sub-agent can't do; the prompt points Cem
-  at the Expenses / Documents section. Same posture as inventory / medical.
+- **No file-attach tool** — `adminTaxFilesAttach` needs a browser byte-upload first, which a chat sub-agent can't do; the prompt points the
+  admin at the Expenses / Documents section. Same posture as inventory / medical.
 - **Delegate** — `src/server/agents/toolDelegateToTax.ts` (orchestrator-side), registered as `delegateToTax` in `agentPersonalAssistant.ts`.
   Pre-writes its `chatMessagesToolCall` row, threads a child `onStepEnd`, parses the sentinels, synthesizes `failed` on a throw. The
   orchestrator's route-map block links mentioned entities as `/workspace/tax?tab=…&focus=<id>` using the ids the delegate returns.

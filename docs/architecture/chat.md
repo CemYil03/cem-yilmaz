@@ -1,9 +1,8 @@
 # Chat Foundation
 
-> **Phase 1 → Phase 2 note:** today there is a single agent (`agentUserConversation.ts`) used by the public visitor chat hosted in the
-> landing-page sheet (`src/web/chat/WebsiteVisitorAssistantChatSheet.tsx`). Phase 2 adds a second agent for the workspace personal
-> assistant. The message-persistence and streaming machinery described here is shared between both — see
-> [`multi-agent-chat.md`](./multi-agent-chat.md) for the dispatch design.
+> The message model and streaming machinery described here are shared by two features — the [visitor chat](../features/chat-visitor.md) and
+> the [workspace personal assistant](../features/chat-workspace.md). Each feature owns its agent factory and GraphQL access path; this doc
+> only covers the shared primitives.
 
 ## Context
 
@@ -12,7 +11,21 @@ same primitives: a stream of heterogeneous messages, tool-call indications when 
 assistant can collect structured answers without freeform parsing. A single shared model keeps each surface from re-inventing message
 polymorphism, picker shapes, and approval round-trips, and prevents the URQL cache from fragmenting along arbitrary lines.
 
-Persistence and LLM replay are out of scope here — see [Chat Persistence](./chat-persistence.md).
+Persistence and LLM replay are out of scope here — see [Chat Persistence](./chat-persistence.md). Presentation rules for every chat surface
+live in [`docs/styles/chat.md`](../styles/chat.md).
+
+### Two audiences plug into one model
+
+Two features send through the same `chatMessageCreate` command with different options:
+
+| Audience | Mutation path                      | `chats.scope` | Agent factory            |
+| -------- | ---------------------------------- | ------------- | ------------------------ |
+| Visitor  | `Mutation.chatMessageCreate`       | `public`      | `agentVisitor`           |
+| Admin    | `Mutation.admin.chatMessageCreate` | `admin`       | `agentPersonalAssistant` |
+
+The agent is chosen by the **access path** (which GraphQL namespace the resolver sits on), not by a client-supplied enum. The `scope` column
+is a post-hoc check so a stolen `chatId` cannot cross the boundary — it is not consulted to pick an agent. Per-audience details live in the
+feature docs linked above.
 
 ## Decision
 
@@ -388,7 +401,7 @@ in their own files and are wired directly into the agent's `tools` map.
 - `src/server/agents/toolPromptUserForInput.ts` — the `execute`-less tool that produces input collections
 - `src/server/mappers/toModelMessages.ts` — the only file that imports AI SDK content types
 - `src/web/components/chat-message/` — one render file per `ChatMessage` variant + shared row primitives
-- `src/web/chat/ChatTranscriptShared.tsx` — the shared transcript renderer used by every chat surface. See
-  [`chat-transcript.md`](./chat-transcript.md).
+- `src/web/chat/ChatTranscriptShared.tsx` — the shared transcript renderer used by every `ChatMessage` surface. See
+  [`docs/styles/chat.md`](../styles/chat.md).
 - `src/web/chat/chatAssistantInputKinds.ts` — slot-kind registry
 - `src/web/chat/useChatLiveUpdates.tsx` — per-turn live state, `<ChatUpdatesListener />`, `beginTurn()`

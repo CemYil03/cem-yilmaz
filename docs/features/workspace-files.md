@@ -1,20 +1,20 @@
 # Workspace Files
 
-Assistant-authored markdown documents that Cem opens, previews, and edits inside the workspace assistant sidebar. The assistant drafts a
-document from chat; the `workspaceFileCreate` tool row shows its usual pill **plus** a clickable document attachment card; clicking the card
-switches the sidebar into a **file-display state** with a preview/edit/save editor. Cem's edits save back to the DB, and the assistant can
-re-fetch the latest version and overwrite it on request.
+Assistant-authored markdown documents that the admin opens, previews, and edits inside the workspace assistant sidebar. The assistant drafts
+a document from chat; the `workspaceFileCreate` tool row shows its usual pill **plus** a clickable document attachment card; clicking the
+card switches the sidebar into a **file-display state** with a preview/edit/save editor. The admin's edits save back to the DB, and the
+assistant can re-fetch the latest version and overwrite it on request.
 
 ## Context
 
 The workspace assistant could already write durable domain rows (projects, trips, …) and produce inline chat markdown, but there was no
 first-class "here's a document I drafted — open it and edit it" surface. Long drafts (notes, plans, letters, specs) either bloated the
-transcript or lived nowhere durable. This feature adds a standalone document that is editable both by the assistant (from chat) and by Cem
-(in the sidebar), with a single stable identity.
+transcript or lived nowhere durable. This feature adds a standalone document that is editable both by the assistant (from chat) and by the
+admin (in the sidebar), with a single stable identity.
 
 ## User Behavior
 
-- Cem asks the assistant to draft something ("write up a plan for X", "draft a letter to the landlord"). The assistant calls
+- The admin asks the assistant to draft something ("write up a plan for X", "draft a letter to the landlord"). The assistant calls
   `workspaceFileCreate` and replies normally in chat (a short "drafted X — open it to review" sentence, like any other tool call). The
   tool-call row keeps its normal pill **and** grows a **document attachment card** beneath it (filename + title, file icon).
 - Clicking the card switches the assistant **sidebar** into its **file-display state**: the same shadcn `<Sidebar>` that hosts the chat
@@ -24,14 +24,14 @@ transcript or lived nowhere durable. This feature adds a standalone document tha
 - The card works from any assistant surface — the docked sidebar transcript **and** the full-page `/workspace/assistant/<chatId>` route.
   Because the sidebar is mounted once at the workspace layout and present on every workspace route, opening a file just flips the shared
   provider state (`openFileId`) and expands the sidebar if it was collapsed — no navigation, no separate panel.
-- **Save** rewrites the document. The assistant can `workspaceFileGet` to read Cem's latest edits and `workspaceFileUpdate` to overwrite the
-  body on request.
+- **Save** rewrites the document. The assistant can `workspaceFileGet` to read the admin's latest edits and `workspaceFileUpdate` to
+  overwrite the body on request.
 - **Download PDF** renders the document to a clean, A4 print layout (like [markdowntopdf.com](https://www.markdowntopdf.com/)) and downloads
   it. The button sits next to **Save** and is **disabled while there are unsaved edits** — the PDF is generated server-side from the
-  persisted document, so Cem saves first, then downloads (the disabled state mirrors the Save-when-dirty gate; no confirm dialog).
+  persisted document, so the admin saves first, then downloads (the disabled state mirrors the Save-when-dirty gate; no confirm dialog).
 - Asking the assistant a **question** about a document ("what did you write in X?", "summarize the plan") makes it `workspaceFileGet` the
   latest body and answer in the **same turn**. The tool description and the orchestrator system prompt both spell out that reading a file is
-  a step toward a written reply, not the end of the turn. `workspaceFileUpdate` is only chained when Cem actually asked to change the
+  a step toward a written reply, not the end of the turn. `workspaceFileUpdate` is only chained when the admin actually asked to change the
   document. (The tool result must be JSON-safe for the same-turn answer to happen at all — see the `toolWorkspaceFileGet` trimming note
   under **Server**.)
 

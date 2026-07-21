@@ -213,5 +213,3 @@ admin editor is the only edit path.
 - `/cv.pdf` server-rendered download via `serverRuntime.browser.capture()` — the existing `Lebenslauf.pdf` covers it for now.
 - A `toolCvSearch` agent tool — the embedded summary covers visitor questions for the current row count.
 - Profile photo asset and avatar surfacing on `/about`.
-- Phase 2 admin OAuth wiring — the editor is reachable today for any session whose `Users.isAdmin` flag is set; OAuth reconciles the flag
-  automatically from `WORKSPACE_GITHUB_LOGINS` once it lands.

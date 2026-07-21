@@ -12,7 +12,7 @@ import { chatMessageFindMany } from './chatMessageFindMany';
 // a chatId exists but belongs to another session, or doesn't exist at all.
 // Admin reads continue to flow through `Query.admin.chat` /
 // `Query.admin.publicChat`, which bypass session ownership by design. See
-// `docs/architecture/multi-agent-chat.md`.
+// `docs/architecture/chat.md`.
 export async function visitorChatFindOne(chatId: string, requestingSession: GqlSSession, serverRuntime: ServerRuntime): Promise<GqlSChat> {
     try {
         const [chat] = await serverRuntime.db.select().from(chats).where(eq(chats.chatId, chatId));

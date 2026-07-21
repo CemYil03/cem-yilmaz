@@ -32,10 +32,9 @@ import { cn } from '../../../web/utils/cn';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
-// TODO(phase-2): wrap this route (and every nested workspace route) in the
-// GitHub-OAuth gate before pointing DNS at production. Until then `noindex`
-// keeps the surface out of search engines and the public sitemap, and the
-// landing page does not link here — it is reachable only by typing the URL.
+// Admin-only (`Users.isAdmin` via `User.admin`). `noindex` keeps the surface
+// out of search engines and the public sitemap; the landing page only links
+// here when the session is admin.
 
 const title = { de: 'Workspace', en: 'Workspace' };
 
@@ -44,7 +43,7 @@ const title = { de: 'Workspace', en: 'Workspace' };
 // `{ chatId }` so the hub composer only forwards the user's text.
 
 // The grid is split into two subgroups. The top "personal" grid is the daily
-// surface — focus areas Cem actually opens to work on himself. The bottom
+// surface — focus areas the admin actually opens to work. The bottom
 // "public site" group is content-management for cem-yilmaz.de — touched rarely
 // (when the CV changes, when a visitor chat is worth a look), so it sits below
 // the personal areas as a small labelled cluster instead of mixed in with the

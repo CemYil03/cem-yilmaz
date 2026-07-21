@@ -9,7 +9,7 @@ import { Button } from './button';
 // description, actions row, and an `AttachmentTrigger` for making the whole
 // card open a preview. The `state` prop drives the upload lifecycle
 // (idle | uploading | processing | error | done) with a built-in shimmer on
-// the title while in-progress. See docs/architecture/chat-transcript.md.
+// the title while in-progress. See docs/styles/chat.md.
 
 const attachmentVariants = cva(
     'group/attachment relative flex w-fit max-w-full min-w-0 shrink-0 flex-wrap rounded-xl border bg-card text-card-foreground transition-colors focus-within:ring-1 focus-within:ring-ring/50 has-[>a,>button]:hover:bg-muted/50 data-[state=error]:border-destructive/30 data-[state=idle]:border-dashed',

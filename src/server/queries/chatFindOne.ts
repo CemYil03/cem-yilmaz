@@ -11,7 +11,7 @@ import { chatMessageFindMany } from './chatMessageFindMany';
 // admin read surface — without it a stolen chatId could flow across
 // namespaces. Visitor reads go through `Session.visitorChat` /
 // `visitorChatFindOne` instead, which additionally enforces session ownership.
-// See `docs/architecture/multi-agent-chat.md`.
+// See `docs/architecture/chat.md`.
 export async function chatFindOne(
     chatId: string,
     expectedScope: 'public' | 'admin',

@@ -333,7 +333,7 @@ import type { CompassInterviewUpdateWirePayload } from './compassInterviewUpdate
 // Visitor / admin namespaces share the same chat command bodies — only the
 // scope and the agent factory change. Pinning these once keeps the resolver
 // wiring symmetric and makes the access-path → agent dispatch obvious.
-// See `docs/architecture/multi-agent-chat.md`.
+// See `docs/architecture/chat.md`.
 const PUBLIC_DISPATCH: ChatMutationDispatch = { scope: 'public', agentFactory: agentVisitor };
 const ADMIN_DISPATCH: ChatMutationDispatch = { scope: 'admin', agentFactory: agentPersonalAssistant };
 
@@ -389,7 +389,7 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             // single field check instead of catching an exception. Mirrors
             // the policy `guardAdmin` used to enforce; the previous helper
             // threw because the schema field was non-nullable. See
-            // `docs/architecture/workspace-access.md`.
+            // `docs/architecture/authorization-workspace.md`.
             async admin(parentUser: GqlSUser, _: any, requestingSession: GqlSSession): Promise<GqlSAdmin | null> {
                 if (!requestingSession.userId || requestingSession.userId !== parentUser.userId) {
                     return null;

@@ -60,8 +60,8 @@ When a real retention job lands (sweep stale `Sessions`, prune `Logs` past 14 da
 the page **must** be updated to re-introduce concrete numbers. Same for the server logs: if `/etc/docker/daemon.json` is ever configured
 with `log-opts.max-size`/`max-file` to bound on-disk retention, the wording can switch back to a concrete window.
 
-The page must be revisited whenever the data-processing surface grows — e.g. when GitHub OAuth lands for `/workspace/*`, when analytics is
-added, or when a contact form / third-party embed appears. See the README's "Open TODOs Before Public Launch" section.
+The page must be revisited whenever the data-processing surface grows — e.g. when analytics is added, or when a contact form / third-party
+embed appears.
 
 ## Why it matters
 

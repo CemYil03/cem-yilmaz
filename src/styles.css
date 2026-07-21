@@ -6,7 +6,7 @@
 /* shadcn shared utilities — brings in `shimmer` (streaming-status text sweep)
    and `scroll-fade` (edge mask on scroll containers). Both are pure CSS,
    scoped to `@utility` classes, and adopted opt-in via className. See
-   docs/architecture/chat-transcript.md for where they land in the chat. */
+   docs/styles/chat.md for where they land in the chat. */
 @import 'shadcn/tailwind.css';
 
 /*

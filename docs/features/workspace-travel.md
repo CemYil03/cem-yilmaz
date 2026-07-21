@@ -1,8 +1,8 @@
 # Workspace Travel
 
-Trip planner for Cem: an admin editor at `/workspace/travel` plus a durable AI use-case where the workspace assistant drafts a day-by-day
-itinerary and packing list directly into Postgres. The whole point of the persistence layer is that a fresh chat can read the plan back
-without replaying the conversation.
+Trip planner for the admin: an admin editor at `/workspace/travel` plus a durable AI use-case where the workspace assistant drafts a
+day-by-day itinerary and packing list directly into Postgres. The whole point of the persistence layer is that a fresh chat can read the
+plan back without replaying the conversation.
 
 ## Why a separate category
 
@@ -76,11 +76,11 @@ default tab's URL carries no `?tab=`. A "New trip" button opens the base-facts d
 ## The AI use-case (the whole reason this feature exists)
 
 The workspace assistant at `/workspace/assistant` gains a `delegateToTravel` tool that hands trip briefs to `agentPersonalAssistantTravel`.
-Cem says _"plan me a 3-day trip to Rome from Aug 5–7 with one main activity per day"_, and the sub-agent lands the whole plan in **four tool
-calls** — `tripsUpsert` (one trip) → `tripDaysUpsert` (three days at once) → `tripActivitiesUpsert` (every activity across every day) →
-`tripPackingItemsUpsert` (the whole checklist). Each call is one transaction; each returns a `MutationResult` whose `referenceIds` array
-carries the ids of the rows it touched, in input order, so the next call can use those as parent ids without a follow-up read. The trip
-surfaces on `/workspace/travel` immediately over `userUpdates`; a fresh chat later reads the plan from the DB via the same
+The admin says _"plan me a 3-day trip to Rome from Aug 5–7 with one main activity per day"_, and the sub-agent lands the whole plan in
+**four tool calls** — `tripsUpsert` (one trip) → `tripDaysUpsert` (three days at once) → `tripActivitiesUpsert` (every activity across every
+day) → `tripPackingItemsUpsert` (the whole checklist). Each call is one transaction; each returns a `MutationResult` whose `referenceIds`
+array carries the ids of the rows it touched, in input order, so the next call can use those as parent ids without a follow-up read. The
+trip surfaces on `/workspace/travel` immediately over `userUpdates`; a fresh chat later reads the plan from the DB via the same
 `travelSnapshotForAgent` call that primes the sub-agent's system prompt.
 
 The sub-agent's rules:

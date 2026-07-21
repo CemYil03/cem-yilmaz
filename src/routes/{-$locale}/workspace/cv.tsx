@@ -37,7 +37,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 // without authentication on the page itself; mutations go through
 // `Mutation.admin`, gated by `guardAdminMutation` (checks `isAdmin` on the
 // requesting session's `Users` row — see
-// `docs/architecture/workspace-access.md`). The page is `noindex` and
+// `docs/architecture/authorization-workspace.md`). The page is `noindex` and
 // unlinked from public surfaces — visitors land here only by typing the
 // URL.
 //
@@ -95,14 +95,6 @@ function WorkspaceCvEditor() {
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <p className="text-sm text-muted-foreground">{description[locale]}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-                {
-                    {
-                        de: 'Hinweis: Schreibzugriff ist in Phase 1 offen. Der Wechsel auf GitHub OAuth folgt in Phase 2.',
-                        en: 'Note: write access is open in Phase 1. GitHub OAuth follows in Phase 2.',
-                    }[locale]
-                }
-            </p>
 
             <ExperienceSection rows={cv?.publicCvExperienceFindMany ?? []} locale={locale} />
             <EducationSection rows={cv?.publicCvEducationFindMany ?? []} locale={locale} />

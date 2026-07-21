@@ -38,7 +38,7 @@ Cookie-based session management with automatic session creation on every GraphQL
 ## Alternatives Considered
 
 - **JWT tokens**: Stateless but harder to revoke, no server-side session state for real-time tracking
-- **Third-party auth (OAuth providers)**: Adds external dependency; can be layered on top of sessions later
+- **Third-party identity providers**: Adds external dependency; cookie sessions already cover anonymous visitors and linked `Users` rows
 
 ## Consequences
 

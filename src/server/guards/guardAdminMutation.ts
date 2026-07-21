@@ -11,7 +11,7 @@ import type { GqlSAdminMutation, GqlSSession } from '../graphql/generated';
 // the landing-page workspace link). The write side stays throw-on-mismatch —
 // `Mutation.admin` is non-nullable and the resolver throws when the caller
 // is not an admin so a bad request fails loudly. See
-// `docs/architecture/workspace-access.md`.
+// `docs/architecture/authorization-workspace.md`.
 export async function guardAdminMutation(requestingSession: GqlSSession, serverRuntime: ServerRuntime): Promise<GqlSAdminMutation> {
     if (!requestingSession.userId) {
         throw new Error('Unauthorized');

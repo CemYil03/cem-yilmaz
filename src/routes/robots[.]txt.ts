@@ -17,7 +17,7 @@ import { environmentVariables } from '../server/env/environmentVariablesCreate';
 //   - Inference / live-citation crawlers (OAI-SearchBot, ChatGPT-User,
 //     PerplexityBot, Perplexity-User) — fetch on-demand when answering a
 //     user's live query and cite the source.
-// See docs/architecture/seo.md → "AI-search optimization" for the policy
+// See docs/architecture/discovery-geo.md for the policy
 // rationale.
 
 export const Route = createFileRoute('/robots.txt')({

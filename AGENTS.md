@@ -1,5 +1,7 @@
 # Agents
 
+This file is the project's working agreement for coding agents. [`CLAUDE.md`](./CLAUDE.md) is a symlink to it.
+
 ## Prime Directive
 
 **Follow the docs. Update the docs.**
@@ -11,22 +13,21 @@ the change. Drift between docs and code is a bug.
 
 This repo is **Cem Yilmaz's personal site** at <https://cem-yilmaz.de>:
 
-- **Public**: portfolio landing, projects showcase, markdown blog, web-tools showcase, and a visitor AI chat ("Ask me anything") that
-  answers questions about Cem.
-- **Private** (`/workspace`, GitHub-OAuth-gated): personal AI assistant and a content editor for the public portfolio. Future iterations add
-  calendar, notes, tasks.
+- **Public**: portfolio landing, about, CV, projects showcase, legal pages, and a visitor AI chat ("Ask me anything") that answers questions
+  about Cem and lets visitors submit OTP-verified project requests. See `docs/features/chat-visitor.md` and
+  `docs/features/project-requests.md`.
+- **Private** (`/workspace`, gated by session `userId` + `Users.isAdmin`): admin AI assistant, content editors, and focus areas (projects,
+  todos, media, travel, fitness, nutrition, medical, finances, tax, inventory, compass, and more). See `docs/features/` for each surface.
 
 There is **one environment**: pushes to `main` deploy to production via Coolify. No staging branch.
-
-The work is staged in phases — see `README.md` for the phase table. Phase 1 (de-template-ification + portfolio shell + legal pages) is in.
-Phase 2 brings GitHub OAuth and dual-agent chat. Phase 3 brings the DB-backed projects/tools and the markdown blog.
 
 ## Before You Start
 
 1. Read `docs/conventions.md` — follow every convention without exception
 2. Read `docs/documentation.md` — understand where docs live and what goes where
 3. Read the relevant `docs/architecture/*.md` files for the area you are working in
-4. Read `docs/infrastructure.md` if your change affects deployment, CI, or environment variables
+4. Read the relevant `docs/features/*.md` files when the task touches a shipped surface
+5. Read `docs/infrastructure.md` if your change affects deployment, CI, or environment variables
 
 ## Working Boundaries
 
@@ -52,50 +53,47 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
   the guardrails, anti-patterns, and reduced-motion stance. No motion library; reuse `Reveal` / `useInView`.
 - **GraphQL schema**: SDL-first in `src/server/graphql/schema.graphqls`. Run `npm run graphql:generate` after any schema change.
 - **Resolver wiring**: all in `src/server/graphql/resolversCreate.ts` — the only file that imports from commands/, queries/, and guards/
+- **Commands**: two-phase writes — build all insert/update payloads first (pure), then run DB work in try/catch (transaction when
+  multi-write). See [docs/conventions.md](./docs/conventions.md#commands-database-writes).
+- **Environment variables**: never read `process.env` directly — only via `environmentVariablesCreate()`. See
+  [docs/architecture/environment.md](./docs/architecture/environment.md).
 - **Bilingual copy**: this site is DE + EN. Use the inline `{ de: '…', en: '…' }[locale]` literal **at the call site** — no i18n library and
   no page-level `COPY` const. Hoist a small named const only for strings reused within the file (e.g. shared by `seoMeta()` and the `<h1>`)
   or needed outside JSX (`aria-label`, `alt`, JSON-LD). See [docs/conventions.md](./docs/conventions.md#bilingual-copy).
 - **Bilingual DB content**: paired `*De` / `*En` text columns (e.g. `roleDe`, `roleEn`), exposed as paired `*De` / `*En` GraphQL fields. See
   [docs/architecture/content-model.md](./docs/architecture/content-model.md).
 - **Static identity content**: lives under `src/web/content/` (e.g. `personalInfo.ts`). Imported by both server and client. PR-edited.
+- **SEO**: every public page uses `seoMeta()` and is listed in `src/web/seo/sitemapRoutes.ts` when indexable. Workspace / private pages pass
+  `noindex: true` and stay out of the sitemap.
+- **Jobs**: handlers in `src/server/jobs/handlers/`, registered in `jobDefinitions.ts`; enqueue via `serverRuntime.jobs.enqueue()`.
 - **Comments**: only comment if there is no other way to make the code self-explanatory — prefer better names, smaller functions, and
   clearer types
-- **Quality checks**: run `npm run check` before considering any task complete
+- **Quality checks**: run `npm run check` and `npm test` before considering any task complete
 
 ## Architecture at a Glance
 
-| Concern               | Pattern                                                                                                                                                                    | Key Files                                      |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Server-side structure | CQRS — commands/, queries/, mappers/                                                                                                                                       | `docs/architecture/server-architecture.md`     |
-| Dependency injection  | ServerRuntime container                                                                                                                                                    | `src/server/domain/ServerRuntime.ts`           |
-| Environment variables | Central validated `EnvironmentVariables` — no direct `process.env` reads                                                                                                   | `src/server/env/environmentVariablesCreate.ts` |
-| Authentication        | Cookie-based automatic sessions; Phase 2 adds GitHub OAuth on top                                                                                                          | `src/server/utils/sessionUpsert.ts`            |
-| Authorization         | Guard functions (`guard{Entity}{Ctx}`)                                                                                                                                     | `src/server/guards/`                           |
-| Workspace access      | `isAdmin` column on `Users`; `guardAdmin` / `guardAdminMutation` enforce                                                                                                   | `docs/architecture/workspace-access.md`        |
-| GraphQL               | SDL-first, Apollo Server v5, URQL client                                                                                                                                   | `src/server/graphql/schema.graphqls`           |
-| Real-time             | Subscriptions over SSE, PostgreSQL NOTIFY/LISTEN                                                                                                                           | `src/server/graphql/PubSubPostgres.ts`         |
-| Background jobs       | pg-boss via `serverRuntime.jobs.enqueue()`                                                                                                                                 | `docs/architecture/jobs.md`                    |
-| Server-side rendering | Singleton headless Chromium via `serverRuntime.browser.capture()`                                                                                                          | `docs/architecture/server-side-rendering.md`   |
-| SEO                   | `seoMeta()` per page; dynamic `/sitemap.xml` and `/robots.txt`                                                                                                             | `docs/architecture/seo.md`                     |
-| AI-search (GEO)       | `/llms.txt`, ProfilePage/FAQPage JSON-LD, AI bot allowlist, chat deep-link                                                                                                 | `docs/architecture/ai-search.md`               |
-| Code generation       | `npm run graphql:generate` — server `GqlS*`, client `GqlC*`                                                                                                                | `codegen.ts`                                   |
-| Editable content      | DB tables (CV, future projects/blog/tools) + admin UI under `/workspace`                                                                                                   | `docs/architecture/content-model.md`           |
-| Static identity       | Typed config under `src/web/content/`                                                                                                                                      | `src/web/content/personalInfo.ts`              |
-| AI chat (Phase 1)     | Single-agent visitor chat ("Ask me anything")                                                                                                                              | `src/server/agents/agentVisitorAboutCem.ts`    |
-| AI chat (Phase 2)     | Dual agents: visitor + workspace personal assistant                                                                                                                        | `docs/architecture/multi-agent-chat.md`        |
-| AI chat titles        | Post-turn LLM titler with `NONE`-retry loop on the empty column                                                                                                            | `docs/features/chat-titles.md`                 |
-| AI chat transcript    | Shared MessageScroller-backed transcript for every chat surface                                                                                                            | `docs/architecture/chat-transcript.md`         |
-| AI model selection    | Per-turn admin choice + sticky default; catalog drives picker `accept`                                                                                                     | `src/server/agents/adminChatModels.ts`         |
-| Compass (Phase 2+)    | AI-built summary / portrait / psychology from admin chats; firewalled                                                                                                      | `docs/features/workspace-compass.md`           |
-| Media library         | Movies + channels, TMDB auto-fill, topic-clustered cross-views                                                                                                             | `docs/features/workspace-media.md`             |
-| Inventory             | Items + valuations + service log + receipt uploads; material net worth                                                                                                     | `docs/features/workspace-inventory.md`         |
-| Medical               | Health journal + appointment tracker; documentarian sub-agent with triage                                                                                                  | `docs/features/workspace-medical.md`           |
-| Travel                | Trips → days → activities + per-trip packing list; planner sub-agent writes durable itineraries from chat                                                                  | `docs/features/workspace-travel.md`            |
-| Nutrition             | Cookbook + soft weekly meal plan + food/drink diary + supplement tracker (AI-researched composition); sub-agent suggests snacks, logs intake, adds supplements             | `docs/features/workspace-nutrition.md`         |
-| Fitness               | Gym log (sessions → sets) + reusable routines + exercise catalog; sub-agent logs workouts from chat                                                                        | `docs/features/workspace-fitness.md`           |
-| Finances              | Recurring-cost tracker (income → categories → items Sankey); sub-agent adds/edits costs from chat                                                                          | `docs/features/workspace-finances.md`          |
-| Tax                   | German tax return organiser: tax year → income sources (Anlagen) → deductible expenses + receipts + seeded document checklist; documentarian sub-agent (no binding advice) | `docs/features/workspace-tax.md`               |
-| Workspace files       | Assistant-authored markdown docs (create/read/update tools on the orchestrator); attachment on the chat message opens a resizable editor panel with preview/edit/save      | `docs/features/workspace-files.md`             |
+One row per doc under `docs/architecture/`. Feature behavior lives in `docs/features/` — do not duplicate it here.
+
+| Concern               | Doc                                                                            |
+| --------------------- | ------------------------------------------------------------------------------ |
+| Server-side structure | [`server-architecture.md`](./docs/architecture/server-architecture.md)         |
+| Dependency injection  | [`dependency-injection.md`](./docs/architecture/dependency-injection.md)       |
+| Environment variables | [`environment.md`](./docs/architecture/environment.md)                         |
+| Authentication        | [`authentication.md`](./docs/architecture/authentication.md)                   |
+| Authorization         | [`authorization.md`](./docs/architecture/authorization.md)                     |
+| Workspace access      | [`authorization-workspace.md`](./docs/architecture/authorization-workspace.md) |
+| API layer             | [`api-layer.md`](./docs/architecture/api-layer.md)                             |
+| State synchronization | [`state-synchronization.md`](./docs/architecture/state-synchronization.md)     |
+| Jobs                  | [`jobs.md`](./docs/architecture/jobs.md)                                       |
+| Server-side rendering | [`server-side-rendering.md`](./docs/architecture/server-side-rendering.md)     |
+| SEO                   | [`discovery-seo.md`](./docs/architecture/discovery-seo.md)                     |
+| AI-search (GEO)       | [`discovery-geo.md`](./docs/architecture/discovery-geo.md)                     |
+| Content model         | [`content-model.md`](./docs/architecture/content-model.md)                     |
+| File storage          | [`file-storage.md`](./docs/architecture/file-storage.md)                       |
+| i18n                  | [`i18n.md`](./docs/architecture/i18n.md)                                       |
+| Chat foundation       | [`chat.md`](./docs/architecture/chat.md)                                       |
+| Chat persistence      | [`chat-persistence.md`](./docs/architecture/chat-persistence.md)               |
+| Agent delegation      | [`agent-delegation.md`](./docs/architecture/agent-delegation.md)               |
 
 ## How to Add Things
 
@@ -123,6 +121,31 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 3. **Add the path to `src/web/seo/sitemapRoutes.ts`** if it should be indexed
 4. Bilingual page copy uses the `{ de: '…', en: '…' }[locale]` pattern
 
+### New Workspace Page
+
+1. Add the route under `src/routes/{-$locale}/workspace/`
+2. Pass `noindex: true` to `seoMeta()` — do **not** add the path to `sitemapRoutes.ts`
+3. Gate data through the admin GraphQL namespace (`Session.user.admin` / `Mutation.admin`); see
+   [docs/architecture/authorization-workspace.md](./docs/architecture/authorization-workspace.md)
+4. Follow an existing focus-area route for layout (shared workspace chrome owns header / back-link)
+5. Document the surface in `docs/features/workspace-{name}.md`
+
+### New Background Job
+
+1. Add a handler in `src/server/jobs/handlers/{entityAction}.ts` exporting a `RecurringJobDefinition` or `QueuedJobDefinition`
+2. Register it in `src/server/jobs/jobDefinitions.ts`
+3. Re-export from `src/server/jobs/index.ts` if callers need it
+4. Enqueue queued jobs via `serverRuntime.jobs.enqueue(definition, data, options)`
+5. See [docs/architecture/jobs.md](./docs/architecture/jobs.md) for the full recipe
+
+### New Agent Tool
+
+1. Prefer colocating the AI-SDK `tool()` wrapper on the command it wraps (under `src/server/commands/`), not a separate `agents/toolX.ts`
+2. For domain work on the personal assistant, add or extend a sub-agent and a `delegateTo…` tool on the orchestrator — see
+   [docs/architecture/agent-delegation.md](./docs/architecture/agent-delegation.md)
+3. Wire tools into the relevant agent factory under `src/server/agents/`
+4. Update the matching `docs/features/` doc (and architecture docs if the pattern changes)
+
 ### New Feature
 
 1. Implement following the patterns above
@@ -132,6 +155,7 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 ### New Architectural Decision
 
 1. Create a doc in `docs/architecture/{decision-name}.md` covering: context, decision, alternatives considered, consequences
+2. Add a row to the Architecture table above
 
 ## Documentation Update Rules
 
@@ -153,87 +177,19 @@ If you are unsure whether a doc needs updating, it does.
 
 ```txt
 src/
-├── routes/                     TanStack Router route definitions
-│   ├── __root.tsx              Root layout
-│   ├── {-$locale}/
-│   │   ├── index.tsx           Portfolio landing page (hosts the visitor AI chat dialog)
-│   │   ├── about.tsx           Public profile page (bio, identity, skills, hobbies, contact)
-│   │   ├── cv.tsx              Public CV (experience + education timelines)
-│   │   ├── projects.tsx        Public portfolio (static list of Cem's projects)
-│   │   ├── impressum.tsx       Imprint (TMG §5)
-│   │   ├── datenschutz.tsx     Privacy notice (GDPR)
-│   │   └── workspace/          Personal workspace hub + focus areas (noindex; Phase 2 OAuth-gated)
-│   │       ├── index.tsx       Hub: greeting + assistant composer + links to each focus area
-│   │       ├── assistant.$chatId.tsx  Deep-link view of one admin chat (`/workspace/assistant/<chatId>`) — bookmark-friendly, sidebar-independent
-│   │       ├── compass.tsx     AI-built compass (summary / portrait / psychology) — see docs/features/workspace-compass.md
-│   │       ├── cv.tsx          CV editor (writes the `Cv*` tables)
-│   │       ├── software.tsx    Software development & architecture
-│   │       ├── projects.tsx    Personal projects board (Inbox + kanban)
-│   │       ├── projects_.$projectId.tsx  Per-project detail (tasks, activity, notes, links, files)
-│   │       ├── todos.tsx       Standalone todos (tasks with no parent project)
-│   │       ├── finances.tsx    Finances (goals, overview, trading & stocks)
-│   │       ├── inventory.tsx   Inventory — material assets, warranty, valuations, service log
-│   │       ├── inventory_.$itemId.tsx  Per-item detail (facts, valuations sparkline, service history, files)
-│   │       ├── tax.tsx         Tax matters
-│   │       ├── fitness.tsx     Fitness — gym log (sessions → sets), reusable routines, exercise catalog
-│   │       ├── nutrition.tsx   Nutrition — cookbook, soft weekly meal plan, food/drink diary, supplement tracker (AI-researched composition)
-│   │       ├── medical.tsx     Medical (appointments, results, health notes)
-│   │       ├── media.tsx       Movies, series & channels — watchlist, series next-season tracking, favourite YouTube/podcast channels
-│   │       ├── travel.tsx      Travel — trips list (upcoming / past) + new-trip dialog
-│   │       ├── travel_.$tripId.tsx  Per-trip detail (itinerary: day cards + activities; packing list grouped by category)
-│   │       └── logs.tsx        Server log viewer (read-only triage of the `Logs` table)
-│   └── api/
-│       ├── graphql.ts          POST /api/graphql (queries, mutations)
-│       └── stream.ts           POST /api/stream (subscriptions via SSE)
-├── server/
-│   ├── agents/                 AI agents (visitor in Phase 1, +personal in Phase 2)
-│   ├── commands/               Write operations (mutations)
-│   ├── queries/                Read operations
-│   ├── mappers/                DB-to-GraphQL transformations
-│   ├── guards/                 Authorization guard functions
-│   ├── db/
-│   │   └── schema.ts           Drizzle table definitions
-│   ├── domain/
-│   │   ├── ServerRuntime.ts    DI container interface
-│   │   └── serverRuntimeCreate.ts
-│   ├── env/
-│   │   ├── EnvironmentVariables.ts        EnvironmentVariables interface
-│   │   └── environmentVariablesCreate.ts  Validates required env vars at startup
-│   ├── graphql/
-│   │   ├── schema.graphqls     SDL schema (source of truth)
-│   │   ├── resolversCreate.ts  Resolver wiring (single entry point)
-│   │   ├── extensions.ts       Union/interface __resolveType
-│   │   ├── server.ts           Apollo Server setup
-│   │   ├── PubSubPostgres.ts   PostgreSQL pub-sub
-│   │   └── generated.ts        Generated types (DO NOT EDIT)
-│   ├── jobs/
-│   │   ├── boss.ts             pg-boss singleton + jobEnqueue
-│   │   ├── index.ts            Worker registration, handler re-exports
-│   │   ├── types.ts            Job type definitions
-│   │   ├── jobDefinitions.ts   Central job registry
-│   │   └── handlers/           Job handler implementations
-│   └── utils/
-├── web/
-│   ├── components/
-│   │   ├── base/               Radix/shadcn primitives
-│   │   ├── CvTimeline.tsx      Shared timeline renderer (used on /cv)
-│   │   └── CvSkillGroup.tsx    Skill block grouped by category (used on /about)
-│   ├── content/
-│   │   ├── personalInfo.ts     Static identity facts (DOB, nationality, contact)
-│   │   └── portfolioProjects.ts  Static portfolio list (Phase 1; replaced by DB in Phase 3)
-│   ├── graphql/
-│   │   ├── client.ts           URQL client config
-│   │   └── generated.ts        Generated types (DO NOT EDIT)
-│   ├── hooks/                  Shared React hooks
-│   ├── seo/
-│   │   ├── seoMeta.ts          Per-page meta tag builder
-│   │   └── sitemapRoutes.ts    Static path enumeration for /sitemap.xml
-│   └── utils/
-│       ├── cn.ts               Class name merging
-│       └── locale.ts           DE / EN locale helpers
+├── routes/          TanStack Router — public under {-$locale}/, private under workspace/, GraphQL under api/
+├── server/          CQRS (commands/, queries/, guards/, mappers/), agents/, jobs/, graphql/, db/, env/, domain/
+├── web/             UI (components/, content/, hooks/, seo/, chat/), GraphQL client, utils/
 ├── router.tsx
-├── routeTree.gen.ts            Generated (DO NOT EDIT)
+├── routeTree.gen.ts Generated (DO NOT EDIT)
 └── styles.css
+
+docs/
+├── conventions.md       Working agreements
+├── documentation.md     What goes where under docs/
+├── infrastructure.md    Deploy, CI, env vars
+├── architecture/        Structural decisions (see table above)
+└── features/            Shipped feature docs
 ```
 
 ## Tech Stack

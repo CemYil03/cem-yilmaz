@@ -7,16 +7,17 @@ See also:
 
 - [features/chat-workspace.md](./chat-workspace.md) — the chat surface this tool plugs into.
 - [features/chat-visitor.md](./chat-visitor.md) — the parallel public chat, which is intentionally scoped narrower.
-- [architecture/multi-agent-chat.md](../architecture/multi-agent-chat.md) — how the visitor and admin agents diverge on tool scope.
+- [architecture/chat.md](../architecture/chat.md) — shared chat model; how visitor vs admin plug in via access path / `scope`.
+- [features/chat-workspace.md](./chat-workspace.md) — Agent and GraphQL access for the personal assistant (where search is registered).
 - [features/chat-email-tools.md](./chat-email-tools.md) — example of a tool the visitor agent owns but the admin agent does not (the
   asymmetry runs both directions).
 
 ## User behaviour
 
-When Cem asks the workspace assistant something time-sensitive or external — current prices, recent releases, library docs, sports results,
-"what's the latest on X" — the agent reaches for `delegateToWebSearch` (a sub-agent delegate) instead of answering from its training cutoff.
-The synthesized answer comes back inline; the sources are inlined as `[title](url)` markdown links beside the relevant sentences so the
-existing `<AssistantMarkdown>` renderer turns them into clickable anchors. Cem can click through to verify any claim.
+When the admin asks the workspace assistant something time-sensitive or external — current prices, recent releases, library docs, sports
+results, "what's the latest on X" — the agent reaches for `delegateToWebSearch` (a sub-agent delegate) instead of answering from its
+training cutoff. The synthesized answer comes back inline; the sources are inlined as `[title](url)` markdown links beside the relevant
+sentences so the existing `<AssistantMarkdown>` renderer turns them into clickable anchors. The admin can click through to verify any claim.
 
 The agent is prompted to **skip** search for things it can already answer:
 
@@ -110,7 +111,7 @@ Alternatives considered for the cross-version split, none picked:
 - **Detect the model and conditionally register `googleSearch` only on Gemini 3.** Halves the surface area on Pro turns but adds a per-model
   branch in the orchestrator tool map. The sub-agent wrap is the same cost in code and works uniformly.
 - **Force the catalog to Gemini 3 only.** Possible once 3-Flash matures, but 2.5-Flash is still the fallback (cheapest, fastest) and the
-  composer surfaces both Pro and Flash on both versions. Locking the catalog would either remove options Cem wants or remove the cheap
+  composer surfaces both Pro and Flash on both versions. Locking the catalog would either remove options the admin wants or remove the cheap
   fallback we rely on inside the sub-agents themselves.
 - **Drop function tools while a search is in flight.** Splits one user turn into multiple orchestrator turns with no clean way to thread
   state back through the SDK. The delegate pattern already covers in-flight sub-agent work without that contortion.

@@ -23,8 +23,7 @@ import type { Locale } from '../../../web/utils/locale';
 // collection/approval UI. Authorization is the `User.admin` resolver chain on
 // the GraphQL queries (returns null for non-admins, the namespace shell
 // otherwise); the page falls back to `<WorkspaceUnauthorized />` when the
-// chain resolves null. This route itself is also `noindex` and (Phase 2) sits
-// behind the workspace OAuth gate.
+// chain resolves null. This route itself is also `noindex`.
 //
 // Data flow: `chatId` lives in the URL. When absent, the loader returns the
 // chat list; when present, the loader returns a single chat detail. The

@@ -48,9 +48,8 @@ import { localeFromParam } from '../../../web/utils/locale';
 // inserts the project and archives the source request in one transaction.
 // Standalone todos (tasks with no project attached) live on
 // `/workspace/todos` — the two surfaces stay disjoint.
-// Admin-only, single-language (no DE/EN pairs); the page itself is
-// noindex and reachable only by typing the URL until Phase 2 OAuth.
-// See `docs/features/projects-workspace.md`.
+// Admin-only (`Users.isAdmin`), single-language (no DE/EN pairs); the page
+// itself is noindex. See `docs/features/workspace-projects.md`.
 
 type Tab = 'inbox' | 'projects';
 const TABS = ['inbox', 'projects'] as const satisfies ReadonlyArray<Tab>;

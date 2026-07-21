@@ -44,7 +44,7 @@ This matters:
   FOUT (flash of unstyled text) followed by a layout shift when the webfont swaps in.
 - **Variable fonts.** A single file covers every weight from 400 to 700, so changing weight does not download another asset.
 - **Self-hosting also avoids the GDPR ambiguity** around Google Fonts being a hot legal topic in Germany — see
-  [docs/architecture/seo.md](../architecture/seo.md) and the privacy notice (Datenschutz) page.
+  [docs/architecture/discovery-seo.md](../architecture/discovery-seo.md) and the privacy notice (Datenschutz) page.
 
 ## How to use them
 

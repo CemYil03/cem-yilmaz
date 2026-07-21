@@ -44,7 +44,7 @@ interface ChatMessageProps {
     children?: ReadonlyArray<GqlCChatMessage>;
     /** True only for the trailing tool-call row while the turn is still in
      *  flight — drives the "working on it" shimmer on that pill. Consumed only
-     *  by the `ChatMessageToolCall` branch. See docs/architecture/chat-transcript.md. */
+     *  by the `ChatMessageToolCall` branch. See docs/styles/chat.md. */
     activeToolCall?: boolean;
 }
 

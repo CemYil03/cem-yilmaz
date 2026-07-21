@@ -4,7 +4,7 @@
 # `agentPersonalAssistant` and persists with `scope = 'admin'`. Every
 # operation and fragment is `Workspace*`-prefixed so codegen does not collide
 # with the visitor variants in `ChatPage.graphql`. See
-# `docs/architecture/multi-agent-chat.md`.
+# `docs/features/chat-workspace.md`.
 
 fragment WorkspaceChatMessageGeneration on ChatMessageGeneration {
     modelId

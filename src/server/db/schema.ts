@@ -81,13 +81,12 @@ export type Log = typeof logs.$inferSelect;
 export type LogCreate = typeof logs.$inferInsert;
 
 // `isAdmin` gates the workspace surface — the `User.admin` resolver and the
-// `Mutation.admin` `guardAdminMutation` gate both read this column. Set
-// manually with `UPDATE "Users" SET "isAdmin" = true WHERE …` for Cem's own
-// accounts; visitors and anonymous sessions never flip it. The column is a
-// stepping stone — once OAuth lands the boolean can be reconciled from the
-// GitHub login allowlist, and a dedicated `Admins` table is a clean upgrade
-// because the column move is mechanical. See
-// `docs/architecture/workspace-access.md`.
+// `Mutation.admin` `guardAdminMutation` gate both read this column. Access is
+// simply: the session has a `userId` whose row has `isAdmin = true`. Set
+// manually with `UPDATE "Users" SET "isAdmin" = true WHERE …` for admin
+// accounts; visitors and anonymous sessions never flip it. A dedicated
+// `Admins` table is a clean upgrade later because the column move is
+// mechanical. See `docs/architecture/authorization-workspace.md`.
 export const users = pgTable('Users', {
     userId: uuid().primaryKey(),
     name: varchar().notNull(),
@@ -114,7 +113,7 @@ export type UserCreate = typeof users.$inferInsert;
 // used), not by reading this column; `scope` exists so the chat commands can
 // reject a `chatId` flowing through the wrong namespace, and so
 // `Admin.publicChats` / `Admin.chats` can split admin-side reads. See
-// `docs/architecture/multi-agent-chat.md`.
+// `docs/architecture/chat.md`.
 export const chats = pgTable(
     'Chats',
     {
@@ -725,10 +724,10 @@ export type CompassObservationCategory = (typeof compassObservationCategories)[n
 // so a missed week resumes next week rather than piling up.
 //
 // Decoupled from `Chats` / `ChatMessages` deliberately: `chats.scope` is the
-// strict `'public' | 'admin'` discriminator the multi-agent-chat dispatch
-// rests on (`docs/architecture/multi-agent-chat.md`), and interview turns
+// strict `'public' | 'admin'` discriminator the visitor / admin access-path
+// dispatch rests on (`docs/architecture/chat.md`), and interview turns
 // don't need approval, tool calls, generations, or input collection — a flat
-// user/assistant log is enough. See `docs/features/compass.md`.
+// user/assistant log is enough. See `docs/features/workspace-compass.md`.
 export const compassInterviewStatuses = ['pending', 'in_progress', 'completed', 'skipped'] as const;
 export type CompassInterviewStatus = (typeof compassInterviewStatuses)[number];
 

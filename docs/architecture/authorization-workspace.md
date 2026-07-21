@@ -4,23 +4,23 @@
 
 The site has two surfaces:
 
-- **Public** — portfolio landing, projects, CV, blog, web-tools, and the visitor AI chat. Open to everyone.
-- **Workspace** (`/workspace/*`) — Cem's personal hub: personal-assistant chat, content editors, compass, future calendar/notes/tasks. Must
-  be reachable only by Cem.
+- **Public** — portfolio landing, projects, CV, and the visitor AI chat (Q&A about Cem + OTP-verified project requests). Open to everyone.
+- **Workspace** (`/workspace/*`) — personal-assistant chat, content editors, compass, and focus areas for users with `isAdmin = true`. Must
+  not be reachable by non-admins.
 
 Both surfaces share the same GraphQL schema. The workspace **read** namespace hangs off `Session.user.admin`; the **write** namespace lives
-at `Mutation.admin`. Something has to stop anyone other than Cem from resolving fields under those namespaces.
+at `Mutation.admin`. Something has to stop non-admin callers from resolving fields under those namespaces.
 
 ## Decision
 
-Add `isAdmin: boolean` to the `Users` table.
+Add `isAdmin: boolean` to the `Users` table. Access is simply: the current session has a `userId`, and that user's row has `isAdmin = true`.
 
 - **Reads.** `User.admin: Admin` is nullable. The `User.admin` resolver returns the empty `Admin` shell only when the requesting session
   owns the parent user row AND that row has `isAdmin = true`; in every other case it returns `null`. Because the field is nullable a
   non-admin caller gets `sessionFindOne.user.admin = null` instead of an exception — every public page (landing, `/about`, `/cv`,
   `/projects`) composes this probe in its route loader and passes the boolean into `<Header showWorkspaceLink=… />`, so the "Workspace" icon
-  button surfaces on every public surface Cem might arrive on. Workspace pages use the same field to render an inline "no access" surface
-  when they encounter null.
+  button surfaces on every public surface an admin might arrive on. Workspace pages use the same field to render an inline "no access"
+  surface when they encounter null.
 - **Writes.** `Mutation.admin: AdminMutation!` is non-nullable and gated by `guardAdminMutation`, which still throws on non-admins. Writes
   are not composable from the public surface, so the throw-on-mismatch contract is correct there. The guard also stamps the admin's `userId`
   onto the returned `AdminMutation` shell, so every admin-mutation resolver has it on the parent — each command ends with
@@ -53,8 +53,9 @@ User: {
 },
 ```
 
-`Users.isAdmin` defaults to `false`, so every newly-created user — including any future signup path — starts non-admin. The flag is set
-manually with `UPDATE "Users" SET "isAdmin" = true WHERE …` for the few accounts that belong to Cem.
+`Users.isAdmin` defaults to `false`, so every newly-created user starts non-admin. The flag is set manually with
+`UPDATE "Users" SET "isAdmin" = true WHERE …` for the admin accounts in use. How that flag gets set in the future (manual SQL, an auth
+callback, etc.) is out of scope for the gate itself — the gate only reads the column.
 
 ### Why a boolean column
 
@@ -70,18 +71,11 @@ to ask "is the visitor an admin?" from the public landing page without catching 
 making it nullable turns admin-ness into a regular query that anyone can compose; the workspace pages still gate on the field being non-null
 and render the `<WorkspaceUnauthorized />` surface when it's null.
 
-### Why not the OAuth allowlist (`WORKSPACE_GITHUB_LOGINS`) directly
-
-That env var is documented for the Phase 2 OAuth login but doesn't exist on the session today — most workspace sessions are pre-OAuth,
-authenticated only by the cookie-bound `Users` row. Gating on a GitHub login that isn't on the session yet would mean blocking the workspace
-entirely until OAuth lands. The boolean is the smallest thing that gates correctly _today_ and survives the OAuth migration: once OAuth is
-live, the callback can reconcile `isAdmin` from `WORKSPACE_GITHUB_LOGINS` instead of being hand-set.
-
 ### Why not a dedicated `Admins` table
 
 A separate table makes sense once admin membership grows fields (roles, scopes, granted-by, granted-at). Today there is one fact — "is this
-row Cem?" — and one user. The boolean column is the right altitude. When the second field appears, moving to an `Admins` table is a
-mechanical migration: copy `userId` for every `isAdmin = true` row into the new table, drop the column.
+row an admin?" — and a handful of user rows. The boolean column is the right altitude. When the second field appears, moving to an `Admins`
+table is a mechanical migration: copy `userId` for every `isAdmin = true` row into the new table, drop the column.
 
 ### Anonymous sessions
 
@@ -91,24 +85,20 @@ sessions resolve `sessionFindOne.user = null`, so `sessionFindOne.user?.admin` s
 
 ## Alternatives Considered
 
-- **Env-var allowlist at guard time** (no DB column, check `requestingSession.githubLogin` against `WORKSPACE_GITHUB_LOGINS`). Rejected:
-  there is no `githubLogin` on the session yet — that field only exists once OAuth lands. Adoption is forced to wait for OAuth.
-- **Permissive guard + obscurity** (rely on `noindex` + unlinked + URL-obscurity). Rejected: this was the previous Phase-1 stance. It worked
-  while the workspace was empty, but the surface now hosts a real personal assistant; "anyone who types the URL" is too wide.
+- **Permissive guard + obscurity** (rely on `noindex` + unlinked + URL-obscurity). Rejected: this was the previous stance while the
+  workspace was empty, but the surface now hosts a real personal assistant; "anyone who types the URL" is too wide.
 - **Top-level `Query.admin: Admin!` gated by `guardAdmin`.** Was the original shape; replaced because the non-null + throw contract was
   incompatible with composing the field on the public landing page. The single read-side guard helper went away with it; the policy is now
   inlined as the `User.admin` resolver.
-- **Dedicated `Admins` table from day one.** Rejected: premature. One fact, one user — see above.
+- **Dedicated `Admins` table from day one.** Rejected: premature. One fact, few users — see above.
 
 ## Consequences
 
 - Adding a new admin is a manual `UPDATE` against the production DB. Acceptable while admin count is single-digit.
-- Forgetting to set `isAdmin` on a fresh device locks Cem out of the workspace until the row is updated. Recovery is a DB write, not a code
-  change.
+- Forgetting to set `isAdmin` on a fresh device locks that session's user out of the workspace until the row is updated. Recovery is a DB
+  write, not a code change.
 - The `User.admin` resolver does a DB read per request that selects the field. Cost is negligible (PK lookup) and fires at most once per
   request.
-- Phase 2 OAuth integrates by writing `isAdmin = true` for every user whose GitHub login is in `WORKSPACE_GITHUB_LOGINS` at callback time.
-  The resolver does not change.
 
 ## Key Files
 

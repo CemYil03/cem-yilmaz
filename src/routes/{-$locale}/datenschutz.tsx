@@ -10,8 +10,8 @@ import { localeFromParam } from '../../web/utils/locale';
 // attachments), outbound email and OTP delivery via Resend for the chat's
 // contact tools, the project-request channel that backs those tools, and
 // standard server logs. Extend this page whenever the data-processing
-// surface grows — for example when analytics, GitHub OAuth for
-// `/workspace`, a contact form, or a third-party embed lands.
+// surface grows — for example when analytics, a contact form, or a
+// third-party embed lands.
 
 export const Route = createFileRoute('/{-$locale}/datenschutz')({
     head: ({ params }) => {

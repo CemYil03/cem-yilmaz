@@ -8,7 +8,7 @@ query CvPage {
             # Presence-only probe — non-null when the user is an admin. Drives
             # the "Workspace" link in the public-page header. Mirrors the
             # pattern used on the landing page (`HomePage.graphql`). See
-            # `docs/architecture/workspace-access.md`.
+            # `docs/architecture/authorization-workspace.md`.
             admin {
                 __typename
             }

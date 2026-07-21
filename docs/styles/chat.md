@@ -4,11 +4,12 @@ Every chat surface on this site — the visitor "Ask me anything" sheet on the l
 deep-link route, the workspace compass psychological interview — is held to the same bar. The rules below exist so the _next_ chat surface
 inherits the good behaviours automatically, without anyone having to remember them.
 
-This doc is about **presentation** — how a chat looks, how it scrolls, how the composer feels, how the copy/TTS row sits under an assistant
-reply. It is not about the message union, streaming machinery, tool-call approval flow, or LLM replay — those live in
-[`docs/architecture/chat.md`](../architecture/chat.md), [`docs/architecture/chat-persistence.md`](../architecture/chat-persistence.md), and
-[`docs/architecture/chat-transcript.md`](../architecture/chat-transcript.md). See [`docs/features/chat.md`](../features/chat.md) for the
-visitor-facing behaviours (composer flow, read-aloud, attachments).
+This doc is about the **desired chat experience** — how a chat looks, how it scrolls, how the composer feels, how the copy/TTS row sits
+under an assistant reply, and how the shared transcript / composer primitives are composed. It is not about the message union, streaming
+machinery, tool-call approval flow, or LLM replay — those live in [`docs/architecture/chat.md`](../architecture/chat.md) and
+[`docs/architecture/chat-persistence.md`](../architecture/chat-persistence.md). Surface-specific product behaviour lives in
+[`docs/features/chat-visitor.md`](../features/chat-visitor.md) and [`docs/features/chat-workspace.md`](../features/chat-workspace.md); see
+[`docs/features/chat.md`](../features/chat.md) for shared visitor-facing affordances (read-aloud, attachments).
 
 ## The one principle
 
@@ -135,6 +136,12 @@ The only genuinely-live tool state is "the turn is still going and hasn't starte
 `AssistantMarkdown`'s "Thinking…" sweep. A continuous shimmer on every settled tool row would be a decorative loop — forbidden by
 [motion.md](./motion.md). The label also gains a trailing `…` while active, so state is conveyed by text too, not motion alone.
 
+**Why `liveTurnMessageIds` gates the shimmer.** `ChatTranscript` takes `isGenerating` plus `liveTurnMessageIds` (the ids the current
+still-running turn has appended, from `liveTurnMessageIdsFor(chatId)`). It marks the last top-level tool-call `active` **only if that row's
+id is in `liveTurnMessageIds`**. That keeps the shimmer honest across two stale-row traps: (1) sending a **new** message in a chat that
+already has a completed tool call — the prior tool call is not in the new turn's live set; (2) an **unrelated** chat that isn't generating —
+its live set is empty. The pure helper is `activeToolCallId(…)` in `chatTranscript.ts` (unit-tested).
+
 **Why the result is a summary + status, not inline JSON.** A tool's return value is the same category as its `args` — a per-tool-typed
 internal blob. Dumping it into the transcript competes with the assistant's reply (whose job is to _summarize_ that result) and reads as a
 wall of JSON. Instead: the `delegateTo*` tools already return `{ status, summary }` (see
@@ -173,6 +180,61 @@ strips formatting they'd want.
 
 The TTS state machine, pre-warm, and caching are documented in [`docs/features/chat.md#read-aloud`](../features/chat.md#read-aloud). The
 rule here is: **use `SpeakButton`**. Don't roll a new one.
+
+## Internal vs external links
+
+Assistant messages render markdown through `AssistantMarkdown.tsx` (Streamdown). The default Streamdown anchor routes **every** href —
+relative ones included — through its own "you're about to visit an external website" modal and always opens a new tab. That is wrong for
+links to pages on this site: the assistant is prompted to point visitors at `/cv`, `/projects`, etc., and those should feel like normal
+in-app navigation. So the renderer overrides the `a` component with a custom `MarkdownAnchor` that splits three ways:
+
+- **Incomplete** (`streamdown:incomplete-link`, emitted mid-stream) → styled but inert, so a half-streamed link isn't clickable.
+- **Internal** (`isInternalHref` — a single leading slash, not the `//host` protocol-relative form) → a plain same-tab `<a>` whose click is
+  intercepted for `router.navigate({ href })` (SPA, no reload, no interstitial). The path is locale-prefixed to match the route the visitor
+  is on: `localeFromPathname` + `localizeInternalHref` turn `/cv` into `/en/cv` on an English page. Modified clicks (⌘/Ctrl/Shift/Alt,
+  non-primary button) fall through to the browser so "open in new tab" still works.
+- **External** → preserves the per-surface behaviour encoded by `ExternalLinkConfirmationProvider`.
+
+`ExternalLinkConfirmationProvider` gates only **external** links. The public visitor chat leaves it at the default (`enabled: true`) so
+off-site links get a bilingual confirmation `AlertDialog` before opening in a new tab; the workspace assistant wraps its transcript with
+`enabled={false}` so its links to trusted surfaces open directly. Internal links ignore this flag entirely — they always navigate in-app.
+
+Behaviour is locked down in `AssistantMarkdown.test.tsx` plus unit tests for the three pure helpers.
+
+## Shared transcript composition
+
+Four surfaces render a transcript today:
+
+| Surface                         | Component                              | Notes                                                                                                                                             |
+| ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workspace assistant sidebar     | `WorkspaceAssistantChatBody.tsx`       | Mounted in the shadcn Sidebar / mobile Sheet                                                                                                      |
+| Workspace assistant deep-link   | `/workspace/assistant/<chatId>`        | Same body, URL-driven                                                                                                                             |
+| Visitor "Ask me anything" sheet | `WebsiteVisitorAssistantChatSheet.tsx` | Mounted once at the root layout                                                                                                                   |
+| Compass interview               | `CompassInterviewTranscript.tsx`       | Uses `MessageScroller` / `ChatTranscriptShell` directly — different message union; see [`workspace-compass.md`](../features/workspace-compass.md) |
+
+`ChatTranscript` (`ChatTranscriptShared.tsx`) is the scroll container for the `ChatMessage` union. It does **not** own:
+
+- **The message union** — `ChatMessage` still dispatches to the per-variant renderers.
+- **The mutations** — `onCollectionSubmit` / `onApprovalRespond` are injected; workspace uses `admin.*`, visitor uses the public namespace.
+- **The composer** — each surface parks its own audience wrapper below the transcript.
+
+```text
+MessageScrollerProvider (defaultScrollPosition="last-anchor", scrollEdgeThreshold=64)
+└── MessageScroller
+    ├── MessageScrollerViewport
+    │   └── MessageScrollerContent
+    │       ├── date-grouped MessageScrollerItem + ChatMessage
+    │       └── streaming MessageScrollerItem + AssistantMarkdown
+    └── MessageScrollerButton direction="end"  ("Jump to latest")
+```
+
+Every persisted row and every in-flight streaming buffer is a `MessageScrollerItem` with `scrollAnchor` — that is how last-anchor restore
+and new-turn anchoring work. Do not hand-roll scroll; route through `ChatTranscriptShell` (see
+[The shared primitives](#the-shared-primitives)).
+
+A `workspaceFileCreate` tool row may render a document attachment card beneath its pill; click opens the file in the assistant sidebar's
+file-display state via `DocumentPanelProvider`. Surfaces without a provider (visitor sheet) leave the card inert. See
+[`workspace-files.md`](../features/workspace-files.md).
 
 ## Composer — hard rules
 
@@ -303,6 +365,9 @@ The list below names things that are tempting but wrong here. They are not allow
   at the edge. `p-1` opens 4px of paint room inside the clip edge; `-my-1` cancels it on the scroll axis so the documented `gap-4` between
   turns stays exact (horizontal stays a plain inset so the item can't grow past the viewport and trip its overflow-x). Removing it re-clips
   every card-based row (input collections, approval requests) and every focus ring.
+- **Adopting shadcn `Bubble` / `Message` for the whole transcript.** Assistant markdown stays unbubbled; `MessageRow` already covers the
+  three-way `user` / `assistant` / `system` split without inventing avatars. Tool pills stay visually distinct from `Marker` date
+  separators.
 
 ## How to add a new chat surface
 
@@ -348,5 +413,6 @@ The audit is a live checklist: adding a new surface adds a row.
 | Live-updates hook (`ChatMessage`)                   | `src/web/chat/useChatLiveUpdates.tsx`                                                               |
 | Live-updates hook (compass)                         | `src/web/chat/useCompassInterviewLiveUpdates.tsx`                                                   |
 | Motion rules for the composer states                | `docs/styles/motion.md` (Composer states)                                                           |
-| Foundation, schema, replay                          | `docs/architecture/chat.md`, `chat-persistence.md`, `chat-transcript.md`                            |
-| Visitor-facing behaviours                           | `docs/features/chat.md`                                                                             |
+| Foundation, schema, replay                          | `docs/architecture/chat.md`, `docs/architecture/chat-persistence.md`                                |
+| Visitor / workspace product behaviour               | `docs/features/chat-visitor.md`, `docs/features/chat-workspace.md`                                  |
+| Shared visitor-facing affordances                   | `docs/features/chat.md`                                                                             |

@@ -1,7 +1,8 @@
 # Workspace Hub
 
-The private side of cem-yilmaz.de is a personal workspace. Phase 1 ships the **navigation hub** — a single landing page that lists the focus
-areas Cem actively works on and prominently hosts the personal-assistant composer. Per-area features land in later phases.
+The private side of cem-yilmaz.de is a personal workspace. The **navigation hub** is a single landing page that lists the focus areas the
+admin works on and prominently hosts the personal-assistant composer. Per-area behavior is documented in the matching
+`docs/features/workspace-*.md` files.
 
 ## User Behavior
 
@@ -41,11 +42,11 @@ areas Cem actively works on and prominently hosts the personal-assistant compose
 
 ## Hero quote
 
-Above the focus-area grid sits a rotating motivational quote — replacing the static "Welcome back, Cem" greeting that used to live there. A
+Above the focus-area grid sits a rotating motivational quote — replacing the static personalized welcome greeting that used to live there. A
 generic welcome was wallpaper; the quote is a quiet motivational beat at the top of the hub. It is **rendered small and muted on purpose**
 (body-text size, italic, `text-muted-foreground`) — it is not the focus of the workspace; the assistant composer and the focus-area grid
-are. The list lives in `src/web/content/workspaceQuotes.ts` as `{ de, en, attribution? }` triples (Cem's own lines + a handful of well-known
-entrepreneurial / resilience quotes). Edited via PR, same pattern as `personalInfo.ts` and `portfolioProjects.ts`.
+are. The list lives in `src/web/content/workspaceQuotes.ts` as `{ de, en, attribution? }` triples (the admin's own lines + a handful of
+well-known entrepreneurial / resilience quotes). Edited via PR, same pattern as `personalInfo.ts` and `portfolioProjects.ts`.
 
 Selection is **deterministic per UTC day** via `workspaceQuotePick()` — `dayOfYear % quotes.length`. Two consequences:
 
@@ -95,8 +96,8 @@ The route is `noindex`, kept out of the sitemap, and unlinked from the public si
 
 ## Auth and visibility
 
-The README and `AGENTS.md` describe `/workspace/*` as the **GitHub-OAuth-gated, Phase 2** surface. Phase 1 ships the navigation shell and
-the personal-assistant composer; the OAuth gate has not been built yet. To keep the surface non-public until then:
+`/workspace/*` is gated by the current session's `userId` resolving to a `Users` row with `isAdmin = true`. There is no separate login flow
+— the flag is set manually in the DB for admin accounts. To keep the surface non-public:
 
 - All workspace routes pass `noindex: true` to `seoMeta()`. Each page emits `<meta name="robots" content="noindex,nofollow">`, so search
   engines do not list them.
@@ -107,12 +108,11 @@ the personal-assistant composer; the OAuth gate has not been built yet. To keep 
   continues not to link to `/workspace`.
 - The `User.admin` resolver (read side) and `guardAdminMutation` (`src/server/guards/guardAdminMutation.ts`, write side) gate the workspace
   namespaces. Both check `isAdmin` on the requesting session's `Users` row — anonymous sessions (which never have a `userId`) bypass to null
-  / fail the first check; logged-in non-admin users fail the second. The flag is set manually with a DB `UPDATE` for Cem's own accounts. The
-  read side returns null instead of throwing so the landing-page check composes cleanly; the write side throws because there's no
-  compositional consumer that needs the soft contract. See [docs/architecture/workspace-access.md](../architecture/workspace-access.md).
+  / fail the first check; logged-in non-admin users fail the second. The read side returns null instead of throwing so the landing-page
+  check composes cleanly; the write side throws because there's no compositional consumer that needs the soft contract. See
+  [docs/architecture/authorization-workspace.md](../architecture/authorization-workspace.md).
 
-See [docs/architecture/workspace-access.md](../architecture/workspace-access.md) for the access model and "Open TODOs" below for the Phase 2
-OAuth work.
+See [docs/architecture/authorization-workspace.md](../architecture/authorization-workspace.md) for the access model.
 
 ## Implementation Details
 
@@ -202,14 +202,12 @@ corner that brightens and translates on hover. The previous "Öffnen → / Open 
 a `<Link>`; removing it cut a row of vertical space per card without losing affordance — the cursor change on hover, the corner arrow, and
 the card-wide hover state all still read as "this is clickable."
 
-### Stub layout
+### Page chrome
 
-Each focus-area stub has its own `COPY` constant (title, description, body, "coming soon") and a single `<main>` block: body paragraph →
-muted "Coming soon" line. They are intentionally tiny — the goal of Phase 1 is for the navigation to exist, not for the rooms to be
-furnished. Stubs don't render their own header, back-link, or on-page title row; the workspace header above the outlet provides the
+Focus-area pages do not render their own header, back-link, or on-page title row; the workspace header above the outlet provides the
 breadcrumb (with the focus area's icon on the trailing crumb), so a duplicate `icon + h1` inside the page would only repeat what the chrome
 already shows. The breadcrumb-with-icon contract is owned by `Header`'s `Crumb` type and rendered by `WorkspaceHeader` via `WORKSPACE_ICONS`
-— see `src/web/components/WorkspaceHeader.tsx`.
+— see `src/web/components/WorkspaceHeader.tsx`. Per-area behavior lives in the matching `docs/features/workspace-*.md` doc.
 
 ### Wiring `WorkspaceChatComposer`
 
@@ -232,7 +230,7 @@ Surface-specific props stay on the wrapper: `chatId` (URL-owned on the route, pr
 
 Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonical URL and `hreflang` alternates still render correctly via
 `webPageUrlGet()` so a directly-shared link resolves cleanly, but the page is not indexed and not in the sitemap. See
-`docs/architecture/seo.md` for the underlying conventions.
+`docs/architecture/discovery-seo.md` for the underlying conventions.
 
 ## Adding a new focus area
 
@@ -240,19 +238,9 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
 2. Add a new entry to either `PERSONAL_FOCUS_AREAS` (daily-use surfaces) or `PUBLIC_SITE_FOCUS_AREAS` (content that feeds the public site)
    in the same file (key, route path, icon). If you're adding a third subgroup, factor a new array + `<FocusCardGrid />` invocation in
    `FocusAreaGrid` and pick an appropriate `lg:grid-cols-*` for its width.
-3. Create a new stub file under `src/routes/{-$locale}/workspace/` mirroring one of the existing stubs (`software.tsx`, etc.). Use the same
-   `COPY` shape and `seoMeta({ ..., noindex: true })`. The stub does **not** render its own `<Header />` or back-link — both come from the
-   layout.
+3. Create the route under `src/routes/{-$locale}/workspace/` (mirror a sibling focus-area page). Pass `seoMeta({ ..., noindex: true })`. The
+   page does **not** render its own `<Header />` or back-link — both come from the layout.
 4. Add the new path-segment to `WORKSPACE_TITLES` in `src/web/components/WorkspaceHeader.tsx` so the breadcrumb has a label, and to
    `WORKSPACE_ICONS` in the same file so the trailing crumb gets the same Lucide icon used on the hub tile.
-5. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap until they are public.
-
-## Open TODOs
-
-- **Phase 2 — OAuth login.** Wrap workspace access in GitHub OAuth (env vars `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`,
-  `WORKSPACE_GITHUB_LOGINS`). With OAuth in place, `isAdmin` can be reconciled from the allowlist at login time rather than hand-set in the
-  DB — the guards stay the same shape. See [docs/architecture/workspace-access.md](../architecture/workspace-access.md).
-- **Phase 2+ — populate focus areas.** Each stub becomes a real surface (per-area notes, lists, integrations) once the gate is in.
-- **Follow-up — extract `ChatTranscript`.** The transcript layout in `src/web/chat/WebsiteVisitorAssistantChatSheet.tsx` and
-  `src/routes/{-$locale}/workspace/assistant.tsx` is duplicated. Once a third surface needs it, extract to a shared component under
-  `src/web/chat/`.
+5. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap.
+6. Document the surface in `docs/features/workspace-{name}.md`.

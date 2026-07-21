@@ -43,7 +43,7 @@ function createdWorkspaceFileFromResult(result: unknown): CreatedWorkspaceFile |
 // `active` is true only for the trailing tool-call row while the turn is still
 // in flight — the transcript threads it down so the pill shows the in-progress
 // spinner + shimmer until the assistant streams text or the turn ends. See
-// docs/architecture/chat-transcript.md.
+// docs/styles/chat.md.
 //
 // When child rows are present, they render in an indented block under the
 // parent pill — see `docs/architecture/agent-delegation.md` ("Nested tool

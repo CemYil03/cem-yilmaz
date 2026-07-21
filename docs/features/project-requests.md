@@ -2,7 +2,7 @@
 
 A verified contact channel for the visitor AI chat. When a visitor describes a project (freelance gig, paid work, business enquiry), the
 assistant offers to submit a structured brief. The brief is recorded in `AdminProjectRequest` in state `pendingOtp` and gated behind a
-one-time-password verification: nothing reaches Cem's inbox until the visitor proves they own the email address they gave.
+one-time-password verification: nothing reaches the site owner's inbox until the visitor proves they own the email address they gave.
 
 See also:
 
@@ -12,10 +12,12 @@ See also:
 
 ## Why an OTP, not "send + filter"
 
-The cheapest place to filter spam and impersonation is **before** the email lands in Cem's inbox. Three options were on the table:
+The cheapest place to filter spam and impersonation is **before** the email lands in the site owner's inbox. Three options were on the
+table:
 
-1. **Send first, filter Cem's inbox.** Trivial to implement. Cem becomes the filter. Every spammer with an email field gets through; every
-   typo creates a notification Cem can't reply to. Rejected — the entire point of the contact pipeline is to keep noise out of Cem's day.
+1. **Send first, filter the site owner's inbox.** Trivial to implement. The admin becomes the filter. Every spammer with an email field gets
+   through; every typo creates a notification they can't reply to. Rejected — the entire point of the contact pipeline is to keep noise out
+   of the admin's day.
 2. **Magic-link verification.** Email a click-through link the visitor opens to confirm. Better than nothing, but breaks the in-chat flow:
    the visitor leaves the conversation, goes to their email client, clicks a link, returns to a new page. Two context switches per request.
    Rejected — the chat is the surface; verification belongs inside it.
@@ -28,7 +30,7 @@ A `AdminProjectRequest` row moves through one of three states. Status is a flat 
 column-shape pattern as `chats.scope` and the chat-message kinds.
 
 ```text
-                          ┌── verify with correct OTP within 10 min ──> emailVerified ──> (notification email to Cem fires)
+                          ┌── verify with correct OTP within 10 min ──> emailVerified ──> (notification email to the admin notification address fires)
                           │
    submitProjectRequest ──┼── 5 wrong attempts ───────────────────────> archived
    (status = pendingOtp)  │

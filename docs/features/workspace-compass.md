@@ -1,7 +1,7 @@
 # Compass
 
-AI-built compass of Cem, fed continuously by an analyzer that watches the workspace personal-assistant chat and synthesized periodically
-into three text artifacts. Surfaces at `/workspace/compass`.
+AI-built compass of the admin, fed continuously by an analyzer that watches the workspace personal-assistant chat and synthesized
+periodically into three text artifacts. Surfaces at `/workspace/compass`.
 
 The name has shifted from "profile" to "compass" — the feature is not a static fact list. It is an evolving sense of "where am I right now,
 where am I drifting", grounded in observations the analyzer captures from admin chats. Future work adds a recurring psychological-interview
@@ -11,8 +11,8 @@ agent that _draws out_ new bearings on a cadence (see "Phase 2 follow-ups"); bot
 
 There are two surfaces and one firewall.
 
-**`/workspace/compass`** — Cem's read-only insight page. Three tabs (Summary / Portrait / Psychological), an observations stream beneath
-them with category filters and dismiss, plus a "Re-synthesize now" button.
+**`/workspace/compass`** — the admin's read-only insight page. Three tabs (Summary / Portrait / Psychological), an observations stream
+beneath them with category filters and dismiss, plus a "Re-synthesize now" button.
 
 **Inline observation pill below admin chat messages** — when the analyzer extracts observations from a user message, a small pill appears
 below it. Clicking expands the captured lines; an "Open compass →" link deep-links to the page.
@@ -48,7 +48,7 @@ Three options were on the table.
    Runs out-of-loop with a separate prompt and a smaller model. The analyzer sees no assistant reasoning (only user messages), produces zero
    observations by default unless something genuinely new shows up, and never feeds back into the chat agent.
 3. **Cron over unprocessed messages.** Simpler enqueue (no per-message hook), batch reasoning over multiple messages. Rejected: observations
-   lag the conversation; also loses temporal context — analyzing "what was on his mind" hours after the fact misses the moment.
+   lag the conversation; also loses temporal context — analyzing "what was on their mind" hours after the fact misses the moment.
 
 ### Synthesizer trigger
 
@@ -215,11 +215,11 @@ Bilingual UI copy (DE/EN) follows the inline `{ de, en }[locale]` pattern; the s
 
 ## Psychological-interview agent
 
-The passive analyzer can only see what Cem volunteers to his personal assistant. Topics he doesn't naturally bring up (mood, recent
-stressors, goals shifting, things weighing on him) never land in the picture, and the picture stales as his life moves on. The interview
-agent fixes that: a recurring job creates a "due" interview, Cem opens it from `/workspace/compass`, an interviewer agent asks 4–8 directed
-questions, replies feed the same observations / synthesis pipeline as everything else. The name "compass" was chosen partly to accommodate
-this — an interview is a way to _take a bearing_.
+The passive analyzer can only see what the admin volunteers to their personal assistant. Topics they don't naturally bring up (mood, recent
+stressors, goals shifting, things weighing on them) never land in the picture, and the picture stales as their life moves on. The interview
+agent fixes that: a recurring job creates a "due" interview, the admin opens it from `/workspace/compass`, an interviewer agent asks 4–8
+directed questions, replies feed the same observations / synthesis pipeline as everything else. The name "compass" was chosen partly to
+accommodate this — an interview is a way to _take a bearing_.
 
 ### User behavior
 
@@ -227,9 +227,9 @@ A new **Interviews** tab on `/workspace/compass`, alongside Summary / Portrait /
 
 1. No open interview → quiet empty state explaining the cadence plus a "Start a new interview" button for an off-cycle start.
 2. Open interview waiting (`pending`) → prominent card with "Start interview" / "Skip". A small amber dot on the tab itself flags that
-   something is waiting so Cem sees it from any of the other tabs.
-3. Active interview (`in_progress`) → transcript + composer (pinned by `?interviewId=…`); the agent asks one question per turn, Cem replies,
-   the agent decides when it has enough and calls `concludeInterview`. He can also click "End interview" any time.
+   something is waiting so the admin sees it from any of the other tabs.
+3. Active interview (`in_progress`) → transcript + composer (pinned by `?interviewId=…`); the agent asks one question per turn, the admin
+   replies, the agent decides when it has enough and calls `concludeInterview`. They can also click "End interview" any time.
 
 Beneath all three states sits a quiet "Past interviews" rail with status, due-date, and observation count per row.
 
@@ -238,10 +238,10 @@ Beneath all three states sits a quiet "Past interviews" rail with status, due-da
 #### Storage
 
 - **Dedicated tables (chosen).** `CompassInterviews` + `CompassInterviewMessages` + `CompassInterviewMessageAnalysis`. Keeps `chats.scope`
-  strictly `'public' | 'admin'` (which is what the multi-agent-chat dispatch rests on — see
-  [`docs/architecture/multi-agent-chat.md`](../architecture/multi-agent-chat.md)), and gives the interview row its own status / dueAt /
-  endReason fields. Interview turns don't need approval, tool-call persistence, generations, or input collection — a flat user/assistant log
-  is enough. Turns _do_ stream (see below), but through a parallel `compassInterviewUpdates` subscription rather than the chat one.
+  strictly `'public' | 'admin'` (the access-path-driven visitor / admin split — see [`docs/architecture/chat.md`](../architecture/chat.md)),
+  and gives the interview row its own status / dueAt / endReason fields. Interview turns don't need approval, tool-call persistence,
+  generations, or input collection — a flat user/assistant log is enough. Turns _do_ stream (see below), but through a parallel
+  `compassInterviewUpdates` subscription rather than the chat one.
 - **Reusing `Chats` with a new scope.** Rejected. Adding a third value contradicts the binary access-path dispatch and would force scope
   checks at every chat command call site.
 
@@ -251,8 +251,8 @@ Beneath all three states sits a quiet "Past interviews" rail with status, due-da
   `src/server/agents/compassInterviewConfig.ts` — currently daily at 09:00 server time (`0 9 * * *`). That constant is the single source of
   truth; the DB / GraphQL `triggerReason` is deliberately cadence-neutral (`scheduled` vs `manual`) so shifting the interval is a one-line
   change. Idempotent: the handler short-circuits if a `pending` or `in_progress` interview already exists, so a missed tick (worker offline,
-  Cem busy) just resumes on the next one — pending rows never pile up. No email or push notification — Cem sees the waiting card next time
-  he opens the page.
+  admin busy) just resumes on the next one — pending rows never pile up. No email or push notification — the admin sees the waiting card
+  next time they open the page.
 - **Manual-only.** Rejected as the sole trigger — defeats the "refresh the picture on a cadence" goal. But the manual trigger _does_ ship
   alongside the cron as an off-cycle escape hatch: a "Start a new interview" button on the `NoInterviewCard` calls
   `AdminMutation.compassInterviewStartNow` (see `src/server/commands/compassInterviewStartNow.ts`), which inserts a `pending` row with
@@ -326,7 +326,7 @@ src/server/commands/
                                      Shares the "at most one open interview" guard with the cron
                                      (returns the existing id if one is already open).
   compassScheduledInterviewDismiss.ts clears Compass.scheduledInterview* fields; called when
-                                     Cem dismisses the AI-suggested hint without acting.
+                                     the admin dismisses the AI-suggested hint without acting.
   compassInterviewMessageSend.ts     appends user msg; runs one agent turn; enqueues
                                      compassAnalyze fire-and-forget; transitions to
                                      'completed' if the agent called concludeInterview.
@@ -372,8 +372,8 @@ The cron handler (`compassInterviewScheduledDue`) picks the topic for each sched
 **AI-driven hints** are emitted by the analyzer (`compassAnalyze`) when a message contains a time-sensitive signal (upcoming career
 decision, concrete deadline, acute stressor). The analyzer extends `OBSERVATION_SCHEMA` with an optional
 `scheduleHint: { topic, daysFromNow, reason }` field; when set, it updates `Compass.scheduledInterviewTopic/At/Reason` only if the new hint
-fires sooner than the current one (or no hint exists). The hint is shown as a suggestion card on `/workspace/compass` — Cem can start it
-immediately or dismiss it. "Start now" calls `compassInterviewStartNow(topic)` and immediately starts the interview. "Dismiss" calls
+fires sooner than the current one (or no hint exists). The hint is shown as a suggestion card on `/workspace/compass` — the admin can start
+it immediately or dismiss it. "Start now" calls `compassInterviewStartNow(topic)` and immediately starts the interview. "Dismiss" calls
 `compassScheduledInterviewDismiss`, which clears the three fields.
 
 ### User behavior — topic picker
@@ -387,15 +387,15 @@ The **Interviews** tab `NoInterviewCard` now shows a 2×3 grid of topic cards (i
 Topic badges appear on the pending/active card header, the transcript view header, and each row in the past-interviews rail.
 
 `agentCompassInterviewer` exposes both a streaming (`agentCompassInterviewerStream`) and non-streaming (`agentCompassInterviewerGenerate`)
-entry rather than a `ToolLoopAgent`, because each "step" is Cem typing his reply, which arrives on a separate command call. The message-send
-and start commands drive the streaming entry through `compassInterviewTurnRunDetached` (modelled on `chatAssistantTurnRunDetached`) — the
-mutation returns as soon as the user-side row is durable; the agent turn runs detached and publishes token-by-token deltas on
-`serverRuntime.publish.compassInterviewUpdates` under a client-allocated `generationId`. The transcript view subscribes via
-`useCompassInterviewLiveUpdates` and renders in-flight buffers through the shared `MessageScroller` primitives — see
-[`docs/architecture/chat-transcript.md`](../architecture/chat-transcript.md). Non-streaming path stays available for tests and any future
-scheduled-job caller that doesn't have a live UI. Single sentinel tool `concludeInterview({ note })` that the turn-run helper branches on —
-its `note` is logged for audit, not persisted on the row. System prompt is anchored to the soft 4–8 question target, asks for one question
-per turn, matches Cem's reply language, and explicitly tells the agent NOT to summarize answers back (the analyzer does that).
+entry rather than a `ToolLoopAgent`, because each "step" is the admin typing their reply, which arrives on a separate command call. The
+message-send and start commands drive the streaming entry through `compassInterviewTurnRunDetached` (modelled on
+`chatAssistantTurnRunDetached`) — the mutation returns as soon as the user-side row is durable; the agent turn runs detached and publishes
+token-by-token deltas on `serverRuntime.publish.compassInterviewUpdates` under a client-allocated `generationId`. The transcript view
+subscribes via `useCompassInterviewLiveUpdates` and renders in-flight buffers through the shared `MessageScroller` primitives — see
+[`docs/styles/chat.md`](../styles/chat.md). Non-streaming path stays available for tests and any future scheduled-job caller that doesn't
+have a live UI. Single sentinel tool `concludeInterview({ note })` that the turn-run helper branches on — its `note` is logged for audit,
+not persisted on the row. System prompt is anchored to the soft 4–8 question target, asks for one question per turn, matches the admin's
+reply language, and explicitly tells the agent NOT to summarize answers back (the analyzer does that).
 
 Model: `serverRuntime.ai.compassInterviewerModel()` — Gemini 2.5 Pro by default. The interviewer runs on a low-frequency cadence and the
 question-quality bar is high (probe gaps, don't repeat), so the higher tier is worth it.
@@ -406,15 +406,16 @@ At most one open interview exists at a time. The cron handler reads `(status IN 
 there, so two firings in the same minute, a worker replay, or a busy stretch with an un-started interview all converge on one row. The skip
 command transitions `pending → skipped`, clearing the guard so the next cron tick inserts a fresh row.
 
-Phase-2 follow-up (future): per-user compasses once OAuth lands — the cron then creates one row per active user, gated by per-user
+Follow-up (if multi-user accounts appear): per-user compasses — the cron then creates one row per active user, gated by per-user
 preferences.
 
-## Phase 2 follow-ups
+## Follow-ups
 
 - **~~Psychological-interview agent.~~ Done — see "Psychological-interview agent" above.**
-- Per-user compasses once GitHub OAuth lands. Today's `COMPASS_SINGLETON_ID` becomes "the owner's id" and new users get fresh rows.
+- Per-user compasses if more than one admin account exists. Today's `COMPASS_SINGLETON_ID` becomes "the owner's id" and new users get fresh
+  rows.
 - Optional weekly cron synthesis as a backstop for idle weeks (currently only threshold + manual).
-- "Undismiss" mutation if Cem changes his mind on an observation.
+- "Undismiss" mutation if the admin changes their mind on an observation.
 - Possibly a low-frequency analyzer pass over assistant messages once their reasoning is rich enough to be informative (today: avoided to
   prevent hall-of-mirrors bias).
 - **~~"Start a new interview now" button for off-cycle, manually-triggered interviews.~~ Done — `AdminMutation.compassInterviewStartNow` +

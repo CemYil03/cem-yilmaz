@@ -11,7 +11,7 @@ export interface EnvironmentVariables {
     // Absolute origin of the deployed site (no trailing slash, e.g.
     // `https://example.com`). Single source of truth for SEO concerns —
     // canonical URLs, hreflang alternates, the dynamic sitemap.xml, and the
-    // dynamic robots.txt all derive from this. See `docs/architecture/seo.md`.
+    // dynamic robots.txt all derive from this. See `docs/architecture/discovery-seo.md`.
     webPageUrl: string;
     // Optional at the env layer, fail-fast required at the LLM-capability
     // wiring site (`serverRuntimeCreate`). Keeping it optional here means

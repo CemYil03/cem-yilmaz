@@ -14,7 +14,7 @@ import type { Locale } from '../utils/locale';
 //
 // - dispatches the workspace `chatMessageCreate` mutation (so the server
 //   routes to `agentPersonalAssistant` — see
-//   `docs/architecture/multi-agent-chat.md`);
+//   `docs/features/chat-workspace.md`);
 // - pulls the model catalog + selected model id from the workspace
 //   assistant chat provider, so the same dropdown choice is reflected on
 //   every surface and a change is persisted as the new sticky default

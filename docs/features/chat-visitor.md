@@ -1,20 +1,39 @@
 # Visitor chat
 
 The visitor chat is the "Ask me anything" surface mounted on the public site. The assistant persona is named **Eida** (see `agentVisitor`).
-It's a right-side **Sheet** hosted at the root layout so any public page can open it — the landing-page hero composer, suggestion chips, and
-the chat icon in the site header all funnel into the same component.
+It answers questions about Cem from a live CV summary **and** runs the contact / project-request tools (OTP-gated briefs land in
+`AdminProjectRequest`). It's a right-side **Sheet** hosted at the root layout so any public page can open it — the landing-page hero
+composer, suggestion chips, and the chat icon in the site header all funnel into the same component.
 
 See also:
 
-- [features/chat.md](./chat.md) — the chat surface itself (transcript, composer, live updates).
+- [features/chat.md](./chat.md) — shared chat affordances (transcript, composer, live updates, read-aloud, attachments).
 - [features/chat-workspace.md](./chat-workspace.md) — the parallel personal-assistant chat for the workspace.
 - [features/chat-web-search.md](./chat-web-search.md) — Google Search grounding, intentionally only on the admin assistant (not on this
   visitor agent).
 - [features/chat-email-tools.md](./chat-email-tools.md) — the visitor agent's three email-shaped tools (contact, project request, OTP
   verify).
 - [features/project-requests.md](./project-requests.md) — the OTP-gated project-request flow.
-- [architecture/multi-agent-chat.md](../architecture/multi-agent-chat.md) — how visitor and admin chats split at the GraphQL namespace level
-  and which agent each one dispatches to.
+- [architecture/chat.md](../architecture/chat.md) — shared message model; how this feature plugs in via `scope: 'public'`.
+- [styles/chat.md](../styles/chat.md) — desired chat experience (scroll, composer, transcript composition, link behaviour).
+
+## Agent and GraphQL access
+
+Visitor sends go through the **top-level** `Mutation` namespace (cookie session, no registered user required):
+
+- `chatMessageCreate` / `chatInputCollectionRespond` / `chatToolApprovalRespond`
+- Resolver stamps `scope: 'public'` and dispatches to `agentVisitor` — the agent is chosen by the access path, not a client enum.
+- Resolved chats must have `scope = 'public'`; mismatches return null (logged).
+- Reads: `Session.visitorChatFindMany` / `Session.visitorChatFindOne(chatId)` — the latter also requires
+  `chats.sessionId = sessionFindOne.sessionId` so a stolen chatId cannot cross visitor sessions.
+
+`agentVisitor` (`src/server/agents/agentVisitor.ts`) carries the visitor system prompt, three transactional email-shaped tools
+(`sendEmailToCem`, `submitProjectRequest`, `verifyProjectRequestOtp`) plus `promptUserForInput`. No approval gating — side effects are
+bounded by the visitor rate-limit + OTP firewall. Shared scaffolding (provider bindings, `currentDateForAgent()`, `stopWhen`, `onStepEnd`)
+lives in `agentScaffolding.ts` — a tiny helper, not a base class.
+
+Optional `currentPagePath` on `chatMessageCreate` is forwarded into the factory for that turn only (not persisted) — see
+[Page context](#page-context).
 
 ## Why a sheet, not a dialog
 
@@ -81,7 +100,7 @@ tables, lists — and to only link to the listed paths. It is deliberately infor
 This fixes the failure where the agent, never having been told the routes exist, insisted it "cannot provide links or has no access to URLs"
 when a visitor asked where the CV was. Internal links the agent emits (`/cv`, `/projects`, …) navigate in-app — same tab, no interstitial,
 and locale-prefixed to the route the visitor is on (`/cv` becomes `/en/cv` on an English page). That behaviour lives in the shared markdown
-anchor; see [architecture/chat-transcript.md](../architecture/chat-transcript.md#internal-vs-external-links).
+anchor; see [styles/chat.md — Internal vs external links](../styles/chat.md#internal-vs-external-links).
 
 ## Page context
 

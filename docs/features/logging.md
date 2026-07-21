@@ -83,7 +83,7 @@ catch (error) {
 
 ## Viewer
 
-Cem reads recent log rows in the browser at `/workspace/logs` (workspace hub → "Public site" group → "Logs"). The surface is read-only
+The admin reads recent log rows in the browser at `/workspace/logs` (workspace hub → "Public site" group → "Logs"). The surface is read-only
 triage:
 
 - Newest-first list, server-clamped to 1000 rows (200 by default).

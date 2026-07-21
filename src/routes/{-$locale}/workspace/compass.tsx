@@ -972,7 +972,7 @@ function InterviewView({
     // Per-turn live-update state — mints the `generationId`, holds streaming
     // deltas keyed by the pre-allocated assistant `interviewMessageId`, and
     // clears itself on the server's `turnEnded`. See
-    // `docs/architecture/chat-transcript.md`.
+    // `docs/styles/chat.md`.
     const live = useCompassInterviewLiveUpdates(interview.interviewId);
 
     // Merge persisted messages from the loader/subscription with any rows

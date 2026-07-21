@@ -1,10 +1,10 @@
 # Workspace nutrition: Cookbook + soft meal plan + food diary + supplements
 
-`/workspace/nutrition` is Cem's private surface for four things: a **cookbook** of favourite dishes grouped by meal type, a **soft weekly
-meal plan** (only the slots he fills exist — an empty week is zero rows), a **food/drink diary** rolled up into an end-of-week overview, and
-a **supplement tracker** whose exact per-serving composition is filled by AI web research and confirmed before saving. The nutrition
-sub-agent is the chat-authored write path: it suggests a snack from what Cem actually likes, logs what he ate, drafts a week's plan, and
-researches + adds supplements.
+`/workspace/nutrition` is the admin's private surface for four things: a **cookbook** of favourite dishes grouped by meal type, a **soft
+weekly meal plan** (only the slots they fill exist — an empty week is zero rows), a **food/drink diary** rolled up into an end-of-week
+overview, and a **supplement tracker** whose exact per-serving composition is filled by AI web research and confirmed before saving. The
+nutrition sub-agent is the chat-authored write path: it suggests a snack from what the admin actually likes, logs what they ate, drafts a
+week's plan, and researches + adds supplements.
 
 See also:
 
@@ -41,7 +41,7 @@ and flashes it — the assistant's deep-links use this. Plan and diary carry a `
 | **One combined `/workspace/fitness` with a nutrition tab**               | Fewer routes, but nutrition and fitness are distinct enough (cookbook vs. gym log) that one page would be dense and the two sub-agents would blur. Two areas scale better; the hub already had room.                |
 | **Two separate areas** (chosen)                                          | `/workspace/nutrition` + `/workspace/fitness`, each its own hub tile, route, and sub-agent. Matches the confirmed decision.                                                                                         |
 | **Rigid full-week plan** (all 7×N slots modeled, nullable-but-present)   | Heavier schema, and it forces the UI to render/track empty slots. Contradicts the "soft" ask.                                                                                                                       |
-| **Soft `AdminNutritionMealPlanEntry`, only filled slots exist** (chosen) | A row exists only where Cem planned something. The grid derives empty cells from absence. The assistant can fill one meal or a whole week; nothing forces completeness.                                             |
+| **Soft `AdminNutritionMealPlanEntry`, only filled slots exist** (chosen) | A row exists only where the admin planned something. The grid derives empty cells from absence. The assistant can fill one meal or a whole week; nothing forces completeness.                                       |
 | **Recipe reference OR free text on a plan slot** (chosen)                | `recipeId` (nullable, `ON DELETE SET NULL`) links to the cookbook; `customText` covers "leftovers" that isn't a recipe. Both may be set; the UI prefers the recipe. Deleting a recipe leaves the slot as bare text. |
 | **Diary folded into the plan**                                           | The plan is _intent_ (future), the diary is _record_ (past). Merging them muddies "what I meant to eat" vs. "what I ate". Kept separate.                                                                            |
 | **`kind` (food/drink) on the diary** (chosen)                            | Lets the weekly overview split intake without a second table or a tag convention. One varchar column.                                                                                                               |

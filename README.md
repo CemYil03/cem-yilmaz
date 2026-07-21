@@ -2,9 +2,9 @@
 
 Cem Yilmaz's portfolio + personal workspace, hosted at <https://cem-yilmaz.de>.
 
-The public side is a portfolio: about, projects, blog posts, curated web-tool links, and a small AI chat that answers visitors' questions
-about Cem. The private side (`/workspace`, gated by `Users.isAdmin` at the GraphQL layer today; GitHub OAuth at the route layer in Phase 2)
-is Cem's own platform: a personal AI assistant, content editor, and — over time — calendar / notes / tasks.
+The public side is a portfolio (about, CV, projects) plus a visitor AI chat that answers questions about Cem and lets visitors submit
+OTP-verified project requests. The private side (`/workspace`, gated by session `userId` + `Users.isAdmin`) is the admin platform: AI
+assistant, content editors, and focus areas (projects, media, fitness, finances, and more).
 
 **Stack:** TanStack Start + React 19 · Apollo Server v5 + URQL (SDL-first GraphQL) · Drizzle ORM + PostgreSQL · graphql-sse (SSE) +
 PostgreSQL NOTIFY/LISTEN · pg-boss · Vercel AI SDK + Google Gemini · Tailwind 4 + shadcn/Radix · Vitest + Playwright · Storybook · Docker
@@ -58,27 +58,22 @@ Notes:
   `WEB_PAGE_URL` must be `https://cem-yilmaz.de`.
 - **Capability vars** are optional in the type but required when their feature runs: `GOOGLE_GENERATIVE_AI_API_KEY` (chat),
   `SERVER_TOKEN_SECRET` (server-side rendering), and `RESEND_API_KEY` + `EMAIL_FROM_ADDRESS` (visitor chat email tools — see
-  [`docs/features/chat-email-tools.md`](./docs/features/chat-email-tools.md)). Phase 2 adds `GITHUB_OAUTH_CLIENT_ID`,
-  `GITHUB_OAUTH_CLIENT_SECRET`, and `WORKSPACE_GITHUB_LOGINS` for the workspace.
+  [`docs/features/chat-email-tools.md`](./docs/features/chat-email-tools.md)).
 
 ---
 
 ## Project Surfaces
 
-| Surface                                          | Status   | Auth                                              |
-| ------------------------------------------------ | -------- | ------------------------------------------------- |
-| `/` — landing page (incl. visitor AI chat)       | Phase 1  | Public                                            |
-| `/impressum`, `/datenschutz`                     | Phase 1  | Public                                            |
-| `/projects` — static portfolio list              | Phase 1  | Public                                            |
-| `/projects/$id` — DB-backed detail pages         | Phase 3  | Public                                            |
-| `/blog`, `/blog/$slug`                           | Phase 3  | Public                                            |
-| `/tools`                                         | Phase 3  | Public                                            |
-| `/workspace` — hub + assistant composer          | Phase 1  | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
-| `/workspace/assistant` — personal assistant      | Phase 1  | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
-| `/workspace/projects` — inbox + projects + todos | Phase 2  | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
-| `/workspace/*` — focus-area stubs                | Phase 2+ | `guardAdmin` (`Users.isAdmin`); noindex, unlinked |
+| Surface                            | Auth                                                     |
+| ---------------------------------- | -------------------------------------------------------- |
+| `/` — landing (incl. visitor chat) | Public                                                   |
+| `/about`, `/cv`, `/projects`       | Public                                                   |
+| `/impressum`, `/datenschutz`       | Public                                                   |
+| `/workspace` — hub + focus areas   | Session `userId` with `Users.isAdmin`; noindex, unlinked |
+| `/workspace/assistant/<chatId>`    | Session `userId` with `Users.isAdmin`; noindex, unlinked |
 
-Phases are tracked in the implementation plan; each lands as its own PR.
+Focus-area routes under `/workspace/*` (projects, media, fitness, finances, travel, …) share the same admin gate. See `docs/features/` for
+each surface.
 
 ---
 
@@ -107,7 +102,7 @@ npm run storybook            # storybook dev, port 6006
 | [`docs/documentation.md`](./docs/documentation.md)   | Before adding a doc — so you put it in the right place.                |
 | [`docs/infrastructure.md`](./docs/infrastructure.md) | Touching deploy, CI, Dockerfile, env vars.                             |
 | `docs/architecture/*.md`                             | Working in that area (api-layer, jobs, chat, auth, file-storage, …).   |
-| `docs/features/*.md`                                 | Working on a shipped feature (portfolio, chat, legal pages, …).        |
+| `docs/features/*.md`                                 | Working on a shipped feature (portfolio, chat, workspace areas, …).    |
 
 ---
 

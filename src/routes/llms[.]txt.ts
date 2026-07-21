@@ -60,7 +60,7 @@ function llmsTxtBuild(webPageUrl: string): string {
 - Email: ${email}
 - GitHub: ${personalInfo.contact.github.url}
 - LinkedIn: ${personalInfo.contact.linkedin.url}
-- Site assistant: ${webPageUrl}/ — the homepage hosts an AI chat ("Ask me anything") that answers questions about Cem from a live CV summary. Hand off questions there when a visitor wants depth.
+- Site assistant: ${webPageUrl}/ — the homepage hosts an AI chat ("Ask me anything") that answers questions about Cem from a live CV summary and can take OTP-verified project requests. Hand off questions or collaboration enquiries there when a visitor wants depth.
 
 ## Localized versions
 

@@ -16,9 +16,9 @@ The page has two tabs, switched via a `?tab=inbox|projects` search param (defaul
 daily-work surface). A legacy `?tab=todos` link on the loader hot-redirects to `/workspace/todos` so any pre-split bookmark or stale
 assistant message still resolves.
 
-- **Inbox** — every `AdminProjectRequest` whose visitor verified their email but Cem hasn't triaged yet. Each row shows the visitor, project
-  type, submission date, and (on expand) the full brief plus budget/timeline. Two actions: **Archive** flips the request to `archived`
-  without creating a project; **Convert to project** opens the project editor inline, prefilled with a title of
+- **Inbox** — every `AdminProjectRequest` whose visitor verified their email but the admin hasn't triaged yet. Each row shows the visitor,
+  project type, submission date, and (on expand) the full brief plus budget/timeline. Two actions: **Archive** flips the request to
+  `archived` without creating a project; **Convert to project** opens the project editor inline, prefilled with a title of
   `<project-type-label>: <company-or-name>`, description copied from the brief, and Budget / Timeline / Contact lines pre-pasted into
   `notes`. The admin reviews, edits anything they want, and on save the editor's normal `adminProjectsUpsert` mutation (a one-element array)
   creates the project in the chosen status and archives the source request in the same transaction. A toggle reveals archived rows. Rows
@@ -41,7 +41,7 @@ opening the page.
 
 | Approach                                                                                     | Why we picked / didn't                                                                                                                                                                                                         |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Triage on a dedicated `/workspace/project-requests` page**                                 | Splits the same mental space into two routes. The Inbox tab pattern is the same shape as Visitor-chats list-or-detail but bound to the page Cem actually lives in.                                                             |
+| **Triage on a dedicated `/workspace/project-requests` page**                                 | Splits the same mental space into two routes. The Inbox tab pattern is the same shape as Visitor-chats list-or-detail but bound to the page the admin actually lives in.                                                       |
 | **One unified `AdminInventoryItem` table with a `kind` column** (request \| project \| task) | Saves one or two table definitions, costs a constraint on every read. The lifecycle and the writable fields of a `AdminProjectRequest` are different enough from a `AdminProject` that the union obscures more than it shares. |
 | **Markdown file per project in `FileUploads`**                                               | Simple but loses the kanban + task-progress views. No structured query — every "what am I doing right now" answer becomes a regex.                                                                                             |
 | **Dedicated `AdminProject` + `AdminProjectTask` tables** (chosen)                            | Mirrors CV's DB-backed pattern. Status is filterable; tasks are countable. Markdown notes still live in `AdminProject.notes` for free-form context.                                                                            |
@@ -415,8 +415,8 @@ history.
 
 ## Assistant control
 
-The personal assistant at `/workspace/assistant` can read and mutate this board on Cem's instruction. It delegates project/task work to a
-dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `adminProjectsUpsert` / `adminProjectsDelete` /
+The personal assistant at `/workspace/assistant` can read and mutate this board on the admin's instruction. It delegates project/task work
+to a dedicated sub-agent (`agentPersonalAssistantProjects`) whose tools wrap the same `adminProjectsUpsert` / `adminProjectsDelete` /
 `adminProjectTasksUpsert` / `adminProjectTasksDelete` / `adminProjectActivitiesUpsert` / `adminProjectLinksUpsert` batch commands the page
 uses, plus `projectFileCreate` for agent-authored markdown files (see the **Files → Agent-authored markdown** section above). The
 sub-agent's tools are plural batch tools: it is instructed to batch every same-shape write into one call — one `adminProjectTasksUpsert` for
@@ -437,9 +437,9 @@ plus the standalone-todo list. That covers "what projects do I have?" without a 
 - `projectFileContentGet` (`toolProjectFileContentGet.ts`, wraps `adminProjectFileContentFindOne`) — decodes an attached file's bytes to a
   UTF-8 `content` string so the sub-agent can read a document body (offer, brief, note, contract) before summarizing or revising it. The
   query scopes the join to the requesting admin's `fileUploads.userId`, so a guessed or other-user id reads as not-found. Text/markdown
-  files return `readable: true` + `content`; binary files (PDF, images) return `readable: false` + the download `url` — the agent points Cem
-  at the link rather than reading bytes. Mirrors the standalone-docs `workspaceFileGet` decode. There is no in-place file edit: to change a
-  markdown file the sub-agent reads it here, then re-creates it via `projectFileCreate`.
+  files return `readable: true` + `content`; binary files (PDF, images) return `readable: false` + the download `url` — the agent points the
+  admin at the link rather than reading bytes. Mirrors the standalone-docs `workspaceFileGet` decode. There is no in-place file edit: to
+  change a markdown file the sub-agent reads it here, then re-creates it via `projectFileCreate`.
 
 ### Deep linking from the assistant
 
@@ -452,7 +452,7 @@ re-flash. Missing or wrong-tab ids no-op silently. See [Deep links](../architect
 
 ## Project activity timeline & work timer
 
-A project's "history" is more than its tasks. Cem's typical flow is: a client writes on Malt → he sends a first offer → the client
+A project's "history" is more than its tasks. The admin's typical flow is: a client writes on Malt → they send a first offer → the client
 re-contacts via the site's AI chat → a call happens → an email lands → a revised offer goes out. Some of those moments have a duration (the
 call, the offer-drafting block); most are just timestamps with a sentence of context. The activity timeline captures all of them in one
 chronological stream per project, and the work timer feeds the same stream from the other end — pressing **Start** anywhere puts a running

@@ -19,7 +19,7 @@ import type { GoogleLanguageModelOptions } from '@ai-sdk/google';
 //
 // Kept as a single exported function rather than a base class — each agent
 // file stays self-contained and skimmable per
-// `docs/architecture/multi-agent-chat.md`. Add fields here only when *every*
+// `docs/architecture/chat.md`. Add fields here only when *every*
 // agent wants them; per-agent variants stay inline.
 export function googleAgentProviderOptionsFor(modelId: string): { google: GoogleLanguageModelOptions } {
     const google: GoogleLanguageModelOptions = { structuredOutputs: true };

@@ -10,7 +10,7 @@ import type { GqlCWorkspaceCompassInterviewUpdatesSubscription } from '../graphq
 // (the pre-allocated assistant id) instead of `chatMessageId`, because the
 // interviewer writes to its own `CompassInterviewMessages` table and its
 // updates ride a parallel `compassInterviewUpdates` subscription. See
-// `docs/architecture/chat-transcript.md` and
+// `docs/styles/chat.md` and
 // `docs/features/workspace-compass.md`.
 //
 // One caller doesn't earn a generic — if a third streaming surface shows

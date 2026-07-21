@@ -344,8 +344,8 @@ Every public page route MUST set `head: ({ params }) => seoMeta({ ... })` using 
 logged-in, transactional, or otherwise non-indexable pass `noindex: true`. Indexable public pages are also added to `SITEMAP_PATHS` in
 `src/web/seo/sitemapRoutes.ts` so they appear in the dynamic `/sitemap.xml`.
 
-See [architecture/seo.md](./architecture/seo.md) for the full rationale, the canonical/hreflang strategy, and a copy-paste template for new
-pages.
+See [architecture/discovery-seo.md](./architecture/discovery-seo.md) for the full rationale, the canonical/hreflang strategy, and a
+copy-paste template for new pages.
 
 ## Environment Variables
 

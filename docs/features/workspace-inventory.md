@@ -1,9 +1,9 @@
 # Workspace Inventory
 
-Track material belongings — what Cem owns, what each item is worth today, how it's been serviced, and how its value moves over time. This is
-the material-assets counterpart to `workspace-finances` (which is instruments / accounts / trading), split into its own focus area because
-the two have different data shapes and very different update cadences: finances is checked weekly, inventory is touched when something is
-acquired, sold, gifted, damaged, repriced, or serviced.
+Track material belongings — what the admin owns, what each item is worth today, how it's been serviced, and how its value moves over time.
+This is the material-assets counterpart to `workspace-finances` (which is instruments / accounts / trading), split into its own focus area
+because the two have different data shapes and very different update cadences: finances is checked weekly, inventory is touched when
+something is acquired, sold, gifted, damaged, repriced, or serviced.
 
 ## Why a separate category
 
@@ -20,8 +20,8 @@ Considered — and rejected — renaming `finances` to `assets`:
 - The umbrella reads clean on paper (stocks + material things = "assets") but breaks daily use: it forces two very different rhythms into
   one surface.
 
-The category is called **Inventory** (not `belongings` / `assets` / `possessions`) because that's the noun Cem will type into the address
-bar when he needs it.
+The category is called **Inventory** (not `belongings` / `assets` / `possessions`) because that's the noun the admin will type into the
+address bar when they need it.
 
 ## User Behavior
 
@@ -191,8 +191,9 @@ from the purchase price — without opening the page. This follows the orchestra
 
 **File upload is deliberately not wrapped.** `adminInventoryItemFilesAttach` needs bytes uploaded via `POST /api/file-uploads` first — a
 two-step flow a chat sub-agent has no way to perform. So the assistant gets `adminInventoryItemFilesUpsert` (rename / pin an
-already-attached file) and `adminInventoryItemFilesDelete` (detach), but not attach; the sub-agent's prompt tells it to point Cem at the
-item's Files section when he wants to add a new file. This mirrors why travel / finances / nutrition / fitness ship no file tools at all.
+already-attached file) and `adminInventoryItemFilesDelete` (detach), but not attach; the sub-agent's prompt tells it to point the admin at
+the item's Files section when they want to add a new file. This mirrors why travel / finances / nutrition / fitness ship no file tools at
+all.
 
 ## Open TODOs
 

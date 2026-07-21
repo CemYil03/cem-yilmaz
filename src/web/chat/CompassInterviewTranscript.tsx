@@ -107,7 +107,7 @@ export function CompassInterviewTranscript({
 // User rows are bubbled — the interview transcript reads noticeably better
 // with the shared right-aligned `Bubble tone="user"` treatment than with
 // unbubbled markdown, and the doc's "don't bubble assistant markdown" rule
-// (`docs/architecture/chat-transcript.md`) applies only to the assistant
+// (`docs/styles/chat.md`) applies only to the assistant
 // side.
 function InterviewUserRow({
     message,
