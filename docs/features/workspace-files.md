@@ -124,7 +124,7 @@ are reachable via the chat attachment cards. A browser can be added later withou
 ### PDF export
 
 The **Download PDF** button renders the document to a clean A4 PDF using the template's server-side rendering pipeline (see
-`docs/architecture/server-side-rendering.md`) — this is that pipeline's **first consumer** (`/server/*` had no route until now).
+`docs/architecture/browser-capture.md`) — this is that pipeline's **first consumer** (`/server/*` had no route until now).
 
 - `src/server/utils/browserCapture.ts` — `browserCapturePdf()` sits beside `browserCapture()`, reusing the same singleton headless Chromium
   but calling `page.pdf()` (`format: 'A4'`, `printBackground: true`, 15 mm margins, `print` media emulation) instead of `page.screenshot()`.

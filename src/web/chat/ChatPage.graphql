@@ -1,4 +1,4 @@
-# Operations for the minimal AI chat surface — see `docs/features/chat.md`.
+# Operations for the shared chat surface — see `docs/features/chat.md` (index) and `docs/architecture/chat.md`.
 # The fragment is the single source of truth for which fields the
 # `<ChatMessage />` component needs; matches the union shape in
 # `docs/architecture/chat.md`.

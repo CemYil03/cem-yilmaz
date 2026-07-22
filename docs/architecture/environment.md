@@ -12,33 +12,19 @@ A single module — `src/server/env/environmentVariablesCreate.ts` — declares 
 a typed `EnvironmentVariables` object. No code outside this module reads `process.env` directly. Functions that need configuration receive
 it as a parameter (or read it from a shared `environmentVariables` instance).
 
-### Interface
+### Typed fields
 
-```typescript
-// src/server/env/EnvironmentVariables.ts
-export interface SessionCookieConfiguration {
-  name: string;
-  secure: boolean;
-  domainScope: string | undefined;
-}
-
-export interface EnvironmentVariables {
-  databaseUrl: string;
-  sessionCookie: SessionCookieConfiguration;
-  buildSha: string;
-  // Optional at this layer; capability-specific keys are validated where
-  // they are consumed, not at boot. See "Capability-Specific Variables"
-  // below.
-  googleGenerativeAiApiKey: string | undefined;
-}
-```
+The typed shape lives in [`src/server/env/EnvironmentVariables.ts`](../../src/server/env/EnvironmentVariables.ts) — that file is the source
+of truth for every field (required strings, the nested `sessionCookie` object, and capability-optional `string | undefined` keys). Do not
+mirror the interface in this doc; it drifts.
 
 ### Validation
 
-`environmentVariablesCreate.ts` defines:
+Validation lives in [`src/server/env/environmentVariablesCreate.ts`](../../src/server/env/environmentVariablesCreate.ts). The boot-required
+list is:
 
 ```typescript
-const requiredEnvironmentVariables = ['DATABASE_URL', 'sessionCookieName'] as const;
+const requiredEnvironmentVariables = ['DATABASE_URL', 'sessionCookieName', 'WEB_PAGE_URL', 'VISITOR_IP_HASH_SALT'] as const;
 ```
 
 `environmentVariablesCreate()` collects every missing variable and throws once with all names listed — the operator sees the full picture
@@ -59,7 +45,8 @@ dependency.
 
 ### Adding a New Variable
 
-1. Add the key to `requiredEnvironmentVariables` in `environmentVariablesCreate.ts` (or as an optional field if it has a default).
+1. Add the key to `requiredEnvironmentVariables` in `environmentVariablesCreate.ts` (or as an optional field if it has a default / is
+   capability-specific).
 2. Add the typed field to `EnvironmentVariables` in `src/server/env/EnvironmentVariables.ts`.
 3. Map `process.env.X` to the typed field inside `environmentVariablesCreate()`.
 4. Document the variable in `docs/infrastructure.md`.
@@ -71,15 +58,22 @@ Some variables are required by the _real-app boot_ but not by every consumer of 
 codegen). The Google Generative AI API key is the canonical example: production needs it for the Gemini language model, but a unit test that
 exercises a command should never call the LLM endpoint at all.
 
+Capability-optional fields today (typed as `string | undefined`, validated at the capability wiring / call site, not at boot):
+
+- `googleGenerativeAiApiKey` — LLM clients in `serverRuntimeCreate`
+- `serverTokenSecret` — HMAC tokens for `/server/*` browser-capture routes (`serverToken.ts`)
+- `resendApiKey` / `emailFromAddress` — `emailServiceCreate`
+- `tmdbApiKey` — `tmdbClientCreate` (empty search when missing)
+- `youtubeApiKey` — `youtubeClientCreate` (empty search when missing)
+
 For these, do **not** add the key to `requiredEnvironmentVariables`. Instead:
 
 1. Add the field as `string | undefined` to `EnvironmentVariables`.
-2. Validate it at the _capability wiring site_. For LLM clients that means `serverRuntimeCreate.ts` — which throws if the key is missing
-   when building the Google provider.
+2. Validate it at the _capability wiring site_ (or degrade gracefully at the client factory, as TMDB / YouTube do).
 3. Tests that need the capability inject a stub via `ServerRuntime` (see `src/server/test/aiTestUtils.ts` for the LLM model stub) and never
    reach `serverRuntimeCreate`.
 
-This keeps the env validator decoupled from the AI provider: the env file says "is the deploy correctly configured for the _core_ app?" and
+This keeps the env validator decoupled from each capability: the env file says "is the deploy correctly configured for the _core_ app?" and
 each capability says "is _this_ capability correctly wired?". The two questions used to be conflated in `requiredEnvironmentVariables`,
 which made unit tests transitively depend on every capability the runtime supports.
 

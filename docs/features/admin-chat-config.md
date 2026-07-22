@@ -24,11 +24,15 @@ from the active model — `.docx` is pick-able iff the model says so. The picked
 
 ## Surfaces
 
-| Entry point                                                        | Behavior                                                                                                                                                                                              |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workspace `/workspace/assistant` composer                          | Renders the model dropdown in the bottom-addon row alongside the Auto/Manual approval-mode selector. Picking a new model updates the local state AND fires `chatConfigDefaultModelSet` to persist it. |
-| Workspace assistant sheet (`WorkspaceAssistantChatSheet`) — future | Not wired yet; the sheet currently inherits whatever the route last persisted via the saved default.                                                                                                  |
-| Public visitor sheet (`/`, "Ask me anything")                      | **No dropdown.** The visitor surface stays on the catalog fallback (`gemini-2.5-flash`); admin-only feature.                                                                                          |
+The model dropdown ships on **every** admin composer via `WorkspaceAssistantChatProvider` (layout-mounted) → `WorkspaceChatComposer`.
+Picking a new model updates local state and fires `chatConfigDefaultModelSet` to persist the sticky default.
+
+| Entry point                                                   | Behavior                                                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Workspace hub composer (`/workspace`)                         | Same `<WorkspaceChatComposer />`; model dropdown + Auto/Manual approval-mode selector in the bottom-addon row.     |
+| Workspace assistant sidebar (`WorkspaceAssistantChatSidebar`) | Wired — sidebar body uses `<WorkspaceChatComposer />` under the shared provider; same dropdown as hub / deep-link. |
+| Workspace deep-link (`/workspace/assistant/$chatId`)          | Same `<WorkspaceChatComposer />` + provider; dropdown always present.                                              |
+| Public visitor sheet (`/`, "Ask me anything")                 | **No dropdown.** The visitor surface stays on the catalog fallback (`gemini-2.5-flash`); admin-only feature.       |
 
 ## Model catalog
 

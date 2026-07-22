@@ -14,9 +14,9 @@ Every page on the site picks them up automatically — no per-page wiring needed
 
 ## Why these two
 
-Several pairings were auditioned on `/visual-design` (Inter alone, DM Sans × Inter, Manrope × Inter, Plus Jakarta × Inter, Manrope × DM
-Sans) using a temporary font toggle on that page. The toggle has been removed now that the pair is settled — see
-[How to audition new pairings](#how-to-audition-new-pairings) for how to bring it back.
+Several pairings were auditioned historically (Inter alone, DM Sans × Inter, Manrope × Inter, Plus Jakarta × Inter, Manrope × DM Sans) using
+a temporary font toggle on a since-removed audition page. The toggle is gone now that the pair is settled — see
+[How to audition new pairings](#how-to-audition-new-pairings) for how to trial alternatives again.
 
 Plus Jakarta × Inter won because:
 
@@ -81,8 +81,7 @@ like a title) and you still want the display face.
 - **Use `<h1>`–`<h6>` semantically.** They get `--font-heading` for free.
 - **Use `font-display` on non-heading elements styled as titles** — pull-quotes, hero numbers, callouts.
 - **Don't pin `font-sans` on body copy by default.** It cascades from `<body>`. Only override when undoing a parent.
-- **Avoid inline `style={{ fontFamily: ... }}`** outside of `/visual-design` (where it powers the experiment toggle). Reach for the CSS
-  variable or Tailwind utility instead so a future swap is one CSS change.
+- **Avoid inline `style={{ fontFamily: ... }}`.** Reach for the CSS variable or Tailwind utility instead so a future swap is one CSS change.
 
 ## File locations
 
@@ -92,7 +91,6 @@ like a title) and you still want the display face.
 | CSS variable definitions | `src/styles.css` → `:root` block                                     |
 | Tailwind theme tokens    | `src/styles.css` → `@theme inline` block                             |
 | Default cascade          | `src/styles.css` → `@layer base { body, h1..h6 }`                    |
-| Experiment / toggle page | `src/routes/{-$locale}/visual-design.tsx`                            |
 | This doc                 | `docs/styles/fonts.md`                                               |
 
 ## How to add a font
@@ -109,21 +107,18 @@ If a future page needs an additional family (a serif callout, a mono variant, a 
    `@theme inline` (e.g. `--font-quote: var(--font-quote);` → `font-quote` utility).
 4. **Update this doc.** Add a row to the table at the top, explain the role, and update the file-locations table if anything moved.
 
-If a font is only being trialled (not yet adopted), don't add it to `styles.css`. Add it to the `/visual-design` toggle instead, where it
-stays out of the production bundle.
+If a font is only being trialled (not yet adopted), do **not** add it to `styles.css`. Trial on a throwaway branch or a local-only route so
+non-adopted families stay out of the production bundle.
 
 ## How to audition new pairings
 
-`/visual-design` is the page used to test typography against a full marketing-style layout. The font toggle that originally lived there has
-been removed (the pair is settled), but the page is the right place to bring one back when you want to trial alternatives.
+There is no dedicated `/visual-design` route anymore (the pairing is settled). To trial alternatives:
 
-To trial a new pairing:
+1. On a throwaway branch, add a small local toggle (or temporary chips on an existing page) that swaps `--font-heading` / `--font-body` on a
+   wrapper.
+2. If the trialled families are not bundled, pull them from Google Fonts via a `<link rel="stylesheet">` on that trial surface only — do not
+   add a non-adopted family to `src/styles.css`.
+3. Judge against a full marketing-style layout (landing page is enough).
 
-1. Add a `useState` for a preset id and a small `FONT_PRESETS` array (heading + body family per preset) to `visual-design.tsx`.
-2. Render a row of buttons that swap two CSS variables (`--font-heading`, `--font-body`) on the page wrapper.
-3. If the trialled families are not bundled, pull them from Google Fonts via a `<link rel="stylesheet">` _on this page only_ — do not add a
-   non-adopted family to `src/styles.css`.
-4. Open `/visual-design`, click through the chips, and judge against the rest of the layout.
-
-If a pairing wins, follow [How to add a font](#how-to-add-a-font) to bundle it and remove the toggle again so the production bundle stays
+If a pairing wins, follow [How to add a font](#how-to-add-a-font) to bundle it and remove the trial toggle so the production bundle stays
 small.

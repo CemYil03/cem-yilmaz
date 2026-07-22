@@ -1481,7 +1481,7 @@ extend type Admin {
 #
 # Workspace surface onto the `Logs` table the server writes to via
 # `serverRuntime.log.*`. Read-only triage — no live tail, no delete. Gated by
-# the resolver chain on `User.admin`. See `docs/features/logging.md`.
+# the resolver chain on `User.admin`. See `docs/architecture/logging.md`.
 
 enum LogLevel {
     error

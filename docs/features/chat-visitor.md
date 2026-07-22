@@ -1,5 +1,7 @@
 # Visitor chat
 
+## User behavior
+
 The visitor chat is the "Ask me anything" surface mounted on the public site. The assistant persona is named **Eida** (see `agentVisitor`).
 It answers questions about Cem from a live CV summary **and** runs the contact / project-request tools (OTP-gated briefs land in
 `AdminProjectRequest`). It's a right-side **Sheet** hosted at the root layout so any public page can open it — the landing-page hero
@@ -7,17 +9,33 @@ composer, suggestion chips, and the chat icon in the site header all funnel into
 
 See also:
 
-- [features/chat.md](./chat.md) — shared chat affordances (transcript, composer, live updates, read-aloud, attachments).
+- [styles/chat.md](../styles/chat.md) — desired chat experience (scroll, composer, transcript composition, link behaviour).
+- [architecture/chat.md](../architecture/chat.md) — shared message model; how this feature plugs in via `scope: 'public'`.
+- [architecture/chat-persistence.md](../architecture/chat-persistence.md) — storage, replay, attachments.
+- [architecture/file-storage.md#read-aloud-tts-cache](../architecture/file-storage.md#read-aloud-tts-cache) — read-aloud / TTS cache.
 - [features/chat-workspace.md](./chat-workspace.md) — the parallel personal-assistant chat for the workspace.
 - [features/chat-web-search.md](./chat-web-search.md) — Google Search grounding, intentionally only on the admin assistant (not on this
   visitor agent).
 - [features/chat-email-tools.md](./chat-email-tools.md) — the visitor agent's three email-shaped tools (contact, project request, OTP
   verify).
 - [features/project-requests.md](./project-requests.md) — the OTP-gated project-request flow.
-- [architecture/chat.md](../architecture/chat.md) — shared message model; how this feature plugs in via `scope: 'public'`.
-- [styles/chat.md](../styles/chat.md) — desired chat experience (scroll, composer, transcript composition, link behaviour).
+- [features/chat.md](./chat.md) — thin index of chat docs (not a third product).
 
-## Agent and GraphQL access
+## Options considered
+
+| Option                    | Notes                                                                       |
+| ------------------------- | --------------------------------------------------------------------------- |
+| Modal dialog              | Forces dismiss to keep browsing — rejected for "ask while reading the page" |
+| Dedicated `/chat` route   | Breaks the landing-page hero flow and loses ambient context                 |
+| Right-side Sheet (chosen) | Stays open while scrolling; same entry from hero, chips, and header         |
+
+## Option chosen
+
+Right-side Sheet at the root layout — see [Why a sheet, not a dialog](#why-a-sheet-not-a-dialog) below.
+
+## Implementation
+
+### Agent and GraphQL access
 
 Visitor sends go through the **top-level** `Mutation` namespace (cookie session, no registered user required):
 

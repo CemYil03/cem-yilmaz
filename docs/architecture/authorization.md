@@ -20,10 +20,10 @@ Guards are imported into `resolversCreate.ts` and called at the start of the rel
 
 ### Naming Convention
 
-Guard files follow the pattern `guard{Entity}{Context}`:
+Guard files follow the pattern `guard{Entity}{Context}`. The three guards in `src/server/guards/` today:
 
 - `guardUserSubscription` — validates that the session can subscribe to user updates
-- `guardSessionMutation` — validates that the session can perform session-level mutations
+- `guardUserMutation` — validates that the session can perform user-scoped mutations
 - `guardAdminMutation` — validates that the requesting session belongs to an admin user (checks `isAdmin` on the `Users` row). The read-side
   counterpart is _not_ a guard helper: the `User.admin` field resolver inlines the same check but returns `null` instead of throwing, so the
   field can be composed from the public landing page. See [authorization-workspace.md](./authorization-workspace.md).

@@ -108,7 +108,7 @@ role:
 | Commands  | `{entity}{Action}`                                       | `sessionUpsert`, `userCreate`                                      |
 | Queries   | `{accessPath}{Entity}{FindOne\|FindMany\|Count\|Counts}` | `adminProjectFindOne`, `adminMediaMovieFindMany`, `adminChatCount` |
 | Mappers   | `toGql{Entity}`                                          | `toGqlSession`, `toGqlUser`                                        |
-| Guards    | `guard{Entity}{Ctx}`                                     | `guardUserSubscription`, `guardSessionMutation`                    |
+| Guards    | `guard{Entity}{Ctx}`                                     | `guardUserSubscription`, `guardUserMutation`                       |
 | Factories | `{entity}Create`                                         | `serverRuntimeCreate`, `resolversCreate`                           |
 | Utils     | `{entity}Utils`                                          | `sessionUtils`                                                     |
 | Tests     | `{source}.test`                                          | `sessionUtils.test`, `sessionUpsert.test`                          |
@@ -352,7 +352,7 @@ copy-paste template for new pages.
 Never read `process.env` directly. The only sanctioned reader is `src/server/env/environmentVariablesCreate.ts`; everything else (including
 `drizzle.config.ts` and test utilities) calls `environmentVariablesCreate()` to get a typed, validated object. This is enforced by an ESLint
 `no-restricted-syntax` rule — any new `process.env` reference will fail lint. See
-`[docs/architecture/environment.md](./architecture/environment.md)` for the rationale.
+[docs/architecture/environment.md](./architecture/environment.md) for the rationale.
 
 ## Testing
 
@@ -499,7 +499,7 @@ npm run check
 
 This runs: format check, lint, spell check, type check, unused export detection (knip), and commitlint on the last commit.
 
-## Server-Side Rendering (Playwright)
+## Browser Capture (Playwright)
 
 The template ships a server-side image-rendering pipeline. To use it:
 
@@ -510,8 +510,8 @@ The template ships a server-side image-rendering pipeline. To use it:
 - **The signing secret is `SERVER_TOKEN_SECRET`** (capability-specific — only required by features that actually call `browserCapture`). Set
   it in `.env.local` and in your Coolify environment.
 - **Do not edit `vite.config.ts`'s Playwright externals or the runtime stage of `Dockerfile`** without reading
-  [architecture/server-side-rendering.md](./architecture/server-side-rendering.md) — `playwright` must stay external on both, and the
-  runtime image must keep installing Chromium.
+  [architecture/browser-capture.md](./architecture/browser-capture.md) — `playwright` must stay external on both, and the runtime image must
+  keep installing Chromium.
 
 ## Jobs (Background Processing)
 

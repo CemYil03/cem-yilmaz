@@ -1,13 +1,15 @@
 # Agent Delegation
 
-The personal assistant at `/workspace/assistant` is the single voice for every workspace domain — projects, tasks, media, future calendar /
-notes / fitness / finances / medical. Landing every domain tool on the one `agentPersonalAssistant` factory does not scale: the system
-prompt grows unmanageable, and tool-selection accuracy decays past ~10–15 tools. Instead, the orchestrator stays thin and hands each domain
-off to a focused sub-agent.
+## Context
 
-This doc covers the pattern. The sub-agents built on it are `agentPersonalAssistantProjects` (see
-[features/workspace-projects.md](../features/workspace-projects.md)) and `agentPersonalAssistantMedia` (see
-[features/workspace-media.md](../features/workspace-media.md)) — both wired identically.
+The personal assistant at `/workspace/assistant` is the single voice for every workspace domain. Landing every domain tool on the one
+`agentPersonalAssistant` factory does not scale: the system prompt grows unmanageable, and tool-selection accuracy decays past ~10–15 tools.
+Instead, the orchestrator stays thin and hands each domain off to a focused sub-agent.
+
+This doc covers the pattern. Many domain sub-agents ship today — projects, media, medical, travel, nutrition, fitness, finances, inventory,
+tax, and web search — each wired identically via a `delegateTo*` tool. Per-domain behavior lives in the matching `docs/features/` doc (e.g.
+[workspace-projects.md](../features/workspace-projects.md), [workspace-media.md](../features/workspace-media.md)); the file map is in
+[Where things live](#where-things-live) below.
 
 ## Decision
 

@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { environmentVariables } from '../env/environmentVariablesCreate';
 
 // Server-side renders (Playwright capturing a `/server/*` route — see
-// `docs/architecture/server-side-rendering.md`) need to authenticate without
+// `docs/architecture/browser-capture.md`) need to authenticate without
 // a session cookie because the headless browser has no way to inherit the
 // user's cookie jar. We mint a short-lived HMAC token bound to a subject
 // string (typically the resource id being rendered) and pass it as a

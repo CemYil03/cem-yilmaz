@@ -22,7 +22,7 @@ export function environmentVariablesCreate(source: NodeJS.ProcessEnv = process.e
         googleGenerativeAiApiKey: source.GOOGLE_GENERATIVE_AI_API_KEY,
         // Capability-specific — required only by features that authenticate
         // server-side renders via `serverToken.ts`. Validated at the call
-        // site, not at boot. See `docs/architecture/server-side-rendering.md`.
+        // site, not at boot. See `docs/architecture/browser-capture.md`.
         serverTokenSecret: source.SERVER_TOKEN_SECRET,
         visitorIpHashSalt: source.VISITOR_IP_HASH_SALT!,
         // Capability-specific — required only when the visitor chat's email

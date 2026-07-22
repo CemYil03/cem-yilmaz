@@ -23,7 +23,7 @@ export interface EnvironmentVariables {
     // Optional at the env layer, fail-fast required at the capability site
     // (`serverToken.createServerToken` / `verifyServerToken`). Used to sign
     // short-lived HMAC tokens that authenticate server-side renders against
-    // `/server/*` routes. See `docs/architecture/server-side-rendering.md`.
+    // `/server/*` routes. See `docs/architecture/browser-capture.md`.
     serverTokenSecret: string | undefined;
     // Per-deploy salt mixed into the SHA-256 of every visitor request's
     // client IP before it lands in `Sessions.ipHash`. The hash is used for

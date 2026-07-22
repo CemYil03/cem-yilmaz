@@ -1,7 +1,7 @@
 # Admin view onto the `Logs` table — rendered at `/workspace/logs`. Gated by
 # the `User.admin` resolver (returns null for non-admins). Read-only: no live
 # tail, no delete; the route lets Cem triage server errors without shelling
-# into the box. See `docs/features/logging.md`.
+# into the box. See `docs/architecture/logging.md`.
 
 query WorkspaceLogs($level: LogLevel, $search: String, $limit: Int) {
     sessionFindOne {

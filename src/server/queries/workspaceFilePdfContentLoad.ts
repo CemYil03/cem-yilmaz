@@ -6,7 +6,7 @@ import { verifyServerToken } from '../utils/serverToken';
 // Server-only loader for the `/server/workspace-file-pdf/:id` render surface
 // (the print layout headless Chromium captures into a PDF — see
 // `docs/features/workspace-files.md` and
-// `docs/architecture/server-side-rendering.md`).
+// `docs/architecture/browser-capture.md`).
 //
 // The headless browser has no session cookie, so this authenticates with the
 // short-lived HMAC token minted by the download route (`serverToken.ts`),

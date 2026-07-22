@@ -1,8 +1,12 @@
 # Workspace Hub
 
 The private side of cem-yilmaz.de is a personal workspace. The **navigation hub** is a single landing page that lists the focus areas the
-admin works on and prominently hosts the personal-assistant composer. Per-area behavior is documented in the matching
-`docs/features/workspace-*.md` files.
+admin works on and prominently hosts the personal-assistant composer. Each focus area is a **shipped** surface (not a placeholder). Per-area
+behavior is documented in the matching `docs/features/workspace-*.md` files; CV, visitor chats, and logs live in adjacent feature docs
+([cv.md](./cv.md), [chat-visitor.md](./chat-visitor.md), [workspace-logs.md](./workspace-logs.md)).
+
+Sidebar chat behaviour (open/close, deep-link hand-off, mobile Sheet owned by shadcn's `<Sidebar>`) is owned by
+[chat-workspace.md](./chat-workspace.md) — this doc only covers how the hub seeds that sidebar.
 
 ## User Behavior
 
@@ -11,32 +15,40 @@ admin works on and prominently hosts the personal-assistant composer. Per-area b
   — the language selector is intentionally absent because the workspace is English-only), then a **scroll region** holding a small muted
   motivational quote (see "Hero quote" below) followed by the **focus-area grid**, and the personal-assistant composer **pinned to the
   viewport bottom** below the scroll region. The tiles scroll behind the composer bar (with a `scroll-fade-b` feather into it); the composer
-  never scrolls. This mirrors the loaded chat surfaces (`/workspace/assistant/<chatId>`): a bounded-height `main` (`h-[calc(100dvh-5rem)]` —
+  never scrolls. This mirrors the loaded chat surface (`/workspace/assistant/<chatId>`): a bounded-height `main` (`h-[calc(100dvh-5rem)]` —
   the header's ~5rem flow rail subtracted), a `flex-1 min-h-0` scroll child, and the composer as the fixed-height sibling under it. The
   earlier layout scrolled the composer with the page in normal flow; parking it at the bottom makes the hub read like the rest of the
   assistant surfaces — the input is always reachable and the tiles are a scrollable catalogue above it.
-- Sending a message from the hub composer creates a new admin-scope chat and pops the workspace assistant sheet so the streaming response
-  surfaces in context. The hub itself stays a hub — every visit lands on the empty composer again.
+- Sending a message from the hub composer creates a new admin-scope chat, hands the id to the workspace assistant chat provider via
+  `setChatIdFromHub(chatId)`, and forces the **workspace assistant sidebar** open (`useSidebar().setOpen(true)` on `md+`, or
+  `setOpenMobile(true)` on `<md`) so the streaming response surfaces in context. The hub itself stays a hub — every visit lands on the empty
+  composer again. Full sidebar / deep-link behaviour: [chat-workspace.md](./chat-workspace.md).
 - The focus-area cards are split into two subgroups:
-  - **Personal areas** (top): Software, Projects, Finances, Inventory, Tax, Fitness, Medical, Movies & TV, Travel — the daily-use surfaces.
-  - **Public site** (bottom, under a small muted "Öffentliche Website / Public site" heading): CV, Visitor chats. These manage what appears
-    on the public `cem-yilmaz.de` (the CV editor writes the `Cv*` tables that feed `/cv` and `/about`; the visitor-chats surface is for
-    reading what visitors have asked the public assistant). They sit at the bottom because they're touched rarely compared to the personal
-    areas above.
+  - **Personal areas** (top): Compass, Projects, Todos, Tax, Software, Finances, Inventory, Fitness, Nutrition, Medical, Movies & TV, Travel
+    — the daily-use surfaces.
+  - **Public site** (bottom, under a small muted "Öffentliche Website / Public site" heading): CV, Visitor chats, Logs. These manage or
+    inspect what appears on / relates to the public `cem-yilmaz.de` (the CV editor writes the `Cv*` tables that feed `/cv` and `/about`;
+    visitor chats review what visitors asked the public assistant; logs inspect server log rows). They sit at the bottom because they're
+    touched rarely compared to the personal areas above.
   - Routes:
-    - CV → `/workspace/cv`
-    - Software → `/workspace/software`
+    - Compass → `/workspace/compass`
     - Projects → `/workspace/projects`
+    - Todos → `/workspace/todos`
+    - Tax → `/workspace/tax`
+    - Software → `/workspace/software`
     - Finances → `/workspace/finances`
     - Inventory → `/workspace/inventory`
-    - Tax → `/workspace/tax`
     - Fitness → `/workspace/fitness`
+    - Nutrition → `/workspace/nutrition`
     - Medical → `/workspace/medical`
     - Movies & TV → `/workspace/media`
     - Travel → `/workspace/travel`
+    - CV → `/workspace/cv`
     - Visitor chats → `/workspace/visitor-chats`
-- Each focus-area page is a placeholder: the area name + icon, a one-line "this area is being built out" body, and a muted "Coming soon"
-  line. No per-page back-link — the workspace header's breadcrumb trail is the way back to `/workspace`.
+    - Logs → `/workspace/logs`
+- Focus-area pages are real surfaces with their own editors, lists, and loaders — not "Coming soon" stubs. No per-page back-link — the
+  workspace header's breadcrumb trail is the way back to `/workspace`.
+- Projects and Todos tiles can show small numeric badges (inbox count / open-todo count) when the hub loader returns non-zero values.
 - The language switcher is hidden on workspace surfaces (the workspace is single-user private chrome; the locale toggle belongs to the
   public site). To switch locale, return to a public page via the logo.
 
@@ -61,36 +73,36 @@ putting that string into the visual hierarchy. The browser-tab title and `seoMet
 
 The assistant composer is **pinned to the bottom of the viewport**, below the scrollable focus-area grid — the AI-app shell described under
 "User Behavior". It is the shared `<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`) — the same composer the workspace
-assistant sheet and `/workspace/assistant` use — so the **full** admin composer kit is identical across every workspace surface: file
-attachments (with the active model gating the accepted media types), the model-selection dropdown (sticky default — picks both the model for
-the next send and updates `AdminChatConfig.defaultModelId`), and the tool-call approval-mode selector (Auto / Manual). The hub used to wrap
-a stripped-down `<MessageComposer />` that delegated to a provider-owned `openWithMessage(text)`, but that path couldn't carry attachments
-or a chosen model — the hub is the workspace's primary affordance, so it gets the same options as the dedicated route. Because the composer
-is always parked at the bottom, the assistant input is reachable without scrolling regardless of how far down the tile catalogue the user
-has scrolled. The composer is rendered with `autoFocus` so the textarea is the active element on landing — the user can start typing
-immediately without clicking.
+assistant sidebar and `/workspace/assistant/<chatId>` use — so the **full** admin composer kit is identical across every workspace surface:
+file attachments (with the active model gating the accepted media types), the model-selection dropdown (sticky default — picks both the
+model for the next send and updates `AdminChatConfig.defaultModelId`), and the tool-call approval-mode selector (Auto / Manual). The hub
+used to wrap a stripped-down `<MessageComposer />` that delegated to a provider-owned `openWithMessage(text)`, but that path couldn't carry
+attachments or a chosen model — the hub is the workspace's primary affordance, so it gets the same options as the dedicated route. Because
+the composer is always parked at the bottom, the assistant input is reachable without scrolling regardless of how far down the tile
+catalogue the user has scrolled. The composer is rendered with `autoFocus` so the textarea is the active element on landing — the user can
+start typing immediately without clicking.
 
 Submitting fires `WorkspaceChatMessageCreate` directly (no `chatId`, so the server allocates a fresh row). On the mutation's success the hub
-hands the freshly-allocated chatId to the workspace assistant chat provider via `setChatIdFromHub(chatId)` and pops the **workspace
-assistant sheet** (the same sheet the header's assistant button on every other workspace page opens) so the streaming response surfaces in
-context. The conversation stays in the sheet across navigation between focus areas; clicking **"Open full-screen"** in the sheet's header
-navigates to `/workspace/assistant?chatId=<id>` for a dedicated full-screen surface. See [Workspace Chat](./chat-workspace.md) for the
-sheet, header entry point, and full-screen jump-off behaviour.
+hands the freshly-allocated chatId to the workspace assistant chat provider via `setChatIdFromHub(chatId)` and forces the **workspace
+assistant sidebar** open so the streaming response surfaces in context. The conversation stays in the sidebar across navigation between
+focus areas; **"Open in its own page"** navigates to `/workspace/assistant/<chatId>` (path param — not `?chatId=`). See
+[chat-workspace.md](./chat-workspace.md) for sidebar, header entry point, and deep-link hand-off behaviour.
 
 The model catalog + saved default come from `WorkspaceChatConfig`, fetched **once** by the workspace layout loader
 (`src/routes/{-$locale}/workspace.tsx`) and passed into `WorkspaceAssistantChatProvider`. Every admin composer reads its `availableModels` /
 `selectedModelId` / `onModelChange` from the provider, so a model change on one surface is immediately reflected on the others. The provider
 also fire-and-forget persists every change as the new default via `WorkspaceChatConfigDefaultModelSet`.
 
-## `/workspace/assistant`
+## `/workspace/assistant/<chatId>`
 
-The dedicated chat surface for the personal assistant. Same shape as the public visitor chat sheet: empty state with the composer, loaded
-state with a header, the transcript, and the composer pinned to the bottom. The loaded transcript reads
+The dedicated deep-link chat surface for the personal assistant (`src/routes/{-$locale}/workspace/assistant.$chatId.tsx`). Same shape as
+other AI-app shells: loaded state with a header, the transcript, and the composer pinned to the bottom. The loaded transcript reads
 `sessionFindOne.user.admin.adminChatFindOne(chatId)` so a stolen chatId from the visitor namespace is rejected by `chatFindOne`.
 
-This route is the **bookmark-able** form of the same conversation that lives in the sheet. The sheet's "Open full-screen" button hands the
-active `chatId` off to this route via a normal navigation; the sheet stays the in-context surface for short questions while doing other
-workspace work, the route is for deep work where the chat IS the page. See [Workspace Chat](./chat-workspace.md).
+There is **no** `/workspace/assistant` index route — a fresh chat starts from the hub composer; existing chats live under
+`/workspace/assistant/<chatId>`. This route is the **bookmark-able** form of a conversation that also lives in the sidebar. The sidebar's
+"Open in its own page" affordance hands the active `chatId` off via normal navigation to that path. See
+[chat-workspace.md](./chat-workspace.md).
 
 The route is `noindex`, kept out of the sitemap, and unlinked from the public site — same posture as the rest of `/workspace/*`.
 
@@ -114,28 +126,88 @@ The route is `noindex`, kept out of the sitemap, and unlinked from the public si
 
 See [docs/architecture/authorization-workspace.md](../architecture/authorization-workspace.md) for the access model.
 
+## Options considered
+
+### Hub shell vs scrolling page
+
+1. **Normal document flow** (composer scrolls with the tiles). Rejected: the hub is the primary place to start a chat; burying the input
+   under a long tile catalogue made "ask something" feel secondary to navigation.
+2. **AI-app shell** (chosen) — bounded-height `main`, scrollable catalogue, composer pinned as the sibling below it. Matches
+   `/workspace/assistant/<chatId>` and keeps the input always reachable.
+
+### Focus-area presentation
+
+1. **Coming-soon placeholders** for every tile. Rejected once the areas shipped — a stub page undercuts the hub as a real jump-off.
+2. **Single mixed grid** with bento spans encoding priority. Rejected: tile size as a proxy for "daily vs rare" was harder to read than an
+   explicit labelled split.
+3. **Two labelled subgroups** (chosen) — personal areas on top, public-site management below. Uniform tile size inside each subgroup.
+
+### Assistant surface on send
+
+1. **Navigate away to a dedicated chat route** on every hub send. Rejected: breaks the "keep working in the workspace" posture.
+2. **Overlay Sheet as the only in-context surface.** Rejected in favour of the persistent sidebar — see
+   [chat-workspace.md](./chat-workspace.md).
+3. **Open the workspace assistant sidebar** (chosen) — `setChatIdFromHub` + `useSidebar().setOpen` / `setOpenMobile`. Deep work still has
+   `/workspace/assistant/<chatId>`.
+
+## Option chosen
+
+Ship the hub as an AI-app shell with a two-subgroup focus-area grid of real routes, bilingual strings on the `FocusArea` objects (and inline
+`{ de, en }[locale]` at other call sites), and a shared composer that seeds the layout-owned assistant sidebar. Defer sidebar / deep-link
+detail to [chat-workspace.md](./chat-workspace.md). Keep workspace chrome English-only via `hideLanguageSelector`, and keep every workspace
+path `noindex` and out of the sitemap.
+
 ## Implementation Details
 
 ### Files
 
 ```
+src/routes/{-$locale}/workspace.tsx                 → layout (header, sidebar providers, Outlet)
 src/routes/{-$locale}/workspace/
-├── index.tsx                          → /workspace               (hub + assistant composer)
-├── assistant.tsx                      → /workspace/assistant     (loaded chat)
-├── WorkspaceAssistantPage.graphql     admin-namespace operations for the chat
-├── software.tsx                       → /workspace/software
-├── projects.tsx                       → /workspace/projects
-├── finances.tsx                       → /workspace/finances
-├── inventory.tsx                      → /workspace/inventory
-├── tax.tsx                            → /workspace/tax
-├── fitness.tsx                        → /workspace/fitness
-├── medical.tsx                        → /workspace/medical
-├── media.tsx                          → /workspace/media
-└── travel.tsx                         → /workspace/travel
+├── index.tsx                                       → /workspace (hub + assistant composer)
+├── index.graphql                                   hub badge counts
+├── assistant.$chatId.tsx                           → /workspace/assistant/<chatId>
+├── WorkspaceAssistantPage.graphql                  admin-namespace chat operations
+├── compass.tsx                                     → /workspace/compass
+├── WorkspaceCompassPage.graphql
+├── projects.tsx                                    → /workspace/projects
+├── projects.graphql
+├── projects_.$projectId.tsx                        → /workspace/projects/<projectId>
+├── projects_.$projectId.graphql
+├── todos.tsx                                       → /workspace/todos
+├── todos.graphql
+├── tax.tsx                                         → /workspace/tax
+├── tax.graphql
+├── software.tsx                                    → /workspace/software
+├── software.graphql
+├── finances.tsx                                    → /workspace/finances
+├── finances.graphql
+├── inventory.tsx                                   → /workspace/inventory
+├── inventory.graphql
+├── inventory_.$itemId.tsx                          → /workspace/inventory/<itemId>
+├── inventory_.$itemId.graphql
+├── fitness.tsx                                     → /workspace/fitness
+├── fitness.graphql
+├── nutrition.tsx                                   → /workspace/nutrition
+├── nutrition.graphql
+├── medical.tsx                                     → /workspace/medical
+├── medical.graphql
+├── media.tsx                                       → /workspace/media
+├── media.graphql
+├── travel.tsx                                      → /workspace/travel
+├── travel.graphql
+├── travel_.$tripId.tsx                             → /workspace/travel/<tripId>
+├── travel_.$tripId.graphql
+├── cv.tsx                                          → /workspace/cv
+├── cv.graphql
+├── visitor-chats.tsx                               → /workspace/visitor-chats
+├── VisitorChatsAdminPage.graphql
+├── logs.tsx                                        → /workspace/logs
+└── LogsAdminPage.graphql
 ```
 
-All page files follow the same shape as `src/routes/{-$locale}/index.tsx` and `src/routes/{-$locale}/datenschutz.tsx`:
-`createFileRoute(...)` with a `head()` that returns `seoMeta(...)`, plus a component that reads `useLocale()` and renders the locale's copy.
+Page files follow the shared route shape: `createFileRoute(...)` with a `head()` that returns `seoMeta(...)` (always `noindex: true`), plus
+a component that reads `useLocale()` where bilingual chrome is needed.
 
 ### Workspace header
 
@@ -145,7 +217,7 @@ layout) and renders above the `<Outlet />`. Pages render only their body content
 
 `WorkspaceHeader` is a thin wrapper around `<Header />` that:
 
-- passes `chatVariant="workspace"` so the chat button opens the personal-assistant sheet,
+- passes `chatVariant="workspace"` so the chat button toggles the personal-assistant sidebar,
 - passes `hideLanguageSelector` so the language selector doesn't render (the workspace is English-only); the theme selector stays — dark
   mode is a workspace concern too,
 - builds a breadcrumb trail from the current pathname against a centralized `WORKSPACE_TITLES` map (path-segment → `{ de, en }` label) in
@@ -168,46 +240,46 @@ kept on the primitive for any future surface that needs `logo + plain label` chr
 
 ### Hub layout
 
-The hub reuses the same primitives the landing page does:
+The hub reuses shared primitives:
 
-- `Card` / `CardContent` / `CardTitle` / `CardDescription` from `src/web/components/base/card.tsx`
+- `GlassCard` plus `CardContent` / `CardTitle` / `CardDescription` from `src/web/components/`
 - `useLocale()` from `src/web/hooks/useLocale.ts`
 - `WorkspaceChatComposer` from `src/web/chat/WorkspaceChatComposer.tsx` (the shared admin composer)
-- `useChatLiveUpdates` from `src/web/chat/useChatLiveUpdates.tsx` (namespace-agnostic)
+- `useSidebar()` from `src/web/components/base/sidebar.tsx` (force-open on hub send)
+- `useWorkspaceAssistantChat()` for `setChatIdFromHub` / live-turn helpers
 
 The header is **not** invoked by the hub itself — it comes from `<WorkspaceHeader />` mounted at the layout (see "Workspace header" above).
 The hub's component body is a bounded-height `main` split into two children: a `flex-1 min-h-0` scroll region (the `sr-only` "Workspace" h1,
 the `HeroQuote`, and the focus-area grid) and a `shrink-0` composer bar pinned below it.
 
-A single `COPY` constant at the top of the file keys every visible string under `{ de, en }`. This follows the inline-bilingual-copy pattern
-from `docs/architecture/i18n.md` — no translation library.
+Bilingual copy follows the repo convention: inline `{ de: '…', en: '…' }[locale]` at call sites (section headings, aria-labels, badge
+narration). Focus-area titles and descriptions live on the `FocusArea` objects in `PERSONAL_FOCUS_AREAS` / `PUBLIC_SITE_FOCUS_AREAS` in
+`index.tsx` — there is **no** page-level `COPY` const. A small named `title` const is shared by `seoMeta()` and the visually-hidden `<h1>`.
 
-The cards are driven by two small `FocusArea[]` arrays — `PERSONAL_FOCUS_AREAS` and `PUBLIC_SITE_FOCUS_AREAS` (`{ key, to, icon }`) — and a
-shared `<FocusCardGrid />` that renders one subgroup at uniform tile size with a parameterized `lg:grid-cols-*`. Adding a new focus area is
-one entry to the right array plus one new file plus one new copy block.
+The cards are driven by those two `FocusArea[]` arrays (`{ to, icon, title, description, badgeKey? }`) and a shared `<FocusCardGrid />` that
+renders one subgroup at uniform tile size with a parameterized columns class. Adding a new focus area is one entry to the right array plus
+one new route file (and breadcrumb / docs updates — see below).
 
 **Two-subgroup layout.** The grid is split into a top "personal" subgroup and a bottom "public site" subgroup, separated by vertical spacing
 and a small muted `<h2>` + one-line subtitle marking the boundary. Inside each subgroup every tile is the same size — the previous bento
 with `primary` / `standard` / `wide` spans encoded a daily-vs-rare priority across one combined grid, but reading the layout as one flow
-obscured that CV and Visitor chats are content-management surfaces for the public site rather than daily personal areas. Splitting them into
-a labelled cluster at the bottom makes that grouping legible without relying on tile size as a proxy for it.
+obscured that CV / Visitor chats / Logs are content-management (or ops) surfaces for the public site rather than daily personal areas.
+Splitting them into a labelled cluster at the bottom makes that grouping legible without relying on tile size as a proxy for it.
 
-**Tile sizing.** Both subgroups use the same uniform grid: 1 column on `sm`, 2 on `md`, then 4 on `lg` for the personal subgroup (7 entries
-→ 4 + 3 with a trailing gap on the second row) and 2 on `lg` for the public-site subgroup (2 entries side by side). The trailing gap is
-intentional — adding a filler tile or shrinking to `lg:grid-cols-3` would just shift the awkwardness around. Card heights are uniform inside
-a subgroup because every card has the same icon + title + one-line description layout.
+**Tile sizing.** Personal subgroup: 1 column by default, 2 on `md`, 3 on `xl`, 4 on `2xl` (`xl:grid-cols-3 2xl:grid-cols-4`) — jumping
+straight to 4 columns at `lg` made German one-word titles too narrow. Public-site subgroup: 2 columns from `lg` (`lg:grid-cols-2`). Card
+heights are uniform inside a subgroup (`auto-rows-fr`) because every card has the same icon + title + one-line description layout.
 
-**Card content.** Each card is icon + title on one row, a one-line description below, and an `ArrowUpRightIcon` tucked in the top-right
-corner that brightens and translates on hover. The previous "Öffnen → / Open →" labelled-button row was redundant with the entire card being
-a `<Link>`; removing it cut a row of vertical space per card without losing affordance — the cursor change on hover, the corner arrow, and
-the card-wide hover state all still read as "this is clickable."
+**Card content.** Each card is icon + title on one row (optional count badge), a one-line description below, and an `ArrowUpRightIcon`
+tucked in the top-right corner that brightens and translates on hover. The previous "Öffnen → / Open →" labelled-button row was redundant
+with the entire card being a `<Link>`; removing it cut a row of vertical space per card without losing affordance.
 
 ### Page chrome
 
 Focus-area pages do not render their own header, back-link, or on-page title row; the workspace header above the outlet provides the
 breadcrumb (with the focus area's icon on the trailing crumb), so a duplicate `icon + h1` inside the page would only repeat what the chrome
 already shows. The breadcrumb-with-icon contract is owned by `Header`'s `Crumb` type and rendered by `WorkspaceHeader` via `WORKSPACE_ICONS`
-— see `src/web/components/WorkspaceHeader.tsx`. Per-area behavior lives in the matching `docs/features/workspace-*.md` doc.
+— see `src/web/components/WorkspaceHeader.tsx`. Per-area behavior lives in the matching feature doc.
 
 ### Wiring `WorkspaceChatComposer`
 
@@ -218,10 +290,10 @@ already shows. The breadcrumb-with-icon contract is owned by `Header`'s `Crumb` 
 - `extractResult` → reads `data.admin.chatMessageCreate` instead of the visitor `data.chatMessageCreate`.
 - `placeholder` → the localized "Ask your assistant…" string.
 - `availableModels` / `selectedModelId` / `onModelChange` → all pulled from `useWorkspaceAssistantChat()` so every admin composer (hub,
-  sheet, full-screen route) sees the same selection.
+  sidebar, deep-link route) sees the same selection.
 
-Surface-specific props stay on the wrapper: `chatId` (URL-owned on the route, provider-owned on the sheet, omitted on the hub),
-`onMessageSent` (navigate on the route, `setChatIdFromHub` on the sheet/hub), and `addonStart` (the sheet's "new chat" button).
+Surface-specific props stay on the wrapper: `chatId` (URL-owned on the deep-link route, provider-owned on the sidebar, omitted on the hub),
+`onMessageSent` (navigate on the route, `setChatIdFromHub` on the sidebar/hub), and sidebar extras such as the "new chat" control.
 
 `ChatComposer` itself still accepts the same prop passes for non-workspace callers — the public visitor chat sheet
 (`WebsiteVisitorAssistantChatSheet`) uses it directly with the default visitor mutation and no model dropdown.
@@ -234,13 +306,14 @@ Every workspace route passes `noindex: true` to `seoMeta()`. The shared canonica
 
 ## Adding a new focus area
 
-1. Add a new entry to `COPY.areas` in `src/routes/{-$locale}/workspace/index.tsx` (DE + EN copy).
-2. Add a new entry to either `PERSONAL_FOCUS_AREAS` (daily-use surfaces) or `PUBLIC_SITE_FOCUS_AREAS` (content that feeds the public site)
-   in the same file (key, route path, icon). If you're adding a third subgroup, factor a new array + `<FocusCardGrid />` invocation in
-   `FocusAreaGrid` and pick an appropriate `lg:grid-cols-*` for its width.
-3. Create the route under `src/routes/{-$locale}/workspace/` (mirror a sibling focus-area page). Pass `seoMeta({ ..., noindex: true })`. The
+1. Add a new entry to either `PERSONAL_FOCUS_AREAS` (daily-use surfaces) or `PUBLIC_SITE_FOCUS_AREAS` (content that feeds / relates to the
+   public site) in `src/routes/{-$locale}/workspace/index.tsx`, with bilingual `title` / `description` on the `FocusArea` object itself
+   (`{ de, en }`). Extend the `FocusAreaRoute` union with the new path. If you're adding a third subgroup, factor a new array +
+   `<FocusCardGrid />` invocation in `FocusAreaGrid` and pick an appropriate columns class for its width.
+2. Create the route under `src/routes/{-$locale}/workspace/` (mirror a sibling focus-area page). Pass `seoMeta({ ..., noindex: true })`. The
    page does **not** render its own `<Header />` or back-link — both come from the layout.
-4. Add the new path-segment to `WORKSPACE_TITLES` in `src/web/components/WorkspaceHeader.tsx` so the breadcrumb has a label, and to
+3. Add the new path-segment to `WORKSPACE_TITLES` in `src/web/components/WorkspaceHeader.tsx` so the breadcrumb has a label, and to
    `WORKSPACE_ICONS` in the same file so the trailing crumb gets the same Lucide icon used on the hub tile.
-5. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap.
-6. Document the surface in `docs/features/workspace-{name}.md`.
+4. Do **not** add the new path to `SITEMAP_PATHS` — workspace routes stay out of the sitemap.
+5. Document the surface in `docs/features/workspace-{name}.md` (or the appropriate adjacent feature doc for public-site / cross-cutting
+   surfaces).

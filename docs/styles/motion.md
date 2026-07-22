@@ -48,7 +48,8 @@ A button without a pressed state feels dead on mobile — the visitor taps and g
 interactive element must answer "did you hear me?" the moment it is engaged. The bar:
 
 - **`hover:`** is for desktop affordance — "this is real, you can click it." Used on color/background, not on transform.
-- **`focus-visible:`** is for keyboard users — never strip the ring. The Tailwind default `ring-2 ring-primary` is the baseline.
+- **`focus-visible:`** is for keyboard users — never strip the ring. Baseline on `Button` is
+  `focus-visible:ring-[3px] focus-visible:ring-ring/50` (destructive variants use a destructive-tinted ring).
 - **`active:`** is for the tap itself — the moment of contact. **Every clickable element ships with one.** Without it, mobile users tap and
   see nothing change until the page navigates, and the UI reads as broken. Use a slightly darker shade than `hover:` (e.g.
   `hover:bg-primary/90` paired with `active:bg-primary/80`).
@@ -68,12 +69,12 @@ CTAs). Inline text links inside flowing prose are exempt — they ride the line-
 
 - The shared `useInView` hook (`src/web/hooks/useInView.ts`) short-circuits to `inView = true` on mount when the media query matches, so
   observed elements render at their final state with no transition involvement.
-- The shared `Reveal` component (`src/web/components/Reveal.tsx`) uses Tailwind's `motion-reduce:` variant to suppress the translate (it
-  keeps the opacity fade, which is harmless even for vestibular sensitivity).
-- Keyframe animations in `src/styles.css` are paused inside one `@media (prefers-reduced-motion: reduce)` block at the bottom of the file.
-  Every new `@keyframes` entry must be added to that block when introduced.
-- One-off hover transforms (e.g. `NavCard`'s arrow translate) suppress themselves with `motion-reduce:group-hover:translate-x-0` or
-  equivalent.
+- The shared `Reveal` component (`src/web/components/Reveal.tsx`) uses `motion-reduce:transition-none` (and zeros the out-state translate)
+  so reduced-motion users see the final opacity/position immediately — there is **no** leftover opacity fade.
+- Keyframe animations in `src/styles.css` are paused inside `@media (prefers-reduced-motion: reduce)` blocks (more than one block may exist
+  — e.g. todo-specific animations). Every new `@keyframes` entry must be covered by a reduced-motion rule when introduced.
+- One-off hover transforms (e.g. landing `NavCard`'s arrow translate — a local helper in `index.tsx`, not a shared primitive) suppress
+  themselves with `motion-reduce:group-hover:translate-x-0` or equivalent.
 
 The site must work as a still page. Test by enabling "Reduce motion" in your OS and walking through the landing page — nothing should
 animate, nothing should feel broken.

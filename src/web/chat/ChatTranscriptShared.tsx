@@ -1,8 +1,8 @@
 import { format, parseISO } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-import { useCallback } from 'react';
+import { Fragment, useCallback } from 'react';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
-import { ChatStreamingRegion, ChatTranscriptShell } from '../components/base/chat-transcript-shell';
+import { ChatTranscriptShell } from '../components/base/chat-transcript-shell';
 import { Marker, MarkerContent, MarkerIcon } from '../components/base/marker';
 import { MessageScrollerItem } from '../components/base/message-scroller';
 import { Spinner } from '../components/base/spinner';
@@ -26,6 +26,14 @@ import {
 // `defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`, and the
 // jump-to-latest pill at the tail. See `docs/styles/chat.md` for the desired
 // chat experience and the shared transcript composition rules.
+//
+// Critical MessageScroller contract: every `MessageScrollerItem` must be a
+// *direct* child of `MessageScrollerContent`. The primitive's MutationObserver
+// and turn-anchor walk only look at `content.children` — wrapping items in a
+// date `<section>` or an `aria-live` region silently breaks stick-to-bottom
+// and `scrollAnchor` handling (new sends show "Jump to latest" instead of
+// following). Date markers and streaming rows are therefore siblings of the
+// message items, not parents of them.
 
 export interface ChatTranscriptProps {
     /** Every message that should render as a row in the transcript, in
@@ -35,9 +43,8 @@ export interface ChatTranscriptProps {
      *  reads as a nested block instead of a flat run of siblings. */
     messages: ReadonlyArray<TranscriptMessage>;
     /** In-flight assistant streaming buffers, keyed by streaming id. Rendered
-     *  after all persisted messages in a separate section so the
-     *  MessageScroller anchors on new turns without racing the persisted
-     *  ChatMessage remounts. */
+     *  after all persisted messages as sibling `MessageScrollerItem`s so the
+     *  MessageScroller can follow growth while the reader is at the live edge. */
     streamingTexts: Readonly<Record<string, string>>;
     /** Submit handler for `ChatMessageAssistantInputCollection` prompts. The
      *  outermost provider owns the mutation (admin vs visitor) so this
@@ -83,6 +90,14 @@ export interface ChatTranscriptProps {
 // new Set each render (which would defeat memo comparisons downstream).
 const EMPTY_LIVE_TURN_IDS: ReadonlySet<string> = new Set();
 
+/** Turn anchors are user messages only — matching shadcn's MessageScroller
+ *  contract. A new `scrollAnchor` row settles near the top of the viewport so
+ *  the reply can grow into the room below; `autoScroll` then follows that
+ *  growth while the reader stays at the live edge. */
+function isTurnScrollAnchor(message: TranscriptMessage): boolean {
+    return message.__typename === 'ChatMessageUser';
+}
+
 export function ChatTranscript({
     messages,
     streamingTexts,
@@ -111,30 +126,40 @@ export function ChatTranscript({
     // prior-turn tool call or another chat's tool call never re-shimmers.
     const activeId = activeToolCallId(topLevel, liveTurnMessageIds ?? EMPTY_LIVE_TURN_IDS, isGenerating, streamingEntries.length > 0);
 
-    // Every persisted message and every in-flight streaming buffer becomes
-    // its own scroll anchor — MessageScroller uses these to decide "start a
-    // new turn near the top of the viewport" and to preserve position when
-    // older history is prepended.
     const messageIdFor = useCallback((message: TranscriptMessage) => message.chatMessageId, []);
 
     return (
-        <ChatTranscriptShell jumpToLatestLabel={jumpToLatestLabel} className={className} viewportClassName={viewportClassName}>
+        <ChatTranscriptShell
+            jumpToLatestLabel={jumpToLatestLabel}
+            className={className}
+            viewportClassName={viewportClassName}
+            // Row gap (`--chat-row-gap`); date markers add `mt-4` so the gap
+            // between the last row of one day and the next day's marker reads
+            // as `--chat-group-gap` (gap-4 + mt-4 ≈ 2rem).
+            contentClassName="gap-4"
+        >
             {initialFetching && messages.length === 0 ? (
                 <div className="grid place-items-center py-8">
                     <Spinner className="size-4 text-muted-foreground" />
                 </div>
             ) : null}
-            {groupedMessages.map((group) => (
-                <section key={group.date} className="flex min-w-0 flex-col gap-4">
-                    <Marker variant="separator" className="text-[11px] uppercase tracking-wide">
-                        <MarkerIcon>
-                            <CalendarIcon />
-                        </MarkerIcon>
-                        <MarkerContent>
-                            <time dateTime={group.date}>{format(parseISO(group.date), 'PP')}</time>
-                        </MarkerContent>
-                    </Marker>
+            {groupedMessages.map((group, groupIndex) => (
+                <Fragment key={group.date}>
+                    <MessageScrollerItem messageId={`date:${group.date}`} className={groupIndex > 0 ? 'mt-4' : undefined}>
+                        <Marker variant="separator" className="text-[11px] uppercase tracking-wide">
+                            <MarkerIcon>
+                                <CalendarIcon />
+                            </MarkerIcon>
+                            <MarkerContent>
+                                <time dateTime={group.date}>{format(parseISO(group.date), 'PP')}</time>
+                            </MarkerContent>
+                        </Marker>
+                    </MessageScrollerItem>
                     {group.messages.map((message) => {
+                        // Folded into the collection card — no visual row, so no
+                        // scroller item (an empty item would still shift
+                        // itemCount and confuse turn anchoring).
+                        if (message.__typename === 'ChatMessageUserInput') return null;
                         const approvalRespondHandler =
                             message.__typename === 'ChatMessageToolApprovalRequest' && pendingApprovalIds.has(message.approvalId)
                                 ? onApprovalRespond
@@ -146,7 +171,11 @@ export function ChatTranscript({
                         const children =
                             message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
                         return (
-                            <MessageScrollerItem key={message.chatMessageId} messageId={messageIdFor(message)} scrollAnchor>
+                            <MessageScrollerItem
+                                key={message.chatMessageId}
+                                messageId={messageIdFor(message)}
+                                scrollAnchor={isTurnScrollAnchor(message)}
+                            >
                                 <ChatMessage
                                     message={message}
                                     isInteractiveCollection={
@@ -162,17 +191,18 @@ export function ChatTranscript({
                             </MessageScrollerItem>
                         );
                     })}
-                </section>
+                </Fragment>
             ))}
-            {streamingEntries.length > 0 ? (
-                <ChatStreamingRegion className="flex min-w-0 flex-col gap-4">
-                    {streamingEntries.map(([streamingId, text]) => (
-                        <MessageScrollerItem key={streamingId} messageId={streamingId} scrollAnchor>
-                            <AssistantMarkdown text={text} streaming />
-                        </MessageScrollerItem>
-                    ))}
-                </ChatStreamingRegion>
-            ) : null}
+            {streamingEntries.map(([streamingId, text]) => (
+                // No `scrollAnchor` — the user message that started the turn
+                // already holds the reading line; streaming growth is followed
+                // by `autoScroll` while the reader is at the live edge.
+                // `aria-live` lives on the item itself so we don't wrap items
+                // in a DOM parent (which would break the direct-child contract).
+                <MessageScrollerItem key={streamingId} messageId={streamingId} aria-live="polite" aria-atomic="false">
+                    <AssistantMarkdown text={text} streaming />
+                </MessageScrollerItem>
+            ))}
         </ChatTranscriptShell>
     );
 }

@@ -87,7 +87,7 @@ export interface ServerRuntime {
     // Server-side rendering capability — drives a singleton headless
     // Chromium against an internal `/server/*` route to produce an image
     // (`capture`) or a PDF (`capturePdf`) of the rendered React UI. See
-    // `docs/architecture/server-side-rendering.md`. Tests inject a stub
+    // `docs/architecture/browser-capture.md`. Tests inject a stub
     // that returns a fixed `Buffer` and never launch a real browser.
     browser: {
         capture: (options: BrowserCaptureOptions) => Promise<Buffer>;

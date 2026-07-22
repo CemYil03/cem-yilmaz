@@ -74,26 +74,27 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 
 One row per doc under `docs/architecture/`. Feature behavior lives in `docs/features/` — do not duplicate it here.
 
-| Concern               | Doc                                                                            |
-| --------------------- | ------------------------------------------------------------------------------ |
-| Server-side structure | [`server-architecture.md`](./docs/architecture/server-architecture.md)         |
-| Dependency injection  | [`dependency-injection.md`](./docs/architecture/dependency-injection.md)       |
-| Environment variables | [`environment.md`](./docs/architecture/environment.md)                         |
-| Authentication        | [`authentication.md`](./docs/architecture/authentication.md)                   |
-| Authorization         | [`authorization.md`](./docs/architecture/authorization.md)                     |
-| Workspace access      | [`authorization-workspace.md`](./docs/architecture/authorization-workspace.md) |
-| API layer             | [`api-layer.md`](./docs/architecture/api-layer.md)                             |
-| State synchronization | [`state-synchronization.md`](./docs/architecture/state-synchronization.md)     |
-| Jobs                  | [`jobs.md`](./docs/architecture/jobs.md)                                       |
-| Server-side rendering | [`server-side-rendering.md`](./docs/architecture/server-side-rendering.md)     |
-| SEO                   | [`discovery-seo.md`](./docs/architecture/discovery-seo.md)                     |
-| AI-search (GEO)       | [`discovery-geo.md`](./docs/architecture/discovery-geo.md)                     |
-| Content model         | [`content-model.md`](./docs/architecture/content-model.md)                     |
-| File storage          | [`file-storage.md`](./docs/architecture/file-storage.md)                       |
-| i18n                  | [`i18n.md`](./docs/architecture/i18n.md)                                       |
-| Chat foundation       | [`chat.md`](./docs/architecture/chat.md)                                       |
-| Chat persistence      | [`chat-persistence.md`](./docs/architecture/chat-persistence.md)               |
-| Agent delegation      | [`agent-delegation.md`](./docs/architecture/agent-delegation.md)               |
+| Concern                      | Doc                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| Server-side structure        | [`server-architecture.md`](./docs/architecture/server-architecture.md)         |
+| Dependency injection         | [`dependency-injection.md`](./docs/architecture/dependency-injection.md)       |
+| Environment variables        | [`environment.md`](./docs/architecture/environment.md)                         |
+| Authentication               | [`authentication.md`](./docs/architecture/authentication.md)                   |
+| Authorization                | [`authorization.md`](./docs/architecture/authorization.md)                     |
+| Workspace access             | [`authorization-workspace.md`](./docs/architecture/authorization-workspace.md) |
+| API layer                    | [`api-layer.md`](./docs/architecture/api-layer.md)                             |
+| State synchronization        | [`state-synchronization.md`](./docs/architecture/state-synchronization.md)     |
+| Jobs                         | [`jobs.md`](./docs/architecture/jobs.md)                                       |
+| Browser capture (Playwright) | [`browser-capture.md`](./docs/architecture/browser-capture.md)                 |
+| Persistent logging           | [`logging.md`](./docs/architecture/logging.md)                                 |
+| SEO                          | [`discovery-seo.md`](./docs/architecture/discovery-seo.md)                     |
+| AI-search (GEO)              | [`discovery-geo.md`](./docs/architecture/discovery-geo.md)                     |
+| Content model                | [`content-model.md`](./docs/architecture/content-model.md)                     |
+| File storage                 | [`file-storage.md`](./docs/architecture/file-storage.md)                       |
+| i18n                         | [`i18n.md`](./docs/architecture/i18n.md)                                       |
+| Chat foundation              | [`chat.md`](./docs/architecture/chat.md)                                       |
+| Chat persistence             | [`chat-persistence.md`](./docs/architecture/chat-persistence.md)               |
+| Agent delegation             | [`agent-delegation.md`](./docs/architecture/agent-delegation.md)               |
 
 ## How to Add Things
 

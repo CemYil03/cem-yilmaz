@@ -47,13 +47,16 @@ The `/api/stream` endpoint (`src/routes/api/stream.ts`):
 
 Currently defined in `ServerRuntime.publish` (see `src/server/domain/serverRuntimeCreate.ts`):
 
-| Channel       | Trigger Key                   | Payload          | Use Case                                                         |
-| ------------- | ----------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `userUpdates` | `{userId}`                    | `{}`             | User state changes                                               |
-| `chatUpdates` | `chat-updates:{generationId}` | `GqlSChatUpdate` | AI generation streaming and chat-message lifecycle notifications |
+| Channel                   | Trigger Key                                | Wire payload                        | GraphQL delivery                    | Use Case                                           |
+| ------------------------- | ------------------------------------------ | ----------------------------------- | ----------------------------------- | -------------------------------------------------- |
+| `userUpdates`             | `{userId}`                                 | `{}`                                | (reload / invalidate)               | User state changes                                 |
+| `chatUpdates`             | `chat-updates:{generationId}`              | `ChatUpdateWirePayload` (ids only)  | Resolver reloads → `GqlSChatUpdate` | AI generation streaming and chat-message lifecycle |
+| `compassInterviewUpdates` | `compass-interview-updates:{generationId}` | `CompassInterviewUpdateWirePayload` | Interview message updates           | Compass psychological-interview agent              |
 
-The `chat-updates:` prefix namespaces the channel so a generation id reused as some other key cannot collide; `userUpdates` publishes
-directly against the user id with no prefix.
+Publish puts a **wire payload** on NOTIFY (pg_notify is capped at 8000 bytes) — see
+[chat.md](./chat.md#why-the-wire-payload-is-the-id-not-the-full-message). The subscription resolver reloads full rows before delivering
+GraphQL types. The `chat-updates:` / `compass-interview-updates:` prefixes namespace channels so generation ids cannot collide with other
+keys; `userUpdates` publishes directly against the user id with no prefix.
 
 ### Key Files
 

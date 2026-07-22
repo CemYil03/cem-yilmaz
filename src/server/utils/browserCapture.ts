@@ -1,7 +1,7 @@
 import type { Browser } from 'playwright';
 
 // Server-side rendering capability. See
-// `docs/architecture/server-side-rendering.md` for the full design — this
+// `docs/architecture/browser-capture.md` for the full design — this
 // module is the singleton-Chromium half of that pipeline. Routes intended
 // for capture live under `/server/*` and authenticate with an HMAC token
 // minted by `serverToken.ts`.

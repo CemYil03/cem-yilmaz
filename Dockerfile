@@ -22,7 +22,7 @@ ENV BUILD_SHA=$BUILD_SHA
 # Server-side rendering: Playwright + Chromium. These layers are placed
 # before the application copy so they cache across application code
 # changes — the Chromium download dominates image build time and rarely
-# changes. See `docs/architecture/server-side-rendering.md`.
+# changes. See `docs/architecture/browser-capture.md`.
 #
 # `playwright` is the only runtime dependency that cannot be inlined into
 # the nitro bundle (chromium-bidi loads via paths Vite cannot statically

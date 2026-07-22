@@ -30,7 +30,7 @@ import type { Locale } from '../../../web/utils/locale';
 // the surface is triage, not bulk export, so there is no "Load more"
 // button — bumping the cap is a query-param change.
 //
-// See `docs/features/logging.md`.
+// See `docs/architecture/logging.md` and `docs/features/workspace-logs.md`.
 
 const title = { de: 'Logs', en: 'Logs' };
 const description = {

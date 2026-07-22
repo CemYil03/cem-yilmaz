@@ -24,7 +24,7 @@ The runtime stage then runs `npx playwright install-deps chromium` and `npx play
 Chromium needs (fonts, libnss, libatk, ...) and download the matching Chromium build. These steps live above the
 `COPY --from=build /app/.output` so the multi-hundred-megabyte Chromium layer caches across application code changes. The Debian-based
 `node:24-slim` base is required — Chromium's prebuilt binaries are linked against glibc and will not run on Alpine. See
-[architecture/server-side-rendering.md](./architecture/server-side-rendering.md) for the full design.
+[architecture/browser-capture.md](./architecture/browser-capture.md) for the full design.
 
 The runtime stage sets `ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` **before** those install steps. Playwright resolves browser binaries
 relative to `$HOME/.cache/ms-playwright`, but the install runs as `root` while the container serves as `USER node` — leaving Chromium in
@@ -33,10 +33,10 @@ relative to `$HOME/.cache/ms-playwright`, but the install runs as `root` while t
 and a `chmod -R a+rX /ms-playwright` after install lets the `node` user read the root-created files.
 
 **`ffmpeg-static` is the other runtime dependency that ships a native binary via npm.** The read-aloud feature transcodes Gemini's PCM
-output into MP3 (see [chat.md#read-aloud](./features/chat.md#read-aloud)); the transcoder spawns the pinned `ffmpeg` binary that ships with
-`ffmpeg-static`. Because it's a plain npm package with a prebuilt binary, no `apt-get install ffmpeg` layer is needed and the same package
-works on macOS for local dev. Like Playwright, it lives in `dependencies` (not `devDependencies`) so `npm ci --omit=dev` in the runtime
-stage still installs it.
+output into MP3 (see [file-storage.md#read-aloud-tts-cache](./architecture/file-storage.md#read-aloud-tts-cache)); the transcoder spawns the
+pinned `ffmpeg` binary that ships with `ffmpeg-static`. Because it's a plain npm package with a prebuilt binary, no `apt-get install ffmpeg`
+layer is needed and the same package works on macOS for local dev. Like Playwright, it lives in `dependencies` (not `devDependencies`) so
+`npm ci --omit=dev` in the runtime stage still installs it.
 
 #### Build output: nitro + TanStack Start
 
@@ -46,12 +46,19 @@ a real Node entrypoint, `vite.config.ts` adds the `nitro/vite` plugin alongside 
 `node:http` listener that reads `PORT` and `HOST` from the environment, and emits a self-contained bundle at `.output/server/index.mjs` with
 its runtime dependencies inlined. This is the file the Dockerfile launches in production.
 
-The final image contains only the `.output/` directory — no source, no `node_modules`, no `package.json`. Runtime deps (`react`,
-`@tanstack/react-router`, `pg`, etc.) are inlined into the bundle by nitro, so the runtime stage does not need to install anything.
+Nitro inlines most application runtime deps (`react`, `@tanstack/react-router`, `pg`, etc.) into `.output/`. The Docker **runtime stage
+still runs `npm ci --omit=dev`** and keeps `package.json` / `node_modules` because Playwright (Chromium) and `ffmpeg-static` must resolve as
+real packages on disk — see the Dockerfile notes above. Do not describe the image as "`.output` only."
 
 ```bash
 docker build -t app .
-docker run -p 3000:3000 -e DATABASE_URL=... -e sessionCookieName=... -e WEB_PAGE_URL=... -e GOOGLE_GENERATIVE_AI_API_KEY=... app
+docker run -p 3000:3000 \
+  -e DATABASE_URL=... \
+  -e sessionCookieName=... \
+  -e WEB_PAGE_URL=... \
+  -e VISITOR_IP_HASH_SALT=... \
+  -e GOOGLE_GENERATIVE_AI_API_KEY=... \
+  app
 ```
 
 ### Health Check
@@ -85,7 +92,7 @@ The following environment variables must be configured in the deployment environ
 | `WEB_PAGE_URL`                 | Yes      | Absolute origin of the deployed site, no trailing slash. In production this is `https://cem-yilmaz.de`. Drives canonical URLs, hreflang alternates, the dynamic `/sitemap.xml`, and `/robots.txt` — see [architecture/discovery-seo.md](./architecture/discovery-seo.md)                                                  |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Yes      | Google Generative AI API key. Validated when `serverRuntimeCreate` builds the Gemini language model                                                                                                                                                                                                                       |
 | `VISITOR_IP_HASH_SALT`         | Yes      | Per-deploy salt mixed into `SHA256(salt + ":" + clientIp)` before it lands in `Sessions.ipHash`. Drives the visitor-chat rate limiter's IP bucket — see [features/chat-visitor.md](./features/chat-visitor.md). Generate with `openssl rand -hex 32`; treat as a secret                                                   |
-| `SERVER_TOKEN_SECRET`          | No\*     | HMAC secret signing short-lived server-side render tokens. Required only by features that call `serverRuntime.browser.capture()` against an authenticated `/server/*` route — see [architecture/server-side-rendering.md](./architecture/server-side-rendering.md)                                                        |
+| `SERVER_TOKEN_SECRET`          | No\*     | HMAC secret signing short-lived server-side render tokens. Required only by features that call `serverRuntime.browser.capture()` against an authenticated `/server/*` route — see [architecture/browser-capture.md](./architecture/browser-capture.md)                                                                    |
 | `RESEND_API_KEY`               | No\*     | [Resend](https://resend.com) API key. Required only when the visitor chat's email tools fire (`sendEmailToCem`, `submitProjectRequest`, `verifyProjectRequestOtp`). Validated at the first send in `emailServiceCreate` — see [features/chat-email-tools.md](./features/chat-email-tools.md)                              |
 | `EMAIL_FROM_ADDRESS`           | No\*     | From-address Resend sends as. The Resend account must own the sending domain (DNS + SPF + DKIM). Format `"Name <local@domain>"` or bare `local@domain`. Required alongside `RESEND_API_KEY`                                                                                                                               |
 | `TMDB_API_KEY`                 | No       | [The Movie Database](https://www.themoviedb.org/) v3 API key. Powers the `/workspace/media` search-as-you-type add flow and the `adminMediaMoviesAddFromTmdb` auto-fill. Missing key degrades to empty search results (manual entry still works) — see [features/workspace-media.md](./features/workspace-media.md)       |

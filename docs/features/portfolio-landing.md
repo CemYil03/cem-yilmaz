@@ -93,7 +93,7 @@ it fires `chatMessageCreate` with the seeded question on open, mounts `useChatLi
 before the mutation publishes, and renders the same transcript + composer stack that used to live at the now-removed `/chat` route. The
 sheet owns its own `chatId` in component state — closing it ends the session.
 
-See [`docs/features/chat.md`](./chat.md) for the visitor chat surface itself.
+See [`docs/features/chat-visitor.md`](./chat-visitor.md) for the visitor chat surface itself.
 
 ### Call-to-action section
 

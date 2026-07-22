@@ -1,4 +1,7 @@
-# Server-Side Rendering (Playwright)
+# Browser Capture (Playwright)
+
+> **Naming:** this is **not** TanStack Start / route-loader SSR (see [api-layer.md](./api-layer.md#ssr-data-loading)). It is headless
+> Chromium capture of `/server/*` routes to image or PDF buffers via `serverRuntime.browser`.
 
 ## Context
 
@@ -14,8 +17,8 @@ Dockerfile rewrite.
 
 ## Decision
 
-Server-side rendering is a **first-class capability** of the template, exposed on `ServerRuntime` as `serverRuntime.browser`. The pipeline
-has four pieces, each independently replaceable:
+Browser capture is a **first-class capability** of the template, exposed on `ServerRuntime` as `serverRuntime.browser`. The pipeline has
+four pieces, each independently replaceable:
 
 1. **A long-lived headless Chromium process** managed as a lazy module-scope singleton inside `src/server/utils/browserCapture.ts`. The
    first call to `serverRuntime.browser.capture(...)` launches Chromium; every subsequent call reuses the same browser and just opens a

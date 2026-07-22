@@ -6,7 +6,7 @@ import type { WorkspaceFilePdfContent } from '../server/queries/workspaceFilePdf
 
 // Print surface for a workspace markdown document — the page headless
 // Chromium navigates to and captures into a PDF (see
-// `docs/features/workspace-files.md`, `docs/architecture/server-side-rendering.md`).
+// `docs/features/workspace-files.md`, `docs/architecture/browser-capture.md`).
 // This is the first consumer of the `/server/*` render-route convention.
 //
 // It authenticates by the short-lived HMAC `token` search param (bound to the

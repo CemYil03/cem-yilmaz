@@ -1,5 +1,7 @@
 # Workspace chat
 
+## User behavior
+
 The workspace personal-assistant chat is the private counterpart to the public visitor chat. It is mounted once at the workspace layout
 (`src/routes/{-$locale}/workspace.tsx`) as a persistent right-side **sidebar** that lives **alongside** every workspace surface, so the
 admin can ask the assistant a question and keep editing/reading without dismissing anything.
@@ -32,12 +34,28 @@ See also:
 - [features/chat-web-search.md](./chat-web-search.md) — the admin assistant's Google Search grounding tool. Not on the visitor agent.
 - [features/admin-chat-config.md](./admin-chat-config.md) — per-turn model picker + sticky default.
 - [features/workspace-hub.md](./workspace-hub.md) — the hub composer that seeds the sidebar, plus the workspace navigation shell.
-- [features/chat.md](./chat.md) — shared chat affordances (transcript, composer, live updates).
-- [architecture/chat.md](../architecture/chat.md) — shared message model; how this feature plugs in via `scope: 'admin'`.
-- [architecture/agent-delegation.md](../architecture/agent-delegation.md) — orchestrator → domain sub-agents.
 - [styles/chat.md](../styles/chat.md) — desired chat experience (scroll, composer, transcript composition, link behaviour).
+- [architecture/chat.md](../architecture/chat.md) — shared message model; how this feature plugs in via `scope: 'admin'`.
+- [architecture/chat-persistence.md](../architecture/chat-persistence.md) — storage, replay, attachments.
+- [architecture/file-storage.md#read-aloud-tts-cache](../architecture/file-storage.md#read-aloud-tts-cache) — read-aloud / TTS cache.
+- [architecture/agent-delegation.md](../architecture/agent-delegation.md) — orchestrator → domain sub-agents.
+- [features/chat.md](./chat.md) — thin index of chat docs (not a third product).
 
-## Agent and GraphQL access
+## Options considered
+
+| Option                                      | Notes                                           |
+| ------------------------------------------- | ----------------------------------------------- |
+| Modal / overlay Sheet covering the page     | Blocks the surface the admin is editing         |
+| Dedicated chat-only route as the only entry | Loses "ask while working"                       |
+| Persistent right sidebar (chosen)           | Docked column; conversation survives navigation |
+
+## Option chosen
+
+shadcn `<Sidebar collapsible="offcanvas" side="right">` — see [Why a persistent sidebar](#why-a-persistent-sidebar).
+
+## Implementation
+
+### Agent and GraphQL access
 
 Admin sends go through `Mutation.admin` (`guardAdminMutation` — see
 [authorization-workspace.md](../architecture/authorization-workspace.md)):

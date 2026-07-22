@@ -171,7 +171,7 @@ To swap either icon, replace the file in `public/`. Keep the names — they are 
 
 If a future asset needs a light/dark variant (logo, illustration, OG image), the recommended pattern depends on where it renders:
 
-- **CSS-controlled image** — use Tailwind's `dark:` variant on `<img>` pairs (see the nav logo on `/visual-design`):
+- **CSS-controlled image** — use Tailwind's `dark:` variant on `<img>` pairs (e.g. light/dark logos in the site header):
   ```tsx
   <img src="/logo-light.svg" className="dark:hidden" alt="" />
   <img src="/logo-dark.svg" className="hidden dark:block" alt="" />

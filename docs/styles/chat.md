@@ -8,8 +8,9 @@ This doc is about the **desired chat experience** — how a chat looks, how it s
 under an assistant reply, and how the shared transcript / composer primitives are composed. It is not about the message union, streaming
 machinery, tool-call approval flow, or LLM replay — those live in [`docs/architecture/chat.md`](../architecture/chat.md) and
 [`docs/architecture/chat-persistence.md`](../architecture/chat-persistence.md). Surface-specific product behaviour lives in
-[`docs/features/chat-visitor.md`](../features/chat-visitor.md) and [`docs/features/chat-workspace.md`](../features/chat-workspace.md); see
-[`docs/features/chat.md`](../features/chat.md) for shared visitor-facing affordances (read-aloud, attachments).
+[`docs/features/chat-visitor.md`](../features/chat-visitor.md) and [`docs/features/chat-workspace.md`](../features/chat-workspace.md).
+Read-aloud lives in [`file-storage.md#read-aloud-tts-cache`](../architecture/file-storage.md#read-aloud-tts-cache); attachments in
+[`chat-persistence.md#attachments`](../architecture/chat-persistence.md#attachments). Index: [`features/chat.md`](../features/chat.md).
 
 ## The one principle
 
@@ -71,14 +72,21 @@ buffer is empty.
 | Concern                                    | Value                                                              | Rationale                                                                                                                                                                                                                                                     |
 | ------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Stick-to-bottom edge threshold             | **64 px**                                                          | Streamdown produces sub-pixel content-height jitter as it grows; 64 px absorbs it without dropping stick mode. Any smaller and stick-mode chatters; larger and casual scroll-ups look like the reader is still at the bottom.                                 |
-| Anchor new turns near                      | **top of viewport**                                                | The `MessageScroller` primitive handles this — a fresh reply grows _into_ the screen instead of pushing everything up. Reader can watch it fill.                                                                                                              |
-| Jump-to-latest pill visibility             | **only while `data-active="false"` on the scroller**               | The pill's fade in/out is driven by the primitive's `data-active` state — 400 ms out-quint on hide, 200 ms in-quint on show. Do not hand-roll a second one.                                                                                                   |
+| Anchor new turns near                      | **top of viewport** (`scrollAnchor` on the **user** row only)      | Industry pattern (ChatGPT / Claude / shadcn): a new send settles the user message near the top so the reply grows into the room below. Once the reply fills the viewport, follow-output takes over again.                                                     |
+| Jump-to-latest pill visibility             | **only while not at the live edge** (`scrollable.end`)             | The pill's fade in/out is driven by the primitive's `data-active` state — 400 ms out-quint on hide, 200 ms in-quint on show. Do not hand-roll a second one. While follow-output is engaged the pill stays hidden even if a spacer temporarily exists.         |
 | Auto-follow enabled                        | **`autoScroll` on `MessageScrollerProvider`**                      | Off by default in the primitive — without it the transcript never sticks to the bottom during streaming. Set once in `ChatTranscriptShell`, so every surface follows the live edge. Still edge-gated (see below), so it never yanks a reader who scrolled up. |
 | Auto-follow interrupts on                  | **any user scroll up, keyboard nav, text selection, or link open** | If the reader is doing anything at all, follow stops. Resumes when they smooth-scroll back via the pill or the natural bottom edge.                                                                                                                           |
 | Position preservation on prepended history | **free** — the primitive handles it                                | Once "load older messages" ships, the transcript won't jump under the reader.                                                                                                                                                                                 |
 
+This is the industry standard: **follow while at the live edge, never yank a reader who scrolled up.** Turn anchoring (`scrollAnchor` on the
+user message) composes with that — a send from the live edge parks the new turn at the reading line; streaming growth is then followed until
+the reader scrolls away.
+
 **Do not** hand-roll `scrollIntoView` or a home-grown `isAtBottom` toggle. Every surface routes through the `MessageScroller` primitive; the
 config lives in `ChatTranscriptShell` (see [The shared primitives](#the-shared-primitives)) so all surfaces inherit the same values.
+
+**Do not** wrap `MessageScrollerItem`s in extra DOM parents (date `<section>`, `aria-live` regions, layout divs). The primitive only sees
+direct children of Content — nested items break both follow-output and turn anchoring.
 
 ## Scrollbar gutter — reserved, never over the bubbles
 
@@ -178,8 +186,9 @@ to me", "I want this text elsewhere."
 **Why raw markdown for copy.** Power users paste back into notes / other tools that render markdown themselves; copying the rendered text
 strips formatting they'd want.
 
-The TTS state machine, pre-warm, and caching are documented in [`docs/features/chat.md#read-aloud`](../features/chat.md#read-aloud). The
-rule here is: **use `SpeakButton`**. Don't roll a new one.
+The TTS state machine, pre-warm, and caching are documented in
+[`file-storage.md#read-aloud-tts-cache`](../architecture/file-storage.md#read-aloud-tts-cache). The rule here is: **use `SpeakButton`**.
+Don't roll a new one.
 
 ## Internal vs external links
 
@@ -219,17 +228,25 @@ Four surfaces render a transcript today:
 - **The composer** — each surface parks its own audience wrapper below the transcript.
 
 ```text
-MessageScrollerProvider (defaultScrollPosition="last-anchor", scrollEdgeThreshold=64)
+MessageScrollerProvider (defaultScrollPosition="last-anchor", scrollEdgeThreshold=64, autoScroll)
 └── MessageScroller
     ├── MessageScrollerViewport
-    │   └── MessageScrollerContent
-    │       ├── date-grouped MessageScrollerItem + ChatMessage
-    │       └── streaming MessageScrollerItem + AssistantMarkdown
+    │   └── MessageScrollerContent   ← every MessageScrollerItem is a *direct* child
+    │       ├── MessageScrollerItem (date marker, no scrollAnchor)
+    │       ├── MessageScrollerItem scrollAnchor={user?} + ChatMessage
+    │       ├── …
+    │       └── MessageScrollerItem (streaming, aria-live, no scrollAnchor)
     └── MessageScrollerButton direction="end"  ("Jump to latest")
 ```
 
-Every persisted row and every in-flight streaming buffer is a `MessageScrollerItem` with `scrollAnchor` — that is how last-anchor restore
-and new-turn anchoring work. Do not hand-roll scroll; route through `ChatTranscriptShell` (see
+**Direct children only.** The primitive's MutationObserver and turn-anchor walk read `content.children` — they do not descend into wrappers.
+Nesting items in a date `<section>` or an `aria-live` region silently breaks stick-to-bottom and `last-anchor` (new sends leave the reader
+on "Jump to latest" instead of following). Date markers and streaming rows are siblings of message items, not parents of them. Put
+`aria-live` on the streaming item itself.
+
+**`scrollAnchor` only on user messages.** That is the turn boundary: a newly appended user row settles near the top of the viewport so the
+reply can grow into the room below. Streaming / assistant / tool rows must not set `scrollAnchor` — their growth is followed by `autoScroll`
+while the reader is at the live edge. Do not hand-roll scroll; route through `ChatTranscriptShell` (see
 [The shared primitives](#the-shared-primitives)).
 
 A `workspaceFileCreate` tool row may render a document attachment card beneath its pill; click opens the file in the assistant sidebar's
@@ -241,20 +258,20 @@ file-display state via `DocumentPanelProvider`. Surfaces without a provider (vis
 Every chat composer wraps `MessageComposer` (`src/web/components/MessageComposer.tsx`). Anything that hand-rolls a textarea + send button is
 a review-time reject. The primitive already ships every rule below.
 
-| Concern                | Value                                                                                                                       | Rationale                                                                                                                                                                                             |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Submit key             | **Desktop:** Enter sends; Shift+Enter inserts a newline. **Mobile:** Enter inserts a newline; only the Send button submits. | Desktop keeps the universal chat shortcut. Soft-keyboard Return must insert newlines — intercepting it made multi-line drafts impossible.                                                             |
-| Auto-grow              | **`field-sizing: content` + `max-h-[40vh]`**                                                                                | Grows with content, capped so a runaway paste can't push the page.                                                                                                                                    |
-| Focus ring             | **brand-tinted** — `focus-within:border-brand`, `ring-brand/30`                                                             | Ties the composer into the ambient orb / links / chart-1. See [motion.md — Composer states](./motion.md#composer-states).                                                                             |
-| Ready micro-state      | Send **lifts `-translate-y-px`** and fades muted → full opacity, 200 ms                                                     | Answers "I noticed you typed something." Suppressed under `motion-reduce`.                                                                                                                            |
-| Sending                | **`SendIcon` crossfades to `Spinner`**, 150 ms                                                                              | Answers "did it hear me?"                                                                                                                                                                             |
-| Sent                   | **`CheckIcon` flashes for 700 ms** on the `busy → !busy` edge, then reverts to `SendIcon`                                   | Answers "did it land?"                                                                                                                                                                                |
-| Post-turn focus        | Textarea **refocuses automatically** on `busy → !busy`                                                                      | Textarea was `disabled` mid-turn (focus fell to `<body>`); this is a real refocus, not a no-op.                                                                                                       |
-| Draft restore on error | Restore the trimmed message and call `endTurn()`                                                                            | The user's message may have been the most thought-through of the session — never lose it.                                                                                                             |
-| Locked while streaming | Textarea + Send disabled while `busy === true`                                                                              | Prevents two overlapping turns. `addonStart` children stay reactive (model picker, approval-mode selector) so those still read as live.                                                               |
-| Attachments (opt-in)   | Paperclip in the bottom addon, drop zone on the whole `<form>`, per-tile lifecycle                                          | Passed as `attachments` + `onAttachmentsAdd` + `onAttachmentRemove`. Bytes never touch the composer — parent owns the upload lifecycle. See [`chat.md#attachments`](../features/chat.md#attachments). |
-| Textarea `name`        | Defaults to `'message'`                                                                                                     | Chrome logs "A form field element should have an id or name attribute" without one. Override per surface if needed.                                                                                   |
-| `autoFocus`            | Opt-in via prop                                                                                                             | Only pass on surfaces where the composer is the primary affordance (workspace hub landing, deep-link route). Otherwise the page decides what gets focus first.                                        |
+| Concern                | Value                                                                                                                       | Rationale                                                                                                                                                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Submit key             | **Desktop:** Enter sends; Shift+Enter inserts a newline. **Mobile:** Enter inserts a newline; only the Send button submits. | Desktop keeps the universal chat shortcut. Soft-keyboard Return must insert newlines — intercepting it made multi-line drafts impossible.                                                                                         |
+| Auto-grow              | **`field-sizing: content` + `max-h-[40vh]`**                                                                                | Grows with content, capped so a runaway paste can't push the page.                                                                                                                                                                |
+| Focus ring             | **brand-tinted** — `focus-within:border-brand`, `ring-brand/30`                                                             | Ties the composer into the ambient orb / links / chart-1. See [motion.md — Composer states](./motion.md#composer-states).                                                                                                         |
+| Ready micro-state      | Send **lifts `-translate-y-px`** and fades muted → full opacity, 200 ms                                                     | Answers "I noticed you typed something." Suppressed under `motion-reduce`.                                                                                                                                                        |
+| Sending                | **`SendIcon` crossfades to `Spinner`**, 150 ms                                                                              | Answers "did it hear me?"                                                                                                                                                                                                         |
+| Sent                   | **`CheckIcon` flashes for 700 ms** on the `busy → !busy` edge, then reverts to `SendIcon`                                   | Answers "did it land?"                                                                                                                                                                                                            |
+| Post-turn focus        | Textarea **refocuses automatically** on `busy → !busy`                                                                      | Textarea was `disabled` mid-turn (focus fell to `<body>`); this is a real refocus, not a no-op.                                                                                                                                   |
+| Draft restore on error | Restore the trimmed message and call `endTurn()`                                                                            | The user's message may have been the most thought-through of the session — never lose it.                                                                                                                                         |
+| Locked while streaming | Textarea + Send disabled while `busy === true`                                                                              | Prevents two overlapping turns. `addonStart` children stay reactive (model picker, approval-mode selector) so those still read as live.                                                                                           |
+| Attachments (opt-in)   | Paperclip in the bottom addon, drop zone on the whole `<form>`, per-tile lifecycle                                          | Passed as `attachments` + `onAttachmentsAdd` + `onAttachmentRemove`. Bytes never touch the composer — parent owns the upload lifecycle. See [`chat-persistence.md#attachments`](../architecture/chat-persistence.md#attachments). |
+| Textarea `name`        | Defaults to `'message'`                                                                                                     | Chrome logs "A form field element should have an id or name attribute" without one. Override per surface if needed.                                                                                                               |
+| `autoFocus`            | Opt-in via prop                                                                                                             | Only pass on surfaces where the composer is the primary affordance (workspace hub landing, deep-link route). Otherwise the page decides what gets focus first.                                                                    |
 
 **How a surface wraps the primitive.** Every audience wrapper (`VisitorChatComposer`, `WorkspaceChatComposer`, `CompassInterviewComposer`)
 accepts `beginTurn`, `endTurn`, and `isLocked` from a live-updates hook, holds its own `draft` state, and passes `busy` + `disabled` into
@@ -281,16 +298,16 @@ override, don't reach past the primitive.
 
 ## Accessibility
 
-| Rule                                                                              | Where                                                      |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Streaming assistant text renders inside `aria-live="polite" aria-atomic="false"`  | Transcript viewport (streaming section)                    |
-| Composer textarea has an explicit `name`                                          | `MessageComposer` (defaults to `'message'`)                |
-| Send button has an `aria-label` matching the localised "Send" tooltip             | `MessageComposer`                                          |
-| Assistant TTS / copy icon buttons expose localised tooltips matching `aria-label` | `SpeakButton` / `CopyButton` in `chat-message/shared.tsx`  |
-| Jump-to-latest pill has an SR-only label                                          | `MessageScrollerButton`                                    |
-| `prefers-reduced-motion` suppresses the Send-button lift                          | `motion-reduce:enabled:translate-y-0` in `MessageComposer` |
-| Focus lands on the composer when a surface opens as the primary affordance        | `autoFocus` prop on `MessageComposer`                      |
-| Escape closes sheet / dialog surfaces                                             | Radix defaults — do not override                           |
+| Rule                                                                              | Where                                                                 |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Streaming assistant text renders inside `aria-live="polite" aria-atomic="false"`  | Streaming `MessageScrollerItem` (attributes on the item — no wrapper) |
+| Composer textarea has an explicit `name`                                          | `MessageComposer` (defaults to `'message'`)                           |
+| Send button has an `aria-label` matching the localised "Send" tooltip             | `MessageComposer`                                                     |
+| Assistant TTS / copy icon buttons expose localised tooltips matching `aria-label` | `SpeakButton` / `CopyButton` in `chat-message/shared.tsx`             |
+| Jump-to-latest pill has an SR-only label                                          | `MessageScrollerButton`                                               |
+| `prefers-reduced-motion` suppresses the Send-button lift                          | `motion-reduce:enabled:translate-y-0` in `MessageComposer`            |
+| Focus lands on the composer when a surface opens as the primary affordance        | `autoFocus` prop on `MessageComposer`                                 |
+| Escape closes sheet / dialog surfaces                                             | Radix defaults — do not override                                      |
 
 **Why `polite` not `assertive`.** `assertive` interrupts whatever the screen reader is currently reading, which is hostile on mobile where
 the reader may be part-way through the previous message. `polite` queues the announcement so the reader hears it at the next natural break.
@@ -325,7 +342,7 @@ Before writing a new chat-shaped anything, check whether one of these already co
 | `ChatComposer`                                                                                          | `src/web/chat/ChatComposer.tsx`                     | The surface fires `chatMessageCreate` (visitor + workspace). Owns draft state, upload lifecycle, `beginTurn` / `endTurn` handshake, and draft restore.                                                                                                                                                                           |
 | `VisitorChatComposer` / `WorkspaceChatComposer`                                                         | `src/web/chat/*Composer.tsx`                        | Audience wrappers over `ChatComposer` — mutation + model picker + rate-limit hooks pre-wired.                                                                                                                                                                                                                                    |
 | `CompassInterviewComposer`                                                                              | `src/web/chat/CompassInterviewComposer.tsx`         | Structural clone for the compass interview (its message union isn't `ChatMessage`). Same `MessageComposer` underneath.                                                                                                                                                                                                           |
-| `ChatTranscriptShell`                                                                                   | `src/web/components/base/chat-transcript-shell.tsx` | You need a chat scroll container. Pins `defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`, the jump-to-latest pill, and the streaming ARIA live region. **Every transcript uses this.**                                                                                                                           |
+| `ChatTranscriptShell`                                                                                   | `src/web/components/base/chat-transcript-shell.tsx` | You need a chat scroll container. Pins `defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`, `autoScroll`, and the jump-to-latest pill. Streaming `aria-live` lives on the streaming item itself. **Every transcript uses this.**                                                                                   |
 | `ChatTranscript` (shared)                                                                               | `src/web/chat/ChatTranscriptShared.tsx`             | The surface renders the `ChatMessage` union. Handles date grouping, tool-call nesting, collection folding, approval gating.                                                                                                                                                                                                      |
 | `CompassInterviewTranscript`                                                                            | `src/web/chat/CompassInterviewTranscript.tsx`       | Interview transcript — different message shape, same shell + row atoms.                                                                                                                                                                                                                                                          |
 | `MessageScroller*`                                                                                      | `src/web/components/base/message-scroller.tsx`      | The shadcn primitive under `ChatTranscriptShell`. Reach for the shell first — only touch this directly when the shell doesn't cover you.                                                                                                                                                                                         |
@@ -360,6 +377,11 @@ The list below names things that are tempting but wrong here. They are not allow
 - **Composer that doesn't wrap `MessageComposer`.** Raw `<textarea>` inside a chat surface is always a review-time reject.
 - **Per-surface `viewportClassName` that redeclares `scrollbar-gutter:stable`.** The shell already reserves the lane. Redeclaring it in
   every surface is how the deep-link route silently dropped the rule and painted the scrollbar over a bubble in the first place.
+- **Wrapping `MessageScrollerItem`s in a date `<section>` or `aria-live` region.** The primitive only observes direct children of
+  `MessageScrollerContent`. Nested items never register as new turn anchors and stick-to-bottom silently fails — new sends leave the reader
+  on "Jump to latest". Keep markers and streaming rows as sibling items; put `aria-live` on the streaming item itself.
+- **`scrollAnchor` on every row.** Only the user message that starts a turn is an anchor. Anchoring assistant / tool / streaming rows fights
+  follow-output and re-triggers the top-of-viewport settle on every append.
 - **Dropping the `-my-1 p-1` bleed room on `MessageScrollerItem`.** Each row carries `content-visibility:auto`, which forces `contain:paint`
   while on screen — that clips every descendant to the item box, shearing card shadows (`shadow-sm`) and outset focus rings (`ring-[3px]`)
   at the edge. `p-1` opens 4px of paint room inside the clip edge; `-my-1` cancels it on the scroll axis so the documented `gap-4` between
@@ -415,4 +437,6 @@ The audit is a live checklist: adding a new surface adds a row.
 | Motion rules for the composer states                | `docs/styles/motion.md` (Composer states)                                                           |
 | Foundation, schema, replay                          | `docs/architecture/chat.md`, `docs/architecture/chat-persistence.md`                                |
 | Visitor / workspace product behaviour               | `docs/features/chat-visitor.md`, `docs/features/chat-workspace.md`                                  |
-| Shared visitor-facing affordances                   | `docs/features/chat.md`                                                                             |
+| Read-aloud / TTS cache                              | `docs/architecture/file-storage.md#read-aloud-tts-cache`                                            |
+| Attachments (persist + upload pipeline)             | `docs/architecture/chat-persistence.md#attachments`                                                 |
+| Chat surfaces index                                 | `docs/features/chat.md`                                                                             |

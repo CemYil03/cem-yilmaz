@@ -11,33 +11,37 @@ docs/
 ├── infrastructure.md             # Deployment and CI
 ├── architecture/                 # Architectural decision records
 │   ├── agent-delegation.md       # Orchestrator + in-process domain sub-agents
-│   ├── api-layer.md              # Type-safe client-server API (GraphQL, SSR data loading)
+│   ├── api-layer.md              # Type-safe client-server API (GraphQL, route-loader SSR)
 │   ├── authentication.md         # Session-based auth design
 │   ├── authorization.md          # Guard-based access control
 │   ├── authorization-workspace.md # Users.isAdmin + guardAdmin / Admin GraphQL namespace
+│   ├── browser-capture.md        # Playwright headless capture → image/PDF (not route SSR)
 │   ├── chat.md                   # Chat foundation — polymorphic message model
 │   ├── chat-persistence.md       # Chat persistence — DB schema and AI SDK replay
 │   ├── content-model.md          # Editable DB content + bilingual columns
-│   ├── dependency-injection.md   # Dependency injection container
+│   ├── dependency-injection.md   # Dependency injection container (ServerRuntime)
 │   ├── discovery-geo.md          # GEO — llms.txt, JSON-LD, AI bot allowlist
 │   ├── discovery-seo.md          # SEO standards — seoMeta() helper, dynamic sitemap.xml, robots.txt
 │   ├── environment.md            # Validated EnvironmentVariables (no direct process.env)
-│   ├── file-storage.md           # Generic file-upload store (Postgres bytea); consumers join by fileUploadId
+│   ├── file-storage.md           # FileUploads (bytea) + TTS cache (read-aloud)
 │   ├── i18n.md                   # DE / EN locale strategy
 │   ├── jobs.md                   # pg-boss background jobs
+│   ├── logging.md                # PostgreSQL-backed logger + /workspace/logs viewer notes
 │   ├── server-architecture.md    # Server-side domain logic structure (CQRS)
-│   ├── server-side-rendering.md  # Playwright-based UI capture for image/PDF exports
 │   └── state-synchronization.md  # Client-server state sync via subscriptions
 ├── styles/                       # Visual / interaction design rules
 │   ├── chat.md                   # Desired chat experience (scroll, composer, transcript)
 │   ├── fonts.md
 │   ├── motion.md
+│   ├── navigation-progress.md    # Top-of-viewport nav progress bar
 │   └── theme.md
 ├── features/                     # Implemented feature documentation
+│   ├── chat.md                   # Thin index only — not a third chat product
 │   ├── chat-visitor.md           # Public visitor agent ("Ask me anything")
 │   ├── chat-workspace.md         # Workspace personal-assistant agent
+│   ├── workspace-*.md            # Workspace hub + focus areas
 │   └── …
-└── assets/                       # Diagrams, images, and other media
+└── assets/                       # Diagrams, images, and other media (may be empty)
 ```
 
 ## What Goes Where
@@ -58,8 +62,8 @@ When you add a new architecture doc, also add a row to the Architecture table in
 
 ### `styles/`
 
-Presentation and interaction rules that hold across surfaces — typography, motion, theme tokens, and the desired chat experience. Not ADRs:
-these describe the bar every UI surface should meet.
+Presentation and interaction rules that hold across surfaces — typography, motion, theme tokens, navigation chrome, and the desired chat
+experience. Not ADRs: these describe the bar every UI surface should meet.
 
 ### `features/`
 
@@ -76,6 +80,10 @@ end-to-end functionality built on top of that architecture.
 The visitor agent and workspace personal assistant are **two features** that share the chat foundation
 ([architecture/chat.md](./architecture/chat.md)) and the chat experience bar ([styles/chat.md](./styles/chat.md)) — see
 [chat-visitor.md](./features/chat-visitor.md) and [chat-workspace.md](./features/chat-workspace.md).
+[`features/chat.md`](./features/chat.md) is only a thin index of those homes — not a third product doc.
+
+Capability slices that are not standalone products (email tools, web search, chat titles, admin model config) may live as satellite feature
+docs or sections of the parent chat feature — prefer folding into the parent when the slice has no independent user journey.
 
 ### `conventions.md`
 
@@ -89,4 +97,4 @@ Deployment pipeline, CI configuration, environment setup. Update it when the dep
 ### `assets/`
 
 Supporting media referenced from other docs (diagrams, screenshots). Name files to match the doc they support (e.g., `state-sync-flow.png`
-for `architecture/state-synchronization.md`).
+for `architecture/state-synchronization.md`). The folder may be empty until diagrams exist.

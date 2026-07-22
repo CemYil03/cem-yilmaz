@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { LinkIcon } from 'lucide-react';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
-import { ChatStreamingRegion, ChatTranscriptShell } from '../components/base/chat-transcript-shell';
+import { ChatTranscriptShell } from '../components/base/chat-transcript-shell';
 import { MessageScrollerItem } from '../components/base/message-scroller';
 import { Bubble, CopyButton, MessageRow, SpeakButton, Timestamp } from '../components/chat-message/shared';
 import type { GqlCWorkspaceCompassInterviewMessageFragment, GqlCWorkspaceCompassObservationFragment } from '../graphql/generated';
@@ -17,6 +17,10 @@ import { cn } from '../utils/cn';
 // `CompassInterviewMessage` isn't part of the `ChatMessage` union; the
 // row-level atoms (`Bubble`, `Timestamp`, `CopyButton`, `SpeakButton`,
 // `AssistantMarkdown`) are the same ones `ChatTranscriptShared` uses.
+//
+// MessageScrollerItems are direct children of Content (no wrapping region) —
+// required for stick-to-bottom and turn anchoring. `scrollAnchor` is set only
+// on user rows, matching the shadcn contract.
 
 type InterviewMessage = GqlCWorkspaceCompassInterviewMessageFragment;
 type Observation = GqlCWorkspaceCompassObservationFragment;
@@ -73,9 +77,18 @@ export function CompassInterviewTranscript({
     const streamingEntries = Object.entries(streamingTexts);
 
     return (
-        <ChatTranscriptShell jumpToLatestLabel={jumpToLatestLabel} className={className} viewportClassName={viewportClassName}>
+        <ChatTranscriptShell
+            jumpToLatestLabel={jumpToLatestLabel}
+            className={className}
+            viewportClassName={viewportClassName}
+            contentClassName="gap-4"
+        >
             {messages.map((message) => (
-                <MessageScrollerItem key={message.interviewMessageId} messageId={message.interviewMessageId} scrollAnchor>
+                <MessageScrollerItem
+                    key={message.interviewMessageId}
+                    messageId={message.interviewMessageId}
+                    scrollAnchor={message.role === 'user'}
+                >
                     {message.role === 'user' ? (
                         <InterviewUserRow
                             message={message}
@@ -87,19 +100,15 @@ export function CompassInterviewTranscript({
                     )}
                 </MessageScrollerItem>
             ))}
-            {streamingEntries.length > 0 ? (
-                <ChatStreamingRegion className="flex min-w-0 flex-col gap-4">
-                    {streamingEntries.map(([interviewMessageId, text]) => (
-                        <MessageScrollerItem key={interviewMessageId} messageId={interviewMessageId} scrollAnchor>
-                            <MessageRow side="assistant">
-                                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                                    <AssistantMarkdown text={text} streaming />
-                                </div>
-                            </MessageRow>
-                        </MessageScrollerItem>
-                    ))}
-                </ChatStreamingRegion>
-            ) : null}
+            {streamingEntries.map(([interviewMessageId, text]) => (
+                <MessageScrollerItem key={interviewMessageId} messageId={interviewMessageId} aria-live="polite" aria-atomic="false">
+                    <MessageRow side="assistant">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <AssistantMarkdown text={text} streaming />
+                        </div>
+                    </MessageRow>
+                </MessageScrollerItem>
+            ))}
         </ChatTranscriptShell>
     );
 }

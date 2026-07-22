@@ -100,10 +100,11 @@ union above; the tool has no `execute`. Two pieces of plumbing turn the tool cal
 1. **`chatAssistantTurnRun` translates at persistence time.** When `onStepEnd` sees a tool call named `promptUserForInput`, it writes a
    `chatMessagesAssistantInputCollection` row (assigning each slot a fresh `inputId`) instead of the generic `chatMessagesToolCall` row.
    Without this branch the form would render as the bland "Called `promptUserForInput`" pill every other tool gets.
-2. **The agent loop stops on this tool call.** `agentUserConversation` lists `hasToolCall('promptUserForInput')` alongside `isStepCount(8)`
-   in `stopWhen`. Because the tool has no `execute`, there is no result to feed back into the loop — the next turn-taker is the human.
-   Without this stop condition, Gemini would keep stepping and tend to apologize that "the tool failed", producing a phantom assistant text
-   right next to the form.
+2. **The agent loop stops on this tool call.** Both chat agents that register `promptUserForInput` — `agentVisitor` and
+   `agentPersonalAssistant` — list `hasToolCall('promptUserForInput')` alongside `isStepCount(8)` in `stopWhen` (shared provider options
+   live in `agentScaffolding`). Because the tool has no `execute`, there is no result to feed back into the loop — the next turn-taker is
+   the human. Without this stop condition, Gemini would keep stepping and tend to apologize that "the tool failed", producing a phantom
+   assistant text right next to the form.
 3. **Any preamble text from the stopping step is dropped at persistence time.** The system prompt coaches the model to narrate briefly
    before calling `promptUserForInput` ("respond briefly, then ..."), so Gemini almost always emits a few words alongside the tool call.
    `chatAssistantTurnRun` tracks whether the stopping step contained a `promptUserForInput` call and, when it did, skips the trailing
@@ -188,11 +189,12 @@ work the LLM already does.
 
 ### Nested tool calls
 
-`ChatMessageToolCall` carries an optional `parentChatMessageId: ID`. When a tool's `execute` runs a sub-agent in-process (today only
-`delegateToProjects` does this), every tool call the sub-agent makes is persisted with `parentChatMessageId` set to the parent tool-call
-row's id. The transcript groups these via `partitionByParent` (`src/web/chat/chatTranscript.ts`): child rows are filtered out of the
-top-level day-grouped list and rendered as an indented block inside the parent's `<ChatMessageToolCall>` view. LLM replay
-(`toModelMessages`) ignores the column — each row is still a valid AI-SDK `tool-call` / `tool-result` pair on its own.
+`ChatMessageToolCall` carries an optional `parentChatMessageId: ID`. When a tool's `execute` runs a sub-agent in-process (every
+`delegateTo*` tool on the personal-assistant orchestrator — projects, media, medical, travel, nutrition, fitness, finances, inventory, tax,
+web search), every tool call the sub-agent makes is persisted with `parentChatMessageId` set to the parent tool-call row's id. The
+transcript groups these via `partitionByParent` (`src/web/chat/chatTranscript.ts`): child rows are filtered out of the top-level day-grouped
+list and rendered as an indented block inside the parent's `<ChatMessageToolCall>` view. LLM replay (`toModelMessages`) ignores the column —
+each row is still a valid AI-SDK `tool-call` / `tool-result` pair on its own.
 
 The pattern, the FK ordering trick (`preWrittenToolCallIds`), and the shared `chatPersistStep` helper that powers both the orchestrator's
 and the sub-agent's `onStepEnd` are documented in [`agent-delegation.md`](./agent-delegation.md#nested-tool-calls).

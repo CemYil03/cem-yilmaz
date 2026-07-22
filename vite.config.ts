@@ -64,7 +64,7 @@ const config = defineConfig({
     // must stay external on both the dev server (optimizeDeps) and the
     // production nitro bundle (rollup external) — the runtime image
     // installs it as a real `node_modules` dependency. See
-    // `docs/architecture/server-side-rendering.md`.
+    // `docs/architecture/browser-capture.md`.
     //
     // `ffmpeg-static` is a CJS package that resolves its bundled ffmpeg
     // binary via `__dirname`. Nitro's ESM bundle has no `__dirname`, so

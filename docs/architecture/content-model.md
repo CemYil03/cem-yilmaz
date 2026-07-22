@@ -19,9 +19,22 @@ Split by editing cadence:
 - **Static**: typed config file under `src/web/content/`. Read directly from both server and client (it's pure data, no runtime). Edited via
   PR. Used today by `personalInfo.ts` (CV identity facts).
 - **DB-backed**: Drizzle table + CQRS layer (queries, commands, mappers, resolver) + admin form on `/workspace/<thing>`. Used today by the
-  CV timeline tables (`cvExperience`, `cvEducation`, `cvSkill`, `cvHobby`), the workspace projects tables (`projects`, `tasks`,
-  `projectActivities`, `projectLinks`, `projectFiles`), and the media library tables (`movies`, `mediaChannels`); will be used by Phase 3's
-  blog/tools.
+  CV timeline tables (`cvExperience`, `cvEducation`, `cvSkill`, `cvHobby`), workspace projects (`projects`, `tasks`, `projectActivities`,
+  `projectLinks`, `projectFiles`), media (`movies`, `shows`, `mediaChannels`), and other workspace domains (inventory, travel, …).
+
+## Alternatives Considered
+
+| Option                          | Why rejected                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| Everything in the DB / CMS      | Identity facts almost never change; admin UI + migrations are overhead                |
+| Everything in static files      | Timeline content (jobs, projects, watchlist) needs fast edits without a PR + redeploy |
+| Headless CMS (Contentful, etc.) | Extra vendor, auth surface, and sync for a single-operator site                       |
+
+## Consequences
+
+- Agents and humans must pick the right store up front — moving a field later means a migration or a content rewrite.
+- Public bilingual lists pay the `*De` / `*En` typing cost; admin-only lists skip it (see below).
+- Conventions below are the day-to-day shape of DB-backed lists; feature docs cover each surface's behaviour.
 
 ## Conventions for DB-backed editable lists
 
@@ -30,9 +43,9 @@ A new editable-list domain follows the same shape every time:
 1. **Schema** — uuid PK, paired `*De` / `*En` text columns for any bilingual field, an integer `position` column for ordering, `createdAt` /
    `updatedAt` timestamps. Postgres `text[]` for inline label arrays (technology chips, tags) when the labels are display-only and never
    queried by relation.
-2. **GraphQL** — a `Query.<thing>` namespace with the read shape (`experience`, `education`, etc.), and one mutation triple per entity on
-   `AdminMutation`: `<entity>Upsert(input)`, `<entity>Delete(<entity>Id)`, `<entity>Reorder(orderedIds)`. Bilingual columns surface as
-   paired `*De` / `*En` GraphQL fields — the client picks per-locale at render time.
+2. **GraphQL** — public reads under a dedicated namespace field (e.g. `publicCvFindOne: CvQuery!`); admin reads/writes under `User.admin` /
+   `Mutation.admin` with the usual `<entity>Upsert` / `Delete` / `Reorder` triple. Bilingual columns surface as paired `*De` / `*En` GraphQL
+   fields — the client picks per-locale at render time. Do **not** invent a free-floating `Query.<thing>` namespace for new domains.
 3. **Server** — one query file per list (`<entity>List.ts`), three command files per entity (`<entity>Upsert.ts`, `Delete.ts`,
    `Reorder.ts`), one mapper (`toGql<Entity>.ts`). All wired in `src/server/graphql/resolversCreate.ts`.
 4. **Read pages** — public route loads the list query through `routeLoaderGraphqlClient`, renders with a presentational component that knows

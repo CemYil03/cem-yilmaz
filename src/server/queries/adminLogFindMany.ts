@@ -16,7 +16,7 @@ import { escapeLike } from './chatSearchCondition';
 //
 // `limit` defaults to 200 and is clamped at 1000 server-side — the viewer is
 // triage, not bulk export, and an unbounded scan over `Logs` would dominate
-// the API process. See `docs/features/logging.md`.
+// the API process. See `docs/architecture/logging.md`.
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 1000;

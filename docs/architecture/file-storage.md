@@ -47,8 +47,8 @@ join row, layer per-consumer cascade and authorization rules on top. A new domai
 shared across sessions, so re-listening to the same message from any device is a hit), and its primary key is content-derived
 (`sha256(text|voice|model|format)`) rather than a UUID. Making `FileUploads.userId` nullable to accommodate it would loosen the ownership
 model every other consumer relies on. The exception carries a matching bespoke access path (`ttsAudioCacheFindOne`, `ttsAudioCacheUpsert`)
-and is documented in [Read-aloud](../features/chat.md#read-aloud). Future domains with the same shape — anonymous, content-addressed, shared
-— belong in their own table too; user-owned uploads still default to `FileUploads`.
+and is documented in [Read-aloud (TTS cache)](#read-aloud-tts-cache) below. Future domains with the same shape — anonymous,
+content-addressed, shared — belong in their own table too; user-owned uploads still default to `FileUploads`.
 
 The upload and download routes are likewise consumer-agnostic:
 
@@ -94,6 +94,55 @@ The migration path off Postgres is intentionally cheap: `FileUploads` already ha
 (`filename`, `mediaType`, `size`), so swapping `bytes bytea` for `objectKey varchar` is a column-level change. Consumers reference uploads
 by `fileUploadId` only — they never see the bytes column directly — so a swap is invisible to every join-table and resolver above the store.
 Until that day, the row-shaped approach keeps the deployment surface area small.
+
+## Read-aloud (TTS cache)
+
+<a id="read-aloud"></a>
+
+Every assistant text message exposes a **read-aloud** control next to Copy. The primary button POSTs cleaned message text to `/api/tts`,
+which calls **Gemini TTS** (`gemini-2.5-flash-preview-tts`, voice `Zephyr`) server-side and returns MP3. The browser plays via `MediaSource`
+— bytes append to a `SourceBuffer` as they arrive, so playback starts on the first ~100 ms rather than waiting for the full clip.
+Neural-quality output regardless of OS or browser; no on-device voices.
+
+The primary button walks four states — speaker (idle) → spinner (loading) → pause (playing) → play (paused). A separate **stop** button
+appears while audio is playing or paused and hard-resets to idle so the next click starts at position 0. Pause keeps the audio element and
+buffered MP3 in place; resume continues without re-fetch or re-synthesis. Native pause/play events (mediaSession, media keys, headphone
+unplug) sync via listeners on the `HTMLAudioElement`. `speak()` on any button hard-stops prior playback app-wide so two messages never
+overlap.
+
+The message body is markdown, so it is stripped before the API call — code fences become a spoken "Codeblock" / "code block" placeholder,
+backticks/asterisks are dropped, links keep the label only, list markers and headings are stripped. Gemini receives plain prose; language is
+auto-detected (no explicit `lang` param).
+
+**Caching.** Identical `(text, voice, model, format)` tuples resolve to the same SHA-256 key; the MP3 lives in `TtsAudioCache`. A cache hit
+skips Gemini and returns the bytes in one response with `Cache-Control: private, max-age=86400` so the browser HTTP cache covers subsequent
+listens. The cache is anonymous — no `userId` — because the same body always yields the same audio. That is why this table sits outside
+`FileUploads` (see Decision above).
+
+**Chunked streaming synthesis.** On cache miss, the server splits text into ~300-character chunks along sentence boundaries
+(`src/web/utils/textToSentences.ts`), synthesizes each chunk serially via Gemini, and feeds raw PCM through a long-lived `ffmpeg-static`
+process that transcodes to MP3 on the fly. MP3 bytes are teed to the response `ReadableStream` and a Buffer accumulator; on ffmpeg close the
+completed clip is written to `TtsAudioCache`. Client disconnect kills ffmpeg and skips the cache write so a partial stream cannot poison the
+next request.
+
+**Pre-warm on hover / focus.** `SpeakButton` fires `preload(text)` on `onMouseEnter` / `onFocus` so the fetch is already in flight on click.
+`useSpeechSynthesis.preload()` de-dupes on `text` and adopts the in-flight response when `speak()` is called with the same string. Hovering
+a different button aborts the previous preload; leaving without clicking keeps the preload for a 30 s grace window. Because of the cache,
+the only Gemini call a hover-then-never-click pays for is the first hover on a given message across the app's lifetime.
+
+| Concern           | Where                                                                                                                                                                                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API route         | `src/routes/api/tts.ts` — POST, no `userId` required. Cache miss: chunked `audio/mpeg` (`Cache-Control: no-store`). Cache hit: full clip + `ETag` + `Cache-Control: private, max-age=86400`. Uses `GOOGLE_GENERATIVE_AI_API_KEY`. `sessionUpsert` runs on every request (anchor for a future rate limit). |
+| Hook              | `src/web/hooks/useSpeechSynthesis.ts` — `state: 'idle' \| 'loading' \| 'playing' \| 'paused'`; `speak` / `pause` / `resume` / `stop` / `preload`. Progressive fallback to blob download when `MediaSource` or `audio/mpeg` is unavailable.                                                                |
+| Cache             | `TtsAudioCache` in `src/server/db/schema.ts`; `ttsAudioCacheFindOne`, `ttsAudioCacheUpsert`; `ttsContentHash` — SHA-256 of `${text}\|${voice}\|${model}\|${format}`.                                                                                                                                      |
+| Transcoder        | `src/server/utils/audioTranscode.ts` — streaming PCM → MP3 via `ffmpeg-static`.                                                                                                                                                                                                                           |
+| Markdown stripper | `src/web/utils/markdownToPlainText.ts` — deterministic regex; no `remark` / `unified`.                                                                                                                                                                                                                    |
+| Sentence splitter | `src/web/utils/textToSentences.ts` — regex with a greedy ~300-char coalesce.                                                                                                                                                                                                                              |
+| Button            | `SpeakButton` in `src/web/components/chat-message/shared.tsx` (alongside `CopyButton`). Shared via `<ChatMessage />` on visitor and workspace surfaces.                                                                                                                                                   |
+
+**Live-stream reading is out of scope.** The button reads the final persisted `ChatMessageAssistantText.body`, not live
+`ChatUpdateAssistantTextChunk` deltas. Chunked synthesis cuts first-audio latency for the completed message; reading while still streaming
+would require hooking `useChatLiveUpdates` and can land later.
 
 ## Alternatives Considered
 
