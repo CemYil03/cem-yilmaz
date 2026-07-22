@@ -83,8 +83,9 @@ streaming the label reads **Thinking… / Denke nach…**).
   text then falls back to the persisted field.
 
 The pending shimmer still covers the gap before the first thought _or_ text chunk. Once thoughts start, the disclosure replaces the pending
-row; once answer text starts, the disclosure collapses (user can re-open). User toggles animate height + opacity + chevron (200 ms
-`ease-out`); live-driven open/close is instant so stick-to-bottom scroll is not fought. `prefers-reduced-motion` skips the transition.
+row; once answer text starts, the disclosure collapses (user can re-open). User toggles animate height + chevron rotate (200 ms
+`ease-out`) — height clip only, no opacity fade (that blanked the text on collapse while the row was still open). Live-driven open/close is
+instant so stick-to-bottom scroll is not fought. `prefers-reduced-motion` skips the transition.
 
 ## Scroll behaviour during streaming — follow while at the edge, never yank
 
@@ -110,22 +111,34 @@ direct children of Content — nested items break both follow-output and turn an
 
 ## Scrollbar gutter — reserved, never over the bubbles
 
+Same class of problem as the document gutter in [theme.md](./theme.md#scrollbar-gutter-no-layout-shift): classic scrollbars grow/shrink the
+content width when they appear. In chat that shows up as a left–right jump on right-aligned user bubbles the moment a turn overflows (or
+while streaming follow-output keeps toggling scroll state).
+
 | Rule                                                               | Where it lives                                                                                      |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| The viewport reserves `scrollbar-gutter: stable`                   | `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`)                         |
+| The viewport reserves `scrollbar-gutter: stable`                   | `MessageScrollerViewport` + `ChatTranscriptShell` (`scrollbar-gutter-stable` / `[scrollbar-gutter:stable]`) |
 | The viewport ships `pr-2` breathing room to the right of bubbles   | `ChatTranscriptShell`                                                                               |
+| **Never** hide the bar with `scrollbar-none` / `scrollbar-width: none` on the transcript viewport | `MessageScrollerViewport` — no `data-autoscrolling:scrollbar-none` |
 | A surface **must not** turn the gutter off via `viewportClassName` | Review-time reject — the class merges on top of the shell's, so pass no override unless widening it |
 
 **Why the gutter is reserved.** Without `scrollbar-gutter: stable` the scrollbar draws _over_ the rightmost user bubbles on WebKit and
-legacy Firefox — the visitor sees a scrollbar track cut across a blue bubble as content grows past the viewport. Reserving the lane costs a
-few pixels of horizontal room but every browser paints the same layout in every state, empty to full.
+legacy Firefox — the visitor sees a scrollbar track cut across a blue bubble as content grows past the viewport. Reserving the lane also
+stops the content-width jump when overflow first appears during streaming. It costs a few pixels of horizontal room but every browser paints
+the same layout in every state, empty to full. (Overlay scrollbars, macOS default, never consume layout space — force “Always” under
+Appearance to see the classic-scrollbar case.)
+
+**Why not `data-autoscrolling:scrollbar-none`.** The MessageScroller primitive sets `data-autoscrolling` for ~180 ms on every programmatic
+scroll. Streaming follow-output fires that continuously. `scrollbar-width: none` removes the classic scrollbar **and** collapses the stable
+gutter, so bubbles shift left while tokens stream and jump back when follow settles. Hiding the thumb during auto-scroll is not worth that
+layout shift — leave the thin scrollbar painted.
 
 **Why `pr-2` on top.** Even with the gutter reserved, a right-aligned bubble still visually kisses the scrollbar track on WebKit — 8 px of
 padding to the right of the content lane keeps a hairline gap between bubble and track.
 
-**Why in the shell, not per-surface.** Bubbles under the scrollbar was the exact symptom that motivated centralizing this — every surface
-used to opt in with its own `viewportClassName="pr-3 [scrollbar-gutter:stable]"` and the deep-link route silently drifted by omitting it.
-The rule now lives in `ChatTranscriptShell` so a new surface inherits it automatically.
+**Why in the shell / viewport primitive, not per-surface.** Bubbles under the scrollbar was the exact symptom that motivated centralizing
+this — every surface used to opt in with its own `viewportClassName="pr-3 [scrollbar-gutter:stable]"` and the deep-link route silently
+drifted by omitting it. The rule now lives in `MessageScrollerViewport` + `ChatTranscriptShell` so a new surface inherits it automatically.
 
 ## Message rendering
 
@@ -371,7 +384,7 @@ Before writing a new chat-shaped anything, check whether one of these already co
 | `CompassInterviewTranscript`                                                                            | `src/web/chat/CompassInterviewTranscript.tsx`       | Interview transcript — different message shape, same shell + row atoms.                                                                                                                                                                                                                                                          |
 | `MessageScroller*`                                                                                      | `src/web/components/base/message-scroller.tsx`      | The shadcn primitive under `ChatTranscriptShell`. Reach for the shell first — only touch this directly when the shell doesn't cover you.                                                                                                                                                                                         |
 | `AssistantPendingStatus`                                                                                | `src/web/components/AssistantPendingStatus.tsx`     | Shimmering bilingual "Thinking…" / "Denke nach…" while a turn is in flight and answer text has not started. Mounted by `ChatTranscript` / compass transcript from `isGenerating`; also used by empty streaming `AssistantMarkdown`.                                                                                              |
-| `AssistantReasoning`                                                                                    | `src/web/components/AssistantReasoning.tsx`         | Gemini thought summaries (`ChatUpdateAssistantReasoningChunk`). Live: shimmering "Thinking…" / "Denke nach…", forced open. Settled: collapsed "Thought" / "Nachgedacht" with chevron; user expand/collapse animates height + opacity (200 ms); live-driven collapse is instant. Body via `AssistantMarkdown`.                    |
+| `AssistantReasoning`                                                                                    | `src/web/components/AssistantReasoning.tsx`         | Gemini thought summaries (`ChatUpdateAssistantReasoningChunk`). Live: shimmering "Thinking…" / "Denke nach…", forced open. Settled: collapsed "Thought" / "Nachgedacht" with chevron; user expand/collapse animates height + chevron rotate (200 ms, no opacity fade); live-driven collapse is instant. Body via `AssistantMarkdown`. |
 | `AssistantMarkdown`                                                                                     | `src/web/components/AssistantMarkdown.tsx`          | Rendering AI-produced markdown (streaming or persisted). Handles partial fences/tables via `parseIncompleteMarkdown`. External-link confirmation defaults on (visitor chat); wrap a transcript in `ExternalLinkConfirmationProvider enabled={false}` to suppress the interstitial where links are trusted (workspace assistant). |
 | `MessageRow`, `Bubble`, `Timestamp`, `CopyButton`, `SpeakButton`, `ToolArgumentsButton`, `ToolRowShell` | `src/web/components/chat-message/shared.tsx`        | Row-level atoms shared by every message variant. Reaching past these into raw JSX is a review-time reject. `ToolRowShell` is the left-aligned tool-call pill (friendly label + args + timestamp + `active` shimmer).                                                                                                             |
 | `toolDisplay` / `toolDisplayLabel`                                                                      | `src/web/chat/toolDisplay.ts`                       | Map a raw tool id to a friendly bilingual label + icon. Use anywhere a tool name is shown to a human.                                                                                                                                                                                                                            |
@@ -402,8 +415,10 @@ The list below names things that are tempting but wrong here. They are not allow
 - **Avatars.** Not this site.
 - **A refetch on send.** The subscription is the live signal; a refetch races it and flashes.
 - **Composer that doesn't wrap `MessageComposer`.** Raw `<textarea>` inside a chat surface is always a review-time reject.
-- **Per-surface `viewportClassName` that redeclares `scrollbar-gutter:stable`.** The shell already reserves the lane. Redeclaring it in
-  every surface is how the deep-link route silently dropped the rule and painted the scrollbar over a bubble in the first place.
+- **Per-surface `viewportClassName` that redeclares `scrollbar-gutter:stable`.** The shell / viewport already reserves the lane. Redeclaring
+  it in every surface is how the deep-link route silently dropped the rule and painted the scrollbar over a bubble in the first place.
+- **`data-autoscrolling:scrollbar-none` (or any `scrollbar-width: none`) on the transcript viewport.** Collapses the stable gutter while
+  streaming follow-output is engaged — bubbles jump horizontally. See [Scrollbar gutter](#scrollbar-gutter--reserved-never-over-the-bubbles).
 - **Wrapping `MessageScrollerItem`s in a date `<section>` or `aria-live` region.** The primitive only observes direct children of
   `MessageScrollerContent`. Nested items never register as new turn anchors and stick-to-bottom silently fails — new sends leave the reader
   on "Jump to latest". Keep markers and streaming rows as sibling items; put `aria-live` on the streaming item itself.

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CvSkillGroup } from './CvSkillGroup';
 import type { CvSkillItem } from './CvSkillGroup';
+import { CvSkillGroup } from './CvSkillGroup';
 
 const meta = {
     title: 'CV/CvSkillGroup',

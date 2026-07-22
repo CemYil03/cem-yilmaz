@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { MockVisitorChatProvider, MockWorkspaceAssistantChatProvider } from '../storybook/MockChatProviders';
 import { HeaderChatButton } from './HeaderChatButton';
 import { SidebarProvider } from './base/sidebar';
-import { MockVisitorChatProvider, MockWorkspaceAssistantChatProvider } from '../storybook/MockChatProviders';
 
 // Two variants of the same affordance — `visitor` (default, public site) and
 // `workspace` (admin assistant). Both rely on a chat context; the stories

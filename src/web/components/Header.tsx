@@ -1,15 +1,15 @@
-import type { LucideIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
+import type { LucideIcon } from 'lucide-react';
 import { BriefcaseIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useLocale } from '../hooks/useLocale';
+import { cn } from '../utils/cn';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from './base/breadcrumb';
+import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
 import { GlassCard } from './GlassCard';
 import { HeaderChatButton } from './HeaderChatButton';
 import { LanguageSelector } from './LanguageSelector';
 import { ThemeSelector } from './ThemeSelector';
-import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
-import { useLocale } from '../hooks/useLocale';
-import { cn } from '../utils/cn';
 
 /* Strip a leading `/en` (or any non-default locale) segment so `/about` and
    `/en/about` collapse to the same comparison key. Trailing slashes are

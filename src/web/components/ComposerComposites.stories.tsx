@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
 import { BotIcon, ShieldCheckIcon } from 'lucide-react';
+import { useState } from 'react';
 import type { GqlCChatMessage, GqlCChatMessageUserInput } from '../graphql/generated';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './base/select';
 import { ChatMessage } from './chat-message';
 import { MessageComposer } from './MessageComposer';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './base/select';
 
 // Composite stories — the composer glued under a real chat thread, the
 // workspace hub greeting block, and the approval-mode flow end-to-end.

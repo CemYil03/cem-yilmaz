@@ -142,7 +142,8 @@ Two root rules keep the layout still — both are required:
 
 Do not “fix” the shift by forcing `overflow-y: scroll` forever — that always paints a disabled track. Do not put `overflow-x-hidden` on
 `<body>` or on sticky ancestors. Nested scroll surfaces (chat transcripts) still opt into their own `scrollbar-gutter: stable`; that is
-independent of the document gutter — see [chat.md](./chat.md).
+independent of the document gutter — see [chat.md](./chat.md). On those surfaces, also avoid `scrollbar-width: none` while the bar is
+meant to stay reserved: it collapses the stable gutter (the streaming layout-shift case).
 
 ## Switching modes
 

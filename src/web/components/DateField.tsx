@@ -1,8 +1,8 @@
 import { parseISO } from 'date-fns';
 import { formatIsoDate } from '../../shared';
-import { DatePicker } from './base/date-picker';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
+import { DatePicker } from './base/date-picker';
 
 // Bridges the ISO `YYYY-MM-DD` storage shape the GraphQL `Date` scalar
 // expects over to the `Date`-based `DatePicker`. The mirrored input keeps

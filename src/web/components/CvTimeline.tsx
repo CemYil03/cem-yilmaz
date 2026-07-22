@@ -1,5 +1,5 @@
-import type { Locale } from '../utils/locale';
 import { formatMonthYear } from '../../shared';
+import type { Locale } from '../utils/locale';
 import { AssistantMarkdown } from './AssistantMarkdown';
 import { GlassCard } from './GlassCard';
 import { Reveal } from './Reveal';

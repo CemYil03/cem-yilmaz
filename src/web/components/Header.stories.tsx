@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Header } from './Header';
 import { CodeXmlIcon, FolderKanbanIcon } from 'lucide-react';
 import { MockVisitorChatProvider, MockWorkspaceAssistantChatProvider } from '../storybook/MockChatProviders';
+import { Header } from './Header';
 
 // `Header` is the floating glass nav used across every public page. Stories
 // stage it inside a fixed-height background that mimics the landing page so

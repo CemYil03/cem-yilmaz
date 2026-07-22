@@ -36,7 +36,13 @@ function MessageScrollerViewport({ className, ...props }: React.ComponentProps<t
         <MessageScrollerPrimitive.Viewport
             data-slot="message-scroller-viewport"
             className={cn(
-                'size-full min-h-0 min-w-0 scroll-fade-b scrollbar-thin scrollbar-gutter-stable overflow-y-auto overscroll-contain contain-content data-autoscrolling:scrollbar-none',
+                // `scrollbar-gutter-stable` reserves the classic-scrollbar lane so
+                // content width does not jump when overflow appears. Do NOT pair
+                // that with `data-autoscrolling:scrollbar-none`: during streaming
+                // follow-output the primitive toggles `data-autoscrolling` on every
+                // programmatic scroll, `scrollbar-width: none` collapses the gutter,
+                // and right-aligned bubbles shift left/right. See docs/styles/chat.md.
+                'size-full min-h-0 min-w-0 scroll-fade-b scrollbar-thin scrollbar-gutter-stable overflow-y-auto overscroll-contain contain-content',
                 className,
             )}
             {...props}

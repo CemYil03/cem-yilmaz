@@ -1,8 +1,12 @@
-import { createContext, useContext, useState } from 'react';
-import { useRouter } from '@tanstack/react-router';
-import { Streamdown } from 'streamdown';
-import type { Components } from 'streamdown';
 import { code } from '@streamdown/code';
+import { useRouter } from '@tanstack/react-router';
+import { createContext, useContext, useState } from 'react';
+import type { Components } from 'streamdown';
+import { Streamdown } from 'streamdown';
+import { cn } from '../utils/cn';
+import type { Locale } from '../utils/locale';
+import { DEFAULT_LOCALE, LOCALES } from '../utils/locale';
+import { AssistantPendingStatus } from './AssistantPendingStatus';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,10 +17,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from './base/alert-dialog';
-import { cn } from '../utils/cn';
-import { DEFAULT_LOCALE, LOCALES } from '../utils/locale';
-import type { Locale } from '../utils/locale';
-import { AssistantPendingStatus } from './AssistantPendingStatus';
 
 // Whether markdown links to *external* sites go through a "you're about to
 // visit an external website" confirmation before opening. Defaults to `true` —

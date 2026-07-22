@@ -1,6 +1,6 @@
+import { XIcon } from 'lucide-react';
 import * as React from 'react';
 import { useState } from 'react';
-import { XIcon } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 // Free-form multi-select rendered as pills. Enter (or comma) commits the

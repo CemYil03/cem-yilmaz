@@ -1,8 +1,8 @@
-import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
+import { sankey, sankeyLeft, sankeyLinkHorizontal } from 'd3-sankey';
 import { useMemo } from 'react';
 import { formatCurrency } from '../../shared';
-import type { Locale } from '../utils/locale';
 import { cn } from '../utils/cn';
+import type { Locale } from '../utils/locale';
 
 // Hand-rolled inline SVG Sankey for `/workspace/finances`. Same "no chart
 // library" posture as the inventory sparkline — d3-sankey does only the

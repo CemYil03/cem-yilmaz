@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CvTimeline } from './CvTimeline';
 import type { CvTimelineEntry } from './CvTimeline';
+import { CvTimeline } from './CvTimeline';
 
 const meta = {
     title: 'CV/CvTimeline',

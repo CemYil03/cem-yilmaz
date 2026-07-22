@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronRightIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
@@ -11,9 +11,12 @@ import { AssistantMarkdown } from './AssistantMarkdown';
 // growing summary is readable; once the turn settles it starts collapsed with
 // a chevron to expand.
 //
-// User toggles animate height (`grid-template-rows` 0fr→1fr) + opacity +
-// chevron rotate (200 ms ease-out). Live-driven open/close is instant so
-// stick-to-bottom scroll is not fought. See docs/styles/chat.md.
+// User toggles animate height only (`grid-template-rows` 0fr↔1fr) + chevron
+// rotate (200 ms). No opacity fade — ease-out opacity on collapse blanks the
+// text in the first frames while height is still open, which reads as a flash
+// (expand hid the same timing because content started invisible). Live-driven
+// open/close is instant so stick-to-bottom scroll is not fought. See
+// docs/styles/chat.md.
 
 export function AssistantReasoning({ text, live = false, className }: { text: string; live?: boolean; className?: string }) {
     const locale = useLocale();
@@ -43,19 +46,19 @@ export function AssistantReasoning({ text, live = false, className }: { text: st
                     setOpen((current) => !current);
                 }}
                 className={cn(
-                    'flex max-w-full items-center gap-1 rounded py-0.5 text-left font-medium',
+                    'flex max-w-full items-center gap-2 rounded py-0.5 text-left font-medium',
                     'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                     live ? 'cursor-default' : 'cursor-pointer hover:text-foreground active:text-foreground',
                     live && 'shimmer',
                 )}
             >
                 <span className="truncate">{label}</span>
-                {live ? null : (
-                    <ChevronDownIcon
+                {!live && (
+                    <ChevronRightIcon
                         aria-hidden
                         className={cn(
                             'size-3.5 shrink-0 opacity-70 transition-transform duration-200 ease-out motion-reduce:transition-none',
-                            open && 'rotate-180',
+                            open && 'rotate-90',
                         )}
                     />
                 )}
@@ -68,13 +71,7 @@ export function AssistantReasoning({ text, live = false, className }: { text: st
                 )}
             >
                 <div className="min-h-0 overflow-hidden" aria-hidden={!open} inert={!open}>
-                    <div
-                        className={cn(
-                            'my-4',
-                            animate && 'transition-opacity duration-200 ease-out motion-reduce:transition-none',
-                            open ? 'opacity-90' : 'opacity-0',
-                        )}
-                    >
+                    <div className="my-4 opacity-90">
                         <AssistantMarkdown text={text} streaming={live} className="text-xs text-muted-foreground" />
                     </div>
                 </div>
