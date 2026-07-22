@@ -2,8 +2,8 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import {
     ArrowUpRightIcon,
-    ChevronLeftIcon,
     ExternalLinkIcon,
+    ListIcon,
     MessageSquarePlusIcon,
     MessageSquareTextIcon,
     SearchIcon,
@@ -39,8 +39,9 @@ import type { Locale } from '../utils/locale';
 //   1. Chat browser — when no chat is loaded. Search input + paginated
 //      list backed by `WorkspaceAssistantChatsPage`, "Show more" pulls the
 //      next page in place.
-//   2. Transcript — when a chat is loaded, with a "Back to chats" affordance
-//      at the top that calls `resetChat` on the provider.
+//   2. Transcript — when a chat is loaded. "Back to chats" / "Open in its
+//      own page" live in the sidebar chrome header (not above the
+//      transcript) so the content column stays taller.
 //   3. Composer — always mounted at the bottom, in the footer.
 //
 // All state lives on `WorkspaceAssistantChatProvider`, so mounting this body
@@ -256,7 +257,7 @@ function ChatBrowserRow({
                             openStandalone(chat.chatId);
                         }}
                         aria-label={openStandaloneLabel[locale]}
-                        className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
+                        className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
                     >
                         <ArrowUpRightIcon className="size-4" aria-hidden />
                     </button>
@@ -269,21 +270,22 @@ function ChatBrowserRow({
 
 // --- Loaded-state affordances ------------------------------------------------
 //
-// A small row above the transcript with two actions: "Back to chats" (calls
-// `resetChat` on the provider so the browser is on screen again) and "Open
-// in its own page" (navigates to `/workspace/assistant/<chatId>`, closes the
-// sidebar, and resets the provider so the same chat is not visible in two
-// places at once).
+// Icon buttons that live in the sidebar chrome header (top-right, next to
+// "Hide assistant") when a chat is loaded: "Back to chats" (list icon;
+// calls `resetChat` so the browser is on screen again) and "Open in its own
+// page" (navigates to `/workspace/assistant/<chatId>`, closes the sidebar,
+// and resets the provider so the same chat is not visible in two places at
+// once). Keeping them in the chrome frees a vertical row above the transcript.
 
-// Shared hand-off used by both the loaded-state header (chat already on
-// screen in the sidebar) and the hover action on each browser row (chat not
-// yet loaded). In either case the deep-link route is about to mount, so we
-// dismiss the sidebar (mobile Sheet or desktop dock) and drop whatever chat
-// the provider is holding — otherwise the URL and the docked column would
-// both render the same conversation, and a later workspace-page visit would
-// silently restore the just-handed-off chat in the sidebar. Row usage may
-// pass a chatId that isn't the currently-loaded one (or the provider may be
-// empty); calling `resetChat` in that case is a no-op either way.
+// Shared hand-off used by both the loaded-state header actions (chat already
+// on screen in the sidebar) and the hover action on each browser row (chat
+// not yet loaded). In either case the deep-link route is about to mount, so
+// we dismiss the sidebar (mobile Sheet or desktop dock) and drop whatever
+// chat the provider is holding — otherwise the URL and the docked column
+// would both render the same conversation, and a later workspace-page visit
+// would silently restore the just-handed-off chat in the sidebar. Row usage
+// may pass a chatId that isn't the currently-loaded one (or the provider may
+// be empty); calling `resetChat` in that case is a no-op either way.
 function useOpenChatStandalone() {
     const { resetChat } = useWorkspaceAssistantChat();
     const { isMobile, setOpen, setOpenMobile } = useSidebar();
@@ -299,7 +301,10 @@ function useOpenChatStandalone() {
     );
 }
 
-export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale }) {
+const sidebarHeaderActionClassName =
+    'grid size-7 cursor-pointer place-items-center rounded-md text-sidebar-foreground/70 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-hidden focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar';
+
+export function WorkspaceAssistantChatLoadedHeaderActions({ locale }: { locale: Locale }) {
     const { chatId, resetChat } = useWorkspaceAssistantChat();
     const openStandalone = useOpenChatStandalone();
 
@@ -310,30 +315,34 @@ export function WorkspaceAssistantChatLoadedHeader({ locale }: { locale: Locale 
 
     if (!chatId) return null;
     return (
-        <div className="flex items-center justify-between gap-2">
-            <button
-                type="button"
-                onClick={resetChat}
-                className="inline-flex items-center gap-1 rounded-md px-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-                <ChevronLeftIcon className="size-3.5" aria-hidden />
-                {backToChatsLabel[locale]}
-            </button>
+        <>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button
+                    <button
                         type="button"
-                        variant="ghost"
-                        size="icon-xs"
+                        onClick={resetChat}
+                        aria-label={backToChatsLabel[locale]}
+                        className={sidebarHeaderActionClassName}
+                    >
+                        <ListIcon className="size-4" aria-hidden />
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent>{backToChatsLabel[locale]}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
                         onClick={onOpenStandalone}
                         aria-label={openStandaloneLabel[locale]}
+                        className={sidebarHeaderActionClassName}
                     >
-                        <ExternalLinkIcon />
-                    </Button>
+                        <ExternalLinkIcon className="size-4" aria-hidden />
+                    </button>
                 </TooltipTrigger>
                 <TooltipContent>{openStandaloneLabel[locale]}</TooltipContent>
             </Tooltip>
-        </div>
+        </>
     );
 }
 

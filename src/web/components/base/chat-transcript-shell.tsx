@@ -10,8 +10,9 @@ import {
 
 // Shared scaffolding every chat transcript in the app sits on top of. Pins the
 // scroll config in exactly one place — `defaultScrollPosition="last-anchor"`,
-// `scrollEdgeThreshold={64}`, the jump-to-latest pill at the tail — so a new
-// surface can't drift by forgetting one. See docs/styles/chat.md.
+// `scrollEdgeThreshold={64}`, `scrollPreviousItemPeek={0}`, the jump-to-latest
+// pill at the tail — so a new surface can't drift by forgetting one. See
+// docs/styles/chat.md.
 
 export interface ChatTranscriptShellProps {
     /** Localised label for the SR-only text on the jump-to-latest pill.
@@ -57,6 +58,10 @@ export function ChatTranscriptShell({
             // chatters; larger and casual scroll-ups look like the reader
             // is still at the bottom.
             scrollEdgeThreshold={64}
+            // Primitive default is 64 px of the previous item peeking above a
+            // new turn anchor. We want the new user message flush at the top
+            // so the prior reply leaves the viewport entirely.
+            scrollPreviousItemPeek={0}
         >
             <MessageScroller className={className}>
                 {/*

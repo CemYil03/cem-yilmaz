@@ -12,9 +12,9 @@ import { cn } from '../utils/cn';
 // Transcript for the compass psychological-interview view. Sits on top of the
 // shared `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`)
 // so it inherits the same scroll config (`last-anchor`, 64 px edge threshold,
-// jump-to-latest pill) as every other chat transcript on the site — see
-// `docs/styles/chat.md`. Dispatches to interview-shaped rows because
-// `CompassInterviewMessage` isn't part of the `ChatMessage` union; the
+// zero previous-item peek, jump-to-latest pill) as every other chat transcript
+// on the site — see `docs/styles/chat.md`. Dispatches to interview-shaped rows
+// because `CompassInterviewMessage` isn't part of the `ChatMessage` union; the
 // row-level atoms (`Bubble`, `Timestamp`, `CopyButton`, `SpeakButton`,
 // `AssistantMarkdown`) are the same ones `ChatTranscriptShared` uses.
 //

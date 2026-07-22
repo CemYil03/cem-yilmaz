@@ -24,9 +24,10 @@ import {
 // route) and the visitor "Ask me anything" sheet. Sits on top of
 // `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`),
 // which pins the shadcn `MessageScroller` config in exactly one place —
-// `defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`, and the
-// jump-to-latest pill at the tail. See `docs/styles/chat.md` for the desired
-// chat experience and the shared transcript composition rules.
+// `defaultScrollPosition="last-anchor"`, `scrollEdgeThreshold={64}`,
+// `scrollPreviousItemPeek={0}`, and the jump-to-latest pill at the tail. See
+// `docs/styles/chat.md` for the desired chat experience and the shared
+// transcript composition rules.
 //
 // Critical MessageScroller contract: every `MessageScrollerItem` must be a
 // *direct* child of `MessageScrollerContent`. The primitive's MutationObserver
@@ -94,9 +95,10 @@ export interface ChatTranscriptProps {
 const EMPTY_LIVE_TURN_IDS: ReadonlySet<string> = new Set();
 
 /** Turn anchors are user messages only — matching shadcn's MessageScroller
- *  contract. A new `scrollAnchor` row settles near the top of the viewport so
- *  the reply can grow into the room below; `autoScroll` then follows that
- *  growth while the reader stays at the live edge. */
+ *  contract. A new `scrollAnchor` row settles flush at the top of the viewport
+ *  (`scrollPreviousItemPeek={0}` in `ChatTranscriptShell`) so the reply can
+ *  grow into the room below; `autoScroll` then follows that growth while the
+ *  reader stays at the live edge. */
 function isTurnScrollAnchor(message: TranscriptMessage): boolean {
     return message.__typename === 'ChatMessageUser';
 }

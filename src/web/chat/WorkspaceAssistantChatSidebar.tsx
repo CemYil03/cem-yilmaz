@@ -5,7 +5,7 @@ import { mergeTranscriptMessages } from './chatTranscript';
 import {
     WorkspaceAssistantChatBrowser,
     WorkspaceAssistantChatComposer,
-    WorkspaceAssistantChatLoadedHeader,
+    WorkspaceAssistantChatLoadedHeaderActions,
     WorkspaceAssistantChatTranscript,
 } from './WorkspaceAssistantChatBody';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
@@ -105,13 +105,14 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
                         </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
+                        {hasActiveChat && !showingFile ? <WorkspaceAssistantChatLoadedHeaderActions locale={locale} /> : null}
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button
                                     type="button"
                                     onClick={toggleSidebar}
                                     aria-label={collapseLabel[locale]}
-                                    className="grid size-7 place-items-center rounded-md text-sidebar-foreground/70 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-hidden focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar"
+                                    className="grid size-7 cursor-pointer place-items-center rounded-md text-sidebar-foreground/70 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-hidden focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar"
                                 >
                                     <PanelRightCloseIcon className="size-4" />
                                 </button>
@@ -132,14 +133,11 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
                 ) : (
                     <div className="flex min-h-0 flex-1 flex-col gap-1 px-4 pt-2 pb-0">
                         {hasActiveChat ? (
-                            <>
-                                <WorkspaceAssistantChatLoadedHeader locale={locale} />
-                                <WorkspaceAssistantChatTranscript
-                                    messages={allMessages}
-                                    streamingTexts={live.streamingTextsFor(chatId)}
-                                    locale={locale}
-                                />
-                            </>
+                            <WorkspaceAssistantChatTranscript
+                                messages={allMessages}
+                                streamingTexts={live.streamingTextsFor(chatId)}
+                                locale={locale}
+                            />
                         ) : (
                             <WorkspaceAssistantChatBrowser locale={locale} />
                         )}

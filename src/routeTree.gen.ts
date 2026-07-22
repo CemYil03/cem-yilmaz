@@ -9,54 +9,49 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as Char123LocaleChar125RouteImport } from './routes/{-$locale}'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
-import { Route as Char123LocaleChar125IndexRouteImport } from './routes/{-$locale}/index'
-import { Route as Char123LocaleChar125WorkspaceRouteImport } from './routes/{-$locale}/workspace'
-import { Route as Char123LocaleChar125ProjectsRouteImport } from './routes/{-$locale}/projects'
-import { Route as Char123LocaleChar125ImpressumRouteImport } from './routes/{-$locale}/impressum'
-import { Route as Char123LocaleChar125DatenschutzRouteImport } from './routes/{-$locale}/datenschutz'
-import { Route as Char123LocaleChar125CvRouteImport } from './routes/{-$locale}/cv'
-import { Route as Char123LocaleChar125AboutRouteImport } from './routes/{-$locale}/about'
-import { Route as ApiTtsRouteImport } from './routes/api/tts'
-import { Route as ApiStreamRouteImport } from './routes/api/stream'
-import { Route as ApiHealthRouteImport } from './routes/api/health'
-import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as Char123LocaleChar125RouteImport } from './routes/{-$locale}'
 import { Route as ApiFileUploadsRouteImport } from './routes/api/file-uploads'
-import { Route as Char123LocaleChar125WorkspaceIndexRouteImport } from './routes/{-$locale}/workspace/index'
-import { Route as Char123LocaleChar125WorkspaceVisitorChatsRouteImport } from './routes/{-$locale}/workspace/visitor-chats'
-import { Route as Char123LocaleChar125WorkspaceTravelRouteImport } from './routes/{-$locale}/workspace/travel'
-import { Route as Char123LocaleChar125WorkspaceTodosRouteImport } from './routes/{-$locale}/workspace/todos'
-import { Route as Char123LocaleChar125WorkspaceTaxRouteImport } from './routes/{-$locale}/workspace/tax'
-import { Route as Char123LocaleChar125WorkspaceSoftwareRouteImport } from './routes/{-$locale}/workspace/software'
-import { Route as Char123LocaleChar125WorkspaceProjectsRouteImport } from './routes/{-$locale}/workspace/projects'
-import { Route as Char123LocaleChar125WorkspaceNutritionRouteImport } from './routes/{-$locale}/workspace/nutrition'
-import { Route as Char123LocaleChar125WorkspaceMedicalRouteImport } from './routes/{-$locale}/workspace/medical'
-import { Route as Char123LocaleChar125WorkspaceMediaRouteImport } from './routes/{-$locale}/workspace/media'
-import { Route as Char123LocaleChar125WorkspaceLogsRouteImport } from './routes/{-$locale}/workspace/logs'
-import { Route as Char123LocaleChar125WorkspaceInventoryRouteImport } from './routes/{-$locale}/workspace/inventory'
-import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './routes/{-$locale}/workspace/fitness'
-import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
-import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
-import { Route as Char123LocaleChar125WorkspaceCompassRouteImport } from './routes/{-$locale}/workspace/compass'
-import { Route as ServerWorkspaceFilePdfWorkspaceFileIdRouteImport } from './routes/server.workspace-file-pdf.$workspaceFileId'
+import { Route as ApiGraphqlRouteImport } from './routes/api/graphql'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiStreamRouteImport } from './routes/api/stream'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
+import { Route as Char123LocaleChar125IndexRouteImport } from './routes/{-$locale}/index'
+import { Route as Char123LocaleChar125AboutRouteImport } from './routes/{-$locale}/about'
+import { Route as Char123LocaleChar125CvRouteImport } from './routes/{-$locale}/cv'
+import { Route as Char123LocaleChar125DatenschutzRouteImport } from './routes/{-$locale}/datenschutz'
+import { Route as Char123LocaleChar125ImpressumRouteImport } from './routes/{-$locale}/impressum'
+import { Route as Char123LocaleChar125ProjectsRouteImport } from './routes/{-$locale}/projects'
+import { Route as Char123LocaleChar125WorkspaceRouteImport } from './routes/{-$locale}/workspace'
 import { Route as ApiFileUploadsFileUploadIdRouteImport } from './routes/api/file-uploads_.$fileUploadId'
-import { Route as Char123LocaleChar125WorkspaceTravelTripIdRouteImport } from './routes/{-$locale}/workspace/travel_.$tripId'
-import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
-import { Route as Char123LocaleChar125WorkspaceInventoryItemIdRouteImport } from './routes/{-$locale}/workspace/inventory_.$itemId'
-import { Route as Char123LocaleChar125WorkspaceAssistantChatIdRouteImport } from './routes/{-$locale}/workspace/assistant.$chatId'
+import { Route as ServerWorkspaceFilePdfWorkspaceFileIdRouteImport } from './routes/server.workspace-file-pdf.$workspaceFileId'
+import { Route as Char123LocaleChar125WorkspaceIndexRouteImport } from './routes/{-$locale}/workspace/index'
+import { Route as Char123LocaleChar125WorkspaceCompassRouteImport } from './routes/{-$locale}/workspace/compass'
+import { Route as Char123LocaleChar125WorkspaceCvRouteImport } from './routes/{-$locale}/workspace/cv'
+import { Route as Char123LocaleChar125WorkspaceFinancesRouteImport } from './routes/{-$locale}/workspace/finances'
+import { Route as Char123LocaleChar125WorkspaceFitnessRouteImport } from './routes/{-$locale}/workspace/fitness'
+import { Route as Char123LocaleChar125WorkspaceInventoryRouteImport } from './routes/{-$locale}/workspace/inventory'
+import { Route as Char123LocaleChar125WorkspaceLogsRouteImport } from './routes/{-$locale}/workspace/logs'
+import { Route as Char123LocaleChar125WorkspaceMediaRouteImport } from './routes/{-$locale}/workspace/media'
+import { Route as Char123LocaleChar125WorkspaceMedicalRouteImport } from './routes/{-$locale}/workspace/medical'
+import { Route as Char123LocaleChar125WorkspaceNutritionRouteImport } from './routes/{-$locale}/workspace/nutrition'
+import { Route as Char123LocaleChar125WorkspaceProjectsRouteImport } from './routes/{-$locale}/workspace/projects'
+import { Route as Char123LocaleChar125WorkspaceSoftwareRouteImport } from './routes/{-$locale}/workspace/software'
+import { Route as Char123LocaleChar125WorkspaceTaxRouteImport } from './routes/{-$locale}/workspace/tax'
+import { Route as Char123LocaleChar125WorkspaceTodosRouteImport } from './routes/{-$locale}/workspace/todos'
+import { Route as Char123LocaleChar125WorkspaceTravelRouteImport } from './routes/{-$locale}/workspace/travel'
+import { Route as Char123LocaleChar125WorkspaceVisitorChatsRouteImport } from './routes/{-$locale}/workspace/visitor-chats'
 import { Route as ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport } from './routes/api/workspace-files_.$workspaceFileId.pdf'
+import { Route as Char123LocaleChar125WorkspaceAssistantChatIdRouteImport } from './routes/{-$locale}/workspace/assistant.$chatId'
+import { Route as Char123LocaleChar125WorkspaceInventoryItemIdRouteImport } from './routes/{-$locale}/workspace/inventory_.$itemId'
+import { Route as Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport } from './routes/{-$locale}/workspace/projects_.$projectId'
+import { Route as Char123LocaleChar125WorkspaceTravelTripIdRouteImport } from './routes/{-$locale}/workspace/travel_.$tripId'
 
-const Char123LocaleChar125Route = Char123LocaleChar125RouteImport.update({
-  id: '/{-$locale}',
-  path: '/{-$locale}',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
@@ -64,9 +59,39 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
-  id: '/llms.txt',
-  path: '/llms.txt',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char123LocaleChar125Route = Char123LocaleChar125RouteImport.update({
+  id: '/{-$locale}',
+  path: '/{-$locale}',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFileUploadsRoute = ApiFileUploadsRouteImport.update({
+  id: '/api/file-uploads',
+  path: '/api/file-uploads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGraphqlRoute = ApiGraphqlRouteImport.update({
+  id: '/api/graphql',
+  path: '/api/graphql',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStreamRoute = ApiStreamRouteImport.update({
+  id: '/api/stream',
+  path: '/api/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char123LocaleChar125IndexRoute =
@@ -75,16 +100,21 @@ const Char123LocaleChar125IndexRoute =
     path: '/',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
-const Char123LocaleChar125WorkspaceRoute =
-  Char123LocaleChar125WorkspaceRouteImport.update({
-    id: '/workspace',
-    path: '/workspace',
+const Char123LocaleChar125AboutRoute =
+  Char123LocaleChar125AboutRouteImport.update({
+    id: '/about',
+    path: '/about',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
-const Char123LocaleChar125ProjectsRoute =
-  Char123LocaleChar125ProjectsRouteImport.update({
-    id: '/projects',
-    path: '/projects',
+const Char123LocaleChar125CvRoute = Char123LocaleChar125CvRouteImport.update({
+  id: '/cv',
+  path: '/cv',
+  getParentRoute: () => Char123LocaleChar125Route,
+} as any)
+const Char123LocaleChar125DatenschutzRoute =
+  Char123LocaleChar125DatenschutzRouteImport.update({
+    id: '/datenschutz',
+    path: '/datenschutz',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
 const Char123LocaleChar125ImpressumRoute =
@@ -93,136 +123,34 @@ const Char123LocaleChar125ImpressumRoute =
     path: '/impressum',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
-const Char123LocaleChar125DatenschutzRoute =
-  Char123LocaleChar125DatenschutzRouteImport.update({
-    id: '/datenschutz',
-    path: '/datenschutz',
+const Char123LocaleChar125ProjectsRoute =
+  Char123LocaleChar125ProjectsRouteImport.update({
+    id: '/projects',
+    path: '/projects',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
-const Char123LocaleChar125CvRoute = Char123LocaleChar125CvRouteImport.update({
-  id: '/cv',
-  path: '/cv',
-  getParentRoute: () => Char123LocaleChar125Route,
-} as any)
-const Char123LocaleChar125AboutRoute =
-  Char123LocaleChar125AboutRouteImport.update({
-    id: '/about',
-    path: '/about',
+const Char123LocaleChar125WorkspaceRoute =
+  Char123LocaleChar125WorkspaceRouteImport.update({
+    id: '/workspace',
+    path: '/workspace',
     getParentRoute: () => Char123LocaleChar125Route,
   } as any)
-const ApiTtsRoute = ApiTtsRouteImport.update({
-  id: '/api/tts',
-  path: '/api/tts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiStreamRoute = ApiStreamRouteImport.update({
-  id: '/api/stream',
-  path: '/api/stream',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiGraphqlRoute = ApiGraphqlRouteImport.update({
-  id: '/api/graphql',
-  path: '/api/graphql',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiFileUploadsRoute = ApiFileUploadsRouteImport.update({
-  id: '/api/file-uploads',
-  path: '/api/file-uploads',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ApiFileUploadsFileUploadIdRoute =
+  ApiFileUploadsFileUploadIdRouteImport.update({
+    id: '/api/file-uploads_/$fileUploadId',
+    path: '/api/file-uploads/$fileUploadId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ServerWorkspaceFilePdfWorkspaceFileIdRoute =
+  ServerWorkspaceFilePdfWorkspaceFileIdRouteImport.update({
+    id: '/server/workspace-file-pdf/$workspaceFileId',
+    path: '/server/workspace-file-pdf/$workspaceFileId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const Char123LocaleChar125WorkspaceIndexRoute =
   Char123LocaleChar125WorkspaceIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceVisitorChatsRoute =
-  Char123LocaleChar125WorkspaceVisitorChatsRouteImport.update({
-    id: '/visitor-chats',
-    path: '/visitor-chats',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceTravelRoute =
-  Char123LocaleChar125WorkspaceTravelRouteImport.update({
-    id: '/travel',
-    path: '/travel',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceTodosRoute =
-  Char123LocaleChar125WorkspaceTodosRouteImport.update({
-    id: '/todos',
-    path: '/todos',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceTaxRoute =
-  Char123LocaleChar125WorkspaceTaxRouteImport.update({
-    id: '/tax',
-    path: '/tax',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceSoftwareRoute =
-  Char123LocaleChar125WorkspaceSoftwareRouteImport.update({
-    id: '/software',
-    path: '/software',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceProjectsRoute =
-  Char123LocaleChar125WorkspaceProjectsRouteImport.update({
-    id: '/projects',
-    path: '/projects',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceNutritionRoute =
-  Char123LocaleChar125WorkspaceNutritionRouteImport.update({
-    id: '/nutrition',
-    path: '/nutrition',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceMedicalRoute =
-  Char123LocaleChar125WorkspaceMedicalRouteImport.update({
-    id: '/medical',
-    path: '/medical',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceMediaRoute =
-  Char123LocaleChar125WorkspaceMediaRouteImport.update({
-    id: '/media',
-    path: '/media',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceLogsRoute =
-  Char123LocaleChar125WorkspaceLogsRouteImport.update({
-    id: '/logs',
-    path: '/logs',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceInventoryRoute =
-  Char123LocaleChar125WorkspaceInventoryRouteImport.update({
-    id: '/inventory',
-    path: '/inventory',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceFitnessRoute =
-  Char123LocaleChar125WorkspaceFitnessRouteImport.update({
-    id: '/fitness',
-    path: '/fitness',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceFinancesRoute =
-  Char123LocaleChar125WorkspaceFinancesRouteImport.update({
-    id: '/finances',
-    path: '/finances',
-    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
-  } as any)
-const Char123LocaleChar125WorkspaceCvRoute =
-  Char123LocaleChar125WorkspaceCvRouteImport.update({
-    id: '/cv',
-    path: '/cv',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
 const Char123LocaleChar125WorkspaceCompassRoute =
@@ -231,28 +159,100 @@ const Char123LocaleChar125WorkspaceCompassRoute =
     path: '/compass',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
-const ServerWorkspaceFilePdfWorkspaceFileIdRoute =
-  ServerWorkspaceFilePdfWorkspaceFileIdRouteImport.update({
-    id: '/server/workspace-file-pdf/$workspaceFileId',
-    path: '/server/workspace-file-pdf/$workspaceFileId',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiFileUploadsFileUploadIdRoute =
-  ApiFileUploadsFileUploadIdRouteImport.update({
-    id: '/api/file-uploads_/$fileUploadId',
-    path: '/api/file-uploads/$fileUploadId',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char123LocaleChar125WorkspaceTravelTripIdRoute =
-  Char123LocaleChar125WorkspaceTravelTripIdRouteImport.update({
-    id: '/travel_/$tripId',
-    path: '/travel/$tripId',
+const Char123LocaleChar125WorkspaceCvRoute =
+  Char123LocaleChar125WorkspaceCvRouteImport.update({
+    id: '/cv',
+    path: '/cv',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
-const Char123LocaleChar125WorkspaceProjectsProjectIdRoute =
-  Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport.update({
-    id: '/projects_/$projectId',
-    path: '/projects/$projectId',
+const Char123LocaleChar125WorkspaceFinancesRoute =
+  Char123LocaleChar125WorkspaceFinancesRouteImport.update({
+    id: '/finances',
+    path: '/finances',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceFitnessRoute =
+  Char123LocaleChar125WorkspaceFitnessRouteImport.update({
+    id: '/fitness',
+    path: '/fitness',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceInventoryRoute =
+  Char123LocaleChar125WorkspaceInventoryRouteImport.update({
+    id: '/inventory',
+    path: '/inventory',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceLogsRoute =
+  Char123LocaleChar125WorkspaceLogsRouteImport.update({
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceMediaRoute =
+  Char123LocaleChar125WorkspaceMediaRouteImport.update({
+    id: '/media',
+    path: '/media',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceMedicalRoute =
+  Char123LocaleChar125WorkspaceMedicalRouteImport.update({
+    id: '/medical',
+    path: '/medical',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceNutritionRoute =
+  Char123LocaleChar125WorkspaceNutritionRouteImport.update({
+    id: '/nutrition',
+    path: '/nutrition',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceProjectsRoute =
+  Char123LocaleChar125WorkspaceProjectsRouteImport.update({
+    id: '/projects',
+    path: '/projects',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceSoftwareRoute =
+  Char123LocaleChar125WorkspaceSoftwareRouteImport.update({
+    id: '/software',
+    path: '/software',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceTaxRoute =
+  Char123LocaleChar125WorkspaceTaxRouteImport.update({
+    id: '/tax',
+    path: '/tax',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceTodosRoute =
+  Char123LocaleChar125WorkspaceTodosRouteImport.update({
+    id: '/todos',
+    path: '/todos',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceTravelRoute =
+  Char123LocaleChar125WorkspaceTravelRouteImport.update({
+    id: '/travel',
+    path: '/travel',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const Char123LocaleChar125WorkspaceVisitorChatsRoute =
+  Char123LocaleChar125WorkspaceVisitorChatsRouteImport.update({
+    id: '/visitor-chats',
+    path: '/visitor-chats',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
+  } as any)
+const ApiWorkspaceFilesWorkspaceFileIdPdfRoute =
+  ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport.update({
+    id: '/api/workspace-files_/$workspaceFileId/pdf',
+    path: '/api/workspace-files/$workspaceFileId/pdf',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char123LocaleChar125WorkspaceAssistantChatIdRoute =
+  Char123LocaleChar125WorkspaceAssistantChatIdRouteImport.update({
+    id: '/assistant/$chatId',
+    path: '/assistant/$chatId',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
 const Char123LocaleChar125WorkspaceInventoryItemIdRoute =
@@ -261,17 +261,17 @@ const Char123LocaleChar125WorkspaceInventoryItemIdRoute =
     path: '/inventory/$itemId',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
-const Char123LocaleChar125WorkspaceAssistantChatIdRoute =
-  Char123LocaleChar125WorkspaceAssistantChatIdRouteImport.update({
-    id: '/assistant/$chatId',
-    path: '/assistant/$chatId',
+const Char123LocaleChar125WorkspaceProjectsProjectIdRoute =
+  Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport.update({
+    id: '/projects_/$projectId',
+    path: '/projects/$projectId',
     getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
-const ApiWorkspaceFilesWorkspaceFileIdPdfRoute =
-  ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport.update({
-    id: '/api/workspace-files_/$workspaceFileId/pdf',
-    path: '/api/workspace-files/$workspaceFileId/pdf',
-    getParentRoute: () => rootRouteImport,
+const Char123LocaleChar125WorkspaceTravelTripIdRoute =
+  Char123LocaleChar125WorkspaceTravelTripIdRouteImport.update({
+    id: '/travel_/$tripId',
+    path: '/travel/$tripId',
+    getParentRoute: () => Char123LocaleChar125WorkspaceRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -537,18 +537,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/{-$locale}': {
-      id: '/{-$locale}'
-      path: '/{-$locale}'
-      fullPath: '/{-$locale}'
-      preLoaderRoute: typeof Char123LocaleChar125RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots.txt': {
@@ -558,88 +551,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/llms.txt': {
-      id: '/llms.txt'
-      path: '/llms.txt'
-      fullPath: '/llms.txt'
-      preLoaderRoute: typeof LlmsDottxtRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/{-$locale}/': {
-      id: '/{-$locale}/'
-      path: '/'
-      fullPath: '/{-$locale}/'
-      preLoaderRoute: typeof Char123LocaleChar125IndexRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/{-$locale}/workspace': {
-      id: '/{-$locale}/workspace'
-      path: '/workspace'
-      fullPath: '/{-$locale}/workspace'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/{-$locale}/projects': {
-      id: '/{-$locale}/projects'
-      path: '/projects'
-      fullPath: '/{-$locale}/projects'
-      preLoaderRoute: typeof Char123LocaleChar125ProjectsRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/{-$locale}/impressum': {
-      id: '/{-$locale}/impressum'
-      path: '/impressum'
-      fullPath: '/{-$locale}/impressum'
-      preLoaderRoute: typeof Char123LocaleChar125ImpressumRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/{-$locale}/datenschutz': {
-      id: '/{-$locale}/datenschutz'
-      path: '/datenschutz'
-      fullPath: '/{-$locale}/datenschutz'
-      preLoaderRoute: typeof Char123LocaleChar125DatenschutzRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/{-$locale}/cv': {
-      id: '/{-$locale}/cv'
-      path: '/cv'
-      fullPath: '/{-$locale}/cv'
-      preLoaderRoute: typeof Char123LocaleChar125CvRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/{-$locale}/about': {
-      id: '/{-$locale}/about'
-      path: '/about'
-      fullPath: '/{-$locale}/about'
-      preLoaderRoute: typeof Char123LocaleChar125AboutRouteImport
-      parentRoute: typeof Char123LocaleChar125Route
-    }
-    '/api/tts': {
-      id: '/api/tts'
-      path: '/api/tts'
-      fullPath: '/api/tts'
-      preLoaderRoute: typeof ApiTtsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/stream': {
-      id: '/api/stream'
-      path: '/api/stream'
-      fullPath: '/api/stream'
-      preLoaderRoute: typeof ApiStreamRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/graphql': {
-      id: '/api/graphql'
-      path: '/api/graphql'
-      fullPath: '/api/graphql'
-      preLoaderRoute: typeof ApiGraphqlRouteImport
+    '/{-$locale}': {
+      id: '/{-$locale}'
+      path: '/{-$locale}'
+      fullPath: '/{-$locale}'
+      preLoaderRoute: typeof Char123LocaleChar125RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/file-uploads': {
@@ -649,109 +572,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFileUploadsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/graphql': {
+      id: '/api/graphql'
+      path: '/api/graphql'
+      fullPath: '/api/graphql'
+      preLoaderRoute: typeof ApiGraphqlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stream': {
+      id: '/api/stream'
+      path: '/api/stream'
+      fullPath: '/api/stream'
+      preLoaderRoute: typeof ApiStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/{-$locale}/': {
+      id: '/{-$locale}/'
+      path: '/'
+      fullPath: '/{-$locale}/'
+      preLoaderRoute: typeof Char123LocaleChar125IndexRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/about': {
+      id: '/{-$locale}/about'
+      path: '/about'
+      fullPath: '/{-$locale}/about'
+      preLoaderRoute: typeof Char123LocaleChar125AboutRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/cv': {
+      id: '/{-$locale}/cv'
+      path: '/cv'
+      fullPath: '/{-$locale}/cv'
+      preLoaderRoute: typeof Char123LocaleChar125CvRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/datenschutz': {
+      id: '/{-$locale}/datenschutz'
+      path: '/datenschutz'
+      fullPath: '/{-$locale}/datenschutz'
+      preLoaderRoute: typeof Char123LocaleChar125DatenschutzRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/impressum': {
+      id: '/{-$locale}/impressum'
+      path: '/impressum'
+      fullPath: '/{-$locale}/impressum'
+      preLoaderRoute: typeof Char123LocaleChar125ImpressumRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/projects': {
+      id: '/{-$locale}/projects'
+      path: '/projects'
+      fullPath: '/{-$locale}/projects'
+      preLoaderRoute: typeof Char123LocaleChar125ProjectsRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/{-$locale}/workspace': {
+      id: '/{-$locale}/workspace'
+      path: '/workspace'
+      fullPath: '/{-$locale}/workspace'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceRouteImport
+      parentRoute: typeof Char123LocaleChar125Route
+    }
+    '/api/file-uploads_/$fileUploadId': {
+      id: '/api/file-uploads_/$fileUploadId'
+      path: '/api/file-uploads/$fileUploadId'
+      fullPath: '/api/file-uploads/$fileUploadId'
+      preLoaderRoute: typeof ApiFileUploadsFileUploadIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/server/workspace-file-pdf/$workspaceFileId': {
+      id: '/server/workspace-file-pdf/$workspaceFileId'
+      path: '/server/workspace-file-pdf/$workspaceFileId'
+      fullPath: '/server/workspace-file-pdf/$workspaceFileId'
+      preLoaderRoute: typeof ServerWorkspaceFilePdfWorkspaceFileIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/{-$locale}/workspace/': {
       id: '/{-$locale}/workspace/'
       path: '/'
       fullPath: '/{-$locale}/workspace/'
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceIndexRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/visitor-chats': {
-      id: '/{-$locale}/workspace/visitor-chats'
-      path: '/visitor-chats'
-      fullPath: '/{-$locale}/workspace/visitor-chats'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/travel': {
-      id: '/{-$locale}/workspace/travel'
-      path: '/travel'
-      fullPath: '/{-$locale}/workspace/travel'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTravelRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/todos': {
-      id: '/{-$locale}/workspace/todos'
-      path: '/todos'
-      fullPath: '/{-$locale}/workspace/todos'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTodosRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/tax': {
-      id: '/{-$locale}/workspace/tax'
-      path: '/tax'
-      fullPath: '/{-$locale}/workspace/tax'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTaxRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/software': {
-      id: '/{-$locale}/workspace/software'
-      path: '/software'
-      fullPath: '/{-$locale}/workspace/software'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceSoftwareRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/projects': {
-      id: '/{-$locale}/workspace/projects'
-      path: '/projects'
-      fullPath: '/{-$locale}/workspace/projects'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/nutrition': {
-      id: '/{-$locale}/workspace/nutrition'
-      path: '/nutrition'
-      fullPath: '/{-$locale}/workspace/nutrition'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceNutritionRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/medical': {
-      id: '/{-$locale}/workspace/medical'
-      path: '/medical'
-      fullPath: '/{-$locale}/workspace/medical'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceMedicalRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/media': {
-      id: '/{-$locale}/workspace/media'
-      path: '/media'
-      fullPath: '/{-$locale}/workspace/media'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceMediaRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/logs': {
-      id: '/{-$locale}/workspace/logs'
-      path: '/logs'
-      fullPath: '/{-$locale}/workspace/logs'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceLogsRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/inventory': {
-      id: '/{-$locale}/workspace/inventory'
-      path: '/inventory'
-      fullPath: '/{-$locale}/workspace/inventory'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceInventoryRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/fitness': {
-      id: '/{-$locale}/workspace/fitness'
-      path: '/fitness'
-      fullPath: '/{-$locale}/workspace/fitness'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceFitnessRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/finances': {
-      id: '/{-$locale}/workspace/finances'
-      path: '/finances'
-      fullPath: '/{-$locale}/workspace/finances'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceFinancesRouteImport
-      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
-    }
-    '/{-$locale}/workspace/cv': {
-      id: '/{-$locale}/workspace/cv'
-      path: '/cv'
-      fullPath: '/{-$locale}/workspace/cv'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceCvRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
     '/{-$locale}/workspace/compass': {
@@ -761,32 +677,116 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceCompassRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
-    '/server/workspace-file-pdf/$workspaceFileId': {
-      id: '/server/workspace-file-pdf/$workspaceFileId'
-      path: '/server/workspace-file-pdf/$workspaceFileId'
-      fullPath: '/server/workspace-file-pdf/$workspaceFileId'
-      preLoaderRoute: typeof ServerWorkspaceFilePdfWorkspaceFileIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/file-uploads_/$fileUploadId': {
-      id: '/api/file-uploads_/$fileUploadId'
-      path: '/api/file-uploads/$fileUploadId'
-      fullPath: '/api/file-uploads/$fileUploadId'
-      preLoaderRoute: typeof ApiFileUploadsFileUploadIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/{-$locale}/workspace/travel_/$tripId': {
-      id: '/{-$locale}/workspace/travel_/$tripId'
-      path: '/travel/$tripId'
-      fullPath: '/{-$locale}/workspace/travel/$tripId'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTravelTripIdRouteImport
+    '/{-$locale}/workspace/cv': {
+      id: '/{-$locale}/workspace/cv'
+      path: '/cv'
+      fullPath: '/{-$locale}/workspace/cv'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceCvRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
-    '/{-$locale}/workspace/projects_/$projectId': {
-      id: '/{-$locale}/workspace/projects_/$projectId'
-      path: '/projects/$projectId'
-      fullPath: '/{-$locale}/workspace/projects/$projectId'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport
+    '/{-$locale}/workspace/finances': {
+      id: '/{-$locale}/workspace/finances'
+      path: '/finances'
+      fullPath: '/{-$locale}/workspace/finances'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceFinancesRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/fitness': {
+      id: '/{-$locale}/workspace/fitness'
+      path: '/fitness'
+      fullPath: '/{-$locale}/workspace/fitness'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceFitnessRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/inventory': {
+      id: '/{-$locale}/workspace/inventory'
+      path: '/inventory'
+      fullPath: '/{-$locale}/workspace/inventory'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceInventoryRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/logs': {
+      id: '/{-$locale}/workspace/logs'
+      path: '/logs'
+      fullPath: '/{-$locale}/workspace/logs'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceLogsRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/media': {
+      id: '/{-$locale}/workspace/media'
+      path: '/media'
+      fullPath: '/{-$locale}/workspace/media'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceMediaRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/medical': {
+      id: '/{-$locale}/workspace/medical'
+      path: '/medical'
+      fullPath: '/{-$locale}/workspace/medical'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceMedicalRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/nutrition': {
+      id: '/{-$locale}/workspace/nutrition'
+      path: '/nutrition'
+      fullPath: '/{-$locale}/workspace/nutrition'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceNutritionRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/projects': {
+      id: '/{-$locale}/workspace/projects'
+      path: '/projects'
+      fullPath: '/{-$locale}/workspace/projects'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/software': {
+      id: '/{-$locale}/workspace/software'
+      path: '/software'
+      fullPath: '/{-$locale}/workspace/software'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceSoftwareRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/tax': {
+      id: '/{-$locale}/workspace/tax'
+      path: '/tax'
+      fullPath: '/{-$locale}/workspace/tax'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTaxRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/todos': {
+      id: '/{-$locale}/workspace/todos'
+      path: '/todos'
+      fullPath: '/{-$locale}/workspace/todos'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTodosRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/travel': {
+      id: '/{-$locale}/workspace/travel'
+      path: '/travel'
+      fullPath: '/{-$locale}/workspace/travel'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTravelRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/{-$locale}/workspace/visitor-chats': {
+      id: '/{-$locale}/workspace/visitor-chats'
+      path: '/visitor-chats'
+      fullPath: '/{-$locale}/workspace/visitor-chats'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceVisitorChatsRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
+    }
+    '/api/workspace-files_/$workspaceFileId/pdf': {
+      id: '/api/workspace-files_/$workspaceFileId/pdf'
+      path: '/api/workspace-files/$workspaceFileId/pdf'
+      fullPath: '/api/workspace-files/$workspaceFileId/pdf'
+      preLoaderRoute: typeof ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/{-$locale}/workspace/assistant/$chatId': {
+      id: '/{-$locale}/workspace/assistant/$chatId'
+      path: '/assistant/$chatId'
+      fullPath: '/{-$locale}/workspace/assistant/$chatId'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceAssistantChatIdRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
     '/{-$locale}/workspace/inventory_/$itemId': {
@@ -796,19 +796,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char123LocaleChar125WorkspaceInventoryItemIdRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
-    '/{-$locale}/workspace/assistant/$chatId': {
-      id: '/{-$locale}/workspace/assistant/$chatId'
-      path: '/assistant/$chatId'
-      fullPath: '/{-$locale}/workspace/assistant/$chatId'
-      preLoaderRoute: typeof Char123LocaleChar125WorkspaceAssistantChatIdRouteImport
+    '/{-$locale}/workspace/projects_/$projectId': {
+      id: '/{-$locale}/workspace/projects_/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/{-$locale}/workspace/projects/$projectId'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceProjectsProjectIdRouteImport
       parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
-    '/api/workspace-files_/$workspaceFileId/pdf': {
-      id: '/api/workspace-files_/$workspaceFileId/pdf'
-      path: '/api/workspace-files/$workspaceFileId/pdf'
-      fullPath: '/api/workspace-files/$workspaceFileId/pdf'
-      preLoaderRoute: typeof ApiWorkspaceFilesWorkspaceFileIdPdfRouteImport
-      parentRoute: typeof rootRouteImport
+    '/{-$locale}/workspace/travel_/$tripId': {
+      id: '/{-$locale}/workspace/travel_/$tripId'
+      path: '/travel/$tripId'
+      fullPath: '/{-$locale}/workspace/travel/$tripId'
+      preLoaderRoute: typeof Char123LocaleChar125WorkspaceTravelTripIdRouteImport
+      parentRoute: typeof Char123LocaleChar125WorkspaceRoute
     }
   }
 }

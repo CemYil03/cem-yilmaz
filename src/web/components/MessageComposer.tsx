@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { ArrowUpIcon, CheckIcon, FileIcon, PaperclipIcon, XIcon } from 'lucide-react';
 import type { ChangeEvent, DragEvent, ReactNode } from 'react';
-import { CheckIcon, FileIcon, PaperclipIcon, SendIcon, XIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useIsMobile } from '../hooks/use-mobile';
+import { useLocale } from '../hooks/useLocale';
+import { cn } from '../utils/cn';
 import {
     Attachment,
     AttachmentAction,
@@ -14,9 +17,6 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from './base/input-group';
 import { Spinner } from './base/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from './base/tooltip';
-import { useIsMobile } from '../hooks/use-mobile';
-import { useLocale } from '../hooks/useLocale';
-import { cn } from '../utils/cn';
 
 // Generic chat-style composer surface — a textarea inside an `<InputGroup>`
 // whose `block-end` addon hosts the Send button. The component is fully
@@ -256,6 +256,7 @@ export function MessageComposer({
                     {
                         'border-brand ring-[3px] ring-brand/30': isDragOver,
                     },
+                    'rounded-2xl',
                 )}
             >
                 {attachmentsEnabled && hasAttachments ? (
@@ -367,7 +368,7 @@ export function MessageComposer({
                                     crossfaded so the swap reads as a state
                                     change rather than a pop. */}
                                 <span className="relative grid place-items-center">
-                                    <SendIcon
+                                    <ArrowUpIcon
                                         aria-hidden
                                         className={cn('transition-opacity duration-150', busy || showSent ? 'opacity-0' : 'opacity-100')}
                                     />
