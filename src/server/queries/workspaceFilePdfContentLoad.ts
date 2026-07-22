@@ -17,7 +17,6 @@ import { verifyServerToken } from '../utils/serverToken';
 // or expired token returns `null` and the route renders nothing sensitive.
 
 export interface WorkspaceFilePdfContent {
-    title: string;
     content: string;
 }
 
@@ -25,7 +24,7 @@ export async function workspaceFilePdfContentLoad(workspaceFileId: string, token
     if (!verifyServerToken(token, workspaceFileId)) return null;
 
     const [row] = await db
-        .select({ file: workspaceFiles, upload: fileUploads })
+        .select({ bytes: fileUploads.bytes })
         .from(workspaceFiles)
         .innerJoin(fileUploads, eq(fileUploads.fileUploadId, workspaceFiles.fileUploadId))
         .where(eq(workspaceFiles.workspaceFileId, workspaceFileId))
@@ -34,7 +33,6 @@ export async function workspaceFilePdfContentLoad(workspaceFileId: string, token
     if (!row) return null;
 
     return {
-        title: row.file.label ?? row.file.filename,
-        content: Buffer.from(row.upload.bytes).toString('utf8'),
+        content: Buffer.from(row.bytes).toString('utf8'),
     };
 }

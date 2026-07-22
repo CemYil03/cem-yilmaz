@@ -19,10 +19,10 @@ import type { WorkspaceFilePdfContent } from '../server/queries/workspaceFilePdf
 // The layout is deliberately NOT the app's on-screen theme: a clean, light,
 // A4-oriented sheet (like markdowntopdf.com) with readable body type and no
 // app chrome. `printBackground` + the `print` media emulation in
-// `browserCapturePdf` make these styles land in the PDF. The route still
-// renders inside `__root` (which mounts the ambient backdrop and toaster), so
-// we paint a white `min-h-screen` sheet over it via `relative z-50` and
-// `data-pdf-*` hooks. The sheet must stay in normal document flow — a
+// `browserCapturePdf` make these styles land in the PDF. `__root` already
+// omits AmbientBackdrop / toaster / nav-progress on `/server/*` and forces a
+// white body, so this sheet does not need to cover site chrome — it just
+// hosts the document. The sheet must stay in normal document flow — a
 // `fixed inset-0` overflow box clips Chromium's `page.pdf()` to one page.
 
 // A missing/blank `token` defaults to `''` rather than failing validation, so
@@ -56,20 +56,19 @@ export const Route = createFileRoute('/server/workspace-file-pdf/$workspaceFileI
 });
 
 function WorkspaceFilePdfDocument() {
-    const { title, content } = Route.useLoaderData();
+    const { content } = Route.useLoaderData();
     return (
-        // White sheet painted over the app's ambient backdrop so the capture
-        // is a clean light page regardless of the app theme. Must stay in
-        // normal document flow (`relative` + `min-h-screen`, NOT
-        // `fixed inset-0`) — Chromium's `page.pdf()` only paginates content
-        // that grows the document height; a viewport-pinned overflow box
-        // clips to a single page. `colorScheme: light` forces light UA
-        // defaults; margins come from `browserCapturePdf`'s `@page`
-        // settings, so the inner padding here is only on-screen breathing
-        // room before capture.
-        <div data-pdf-ready style={{ colorScheme: 'light' }} className="relative z-50 min-h-screen bg-white text-neutral-900">
-            <article className="mx-auto max-w-[720px] px-10 py-8">
-                <h1 className="mb-6 text-2xl font-semibold text-neutral-900">{title}</h1>
+        // White document sheet. Must stay in normal document flow
+        // (`min-h-screen`, NOT `fixed inset-0`) — Chromium's `page.pdf()`
+        // only paginates content that grows the document height; a
+        // viewport-pinned overflow box clips to a single page.
+        // `colorScheme: light` forces light UA defaults; margins come from
+        // `browserCapturePdf`'s `@page` settings, so the inner padding here
+        // is only on-screen breathing room before capture. The file label /
+        // filename is NOT rendered — the PDF is the markdown body only
+        // (titles belong in the markdown itself when wanted).
+        <div data-pdf-ready style={{ colorScheme: 'light' }} className="min-h-screen bg-white text-neutral-900">
+            <article className="mx-auto max-w-180 px-10 py-8">
                 {/* Reuse the same renderer as the on-screen preview for content
                     parity. External-link confirmation is irrelevant in a PDF, so
                     disable the interstitial (links become plain anchors). */}

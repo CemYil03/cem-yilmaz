@@ -12,6 +12,7 @@ import { urqlClient } from '../web/graphql/client';
 import { useLocale } from '../web/hooks/useLocale';
 import { DEFAULT_SHARE_IMAGE, DEFAULT_SHARE_IMAGE_DIMENSIONS, SITE_NAME } from '../web/seo/seoConstants';
 import { webPageUrlGet } from '../web/seo/webPageUrlGet';
+import { cn } from '../web/utils/cn';
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;var lightIcon=document.querySelector('link[rel="icon"][data-theme-icon="light"]');var darkIcon=document.querySelector('link[rel="icon"][data-theme-icon="dark"]');if(lightIcon&&darkIcon){if(mode==='auto'){lightIcon.media='(prefers-color-scheme: light)';darkIcon.media='(prefers-color-scheme: dark)';}else{lightIcon.media=resolved==='light'?'all':'not all';darkIcon.media=resolved==='dark'?'all':'not all';}}}catch(e){}})();`;
 
@@ -122,6 +123,12 @@ function NotFound() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
     const locale = useLocale();
+    // `/server/*` routes are headless Chromium capture targets (PDF /
+    // screenshot) — see docs/architecture/browser-capture.md. They must not
+    // inherit site chrome: fixed AmbientBackdrop reprints on every PDF page
+    // (top-left brand bleed), and body `bg-background` shows as gray in page
+    // margins / trailing empty space on the last page.
+    const isBrowserCaptureRoute = useLocation({ select: (location) => location.pathname.startsWith('/server/') });
 
     return (
         <html lang={locale} suppressHydrationWarning>
@@ -130,9 +137,16 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <HeadContent />
             </head>
             {/* selection:bg-[rgba(79,184,178,0.24)] */}
-            <body className="font-sans antialiased wrap-anywhere overflow-x-hidden">
-                <AmbientBackdrop />
-                <NavigationProgress />
+            <body
+                className={cn(
+                    'font-sans antialiased wrap-anywhere overflow-x-hidden',
+                    // `!` so this beats the global `body { @apply bg-background }`
+                    // rule — capture pages need a true white canvas.
+                    isBrowserCaptureRoute && '!bg-white',
+                )}
+            >
+                {!isBrowserCaptureRoute && <AmbientBackdrop />}
+                {!isBrowserCaptureRoute && <NavigationProgress />}
                 <TooltipProvider>
                     <GraphQLClientProvider value={urqlClient}>
                         <VisitorChatProvider>
@@ -141,11 +155,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                              *  header button (and any other surface) can open
                              *  it from any public route. Renders nothing
                              *  until `useVisitorChat()` flips `isOpen`. */}
-                            <WebsiteVisitorAssistantChatSheet locale={locale} />
+                            {!isBrowserCaptureRoute && <WebsiteVisitorAssistantChatSheet locale={locale} />}
                         </VisitorChatProvider>
                     </GraphQLClientProvider>
                 </TooltipProvider>
-                <Toaster position="bottom-center" richColors />
+                {!isBrowserCaptureRoute && <Toaster position="bottom-center" richColors />}
                 <Scripts />
             </body>
         </html>

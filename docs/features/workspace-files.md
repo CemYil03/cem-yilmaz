@@ -131,9 +131,10 @@ The **Download PDF** button renders the document to a clean A4 PDF using the tem
   Exposed as `serverRuntime.browser.capturePdf`.
 - `src/routes/server.workspace-file-pdf.$workspaceFileId.tsx` — the `/server/*` print surface Chromium navigates to. Authenticates by the
   short-lived HMAC `token` search param (bound to the file id, minted by the download route), **not** a session cookie. Renders the same
-  `AssistantMarkdown` component as the on-screen preview inside a forced-light, A4-oriented sheet with no app chrome
-  (`relative z-50 min-h-screen`, **not** `fixed inset-0` — viewport-pinned overflow boxes clip `page.pdf()` to a single page); a
-  `[data-pdf-ready]` hook is what the capture waits for. Invalid/expired token → 404.
+  `AssistantMarkdown` component as the on-screen preview (markdown body only — no file label/filename heading) inside a forced-light,
+  A4-oriented sheet with no app chrome (`min-h-screen bg-white`, **not** `fixed inset-0` — viewport-pinned overflow boxes clip `page.pdf()`
+  to a single page); a `[data-pdf-ready]` hook is what the capture waits for. Invalid/expired token → 404. Site chrome is already stripped
+  by `__root` for `/server/*` (see [browser-capture.md](../architecture/browser-capture.md)).
 - `src/server/queries/workspaceFilePdfContentLoad.ts` — server-only loader for that route: verifies the token, loads the row + upload bytes.
   Not `userId`-scoped (there's no session on the headless request) — the token is proof the owner-checked download route minted it.
 - `src/routes/api/workspace-files_.$workspaceFileId.pdf.ts` — `GET /api/workspace-files/:id/pdf`. Session-cookie auth + ownership-scoped

@@ -83,6 +83,12 @@ Routes intended for server-side capture live under `src/routes/server.*` (matche
 - Render the same components used by the user-facing route, parameterized for the export viewport (no chrome, no sidebars, no toasts)
 - Be excluded from sitemaps and robots indexing — they are an implementation detail of the export pipeline
 
+`__root`'s `RootDocument` detects `/server/*` and **omits site chrome** (`AmbientBackdrop`, `NavigationProgress`, visitor chat sheet,
+`Toaster`) and forces `body` to white. Without that:
+
+- Fixed `AmbientBackdrop` **reprints on every PDF page**, bleeding a brand-tinted patch into the top-left corner
+- Global `body { bg-background }` (cool off-white) shows in PDF page margins and in the empty trailing region of the last page
+
 Authentication uses a one-shot HMAC token bound to a subject string (typically the resource id) and a TTL (60 s default). The signing secret
 is `SERVER_TOKEN_SECRET`. The token is **opaque to the client** — no browser code ever creates one. Commands generate the token, hand it to
 `browserCapture`, and the captured page is the only consumer.
