@@ -332,7 +332,10 @@ function useHasScrolled(threshold = 8) {
      otherwise be covered by a viewport-wide blur. The wrapper is
      `sticky top-0` with `h-0` so it follows the viewport top during scroll
      without pushing the header / page content down; the blur layers
-     themselves render as `absolute` children of it. */
+     themselves render as `absolute` children of it. The workspace layout
+     also puts `overflow-x-clip` on `<SidebarInset>` so a backdrop-filter
+     layer cannot paint into the docked assistant sidebar when the inset
+     column gets narrow. */
 function ProgressiveBlurTop({ contained = false, width = 'standard' }: { contained?: boolean; width?: 'standard' | 'wide' }) {
     const layers = [
         { blur: '4px', from: 0, to: 100 },

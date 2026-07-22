@@ -78,6 +78,9 @@ declare module './generated' {
     export interface GqlSChatUpdateAssistantTextChunk {
         gqlTypeName: 'ChatUpdateAssistantTextChunk';
     }
+    export interface GqlSChatUpdateAssistantReasoningChunk {
+        gqlTypeName: 'ChatUpdateAssistantReasoningChunk';
+    }
     export interface GqlSChatUpdateTurnEnded {
         gqlTypeName: 'ChatUpdateTurnEnded';
     }

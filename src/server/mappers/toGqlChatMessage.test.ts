@@ -22,6 +22,7 @@ function assistantTextRow(overrides: Partial<NonNullable<ChatMessageRowJoined['a
         assistantText: {
             chatMessageId,
             body: 'hi',
+            reasoning: null,
             modelId: null,
             inputTokens: null,
             outputTokens: null,
@@ -94,5 +95,32 @@ describe('toGqlChatMessage — generation metadata', () => {
             reasoningTokens: null,
             cachedInputTokens: null,
         });
+    });
+
+    it('passes persisted reasoning through on assistant text rows', () => {
+        // Arrange
+        const row = assistantTextRow({
+            modelId: 'gemini-2.5-pro',
+            reasoning: 'Considering the dates…',
+        });
+
+        // Act
+        const message = toGqlChatMessage(row);
+
+        // Assert
+        if (message.gqlTypeName !== 'ChatMessageAssistantText') throw new Error('expected ChatMessageAssistantText');
+        expect(message.reasoning).toBe('Considering the dates…');
+    });
+
+    it('returns reasoning: null when the column is unset (Flash / legacy)', () => {
+        // Arrange
+        const row = assistantTextRow();
+
+        // Act
+        const message = toGqlChatMessage(row);
+
+        // Assert
+        if (message.gqlTypeName !== 'ChatMessageAssistantText') throw new Error('expected ChatMessageAssistantText');
+        expect(message.reasoning).toBeNull();
     });
 });

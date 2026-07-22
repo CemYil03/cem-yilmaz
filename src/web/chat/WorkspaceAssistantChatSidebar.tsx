@@ -49,13 +49,24 @@ interface WorkspaceAssistantChatSidebarProps {
     locale: Locale;
     minWidthPx: number;
     maxWidthPx: number;
+    /** Minimum width left for `<SidebarInset>` when dragging. The resize
+     *  handle clamps against `window.innerWidth - minInsetPx` so a wide
+     *  drag cannot push the floating header / progressive blur under the
+     *  docked panel. */
+    minInsetPx: number;
     /** Called once per drag, on pointer-up, with the final pixel width.
      *  The layout persists it to `localStorage` and updates its React
      *  state so SSR + the cookie-backed `defaultOpen` stay in sync. */
     onWidthCommit: (px: number) => void;
 }
 
-export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, onWidthCommit }: WorkspaceAssistantChatSidebarProps) {
+export function WorkspaceAssistantChatSidebar({
+    locale,
+    minWidthPx,
+    maxWidthPx,
+    minInsetPx,
+    onWidthCommit,
+}: WorkspaceAssistantChatSidebarProps) {
     const { chatId, loadedMessages, live, openFileId, closeFile } = useWorkspaceAssistantChat();
     const { toggleSidebar, isMobile, setOpen, setOpenMobile } = useSidebar();
 
@@ -94,7 +105,15 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
         >
             {/* Left-edge resize handle. Hidden on mobile (the Sheet is full
              *  width on phones anyway). */}
-            {!isMobile ? <ResizeHandle minWidthPx={minWidthPx} maxWidthPx={maxWidthPx} onCommit={onWidthCommit} locale={locale} /> : null}
+            {!isMobile ? (
+                <ResizeHandle
+                    minWidthPx={minWidthPx}
+                    maxWidthPx={maxWidthPx}
+                    minInsetPx={minInsetPx}
+                    onCommit={onWidthCommit}
+                    locale={locale}
+                />
+            ) : null}
 
             <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
                 <div className="flex items-start justify-between gap-2 px-4 py-3.5">
@@ -163,11 +182,13 @@ export function WorkspaceAssistantChatSidebar({ locale, minWidthPx, maxWidthPx, 
 function ResizeHandle({
     minWidthPx,
     maxWidthPx,
+    minInsetPx,
     onCommit,
     locale,
 }: {
     minWidthPx: number;
     maxWidthPx: number;
+    minInsetPx: number;
     onCommit: (px: number) => void;
     locale: Locale;
 }) {
@@ -176,6 +197,11 @@ function ResizeHandle({
     const providerNodeRef = useRef<HTMLElement | null>(null);
     const lastWidthRef = useRef(minWidthPx);
     const [isDragging, setIsDragging] = useState(false);
+
+    const clampDragWidth = (px: number) => {
+        const viewportCap = Math.max(minWidthPx, window.innerWidth - minInsetPx);
+        return Math.min(maxWidthPx, viewportCap, Math.max(minWidthPx, px));
+    };
 
     const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         // Left mouse / primary touch only. Right-click on the handle should
@@ -211,7 +237,7 @@ function ResizeHandle({
             // Sidebar is right-docked; moving the pointer left from its left
             // edge should make the sidebar wider, so we subtract the delta.
             const next = startWidthRef.current - (e.clientX - startXRef.current);
-            const clamped = Math.min(maxWidthPx, Math.max(minWidthPx, next));
+            const clamped = clampDragWidth(next);
             lastWidthRef.current = clamped;
             // Write through the DOM — no React state during the drag.
             providerNodeRef.current?.style.setProperty('--sidebar-width', `${clamped}px`);

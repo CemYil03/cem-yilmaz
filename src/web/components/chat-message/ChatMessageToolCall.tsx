@@ -40,9 +40,10 @@ function createdWorkspaceFileFromResult(result: unknown): CreatedWorkspaceFile |
 // result summary) is `ToolRowShell`. Rows sit on the left rail (see
 // `MessageRow` side="system").
 //
-// `active` is true only for the trailing tool-call row while the turn is still
-// in flight — the transcript threads it down so the pill shows the in-progress
-// spinner + shimmer until the assistant streams text or the turn ends. See
+// `active` is true only for the trailing open tool-call row (`toolResult`
+// still null) while the turn is in flight — the transcript threads it down so
+// the pill shows the in-progress spinner + shimmer until the result lands
+// (then the pending "Thinking…" row takes over until answer text). See
 // docs/styles/chat.md.
 //
 // When child rows are present, they render in an indented block under the

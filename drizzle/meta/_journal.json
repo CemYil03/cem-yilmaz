@@ -239,6 +239,13 @@
             "when": 1784720513067,
             "tag": "0033_material_jubilee",
             "breakpoints": true
+        },
+        {
+            "idx": 34,
+            "version": "7",
+            "when": 1784728358870,
+            "tag": "0034_silly_the_renegades",
+            "breakpoints": true
         }
     ]
 }

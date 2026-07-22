@@ -1547,6 +1547,12 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                                 chatMessageId: payload.chatMessageId,
                                 delta: payload.delta,
                             };
+                        case 'assistantReasoningChunk':
+                            return {
+                                gqlTypeName: 'ChatUpdateAssistantReasoningChunk',
+                                chatMessageId: payload.chatMessageId,
+                                delta: payload.delta,
+                            };
                         case 'turnEnded':
                             return { gqlTypeName: 'ChatUpdateTurnEnded', generationId: payload.generationId };
                     }

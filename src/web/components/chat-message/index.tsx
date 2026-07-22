@@ -46,6 +46,10 @@ interface ChatMessageProps {
      *  flight — drives the "working on it" shimmer on that pill. Consumed only
      *  by the `ChatMessageToolCall` branch. See docs/styles/chat.md. */
     activeToolCall?: boolean;
+    /** Live Gemini thought-summary buffer for this assistant-text turn, if any.
+     *  The view falls back to `message.reasoning` (persisted). Consumed only by
+     *  the `ChatMessageAssistantText` branch. */
+    reasoningText?: string;
 }
 
 export function ChatMessage({
@@ -56,12 +60,13 @@ export function ChatMessage({
     onApprovalRespond,
     children,
     activeToolCall = false,
+    reasoningText,
 }: ChatMessageProps) {
     switch (message.__typename) {
         case 'ChatMessageUser':
             return <ChatMessageUserView message={message} />;
         case 'ChatMessageAssistantText':
-            return <ChatMessageAssistantTextView message={message} />;
+            return <ChatMessageAssistantTextView message={message} reasoningText={reasoningText} />;
         case 'ChatMessageToolCall':
             return <ChatMessageToolCallView message={message} childMessages={children} active={activeToolCall} />;
         case 'ChatMessageToolApprovalRequest':

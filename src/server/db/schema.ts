@@ -243,6 +243,11 @@ export const chatMessagesAssistantText = pgTable(
     {
         chatMessageId: uuid().primaryKey(),
         body: varchar().notNull(),
+        // Gemini thought summary (`includeThoughts` → AI SDK `reasoning-delta` /
+        // `reasoningText`). Null for Flash (thinking disabled), legacy rows, and
+        // turns that produced no thoughts. UI-only — `toModelMessages` does not
+        // replay it. See `docs/architecture/chat-persistence.md`.
+        reasoning: varchar(),
         modelId: varchar(),
         inputTokens: integer(),
         outputTokens: integer(),

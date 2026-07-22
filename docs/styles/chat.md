@@ -50,7 +50,7 @@ composer is sticky-bottom in every state and muscle memory works.
 | The streaming row's `chatMessageId` is **pre-allocated** server-side | `chatAssistantTurnRun.ts`                                                  |
 | The persisted row keys on the same id — swap is a React no-op        | `ChatTranscript` (streaming section keyed on the pre-allocated id)         |
 | Send **never refetches**                                             | Initial query + `chatUpdates` subscription; no `mutate → refetch` anywhere |
-| Streaming placeholder is a **shimmer**, not a spinner                | `shimmer` utility in `AssistantMarkdown` while the buffer is empty         |
+| Pending status is a **shimmer**, not a spinner                       | `AssistantPendingStatus` while `isGenerating &&` no streaming text yet     |
 
 **Why streaming is non-negotiable.** Perceived latency drops from "seconds waiting" to "instant" the moment the first token paints. Every
 consumer LLM surface streams; a non-streaming assistant reads as broken.
@@ -63,9 +63,28 @@ documented in [Chat foundation — Live updates](../architecture/chat.md#live-up
 **Why no refetch on send.** The transcript reads from initial query + subscription buffer only. A `refetch()` on send would race the
 subscription, drop the pre-allocated-id swap, and flash. If a surface finds itself reaching for `refetch()`, the transcript wiring is wrong.
 
-**Why shimmer, not spinner.** A spinner reads as "still fetching over the network." A shimmer on the row we're about to fill reads as
-"content about to arrive here." The shadcn `shimmer` utility is in `shadcn/tailwind.css`; `AssistantMarkdown` uses it while its streaming
-buffer is empty.
+**Why a turn-level pending row (not "empty streaming buffer").** Streaming text entries only appear when the first
+`ChatUpdateAssistantTextChunk` lands — and that chunk already carries text — so an empty-buffer shimmer inside `AssistantMarkdown` almost
+never painted. The wait that matters is `beginTurn` → first token (often seconds of tool work or model latency with no rows yet).
+`ChatTranscript` therefore mounts `AssistantPendingStatus` whenever `isGenerating` is true, `streamingTexts` is empty, no live thoughts slot
+is showing, **and** no in-flight tool shimmer is active. Pending and tool shimmer are **exclusive** — the sequence is pending → open tool
+pill → pending again → answer. The shadcn `shimmer` utility is in `shadcn/tailwind.css`.
+
+**Gemini thinking / thought summaries.** Gemini can emit thought summaries when `thinkingConfig.includeThoughts` is true; the AI SDK
+surfaces them as `reasoning-delta` stream parts. This site publishes those as `ChatUpdateAssistantReasoningChunk` (same pre-allocated
+`chatMessageId` as the answer) and renders a collapsed **Thought / Nachgedacht** disclosure above the answer via `AssistantReasoning` (while
+streaming the label reads **Thinking… / Denke nach…**).
+
+- **Flash** (`gemini-*-flash*`): `agentScaffolding` sets `thinkingBudget: 0` on purpose — without it Flash periodically emits malformed tool
+  calls. With budget 0 there are no thoughts; the pending shimmer is the wait signal.
+- **Pro** (and any non-Flash catalog model): `includeThoughts: true` with the provider default thinking budget. Thought text streams live
+  via `ChatUpdateAssistantReasoningChunk` and is persisted on `ChatMessageAssistantText.reasoning` with the final answer row, so Thoughts
+  survive a refresh. The live buffer in `useChatLiveUpdates` still holds the in-session copy until `forgetChat`; the transcript prefers live
+  text then falls back to the persisted field.
+
+The pending shimmer still covers the gap before the first thought _or_ text chunk. Once thoughts start, the disclosure replaces the pending
+row; once answer text starts, the disclosure collapses (user can re-open). User toggles animate height + opacity + chevron (200 ms
+`ease-out`); live-driven open/close is instant so stick-to-bottom scroll is not fought. `prefers-reduced-motion` skips the transition.
 
 ## Scroll behaviour during streaming — follow while at the edge, never yank
 
@@ -139,11 +158,12 @@ the top-level delegate + visitor tools to curated bilingual labels (with an icon
 that only appear in the indented child list (`toolProjectsUpsert` → "Projects upsert"). The raw id is still one click away in the args
 dialog.
 
-**Why the shimmer only while running.** A persisted `ChatMessageToolCall` row already carries its result — it's a record, not a live thing.
-The only genuinely-live tool state is "the turn is still going and hasn't started streaming text yet," which is a turn-level signal
-(`isGenerating` from `useChatLiveUpdates`). The transcript shimmers exactly the trailing tool row under that condition, matching
-`AssistantMarkdown`'s "Thinking…" sweep. A continuous shimmer on every settled tool row would be a decorative loop — forbidden by
-[motion.md](./motion.md). The label also gains a trailing `…` while active, so state is conveyed by text too, not motion alone.
+**Why the shimmer only while the tool is open.** A `ChatMessageToolCall` with a result is a record, not a live thing. The pill shimmers only
+while the trailing live-turn tool still has `toolResult: null` (pre-written `delegateTo*` rows waiting on the sub-agent). Once the result
+lands, the shimmer stops and the turn-level `AssistantPendingStatus` covers the remaining wait until answer text — matching
+`AssistantPendingStatus`'s "Thinking…" / "Denke nach…" sweep, never both at once. A continuous shimmer on every settled tool row would be a
+decorative loop — forbidden by [motion.md](./motion.md). The label also gains a trailing `…` while active, so state is conveyed by text too,
+not motion alone.
 
 **Why `liveTurnMessageIds` gates the shimmer.** `ChatTranscript` takes `isGenerating` plus `liveTurnMessageIds` (the ids the current
 still-running turn has appended, from `liveTurnMessageIdsFor(chatId)`). It marks the last top-level tool-call `active` **only if that row's
@@ -168,9 +188,10 @@ than a cluster of controls. On touch (coarse-pointer) devices it's always visibl
 rule that keeps timestamp + TTS + copy always visible. The reveal is driven by a `group/tool-row` on each row (the top-level pill in
 `ToolRowShell` and the child row in `ChildToolRow`).
 
-**Why "in progress" isn't stored.** A persisted tool row always carries its result (the runner writes call + result together), so
-`inProgress` is not a value on the wire — it's the same turn-level signal that drives the shimmer (trailing row + `isGenerating` + no
-streaming text yet). The spinner therefore only ever shows on the live trailing row, never on historical rows. Correct by construction.
+**Why "in progress" isn't stored as a column.** A tool row may land with `toolResult: null` (pre-written delegate) and later republish with
+the result, or land fully settled in one write. `inProgress` on the UI is derived: trailing live-turn tool + `toolResult == null` +
+`isGenerating` + no streaming text yet. The spinner therefore only ever shows on an open live tool, never on historical rows. Correct by
+construction.
 
 **Why no per-slot type headline.** The earlier collection card printed an icon + kind label (`Date`, `Text`, `Choose one`) above every slot.
 It was redundant: the slot's own `prompt` says what it wants, and the control (calendar, OTP boxes, Yes/No pair) signals the kind. Dropping
@@ -236,7 +257,8 @@ MessageScrollerProvider (defaultScrollPosition="last-anchor", scrollEdgeThreshol
     │       ├── MessageScrollerItem (date marker, no scrollAnchor)
     │       ├── MessageScrollerItem scrollAnchor={user?} + ChatMessage
     │       ├── …
-    │       └── MessageScrollerItem (streaming, aria-live, no scrollAnchor)
+    │       ├── MessageScrollerItem (pending:assistant while isGenerating && no stream, aria-live)
+│       └── MessageScrollerItem (streaming, aria-live, no scrollAnchor)
     └── MessageScrollerButton direction="end"  ("Jump to latest")
 ```
 
@@ -321,14 +343,15 @@ most surfaces; override only if a page has two composers on it.
 Every user-facing string in a chat surface uses the inline `{ de: '…', en: '…' }[locale]` literal at the call site (see
 [`docs/conventions.md`](../conventions.md#bilingual-copy)). The strings the shared primitives own:
 
-| String                                                            | Where                                                               |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Composer placeholder                                              | Passed by the wrapper (e.g. `CompassInterviewComposer.placeholder`) |
-| "Send" tooltip + button `aria-label`                              | Inside `MessageComposer` (derived from `useLocale()`)               |
-| "Jump to latest" pill label                                       | Passed by the transcript caller (`jumpToLatestLabel` prop)          |
-| "Thinking…" streaming placeholder                                 | Inside `AssistantMarkdown`                                          |
-| TTS states (Read aloud / Pause / Resume / Stop / Cancel / Failed) | Inside `SpeakButton`                                                |
-| Copy states (Copy message / Copied / clipboard failure toast)     | Inside `CopyButton`                                                 |
+| String                                                                   | Where                                                                              |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Composer placeholder                                                     | Passed by the wrapper (e.g. `CompassInterviewComposer.placeholder`)                |
+| "Send" tooltip + button `aria-label`                                     | Inside `MessageComposer` (derived from `useLocale()`)                              |
+| "Jump to latest" pill label                                              | Passed by the transcript caller (`jumpToLatestLabel` prop)                         |
+| "Thinking…" / "Denke nach…" pending status                               | Inside `AssistantPendingStatus` (also used by empty streaming `AssistantMarkdown`) |
+| "Thinking…" / "Denke nach…" (live) · "Thought" / "Nachgedacht" (settled) | Inside `AssistantReasoning`                                                        |
+| TTS states (Read aloud / Pause / Resume / Stop / Cancel / Failed)        | Inside `SpeakButton`                                                               |
+| Copy states (Copy message / Copied / clipboard failure toast)            | Inside `CopyButton`                                                                |
 
 If a new string lands, it goes in the primitive that owns the visual — not in the surface that happens to render it — so both languages stay
 coherent across every chat surface.
@@ -347,6 +370,8 @@ Before writing a new chat-shaped anything, check whether one of these already co
 | `ChatTranscript` (shared)                                                                               | `src/web/chat/ChatTranscriptShared.tsx`             | The surface renders the `ChatMessage` union. Handles date grouping, tool-call nesting, collection folding, approval gating.                                                                                                                                                                                                      |
 | `CompassInterviewTranscript`                                                                            | `src/web/chat/CompassInterviewTranscript.tsx`       | Interview transcript — different message shape, same shell + row atoms.                                                                                                                                                                                                                                                          |
 | `MessageScroller*`                                                                                      | `src/web/components/base/message-scroller.tsx`      | The shadcn primitive under `ChatTranscriptShell`. Reach for the shell first — only touch this directly when the shell doesn't cover you.                                                                                                                                                                                         |
+| `AssistantPendingStatus`                                                                                | `src/web/components/AssistantPendingStatus.tsx`     | Shimmering bilingual "Thinking…" / "Denke nach…" while a turn is in flight and answer text has not started. Mounted by `ChatTranscript` / compass transcript from `isGenerating`; also used by empty streaming `AssistantMarkdown`.                                                                                              |
+| `AssistantReasoning`                                                                                    | `src/web/components/AssistantReasoning.tsx`         | Gemini thought summaries (`ChatUpdateAssistantReasoningChunk`). Live: shimmering "Thinking…" / "Denke nach…", forced open. Settled: collapsed "Thought" / "Nachgedacht" with chevron; user expand/collapse animates height + opacity (200 ms); live-driven collapse is instant. Body via `AssistantMarkdown`.                    |
 | `AssistantMarkdown`                                                                                     | `src/web/components/AssistantMarkdown.tsx`          | Rendering AI-produced markdown (streaming or persisted). Handles partial fences/tables via `parseIncompleteMarkdown`. External-link confirmation defaults on (visitor chat); wrap a transcript in `ExternalLinkConfirmationProvider enabled={false}` to suppress the interstitial where links are trusted (workspace assistant). |
 | `MessageRow`, `Bubble`, `Timestamp`, `CopyButton`, `SpeakButton`, `ToolArgumentsButton`, `ToolRowShell` | `src/web/components/chat-message/shared.tsx`        | Row-level atoms shared by every message variant. Reaching past these into raw JSX is a review-time reject. `ToolRowShell` is the left-aligned tool-call pill (friendly label + args + timestamp + `active` shimmer).                                                                                                             |
 | `toolDisplay` / `toolDisplayLabel`                                                                      | `src/web/chat/toolDisplay.ts`                       | Map a raw tool id to a friendly bilingual label + icon. Use anywhere a tool name is shown to a human.                                                                                                                                                                                                                            |
@@ -364,8 +389,9 @@ The list below names things that are tempting but wrong here. They are not allow
 - **Hand-rolled `scrollIntoView` on new messages.** Breaks the follow-only-at-edge rule. Route through `ChatTranscriptShell` / the
   `MessageScroller` primitive.
 - **A home-grown `isAtBottom` toggle.** The primitive's `data-active` state is already the source of truth; a parallel one drifts.
-- **Typing indicator dots without a shimmer'd row.** Reads as a toy chatbot. The shimmer'd row is the industry-standard "content coming"
-  affordance because it visually maps to the row about to be filled.
+- **Typing indicator dots without a shimmer'd row.** Reads as a toy chatbot. The turn-level pending shimmer (`AssistantPendingStatus` while
+  `isGenerating`, no streaming text, and no open tool shimmer) is the industry-standard "content coming" affordance — exclusive with the
+  in-flight tool pill, never stacked on top of it.
 - **Hover-only copy / TTS actions.** Mobile users get nothing. Keep them visible on every assistant row.
 - **A "Regenerate" button that clones the last turn.** Out of scope for this site. If it ever lands, it lands as a real feature with docs,
   not as a decoration.
@@ -432,6 +458,8 @@ The audit is a live checklist: adding a new surface adds a row.
 | Compass interview transcript                        | `src/web/chat/CompassInterviewTranscript.tsx`                                                       |
 | Shared row atoms                                    | `src/web/components/chat-message/shared.tsx`                                                        |
 | Streaming markdown renderer                         | `src/web/components/AssistantMarkdown.tsx`                                                          |
+| Pending "Thinking…" shimmer                         | `src/web/components/AssistantPendingStatus.tsx`                                                     |
+| Gemini "Thoughts" disclosure                        | `src/web/components/AssistantReasoning.tsx`                                                         |
 | Chat CSS tokens                                     | `src/styles.css` (`--chat-*`)                                                                       |
 | Live-updates hook (`ChatMessage`)                   | `src/web/chat/useChatLiveUpdates.tsx`                                                               |
 | Live-updates hook (compass)                         | `src/web/chat/useCompassInterviewLiveUpdates.tsx`                                                   |

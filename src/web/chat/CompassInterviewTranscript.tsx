@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { LinkIcon } from 'lucide-react';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
+import { AssistantPendingStatus } from '../components/AssistantPendingStatus';
 import { ChatTranscriptShell } from '../components/base/chat-transcript-shell';
 import { MessageScrollerItem } from '../components/base/message-scroller';
 import { Bubble, CopyButton, MessageRow, SpeakButton, Timestamp } from '../components/chat-message/shared';
@@ -42,6 +43,9 @@ export interface CompassInterviewTranscriptProps {
     jumpToLatestLabel: string;
     /** Locale for row-level copy (the "N observation(s)" pluralization). */
     locale: Locale;
+    /** True while a turn is in flight. Shows the pending "Thinking…" shimmer
+     *  until answer text starts streaming — same contract as `ChatTranscript`. */
+    isGenerating?: boolean;
     /** Extra className applied to the outer `MessageScroller`. */
     className?: string;
     /** Extra className for the inner viewport. */
@@ -54,6 +58,7 @@ export function CompassInterviewTranscript({
     observations,
     jumpToLatestLabel,
     locale,
+    isGenerating = false,
     className,
     viewportClassName,
 }: CompassInterviewTranscriptProps) {
@@ -100,6 +105,15 @@ export function CompassInterviewTranscript({
                     )}
                 </MessageScrollerItem>
             ))}
+            {isGenerating && streamingEntries.length === 0 ? (
+                <MessageScrollerItem messageId="pending:assistant" aria-live="polite" aria-atomic="false">
+                    <MessageRow side="assistant">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <AssistantPendingStatus />
+                        </div>
+                    </MessageRow>
+                </MessageScrollerItem>
+            ) : null}
             {streamingEntries.map(([interviewMessageId, text]) => (
                 <MessageScrollerItem key={interviewMessageId} messageId={interviewMessageId} aria-live="polite" aria-atomic="false">
                     <MessageRow side="assistant">

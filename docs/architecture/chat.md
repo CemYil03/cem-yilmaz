@@ -245,7 +245,7 @@ the storage shape and the per-step duplication trade-off.
 ### Live updates flow through one chat-scoped subscription
 
 ```graphql
-union ChatUpdate = ChatUpdateMessageAppended | ChatUpdateAssistantTextChunk | ChatUpdateTurnEnded
+union ChatUpdate = ChatUpdateMessageAppended | ChatUpdateAssistantTextChunk | ChatUpdateAssistantReasoningChunk | ChatUpdateTurnEnded
 
 type ChatUpdateMessageAppended {
   message: ChatMessage! # whichever variant just persisted
@@ -254,6 +254,11 @@ type ChatUpdateMessageAppended {
 type ChatUpdateAssistantTextChunk {
   chatMessageId: ID! # pre-allocated id of the eventual ChatMessageAssistantText
   delta: String!
+}
+
+type ChatUpdateAssistantReasoningChunk {
+  chatMessageId: ID! # same pre-allocated id as the answer text
+  delta: String! # Gemini thought-summary delta (`includeThoughts`); final text lands on `ChatMessageAssistantText.reasoning`
 }
 
 type ChatUpdateTurnEnded {
@@ -268,9 +273,12 @@ type Subscription {
 Every newly persisted message — user message, tool call, approval request/response, input collection, and the final assistant text —
 publishes a `ChatUpdateMessageAppended` after the row commits. While the assistant is generating text, each delta publishes a
 `ChatUpdateAssistantTextChunk` carrying the **server-pre-allocated** `chatMessageId` of the row that will eventually arrive as
-`MessageAppended` at end-of-stream. Clients use that id to swap their in-place streaming preview for the persisted row in the same DOM slot,
-so the swap is a true no-op. `ChatUpdateTurnEnded` fires exactly once per turn (success, agent throw, or downstream publish failure) so the
-client can tear down its per-turn state without waiting on the kicking-off mutation.
+`MessageAppended` at end-of-stream. When Gemini emits thought summaries (Pro + `includeThoughts`), each `reasoning-delta` publishes a
+`ChatUpdateAssistantReasoningChunk` on the **same** pre-allocated id. The concatenated summary is also written onto
+`ChatMessageAssistantText.reasoning` with the final answer row so Thoughts survive a refresh. Clients use the shared id to swap their
+in-place streaming preview for the persisted row in the same DOM slot, so the swap is a true no-op. `ChatUpdateTurnEnded` fires exactly once
+per turn (success, agent throw, or downstream publish failure) so the client can tear down its per-turn state without waiting on the
+kicking-off mutation.
 
 Three rules fall out of this:
 
@@ -296,9 +304,10 @@ args blob, or a multi-paragraph assistant text would blow the cap, the DB driver
 would error after a successful write — committed truth that never reached its subscriber.
 
 The fix is structural: the wire payload — `ChatUpdateWirePayload` in `src/server/graphql/chatUpdateWirePayload.ts` — only carries small
-primitives (`{ kind: 'messageAppended', chatMessageId }`, the streaming-chunk delta, or the `turnEnded` marker). The subscription resolver
-in `resolversCreate.ts` re-loads the row and maps it to the full `GqlSChatMessage` before handing it to graphql-js. The shape that reaches
-the client is exactly what a re-fetch would have returned; the wire payload stays small and fixed-size regardless of message body size.
+primitives (`{ kind: 'messageAppended', chatMessageId }`, the streaming-chunk / reasoning-chunk delta, or the `turnEnded` marker). The
+subscription resolver in `resolversCreate.ts` re-loads the row and maps it to the full `GqlSChatMessage` before handing it to graphql-js.
+The shape that reaches the client is exactly what a re-fetch would have returned; the wire payload stays small and fixed-size regardless of
+message body size.
 
 `PubSubPostgres.publish` enforces this with a 7500-byte hard guard so any future publisher that tries to put a fat value on the wire fails
 loudly at the call site, not deep inside the driver. **The rule: fan out via id, not value.**

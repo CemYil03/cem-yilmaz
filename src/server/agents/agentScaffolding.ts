@@ -3,14 +3,20 @@ import type { GoogleLanguageModelOptions } from '@ai-sdk/google';
 // Shared Gemini provider options for every chat agent in this directory.
 // Two knobs matter independently:
 //
-// - `thinkingConfig.thinkingBudget: 0` — disables thinking. Without it,
-//   Gemini 2.5 Flash periodically emits Python-style tool calls instead of
-//   JSON, which the AI SDK rejects as `MALFORMED_FUNCTION_CALL`. See
-//   https://github.com/googleapis/python-genai/issues/2081. **Pro-tier
-//   models reject `0`** with `"Budget 0 is invalid. This model only works
-//   in thinking mode."` — they require at least 128, or `-1` for dynamic.
-//   We therefore branch on the resolved model id: Flash gets `0`, Pro omits
-//   `thinkingConfig` entirely and lets the model use its default budget.
+// - `thinkingConfig` — Flash vs Pro diverge:
+//   - **Flash** (`thinkingBudget: 0`): disables thinking. Without it, Gemini
+//     2.5 Flash periodically emits Python-style tool calls instead of JSON,
+//     which the AI SDK rejects as `MALFORMED_FUNCTION_CALL`. See
+//     https://github.com/googleapis/python-genai/issues/2081.
+//   - **Pro** (`includeThoughts: true`): Pro rejects `thinkingBudget: 0`
+//     ("Budget 0 is invalid. This model only works in thinking mode.") and
+//     keeps the provider default budget. `includeThoughts` asks Gemini for
+//     thought *summaries*, which the AI SDK surfaces as `reasoning-delta`
+//     stream parts; `chatAssistantTurnRun` publishes them as
+//     `ChatUpdateAssistantReasoningChunk` and persists the concatenated
+//     summary on `ChatMessageAssistantText.reasoning`. Substring match on
+//     `flash` is deliberate so a future `gemini-3.5-flash-lite` still
+//     disables thinking.
 // - `structuredOutputs: true` — constrained decoding so tool calls are valid
 //   JSON matching the declared schema. Without it Gemini freely invents field
 //   names (e.g. `input_type: "DATE"` with `name`/`label`) instead of using
@@ -23,12 +29,10 @@ import type { GoogleLanguageModelOptions } from '@ai-sdk/google';
 // agent wants them; per-agent variants stay inline.
 export function googleAgentProviderOptionsFor(modelId: string): { google: GoogleLanguageModelOptions } {
     const google: GoogleLanguageModelOptions = { structuredOutputs: true };
-    // Flash tolerates (and benefits from) `thinkingBudget: 0`. Anything else —
-    // including the Pro tier, which is the only other family currently in the
-    // catalog — keeps the default budget. Substring match is deliberate so a
-    // future `gemini-3.5-flash-lite` or similar still picks up the override.
     if (modelId.includes('flash')) {
         google.thinkingConfig = { thinkingBudget: 0 };
+    } else {
+        google.thinkingConfig = { includeThoughts: true };
     }
     return { google };
 }

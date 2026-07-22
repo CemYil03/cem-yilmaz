@@ -160,7 +160,7 @@ function WorkspaceAssistantPage({
     // no "New chat" affordance either: the "Workspace" crumb links to
     // the hub, whose hero composer is where a fresh chat starts.
     return (
-        <main className="mx-auto flex h-[calc(100dvh-5rem)] w-full min-w-0 max-w-3xl flex-col gap-4 px-2 sm:p-6">
+        <main className="mx-auto flex h-[calc(100dvh-4rem)] w-full min-w-0 max-w-4xl flex-col gap-4 px-2 sm:pt-10 sm:pb-4">
             <div className="relative min-h-0 min-w-0 flex-1">
                 {/* Workspace assistant links to the admin's own trusted
                  *  surfaces, so external-link confirmation is off here — see
@@ -170,6 +170,7 @@ function WorkspaceAssistantPage({
                         <ChatTranscript
                             messages={messages}
                             streamingTexts={live.streamingTextsFor(chat.chatId)}
+                            reasoningTexts={live.reasoningTextsFor(chat.chatId)}
                             onCollectionSubmit={onCollectionSubmit}
                             onApprovalRespond={onApprovalRespond}
                             jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}

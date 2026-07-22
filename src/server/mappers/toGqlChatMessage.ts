@@ -99,6 +99,7 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
                 gqlTypeName: 'ChatMessageAssistantText',
                 chatMessageId: spine.chatMessageId,
                 body: variant.body,
+                reasoning: variant.reasoning ?? null,
                 generation: toGqlChatMessageGeneration(variant),
                 createdAt: spine.createdAt,
             };

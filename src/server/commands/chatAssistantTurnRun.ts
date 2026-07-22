@@ -479,6 +479,7 @@ async function runAgentTurn({
     });
 
     let assistantText = '';
+    let assistantReasoning = '';
     if (generationId) {
         const result = await agent.stream({ messages: coreMessages });
         for await (const part of result.stream) {
@@ -492,11 +493,27 @@ async function runAgentTurn({
                         delta: part.text,
                     },
                 });
+            } else if (part.type === 'reasoning-delta') {
+                // Gemini thought summaries (Pro + `includeThoughts`). Same
+                // pre-allocated id as the answer so the client can attach a
+                // collapsed "Thoughts" region to that turn while streaming.
+                // Concatenated text is persisted on the assistant-text row at
+                // end-of-stream (see insert below).
+                assistantReasoning += part.text;
+                await serverRuntime.publish.chatUpdates({
+                    generationId,
+                    payload: {
+                        kind: 'assistantReasoningChunk',
+                        chatMessageId: assistantTextMessageId,
+                        delta: part.text,
+                    },
+                });
             }
         }
     } else {
         const result = await agent.generate({ messages: coreMessages });
         assistantText = result.text;
+        assistantReasoning = result.reasoningText ?? '';
     }
 
     // Suppress the trailing assistant-text row when the turn ended on a
@@ -525,6 +542,7 @@ async function runAgentTurn({
         const assistantVariant: ChatMessageAssistantTextCreate = {
             chatMessageId: assistantSpine.chatMessageId,
             body: assistantText,
+            reasoning: assistantReasoning.length > 0 ? assistantReasoning : null,
             ...(generation ?? {}),
         };
         await chatMessageAppend(db, serverRuntime, generationId, assistantSpine, async (transaction) => {

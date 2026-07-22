@@ -95,12 +95,15 @@ export function findPendingApprovalIds(messages: ReadonlyArray<TranscriptMessage
 }
 
 /** The trailing top-level tool-call row that should render its "working on
- *  it" shimmer, or null. A tool call shimmers only while the turn is in flight
- *  AND no assistant text has started streaming yet AND the row was emitted by
- *  the CURRENT, still-running turn (its id is in `liveTurnMessageIds`). The
- *  live-turn gate is what keeps a settled prior-turn tool call — or a tool
- *  call in an unrelated, non-generating chat — from re-shimmering when a new
- *  turn begins: those rows are never in the current turn's live set. */
+ *  it" shimmer, or null. A tool call shimmers only while the turn is in flight,
+ *  no assistant text has started streaming yet, the row was emitted by the
+ *  CURRENT still-running turn (its id is in `liveTurnMessageIds`), AND the
+ *  call is still open (`toolResult` is null — e.g. a pre-written
+ *  `delegateTo*` row waiting on its sub-agent). Once the result lands the
+ *  shimmer yields back to the turn-level pending "Thinking…" row so the two
+ *  never show at once. The live-turn gate also keeps a settled prior-turn
+ *  tool call — or a tool call in an unrelated, non-generating chat — from
+ *  re-shimmering when a new turn begins. */
 export function activeToolCallId(
     topLevel: ReadonlyArray<TranscriptMessage>,
     liveTurnMessageIds: ReadonlySet<string>,
@@ -111,7 +114,10 @@ export function activeToolCallId(
     for (let i = topLevel.length - 1; i >= 0; i -= 1) {
         const message = topLevel[i]!;
         if (message.__typename !== 'ChatMessageToolCall') continue;
-        return liveTurnMessageIds.has(message.chatMessageId) ? message.chatMessageId : null;
+        if (!liveTurnMessageIds.has(message.chatMessageId)) return null;
+        // Settled live tool (result already on the row) → no tool shimmer;
+        // the pending status row covers the wait until text starts.
+        return message.toolResult == null ? message.chatMessageId : null;
     }
     return null;
 }

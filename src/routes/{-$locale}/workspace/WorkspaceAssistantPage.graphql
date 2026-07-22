@@ -43,6 +43,7 @@ fragment WorkspaceChatMessageFields on ChatMessage {
     ... on ChatMessageAssistantText {
         chatMessageId
         body
+        reasoning
         createdAt
         generation {
             ...WorkspaceChatMessageGeneration

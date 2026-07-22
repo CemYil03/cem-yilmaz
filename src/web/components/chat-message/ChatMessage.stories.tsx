@@ -217,6 +217,7 @@ const assistantText: GqlCChatMessage = {
     __typename: 'ChatMessageAssistantText',
     chatMessageId: 'm-asst',
     body: 'Sure — let me find a few options. A couple of details first:',
+    reasoning: null,
     createdAt: '2026-06-03T18:30:05.000Z',
 };
 

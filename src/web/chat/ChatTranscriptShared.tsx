@@ -1,7 +1,9 @@
 import { CalendarIcon } from 'lucide-react';
-import { Fragment, useCallback } from 'react';
+import { Fragment, useCallback, useMemo } from 'react';
 import { formatDate } from '../../shared';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
+import { AssistantPendingStatus } from '../components/AssistantPendingStatus';
+import { AssistantReasoning } from '../components/AssistantReasoning';
 import { ChatTranscriptShell } from '../components/base/chat-transcript-shell';
 import { Marker, MarkerContent, MarkerIcon } from '../components/base/marker';
 import { MessageScrollerItem } from '../components/base/message-scroller';
@@ -48,6 +50,10 @@ export interface ChatTranscriptProps {
      *  after all persisted messages as sibling `MessageScrollerItem`s so the
      *  MessageScroller can follow growth while the reader is at the live edge. */
     streamingTexts: Readonly<Record<string, string>>;
+    /** Gemini thought-summary buffers, keyed by the same pre-allocated
+     *  assistant-text id. Shown collapsed above the answer (live while the
+     *  turn is open; settled after). Optional — Flash never emits these. */
+    reasoningTexts?: Readonly<Record<string, string>>;
     /** Submit handler for `ChatMessageAssistantInputCollection` prompts. The
      *  outermost provider owns the mutation (admin vs visitor) so this
      *  component is agnostic to the caller. */
@@ -67,10 +73,11 @@ export interface ChatTranscriptProps {
      *  messages yet. Renders a centred spinner in place of the empty scroller
      *  so the visitor sheet's open transition doesn't flash empty. */
     initialFetching?: boolean;
-    /** True while a turn is in flight. Used to shimmer the trailing tool-call
-     *  row ("working on it") until the assistant streams text or the turn ends.
-     *  Optional — surfaces that don't pass it get no shimmer, which is correct
-     *  for a settled transcript. */
+    /** True while a turn is in flight. Drives (1) the pending "Thinking…"
+     *  shimmer row under the latest user message until answer text *or*
+     *  Gemini thoughts start — independent of tool calls — and (2) the
+     *  trailing tool-call pill shimmer. Optional — surfaces that don't pass
+     *  it get neither. */
     isGenerating?: boolean;
     /** Message ids emitted by the current, still-running turn for this chat.
      *  The trailing tool-call shimmer is scoped to this set so a settled
@@ -93,6 +100,7 @@ export interface ChatTranscriptProps {
 // Stable empty set so the `liveTurnMessageIds ?? …` fallback doesn't create a
 // new Set each render (which would defeat memo comparisons downstream).
 const EMPTY_LIVE_TURN_IDS: ReadonlySet<string> = new Set();
+const EMPTY_REASONING: Readonly<Record<string, string>> = {};
 
 /** Turn anchors are user messages only — matching shadcn's MessageScroller
  *  contract. A new `scrollAnchor` row settles flush at the top of the viewport
@@ -106,6 +114,7 @@ function isTurnScrollAnchor(message: TranscriptMessage): boolean {
 export function ChatTranscript({
     messages,
     streamingTexts,
+    reasoningTexts = EMPTY_REASONING,
     onCollectionSubmit,
     onApprovalRespond,
     jumpToLatestLabel,
@@ -126,11 +135,33 @@ export function ChatTranscript({
     const groupedMessages = groupMessagesByDate(topLevel);
     const streamingEntries = Object.entries(streamingTexts);
 
-    // The trailing tool call shimmers "working on it" only while the turn is in
-    // flight, no streaming text has started yet, AND the row belongs to the
-    // current turn (its id is in `liveTurnMessageIds`) — so a completed
-    // prior-turn tool call or another chat's tool call never re-shimmers.
+    const persistedAssistantIds = useMemo(() => {
+        const ids = new Set<string>();
+        for (const message of messages) {
+            if (message.__typename === 'ChatMessageAssistantText') ids.add(message.chatMessageId);
+        }
+        return ids;
+    }, [messages]);
+
+    // Live reasoning (not yet attached to a persisted assistant-text row) plus
+    // any in-flight streaming ids share one scroller slot per pre-allocated id.
+    const liveAssistantSlotIds = useMemo(() => {
+        const ids = new Set<string>(Object.keys(streamingTexts));
+        for (const id of Object.keys(reasoningTexts)) {
+            if (!persistedAssistantIds.has(id)) ids.add(id);
+        }
+        return [...ids];
+    }, [streamingTexts, reasoningTexts, persistedAssistantIds]);
+
+    // The trailing tool call shimmers "working on it" only while that call is
+    // still open (`toolResult` null) on the live turn — settled tools yield
+    // back to the pending status row so the two shimmers are exclusive.
     const activeId = activeToolCallId(topLevel, liveTurnMessageIds ?? EMPTY_LIVE_TURN_IDS, isGenerating, streamingEntries.length > 0);
+
+    // Pending "Thinking…" only when nothing more specific is showing: no
+    // streaming text, no live thoughts slot, and no in-flight tool shimmer.
+    // Sequence: pending → tool shimmer → pending → answer.
+    const showPending = isGenerating && streamingEntries.length === 0 && liveAssistantSlotIds.length === 0 && activeId === null;
 
     const messageIdFor = useCallback((message: TranscriptMessage) => message.chatMessageId, []);
 
@@ -176,6 +207,10 @@ export function ChatTranscript({
                                 : undefined;
                         const children =
                             message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
+                        const reasoning =
+                            message.__typename === 'ChatMessageAssistantText'
+                                ? (reasoningTexts[message.chatMessageId] ?? message.reasoning ?? undefined)
+                                : undefined;
                         return (
                             <MessageScrollerItem
                                 key={message.chatMessageId}
@@ -193,22 +228,39 @@ export function ChatTranscript({
                                     onApprovalRespond={approvalRespondHandler}
                                     children={children}
                                     activeToolCall={message.chatMessageId === activeId}
+                                    reasoningText={reasoning}
                                 />
                             </MessageScrollerItem>
                         );
                     })}
                 </Fragment>
             ))}
-            {streamingEntries.map(([streamingId, text]) => (
-                // No `scrollAnchor` — the user message that started the turn
-                // already holds the reading line; streaming growth is followed
-                // by `autoScroll` while the reader is at the live edge.
-                // `aria-live` lives on the item itself so we don't wrap items
-                // in a DOM parent (which would break the direct-child contract).
-                <MessageScrollerItem key={streamingId} messageId={streamingId} aria-live="polite" aria-atomic="false">
-                    <AssistantMarkdown text={text} streaming />
+            {showPending ? (
+                // Turn-level pending status. Exclusive with the in-flight tool
+                // shimmer (`activeId`) — mounts before the first tool, yields
+                // while a tool is open, then returns until thoughts/text start.
+                // See docs/styles/chat.md.
+                <MessageScrollerItem messageId="pending:assistant" aria-live="polite" aria-atomic="false">
+                    <AssistantPendingStatus />
                 </MessageScrollerItem>
-            ))}
+            ) : null}
+            {liveAssistantSlotIds.map((slotId) => {
+                const reasoning = reasoningTexts[slotId];
+                const streamingText = streamingTexts[slotId];
+                const reasoningLive = isGenerating && streamingText === undefined;
+                return (
+                    // No `scrollAnchor` — the user message that started the turn
+                    // already holds the reading line. Thoughts + streaming text
+                    // share one item keyed on the pre-allocated assistant id so
+                    // the MessageAppended swap stays a React no-op.
+                    <MessageScrollerItem key={slotId} messageId={slotId} aria-live="polite" aria-atomic="false">
+                        <div className="flex min-w-0 flex-col gap-2">
+                            {reasoning ? <AssistantReasoning text={reasoning} live={reasoningLive} /> : null}
+                            {streamingText !== undefined ? <AssistantMarkdown text={streamingText} streaming /> : null}
+                        </div>
+                    </MessageScrollerItem>
+                );
+            })}
         </ChatTranscriptShell>
     );
 }

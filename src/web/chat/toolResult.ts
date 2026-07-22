@@ -7,9 +7,9 @@
 // never crashes on an unexpected payload — the worst case is a neutral "done"
 // with the raw JSON available in the args inspector.
 
-/** Three visual states a tool row can be in. `inProgress` is not stored — a
- *  persisted call always carries its result — so it is derived from the
- *  turn-level "still generating" signal by the transcript, not from the JSON. */
+/** Three visual states a tool row can be in. `inProgress` is derived by the
+ *  transcript when the trailing live-turn tool still has `toolResult: null`
+ *  (not a stored column). */
 export type ToolStatus = 'inProgress' | 'done' | 'failed';
 
 export interface ToolResultView {
@@ -25,8 +25,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * @param result the tool's `toolResult` JSON (may be null / undefined / any shape)
- * @param active true when this is the trailing tool row of an in-flight turn —
- *        forces `inProgress` regardless of the (absent) result.
+ * @param active true when this is the trailing open tool row of an in-flight
+ *        turn (`toolResult` still null) — forces `inProgress`.
  */
 export function interpretToolResult(result: unknown, active: boolean): ToolResultView {
     if (active) return { status: 'inProgress', summary: null };

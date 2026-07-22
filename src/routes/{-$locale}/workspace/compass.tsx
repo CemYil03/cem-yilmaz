@@ -1102,6 +1102,7 @@ function InterviewView({
                     observations={observations}
                     jumpToLatestLabel={{ de: 'Zur neuesten Nachricht', en: 'Jump to latest' }[locale]}
                     locale={locale}
+                    isGenerating={live.isGenerating}
                     className="max-h-[60vh]"
                 />
             )}

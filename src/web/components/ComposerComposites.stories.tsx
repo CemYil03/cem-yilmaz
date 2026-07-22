@@ -35,6 +35,7 @@ const visitorThread: ReadonlyArray<GqlCChatMessage> = [
         __typename: 'ChatMessageAssistantText',
         chatMessageId: 'm-2',
         body: "Yes — Cem regularly works on those exact migrations. He's available for a discovery call in mid-July, and the typical engagement is 4–8 weeks. Want me to send a quick intro request?",
+        reasoning: null,
         createdAt: '2026-06-03T18:30:05.000Z',
     },
     {
@@ -168,6 +169,7 @@ const approvedFollowup: ReadonlyArray<GqlCChatMessage> = [
         __typename: 'ChatMessageAssistantText',
         chatMessageId: 'a-4',
         body: 'Done. Reservation confirmed for two at 7pm Friday.',
+        reasoning: null,
         createdAt: '2026-06-03T18:30:18.000Z',
     },
 ];

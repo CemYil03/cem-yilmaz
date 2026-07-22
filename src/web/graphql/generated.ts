@@ -2100,6 +2100,7 @@ export interface GqlCChatMessageAssistantText {
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlCChatMessageGeneration>;
+    reasoning?: Maybe<Scalars['String']['output']>;
 }
 
 export interface GqlCChatMessageCreateResult {
@@ -2186,7 +2187,14 @@ export type GqlCChatMessageUserInputAnswerCreate = {
     time?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCChatUpdate = GqlCChatUpdateAssistantTextChunk | GqlCChatUpdateMessageAppended | GqlCChatUpdateTurnEnded;
+export type GqlCChatUpdate =
+    GqlCChatUpdateAssistantReasoningChunk | GqlCChatUpdateAssistantTextChunk | GqlCChatUpdateMessageAppended | GqlCChatUpdateTurnEnded;
+
+export interface GqlCChatUpdateAssistantReasoningChunk {
+    __typename?: 'ChatUpdateAssistantReasoningChunk';
+    chatMessageId: Scalars['ID']['output'];
+    delta: Scalars['String']['output'];
+}
 
 export interface GqlCChatUpdateAssistantTextChunk {
     __typename?: 'ChatUpdateAssistantTextChunk';
@@ -2650,6 +2658,7 @@ export type GqlCWorkspaceVisitorChatQuery = {
                               __typename: 'ChatMessageAssistantText';
                               chatMessageId: string;
                               body: string;
+                              reasoning: string | null;
                               createdAt: string;
                               generation: {
                                   modelId: string;
@@ -2773,6 +2782,7 @@ type GqlCWorkspaceChatMessageFields_ChatMessageAssistantText_Fragment = {
     __typename: 'ChatMessageAssistantText';
     chatMessageId: string;
     body: string;
+    reasoning: string | null;
     createdAt: string;
     generation: {
         modelId: string;
@@ -2931,6 +2941,7 @@ export type GqlCWorkspaceChatPageQuery = {
                               __typename: 'ChatMessageAssistantText';
                               chatMessageId: string;
                               body: string;
+                              reasoning: string | null;
                               createdAt: string;
                               generation: {
                                   modelId: string;
@@ -6851,6 +6862,7 @@ type GqlCChatMessageFields_ChatMessageAssistantText_Fragment = {
     __typename: 'ChatMessageAssistantText';
     chatMessageId: string;
     body: string;
+    reasoning: string | null;
     createdAt: string;
     generation: {
         modelId: string;
@@ -6985,6 +6997,7 @@ export type GqlCChatPageQuery = {
                       __typename: 'ChatMessageAssistantText';
                       chatMessageId: string;
                       body: string;
+                      reasoning: string | null;
                       createdAt: string;
                       generation: {
                           modelId: string;
@@ -7102,6 +7115,7 @@ export type GqlCChatUpdatesSubscriptionVariables = Exact<{
 
 export type GqlCChatUpdatesSubscription = {
     chatUpdates:
+        | { __typename: 'ChatUpdateAssistantReasoningChunk'; chatMessageId: string; delta: string }
         | { __typename: 'ChatUpdateAssistantTextChunk'; chatMessageId: string; delta: string }
         | {
               __typename: 'ChatUpdateMessageAppended';
@@ -7136,6 +7150,7 @@ export type GqlCChatUpdatesSubscription = {
                         __typename: 'ChatMessageAssistantText';
                         chatMessageId: string;
                         body: string;
+                        reasoning: string | null;
                         createdAt: string;
                         generation: {
                             modelId: string;
@@ -7361,6 +7376,7 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'body' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -10212,6 +10228,7 @@ export const ChatMessageFieldsFragmentDoc = {
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'body' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -11179,6 +11196,7 @@ export const WorkspaceVisitorChatDocument = {
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'body' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -11816,6 +11834,7 @@ export const WorkspaceChatPageDocument = {
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'body' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -24624,6 +24643,7 @@ export const ChatPageDocument = {
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'body' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -25316,6 +25336,20 @@ export const ChatUpdatesDocument = {
                                 },
                                 {
                                     kind: 'InlineFragment',
+                                    typeCondition: {
+                                        kind: 'NamedType',
+                                        name: { kind: 'Name', value: 'ChatUpdateAssistantReasoningChunk' },
+                                    },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'delta' } },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'InlineFragment',
                                     typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'ChatUpdateTurnEnded' } },
                                     selectionSet: {
                                         kind: 'SelectionSet',
@@ -25411,6 +25445,7 @@ export const ChatUpdatesDocument = {
                             selections: [
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'body' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',

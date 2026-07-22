@@ -19,8 +19,10 @@ fully off the right edge — there is no leftover icon rail, the workspace surfa
 On phones the mobile Sheet is forced to full viewport width (`max-md:!w-screen max-md:!max-w-none` on `<Sidebar>`) — the primitive's
 `w-3/4 sm:max-w-sm` default leaves a chat surface too narrow to type in, so we override it for this consumer.
 
-The default width matches the previous Sheet (`sm:max-w-2xl` ≈ 42rem / 672px). The user can drag the sidebar's left edge outward to widen it
-up to ~960px; the width is persisted to `localStorage` (`workspaceAssistantSidebar.widthPx`) so the preference survives reloads. Dragging
+The default width is 400px. The user can drag the sidebar's left edge outward to widen it up to 1000px, further capped so the main column
+keeps at least 360px (`window.innerWidth - 360`) — enough room for the floating workspace header and its progressive-blur strip to stay
+inside `<SidebarInset>` instead of sliding under the docked panel. The width is persisted to `localStorage`
+(`workspaceAssistantSidebar.widthPx`) so the preference survives reloads; a window resize re-clamps a previously saved wide width. Dragging
 inward past the default is clamped — "narrower" trades real estate without giving back enough room to matter, and the assistant button is
 the way to dismiss it instead.
 
@@ -121,7 +123,10 @@ Mounting the chat provider and `<SidebarProvider>` at `workspace.tsx` — one le
 ```
 
 `<SidebarInset>` is the main content frame; `<Sidebar side="right">` docks to the right edge. shadcn's primitive shifts a transparent "gap"
-sibling in the layout so `<SidebarInset>` reflows automatically as the sidebar collapses/expands — no flex math on this side.
+sibling in the layout so `<SidebarInset>` reflows automatically as the sidebar collapses/expands — no flex math on this side. The gap is
+`shrink-0` so it cannot collapse while the fixed panel stays wide (that mismatch is what let the header's progressive blur paint over the
+sidebar). The inset itself is `min-w-0 overflow-x-clip` so wide page content (project tabs, etc.) shrinks and any leftover horizontal paint
+— including `backdrop-filter` blur — is clipped before it can spill into the sidebar column.
 
 ## Surfaces
 
@@ -150,7 +155,8 @@ The sidebar renders, top to bottom:
 | `<SidebarFooter>`  | The shared `<WorkspaceChatComposer />`. Always mounted — a user can start typing without first navigating out of the browser, and the composer's first send simply creates a new chat (adopting the freshly-allocated id into the provider via `setChatIdFromHub`).                     |
 
 A 2px drag handle sits on the sidebar's left edge (`md+` only). Pulling it leftward widens the sidebar; pulling it rightward narrows it back
-down to the 42rem default. The new width is committed to `localStorage` on pointer release, so reloads keep the user's chosen width.
+down to the 400px default. Width is clamped to `min(1000px, viewport − 360px)` so the inset never loses the space the floating header needs.
+The new width is committed to `localStorage` on pointer release, so reloads keep the user's chosen width.
 
 During a drag the handle sets `data-resizing="true"` on the `<SidebarProvider>` wrapper. The sidebar primitive
 (`src/web/components/base/sidebar.tsx`) gates its `transition-[width]` / `transition-[left,right,width]` rules on that attribute and

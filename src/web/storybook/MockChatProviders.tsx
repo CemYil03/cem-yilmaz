@@ -20,6 +20,7 @@ const noOpLive = {
     isGenerating: () => false,
     appendedMessagesFor: () => [],
     streamingTextsFor: () => ({}),
+    reasoningTextsFor: () => ({}),
     liveTurnMessageIdsFor: () => new Set<string>(),
     listeners: null,
 } as const;

@@ -9,10 +9,13 @@
 // before handing it to graphql-js. Same shape reaches the client; the wire
 // payload becomes tiny and fixed-size.
 //
-// `assistantTextChunk` keeps its inline `delta` because chunks are already
-// small (one stream tick), and persisting them just to broadcast an id would
-// invert the design.
+// `assistantTextChunk` / `assistantReasoningChunk` keep their inline `delta`
+// because chunks are already small (one stream tick), and persisting them
+// just to broadcast an id would invert the design. Reasoning deltas are
+// Gemini thought summaries (`includeThoughts`) — ephemeral on the client,
+// never written to the message tables.
 export type ChatUpdateWirePayload =
     | { kind: 'messageAppended'; chatMessageId: string }
     | { kind: 'assistantTextChunk'; chatMessageId: string; delta: string }
+    | { kind: 'assistantReasoningChunk'; chatMessageId: string; delta: string }
     | { kind: 'turnEnded'; generationId: string };

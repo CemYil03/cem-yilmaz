@@ -34,14 +34,23 @@ export const Route = createFileRoute('/{-$locale}/workspace')({
     component: WorkspaceLayout,
 });
 
-// Width bounds. The default matches the prior Sheet (`sm:max-w-2xl` ≈ 42rem
-// = 672px); the user can drag outward, never inward past the default.
+// Width bounds. The default is a comfortable reading column; the user can
+// drag outward up to MAX_WIDTH_PX, never inward past the default. A further
+// viewport floor (`MIN_INSET_PX`) keeps the main column wide enough that the
+// floating header + its progressive-blur strip stay inside `<SidebarInset>`
+// instead of sliding under the docked sidebar.
 const DEFAULT_WIDTH_PX = 400;
 const MAX_WIDTH_PX = 1000;
+const MIN_INSET_PX = 360;
 const WIDTH_STORAGE_KEY = 'workspaceAssistantSidebar.widthPx';
 
+function maxWidthForViewport(): number {
+    if (typeof window === 'undefined') return MAX_WIDTH_PX;
+    return Math.min(MAX_WIDTH_PX, Math.max(DEFAULT_WIDTH_PX, window.innerWidth - MIN_INSET_PX));
+}
+
 function clampWidth(px: number): number {
-    return Math.min(MAX_WIDTH_PX, Math.max(DEFAULT_WIDTH_PX, px));
+    return Math.min(maxWidthForViewport(), Math.max(DEFAULT_WIDTH_PX, px));
 }
 
 function WorkspaceLayout() {
@@ -54,6 +63,23 @@ function WorkspaceLayout() {
         if (!stored) return;
         const parsed = Number(stored);
         if (Number.isFinite(parsed)) setWidthPx(clampWidth(parsed));
+    }, []);
+    // Re-clamp when the viewport shrinks so a previously saved wide width
+    // cannot leave the inset narrower than MIN_INSET_PX (which is what lets
+    // the header blur spill under the sidebar).
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const onResize = () => {
+            setWidthPx((prev) => {
+                const next = clampWidth(prev);
+                if (next !== prev && typeof window !== 'undefined') {
+                    window.localStorage.setItem(WIDTH_STORAGE_KEY, String(next));
+                }
+                return next;
+            });
+        };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
     }, []);
     const onWidthCommit = useCallback((next: number) => {
         const clamped = clampWidth(next);
@@ -96,7 +122,12 @@ function WorkspaceLayout() {
                  *  colour orb on every workspace route. Override to transparent
                  *  so the backdrop shows through the workspace shell the same
                  *  way it does on public pages. */}
-                <SidebarInset className="flex min-h-screen flex-col bg-transparent">
+                {/* `overflow-x-clip` (not `hidden`) keeps sticky header /
+                 *  progressive-blur working while clipping any horizontal
+                 *  paint — including backdrop-filter blur — so it cannot
+                 *  spill over the docked assistant sidebar. See Header.tsx
+                 *  sticky note. */}
+                <SidebarInset className="flex min-h-screen flex-col overflow-x-clip bg-transparent">
                     <WorkspaceHeader />
                     <Outlet />
                 </SidebarInset>
@@ -104,6 +135,7 @@ function WorkspaceLayout() {
                     locale={locale}
                     minWidthPx={DEFAULT_WIDTH_PX}
                     maxWidthPx={MAX_WIDTH_PX}
+                    minInsetPx={MIN_INSET_PX}
                     onWidthCommit={onWidthCommit}
                 />
             </SidebarProvider>

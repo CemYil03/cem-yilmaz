@@ -16,6 +16,7 @@ import {
 import { cn } from '../utils/cn';
 import { DEFAULT_LOCALE, LOCALES } from '../utils/locale';
 import type { Locale } from '../utils/locale';
+import { AssistantPendingStatus } from './AssistantPendingStatus';
 
 // Whether markdown links to *external* sites go through a "you're about to
 // visit an external website" confirmation before opening. Defaults to `true` —
@@ -181,11 +182,11 @@ const markdownComponents: Components = { a: MarkdownAnchor };
 
 export function AssistantMarkdown({ text, className, streaming = false }: { text: string; className?: string; streaming?: boolean }) {
     if (streaming && !text) {
-        // Shimmer sweep across the label reads as "the assistant is actively
-        // thinking" — a signal, not an idle placeholder. `shimmer` is a pure-CSS
-        // utility from the shadcn package; the highlight derives from
-        // `currentColor` so it adapts to light/dark without extra config.
-        return <span className={cn('shimmer text-sm leading-relaxed text-muted-foreground', className)}>Thinking…</span>;
+        // Belt-and-suspenders: an empty streaming buffer (rare — the client
+        // usually mounts the pending row from `isGenerating` before any chunk)
+        // still shows the same shimmer status as the transcript-level pending
+        // row. See `AssistantPendingStatus` / docs/styles/chat.md.
+        return <AssistantPendingStatus className={className} />;
     }
     return (
         <Streamdown

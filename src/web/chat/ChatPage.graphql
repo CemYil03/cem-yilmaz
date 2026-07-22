@@ -40,6 +40,7 @@ fragment ChatMessageFields on ChatMessage {
     ... on ChatMessageAssistantText {
         chatMessageId
         body
+        reasoning
         createdAt
         generation {
             ...ChatMessageGeneration
@@ -250,6 +251,10 @@ subscription ChatUpdates($generationId: ID!) {
             }
         }
         ... on ChatUpdateAssistantTextChunk {
+            chatMessageId
+            delta
+        }
+        ... on ChatUpdateAssistantReasoningChunk {
             chatMessageId
             delta
         }

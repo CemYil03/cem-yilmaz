@@ -464,6 +464,7 @@ export function WorkspaceAssistantChatTranscript({
                     <ChatTranscript
                         messages={messages}
                         streamingTexts={streamingTexts}
+                        reasoningTexts={live.reasoningTextsFor(chatId)}
                         onCollectionSubmit={onCollectionSubmit}
                         onApprovalRespond={onApprovalRespond}
                         jumpToLatestLabel={jumpToLatestLabel[locale]}

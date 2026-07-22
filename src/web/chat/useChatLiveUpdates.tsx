@@ -30,10 +30,14 @@ import type { GqlCChatUpdatesSubscription } from '../graphql/generated';
 // - `streaming` — the live text-delta buffer, keyed by the pre-allocated
 //   `chatMessageId` of the eventual assistant-text row. Cleared on `TurnEnded`
 //   and on the matching `MessageAppended`.
+// - `reasoning` — Gemini thought-summary buffer (same id key). Kept after
+//   `TurnEnded` / `MessageAppended` so the collapsed "Thoughts" region stays
+//   readable on the settled answer until `forgetChat`. The durable copy lives
+//   on `ChatMessageAssistantText.reasoning` and is what survives a refresh.
 // - `ended` — set on `TurnEnded`. Ended generations keep their `appended` rows
-//   (they're the only source for a chat the surface hasn't refetched yet) but
-//   stop contributing to the "still generating" and "current-turn tool call"
-//   signals. `forgetChat()` prunes them once authoritative rows are fetched.
+//   (and `reasoning`) but stop contributing to the "still generating" and
+//   "current-turn tool call" signals. `forgetChat()` prunes them once
+//   authoritative rows are fetched.
 
 type ChatUpdate = GqlCChatUpdatesSubscription['chatUpdates'];
 type ChatUpdateMessage = Extract<ChatUpdate, { __typename: 'ChatUpdateMessageAppended' }>['message'];
@@ -44,6 +48,7 @@ interface Generation {
     chatId: string | null;
     appended: ReadonlyArray<ChatUpdateMessage>;
     streaming: Readonly<Record<string, string>>;
+    reasoning: Readonly<Record<string, string>>;
     ended: boolean;
 }
 
@@ -76,6 +81,9 @@ export interface ChatLiveUpdates {
     appendedMessagesFor: (chatId: string | undefined) => ReadonlyArray<ChatUpdateMessage>;
     /** Live streaming text buffers for this chat (merged across generations). */
     streamingTextsFor: (chatId: string | undefined) => Readonly<Record<string, string>>;
+    /** Live Gemini thought-summary buffers for this chat (merged across
+     *  generations, including finished ones until `forgetChat`). */
+    reasoningTextsFor: (chatId: string | undefined) => Readonly<Record<string, string>>;
     /** Message ids appended during a STILL-RUNNING turn for this chat — scopes
      *  the trailing-tool-call shimmer to the current turn so a settled prior
      *  tool call (or another chat's) never re-shimmers. */
@@ -124,9 +132,18 @@ export function useChatLiveUpdates(): ChatLiveUpdates {
                 return replaceAt(prev, index, { ...generation, streaming });
             }
 
+            if (update.__typename === 'ChatUpdateAssistantReasoningChunk') {
+                const reasoning = {
+                    ...generation.reasoning,
+                    [update.chatMessageId]: (generation.reasoning[update.chatMessageId] ?? '') + update.delta,
+                };
+                return replaceAt(prev, index, { ...generation, reasoning });
+            }
+
             // ChatUpdateTurnEnded — mark the generation finished and drop any
             // orphan streaming buffer (an empty turn leaves a stale entry that
-            // `MessageAppended` never came to clean up). Keep `appended`.
+            // `MessageAppended` never came to clean up). Keep `appended` and
+            // `reasoning` so the settled answer can still show Thoughts.
             return replaceAt(prev, index, { ...generation, ended: true, streaming: {} });
         });
     }, []);
@@ -134,7 +151,14 @@ export function useChatLiveUpdates(): ChatLiveUpdates {
     const beginTurn = useCallback((chatId?: string) => {
         const generationId = crypto.randomUUID();
         setGenerations((prev) => {
-            const next: Generation = { generationId, chatId: chatId ?? null, appended: [], streaming: {}, ended: false };
+            const next: Generation = {
+                generationId,
+                chatId: chatId ?? null,
+                appended: [],
+                streaming: {},
+                reasoning: {},
+                ended: false,
+            };
             return capGenerations([...prev, next]);
         });
         return generationId;
@@ -185,6 +209,15 @@ export function useChatLiveUpdates(): ChatLiveUpdates {
         [generationsFor],
     );
 
+    const reasoningTextsFor = useCallback(
+        (chatId: string | undefined) => {
+            const matching = generationsFor(chatId);
+            if (matching.length === 0) return EMPTY_STREAMING;
+            return matching.reduce<Record<string, string>>((acc, g) => Object.assign(acc, g.reasoning), {});
+        },
+        [generationsFor],
+    );
+
     const liveTurnMessageIdsFor = useCallback(
         (chatId: string | undefined) => {
             const ids = new Set<string>();
@@ -219,6 +252,7 @@ export function useChatLiveUpdates(): ChatLiveUpdates {
         isGenerating,
         appendedMessagesFor,
         streamingTextsFor,
+        reasoningTextsFor,
         liveTurnMessageIdsFor,
         listeners,
     };

@@ -70,6 +70,11 @@ type ChatMessageGeneration {
 type ChatMessageAssistantText {
     chatMessageId: ID!
     body: String!
+    # Gemini thought summary for this answer (`thinkingConfig.includeThoughts`).
+    # Null when the model emitted none (Flash disables thinking) or for legacy
+    # rows written before persistence shipped. Live deltas still stream via
+    # `ChatUpdateAssistantReasoningChunk`; this field is the durable copy.
+    reasoning: String
     # Snapshot of the LLM step that produced this row. See `ChatMessageGeneration`.
     generation: ChatMessageGeneration
     createdAt: DateTime!
@@ -704,6 +709,17 @@ type ChatUpdateAssistantTextChunk {
     delta: String!
 }
 
+# Gemini thought-summary deltas (`thinkingConfig.includeThoughts` → AI SDK
+# `reasoning-delta`). Keyed on the same pre-allocated `chatMessageId` as the
+# eventual answer text so the client can attach a collapsed "Thoughts" region
+# to that turn while streaming. The final concatenated summary is persisted on
+# `ChatMessageAssistantText.reasoning` at end-of-stream. Flash models disable
+# thinking (`thinkingBudget: 0`) and never emit these.
+type ChatUpdateAssistantReasoningChunk {
+    chatMessageId: ID!
+    delta: String!
+}
+
 # Marker variant published exactly once per turn — when `chatAssistantTurnRun`
 # exits (success or failure). Lets the client tear down per-turn state
 # (composer lock, active streamingId) without waiting on the mutation that
@@ -713,7 +729,7 @@ type ChatUpdateTurnEnded {
     generationId: ID!
 }
 
-union ChatUpdate = ChatUpdateMessageAppended | ChatUpdateAssistantTextChunk | ChatUpdateTurnEnded
+union ChatUpdate = ChatUpdateMessageAppended | ChatUpdateAssistantTextChunk | ChatUpdateAssistantReasoningChunk | ChatUpdateTurnEnded
 
 # --- Compass interview live updates -----------------------------------------
 #

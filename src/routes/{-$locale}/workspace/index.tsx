@@ -236,7 +236,7 @@ function WorkspaceHub() {
              * rail — the same figure `assistant.$chatId.tsx` uses) so the
              * scroll region can be the `flex-1 min-h-0` child and the composer
              * bar the fixed-height sibling below it. */}
-            <main className="flex h-[calc(100dvh-5rem)] w-full min-w-0 flex-col">
+            <main className="flex h-[calc(100dvh-4rem)] w-full min-w-0 flex-col">
                 {/* Scroll region — the daily-use surface. The scroll container
                  * itself is full-bleed (no horizontal padding, no max-width) so
                  * its scrollbar sits flush against the inset's edge rather than
@@ -255,7 +255,7 @@ function WorkspaceHub() {
                 </div>
                 {/* Composer bar — parked at the bottom, never scrolls. Keeps its
                  * own horizontal padding now that `main` is full-bleed. */}
-                <div className="mx-auto w-full max-w-3xl shrink-0 px-6 pt-3 pb-4 md:px-10 lg:px-16">
+                <div className="mx-auto w-full max-w-4xl shrink-0 px-6 pt-3 pb-4">
                     <WorkspaceChatComposer
                         locale={locale}
                         isLocked={live.isGenerating(undefined)}

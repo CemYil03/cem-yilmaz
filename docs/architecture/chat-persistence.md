@@ -43,7 +43,7 @@ chatMessages                                          -- spine
 chatMessagesUser                                      -- 1:1 with spine row
   chatMessageId PK FK, body
 chatMessagesAssistantText
-  chatMessageId PK FK, body
+  chatMessageId PK FK, body, reasoning?
 chatMessagesToolCall
   chatMessageId PK FK, toolCallId, toolName, toolArgs jsonb,
   toolResult jsonb?, resultedAt timestamptz?
@@ -177,11 +177,15 @@ The round-trip is restored on read: `toModelMessages` replays the collection as 
 ### Streaming assistant text is inserted at end-of-stream
 
 While a `ChatMessageAssistantText` is streaming, chunks are published over the live subscription channel (`chatUpdates(generationId)`), not
-written to the row. The `chatMessagesAssistantText` row is inserted once when the stream completes, with the final body. The row is the
-durable artifact; the subscription is the live wire.
+written to the row. The `chatMessagesAssistantText` row is inserted once when the stream completes, with the final body **and** any Gemini
+thought summary accumulated from `reasoning-delta` parts (`reasoning` column — null when the model emitted none). The row is the durable
+artifact; the subscription is the live wire.
 
 This avoids row mutation per chunk (high write amplification) and keeps the message log append-only — every row, once written, is final. A
 client that reconnects mid-stream sees no partial row in history; it sees the live subscription pick up where it left off.
+
+Thought text is UI-only. `toModelMessages` still maps `chatMessagesAssistantText.body` alone — reasoning is not replayed to the LLM on later
+turns.
 
 **Exception: a turn that ended on `promptUserForInput` does not persist its trailing text.** When the stopping step contained a
 `promptUserForInput` tool call, the runner skips the post-stream `chatMessagesAssistantText` insert. The model is coached to narrate briefly

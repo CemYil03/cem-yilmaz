@@ -1,0 +1,1 @@
+ALTER TABLE "ChatMessagesAssistantText" ADD COLUMN "reasoning" varchar;

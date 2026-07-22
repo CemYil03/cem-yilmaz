@@ -2097,6 +2097,7 @@ export interface GqlSChatMessageAssistantText {
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlSChatMessageGeneration>;
+    reasoning?: Maybe<Scalars['String']['output']>;
 }
 
 export interface GqlSChatMessageCreateResult {
@@ -2183,7 +2184,14 @@ export type GqlSChatMessageUserInputAnswerCreate = {
     time?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlSChatUpdate = GqlSChatUpdateAssistantTextChunk | GqlSChatUpdateMessageAppended | GqlSChatUpdateTurnEnded;
+export type GqlSChatUpdate =
+    GqlSChatUpdateAssistantReasoningChunk | GqlSChatUpdateAssistantTextChunk | GqlSChatUpdateMessageAppended | GqlSChatUpdateTurnEnded;
+
+export interface GqlSChatUpdateAssistantReasoningChunk {
+    __typename?: 'ChatUpdateAssistantReasoningChunk';
+    chatMessageId: Scalars['ID']['output'];
+    delta: Scalars['String']['output'];
+}
 
 export interface GqlSChatUpdateAssistantTextChunk {
     __typename?: 'ChatUpdateAssistantTextChunk';
@@ -2631,6 +2639,7 @@ export type GqlSResolversUnionTypes<_RefType extends Record<string, unknown>> = 
               author?: Maybe<_RefType['User']>;
           });
     ChatUpdate:
+        | GqlSChatUpdateAssistantReasoningChunk
         | GqlSChatUpdateAssistantTextChunk
         | (Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: _RefType['ChatMessage'] })
         | GqlSChatUpdateTurnEnded;
@@ -2826,6 +2835,7 @@ export type GqlSResolversTypes = ResolversObject<{
     >;
     ChatMessageUserInputAnswerCreate: GqlSChatMessageUserInputAnswerCreate;
     ChatUpdate: ResolverTypeWrapper<GqlSResolversUnionTypes<GqlSResolversTypes>['ChatUpdate']>;
+    ChatUpdateAssistantReasoningChunk: ResolverTypeWrapper<GqlSChatUpdateAssistantReasoningChunk>;
     ChatUpdateAssistantTextChunk: ResolverTypeWrapper<GqlSChatUpdateAssistantTextChunk>;
     ChatUpdateMessageAppended: ResolverTypeWrapper<
         Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversTypes['ChatMessage'] }
@@ -3029,6 +3039,7 @@ export type GqlSResolversParentTypes = ResolversObject<{
     };
     ChatMessageUserInputAnswerCreate: GqlSChatMessageUserInputAnswerCreate;
     ChatUpdate: GqlSResolversUnionTypes<GqlSResolversParentTypes>['ChatUpdate'];
+    ChatUpdateAssistantReasoningChunk: GqlSChatUpdateAssistantReasoningChunk;
     ChatUpdateAssistantTextChunk: GqlSChatUpdateAssistantTextChunk;
     ChatUpdateMessageAppended: Omit<GqlSChatUpdateMessageAppended, 'message'> & { message: GqlSResolversParentTypes['ChatMessage'] };
     ChatUpdateTurnEnded: GqlSChatUpdateTurnEnded;
@@ -4871,6 +4882,7 @@ export type GqlSChatMessageAssistantTextResolvers<
     chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     generation?: Resolver<Maybe<GqlSResolversTypes['ChatMessageGeneration']>, ParentType, ContextType>;
+    reasoning?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4973,10 +4985,20 @@ export type GqlSChatUpdateResolvers<
     ParentType extends GqlSResolversParentTypes['ChatUpdate'] = GqlSResolversParentTypes['ChatUpdate'],
 > = ResolversObject<{
     __resolveType: TypeResolveFn<
-        'ChatUpdateAssistantTextChunk' | 'ChatUpdateMessageAppended' | 'ChatUpdateTurnEnded',
+        'ChatUpdateAssistantReasoningChunk' | 'ChatUpdateAssistantTextChunk' | 'ChatUpdateMessageAppended' | 'ChatUpdateTurnEnded',
         ParentType,
         ContextType
     >;
+}>;
+
+export type GqlSChatUpdateAssistantReasoningChunkResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['ChatUpdateAssistantReasoningChunk'] =
+        GqlSResolversParentTypes['ChatUpdateAssistantReasoningChunk'],
+> = ResolversObject<{
+    chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    delta?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlSChatUpdateAssistantTextChunkResolvers<
@@ -5405,6 +5427,7 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     ChatMessageUserInput?: GqlSChatMessageUserInputResolvers<ContextType>;
     ChatMessageUserInputAnswer?: GqlSChatMessageUserInputAnswerResolvers<ContextType>;
     ChatUpdate?: GqlSChatUpdateResolvers<ContextType>;
+    ChatUpdateAssistantReasoningChunk?: GqlSChatUpdateAssistantReasoningChunkResolvers<ContextType>;
     ChatUpdateAssistantTextChunk?: GqlSChatUpdateAssistantTextChunkResolvers<ContextType>;
     ChatUpdateMessageAppended?: GqlSChatUpdateMessageAppendedResolvers<ContextType>;
     ChatUpdateTurnEnded?: GqlSChatUpdateTurnEndedResolvers<ContextType>;

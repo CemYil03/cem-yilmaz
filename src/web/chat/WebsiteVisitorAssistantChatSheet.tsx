@@ -341,6 +341,7 @@ function ChatLoaded({
                 chat={chat}
                 appendedMessages={live.appendedMessagesFor(chat.chatId)}
                 streamingTexts={live.streamingTextsFor(chat.chatId)}
+                reasoningTexts={live.reasoningTextsFor(chat.chatId)}
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
                 fetching={fetching}
@@ -381,6 +382,7 @@ function ChatTranscript({
     chat,
     appendedMessages,
     streamingTexts,
+    reasoningTexts,
     onCollectionSubmit,
     onApprovalRespond,
     fetching,
@@ -392,6 +394,7 @@ function ChatTranscript({
     chat: NonNullable<GqlCChatPageQuery['sessionFindOne']['visitorChatFindOne']>;
     appendedMessages: ReadonlyArray<TranscriptMessage>;
     streamingTexts: Readonly<Record<string, string>>;
+    reasoningTexts: Readonly<Record<string, string>>;
     onCollectionSubmit: (
         collectionMessageId: string,
         answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>,
@@ -409,6 +412,7 @@ function ChatTranscript({
             <SharedChatTranscript
                 messages={allMessages}
                 streamingTexts={streamingTexts}
+                reasoningTexts={reasoningTexts}
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
                 jumpToLatestLabel={jumpToLatestLabel}
