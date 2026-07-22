@@ -55,12 +55,12 @@ function summarizeError(error: unknown): string {
 export function toolDelegateToFinances({ serverRuntime, session, chatId, generationId, preWrittenToolCallIds }: DelegateToFinancesContext) {
     return tool({
         description: [
-            'Hand a finances instruction to the finances sub-agent. Use for ANY ask that touches recurring costs —',
-            'adding, editing, pausing, or deleting a recurring expense / subscription (rent, insurance, streaming,',
-            'transport, utilities, …) — or setting / clearing the monthly net-income baseline. Pass the brief in',
-            'natural language including the amount and period the user named. This is the durable path: the sub-agent',
-            'writes to Postgres so the finances page and totals update. Do NOT try to "note" a cost in plain chat and',
-            'expect it to persist — always delegate.',
+            'Hand a finances instruction to the finances sub-agent. Use for ANY ask that touches income streams or',
+            'recurring costs — adding, editing, pausing, or deleting salary / freelance / other income, or a',
+            'recurring expense / subscription (rent, insurance, streaming, transport, utilities, …). Pass the brief',
+            'in natural language including the amount and period the user named. This is the durable path: the',
+            'sub-agent writes to Postgres so the finances page and totals update. Do NOT try to "note" a cost or',
+            'income in plain chat and expect it to persist — always delegate.',
             "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
             'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields` (most often the',
             'amount), then call this tool again with the brief enriched by their answers.',

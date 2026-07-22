@@ -232,6 +232,13 @@
             "when": 1784195210808,
             "tag": "0032_mysterious_tyrannus",
             "breakpoints": true
+        },
+        {
+            "idx": 33,
+            "version": "7",
+            "when": 1784720513067,
+            "tag": "0033_material_jubilee",
+            "breakpoints": true
         }
     ]
 }

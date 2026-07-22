@@ -2391,7 +2391,7 @@ function ChannelSearchBar({ inputRef, locale }: { inputRef: React.RefObject<HTML
 
     return (
         <div ref={containerRef} className="relative">
-            <InputGroup>
+            <InputGroup className="bg-background/70 backdrop-blur-sm">
                 <InputGroupAddon>
                     <SearchIcon className="text-muted-foreground" />
                 </InputGroupAddon>

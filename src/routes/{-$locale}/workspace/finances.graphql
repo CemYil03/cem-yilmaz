@@ -8,9 +8,23 @@
 fragment WorkspaceFinancesPageUser on User {
     admin {
         adminFinancesFindOne {
-            adminFinancesMonthlyNetIncomeCentsFindOne
+            adminFinancesMonthlyIncomeCentsFindOne
+            adminFinancesYearlyIncomeCentsFindOne
             adminFinancesMonthlyExpensesCentsFindOne
             adminFinancesYearlyExpensesCentsFindOne
+            adminFinancesIncomeStreamFindMany {
+                incomeStreamId
+                name
+                amountCents
+                cadence
+                currency
+                notes
+                active
+                startsOn
+                endsOn
+                createdAt
+                updatedAt
+            }
             adminFinancesRecurringCostFindMany {
                 costId
                 name
@@ -60,9 +74,18 @@ mutation WorkspaceFinanceRecurringCostDelete($costIds: [ID!]!) {
     }
 }
 
-mutation WorkspaceFinanceMonthlyNetIncomeSet($amountCents: Int) {
+mutation WorkspaceFinanceIncomeStreamUpsert($financeIncomeStreams: [AdminFinancesIncomeStreamInput!]!) {
     admin {
-        adminFinancesMonthlyNetIncomeSet(amountCents: $amountCents) {
+        adminFinancesIncomeStreamsUpsert(financeIncomeStreams: $financeIncomeStreams) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceFinanceIncomeStreamDelete($incomeStreamIds: [ID!]!) {
+    admin {
+        adminFinancesIncomeStreamsDelete(incomeStreamIds: $incomeStreamIds) {
             success
         }
     }

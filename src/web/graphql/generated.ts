@@ -130,12 +130,41 @@ export type GqlCAdminCompassAdminCompassObservationFindManyArgs = {
 
 export type GqlCAdminFinancesCadence = 'monthly' | 'yearly';
 
+export interface GqlCAdminFinancesIncomeStream {
+    __typename?: 'AdminFinancesIncomeStream';
+    active: Scalars['Boolean']['output'];
+    amountCents: Scalars['Int']['output'];
+    cadence: GqlCAdminFinancesCadence;
+    createdAt: Scalars['DateTime']['output'];
+    currency: Scalars['String']['output'];
+    endsOn?: Maybe<Scalars['Date']['output']>;
+    incomeStreamId: Scalars['ID']['output'];
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    startsOn?: Maybe<Scalars['Date']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminFinancesIncomeStreamInput = {
+    active?: InputMaybe<Scalars['Boolean']['input']>;
+    amountCents: Scalars['Int']['input'];
+    cadence: GqlCAdminFinancesCadence;
+    currency?: InputMaybe<Scalars['String']['input']>;
+    endsOn?: InputMaybe<Scalars['Date']['input']>;
+    incomeStreamId?: InputMaybe<Scalars['ID']['input']>;
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    startsOn?: InputMaybe<Scalars['Date']['input']>;
+};
+
 export interface GqlCAdminFinancesQuery {
     __typename?: 'AdminFinancesQuery';
+    adminFinancesIncomeStreamFindMany: Array<GqlCAdminFinancesIncomeStream>;
     adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
-    adminFinancesMonthlyNetIncomeCentsFindOne?: Maybe<Scalars['Int']['output']>;
+    adminFinancesMonthlyIncomeCentsFindOne: Scalars['Int']['output'];
     adminFinancesRecurringCostFindMany: Array<GqlCAdminFinancesRecurringCost>;
     adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
+    adminFinancesYearlyIncomeCentsFindOne: Scalars['Int']['output'];
 }
 
 export interface GqlCAdminFinancesRecurringCost {
@@ -734,7 +763,8 @@ export type GqlCAdminMedicalRecordSeverity = 'info' | 'mild' | 'moderate' | 'sev
 
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
-    adminFinancesMonthlyNetIncomeSet: GqlCMutationResult;
+    adminFinancesIncomeStreamsDelete: GqlCMutationResult;
+    adminFinancesIncomeStreamsUpsert: GqlCMutationResult;
     adminFinancesRecurringCostsDelete: GqlCMutationResult;
     adminFinancesRecurringCostsUpsert: GqlCMutationResult;
     adminFitnessExercisesDelete: GqlCMutationResult;
@@ -842,8 +872,12 @@ export interface GqlCAdminMutation {
     cvSkillsUpsert: GqlCMutationResult;
 }
 
-export type GqlCAdminMutationAdminFinancesMonthlyNetIncomeSetArgs = {
-    amountCents?: InputMaybe<Scalars['Int']['input']>;
+export type GqlCAdminMutationAdminFinancesIncomeStreamsDeleteArgs = {
+    incomeStreamIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFinancesIncomeStreamsUpsertArgs = {
+    financeIncomeStreams: Array<GqlCAdminFinancesIncomeStreamInput>;
 };
 
 export type GqlCAdminMutationAdminFinancesRecurringCostsDeleteArgs = {
@@ -3573,9 +3607,23 @@ export type GqlCWorkspaceCvHobbyReorderMutation = { admin: { cvHobbyReorder: { s
 export type GqlCWorkspaceFinancesPageUserFragment = {
     admin: {
         adminFinancesFindOne: {
-            adminFinancesMonthlyNetIncomeCentsFindOne: number | null;
+            adminFinancesMonthlyIncomeCentsFindOne: number;
+            adminFinancesYearlyIncomeCentsFindOne: number;
             adminFinancesMonthlyExpensesCentsFindOne: number;
             adminFinancesYearlyExpensesCentsFindOne: number;
+            adminFinancesIncomeStreamFindMany: Array<{
+                incomeStreamId: string;
+                name: string;
+                amountCents: number;
+                cadence: Schema.GqlCAdminFinancesCadence;
+                currency: string;
+                notes: string | null;
+                active: boolean;
+                startsOn: string | null;
+                endsOn: string | null;
+                createdAt: string;
+                updatedAt: string;
+            }>;
             adminFinancesRecurringCostFindMany: Array<{
                 costId: string;
                 name: string;
@@ -3601,9 +3649,23 @@ export type GqlCWorkspaceFinancesPageQuery = {
         user: {
             admin: {
                 adminFinancesFindOne: {
-                    adminFinancesMonthlyNetIncomeCentsFindOne: number | null;
+                    adminFinancesMonthlyIncomeCentsFindOne: number;
+                    adminFinancesYearlyIncomeCentsFindOne: number;
                     adminFinancesMonthlyExpensesCentsFindOne: number;
                     adminFinancesYearlyExpensesCentsFindOne: number;
+                    adminFinancesIncomeStreamFindMany: Array<{
+                        incomeStreamId: string;
+                        name: string;
+                        amountCents: number;
+                        cadence: Schema.GqlCAdminFinancesCadence;
+                        currency: string;
+                        notes: string | null;
+                        active: boolean;
+                        startsOn: string | null;
+                        endsOn: string | null;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
                     adminFinancesRecurringCostFindMany: Array<{
                         costId: string;
                         name: string;
@@ -3630,9 +3692,23 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
     userUpdates: {
         admin: {
             adminFinancesFindOne: {
-                adminFinancesMonthlyNetIncomeCentsFindOne: number | null;
+                adminFinancesMonthlyIncomeCentsFindOne: number;
+                adminFinancesYearlyIncomeCentsFindOne: number;
                 adminFinancesMonthlyExpensesCentsFindOne: number;
                 adminFinancesYearlyExpensesCentsFindOne: number;
+                adminFinancesIncomeStreamFindMany: Array<{
+                    incomeStreamId: string;
+                    name: string;
+                    amountCents: number;
+                    cadence: Schema.GqlCAdminFinancesCadence;
+                    currency: string;
+                    notes: string | null;
+                    active: boolean;
+                    startsOn: string | null;
+                    endsOn: string | null;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
                 adminFinancesRecurringCostFindMany: Array<{
                     costId: string;
                     name: string;
@@ -3666,11 +3742,19 @@ export type GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables = Exact<{
 
 export type GqlCWorkspaceFinanceRecurringCostDeleteMutation = { admin: { adminFinancesRecurringCostsDelete: { success: boolean } } };
 
-export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables = Exact<{
-    amountCents?: number | null | undefined;
+export type GqlCWorkspaceFinanceIncomeStreamUpsertMutationVariables = Exact<{
+    financeIncomeStreams: Array<Schema.GqlCAdminFinancesIncomeStreamInput> | Schema.GqlCAdminFinancesIncomeStreamInput;
 }>;
 
-export type GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation = { admin: { adminFinancesMonthlyNetIncomeSet: { success: boolean } } };
+export type GqlCWorkspaceFinanceIncomeStreamUpsertMutation = {
+    admin: { adminFinancesIncomeStreamsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceFinanceIncomeStreamDeleteMutationVariables = Exact<{
+    incomeStreamIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceFinanceIncomeStreamDeleteMutation = { admin: { adminFinancesIncomeStreamsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceFitnessExerciseFragment = {
     exerciseId: string;
@@ -8081,9 +8165,30 @@ export const WorkspaceFinancesPageUserFragmentDoc = {
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesIncomeStreamFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'incomeStreamId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cadence' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'adminFinancesRecurringCostFindMany' },
@@ -14433,9 +14538,30 @@ export const WorkspaceFinancesPageDocument = {
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesIncomeStreamFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'incomeStreamId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cadence' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'adminFinancesRecurringCostFindMany' },
@@ -14508,9 +14634,30 @@ export const WorkspaceFinancesPageUpdatesDocument = {
                                     selectionSet: {
                                         kind: 'SelectionSet',
                                         selections: [
-                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesIncomeStreamFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'incomeStreamId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'amountCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'cadence' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'startsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'endsOn' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'adminFinancesRecurringCostFindMany' },
@@ -14653,18 +14800,27 @@ export const WorkspaceFinanceRecurringCostDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceFinanceRecurringCostDeleteMutation, GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables>;
-export const WorkspaceFinanceMonthlyNetIncomeSetDocument = {
+export const WorkspaceFinanceIncomeStreamUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceFinanceMonthlyNetIncomeSet' },
+            name: { kind: 'Name', value: 'WorkspaceFinanceIncomeStreamUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
-                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'amountCents' } },
-                    type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'financeIncomeStreams' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFinancesIncomeStreamInput' } },
+                            },
+                        },
+                    },
                 },
             ],
             selectionSet: {
@@ -14678,12 +14834,67 @@ export const WorkspaceFinanceMonthlyNetIncomeSetDocument = {
                             selections: [
                                 {
                                     kind: 'Field',
-                                    name: { kind: 'Name', value: 'adminFinancesMonthlyNetIncomeSet' },
+                                    name: { kind: 'Name', value: 'adminFinancesIncomeStreamsUpsert' },
                                     arguments: [
                                         {
                                             kind: 'Argument',
-                                            name: { kind: 'Name', value: 'amountCents' },
-                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'amountCents' } },
+                                            name: { kind: 'Name', value: 'financeIncomeStreams' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'financeIncomeStreams' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinanceIncomeStreamUpsertMutation, GqlCWorkspaceFinanceIncomeStreamUpsertMutationVariables>;
+export const WorkspaceFinanceIncomeStreamDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFinanceIncomeStreamDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'incomeStreamIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFinancesIncomeStreamsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'incomeStreamIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'incomeStreamIds' } },
                                         },
                                     ],
                                     selectionSet: {
@@ -14698,7 +14909,7 @@ export const WorkspaceFinanceMonthlyNetIncomeSetDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceFinanceMonthlyNetIncomeSetMutation, GqlCWorkspaceFinanceMonthlyNetIncomeSetMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceFinanceIncomeStreamDeleteMutation, GqlCWorkspaceFinanceIncomeStreamDeleteMutationVariables>;
 export const WorkspaceFitnessPageDocument = {
     kind: 'Document',
     definitions: [

@@ -2026,18 +2026,14 @@ export type AdminTravelTripPackingItemCreate = typeof tripPackingItems.$inferIns
 
 // --- Finances ---------------------------------------------------------------
 //
-// `FinanceRecurringCosts` backs `/workspace/finances`. Admin-only, `noindex`
-// — no `*De`/`*En` pairs, no per-row `userId` (the `User.admin` /
-// `Mutation.admin` gate authorizes). One row per repeating charge (rent,
-// insurance, subscription, …). `amountCents` is the amount **per `cadence`**,
-// so the page-level Monthly / Yearly toggle is deterministic projection over
-// the same rows — no dated transactions in v1. See
+// `FinanceRecurringCosts` + `FinanceIncomeStreams` back `/workspace/finances`.
+// Admin-only, `noindex` — no `*De`/`*En` pairs, no per-row `userId` (the
+// `User.admin` / `Mutation.admin` gate authorizes). One row per repeating
+// charge (rent, insurance, subscription, …) and one row per income stream
+// (salary, freelance, …). `amountCents` is the amount **per `cadence`**, so
+// the page-level Monthly / Yearly toggle is deterministic projection over the
+// same rows — no dated transactions in v1. See
 // `docs/features/workspace-finances.md`.
-//
-// `AdminFinancesSettings` is per-admin config (net monthly income baseline
-// used as the left node in the Sankey), keyed by `userId`. This one *is*
-// scoped by user because "my income" is meaningful only per user; the
-// domain rows above are not.
 
 export const financeRecurringCostCategories = [
     'housing',
@@ -2083,25 +2079,26 @@ export const financeRecurringCosts = pgTable(
 export type AdminFinancesRecurringCost = typeof financeRecurringCosts.$inferSelect;
 export type AdminFinancesRecurringCostCreate = typeof financeRecurringCosts.$inferInsert;
 
-export const adminFinancesSettings = pgTable(
-    'AdminFinancesSettings',
+export const financeIncomeStreams = pgTable(
+    'AdminFinancesIncomeStream',
     {
-        userId: uuid().primaryKey(),
-        monthlyNetIncomeCents: integer(),
+        incomeStreamId: uuid().primaryKey(),
+        name: varchar().notNull(),
+        amountCents: integer().notNull(),
+        cadence: varchar().$type<AdminFinancesCadence>().notNull().default('monthly'),
+        currency: varchar({ length: 3 }).notNull().default('EUR'),
+        notes: text(),
+        active: boolean().notNull().default(true),
+        startsOn: date(),
+        endsOn: date(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
         updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
-    (table) => [
-        foreignKey({
-            columns: [table.userId],
-            foreignColumns: [users.userId],
-        })
-            .onUpdate('cascade')
-            .onDelete('cascade'),
-    ],
+    (table) => [index('AdminFinancesIncomeStream_active_idx').on(table.active)],
 );
 
-export type AdminFinancesSettings = typeof adminFinancesSettings.$inferSelect;
-export type AdminFinancesSettingsCreate = typeof adminFinancesSettings.$inferInsert;
+export type AdminFinancesIncomeStream = typeof financeIncomeStreams.$inferSelect;
+export type AdminFinancesIncomeStreamCreate = typeof financeIncomeStreams.$inferInsert;
 
 // --- Nutrition --------------------------------------------------------------
 //

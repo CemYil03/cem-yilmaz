@@ -98,6 +98,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
             .nodeAlign(sankeyLeft)
             .nodeWidth(NODE_WIDTH)
             .nodePadding(NODE_PADDING)
+            .nodeSort((a, b) => (b.value ?? 0) - (a.value ?? 0))
             .extent([
                 [MARGIN_LEFT, MARGIN_TOP],
                 [WIDTH - MARGIN_RIGHT, height - MARGIN_BOTTOM],
