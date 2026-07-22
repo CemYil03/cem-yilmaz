@@ -19,12 +19,14 @@ until this base surface earns its keep.
   library shell — see below). Hovering a flow shows the flow's amount as a native SVG `<title>` tooltip.
 - **Grouped list** — every recurring cost grouped by category (`housing`, `connectivity`, `transport`, `insurance`,
   `subscriptionsEntertainment`, `subscriptionsWork`, `memberships`, `donations`, `household`, `savingsGeneral`, `savingsVacation`, `other`).
-  Each row shows name, the row's own amount + cadence, and the projected amount at the current period. Inline edit / delete affordances on
-  hover. Inactive rows stay in the list at reduced opacity with a "Paused" badge — they don't count toward totals or the Sankey.
+  Each row shows name, the row's own amount + cadence, optional starts/ends date range when set, and the projected amount at the current
+  period. Inline edit / delete affordances on hover. Inactive rows stay in the list at reduced opacity with a "Paused" badge — they don't
+  count toward totals or the Sankey.
 - **Empty state** replaces the list when there are zero rows, with a "Add the first cost" call to action.
-- **Dialog** for new / edit. Fields: name (required), category, amount in EUR (required, positive), cadence (monthly / yearly), notes,
-  active. Same shape as the inventory dialog. Delete uses `AlertDialog` and warns the user that toggling `active` off is the softer
-  alternative.
+- **Dialog** for new / edit. Fields: name (required), category, amount in EUR (required, positive), cadence (monthly / yearly), starts on /
+  ends on (optional, informational — do not affect totals or the Sankey), notes, active. Same shape as the inventory dialog. Delete uses
+  `AlertDialog` and warns the user that toggling `active` off is the softer alternative. When set, the date range also shows on the cost
+  card.
 
 Bilingual copy is inline `{ de, en }[locale]` at the call site per [conventions.md](../conventions.md#bilingual-copy). Only `title`,
 `description`, `CATEGORY_LABELS`, `CADENCE_LABELS`, and `PERIOD_LABELS` are hoisted — reused across `seoMeta()`, the `<h1>`, the Select
@@ -103,8 +105,11 @@ subscription delivers the new state.
 
 ### Sankey chart
 
-`src/web/components/FinancesSankey.tsx` — inline SVG at `viewBox="0 0 960 480"`, `preserveAspectRatio="xMidYMid meet"`, sized responsively
-via `className="w-full h-auto"`. `d3-sankey` does the layout; `d3-shape`'s `sankeyLinkHorizontal` draws the flow paths.
+`src/web/components/FinancesSankey.tsx` — inline SVG at `viewBox="0 0 960 {height}"`, `preserveAspectRatio="xMidYMid meet"`, sized
+responsively via `className="w-full h-auto"`. Height grows with the densest column (`max(itemCount, categoryCount) * 36px`, floor 480) so
+label + amount pairs stay readable when many thin nodes pack the right column. `d3-sankey` does the layout with `nodePadding: 30`;
+`d3-shape`'s `sankeyLinkHorizontal` draws the flow paths. The layout extent leaves a ~180px right gutter so item labels sit outside the
+rightmost bars instead of sharing the middle gap with category labels (which was the main overlap failure mode).
 
 - Colours resolve via Tailwind semantic classes (`fill-primary`, `fill-primary/70`, `fill-muted-foreground/60`, `stroke-primary/25`), so
   light / dark themes both work without a per-mode branch and no hard-coded `oklch(...)` values reach the component.

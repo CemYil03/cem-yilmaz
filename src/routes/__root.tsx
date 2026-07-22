@@ -142,7 +142,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     'font-sans antialiased wrap-anywhere overflow-x-hidden',
                     // `!` so this beats the global `body { @apply bg-background }`
                     // rule — capture pages need a true white canvas.
-                    isBrowserCaptureRoute && '!bg-white',
+                    isBrowserCaptureRoute && 'bg-white!',
                 )}
             >
                 {!isBrowserCaptureRoute && <AmbientBackdrop />}

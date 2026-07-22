@@ -48,6 +48,7 @@ interface LayoutNode extends FinancesSankeyInputNode {
     y1?: number;
     value?: number;
 }
+
 interface LayoutLink {
     source: string | LayoutNode;
     target: string | LayoutNode;
@@ -58,9 +59,17 @@ interface LayoutLink {
 }
 
 const WIDTH = 960;
-const HEIGHT = 480;
+const MIN_HEIGHT = 480;
+/** Vertical budget per node in the densest column — fits label + sublabel. */
+const NODE_SLOT = 36;
+/** Gap d3-sankey leaves between adjacent nodes; sized for thin-node midpoints. */
+const NODE_PADDING = 30;
 const NODE_WIDTH = 14;
-const NODE_PADDING = 12;
+const MARGIN_TOP = 12;
+const MARGIN_BOTTOM = 12;
+const MARGIN_LEFT = 8;
+/** Room for item name + amount outside the rightmost column. */
+const MARGIN_RIGHT = 180;
 
 const NODE_KIND_CLASSES: Record<FinancesSankeyNodeKind, string> = {
     income: 'fill-primary',
@@ -68,11 +77,19 @@ const NODE_KIND_CLASSES: Record<FinancesSankeyNodeKind, string> = {
     item: 'fill-muted-foreground/60',
 };
 
+function heightFor(nodes: readonly FinancesSankeyInputNode[]): number {
+    const itemCount = nodes.filter((node) => node.kind === 'item').length;
+    const categoryCount = nodes.filter((node) => node.kind === 'category').length;
+    const densest = Math.max(itemCount, categoryCount, 1);
+    return Math.max(MIN_HEIGHT, densest * NODE_SLOT + MARGIN_TOP + MARGIN_BOTTOM);
+}
+
 export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSankeyProps) {
     // Empty state — no active recurring costs. The route decides when to
     // render this component; the guard here is defence in depth so the
     // layout call never sees zero-node input.
     const hasData = nodes.length > 0 && links.length > 0;
+    const height = heightFor(nodes);
 
     const layout = useMemo(() => {
         if (!hasData) return null;
@@ -89,12 +106,12 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
             .nodeWidth(NODE_WIDTH)
             .nodePadding(NODE_PADDING)
             .extent([
-                [8, 8],
-                [WIDTH - 8, HEIGHT - 8],
+                [MARGIN_LEFT, MARGIN_TOP],
+                [WIDTH - MARGIN_RIGHT, height - MARGIN_BOTTOM],
             ]);
 
         return generator({ nodes: layoutNodes, links: layoutLinks });
-    }, [nodes, links, hasData]);
+    }, [nodes, links, hasData, height]);
 
     if (!hasData || !layout) {
         return (
@@ -106,7 +123,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
 
     return (
         <svg
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+            viewBox={`0 0 ${WIDTH} ${height}`}
             preserveAspectRatio="xMidYMid meet"
             className="w-full h-auto text-foreground"
             role="img"
@@ -134,34 +151,28 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
                     const x1 = node.x1 ?? 0;
                     const y0 = node.y0 ?? 0;
                     const y1 = node.y1 ?? 0;
-                    const width = x1 - x0;
-                    const height = Math.max(y1 - y0, 1);
-                    const labelOnRight = x0 < WIDTH / 2;
-                    const labelX = labelOnRight ? x1 + 8 : x0 - 8;
-                    const anchor: 'start' | 'end' = labelOnRight ? 'start' : 'end';
-                    const midY = y0 + height / 2;
+                    const nodeHeight = Math.max(y1 - y0, 1);
+                    // All labels sit to the right of their bars. Item labels
+                    // use the reserved `MARGIN_RIGHT` gutter so they don't
+                    // share the middle gap with category labels and collide.
+                    const labelX = x1 + 8;
+                    const midY = y0 + nodeHeight / 2;
                     return (
                         <g key={`node-${node.id}`}>
-                            <rect x={x0} y={y0} width={width} height={height} rx={2} className={NODE_KIND_CLASSES[node.kind]}>
+                            <rect x={x0} y={y0} width={x1 - x0} height={nodeHeight} rx={2} className={NODE_KIND_CLASSES[node.kind]}>
                                 <title>{`${node.label} — ${formatCents(node.value ?? 0, locale)}`}</title>
                             </rect>
                             <text
                                 x={labelX}
                                 y={midY - (node.sublabel ? 4 : 0)}
                                 dy="0.32em"
-                                textAnchor={anchor}
+                                textAnchor="start"
                                 className="fill-foreground text-[11px] font-medium"
                             >
                                 {node.label}
                             </text>
                             {node.sublabel ? (
-                                <text
-                                    x={labelX}
-                                    y={midY + 10}
-                                    dy="0.32em"
-                                    textAnchor={anchor}
-                                    className="fill-muted-foreground text-[10px]"
-                                >
+                                <text x={labelX} y={midY + 10} dy="0.32em" textAnchor="start" className="fill-muted-foreground text-[10px]">
                                     {node.sublabel}
                                 </text>
                             ) : null}

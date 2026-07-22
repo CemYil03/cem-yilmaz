@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { format, parseISO } from 'date-fns';
 import {
     Building2Icon,
     CalendarClockIcon,
@@ -36,6 +37,7 @@ import {
     AlertDialogTitle,
 } from '../../../web/components/base/alert-dialog';
 import { Button } from '../../../web/components/base/button';
+import { DatePicker } from '../../../web/components/base/date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../web/components/base/dialog';
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
@@ -63,6 +65,7 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
+import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -489,6 +492,9 @@ function CostCard({
                             {formatCurrency(cost.amountCents, locale)} · {CADENCE_LABELS[cost.cadence][locale]}
                         </span>
                     </div>
+                    {cost.startsOn || cost.endsOn ? (
+                        <div className="mt-0.5 text-xs text-muted-foreground">{formatDateRange(cost.startsOn, cost.endsOn, locale)}</div>
+                    ) : null}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <Button
@@ -536,6 +542,8 @@ type FormState = {
     cadence: GqlCAdminFinancesCadence;
     notes: string;
     active: boolean;
+    startsOn: Date | undefined;
+    endsOn: Date | undefined;
 };
 
 function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null; locale: Locale; onClose: () => void }) {
@@ -548,6 +556,8 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
         cadence: initial?.cadence ?? 'monthly',
         notes: initial?.notes ?? '',
         active: initial?.active ?? true,
+        startsOn: initial?.startsOn ? parseISO(initial.startsOn) : undefined,
+        endsOn: initial?.endsOn ? parseISO(initial.endsOn) : undefined,
     }));
     const [, upsert] = useMutation(WorkspaceFinanceRecurringCostUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
@@ -569,6 +579,8 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                         cadence: state.cadence,
                         notes: state.notes.trim() || null,
                         active: state.active,
+                        startsOn: state.startsOn ? dateToIso(state.startsOn) : null,
+                        endsOn: state.endsOn ? dateToIso(state.endsOn) : null,
                     },
                 ],
             });
@@ -637,6 +649,26 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                                 <SelectItem value="yearly">{CADENCE_LABELS.yearly[locale]}</SelectItem>
                             </SelectContent>
                         </Select>
+                    </Field>
+                    <Field label={{ de: 'Beginn', en: 'Starts on' }[locale]}>
+                        <DatePicker
+                            value={state.startsOn}
+                            onValueChange={(d) => setState((s) => ({ ...s, startsOn: d }))}
+                            locale={DATE_FNS_LOCALE[locale]}
+                            captionLayout="dropdown"
+                            placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
+                            className="w-full"
+                        />
+                    </Field>
+                    <Field label={{ de: 'Ende', en: 'Ends on' }[locale]}>
+                        <DatePicker
+                            value={state.endsOn}
+                            onValueChange={(d) => setState((s) => ({ ...s, endsOn: d }))}
+                            locale={DATE_FNS_LOCALE[locale]}
+                            captionLayout="dropdown"
+                            placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
+                            className="w-full"
+                        />
                     </Field>
                     <Field label={{ de: 'Notizen', en: 'Notes' }[locale]} className="sm:col-span-2">
                         <Textarea rows={3} value={state.notes} onChange={(e) => setState((s) => ({ ...s, notes: e.target.value }))} />
@@ -863,6 +895,31 @@ function formatCurrency(cents: number | null | undefined, locale: Locale): strin
         currency: 'EUR',
         maximumFractionDigits: 0,
     }).format(value);
+}
+
+function formatDate(iso: string | null | undefined, locale: Locale): string {
+    if (!iso) return '—';
+    try {
+        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
+    } catch {
+        return iso;
+    }
+}
+
+function formatDateRange(startsOn: string | null | undefined, endsOn: string | null | undefined, locale: Locale): string {
+    if (!startsOn && !endsOn) return '—';
+    if (startsOn && endsOn) return `${formatDate(startsOn, locale)} – ${formatDate(endsOn, locale)}`;
+    if (startsOn) return { de: `ab ${formatDate(startsOn, locale)}`, en: `from ${formatDate(startsOn, locale)}` }[locale];
+    return { de: `bis ${formatDate(endsOn, locale)}`, en: `until ${formatDate(endsOn, locale)}` }[locale];
+}
+
+function dateToIso(date: Date): string {
+    // Local date → ISO date-only string (YYYY-MM-DD), matching the drizzle
+    // `date` column's shape. Avoids timezone shift from `toISOString().slice(0, 10)`.
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
 function centsToEuros(cents: number): string {
