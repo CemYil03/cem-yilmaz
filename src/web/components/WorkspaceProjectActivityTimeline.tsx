@@ -3,7 +3,7 @@ import { Fragment, useMemo, useState } from 'react';
 import { useMutation } from 'urql';
 import { ChatTranscriptShell } from './base/chat-transcript-shell';
 import { MessageScrollerItem } from './base/message-scroller';
-import { WorkspaceProjectDetailDeleteActivityDocument } from '../graphql/generated';
+import { WorkspaceProjectDetailDeleteActivitiesDocument } from '../graphql/generated';
 import type { Locale } from '../utils/locale';
 import { WorkspaceProjectActivityComposer } from './WorkspaceProjectActivityComposer';
 import { isSameDay } from './WorkspaceProjectActivityConstants';
@@ -31,7 +31,7 @@ export function WorkspaceProjectActivityTimeline({
     locale: Locale;
 }) {
     const [editing, setEditing] = useState<WorkspaceProjectActivityRow | null>(null);
-    const [, del] = useMutation(WorkspaceProjectDetailDeleteActivityDocument);
+    const [, del] = useMutation(WorkspaceProjectDetailDeleteActivitiesDocument);
 
     // Server returns newest-first; chat UIs read newest-at-bottom. Reverse a copy
     // (the prop is readonly), then walk in chronological order so the day-separator

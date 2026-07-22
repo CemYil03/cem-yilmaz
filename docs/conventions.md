@@ -158,19 +158,25 @@ its query namespace already uses (`AdminTravel`, `AdminMedia`, `AdminInventory`,
 `AdminFitness`, …). A free-floating (prefix-less) name is reserved for types that are **genuinely shared across domains**. The rule in one
 line: **no free-floating type or input names unless they are shared between domains.**
 
-| Layer                        | Pattern                                   | Example                                                                      |
-| ---------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------- |
-| GraphQL object type          | `Admin{Domain}{Entity}`                   | `AdminTravelTrip`, `AdminTravelTripDay`, `AdminTravelTripActivity`           |
-| GraphQL input                | `Admin{Domain}{Entity}Input`              | `AdminTravelTripInput`, `AdminTravelTripPackingItemInput`                    |
-| GraphQL / DB enum            | `Admin{Domain}{Concept}`                  | `AdminTravelTripStatus`, `AdminTravelTransportMode`                          |
-| DB table (`pgTable('…')`)    | `Admin{Domain}{Entity}` (singular)        | `pgTable('AdminTravelTrip')` — physical name equals the GraphQL type         |
-| Drizzle table export const   | plain camelCase plural (**not** prefixed) | `export const trips = pgTable('AdminTravelTrip', …)`, `movies`, `items`      |
-| Drizzle row type / insert    | `Admin{Domain}{Entity}` / `…Create`       | `type AdminTravelTrip`, `type AdminTravelTripCreate`                         |
-| Mutation field + `commands/` | `admin{Domain}{Entities}{Action}`         | `adminTravelTripsUpsert`, `adminTravelTripDaysDelete` (batch, plural entity) |
-| Query field + `queries/`     | `admin{Domain}{Entity}{Suffix}`           | `adminTravelTripFindMany`, `adminTravelTripFindOne` (singular entity)        |
-| Mapper                       | `toGql{Type}`                             | `toGqlAdminTravelTrip`, `toGqlAdminTravelTripActivity`                       |
+| Layer                         | Pattern                                              | Example                                                                      |
+| ----------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- |
+| GraphQL object type           | `Admin{Domain}{Entity}`                              | `AdminTravelTrip`, `AdminTravelTripDay`, `AdminTravelTripActivity`           |
+| GraphQL input                 | `Admin{Domain}{Entity}Input`                         | `AdminTravelTripInput`, `AdminTravelTripPackingItemInput`                    |
+| GraphQL / DB enum             | `Admin{Domain}{Concept}`                             | `AdminTravelTripStatus`, `AdminTravelTransportMode`                          |
+| DB table (`pgTable('…')`)     | `Admin{Domain}{Entity}` (singular)                   | `pgTable('AdminTravelTrip')` — physical name equals the GraphQL type         |
+| Drizzle table export const    | plain camelCase plural (**not** prefixed)            | `export const trips = pgTable('AdminTravelTrip', …)`, `movies`, `items`      |
+| Drizzle row type / insert     | `Admin{Domain}{Entity}` / `…Create`                  | `type AdminTravelTrip`, `type AdminTravelTripCreate`                         |
+| Mutation field + `commands/`  | `admin{Domain}{Entities}{Action}`                    | `adminTravelTripsUpsert`, `adminTravelTripDaysDelete` (batch, plural entity) |
+| Query field + `queries/`      | `admin{Domain}{Entity}{Suffix}`                      | `adminTravelTripFindMany`, `adminTravelTripFindOne` (singular entity)        |
+| Mapper                        | `toGql{Type}`                                        | `toGqlAdminTravelTrip`, `toGqlAdminTravelTripActivity`                       |
+| Client operation (`.graphql`) | `Workspace{Entities}{Action}` (mirror schema number) | `WorkspaceFinancesIncomeStreamsUpsert` → `adminFinancesIncomeStreamsUpsert`  |
 
 Notes:
+
+- **Colocated client operation names mirror the schema field's entity number.** Batch `Upsert` / `Delete` / `Attach` / … stay plural
+  (`WorkspaceProjectsUpsert`, `WorkspaceProjectLinksDelete`); singular schema fields stay singular (`WorkspaceProjectReorder`,
+  `WorkspaceMediaChannelReorder`). Drop the `admin{Domain}` access-path prefix on the client name when the route already scopes the domain
+  (`WorkspaceTripsUpsert` for `adminTravelTripsUpsert`), but do not change singular ↔ plural relative to the schema field.
 
 - **The Drizzle export const stays the plain camelCase plural** (`trips`, `movies`, `items`, `tasks`). It is a module-local variable, not
   the physical table name, and prefixing it collides with GraphQL/interface field names spelled the same (`items`, `tasks`). The physical

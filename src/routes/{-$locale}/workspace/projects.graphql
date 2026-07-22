@@ -118,7 +118,7 @@ mutation WorkspaceProjectRequestDelete($projectRequestId: ID!) {
     }
 }
 
-mutation WorkspaceProjectUpsert(
+mutation WorkspaceProjectsUpsert(
     $projectId: ID
     $title: String!
     $description: String
@@ -159,7 +159,7 @@ mutation WorkspaceProjectReorder($orderedIds: [ID!]!) {
     }
 }
 
-mutation WorkspaceProjectActivityUpsert(
+mutation WorkspaceProjectActivitiesUpsert(
     $activityId: ID
     $projectId: ID!
     $taskId: ID
@@ -192,7 +192,7 @@ mutation WorkspaceProjectActivityUpsert(
     }
 }
 
-mutation WorkspaceProjectActivityDelete($activityId: ID!) {
+mutation WorkspaceProjectActivitiesDelete($activityId: ID!) {
     admin {
         adminProjectActivitiesDelete(activityIds: [$activityId]) {
             success

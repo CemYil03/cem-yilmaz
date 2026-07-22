@@ -70,17 +70,17 @@ import type {
 } from '../../../web/graphql/generated';
 import {
     WorkspaceProjectDetailDeleteProjectDocument,
-    WorkspaceProjectDetailDeleteTaskDocument,
+    WorkspaceProjectDetailDeleteTasksDocument,
     WorkspaceProjectDetailDocument,
-    WorkspaceProjectDetailTimerStartDocument,
-    WorkspaceProjectDetailTimerStopDocument,
+    WorkspaceProjectDetailTimersStartDocument,
+    WorkspaceProjectDetailTimersStopDocument,
     WorkspaceProjectDetailUpdatesDocument,
     WorkspaceProjectDetailUpsertProjectDocument,
-    WorkspaceProjectDetailUpsertTaskDocument,
-    WorkspaceProjectFileDeleteDocument,
-    WorkspaceProjectFileUpsertDocument,
-    WorkspaceProjectLinkDeleteDocument,
-    WorkspaceProjectLinkUpsertDocument,
+    WorkspaceProjectDetailUpsertTasksDocument,
+    WorkspaceProjectFilesDeleteDocument,
+    WorkspaceProjectFilesUpsertDocument,
+    WorkspaceProjectLinksDeleteDocument,
+    WorkspaceProjectLinksUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';
@@ -661,8 +661,8 @@ function RailSourceRequest({ sourceRequest, locale }: { sourceRequest: NonNullab
 }
 
 function RailTimerButton({ projectId, activeTimer, locale }: { projectId: string; activeTimer: ActiveTimer; locale: Locale }) {
-    const [, start] = useMutation(WorkspaceProjectDetailTimerStartDocument);
-    const [, stop] = useMutation(WorkspaceProjectDetailTimerStopDocument);
+    const [, start] = useMutation(WorkspaceProjectDetailTimersStartDocument);
+    const [, stop] = useMutation(WorkspaceProjectDetailTimersStopDocument);
     const [busy, setBusy] = useState(false);
     const isOwn = activeTimer?.projectId === projectId;
 
@@ -964,7 +964,7 @@ function OverviewSectionHeader({ title, action }: { title: string; action?: { la
 }
 
 function OverviewUpNextRow({ task, projectId, locale }: { task: TaskRow; projectId: string; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTasksDocument);
     const StatusIcon = task.status === 'doing' ? CircleDotIcon : SquareIcon;
     return (
         <div className="flex items-start gap-2 rounded-md border border-border/40 bg-card/20 p-2 text-sm">
@@ -1093,7 +1093,7 @@ function TotalWorkLabel({ totalWorkSec, activeTimer }: { totalWorkSec: number; a
 }
 
 function LinkChip({ link, locale }: { link: LinkRow; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceProjectLinkUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectLinksUpsertDocument);
     const label = link.label || link.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
     return (
         <span
@@ -1129,7 +1129,7 @@ function LinkChip({ link, locale }: { link: LinkRow; locale: Locale }) {
 }
 
 function FileChip({ file, locale }: { file: FileRow; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceProjectFileUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectFilesUpsertDocument);
     const label = file.label || file.fileUpload.filename;
     return (
         <span
@@ -1289,7 +1289,7 @@ function TasksList({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskRow>
 // subscription then replaces it, and a signature check re-adopts the server
 // ordering.
 function TasksKanban({ tasks, projectId, locale }: { tasks: ReadonlyArray<TaskRow>; projectId: string; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTasksDocument);
     const [localTasks, setLocalTasks] = useState<ReadonlyArray<TaskRow>>(tasks);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [overStatus, setOverStatus] = useState<GqlCAdminProjectTaskStatus | null>(null);
@@ -1491,8 +1491,8 @@ function KanbanCard({
 }
 
 function TaskRow({ task, projectId, locale }: { task: TaskRow; projectId: string; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
-    const [, del] = useMutation(WorkspaceProjectDetailDeleteTaskDocument);
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTasksDocument);
+    const [, del] = useMutation(WorkspaceProjectDetailDeleteTasksDocument);
     const [editing, setEditing] = useState(false);
     const [completing, setCompleting] = useState(false);
 
@@ -1634,7 +1634,7 @@ function TaskForm({
     onClose: () => void;
     onSaved: () => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTaskDocument);
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertTasksDocument);
     const [title, setTitle] = useState(task?.title ?? '');
     const [notes, setNotes] = useState(task?.notes ?? '');
     const [status, setStatus] = useState<GqlCAdminProjectTaskStatus>(task?.status ?? 'todo');
@@ -1832,8 +1832,8 @@ function LinksSection({ links, projectId, locale }: { links: ReadonlyArray<LinkR
 }
 
 function LinkCard({ link, projectId, locale }: { link: LinkRow; projectId: string; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceProjectLinkUpsertDocument);
-    const [, del] = useMutation(WorkspaceProjectLinkDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceProjectLinksUpsertDocument);
+    const [, del] = useMutation(WorkspaceProjectLinksDeleteDocument);
     const [editing, setEditing] = useState(false);
     if (editing) {
         return (
@@ -1916,7 +1916,7 @@ function LinkForm({
     onClose: () => void;
     onSaved: () => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceProjectLinkUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectLinksUpsertDocument);
     const [url, setUrl] = useState(link?.url ?? '');
     const [label, setLabel] = useState(link?.label ?? '');
     const [kind, setKind] = useState<GqlCAdminProjectLinkKind>(link?.kind ?? 'other');
@@ -2054,8 +2054,8 @@ function FilesSection({ files, projectId, locale }: { files: ReadonlyArray<FileR
 }
 
 function FileCard({ file, locale, onOpenPreview }: { file: FileRow; locale: Locale; onOpenPreview: () => void }) {
-    const [, upsert] = useMutation(WorkspaceProjectFileUpsertDocument);
-    const [, del] = useMutation(WorkspaceProjectFileDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceProjectFilesUpsertDocument);
+    const [, del] = useMutation(WorkspaceProjectFilesDeleteDocument);
     // Image / markdown / text formats get an inline preview (same dialog the
     // chat surface uses). PDFs and archives fall back to a plain link that
     // opens in a new tab — the dialog's "other" branch would just show a
@@ -2126,7 +2126,7 @@ function FileUploadForm({
     onClose: () => void;
     onSaved: () => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceProjectFileUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectFilesUpsertDocument);
     const [kind, setKind] = useState<GqlCAdminProjectFileKind>('other');
     const [pinned, setPinned] = useState(false);
     const [busy, setBusy] = useState(false);

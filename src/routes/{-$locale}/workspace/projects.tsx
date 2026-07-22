@@ -29,7 +29,7 @@ import type {
 import {
     WorkspaceProjectRequestArchiveDocument,
     WorkspaceProjectRequestDeleteDocument,
-    WorkspaceProjectUpsertDocument,
+    WorkspaceProjectsUpsertDocument,
     WorkspaceProjectsPageDocument,
     WorkspaceProjectsPageUpdatesDocument,
 } from '../../../web/graphql/generated';
@@ -660,7 +660,7 @@ function ProjectForm({
     onClose: () => void;
     onSaved: () => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceProjectUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectsUpsertDocument);
     const [form, setForm] = useState({
         title: row?.title ?? initialValues?.title ?? '',
         description: row?.description ?? initialValues?.description ?? '',

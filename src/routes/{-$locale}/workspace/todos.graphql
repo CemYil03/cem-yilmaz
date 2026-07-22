@@ -37,7 +37,7 @@ subscription WorkspaceTodosPageUpdates {
     }
 }
 
-mutation WorkspaceTodoUpsert(
+mutation WorkspaceProjectTasksUpsert(
     $taskId: ID
     $title: String!
     $notes: String
@@ -71,7 +71,7 @@ mutation WorkspaceTodoUpsert(
     }
 }
 
-mutation WorkspaceTodoDelete($taskId: ID!) {
+mutation WorkspaceProjectTasksDelete($taskId: ID!) {
     admin {
         adminProjectTasksDelete(taskIds: [$taskId]) {
             success

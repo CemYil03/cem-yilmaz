@@ -219,7 +219,7 @@ search param (list is the default → the key drops from the URL). This secondar
   colored status dot and count in its heading. Rows reuse `TaskRow` (three-state checkbox cycle, inline edit/delete).
 - **Kanban view** (`TasksKanban`) — one droppable column per status, left→right in `TASK_STATUS_ORDER`, each with a tinted header chip and
   count. Cards are **draggable** (native HTML5 drag — same primitives as the CV reorder list in `cv.tsx`, no DnD library). Dropping a card
-  on a column moves it to that status via the existing `WorkspaceProjectDetailUpsertTask` mutation: the card appends to the end of the
+  on a column moves it to that status via the existing `WorkspaceProjectDetailUpsertTasks` mutation: the card appends to the end of the
   target column (`position = max + 1`, collision-free with the single-task upsert), and dropping onto **Done** stamps `completedAt` (cleared
   when dragged back off Done). The move is optimistic locally, then reconciled by the `userUpdates` subscription via an
   `(id, status, position)` signature check. Empty columns show a dashed "Drop here" placeholder. Drag feedback is opacity + a ring on the

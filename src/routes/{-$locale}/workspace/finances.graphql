@@ -57,7 +57,7 @@ subscription WorkspaceFinancesPageUpdates {
     }
 }
 
-mutation WorkspaceFinanceRecurringCostUpsert($financeRecurringCosts: [AdminFinancesRecurringCostInput!]!) {
+mutation WorkspaceFinancesRecurringCostsUpsert($financeRecurringCosts: [AdminFinancesRecurringCostInput!]!) {
     admin {
         adminFinancesRecurringCostsUpsert(financeRecurringCosts: $financeRecurringCosts) {
             success
@@ -66,7 +66,7 @@ mutation WorkspaceFinanceRecurringCostUpsert($financeRecurringCosts: [AdminFinan
     }
 }
 
-mutation WorkspaceFinanceRecurringCostDelete($costIds: [ID!]!) {
+mutation WorkspaceFinancesRecurringCostsDelete($costIds: [ID!]!) {
     admin {
         adminFinancesRecurringCostsDelete(costIds: $costIds) {
             success
@@ -74,7 +74,7 @@ mutation WorkspaceFinanceRecurringCostDelete($costIds: [ID!]!) {
     }
 }
 
-mutation WorkspaceFinanceIncomeStreamUpsert($financeIncomeStreams: [AdminFinancesIncomeStreamInput!]!) {
+mutation WorkspaceFinancesIncomeStreamsUpsert($financeIncomeStreams: [AdminFinancesIncomeStreamInput!]!) {
     admin {
         adminFinancesIncomeStreamsUpsert(financeIncomeStreams: $financeIncomeStreams) {
             success
@@ -83,7 +83,7 @@ mutation WorkspaceFinanceIncomeStreamUpsert($financeIncomeStreams: [AdminFinance
     }
 }
 
-mutation WorkspaceFinanceIncomeStreamDelete($incomeStreamIds: [ID!]!) {
+mutation WorkspaceFinancesIncomeStreamsDelete($incomeStreamIds: [ID!]!) {
     admin {
         adminFinancesIncomeStreamsDelete(incomeStreamIds: $incomeStreamIds) {
             success

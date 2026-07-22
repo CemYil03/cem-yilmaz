@@ -176,7 +176,7 @@ mutation WorkspaceProjectDetailDeleteProject($projectId: ID!) {
     }
 }
 
-mutation WorkspaceProjectDetailUpsertTask(
+mutation WorkspaceProjectDetailUpsertTasks(
     $taskId: ID
     $projectId: ID
     $title: String!
@@ -211,7 +211,7 @@ mutation WorkspaceProjectDetailUpsertTask(
     }
 }
 
-mutation WorkspaceProjectDetailDeleteTask($taskId: ID!) {
+mutation WorkspaceProjectDetailDeleteTasks($taskId: ID!) {
     admin {
         adminProjectTasksDelete(taskIds: [$taskId]) {
             success
@@ -219,7 +219,7 @@ mutation WorkspaceProjectDetailDeleteTask($taskId: ID!) {
     }
 }
 
-mutation WorkspaceProjectDetailUpsertActivity(
+mutation WorkspaceProjectDetailUpsertActivities(
     $activityId: ID
     $projectId: ID!
     $taskId: ID
@@ -274,7 +274,7 @@ mutation WorkspaceProjectDetailUpsertActivity(
     }
 }
 
-mutation WorkspaceProjectDetailDeleteActivity($activityId: ID!) {
+mutation WorkspaceProjectDetailDeleteActivities($activityId: ID!) {
     admin {
         adminProjectActivitiesDelete(activityIds: [$activityId]) {
             success
@@ -282,7 +282,7 @@ mutation WorkspaceProjectDetailDeleteActivity($activityId: ID!) {
     }
 }
 
-mutation WorkspaceProjectDetailTimerStart($projectId: ID!, $taskId: ID, $title: String) {
+mutation WorkspaceProjectDetailTimersStart($projectId: ID!, $taskId: ID, $title: String) {
     admin {
         adminProjectTimersStart(inputs: [{ projectId: $projectId, taskId: $taskId, title: $title }]) {
             success
@@ -291,7 +291,7 @@ mutation WorkspaceProjectDetailTimerStart($projectId: ID!, $taskId: ID, $title: 
     }
 }
 
-mutation WorkspaceProjectDetailTimerStop($activityId: ID!) {
+mutation WorkspaceProjectDetailTimersStop($activityId: ID!) {
     admin {
         adminProjectTimersStop(activityIds: [$activityId]) {
             success
@@ -299,7 +299,7 @@ mutation WorkspaceProjectDetailTimerStop($activityId: ID!) {
     }
 }
 
-mutation WorkspaceProjectLinkUpsert(
+mutation WorkspaceProjectLinksUpsert(
     $projectLinkId: ID
     $projectId: ID!
     $activityId: ID
@@ -328,7 +328,7 @@ mutation WorkspaceProjectLinkUpsert(
     }
 }
 
-mutation WorkspaceProjectLinkDelete($projectLinkId: ID!) {
+mutation WorkspaceProjectLinksDelete($projectLinkId: ID!) {
     admin {
         adminProjectLinksDelete(projectLinkIds: [$projectLinkId]) {
             success
@@ -336,7 +336,7 @@ mutation WorkspaceProjectLinkDelete($projectLinkId: ID!) {
     }
 }
 
-mutation WorkspaceProjectFileUpsert(
+mutation WorkspaceProjectFilesUpsert(
     $projectFileId: ID
     $projectId: ID!
     $activityId: ID
@@ -365,7 +365,7 @@ mutation WorkspaceProjectFileUpsert(
     }
 }
 
-mutation WorkspaceProjectFileDelete($projectFileId: ID!) {
+mutation WorkspaceProjectFilesDelete($projectFileId: ID!) {
     admin {
         adminProjectFilesDelete(projectFileIds: [$projectFileId]) {
             success

@@ -95,9 +95,9 @@ Clicking the checkbox on an open row plays three beats:
 3. The title's strike-through animates from left to right via a `background-image` gradient (`background-size: 0% → 100%` over 300 ms),
    reading as hand-drawn rather than as a `text-decoration: line-through`.
 
-The `WorkspaceTodoUpsert` mutation with `status: 'done'` and `completedAt: now` fires in parallel with the ritual — the server push unmounts
-the row from the open list. The completed row then lives in the `Erledigt` archive (see [View tabs](#view-tabs)); there's no separate "done
-today" strip on the main view.
+The `WorkspaceProjectTasksUpsert` mutation with `status: 'done'` and `completedAt: now` fires in parallel with the ritual — the server push
+unmounts the row from the open list. The completed row then lives in the `Erledigt` archive (see [View tabs](#view-tabs)); there's no
+separate "done today" strip on the main view.
 
 Milestones trigger a `<Celebration>` in a fixed-position layer above everything:
 

@@ -56,10 +56,10 @@ import type {
     GqlCWorkspaceFinancesPageUserFragment,
 } from '../../../web/graphql/generated';
 import {
-    WorkspaceFinanceIncomeStreamDeleteDocument,
-    WorkspaceFinanceIncomeStreamUpsertDocument,
-    WorkspaceFinanceRecurringCostDeleteDocument,
-    WorkspaceFinanceRecurringCostUpsertDocument,
+    WorkspaceFinancesIncomeStreamsDeleteDocument,
+    WorkspaceFinancesIncomeStreamsUpsertDocument,
+    WorkspaceFinancesRecurringCostsDeleteDocument,
+    WorkspaceFinancesRecurringCostsUpsertDocument,
     WorkspaceFinancesPageDocument,
     WorkspaceFinancesPageUpdatesDocument,
 } from '../../../web/graphql/generated';
@@ -681,7 +681,7 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
         startsOn: initial?.startsOn ? parseISO(initial.startsOn) : undefined,
         endsOn: initial?.endsOn ? parseISO(initial.endsOn) : undefined,
     }));
-    const [, upsert] = useMutation(WorkspaceFinanceRecurringCostUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceFinancesRecurringCostsUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
 
     const amountCents = eurosToCents(state.amountEuros);
@@ -841,7 +841,7 @@ function EditIncomeDialog({ initial, locale, onClose }: { initial: IncomeRow | n
         startsOn: initial?.startsOn ? parseISO(initial.startsOn) : undefined,
         endsOn: initial?.endsOn ? parseISO(initial.endsOn) : undefined,
     }));
-    const [, upsert] = useMutation(WorkspaceFinanceIncomeStreamUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceFinancesIncomeStreamsUpsertDocument);
     const [submitting, setSubmitting] = useState(false);
 
     const amountCents = eurosToCents(state.amountEuros);
@@ -987,7 +987,7 @@ function Field({
 // --- Delete confirmations ---------------------------------------------------
 
 function DeleteCostAlert({ cost, locale, onClose }: { cost: CostRow; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceFinanceRecurringCostDeleteDocument);
+    const [, del] = useMutation(WorkspaceFinancesRecurringCostsDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);
@@ -1024,7 +1024,7 @@ function DeleteCostAlert({ cost, locale, onClose }: { cost: CostRow; locale: Loc
 }
 
 function DeleteIncomeAlert({ stream, locale, onClose }: { stream: IncomeRow; locale: Locale; onClose: () => void }) {
-    const [, del] = useMutation(WorkspaceFinanceIncomeStreamDeleteDocument);
+    const [, del] = useMutation(WorkspaceFinancesIncomeStreamsDeleteDocument);
     const [submitting, setSubmitting] = useState(false);
     const doDelete = async () => {
         setSubmitting(true);

@@ -3728,33 +3728,33 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
     };
 };
 
-export type GqlCWorkspaceFinanceRecurringCostUpsertMutationVariables = Exact<{
+export type GqlCWorkspaceFinancesRecurringCostsUpsertMutationVariables = Exact<{
     financeRecurringCosts: Array<Schema.GqlCAdminFinancesRecurringCostInput> | Schema.GqlCAdminFinancesRecurringCostInput;
 }>;
 
-export type GqlCWorkspaceFinanceRecurringCostUpsertMutation = {
+export type GqlCWorkspaceFinancesRecurringCostsUpsertMutation = {
     admin: { adminFinancesRecurringCostsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables = Exact<{
+export type GqlCWorkspaceFinancesRecurringCostsDeleteMutationVariables = Exact<{
     costIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceFinanceRecurringCostDeleteMutation = { admin: { adminFinancesRecurringCostsDelete: { success: boolean } } };
+export type GqlCWorkspaceFinancesRecurringCostsDeleteMutation = { admin: { adminFinancesRecurringCostsDelete: { success: boolean } } };
 
-export type GqlCWorkspaceFinanceIncomeStreamUpsertMutationVariables = Exact<{
+export type GqlCWorkspaceFinancesIncomeStreamsUpsertMutationVariables = Exact<{
     financeIncomeStreams: Array<Schema.GqlCAdminFinancesIncomeStreamInput> | Schema.GqlCAdminFinancesIncomeStreamInput;
 }>;
 
-export type GqlCWorkspaceFinanceIncomeStreamUpsertMutation = {
+export type GqlCWorkspaceFinancesIncomeStreamsUpsertMutation = {
     admin: { adminFinancesIncomeStreamsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceFinanceIncomeStreamDeleteMutationVariables = Exact<{
+export type GqlCWorkspaceFinancesIncomeStreamsDeleteMutationVariables = Exact<{
     incomeStreamIds: Array<string> | string;
 }>;
 
-export type GqlCWorkspaceFinanceIncomeStreamDeleteMutation = { admin: { adminFinancesIncomeStreamsDelete: { success: boolean } } };
+export type GqlCWorkspaceFinancesIncomeStreamsDeleteMutation = { admin: { adminFinancesIncomeStreamsDelete: { success: boolean } } };
 
 export type GqlCWorkspaceFitnessExerciseFragment = {
     exerciseId: string;
@@ -5597,7 +5597,7 @@ export type GqlCWorkspaceProjectRequestDeleteMutationVariables = Exact<{
 
 export type GqlCWorkspaceProjectRequestDeleteMutation = { admin: { adminProjectRequestDelete: { success: boolean } } };
 
-export type GqlCWorkspaceProjectUpsertMutationVariables = Exact<{
+export type GqlCWorkspaceProjectsUpsertMutationVariables = Exact<{
     projectId?: string | null | undefined;
     title: string;
     description?: string | null | undefined;
@@ -5609,7 +5609,7 @@ export type GqlCWorkspaceProjectUpsertMutationVariables = Exact<{
     completedAt?: string | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectUpsertMutation = {
+export type GqlCWorkspaceProjectsUpsertMutation = {
     admin: { adminProjectsUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
@@ -5619,7 +5619,7 @@ export type GqlCWorkspaceProjectReorderMutationVariables = Exact<{
 
 export type GqlCWorkspaceProjectReorderMutation = { admin: { adminProjectReorder: { success: boolean } } };
 
-export type GqlCWorkspaceProjectActivityUpsertMutationVariables = Exact<{
+export type GqlCWorkspaceProjectActivitiesUpsertMutationVariables = Exact<{
     activityId?: string | null | undefined;
     projectId: string;
     taskId?: string | null | undefined;
@@ -5631,15 +5631,15 @@ export type GqlCWorkspaceProjectActivityUpsertMutationVariables = Exact<{
     durationSec?: number | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectActivityUpsertMutation = {
+export type GqlCWorkspaceProjectActivitiesUpsertMutation = {
     admin: { adminProjectActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceProjectActivityDeleteMutationVariables = Exact<{
+export type GqlCWorkspaceProjectActivitiesDeleteMutationVariables = Exact<{
     activityId: string;
 }>;
 
-export type GqlCWorkspaceProjectActivityDeleteMutation = { admin: { adminProjectActivitiesDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectActivitiesDeleteMutation = { admin: { adminProjectActivitiesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceProjectDetailUserFragment = {
     admin: {
@@ -5988,7 +5988,7 @@ export type GqlCWorkspaceProjectDetailDeleteProjectMutationVariables = Exact<{
 
 export type GqlCWorkspaceProjectDetailDeleteProjectMutation = { admin: { adminProjectsDelete: { success: boolean } } };
 
-export type GqlCWorkspaceProjectDetailUpsertTaskMutationVariables = Exact<{
+export type GqlCWorkspaceProjectDetailUpsertTasksMutationVariables = Exact<{
     taskId?: string | null | undefined;
     projectId?: string | null | undefined;
     title: string;
@@ -6001,17 +6001,17 @@ export type GqlCWorkspaceProjectDetailUpsertTaskMutationVariables = Exact<{
     whenBucket?: Schema.GqlCAdminProjectTaskWhenBucket | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectDetailUpsertTaskMutation = {
+export type GqlCWorkspaceProjectDetailUpsertTasksMutation = {
     admin: { adminProjectTasksUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceProjectDetailDeleteTaskMutationVariables = Exact<{
+export type GqlCWorkspaceProjectDetailDeleteTasksMutationVariables = Exact<{
     taskId: string;
 }>;
 
-export type GqlCWorkspaceProjectDetailDeleteTaskMutation = { admin: { adminProjectTasksDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectDetailDeleteTasksMutation = { admin: { adminProjectTasksDelete: { success: boolean } } };
 
-export type GqlCWorkspaceProjectDetailUpsertActivityMutationVariables = Exact<{
+export type GqlCWorkspaceProjectDetailUpsertActivitiesMutationVariables = Exact<{
     activityId?: string | null | undefined;
     projectId: string;
     taskId?: string | null | undefined;
@@ -6034,33 +6034,33 @@ export type GqlCWorkspaceProjectDetailUpsertActivityMutationVariables = Exact<{
     attachFilePinned?: boolean | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectDetailUpsertActivityMutation = {
+export type GqlCWorkspaceProjectDetailUpsertActivitiesMutation = {
     admin: { adminProjectActivitiesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceProjectDetailDeleteActivityMutationVariables = Exact<{
+export type GqlCWorkspaceProjectDetailDeleteActivitiesMutationVariables = Exact<{
     activityId: string;
 }>;
 
-export type GqlCWorkspaceProjectDetailDeleteActivityMutation = { admin: { adminProjectActivitiesDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectDetailDeleteActivitiesMutation = { admin: { adminProjectActivitiesDelete: { success: boolean } } };
 
-export type GqlCWorkspaceProjectDetailTimerStartMutationVariables = Exact<{
+export type GqlCWorkspaceProjectDetailTimersStartMutationVariables = Exact<{
     projectId: string;
     taskId?: string | null | undefined;
     title?: string | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectDetailTimerStartMutation = {
+export type GqlCWorkspaceProjectDetailTimersStartMutation = {
     admin: { adminProjectTimersStart: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceProjectDetailTimerStopMutationVariables = Exact<{
+export type GqlCWorkspaceProjectDetailTimersStopMutationVariables = Exact<{
     activityId: string;
 }>;
 
-export type GqlCWorkspaceProjectDetailTimerStopMutation = { admin: { adminProjectTimersStop: { success: boolean } } };
+export type GqlCWorkspaceProjectDetailTimersStopMutation = { admin: { adminProjectTimersStop: { success: boolean } } };
 
-export type GqlCWorkspaceProjectLinkUpsertMutationVariables = Exact<{
+export type GqlCWorkspaceProjectLinksUpsertMutationVariables = Exact<{
     projectLinkId?: string | null | undefined;
     projectId: string;
     activityId?: string | null | undefined;
@@ -6070,17 +6070,17 @@ export type GqlCWorkspaceProjectLinkUpsertMutationVariables = Exact<{
     pinned?: boolean | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectLinkUpsertMutation = {
+export type GqlCWorkspaceProjectLinksUpsertMutation = {
     admin: { adminProjectLinksUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceProjectLinkDeleteMutationVariables = Exact<{
+export type GqlCWorkspaceProjectLinksDeleteMutationVariables = Exact<{
     projectLinkId: string;
 }>;
 
-export type GqlCWorkspaceProjectLinkDeleteMutation = { admin: { adminProjectLinksDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectLinksDeleteMutation = { admin: { adminProjectLinksDelete: { success: boolean } } };
 
-export type GqlCWorkspaceProjectFileUpsertMutationVariables = Exact<{
+export type GqlCWorkspaceProjectFilesUpsertMutationVariables = Exact<{
     projectFileId?: string | null | undefined;
     projectId: string;
     activityId?: string | null | undefined;
@@ -6090,15 +6090,15 @@ export type GqlCWorkspaceProjectFileUpsertMutationVariables = Exact<{
     pinned?: boolean | null | undefined;
 }>;
 
-export type GqlCWorkspaceProjectFileUpsertMutation = {
+export type GqlCWorkspaceProjectFilesUpsertMutation = {
     admin: { adminProjectFilesUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceProjectFileDeleteMutationVariables = Exact<{
+export type GqlCWorkspaceProjectFilesDeleteMutationVariables = Exact<{
     projectFileId: string;
 }>;
 
-export type GqlCWorkspaceProjectFileDeleteMutation = { admin: { adminProjectFilesDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectFilesDeleteMutation = { admin: { adminProjectFilesDelete: { success: boolean } } };
 
 export type GqlCWorkspaceSoftwarePageQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -6496,7 +6496,7 @@ export type GqlCWorkspaceTodosPageUpdatesSubscription = {
     };
 };
 
-export type GqlCWorkspaceTodoUpsertMutationVariables = Exact<{
+export type GqlCWorkspaceProjectTasksUpsertMutationVariables = Exact<{
     taskId?: string | null | undefined;
     title: string;
     notes?: string | null | undefined;
@@ -6508,15 +6508,15 @@ export type GqlCWorkspaceTodoUpsertMutationVariables = Exact<{
     whenBucket?: Schema.GqlCAdminProjectTaskWhenBucket | null | undefined;
 }>;
 
-export type GqlCWorkspaceTodoUpsertMutation = {
+export type GqlCWorkspaceProjectTasksUpsertMutation = {
     admin: { adminProjectTasksUpsert: { success: boolean; referenceIds: Array<string> | null } };
 };
 
-export type GqlCWorkspaceTodoDeleteMutationVariables = Exact<{
+export type GqlCWorkspaceProjectTasksDeleteMutationVariables = Exact<{
     taskId: string;
 }>;
 
-export type GqlCWorkspaceTodoDeleteMutation = { admin: { adminProjectTasksDelete: { success: boolean } } };
+export type GqlCWorkspaceProjectTasksDeleteMutation = { admin: { adminProjectTasksDelete: { success: boolean } } };
 
 export type GqlCWorkspaceTravelPageUserFragment = {
     admin: {
@@ -14690,13 +14690,13 @@ export const WorkspaceFinancesPageUpdatesDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceFinancesPageUpdatesSubscription, GqlCWorkspaceFinancesPageUpdatesSubscriptionVariables>;
-export const WorkspaceFinanceRecurringCostUpsertDocument = {
+export const WorkspaceFinancesRecurringCostsUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceFinanceRecurringCostUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceFinancesRecurringCostsUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -14747,14 +14747,14 @@ export const WorkspaceFinanceRecurringCostUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceFinanceRecurringCostUpsertMutation, GqlCWorkspaceFinanceRecurringCostUpsertMutationVariables>;
-export const WorkspaceFinanceRecurringCostDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceFinancesRecurringCostsUpsertMutation, GqlCWorkspaceFinancesRecurringCostsUpsertMutationVariables>;
+export const WorkspaceFinancesRecurringCostsDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceFinanceRecurringCostDelete' },
+            name: { kind: 'Name', value: 'WorkspaceFinancesRecurringCostsDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -14799,14 +14799,14 @@ export const WorkspaceFinanceRecurringCostDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceFinanceRecurringCostDeleteMutation, GqlCWorkspaceFinanceRecurringCostDeleteMutationVariables>;
-export const WorkspaceFinanceIncomeStreamUpsertDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceFinancesRecurringCostsDeleteMutation, GqlCWorkspaceFinancesRecurringCostsDeleteMutationVariables>;
+export const WorkspaceFinancesIncomeStreamsUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceFinanceIncomeStreamUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceFinancesIncomeStreamsUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -14857,14 +14857,14 @@ export const WorkspaceFinanceIncomeStreamUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceFinanceIncomeStreamUpsertMutation, GqlCWorkspaceFinanceIncomeStreamUpsertMutationVariables>;
-export const WorkspaceFinanceIncomeStreamDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceFinancesIncomeStreamsUpsertMutation, GqlCWorkspaceFinancesIncomeStreamsUpsertMutationVariables>;
+export const WorkspaceFinancesIncomeStreamsDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceFinanceIncomeStreamDelete' },
+            name: { kind: 'Name', value: 'WorkspaceFinancesIncomeStreamsDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -14909,7 +14909,7 @@ export const WorkspaceFinanceIncomeStreamDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceFinanceIncomeStreamDeleteMutation, GqlCWorkspaceFinanceIncomeStreamDeleteMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceFinancesIncomeStreamsDeleteMutation, GqlCWorkspaceFinancesIncomeStreamsDeleteMutationVariables>;
 export const WorkspaceFitnessPageDocument = {
     kind: 'Document',
     definitions: [
@@ -20091,13 +20091,13 @@ export const WorkspaceProjectRequestDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectRequestDeleteMutation, GqlCWorkspaceProjectRequestDeleteMutationVariables>;
-export const WorkspaceProjectUpsertDocument = {
+export const WorkspaceProjectsUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceProjectsUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -20236,7 +20236,7 @@ export const WorkspaceProjectUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectUpsertMutation, GqlCWorkspaceProjectUpsertMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceProjectsUpsertMutation, GqlCWorkspaceProjectsUpsertMutationVariables>;
 export const WorkspaceProjectReorderDocument = {
     kind: 'Document',
     definitions: [
@@ -20289,13 +20289,13 @@ export const WorkspaceProjectReorderDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectReorderMutation, GqlCWorkspaceProjectReorderMutationVariables>;
-export const WorkspaceProjectActivityUpsertDocument = {
+export const WorkspaceProjectActivitiesUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectActivityUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceProjectActivitiesUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -20431,14 +20431,14 @@ export const WorkspaceProjectActivityUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectActivityUpsertMutation, GqlCWorkspaceProjectActivityUpsertMutationVariables>;
-export const WorkspaceProjectActivityDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectActivitiesUpsertMutation, GqlCWorkspaceProjectActivitiesUpsertMutationVariables>;
+export const WorkspaceProjectActivitiesDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectActivityDelete' },
+            name: { kind: 'Name', value: 'WorkspaceProjectActivitiesDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -20480,7 +20480,7 @@ export const WorkspaceProjectActivityDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectActivityDeleteMutation, GqlCWorkspaceProjectActivityDeleteMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceProjectActivitiesDeleteMutation, GqlCWorkspaceProjectActivitiesDeleteMutationVariables>;
 export const WorkspaceProjectDetailDocument = {
     kind: 'Document',
     definitions: [
@@ -21185,13 +21185,13 @@ export const WorkspaceProjectDetailDeleteProjectDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceProjectDetailDeleteProjectMutation, GqlCWorkspaceProjectDetailDeleteProjectMutationVariables>;
-export const WorkspaceProjectDetailUpsertTaskDocument = {
+export const WorkspaceProjectDetailUpsertTasksDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpsertTask' },
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpsertTasks' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -21337,14 +21337,14 @@ export const WorkspaceProjectDetailUpsertTaskDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUpsertTaskMutation, GqlCWorkspaceProjectDetailUpsertTaskMutationVariables>;
-export const WorkspaceProjectDetailDeleteTaskDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUpsertTasksMutation, GqlCWorkspaceProjectDetailUpsertTasksMutationVariables>;
+export const WorkspaceProjectDetailDeleteTasksDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectDetailDeleteTask' },
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailDeleteTasks' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -21386,14 +21386,14 @@ export const WorkspaceProjectDetailDeleteTaskDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectDetailDeleteTaskMutation, GqlCWorkspaceProjectDetailDeleteTaskMutationVariables>;
-export const WorkspaceProjectDetailUpsertActivityDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailDeleteTasksMutation, GqlCWorkspaceProjectDetailDeleteTasksMutationVariables>;
+export const WorkspaceProjectDetailUpsertActivitiesDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpsertActivity' },
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailUpsertActivities' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -21660,14 +21660,17 @@ export const WorkspaceProjectDetailUpsertActivityDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectDetailUpsertActivityMutation, GqlCWorkspaceProjectDetailUpsertActivityMutationVariables>;
-export const WorkspaceProjectDetailDeleteActivityDocument = {
+} as unknown as DocumentNode<
+    GqlCWorkspaceProjectDetailUpsertActivitiesMutation,
+    GqlCWorkspaceProjectDetailUpsertActivitiesMutationVariables
+>;
+export const WorkspaceProjectDetailDeleteActivitiesDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectDetailDeleteActivity' },
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailDeleteActivities' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -21709,14 +21712,17 @@ export const WorkspaceProjectDetailDeleteActivityDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectDetailDeleteActivityMutation, GqlCWorkspaceProjectDetailDeleteActivityMutationVariables>;
-export const WorkspaceProjectDetailTimerStartDocument = {
+} as unknown as DocumentNode<
+    GqlCWorkspaceProjectDetailDeleteActivitiesMutation,
+    GqlCWorkspaceProjectDetailDeleteActivitiesMutationVariables
+>;
+export const WorkspaceProjectDetailTimersStartDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectDetailTimerStart' },
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailTimersStart' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -21792,14 +21798,14 @@ export const WorkspaceProjectDetailTimerStartDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectDetailTimerStartMutation, GqlCWorkspaceProjectDetailTimerStartMutationVariables>;
-export const WorkspaceProjectDetailTimerStopDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailTimersStartMutation, GqlCWorkspaceProjectDetailTimersStartMutationVariables>;
+export const WorkspaceProjectDetailTimersStopDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectDetailTimerStop' },
+            name: { kind: 'Name', value: 'WorkspaceProjectDetailTimersStop' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -21841,14 +21847,14 @@ export const WorkspaceProjectDetailTimerStopDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectDetailTimerStopMutation, GqlCWorkspaceProjectDetailTimerStopMutationVariables>;
-export const WorkspaceProjectLinkUpsertDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectDetailTimersStopMutation, GqlCWorkspaceProjectDetailTimersStopMutationVariables>;
+export const WorkspaceProjectLinksUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectLinkUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceProjectLinksUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -21964,14 +21970,14 @@ export const WorkspaceProjectLinkUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectLinkUpsertMutation, GqlCWorkspaceProjectLinkUpsertMutationVariables>;
-export const WorkspaceProjectLinkDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectLinksUpsertMutation, GqlCWorkspaceProjectLinksUpsertMutationVariables>;
+export const WorkspaceProjectLinksDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectLinkDelete' },
+            name: { kind: 'Name', value: 'WorkspaceProjectLinksDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -22013,14 +22019,14 @@ export const WorkspaceProjectLinkDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectLinkDeleteMutation, GqlCWorkspaceProjectLinkDeleteMutationVariables>;
-export const WorkspaceProjectFileUpsertDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectLinksDeleteMutation, GqlCWorkspaceProjectLinksDeleteMutationVariables>;
+export const WorkspaceProjectFilesUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectFileUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceProjectFilesUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -22136,14 +22142,14 @@ export const WorkspaceProjectFileUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectFileUpsertMutation, GqlCWorkspaceProjectFileUpsertMutationVariables>;
-export const WorkspaceProjectFileDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectFilesUpsertMutation, GqlCWorkspaceProjectFilesUpsertMutationVariables>;
+export const WorkspaceProjectFilesDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceProjectFileDelete' },
+            name: { kind: 'Name', value: 'WorkspaceProjectFilesDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -22185,7 +22191,7 @@ export const WorkspaceProjectFileDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceProjectFileDeleteMutation, GqlCWorkspaceProjectFileDeleteMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceProjectFilesDeleteMutation, GqlCWorkspaceProjectFilesDeleteMutationVariables>;
 export const WorkspaceSoftwarePageDocument = {
     kind: 'Document',
     definitions: [
@@ -23320,13 +23326,13 @@ export const WorkspaceTodosPageUpdatesDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceTodosPageUpdatesSubscription, GqlCWorkspaceTodosPageUpdatesSubscriptionVariables>;
-export const WorkspaceTodoUpsertDocument = {
+export const WorkspaceProjectTasksUpsertDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTodoUpsert' },
+            name: { kind: 'Name', value: 'WorkspaceProjectTasksUpsert' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -23467,14 +23473,14 @@ export const WorkspaceTodoUpsertDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTodoUpsertMutation, GqlCWorkspaceTodoUpsertMutationVariables>;
-export const WorkspaceTodoDeleteDocument = {
+} as unknown as DocumentNode<GqlCWorkspaceProjectTasksUpsertMutation, GqlCWorkspaceProjectTasksUpsertMutationVariables>;
+export const WorkspaceProjectTasksDeleteDocument = {
     kind: 'Document',
     definitions: [
         {
             kind: 'OperationDefinition',
             operation: 'mutation',
-            name: { kind: 'Name', value: 'WorkspaceTodoDelete' },
+            name: { kind: 'Name', value: 'WorkspaceProjectTasksDelete' },
             variableDefinitions: [
                 {
                     kind: 'VariableDefinition',
@@ -23516,7 +23522,7 @@ export const WorkspaceTodoDeleteDocument = {
             },
         },
     ],
-} as unknown as DocumentNode<GqlCWorkspaceTodoDeleteMutation, GqlCWorkspaceTodoDeleteMutationVariables>;
+} as unknown as DocumentNode<GqlCWorkspaceProjectTasksDeleteMutation, GqlCWorkspaceProjectTasksDeleteMutationVariables>;
 export const WorkspaceTravelPageDocument = {
     kind: 'Document',
     definitions: [

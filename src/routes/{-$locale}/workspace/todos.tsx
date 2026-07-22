@@ -38,10 +38,10 @@ import type {
     GqlCWorkspaceTodosPageUserFragment,
 } from '../../../web/graphql/generated';
 import {
-    WorkspaceTodoDeleteDocument,
+    WorkspaceProjectTasksDeleteDocument,
     WorkspaceTodosPageDocument,
     WorkspaceTodosPageUpdatesDocument,
-    WorkspaceTodoUpsertDocument,
+    WorkspaceProjectTasksUpsertDocument,
 } from '../../../web/graphql/generated';
 import { useHotkeys } from '../../../web/hooks/useHotkeys';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
@@ -589,7 +589,7 @@ function InlineComposer({
     filter: FilterKey;
     onCreated: (created: { whenBucket: GqlCAdminProjectTaskWhenBucket | null }) => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceTodoUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectTasksUpsertDocument);
     const [value, setValue] = useState('');
     const [effortPick, setEffortPick] = useState<GqlCAdminProjectTaskEffort | null>(null);
     const [busy, setBusy] = useState(false);
@@ -759,8 +759,8 @@ function TodoRow({
     editing: boolean;
     onEditingChange: (open: boolean) => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceTodoUpsertDocument);
-    const [, del] = useMutation(WorkspaceTodoDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceProjectTasksUpsertDocument);
+    const [, del] = useMutation(WorkspaceProjectTasksDeleteDocument);
     const [completing, setCompleting] = useState(false);
 
     const complete = useCallback(async () => {
@@ -977,7 +977,7 @@ function TaskForm({
     onClose: () => void;
     onSaved: () => void;
 }) {
-    const [, upsert] = useMutation(WorkspaceTodoUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectTasksUpsertDocument);
     const [form, setForm] = useState({
         title: task?.title ?? '',
         notes: task?.notes ?? '',
@@ -1107,8 +1107,8 @@ function Field({ label, children, fullWidth }: { label: string; children: React.
 // Groups all completed rows by day (Heute / Gestern / earlier days as
 // `dd.MM.yyyy`). Rendered when the `Erledigt` filter chip is active.
 function DoneList({ rows, locale }: { rows: ReadonlyArray<TaskRow>; locale: Locale }) {
-    const [, upsert] = useMutation(WorkspaceTodoUpsertDocument);
-    const [, del] = useMutation(WorkspaceTodoDeleteDocument);
+    const [, upsert] = useMutation(WorkspaceProjectTasksUpsertDocument);
+    const [, del] = useMutation(WorkspaceProjectTasksDeleteDocument);
 
     const groups = useMemo(() => groupDoneByDay(rows, locale), [rows, locale]);
 
@@ -1256,7 +1256,7 @@ function EmptyReward({ locale, doneTodayCount, onFocus }: { locale: Locale; done
 // --- Focus mode -------------------------------------------------------------
 
 function FocusModeView({ row, locale, onExit }: { row: TaskRow; locale: Locale; onExit: () => void }) {
-    const [, upsert] = useMutation(WorkspaceTodoUpsertDocument);
+    const [, upsert] = useMutation(WorkspaceProjectTasksUpsertDocument);
     const [completing, setCompleting] = useState(false);
 
     const complete = useCallback(async () => {

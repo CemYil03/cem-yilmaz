@@ -17,7 +17,7 @@ import type {
     GqlCAdminProjectActivityKind,
     GqlCAdminProjectOfferStatus,
 } from '../graphql/generated';
-import { WorkspaceProjectDetailUpsertActivityDocument } from '../graphql/generated';
+import { WorkspaceProjectDetailUpsertActivitiesDocument } from '../graphql/generated';
 import {
     ACTIVITY_CHANNEL_LABELS,
     ACTIVITY_CHANNEL_ORDER,
@@ -53,7 +53,7 @@ export function WorkspaceProjectActivityComposer({
     onSaved: () => void;
 }) {
     const isEdit = activity !== null;
-    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertActivityDocument);
+    const [, upsert] = useMutation(WorkspaceProjectDetailUpsertActivitiesDocument);
     const [kind, setKind] = useState<GqlCAdminProjectActivityKind>(
         activity?.kind === 'work' ? 'note' : (activity?.kind ?? 'clientContact'),
     );
