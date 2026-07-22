@@ -12,27 +12,31 @@ holdings, trading, bank import) are out of scope until this base surface earns i
 - **Period switch** — canonical top-of-page underlined section tabs (see [conventions.md](../conventions.md#top-of-page-sub-view-switcher)):
   **Monthly** (default) vs **Yearly**. Lives in the URL as `?period=yearly`; the default drops the key so the canonical landing URL has no
   query string. The switch scales every number on the page — summary cards, Sankey flows, per-item projections, category subtotals — nothing
-  else moves. The "New cost" button sits on the same row.
+  else moves.
 - **Period summary** — two glass tiles directly under the period tabs, above the Sankey: **Income** (sum of active streams, period-scaled,
   with leftover / over-income subtitle) and **Payments** (sum of active recurring costs). Only the active period is shown — no parallel
   monthly + yearly pair.
 - **Sankey** — aggregated income → categories → items. Wrapped in a `GlassCard`, drawn as inline SVG using `d3-sankey` for the layout math
-  (no chart library shell — see below). Categories and items are ordered by volume descending (largest at the top). Hovering a flow shows
-  the flow's amount as a native SVG `<title>` tooltip.
-- **Income streams list** — every income stream (salary, freelance, …) as flat amount-first rows: name (+ paused badge), cadence/amount
-  meta, optional date range / notes, projected amount at the current period, hover edit / delete. "Add income" in the section header.
-- **Grouped expense list** — every recurring cost grouped by category (`housing`, `connectivity`, `transport`, `insurance`,
-  `subscriptionsEntertainment`, `subscriptionsWork`, `memberships`, `donations`, `household`, `savingsGeneral`, `savingsVacation`, `other`).
-  Flat list rows (no nested glass cards) sorted by projected amount within each group. Inactive rows stay at reduced opacity with a "Paused"
-  badge — they don't count toward totals or the Sankey.
-- **Empty state** replaces the expense list when there are zero cost rows, with a "Add the first cost" call to action.
+  (no chart library shell — see below). Categories and items are ordered by volume descending (largest at the top). Each category (and its
+  flows / items) gets a distinct `chart-2…5` / `chart-1` slot so adjacent bands read apart; income stays on brand `chart-1`. Hovering a flow
+  shows the flow's amount as a native SVG `<title>` tooltip.
+- **Income streams list** — every income stream (salary, freelance, …) as flat amount-first rows: name (+ paused badge), optional cadence
+  meta (only when the stream's cadence differs from the page period), optional date range / notes, projected amount at the current period,
+  edit / delete (always visible on small screens, hover on `sm+`). "Add income" in the section header.
+- **Recurring costs list** — section header with "Add cost" (mirrors income), then every recurring cost grouped by category (`housing`,
+  `connectivity`, `transport`, `insurance`, `subscriptionsEntertainment`, `subscriptionsWork`, `memberships`, `donations`, `household`,
+  `savingsGeneral`, `savingsVacation`, `other`). Flat list rows (no nested glass cards) sorted by projected amount within each group.
+  Inactive rows stay at reduced opacity with a "Paused" badge — they don't count toward totals or the Sankey. Cadence meta and the old
+  per-row "monthly / yearly" period label under the amount are omitted when they would only repeat the page period tab.
+- **Empty state** replaces the expense list body when there are zero cost rows, with a "Add the first cost" call to action (the section
+  header button remains available too).
 - **Dialogs** for new / edit income and cost. Cost fields: name (required), category, amount in EUR (required, positive), cadence (monthly /
   yearly), starts on / ends on (optional, informational — do not affect totals or the Sankey), notes, active. Income fields are the same
   minus category. Delete uses `AlertDialog` and warns that toggling `active` off is the softer alternative.
 
 Bilingual copy is inline `{ de, en }[locale]` at the call site per [conventions.md](../conventions.md#bilingual-copy). Only `title`,
-`description`, `CATEGORY_LABELS`, `CADENCE_LABELS`, and `PERIOD_LABELS` are hoisted — reused across `seoMeta()`, the Select options, and the
-tab labels.
+`description` (seoMeta only — not rendered as a page lead), `CATEGORY_LABELS`, `CADENCE_LABELS`, and `PERIOD_LABELS` are hoisted — reused
+across `seoMeta()`, the Select options, and the tab labels.
 
 ## Options considered
 
@@ -114,17 +118,19 @@ label + amount pairs stay readable when many thin nodes pack the right column. `
 leaves a ~180px right gutter so item labels sit outside the rightmost bars instead of sharing the middle gap with category labels (which was
 the main overlap failure mode).
 
-- Colours resolve via Tailwind semantic classes (`fill-primary`, `fill-primary/70`, `fill-muted-foreground/60`, `stroke-primary/25`), so
-  light / dark themes both work without a per-mode branch and no hard-coded `oklch(...)` values reach the component.
+- Colours resolve via Tailwind chart tokens (`fill-chart-1`…`fill-chart-5`, `stroke-chart-N/35`). Income stays on brand `chart-1`;
+  categories walk `chart-2…5` then `chart-1` in volume order so the largest band doesn't collide with income; items inherit their category's
+  slot at slightly lower opacity. Light / dark themes both work without a per-mode branch and no hard-coded `oklch(...)` values reach the
+  component.
 - `role="img"` + `aria-label` on the root SVG carry a one-line summary of the period and total for screen readers. Every rectangle and path
   also carries a native SVG `<title>` for hover tooltips.
 - No animation. The motion doc's guardrails call for animations that answer a question the user is already asking; a Sankey settling into
   place at page load doesn't. If the shape earns a fade-in later, wrap in `Reveal`.
 
 Data building lives in `buildSankey()` in the route file, not the component — the route knows the period toggle and the income total. It
-filters active cost rows, groups by `categoryKey`, sorts categories and items by projected amount descending, and emits nodes / links in
-three tiers: one `income` node (labelled with the income total when > 0, or "Expenses" with the cost total when not), one `category` node
-per non-empty category, one `item` node per active cost.
+filters active cost rows, groups by `categoryKey`, sorts categories and items by projected amount descending, assigns a chart color per
+category, and emits nodes / links in three tiers: one `income` node (labelled with the income total when > 0, or "Expenses" with the cost
+total when not), one `category` node per non-empty category, one `item` node per active cost.
 
 ### Period math
 

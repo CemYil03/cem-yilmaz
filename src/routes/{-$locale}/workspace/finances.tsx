@@ -45,7 +45,7 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
-import type { FinancesSankeyInputLink, FinancesSankeyInputNode } from '../../../web/components/FinancesSankey';
+import type { FinancesSankeyColor, FinancesSankeyInputLink, FinancesSankeyInputNode } from '../../../web/components/FinancesSankey';
 import { FinancesSankey } from '../../../web/components/FinancesSankey';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
@@ -194,14 +194,8 @@ function FinancesArea() {
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
-            <p className="text-sm text-muted-foreground">{description[locale]}</p>
-
-            <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-border/60">
+            <div className="border-b border-border/60">
                 <PeriodChips period={period} locale={locale} />
-                <Button size="sm" onClick={() => setEditingCost('new')} className="mb-1">
-                    <PlusIcon className="size-4" />
-                    {{ de: 'Neue Position', en: 'New cost' }[locale]}
-                </Button>
             </div>
 
             <PeriodSummary incomeCents={incomeCents} expensesCents={expensesCents} locale={locale} />
@@ -221,19 +215,14 @@ function FinancesArea() {
                 onDelete={setDeletingIncome}
             />
 
-            <div className="mt-10">
-                {finances.adminFinancesRecurringCostFindMany.length === 0 ? (
-                    <EmptyState locale={locale} onNew={() => setEditingCost('new')} />
-                ) : (
-                    <GroupedList
-                        costs={finances.adminFinancesRecurringCostFindMany}
-                        period={period}
-                        locale={locale}
-                        onEdit={setEditingCost}
-                        onDelete={setDeletingCost}
-                    />
-                )}
-            </div>
+            <RecurringCostsSection
+                costs={finances.adminFinancesRecurringCostFindMany}
+                period={period}
+                locale={locale}
+                onNew={() => setEditingCost('new')}
+                onEdit={setEditingCost}
+                onDelete={setDeletingCost}
+            />
 
             {editingCost !== null ? (
                 <EditCostDialog initial={editingCost === 'new' ? null : editingCost} locale={locale} onClose={() => setEditingCost(null)} />
@@ -261,17 +250,17 @@ function PeriodSummary({ incomeCents, expensesCents, locale }: { incomeCents: nu
     return (
         <section className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
             <GlassCard className="px-5 py-4">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">{{ de: 'Einkommen', en: 'Income' }[locale]}</div>
+                <div className="text-xs uppercase tracking-wider text-foreground/60">{{ de: 'Einkommen', en: 'Income' }[locale]}</div>
                 <div className="mt-1 text-2xl font-semibold tabular-nums">
                     {hasIncome ? (
                         formatCurrency(incomeCents, { locale, maximumFractionDigits: 0 })
                     ) : (
-                        <span className="text-muted-foreground text-base font-normal">
+                        <span className="text-foreground/65 text-base font-normal">
                             {{ de: 'Keine aktiven Ströme', en: 'No active streams' }[locale]}
                         </span>
                     )}
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground tabular-nums">
+                <div className="mt-1 text-xs text-foreground/65 tabular-nums">
                     {!hasIncome
                         ? { de: 'Lege unten einen Einkommensstrom an.', en: 'Add an income stream below.' }[locale]
                         : leftoverCents >= 0
@@ -286,11 +275,11 @@ function PeriodSummary({ incomeCents, expensesCents, locale }: { incomeCents: nu
                 </div>
             </GlassCard>
             <GlassCard className="px-5 py-4">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">{{ de: 'Zahlungen', en: 'Payments' }[locale]}</div>
+                <div className="text-xs uppercase tracking-wider text-foreground/60">{{ de: 'Zahlungen', en: 'Payments' }[locale]}</div>
                 <div className="mt-1 text-2xl font-semibold tabular-nums">
                     {formatCurrency(expensesCents, { locale, maximumFractionDigits: 0 })}
                 </div>
-                <div className="mt-1 text-xs text-muted-foreground">
+                <div className="mt-1 text-xs text-foreground/65">
                     {{ de: 'Summe aller aktiven Positionen', en: 'Sum of every active cost' }[locale]}
                 </div>
             </GlassCard>
@@ -397,19 +386,18 @@ function IncomeStreamsSection({
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
                 <h2
                     id="finances-income-streams"
-                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider"
+                    className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider"
                 >
                     <WalletIcon className="size-4" aria-hidden />
                     {{ de: 'Einkommensströme', en: 'Income streams' }[locale]}
-                    <span className="text-xs normal-case tracking-normal">
+                    <span className="text-xs font-medium normal-case tracking-normal text-foreground/60">
                         {{ de: `${streams.length} Ströme`, en: `${streams.length} streams` }[locale]}
                     </span>
                 </h2>
                 <div className="flex items-center gap-3">
                     {streams.length > 0 ? (
-                        <div className="text-xs tabular-nums text-muted-foreground">
-                            {formatCurrency(activeTotal, { locale, maximumFractionDigits: 0 })} ·{' '}
-                            {PERIOD_LABELS[period][locale].toLowerCase()}
+                        <div className="text-xs tabular-nums text-foreground/60">
+                            {formatCurrency(activeTotal, { locale, maximumFractionDigits: 0 })}
                         </div>
                     ) : null}
                     <Button size="sm" variant="outline" onClick={onNew}>
@@ -419,7 +407,7 @@ function IncomeStreamsSection({
                 </div>
             </div>
             {streams.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-foreground/65">
                     {
                         {
                             de: 'Noch keine Einkommensströme — Gehalt, Freelance oder anderes.',
@@ -459,37 +447,39 @@ function IncomeRowItem({
     onDelete: (stream: IncomeRow) => void;
 }) {
     const projected = projectedCents(stream, period);
+    // Cadence meta only when it differs from the page period — otherwise
+    // "3.500 € · monatlich" next to a monthly tab is noise.
+    const showCadence = stream.cadence !== period;
     return (
-        <li className={cn('group flex items-center gap-4 py-3', !stream.active && 'opacity-60')}>
+        <li className={cn('group flex items-center gap-3 py-3 sm:gap-4', !stream.active && 'opacity-60')}>
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate font-medium">{stream.name}</span>
+                    <span className="truncate font-medium text-foreground">{stream.name}</span>
                     {!stream.active ? (
-                        <span className="shrink-0 rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
                             {{ de: 'Pausiert', en: 'Paused' }[locale]}
                         </span>
                     ) : null}
                 </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                        <RepeatIcon className="size-3" aria-hidden />
-                        {formatCurrency(stream.amountCents, { locale, maximumFractionDigits: 0 })} ·{' '}
-                        {CADENCE_LABELS[stream.cadence][locale]}
-                    </span>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-foreground/65">
+                    {showCadence ? (
+                        <span className="inline-flex items-center gap-1">
+                            <RepeatIcon className="size-3" aria-hidden />
+                            {formatCurrency(stream.amountCents, { locale, maximumFractionDigits: 0 })} ·{' '}
+                            {CADENCE_LABELS[stream.cadence][locale]}
+                        </span>
+                    ) : null}
                     {stream.startsOn || stream.endsOn ? (
                         <span>{formatDateRange(stream.startsOn, stream.endsOn, { locale, openEnded: true })}</span>
                     ) : null}
                     {stream.notes ? <span className="truncate max-w-xs">{stream.notes}</span> : null}
                 </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-                <div className="text-right">
-                    <div className="text-base font-semibold tabular-nums">
-                        {formatCurrency(projected, { locale, maximumFractionDigits: 0 })}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground tabular-nums">{PERIOD_LABELS[period][locale].toLowerCase()}</div>
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                <div className="text-right text-base font-semibold tabular-nums text-foreground">
+                    {formatCurrency(projected, { locale, maximumFractionDigits: 0 })}
                 </div>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -514,7 +504,58 @@ function IncomeRowItem({
     );
 }
 
-// --- Grouped expense list ---------------------------------------------------
+// --- Recurring costs --------------------------------------------------------
+
+function RecurringCostsSection({
+    costs,
+    period,
+    locale,
+    onNew,
+    onEdit,
+    onDelete,
+}: {
+    costs: ReadonlyArray<CostRow>;
+    period: PeriodFilter;
+    locale: Locale;
+    onNew: () => void;
+    onEdit: (cost: CostRow) => void;
+    onDelete: (cost: CostRow) => void;
+}) {
+    const activeTotal = costs.filter((c) => c.active).reduce((sum, c) => sum + projectedCents(c, period), 0);
+
+    return (
+        <section className="mt-10" aria-labelledby="finances-recurring-costs">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+                <h2
+                    id="finances-recurring-costs"
+                    className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider"
+                >
+                    <CircleDollarSignIcon className="size-4" aria-hidden />
+                    {{ de: 'Positionen', en: 'Costs' }[locale]}
+                    <span className="text-xs font-medium normal-case tracking-normal text-foreground/60">
+                        {{ de: `${costs.length} Positionen`, en: `${costs.length} costs` }[locale]}
+                    </span>
+                </h2>
+                <div className="flex items-center gap-3">
+                    {costs.length > 0 ? (
+                        <div className="text-xs tabular-nums text-foreground/60">
+                            {formatCurrency(activeTotal, { locale, maximumFractionDigits: 0 })}
+                        </div>
+                    ) : null}
+                    <Button size="sm" variant="outline" onClick={onNew}>
+                        <PlusIcon className="size-4" />
+                        {{ de: 'Position', en: 'Cost' }[locale]}
+                    </Button>
+                </div>
+            </div>
+            {costs.length === 0 ? (
+                <EmptyState locale={locale} onNew={onNew} />
+            ) : (
+                <GroupedList costs={costs} period={period} locale={locale} onEdit={onEdit} onDelete={onDelete} />
+            )}
+        </section>
+    );
+}
 
 function GroupedList({
     costs,
@@ -552,19 +593,18 @@ function GroupedList({
                 return (
                     <section key={group.key} aria-labelledby={`finances-cat-${group.key}`}>
                         <div className="mb-2 flex items-baseline justify-between gap-3">
-                            <h2
+                            <h3
                                 id={`finances-cat-${group.key}`}
-                                className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wider"
+                                className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider"
                             >
                                 <Icon className="size-4" aria-hidden />
                                 {CATEGORY_LABELS[group.key][locale]}
-                                <span className="text-xs normal-case tracking-normal">
+                                <span className="text-xs font-medium normal-case tracking-normal text-foreground/60">
                                     {{ de: `${group.costs.length} Positionen`, en: `${group.costs.length} costs` }[locale]}
                                 </span>
-                            </h2>
-                            <div className="text-xs tabular-nums text-muted-foreground">
-                                {formatCurrency(group.total, { locale, maximumFractionDigits: 0 })} ·{' '}
-                                {PERIOD_LABELS[period][locale].toLowerCase()}
+                            </h3>
+                            <div className="text-xs tabular-nums text-foreground/60">
+                                {formatCurrency(group.total, { locale, maximumFractionDigits: 0 })}
                             </div>
                         </div>
                         <ul className="divide-y divide-border/60 border-y border-border/60">
@@ -600,36 +640,37 @@ function CostRowItem({
     onDelete: (cost: CostRow) => void;
 }) {
     const projected = projectedCents(cost, period);
+    const showCadence = cost.cadence !== period;
     return (
-        <li className={cn('group flex items-center gap-4 py-3', !cost.active && 'opacity-60')}>
+        <li className={cn('group flex items-center gap-3 py-3 sm:gap-4', !cost.active && 'opacity-60')}>
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate font-medium">{cost.name}</span>
+                    <span className="truncate font-medium text-foreground">{cost.name}</span>
                     {!cost.active ? (
-                        <span className="shrink-0 rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-foreground/70">
                             {{ de: 'Pausiert', en: 'Paused' }[locale]}
                         </span>
                     ) : null}
                 </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                        <RepeatIcon className="size-3" aria-hidden />
-                        {formatCurrency(cost.amountCents, { locale, maximumFractionDigits: 0 })} · {CADENCE_LABELS[cost.cadence][locale]}
-                    </span>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-foreground/65">
+                    {showCadence ? (
+                        <span className="inline-flex items-center gap-1">
+                            <RepeatIcon className="size-3" aria-hidden />
+                            {formatCurrency(cost.amountCents, { locale, maximumFractionDigits: 0 })} ·{' '}
+                            {CADENCE_LABELS[cost.cadence][locale]}
+                        </span>
+                    ) : null}
                     {cost.startsOn || cost.endsOn ? (
                         <span>{formatDateRange(cost.startsOn, cost.endsOn, { locale, openEnded: true })}</span>
                     ) : null}
                     {cost.notes ? <span className="truncate max-w-xs">{cost.notes}</span> : null}
                 </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-                <div className="text-right">
-                    <div className="text-base font-semibold tabular-nums">
-                        {formatCurrency(projected, { locale, maximumFractionDigits: 0 })}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground tabular-nums">{PERIOD_LABELS[period][locale].toLowerCase()}</div>
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+                <div className="text-right text-base font-semibold tabular-nums text-foreground">
+                    {formatCurrency(projected, { locale, maximumFractionDigits: 0 })}
                 </div>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -1065,9 +1106,9 @@ function DeleteIncomeAlert({ stream, locale, onClose }: { stream: IncomeRow; loc
 function EmptyState({ locale, onNew }: { locale: Locale; onNew: () => void }) {
     return (
         <GlassCard className="px-6 py-10 text-center">
-            <CircleDollarSignIcon className="mx-auto size-8 text-muted-foreground/60" aria-hidden />
-            <h2 className="mt-3 text-base font-semibold">{{ de: 'Noch keine Positionen', en: 'Nothing tracked yet' }[locale]}</h2>
-            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            <CircleDollarSignIcon className="mx-auto size-8 text-foreground/40" aria-hidden />
+            <h3 className="mt-3 text-base font-semibold">{{ de: 'Noch keine Positionen', en: 'Nothing tracked yet' }[locale]}</h3>
+            <p className="mx-auto mt-1 max-w-md text-sm text-foreground/65">
                 {
                     {
                         de: 'Erfasse Miete, Nebenkosten, Versicherungen, Abos und ähnliches — mit Betrag und Turnus. Der Rest kommt automatisch.',
@@ -1127,15 +1168,20 @@ function buildSankey(
 
     const categoriesSorted = [...byCategory.entries()].filter(([, entry]) => entry.total > 0).sort((a, b) => b[1].total - a[1].total);
 
-    for (const [key, entry] of categoriesSorted) {
+    // Walk chart-2…5 then chart-1 so the largest category doesn't share
+    // income's brand slot (chart-1). Cycle when there are more than five.
+    const categoryColors: FinancesSankeyColor[] = [2, 3, 4, 5, 1];
+    categoriesSorted.forEach(([key, entry], index) => {
+        const color = categoryColors[index % categoryColors.length] ?? 2;
         const categoryId = `category:${key}`;
         nodes.push({
             id: categoryId,
             kind: 'category',
             label: CATEGORY_LABELS[key][locale],
             sublabel: formatCurrency(entry.total, { locale, maximumFractionDigits: 0 }),
+            color,
         });
-        links.push({ source: incomeId, target: categoryId, valueCents: entry.total });
+        links.push({ source: incomeId, target: categoryId, valueCents: entry.total, color });
 
         const rowsSorted = [...entry.rows].sort((a, b) => projectedCents(b, period) - projectedCents(a, period));
         for (const row of rowsSorted) {
@@ -1146,10 +1192,11 @@ function buildSankey(
                 kind: 'item',
                 label: row.name,
                 sublabel: formatCurrency(amount, { locale, maximumFractionDigits: 0 }),
+                color,
             });
-            links.push({ source: categoryId, target: itemId, valueCents: amount });
+            links.push({ source: categoryId, target: itemId, valueCents: amount, color });
         }
-    }
+    });
 
     return { nodes, links, totalCents };
 }

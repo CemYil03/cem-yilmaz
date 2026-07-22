@@ -2,14 +2,18 @@ import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
 import { useMemo } from 'react';
 import { formatCurrency } from '../../shared';
 import type { Locale } from '../utils/locale';
+import { cn } from '../utils/cn';
 
 // Hand-rolled inline SVG Sankey for `/workspace/finances`. Same "no chart
 // library" posture as the inventory sparkline — d3-sankey does only the
 // layout math; every stroke, fill, and label is our SVG. Colors resolve via
-// Tailwind semantic classes so light / dark themes both work without a
-// per-mode branch. See `docs/features/workspace-finances.md`.
+// Tailwind chart tokens (`chart-1`…`chart-5`) so light / dark themes both
+// work without a per-mode branch. See `docs/features/workspace-finances.md`.
 
 type FinancesSankeyNodeKind = 'income' | 'category' | 'item';
+
+/** Theme chart slot — walk `chart-1`…`chart-5` per category. */
+export type FinancesSankeyColor = 1 | 2 | 3 | 4 | 5;
 
 export interface FinancesSankeyInputNode {
     id: string;
@@ -17,12 +21,16 @@ export interface FinancesSankeyInputNode {
     label: string;
     /** Free-form sublabel drawn below the main label (e.g. cadence). */
     sublabel?: string;
+    /** Chart color for category/item nodes; income stays on brand (`chart-1`). */
+    color?: FinancesSankeyColor;
 }
 
 export interface FinancesSankeyInputLink {
     source: string;
     target: string;
     valueCents: number;
+    /** Flow color — typically the category's chart slot. */
+    color?: FinancesSankeyColor;
 }
 
 interface FinancesSankeyProps {
@@ -46,6 +54,7 @@ interface LayoutLink {
     source: string | LayoutNode;
     target: string | LayoutNode;
     value: number;
+    color?: FinancesSankeyColor;
     width?: number;
     y0?: number;
     y1?: number;
@@ -64,11 +73,29 @@ const MARGIN_LEFT = 8;
 /** Room for item name + amount outside the rightmost column. */
 const MARGIN_RIGHT = 180;
 
-const NODE_KIND_CLASSES: Record<FinancesSankeyNodeKind, string> = {
-    income: 'fill-primary',
-    category: 'fill-primary/70',
-    item: 'fill-muted-foreground/60',
+const NODE_FILL: Record<FinancesSankeyColor, string> = {
+    1: 'fill-chart-1',
+    2: 'fill-chart-2',
+    3: 'fill-chart-3',
+    4: 'fill-chart-4',
+    5: 'fill-chart-5',
 };
+
+const LINK_STROKE: Record<FinancesSankeyColor, string> = {
+    1: 'stroke-chart-1/35 hover:stroke-chart-1/55',
+    2: 'stroke-chart-2/35 hover:stroke-chart-2/55',
+    3: 'stroke-chart-3/35 hover:stroke-chart-3/55',
+    4: 'stroke-chart-4/35 hover:stroke-chart-4/55',
+    5: 'stroke-chart-5/35 hover:stroke-chart-5/55',
+};
+
+function nodeFillClass(node: FinancesSankeyInputNode): string {
+    if (node.kind === 'income') return 'fill-chart-1';
+    const color = node.color ?? 1;
+    // Items sit a step lighter than their category so the flow reads L→R.
+    if (node.kind === 'item') return cn(NODE_FILL[color], 'opacity-75');
+    return NODE_FILL[color];
+}
 
 function heightFor(nodes: readonly FinancesSankeyInputNode[]): number {
     const itemCount = nodes.filter((node) => node.kind === 'item').length;
@@ -91,6 +118,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
             source: link.source,
             target: link.target,
             value: Math.max(link.valueCents, 1),
+            color: link.color,
         }));
 
         const generator = sankey<LayoutNode, LayoutLink>()
@@ -127,11 +155,12 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
                 {layout.links.map((link, index) => {
                     const d = linkPath(link);
                     if (!d) return null;
+                    const color = link.color ?? 1;
                     return (
                         <path
                             key={`link-${index}`}
                             d={d}
-                            className="fill-none stroke-primary/25 hover:stroke-primary/45 transition-colors"
+                            className={cn('fill-none transition-colors', LINK_STROKE[color])}
                             strokeWidth={Math.max(link.width ?? 1, 1)}
                         >
                             <title>{formatCurrency(link.value, { locale, maximumFractionDigits: 0 })}</title>
@@ -153,7 +182,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
                     const midY = y0 + nodeHeight / 2;
                     return (
                         <g key={`node-${node.id}`}>
-                            <rect x={x0} y={y0} width={x1 - x0} height={nodeHeight} rx={2} className={NODE_KIND_CLASSES[node.kind]}>
+                            <rect x={x0} y={y0} width={x1 - x0} height={nodeHeight} rx={2} className={nodeFillClass(node)}>
                                 <title>{`${node.label} — ${formatCurrency(node.value ?? 0, { locale, maximumFractionDigits: 0 })}`}</title>
                             </rect>
                             <text
@@ -166,7 +195,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
                                 {node.label}
                             </text>
                             {node.sublabel ? (
-                                <text x={labelX} y={midY + 10} dy="0.32em" textAnchor="start" className="fill-muted-foreground text-xs">
+                                <text x={labelX} y={midY + 10} dy="0.32em" textAnchor="start" className="fill-foreground/65 text-xs">
                                     {node.sublabel}
                                 </text>
                             ) : null}
