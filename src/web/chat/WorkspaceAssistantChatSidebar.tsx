@@ -101,7 +101,7 @@ export function WorkspaceAssistantChatSidebar({
             // they need. `!` beats the SheetContent's own classes; classes
             // are gated to `max-md:` so the desktop docked column (which
             // ignores className overrides here anyway) is unaffected.
-            className="max-md:!w-screen max-md:!max-w-none"
+            className="max-md:w-screen! max-md:max-w-none!"
         >
             {/* Left-edge resize handle. Hidden on mobile (the Sheet is full
              *  width on phones anyway). */}
@@ -150,7 +150,7 @@ export function WorkspaceAssistantChatSidebar({
                     // hidden below since a file view isn't a chat turn.
                     <WorkspaceFileEditor workspaceFileId={openFileId} onClose={closeFile} locale={locale} className="min-h-0 flex-1" />
                 ) : (
-                    <div className="flex min-h-0 flex-1 flex-col gap-1 px-4 pt-2 pb-0">
+                    <div className="flex min-h-0 flex-1 ps-2 flex-col gap-1 pt-2 pb-0">
                         {hasActiveChat ? (
                             <WorkspaceAssistantChatTranscript
                                 messages={allMessages}
