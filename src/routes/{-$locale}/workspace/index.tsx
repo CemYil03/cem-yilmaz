@@ -151,8 +151,8 @@ const PERSONAL_FOCUS_AREAS: ReadonlyArray<FocusArea> = [
     {
         to: '/{-$locale}/workspace/media',
         icon: FilmIcon,
-        title: { de: 'Filme & Serien', en: 'Movies & TV' },
-        description: { de: 'Watchlist und Gesehenes.', en: 'Watchlist and watched.' },
+        title: { de: 'Medien', en: 'Media' },
+        description: { de: 'Filme, Serien, YouTube, Podcasts.', en: 'Movies, series, YouTube, podcasts.' },
     },
     {
         to: '/{-$locale}/workspace/travel',

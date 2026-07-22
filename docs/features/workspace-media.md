@@ -1,10 +1,10 @@
-# Workspace media: Movies + Series + Channels
+# Workspace media: Movies + Series + YouTube + Podcasts
 
-`/workspace/media` is the admin's private library for three things: a **movie watchlist** (want-to-watch / watching / watched / dropped,
-with posters and ratings), a **TV series library** (same status vocabulary, plus completed / next-season tracking), and a
-**favourite-channels list** (YouTube / Twitch / podcast, filterable by topic and platform). The channels list is the single source of truth
-for cross-view reads — `/workspace/software` renders the subset tagged `tech` as its "Favourite tech channels" section without duplicating
-rows.
+`/workspace/media` is the admin's private library for four things: a **movie watchlist** (want-to-watch / watching / watched / dropped, with
+posters and ratings), a **TV series library** (same status vocabulary, plus completed / next-season tracking), a **YouTube channels** list,
+and a **podcasts** list. YouTube and podcasts share the `AdminMediaChannel` table and are filtered by `platform` into separate tabs. The
+YouTube list (filtered by topic) is the single source of truth for cross-view reads — `/workspace/software` renders the subset tagged `tech`
+as its "Favourite tech channels" section without duplicating rows.
 
 See also:
 
@@ -16,47 +16,48 @@ See also:
 
 ## User behavior
 
-The page has three tabs, switched via a `?tab=movies|series|channels` search param (defaults to `movies`). A `?focus=<id>` param scrolls the
-matching card into view and highlights it for a moment — the assistant's deep-links use this.
+The page has four tabs, switched via a `?tab=movies|series|youtube|podcasts` search param (defaults to `movies`). Legacy `?tab=channels`
+maps to YouTube. A `?focus=<id>` param resolves the correct tab from the id, scrolls the matching card into view, and highlights it for a
+moment — the assistant's deep-links use this.
 
 - **Movies** — sticky **search bar at the top** hits TMDB movie search live (300 ms debounce). Placeholder says "Film suchen…" / "Search a
   movie…" (movies only — series live on their own tab). Suggestions appear as a dropdown with poster thumbnails; clicking one calls
   `adminMediaMoviesAddFromTmdb`, which fetches full detail server-side and inserts the row into Watchlist. A subtle "Add manually" link at
-  the bottom of the dropdown opens the empty edit dialog for films TMDB has never heard of. Cards sit in a responsive **poster-first grid**
-  (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`), grouped into four sections in this order: Watchlist → Watching → Watched →
-  Dropped. Card = poster (2:3 `AspectRatio`) + title + release year, with a rating badge in the top-right corner on watched rows. Kebab menu
-  on each card carries the quick actions (Mark watching / Mark watched → rating popover / Move to dropped / Edit / Delete). Clicking a card
-  opens a **centered modal dialog** with the full edit form (title, release date via `DatePicker` with `captionLayout="dropdown"` for
-  far-past years, runtime, overview, status select, rating, watchedAt, notes textarea, topics multi-select).
-- **Series** — same poster-grid + status grouping as Movies, but the search hits TMDB TV (`tmdbTvSearch` → `adminMediaShowsAddFromTmdb`).
-  Each card surfaces a completed badge or next-season hint (exact date formatted as `MMM yyyy`, or the rough label). The edit dialog adds:
+  the bottom of the dropdown opens the empty edit dialog for films TMDB has never heard of. Cards sit in a dense responsive **poster-first
+  grid** (`grid-cols-3` … `2xl:grid-cols-8`), grouped into four sections in this order: Watchlist → Watching → Watched → Dropped. Card =
+  poster (2:3 `AspectRatio`) + compact title + release year, with a rating badge in the top-right corner on watched rows. Kebab menu on each
+  card carries the quick actions (Mark watching / Mark watched → rating popover / Move to dropped / Edit / Delete). Clicking a card opens a
+  **centered modal dialog** with the full edit form (title, release date via `DatePicker` with `captionLayout="dropdown"` for far-past
+  years, runtime, overview, status select, rating, watchedAt, notes textarea, topics multi-select).
+- **Series** — same dense poster-grid + status grouping as Movies, but the search hits TMDB TV (`tmdbTvSearch` →
+  `adminMediaShowsAddFromTmdb`). Each card surfaces a completed badge or next-season hint (exact date formatted as `MMM yyyy`, or the rough
+  label). The edit dialog adds:
   - **Series completed** toggle (`isCompleted`) — when on, next-season fields clear and hide.
   - **Next season (date)** — exact `DatePicker` value (`nextSeasonReleaseDate`).
   - **Next season (rough)** — free-form string (`nextSeasonReleaseRough`, e.g. "Herbst 2026" / "Fall 2026"). Both date fields can coexist;
     the card prefers exact → rough → completed.
-- **Channels** — **filterable avatar card grid** (1 / 2 / 3 columns). A sticky **search bar at the top** hits the YouTube Data API live (300
-  ms debounce), exactly like the movies / series TMDB search: suggestions drop down with avatar + handle + subscriber count, and **clicking
-  one adds the channel directly** via `adminMediaChannelsUpsert` (identity fields — name / url / handle / avatar / description — filled from
-  the API, `platform: youtube`, topics / notes left empty for later). There is **no manual identity entry on the add path** and no "New
-  channel" button — the admin never hand-adds a channel. Below the search bar, chip rows for platform and topic filter the grid
-  (AND-composed, local state). Each card shows avatar, name, handle, platform, topic chips, first-line notes preview, and an external-link
-  affordance; clicking the card opens the edit dialog. **Drag-reorder** (via the shared `useReorderableList` hook) is available when no
-  filters are active — filtered views hide the grip so priorities aren't rewritten from a partial list. **Editing** a channel opens a dialog
-  with the full manual form (name / platform / url / handle / avatar / description / topics / notes), so the YouTube fields the API can't
-  infer, plus any legacy Twitch / podcast / other rows, stay editable.
+- **YouTube** — avatar card grid (1 / 2 / 3 / 4 columns) of `platform: youtube` rows only. A sticky **search bar at the top** hits the
+  YouTube Data API live (300 ms debounce): suggestions drop down with avatar + handle + subscriber count, and **clicking one adds the
+  channel directly** via `adminMediaChannelsUpsert` (identity fields filled from the API; topics / notes left empty for later). There is
+  **no manual identity entry on the add path**. Topic chips filter the grid (AND-composed, local state). Each card shows a large avatar,
+  name, handle, topic chips, first-line notes preview, and an external-link affordance — no drag handles. Clicking the card opens the edit
+  dialog (platform fixed to YouTube).
+- **Podcasts** — same card layout over `platform: podcast` rows. No search API: an **Add podcast** button opens the create dialog. Topic
+  chips filter the grid the same way as YouTube. Twitch / other platforms are not surfaced in the UI.
 
-Topics on all three entities are a **chip input**: known topics (the `AdminMediaTopic` enum) come as suggested chips; free-form values work
-too (the column is a plain `text[]`, so ad-hoc topics can be added without a migration). Removing a chip removes it from the array. The
-known vocabulary drives the UI autocomplete and the `AdminMediaTopic` GraphQL enum surface. Current known topics: `tech`, `ai`, `software`,
-`gaming`, `movieCritic`, `entertainment`, `comedy`, `science`, `business`, `finance`, `news`, `music`, `sports`, `lifestyle`, `education`.
+Topics on movies, series, YouTube channels, and podcasts are a **chip input**: known topics (the `AdminMediaTopic` enum) come as suggested
+chips; free-form values work too (the column is a plain `text[]`, so ad-hoc topics can be added without a migration). Removing a chip
+removes it from the array. The known vocabulary drives the UI autocomplete and the `AdminMediaTopic` GraphQL enum surface. Current known
+topics: `tech`, `ai`, `software`, `gaming`, `movieCritic`, `entertainment`, `comedy`, `science`, `business`, `finance`, `news`, `music`,
+`sports`, `lifestyle`, `education`.
 
-All search fields across the three tabs (TMDB movie search, TMDB TV search, and the YouTube channel search) are built from the shadcn
-**`InputGroup`** primitives (`InputGroupAddon` for the leading search icon + trailing spinner/clear button, `InputGroupInput` for the field)
-rather than a hand-positioned icon over a bare `Input`.
+All search fields across the movies / series / YouTube tabs (TMDB movie search, TMDB TV search, and the YouTube channel search) are built
+from the shadcn **`InputGroup`** primitives (`InputGroupAddon` for the leading search icon + trailing spinner/clear button,
+`InputGroupInput` for the field) rather than a hand-positioned icon over a bare `Input`.
 
 Filter chips below the movies / series search bars narrow the visible grid by topic (`?topic=tech`). Multi-select AND-composes them. The
-chips are auto-populated from the union of topics across the visible rows. Channels keep topic / platform filters in local state (not URL);
-there is no free-text channel filter — the top-of-tab search box is the YouTube add flow, and the platform / topic chips do the filtering.
+chips are auto-populated from the union of topics across the visible rows. YouTube and Podcasts keep topic filters in local state (not URL);
+there is no free-text channel filter — the YouTube top-of-tab search box is the add flow, and the topic chips do the filtering.
 
 ## Options considered
 
@@ -71,7 +72,7 @@ there is no free-text channel filter — the top-of-tab search box is the YouTub
 | **Multi-topic M2M** (dedicated `MediaTopics` + `MediaChannelTopics` join)   | First M2M in the repo. Overkill unless topics themselves need pages/descriptions. `text[]` covers every current need with `WHERE :topic = ANY(topics)`.                                                                                                 |
 | **Multi-topic `text[]` on both entities** (chosen)                          | Mirrors `cvExperience.technologies`. A channel can be `['tech','ai']`; a movie can be `['scifi','noir']`. Cross-view reads use `ANY(topics)` — the software page's "tech YouTubers" query is one line. New topics land without a migration.             |
 | **Dedicated `AdminMediaChannel` ← `SoftwareArea` FK** for cross-referencing | Duplicates the intent of `topics`. If the reference axis is "these channels are relevant to software", the topic tag already carries that. Cross-section reads via topic scale to future areas (medical, finance) automatically.                        |
-| **Channels grouped by topic sections** (v1)                                 | Worked for a short list; duplicated multi-topic channels and made scanning harder as the library grew. Replaced with a filterable card grid + optional drag-reorder.                                                                                    |
+| **Channels grouped by topic sections** (v1)                                 | Worked for a short list; duplicated multi-topic channels and made scanning harder as the library grew. Replaced with a filterable card grid, later split into YouTube / Podcasts tabs.                                                                  |
 
 ## Option chosen
 
@@ -192,9 +193,10 @@ resolved to `image.tmdb.org` fully-qualified URLs at the boundary — the fronte
 
 Same posture as the TMDB client: `YOUTUBE_API_KEY` is capability-lazy, missing key → empty results (never a throw), 5-second per-request
 timeout. One user search costs two API calls (search 100 units + channels.list 2 units); free-tier quota is 10k units/day which is generous
-for a personal library. The channels tab's add flow is **built entirely around this search** — the sticky search bar at the top of the tab
+for a personal library. The YouTube tab's add flow is **built entirely around this search** — the sticky search bar at the top of the tab
 mirrors the movies / series TMDB search, and clicking a suggestion creates the channel directly (`adminMediaChannelsUpsert` with name, url,
-handle, avatarUrl, and description from the API; topics / notes edited later). There is no manual identity entry on the add path.
+handle, avatarUrl, and description from the API; topics / notes edited later). There is no manual identity entry on the YouTube add path.
+Podcasts are added manually from the Podcasts tab.
 
 ### Assistant integration
 
@@ -228,9 +230,11 @@ The orchestrator's system prompt teaches these link templates (see `agentPersona
 
 - Movie → `[<title>](/workspace/media?tab=movies&focus=<movieId>)`
 - Series → `[<title>](/workspace/media?tab=series&focus=<showId>)`
-- Channel → `[<name>](/workspace/media?tab=channels&focus=<channelId>)`
+- YouTube channel → `[<name>](/workspace/media?tab=youtube&focus=<channelId>)`
+- Podcast → `[<name>](/workspace/media?tab=podcasts&focus=<channelId>)`
 
-The media page reads `?focus=<id>` on mount and scrolls the matching row into view with a brief highlight ring.
+The media page reads `?focus=<id>` on mount, switches to the tab that owns the id when needed, and scrolls the matching row into view with a
+brief highlight ring.
 
 ### Cross-view: `/workspace/software`
 
@@ -255,7 +259,7 @@ any other workspace area (e.g. a future `/workspace/movies-inbox` for film criti
 | Client ops                  | `src/routes/{-$locale}/workspace/media.graphql`                                                                                                                                                                                                                                                      |
 | Cross-view (software)       | `src/routes/{-$locale}/workspace/software.tsx` + `software.graphql`                                                                                                                                                                                                                                  |
 | Assistant sub-agent + tools | `src/server/agents/agentPersonalAssistantMedia.ts`, `mediaSnapshotForAgent.ts`, `toolDelegateToMedia.ts`, `toolMovies*`, `toolShows*`, `toolMediaChannels*`, `toolMoviesList.ts`, `toolShowsList.ts`, `toolMediaChannelsList.ts`, `toolTmdbSearch.ts`, `toolTmdbTvSearch.ts`, `toolYoutubeSearch.ts` |
-| Orchestrator wiring         | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToMedia` + adds deep-link templates for movies / series / channels)                                                                                                                                                                |
+| Orchestrator wiring         | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToMedia` + adds deep-link templates for movies / series / YouTube / podcasts)                                                                                                                                                      |
 
 ## Out of scope
 

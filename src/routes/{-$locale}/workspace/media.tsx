@@ -6,7 +6,6 @@ import {
     ClapperboardIcon,
     EyeIcon,
     FilmIcon,
-    GripVerticalIcon,
     LinkIcon,
     Loader2Icon,
     MoreVerticalIcon,
@@ -18,7 +17,6 @@ import {
     SearchIcon,
     StarIcon,
     Trash2Icon,
-    TvIcon,
     XIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -58,7 +56,6 @@ import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
-    GqlCAdminMediaPlatform,
     GqlCAdminMediaTopic,
     GqlCAdminMediaMovieStatus,
     GqlCWorkspaceMediaPageUpdatesSubscription,
@@ -67,7 +64,6 @@ import type {
 } from '../../../web/graphql/generated';
 import {
     WorkspaceMediaChannelsDeleteDocument,
-    WorkspaceMediaChannelReorderDocument,
     WorkspaceMediaChannelsUpsertDocument,
     WorkspaceMediaPageDocument,
     WorkspaceMediaPageUpdatesDocument,
@@ -91,7 +87,7 @@ import { localeFromParam } from '../../../web/utils/locale';
 import { formatMonthYear } from '../../../shared';
 
 // Admin editor for Cem's movie watchlist, TV series library, and favourite
-// YouTube/podcast channels. Admin-only, noindex; nothing on this page has a
+// YouTube / podcast channels. Admin-only, noindex; nothing on this page has a
 // public surface. The full read shape (movies + shows + channels) lives in
 // the `WorkspaceMediaPageUser` fragment, so the route loader and the
 // `userUpdates` subscription deliver the same payload — mutations rely
@@ -99,15 +95,15 @@ import { formatMonthYear } from '../../../shared';
 // `docs/architecture/state-synchronization.md` and
 // `docs/features/workspace-media.md`.
 //
-// One page, three tabs. Movies / Series are poster-first grids grouped by
-// status; add flow is a sticky TMDB search (movie vs TV endpoints). Channels
-// is a filterable avatar card grid with drag-reorder by priority.
-// Deep-linkable via `?tab=…&focus=<id>` from the personal assistant.
+// One page, four tabs. Movies / Series are poster-first grids grouped by
+// status; add flow is a sticky TMDB search (movie vs TV endpoints). YouTube
+// and Podcasts are separate tabs over the same channel table, filtered by
+// platform. Deep-linkable via `?tab=…&focus=<id>` from the personal assistant.
 
-const pageTitle = { de: 'Filme & Serien', en: 'Movies & TV shows' };
+const pageTitle = { de: 'Medien', en: 'Media' };
 const pageDescription = {
-    de: 'Watchlist, aktuelle Lieblinge und die Kanäle, die ich verfolge.',
-    en: 'Watchlist, current favourites, and the channels I follow.',
+    de: 'Filme, Serien, YouTube und Podcasts.',
+    en: 'Movies, series, YouTube, and podcasts.',
 };
 
 const MOVIE_STATUS_ORDER: ReadonlyArray<GqlCAdminMediaMovieStatus> = ['watchlist', 'watching', 'watched', 'dropped'];
@@ -116,13 +112,6 @@ const MOVIE_STATUS_LABELS: Record<GqlCAdminMediaMovieStatus, { de: string; en: s
     watching: { de: 'Schaue gerade', en: 'Watching' },
     watched: { de: 'Gesehen', en: 'Watched' },
     dropped: { de: 'Abgebrochen', en: 'Dropped' },
-};
-
-const PLATFORM_LABELS: Record<GqlCAdminMediaPlatform, { de: string; en: string }> = {
-    youtube: { de: 'YouTube', en: 'YouTube' },
-    twitch: { de: 'Twitch', en: 'Twitch' },
-    podcast: { de: 'Podcast', en: 'Podcast' },
-    other: { de: 'Sonstige', en: 'Other' },
 };
 
 // Known clustering vocabulary — surfaced as suggestion chips in the topic
@@ -168,27 +157,29 @@ function topicLabel(topic: string, locale: Locale): string {
     return topic in TOPIC_LABELS ? TOPIC_LABELS[topic as GqlCAdminMediaTopic][locale] : topic;
 }
 
-type Tab = 'movies' | 'series' | 'channels';
-const TABS = ['movies', 'series', 'channels'] as const satisfies ReadonlyArray<Tab>;
+type Tab = 'movies' | 'series' | 'youtube' | 'podcasts';
+const TABS = ['movies', 'series', 'youtube', 'podcasts'] as const satisfies ReadonlyArray<Tab>;
 const TAB_LABELS: Record<Tab, { de: string; en: string }> = {
     movies: { de: 'Filme', en: 'Movies' },
     series: { de: 'Serien', en: 'Series' },
-    channels: { de: 'Kanäle', en: 'Channels' },
+    youtube: { de: 'YouTube', en: 'YouTube' },
+    podcasts: { de: 'Podcasts', en: 'Podcasts' },
 };
 const TAB_ICONS: Record<Tab, typeof FilmIcon> = {
     movies: FilmIcon,
     series: ClapperboardIcon,
-    channels: TvIcon,
+    youtube: PlayIcon,
+    podcasts: PodcastIcon,
 };
 
 // URL state. `tab` selects the section; absent = movies (the default landing
-// view). `topic` filters the movies / series grids to titles that carry all
-// listed topics (comma-joined). `focus` deep-links a specific card/row
-// across tabs — the page scrolls it into view and flashes it briefly on
-// land, then drops the param so refresh doesn't re-flash. Assistant links
-// point here (see `agentPersonalAssistant` "Deep links").
+// view). Legacy `?tab=channels` maps to YouTube. `topic` filters the movies /
+// series grids to titles that carry all listed topics (comma-joined). `focus`
+// deep-links a specific card/row across tabs — the page scrolls it into view
+// and flashes it briefly on land, then drops the param so refresh doesn't
+// re-flash. Assistant links point here (see `agentPersonalAssistant` "Deep links").
 const mediaSearchSchema = z.object({
-    tab: z.enum(TABS).optional(),
+    tab: z.preprocess((value) => (value === 'channels' ? 'youtube' : value), z.enum(TABS).optional()),
     topic: z.string().optional(),
     focus: z.string().optional(),
 });
@@ -235,12 +226,35 @@ function WorkspaceMedia() {
     const media = admin?.adminMediaFindOne;
 
     // Deep-link focus: chat assistant emits links like
-    // `/workspace/media?tab=movies&focus=<id>`. Scroll the row/card into view
-    // and flash it for ~1500ms, then drop the search param so a refresh
-    // doesn't re-flash. Mirrors `/workspace/projects` behaviour.
+    // `/workspace/media?tab=movies&focus=<id>`. Resolve the correct tab from
+    // the id when needed, scroll the row/card into view and flash it for
+    // ~1500ms, then drop the search param so a refresh doesn't re-flash.
+    // Mirrors `/workspace/projects` behaviour.
     useEffect(() => {
         const focusId = search.focus;
-        if (!focusId) return;
+        if (!focusId || !media) return;
+
+        const expectedTab: Tab | null = media.adminMediaMovieFindMany.some((m) => m.movieId === focusId)
+            ? 'movies'
+            : media.adminMediaShowFindMany.some((s) => s.showId === focusId)
+              ? 'series'
+              : (() => {
+                    const channel = media.adminMediaChannelFindMany.find((c) => c.channelId === focusId);
+                    if (!channel) return null;
+                    return channel.platform === 'podcast' ? 'podcasts' : 'youtube';
+                })();
+
+        if (expectedTab && expectedTab !== tab) {
+            void navigate({
+                search: (prev) => ({
+                    ...prev,
+                    tab: expectedTab === 'movies' ? undefined : expectedTab,
+                }),
+                replace: true,
+            });
+            return;
+        }
+
         let cancelled = false;
         const frame = requestAnimationFrame(() => {
             if (cancelled) return;
@@ -260,17 +274,18 @@ function WorkspaceMedia() {
             cancelled = true;
             cancelAnimationFrame(frame);
         };
-    }, [search.focus, tab, navigate]);
+    }, [search.focus, tab, navigate, media]);
 
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
     if (!media) return null;
 
+    const youtubeChannels = media.adminMediaChannelFindMany.filter((c) => c.platform === 'youtube');
+    const podcastChannels = media.adminMediaChannelFindMany.filter((c) => c.platform === 'podcast');
+
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
-            <p className="text-sm text-muted-foreground">{pageDescription[locale]}</p>
-
             <nav
-                className="mt-8 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border/60 no-scrollbar scroll-fade-x"
+                className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border/60 no-scrollbar scroll-fade-x"
                 aria-label={{ de: 'Bereiche', en: 'Sections' }[locale]}
             >
                 {TABS.map((t) => {
@@ -312,8 +327,10 @@ function WorkspaceMedia() {
                     <MoviesTab movies={media.adminMediaMovieFindMany} search={search} navigate={navigate} locale={locale} />
                 ) : tab === 'series' ? (
                     <SeriesTab shows={media.adminMediaShowFindMany} search={search} navigate={navigate} locale={locale} />
+                ) : tab === 'youtube' ? (
+                    <YoutubeTab channels={youtubeChannels} locale={locale} />
                 ) : (
-                    <ChannelsTab channels={media.adminMediaChannelFindMany} locale={locale} />
+                    <PodcastsTab channels={podcastChannels} locale={locale} />
                 )}
             </div>
         </main>
@@ -501,7 +518,7 @@ function MovieStatusGroup({
                 </h2>
                 <span className="text-xs tabular-nums text-muted-foreground/70">{movies.length}</span>
             </div>
-            <ul className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
                 {movies.map((movie, index) => (
                     <Reveal key={movie.movieId} as="li" index={index}>
                         <MovieCard movie={movie} onEdit={() => onEdit(movie)} locale={locale} />
@@ -545,42 +562,42 @@ function MovieCard({ movie, onEdit, locale }: { movie: MovieRow; onEdit: () => v
         <>
             <div
                 data-row-id={movie.movieId}
-                className="group/movie relative overflow-hidden rounded-lg border border-border/50 bg-card/40 shadow-sm transition-shadow hover:shadow-md"
+                className="group/movie relative overflow-hidden rounded-md border border-border/50 bg-card/40 shadow-sm transition-shadow hover:shadow-md"
             >
                 <button
                     type="button"
                     onClick={onEdit}
                     aria-label={{ de: 'Details bearbeiten', en: 'Edit details' }[locale]}
-                    className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-lg"
+                    className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-md"
                 >
                     <AspectRatio ratio={2 / 3} className="bg-muted">
                         {movie.posterUrl ? (
                             <img src={movie.posterUrl} alt={movie.title} loading="lazy" className="h-full w-full object-cover" />
                         ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground/70">
-                                <FilmIcon className="size-8" />
+                                <FilmIcon className="size-5" />
                             </div>
                         )}
                     </AspectRatio>
                 </button>
 
                 {movie.status === 'watched' && typeof movie.rating === 'number' ? (
-                    <div className="pointer-events-none absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white shadow">
-                        <StarIcon className="size-3" />
+                    <div className="pointer-events-none absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white shadow">
+                        <StarIcon className="size-2.5" />
                         <span className="tabular-nums">{movie.rating}</span>
                     </div>
                 ) : null}
 
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-1 left-1">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 size="icon-xs"
                                 variant="ghost"
-                                className="bg-black/60 text-white hover:bg-black/80 hover:text-white"
+                                className="size-6 bg-black/60 text-white hover:bg-black/80 hover:text-white"
                                 aria-label={{ de: 'Aktionen', en: 'Actions' }[locale]}
                             >
-                                <MoreVerticalIcon />
+                                <MoreVerticalIcon className="size-3.5" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
@@ -621,9 +638,9 @@ function MovieCard({ movie, onEdit, locale }: { movie: MovieRow; onEdit: () => v
                     </DropdownMenu>
                 </div>
 
-                <div className="px-3 py-2.5">
-                    <div className="line-clamp-2 text-sm font-medium leading-snug">{movie.title}</div>
-                    {releaseYear ? <div className="mt-0.5 text-xs text-muted-foreground">{releaseYear}</div> : null}
+                <div className="px-1.5 py-1.5">
+                    <div className="line-clamp-2 text-[11px] font-medium leading-snug">{movie.title}</div>
+                    {releaseYear ? <div className="mt-0.5 text-[10px] text-muted-foreground">{releaseYear}</div> : null}
                 </div>
             </div>
 
@@ -1269,7 +1286,7 @@ function ShowStatusGroup({
                 </h2>
                 <span className="text-xs tabular-nums text-muted-foreground/70">{shows.length}</span>
             </div>
-            <ul className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8">
                 {shows.map((show, index) => (
                     <Reveal key={show.showId} as="li" index={index}>
                         <ShowCard show={show} onEdit={() => onEdit(show)} locale={locale} />
@@ -1324,28 +1341,28 @@ function ShowCard({ show, onEdit, locale }: { show: ShowRow; onEdit: () => void;
         <>
             <div
                 data-row-id={show.showId}
-                className="group/show relative overflow-hidden rounded-lg border border-border/50 bg-card/40 shadow-sm transition-shadow hover:shadow-md"
+                className="group/show relative overflow-hidden rounded-md border border-border/50 bg-card/40 shadow-sm transition-shadow hover:shadow-md"
             >
                 <button
                     type="button"
                     onClick={onEdit}
                     aria-label={{ de: 'Details bearbeiten', en: 'Edit details' }[locale]}
-                    className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-lg"
+                    className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-md"
                 >
                     <AspectRatio ratio={2 / 3} className="bg-muted">
                         {show.posterUrl ? (
                             <img src={show.posterUrl} alt={show.title} loading="lazy" className="h-full w-full object-cover" />
                         ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground/70">
-                                <ClapperboardIcon className="size-8" />
+                                <ClapperboardIcon className="size-5" />
                             </div>
                         )}
                     </AspectRatio>
                 </button>
 
                 {typeof show.rating === 'number' ? (
-                    <div className="pointer-events-none absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white shadow">
-                        <StarIcon className="size-3" />
+                    <div className="pointer-events-none absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white shadow">
+                        <StarIcon className="size-2.5" />
                         <span className="tabular-nums">{show.rating}</span>
                     </div>
                 ) : null}
@@ -1353,29 +1370,29 @@ function ShowCard({ show, onEdit, locale }: { show: ShowRow; onEdit: () => void;
                 {nextLabel ? (
                     <div
                         className={cn(
-                            'pointer-events-none absolute bottom-14 left-2 right-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-white shadow',
+                            'pointer-events-none absolute bottom-10 left-1 right-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium text-white shadow',
                             show.isCompleted ? 'bg-emerald-700/85' : 'bg-black/70',
                         )}
                     >
                         {show.isCompleted ? (
-                            <CircleCheckIcon className="size-3 shrink-0" />
+                            <CircleCheckIcon className="size-2.5 shrink-0" />
                         ) : (
-                            <CalendarClockIcon className="size-3 shrink-0" />
+                            <CalendarClockIcon className="size-2.5 shrink-0" />
                         )}
                         <span className="truncate">{nextLabel}</span>
                     </div>
                 ) : null}
 
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-1 left-1">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 size="icon-xs"
                                 variant="ghost"
-                                className="bg-black/60 text-white hover:bg-black/80 hover:text-white"
+                                className="size-6 bg-black/60 text-white hover:bg-black/80 hover:text-white"
                                 aria-label={{ de: 'Aktionen', en: 'Actions' }[locale]}
                             >
-                                <MoreVerticalIcon />
+                                <MoreVerticalIcon className="size-3.5" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
@@ -1416,9 +1433,9 @@ function ShowCard({ show, onEdit, locale }: { show: ShowRow; onEdit: () => void;
                     </DropdownMenu>
                 </div>
 
-                <button type="button" onClick={onEdit} className="block w-full px-2.5 py-2 text-left">
-                    <div className="truncate text-sm font-medium leading-snug">{show.title}</div>
-                    {airYear ? <div className="mt-0.5 text-xs text-muted-foreground">{airYear}</div> : null}
+                <button type="button" onClick={onEdit} className="block w-full px-1.5 py-1.5 text-left">
+                    <div className="line-clamp-2 text-[11px] font-medium leading-snug">{show.title}</div>
+                    {airYear ? <div className="mt-0.5 text-[10px] text-muted-foreground">{airYear}</div> : null}
                 </button>
             </div>
 
@@ -1911,20 +1928,11 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
     );
 }
 
-// --- Channels tab -----------------------------------------------------------
+// --- YouTube tab ------------------------------------------------------------
 
-const PLATFORM_ICON: Record<GqlCAdminMediaPlatform, typeof PlayIcon> = {
-    youtube: PlayIcon,
-    twitch: PlayIcon,
-    podcast: PodcastIcon,
-    other: LinkIcon,
-};
-
-function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>; locale: Locale }) {
+function YoutubeTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>; locale: Locale }) {
     const [editing, setEditing] = useState<ChannelRow | null>(null);
     const [activeTopics, setActiveTopics] = useState<string[]>([]);
-    const [activePlatforms, setActivePlatforms] = useState<GqlCAdminMediaPlatform[]>([]);
-    const [, reorderMutation] = useMutation(WorkspaceMediaChannelReorderDocument);
     const searchInputRef = useRef<HTMLInputElement | null>(null);
     const focusSearch = () => searchInputRef.current?.focus();
 
@@ -1936,118 +1944,57 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
         return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     }, [channels]);
 
-    const platformChips = useMemo(() => {
-        const counts = new Map<GqlCAdminMediaPlatform, number>();
-        for (const channel of channels) counts.set(channel.platform, (counts.get(channel.platform) ?? 0) + 1);
-        return (Object.keys(PLATFORM_LABELS) as GqlCAdminMediaPlatform[]).filter((p) => (counts.get(p) ?? 0) > 0);
-    }, [channels]);
-
     const filtered = useMemo(() => {
-        return channels
-            .filter((channel) => {
-                if (activePlatforms.length > 0 && !activePlatforms.includes(channel.platform)) return false;
-                if (activeTopics.length > 0 && !activeTopics.every((topic) => channel.topics.includes(topic))) return false;
-                return true;
-            })
-            .slice()
-            .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
-    }, [channels, activeTopics, activePlatforms]);
-
-    const filtersActive = activeTopics.length > 0 || activePlatforms.length > 0;
-
-    const ordered = useReorderableList(
-        filtered,
-        (c) => c.channelId,
-        async (orderedIds) => {
-            await reorderMutation({ orderedIds });
-        },
-    );
-
-    // Drag-reorder only when the full library is visible — rewriting
-    // priorities from a filtered subset would scramble the global order.
-    const canReorder = !filtersActive;
+        const rows =
+            activeTopics.length === 0
+                ? channels
+                : channels.filter((channel) => activeTopics.every((topic) => channel.topics.includes(topic)));
+        return rows.slice().sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
+    }, [channels, activeTopics]);
 
     const toggleTopic = (topic: string) => {
         setActiveTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
-    };
-    const togglePlatform = (platform: GqlCAdminMediaPlatform) => {
-        setActivePlatforms((prev) => (prev.includes(platform) ? prev.filter((p) => p !== platform) : [...prev, platform]));
     };
 
     return (
         <section>
             <div className="sticky top-0 z-10 pt-1 pb-3">
                 <ChannelSearchBar inputRef={searchInputRef} locale={locale} />
-                {platformChips.length > 0 || topicChips.length > 0 ? (
-                    <div className="mt-3 flex flex-col gap-2">
-                        {platformChips.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                                {platformChips.map((platform) => {
-                                    const active = activePlatforms.includes(platform);
-                                    const Icon = PLATFORM_ICON[platform];
-                                    return (
-                                        <button
-                                            key={platform}
-                                            type="button"
-                                            onClick={() => togglePlatform(platform)}
-                                            className={cn(
-                                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                                active
-                                                    ? 'border-primary bg-primary/15 text-primary'
-                                                    : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
-                                            )}
-                                            aria-pressed={active}
-                                        >
-                                            <Icon className="size-3" />
-                                            <span>{PLATFORM_LABELS[platform][locale]}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        ) : null}
-                        {topicChips.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                                {topicChips.map(([topic, count]) => {
-                                    const active = activeTopics.includes(topic);
-                                    return (
-                                        <button
-                                            key={topic}
-                                            type="button"
-                                            onClick={() => toggleTopic(topic)}
-                                            className={cn(
-                                                'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                                active
-                                                    ? 'border-primary bg-primary/15 text-primary'
-                                                    : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
-                                            )}
-                                            aria-pressed={active}
-                                        >
-                                            <span>{topicLabel(topic, locale)}</span>
-                                            <span
-                                                className={cn(
-                                                    'text-[10px] tabular-nums',
-                                                    active ? 'text-primary/80' : 'text-muted-foreground/70',
-                                                )}
-                                            >
-                                                {count}
-                                            </span>
-                                            {active ? <XIcon className="size-3" /> : null}
-                                        </button>
-                                    );
-                                })}
-                                {filtersActive ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveTopics([]);
-                                            setActivePlatforms([]);
-                                        }}
-                                        className="ml-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                {topicChips.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                        {topicChips.map(([topic, count]) => {
+                            const active = activeTopics.includes(topic);
+                            return (
+                                <button
+                                    key={topic}
+                                    type="button"
+                                    onClick={() => toggleTopic(topic)}
+                                    className={cn(
+                                        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                        active
+                                            ? 'border-primary bg-primary/15 text-primary'
+                                            : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
+                                    )}
+                                    aria-pressed={active}
+                                >
+                                    <span>{topicLabel(topic, locale)}</span>
+                                    <span
+                                        className={cn('text-[10px] tabular-nums', active ? 'text-primary/80' : 'text-muted-foreground/70')}
                                     >
-                                        {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
-                                    </button>
-                                ) : null}
-                            </div>
+                                        {count}
+                                    </span>
+                                    {active ? <XIcon className="size-3" /> : null}
+                                </button>
+                            );
+                        })}
+                        {activeTopics.length > 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => setActiveTopics([])}
+                                className="ml-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                            >
+                                {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
+                            </button>
                         ) : null}
                     </div>
                 ) : null}
@@ -2055,9 +2002,14 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
 
             {channels.length === 0 ? (
                 <GlassCard className="mt-6 px-6 py-10 text-center">
-                    <TvIcon className="mx-auto size-6 text-muted-foreground" />
+                    <PlayIcon className="mx-auto size-6 text-muted-foreground" />
                     <p className="mt-3 text-sm text-muted-foreground">
-                        {{ de: 'Noch keine Kanäle. Suche oben nach einem Kanal.', en: 'No channels yet. Search above to add one.' }[locale]}
+                        {
+                            {
+                                de: 'Noch keine YouTube-Kanäle. Suche oben nach einem Kanal.',
+                                en: 'No YouTube channels yet. Search above to add one.',
+                            }[locale]
+                        }
                     </p>
                     <Button className="mt-4" size="sm" variant="outline" onClick={focusSearch}>
                         <SearchIcon />
@@ -2069,125 +2021,242 @@ function ChannelsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>
                     <p className="text-sm text-muted-foreground">
                         {{ de: 'Keine Kanäle passen zu diesem Filter.', en: 'No channels match this filter.' }[locale]}
                     </p>
-                    <Button
-                        className="mt-4"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                            setActiveTopics([]);
-                            setActivePlatforms([]);
-                        }}
-                    >
+                    <Button className="mt-4" size="sm" variant="outline" onClick={() => setActiveTopics([])}>
                         {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
                     </Button>
                 </GlassCard>
             ) : (
-                <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {ordered.items.map((channel, index) =>
-                        canReorder ? (
-                            <DraggableItem key={channel.channelId} id={channel.channelId} index={index} state={ordered} locale={locale}>
-                                <ChannelCard channel={channel} onEdit={() => setEditing(channel)} locale={locale} />
-                            </DraggableItem>
-                        ) : (
-                            <li key={channel.channelId}>
-                                <ChannelCard channel={channel} onEdit={() => setEditing(channel)} locale={locale} />
-                            </li>
-                        ),
-                    )}
+                <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {filtered.map((channel, index) => (
+                        <Reveal key={channel.channelId} as="li" index={index}>
+                            <ChannelCard channel={channel} onEdit={() => setEditing(channel)} locale={locale} />
+                        </Reveal>
+                    ))}
                 </ul>
             )}
 
-            {editing ? <ChannelEditDialog channel={editing} locale={locale} onClose={() => setEditing(null)} /> : null}
+            {editing ? <ChannelEditDialog channel={editing} platform="youtube" locale={locale} onClose={() => setEditing(null)} /> : null}
+        </section>
+    );
+}
+
+// --- Podcasts tab -----------------------------------------------------------
+
+function PodcastsTab({ channels, locale }: { channels: ReadonlyArray<ChannelRow>; locale: Locale }) {
+    const [editing, setEditing] = useState<ChannelRow | 'new' | null>(null);
+    const [activeTopics, setActiveTopics] = useState<string[]>([]);
+
+    const topicChips = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const channel of channels) {
+            for (const topic of channel.topics) counts.set(topic, (counts.get(topic) ?? 0) + 1);
+        }
+        return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }, [channels]);
+
+    const filtered = useMemo(() => {
+        const rows =
+            activeTopics.length === 0
+                ? channels
+                : channels.filter((channel) => activeTopics.every((topic) => channel.topics.includes(topic)));
+        return rows.slice().sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
+    }, [channels, activeTopics]);
+
+    const toggleTopic = (topic: string) => {
+        setActiveTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
+    };
+
+    return (
+        <section>
+            <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 pt-1 pb-3">
+                <div className="min-w-0 flex-1">
+                    {topicChips.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                            {topicChips.map(([topic, count]) => {
+                                const active = activeTopics.includes(topic);
+                                return (
+                                    <button
+                                        key={topic}
+                                        type="button"
+                                        onClick={() => toggleTopic(topic)}
+                                        className={cn(
+                                            'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                            active
+                                                ? 'border-primary bg-primary/15 text-primary'
+                                                : 'border-border/60 bg-background/60 text-muted-foreground hover:text-foreground',
+                                        )}
+                                        aria-pressed={active}
+                                    >
+                                        <span>{topicLabel(topic, locale)}</span>
+                                        <span
+                                            className={cn(
+                                                'text-[10px] tabular-nums',
+                                                active ? 'text-primary/80' : 'text-muted-foreground/70',
+                                            )}
+                                        >
+                                            {count}
+                                        </span>
+                                        {active ? <XIcon className="size-3" /> : null}
+                                    </button>
+                                );
+                            })}
+                            {activeTopics.length > 0 ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTopics([])}
+                                    className="ml-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                                >
+                                    {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
+                                </button>
+                            ) : null}
+                        </div>
+                    ) : null}
+                </div>
+                <Button size="sm" onClick={() => setEditing('new')}>
+                    <PlusIcon />
+                    {{ de: 'Podcast hinzufügen', en: 'Add podcast' }[locale]}
+                </Button>
+            </div>
+
+            {channels.length === 0 ? (
+                <GlassCard className="mt-6 px-6 py-10 text-center">
+                    <PodcastIcon className="mx-auto size-6 text-muted-foreground" />
+                    <p className="mt-3 text-sm text-muted-foreground">{{ de: 'Noch keine Podcasts.', en: 'No podcasts yet.' }[locale]}</p>
+                    <Button className="mt-4" size="sm" variant="outline" onClick={() => setEditing('new')}>
+                        <PlusIcon />
+                        {{ de: 'Podcast hinzufügen', en: 'Add podcast' }[locale]}
+                    </Button>
+                </GlassCard>
+            ) : filtered.length === 0 ? (
+                <GlassCard className="mt-6 px-6 py-10 text-center">
+                    <p className="text-sm text-muted-foreground">
+                        {{ de: 'Keine Podcasts passen zu diesem Filter.', en: 'No podcasts match this filter.' }[locale]}
+                    </p>
+                    <Button className="mt-4" size="sm" variant="outline" onClick={() => setActiveTopics([])}>
+                        {{ de: 'Filter zurücksetzen', en: 'Clear filters' }[locale]}
+                    </Button>
+                </GlassCard>
+            ) : (
+                <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {filtered.map((channel, index) => (
+                        <Reveal key={channel.channelId} as="li" index={index}>
+                            <ChannelCard channel={channel} onEdit={() => setEditing(channel)} locale={locale} />
+                        </Reveal>
+                    ))}
+                </ul>
+            )}
+
+            {editing ? (
+                <ChannelEditDialog
+                    channel={editing === 'new' ? null : editing}
+                    platform="podcast"
+                    locale={locale}
+                    onClose={() => setEditing(null)}
+                />
+            ) : null}
         </section>
     );
 }
 
 function ChannelCard({ channel, onEdit, locale }: { channel: ChannelRow; onEdit: () => void; locale: Locale }) {
-    const PlatformIcon = PLATFORM_ICON[channel.platform];
     const firstNoteLine = channel.notes?.split('\n')[0]?.trim() ?? '';
+    const openLabel = {
+        de: channel.platform === 'podcast' ? 'Podcast öffnen' : 'Kanal öffnen',
+        en: channel.platform === 'podcast' ? 'Open podcast' : 'Open channel',
+    };
 
     return (
         <div
             data-row-id={channel.channelId}
-            className="group/channel relative flex h-full flex-col gap-3 rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm transition-shadow hover:shadow-md"
+            className="group/channel relative flex h-full items-center gap-4 overflow-hidden rounded-xl border border-border/50 bg-card/40 p-3.5 shadow-sm transition-shadow hover:shadow-md"
         >
-            <div className="flex items-start gap-3">
-                <button
-                    type="button"
-                    onClick={onEdit}
-                    className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
-                >
-                    <Avatar size="lg" className="shrink-0">
-                        {channel.avatarUrl ? <AvatarImage src={channel.avatarUrl} alt={channel.name} /> : null}
-                        <AvatarFallback>{channel.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium leading-snug">{channel.name}</div>
-                        {channel.handle ? <div className="mt-0.5 truncate text-xs text-muted-foreground">{channel.handle}</div> : null}
-                        <div className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <PlatformIcon className="size-3 shrink-0" />
-                            <span>{PLATFORM_LABELS[channel.platform][locale]}</span>
+            <button
+                type="button"
+                onClick={onEdit}
+                className="flex min-w-0 flex-1 items-center gap-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+            >
+                <Avatar className="size-16 shrink-0 rounded-full text-base">
+                    {channel.avatarUrl ? <AvatarImage src={channel.avatarUrl} alt={channel.name} /> : null}
+                    <AvatarFallback className="text-sm font-medium">{channel.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium leading-snug">{channel.name}</div>
+                    {channel.handle ? <div className="mt-0.5 truncate text-xs text-muted-foreground">{channel.handle}</div> : null}
+                    {channel.topics.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                            {channel.topics.slice(0, 3).map((topic) => (
+                                <span
+                                    key={topic}
+                                    className="inline-flex items-center rounded-full border border-border/50 bg-background/50 px-2 py-0.5 text-[10px] text-muted-foreground"
+                                >
+                                    {topicLabel(topic, locale)}
+                                </span>
+                            ))}
+                            {channel.topics.length > 3 ? (
+                                <span className="text-[10px] text-muted-foreground/70">+{channel.topics.length - 3}</span>
+                            ) : null}
                         </div>
-                    </div>
-                </button>
-                <a
-                    href={channel.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={{ de: 'Kanal öffnen', en: 'Open channel' }[locale]}
-                    title={{ de: 'Kanal öffnen', en: 'Open channel' }[locale]}
-                >
-                    <LinkIcon className="size-4" />
-                </a>
-            </div>
-
-            {channel.topics.length > 0 ? (
-                <div className="flex flex-wrap gap-1">
-                    {channel.topics.map((topic) => (
-                        <span
-                            key={topic}
-                            className="inline-flex items-center rounded-full border border-border/50 bg-background/50 px-2 py-0.5 text-[10px] text-muted-foreground"
-                        >
-                            {topicLabel(topic, locale)}
-                        </span>
-                    ))}
+                    ) : null}
+                    {firstNoteLine ? <p className="mt-1.5 line-clamp-1 text-xs text-muted-foreground/90">{firstNoteLine}</p> : null}
                 </div>
-            ) : null}
-
-            {firstNoteLine ? <p className="line-clamp-2 text-xs text-muted-foreground/90">{firstNoteLine}</p> : null}
+            </button>
+            <a
+                href={channel.url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-70 transition-colors hover:bg-accent hover:text-foreground hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={openLabel[locale]}
+                title={openLabel[locale]}
+            >
+                <LinkIcon className="size-4" />
+            </a>
         </div>
     );
 }
 
-// Edit-only. Adding a channel happens inline via `ChannelSearchBar` (pick a
-// YouTube result → the channel is created directly), so this dialog always
-// opens on an existing row. The full manual form is kept so legacy Twitch /
-// podcast / other channels — and the YouTube fields the API can't infer —
-// stay editable.
-function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow; locale: Locale; onClose: () => void }) {
+// Edit / create dialog for YouTube channels and podcasts. YouTube identity is
+// usually created via `ChannelSearchBar`; podcasts are added manually here.
+// Platform is fixed by the calling tab — Twitch / other are not surfaced.
+function ChannelEditDialog({
+    channel,
+    platform,
+    locale,
+    onClose,
+}: {
+    channel: ChannelRow | null;
+    platform: 'youtube' | 'podcast';
+    locale: Locale;
+    onClose: () => void;
+}) {
     const [, upsert] = useMutation(WorkspaceMediaChannelsUpsertDocument);
     const [, del] = useMutation(WorkspaceMediaChannelsDeleteDocument);
     const [busy, setBusy] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const isNew = channel === null;
     const [form, setForm] = useState({
-        name: channel.name,
-        platform: channel.platform,
-        url: channel.url,
-        handle: channel.handle ?? '',
-        avatarUrl: channel.avatarUrl ?? '',
-        description: channel.description ?? '',
-        notes: channel.notes ?? '',
-        topics: channel.topics,
+        name: channel?.name ?? '',
+        url: channel?.url ?? '',
+        handle: channel?.handle ?? '',
+        avatarUrl: channel?.avatarUrl ?? '',
+        description: channel?.description ?? '',
+        notes: channel?.notes ?? '',
+        topics: channel?.topics ?? ([] as string[]),
     });
+
+    const title =
+        platform === 'podcast'
+            ? isNew
+                ? { de: 'Podcast hinzufügen', en: 'Add podcast' }
+                : { de: 'Podcast bearbeiten', en: 'Edit podcast' }
+            : { de: 'Kanal bearbeiten', en: 'Edit channel' };
 
     return (
         <>
             <Dialog open onOpenChange={(next) => (!next ? onClose() : null)}>
                 <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>{{ de: 'Kanal bearbeiten', en: 'Edit channel' }[locale]}</DialogTitle>
+                        <DialogTitle>{title[locale]}</DialogTitle>
                     </DialogHeader>
 
                     <form
@@ -2197,9 +2266,9 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow; 
                             await upsert({
                                 mediaChannels: [
                                     {
-                                        channelId: channel.channelId,
+                                        channelId: channel?.channelId,
                                         name: form.name,
-                                        platform: form.platform,
+                                        platform,
                                         url: form.url,
                                         handle: form.handle || null,
                                         avatarUrl: form.avatarUrl || null,
@@ -2217,28 +2286,9 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow; 
                         <Field label={{ de: 'Name', en: 'Name' }[locale]}>
                             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required autoFocus />
                         </Field>
-                        <div className="grid grid-cols-2 gap-3">
-                            <Field label={{ de: 'Plattform', en: 'Platform' }[locale]}>
-                                <Select
-                                    value={form.platform}
-                                    onValueChange={(value) => setForm({ ...form, platform: value as GqlCAdminMediaPlatform })}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(Object.keys(PLATFORM_LABELS) as GqlCAdminMediaPlatform[]).map((p) => (
-                                            <SelectItem key={p} value={p}>
-                                                {PLATFORM_LABELS[p][locale]}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field label={{ de: 'Handle (optional)', en: 'Handle (optional)' }[locale]}>
-                                <Input value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} />
-                            </Field>
-                        </div>
+                        <Field label={{ de: 'Handle (optional)', en: 'Handle (optional)' }[locale]}>
+                            <Input value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} />
+                        </Field>
                         <Field label={{ de: 'URL', en: 'URL' }[locale]}>
                             <Input
                                 type="url"
@@ -2266,68 +2316,79 @@ function ChannelEditDialog({ channel, locale, onClose }: { channel: ChannelRow; 
                         </Field>
 
                         <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setConfirmingDelete(true)}
-                                disabled={busy}
-                                className="mr-auto text-destructive hover:text-destructive"
-                            >
-                                <Trash2Icon />
-                                {{ de: 'Löschen', en: 'Delete' }[locale]}
-                            </Button>
+                            {!isNew ? (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => setConfirmingDelete(true)}
+                                    disabled={busy}
+                                    className="mr-auto text-destructive hover:text-destructive"
+                                >
+                                    <Trash2Icon />
+                                    {{ de: 'Löschen', en: 'Delete' }[locale]}
+                                </Button>
+                            ) : null}
                             <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
                                 {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
                             </Button>
                             <Button type="submit" disabled={busy}>
-                                {{ de: 'Speichern', en: 'Save' }[locale]}
+                                {isNew ? { de: 'Hinzufügen', en: 'Add' }[locale] : { de: 'Speichern', en: 'Save' }[locale]}
                             </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>{{ de: 'Kanal löschen?', en: 'Delete channel?' }[locale]}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {
+            {channel ? (
+                <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
                                 {
-                                    de: `„${channel.name}" wird dauerhaft entfernt.`,
-                                    en: `"${channel.name}" will be permanently removed.`,
-                                }[locale]
-                            }
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            onClick={async () => {
-                                await del({ channelIds: [channel.channelId] });
-                                setConfirmingDelete(false);
-                                onClose();
-                            }}
-                        >
-                            {{ de: 'Löschen', en: 'Delete' }[locale]}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                                    {
+                                        de: platform === 'podcast' ? 'Podcast löschen?' : 'Kanal löschen?',
+                                        en: platform === 'podcast' ? 'Delete podcast?' : 'Delete channel?',
+                                    }[locale]
+                                }
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {
+                                    {
+                                        de: `„${channel.name}" wird dauerhaft entfernt.`,
+                                        en: `"${channel.name}" will be permanently removed.`,
+                                    }[locale]
+                                }
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
+                            <AlertDialogAction
+                                variant="destructive"
+                                onClick={async () => {
+                                    await del({ channelIds: [channel.channelId] });
+                                    setConfirmingDelete(false);
+                                    onClose();
+                                }}
+                            >
+                                {{ de: 'Löschen', en: 'Delete' }[locale]}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            ) : null}
         </>
     );
 }
 
 // --- Channel search (inline add) --------------------------------------------
 
-// Sticky search-to-add bar for the channels tab. Mirrors the movies / series
+// Sticky search-to-add bar for the YouTube tab. Mirrors the movies / series
 // TMDB search shape (300ms debounce, `pause` on empty, `network-only`,
 // keyboard nav, outside-click closes) but hits the YouTube Data API. Picking
 // a suggestion creates the channel directly via `adminMediaChannelsUpsert` — the
 // identity fields (name / url / handle / avatar / description) come from the
 // API; topics / notes are edited afterwards on the card. There is no manual
-// identity entry on the add path.
+// identity entry on the YouTube add path.
 function ChannelSearchBar({ inputRef, locale }: { inputRef: React.RefObject<HTMLInputElement | null>; locale: Locale }) {
     const [query, setQuery] = useState('');
     const [debounced, setDebounced] = useState('');
@@ -2558,128 +2619,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
             <span className="text-xs font-medium text-muted-foreground">{label}</span>
             {children}
         </label>
-    );
-}
-
-// Drag-and-drop state for a single ordered list. Copied from
-// `/workspace/cv` — kept local to each editor so page-scoped tweaks don't
-// leak. The hook holds an optimistic copy of the upstream `rows` so the
-// on-screen order updates the moment the user drops, before the round-trip
-// mutation + subscription refresh returns.
-interface ReorderableState<T> {
-    items: ReadonlyArray<T>;
-    draggingId: string | null;
-    overId: string | null;
-    setDraggingId: (id: string | null) => void;
-    setOverId: (id: string | null) => void;
-    commitDrop: () => void;
-    getId: (row: T) => string;
-}
-
-function useReorderableList<T>(
-    rows: ReadonlyArray<T>,
-    getId: (row: T) => string,
-    onCommit: (orderedIds: string[]) => Promise<void>,
-): ReorderableState<T> {
-    const [items, setItems] = useState<ReadonlyArray<T>>(rows);
-    const [draggingId, setDraggingId] = useState<string | null>(null);
-    const [overId, setOverId] = useState<string | null>(null);
-
-    const upstreamKey = rows.map(getId).join('|');
-    const lastKeyRef = useRef(upstreamKey);
-    useEffect(() => {
-        if (lastKeyRef.current !== upstreamKey) {
-            lastKeyRef.current = upstreamKey;
-            setItems(rows);
-        }
-    }, [upstreamKey, rows]);
-
-    const commitDrop = () => {
-        if (!draggingId || !overId || draggingId === overId) {
-            setDraggingId(null);
-            setOverId(null);
-            return;
-        }
-        const next = [...items];
-        const from = next.findIndex((r) => getId(r) === draggingId);
-        const to = next.findIndex((r) => getId(r) === overId);
-        if (from < 0 || to < 0) {
-            setDraggingId(null);
-            setOverId(null);
-            return;
-        }
-        const [moved] = next.splice(from, 1) as [T];
-        next.splice(to, 0, moved);
-        setItems(next);
-        setDraggingId(null);
-        setOverId(null);
-        void onCommit(next.map(getId));
-    };
-
-    return { items, draggingId, overId, setDraggingId, setOverId, commitDrop, getId };
-}
-
-function DraggableItem<T>({
-    id,
-    index,
-    state,
-    locale,
-    children,
-}: {
-    id: string;
-    index: number;
-    state: ReorderableState<T>;
-    locale: Locale;
-    children: React.ReactNode;
-}) {
-    const isDragging = state.draggingId === id;
-    const isOver = state.overId === id && state.draggingId !== id;
-    const dragHandleLabel = { de: 'Ziehen zum Sortieren', en: 'Drag to reorder' };
-
-    return (
-        <li
-            draggable
-            onDragStart={(event) => {
-                state.setDraggingId(id);
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', id);
-            }}
-            onDragEnter={() => {
-                if (state.draggingId && state.draggingId !== id) state.setOverId(id);
-            }}
-            onDragOver={(event) => {
-                if (!state.draggingId) return;
-                event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
-            }}
-            onDrop={(event) => {
-                if (!state.draggingId) return;
-                event.preventDefault();
-                state.commitDrop();
-            }}
-            onDragEnd={() => {
-                state.setDraggingId(null);
-                state.setOverId(null);
-            }}
-            className={cn(
-                'flex items-stretch gap-2 transition-opacity',
-                isDragging && 'opacity-50',
-                isOver && 'rounded-md ring-2 ring-primary/60 ring-offset-2 ring-offset-background',
-            )}
-            aria-grabbed={isDragging}
-            data-index={index}
-        >
-            <button
-                type="button"
-                tabIndex={-1}
-                aria-label={dragHandleLabel[locale]}
-                title={dragHandleLabel[locale]}
-                className="flex w-7 shrink-0 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:text-foreground active:cursor-grabbing"
-            >
-                <GripVerticalIcon className="size-4" />
-            </button>
-            <div className="min-w-0 flex-1">{children}</div>
-        </li>
     );
 }
 

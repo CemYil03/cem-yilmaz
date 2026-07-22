@@ -60,7 +60,7 @@ const WORKSPACE_TITLES: Record<string, { de: string; en: string }> = {
     fitness: { de: 'Fitness', en: 'Fitness' },
     nutrition: { de: 'Ernährung', en: 'Nutrition' },
     medical: { de: 'Medizinisches', en: 'Medical' },
-    media: { de: 'Filme & Serien', en: 'Movies & TV' },
+    media: { de: 'Medien', en: 'Media' },
     travel: { de: 'Reisen', en: 'Travel' },
     'visitor-chats': { de: 'Besucher-Chats', en: 'Visitor chats' },
 };
