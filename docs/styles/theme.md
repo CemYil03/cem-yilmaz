@@ -125,6 +125,25 @@ The light page background is **`oklch(0.95 0.012 250)`** — a cool off-white. P
 hairline borders disappear against it. The slight cool tilt (hue 250) keeps the page calm and pairs well with the deep navy used in dark
 mode.
 
+## Scrollbar gutter (no layout shift)
+
+Chrome classic-scrollbar mode (and “Always show scrollbars” on macOS) grows/shrinks the viewport width when a vertical scrollbar appears or
+disappears. That shows up as a left–right jump when:
+
+- a tab switch changes whether the page overflows, or
+- a dialog / sheet locks body scroll and removes the bar.
+
+Two root rules keep the layout still — both are required:
+
+| Rule                          | Where                                      | Why                                                                                                                                                                                                                                                                                                                          |
+| ----------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scrollbar-gutter: stable`    | `html` in `src/styles.css` (`@layer base`) | Reserves the scrollbar column on the viewport even when content is short, and keeps the lane while Radix scroll-lock sets `overflow: hidden`.                                                                                                                                                                                |
+| `overflow-x-clip` on `<body>` | `src/routes/__root.tsx`                    | Clips horizontal bleed without creating a scroll container. `overflow-x: hidden` would force `overflow-y` to `auto`, making `<body>` the scrollport — sticky headers break and the scrollbar toggles on the wrong element. Same reason public pages use `overflow-x-clip` on their page wrappers (see `Header` sticky note). |
+
+Do not “fix” the shift by forcing `overflow-y: scroll` forever — that always paints a disabled track. Do not put `overflow-x-hidden` on
+`<body>` or on sticky ancestors. Nested scroll surfaces (chat transcripts) still opt into their own `scrollbar-gutter: stable`; that is
+independent of the document gutter — see [chat.md](./chat.md).
+
 ## Switching modes
 
 Three modes are persisted in `localStorage` under the key `theme`:
@@ -183,18 +202,20 @@ If a future asset needs a light/dark variant (logo, illustration, OG image), the
 
 ## File locations
 
-| Concern                               | File                                                 |
-| ------------------------------------- | ---------------------------------------------------- |
-| Light & dark token definitions        | `src/styles.css` (`:root`, `.dark`, `@theme inline`) |
-| Inline pre-paint mode application     | `src/routes/__root.tsx` (`THEME_INIT_SCRIPT`)        |
-| `<link rel="icon">` declarations      | `src/routes/__root.tsx` (`head().links`)             |
-| User-facing toggle + manual switching | `src/web/components/ThemeSelector.tsx`               |
-| Site-wide ambient backdrop            | `src/web/components/AmbientBackdrop.tsx`             |
-| Shared frosted-glass surface          | `src/web/components/GlassCard.tsx`                   |
-| `drift` keyframe                      | `src/styles.css`                                     |
-| Favicons                              | `public/favicon.ico`, `public/favicon-dark.ico`      |
-| Web app manifest                      | `public/manifest.json`                               |
-| This doc                              | `docs/styles/theme.md`                               |
+| Concern                               | File                                                    |
+| ------------------------------------- | ------------------------------------------------------- |
+| Light & dark token definitions        | `src/styles.css` (`:root`, `.dark`, `@theme inline`)    |
+| Document scrollbar gutter             | `src/styles.css` (`html { scrollbar-gutter: stable }`)  |
+| Body overflow (clip, not hidden)      | `src/routes/__root.tsx` (`overflow-x-clip` on `<body>`) |
+| Inline pre-paint mode application     | `src/routes/__root.tsx` (`THEME_INIT_SCRIPT`)           |
+| `<link rel="icon">` declarations      | `src/routes/__root.tsx` (`head().links`)                |
+| User-facing toggle + manual switching | `src/web/components/ThemeSelector.tsx`                  |
+| Site-wide ambient backdrop            | `src/web/components/AmbientBackdrop.tsx`                |
+| Shared frosted-glass surface          | `src/web/components/GlassCard.tsx`                      |
+| `drift` keyframe                      | `src/styles.css`                                        |
+| Favicons                              | `public/favicon.ico`, `public/favicon-dark.ico`         |
+| Web app manifest                      | `public/manifest.json`                                  |
+| This doc                              | `docs/styles/theme.md`                                  |
 
 ## Ambient backdrop
 

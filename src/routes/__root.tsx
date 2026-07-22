@@ -139,7 +139,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             {/* selection:bg-[rgba(79,184,178,0.24)] */}
             <body
                 className={cn(
-                    'font-sans antialiased wrap-anywhere overflow-x-hidden',
+                    // `overflow-x-clip` (not `hidden`): `hidden` forces
+                    // `overflow-y: auto` and turns `<body>` into a scroll
+                    // container, so the scrollbar appears/disappears with
+                    // content height and shoves the layout sideways. `clip`
+                    // still kills horizontal bleed without creating a
+                    // scrollport. Pair with `html { scrollbar-gutter: stable }`
+                    // in styles.css — see docs/styles/theme.md.
+                    'font-sans antialiased wrap-anywhere overflow-x-clip',
                     // `!` so this beats the global `body { @apply bg-background }`
                     // rule — capture pages need a true white canvas.
                     isBrowserCaptureRoute && 'bg-white!',

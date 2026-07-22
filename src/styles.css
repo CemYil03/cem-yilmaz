@@ -204,6 +204,14 @@
     * {
         @apply border-border outline-ring/50;
     }
+    /*
+     * Always reserve the vertical scrollbar lane on the viewport. Without this,
+     * Chrome shifts the whole page left/right when overflow content appears
+     * (tab switches) or disappears (dialog scroll-lock). See docs/styles/theme.md.
+     */
+    html {
+        scrollbar-gutter: stable;
+    }
     body {
         @apply bg-background text-foreground;
         font-family: var(--font-body);
