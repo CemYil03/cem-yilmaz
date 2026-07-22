@@ -47,7 +47,9 @@ These are non-negotiable. The full details are in `docs/conventions.md`.
 - **Naming**: entity-action (`sessionUpsert`, `userFindOne`, `toGqlSession`, `guardUserSubscription`)
 - **Generated files — do not edit**: `src/routeTree.gen.ts`, `src/server/graphql/generated.ts`, `src/web/graphql/generated.ts`, `drizzle/`
 - **Icons**: Lucide React only (`lucide-react`)
-- **UI components**: base primitives in `src/web/components/base/`, app components in `src/web/components/`
+- **UI components**: base primitives in `src/web/components/base/`, app components in `src/web/components/`. **Search that tree (and any
+  relevant `docs/styles/*.md`) before creating a new component** — reuse or extend what exists; only add a new file when nothing covers the
+  job. See [docs/conventions.md](./docs/conventions.md#ui-components).
 - **Class merging**: use `cn()` from `src/web/utils/cn.ts`
 - **Motion**: every animation must answer a question the user is already asking — see [docs/styles/motion.md](./docs/styles/motion.md) for
   the guardrails, anti-patterns, and reduced-motion stance. No motion library; reuse `Reveal` / `useInView`.
