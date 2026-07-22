@@ -1,4 +1,5 @@
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatIsoDate } from '../../shared';
 import { DatePicker } from './base/date-picker';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
@@ -25,7 +26,7 @@ function DateField({
         <div className="relative">
             <DatePicker
                 value={value ? parseISO(value) : undefined}
-                onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : '')}
+                onValueChange={(next) => onChange(next ? formatIsoDate(next) : '')}
                 className="w-full"
                 captionLayout="dropdown"
                 locale={DATE_FNS_LOCALE[locale]}

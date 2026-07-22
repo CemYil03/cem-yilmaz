@@ -1,8 +1,8 @@
 import { format, parseISO } from 'date-fns';
 import { ChevronDownIcon, ChevronUpIcon, ExternalLinkIcon, PaperclipIcon, PencilIcon, TimerIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
+import { formatCurrency, formatDate } from '../../shared';
 import { cn } from '../utils/cn';
-import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
 import { Button } from './base/button';
 import { Bubble, MessageRow } from './chat-message/shared';
@@ -12,7 +12,6 @@ import {
     ACTIVITY_KIND_LABELS,
     OFFER_STATUS_LABELS,
     formatDuration,
-    formatEur,
 } from './WorkspaceProjectActivityConstants';
 import type { WorkspaceProjectActivityRow } from './WorkspaceProjectActivityConstants';
 
@@ -29,9 +28,7 @@ import type { WorkspaceProjectActivityRow } from './WorkspaceProjectActivityCons
 // Centered "Montag, 14. März" pill — anchors the chat in time without competing
 // with the bubbles. Repeats per day, not per row.
 export function WorkspaceProjectActivityDaySeparator({ iso, locale }: { iso: string; locale: Locale }) {
-    const formatted = format(parseISO(iso), locale === 'de' ? 'EEEE, d. MMMM yyyy' : 'EEEE, d MMMM yyyy', {
-        locale: DATE_FNS_LOCALE[locale],
-    });
+    const formatted = formatDate(iso, { locale, weekday: true, dateStyle: 'long' });
     return (
         <div aria-hidden className="flex items-center justify-center py-1">
             <span className="rounded-full bg-muted/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -105,7 +102,7 @@ function BubbleActivityRow({
                     {activity.kind === 'offer' && activity.amountCents != null ? (
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
                             <span className="rounded-md bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-                                {formatEur(activity.amountCents)}
+                                {formatCurrency(activity.amountCents, { locale, nullAs: 'empty' })}
                             </span>
                             {activity.offerStatus ? (
                                 <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground">

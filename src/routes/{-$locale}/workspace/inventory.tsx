@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatCurrency, formatDate, formatIsoDate } from '../../../shared';
 import {
     ArrowUpRightIcon,
     GhostIcon,
@@ -224,7 +225,9 @@ function OverviewStrip({
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">
                     {{ de: 'Materieller Nettowert', en: 'Material net worth' }[locale]}
                 </div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{formatCurrency(netWorthCents, locale)}</div>
+                <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {formatCurrency(netWorthCents, { locale, maximumFractionDigits: 0 })}
+                </div>
                 <div className="mt-1 text-xs text-muted-foreground">
                     {{ de: `${owned.length} aktive Einträge`, en: `${owned.length} owned items` }[locale]}
                 </div>
@@ -255,7 +258,7 @@ function OverviewStrip({
                                     {row.brand ? <span className="text-muted-foreground"> · {row.brand}</span> : null}
                                 </Link>
                                 <span className="tabular-nums text-muted-foreground shrink-0">
-                                    {formatDate(row.warrantyEndsAt, locale)}
+                                    {formatDate(row.warrantyEndsAt, { locale })}
                                 </span>
                             </li>
                         ))}
@@ -345,7 +348,9 @@ function GroupedList({
                                 {{ de: `${group.items.length} Stück`, en: `${group.items.length} items` }[locale]}
                             </span>
                         </h2>
-                        <div className="text-xs tabular-nums text-muted-foreground">{formatCurrency(group.total, locale)}</div>
+                        <div className="text-xs tabular-nums text-muted-foreground">
+                            {formatCurrency(group.total, { locale, maximumFractionDigits: 0 })}
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                         {group.items.map((item) => (
@@ -425,12 +430,14 @@ function ItemCard({
                 </div>
                 <div className="text-right shrink-0">
                     {item.currentValueCents !== null ? (
-                        <div className="text-sm font-semibold tabular-nums">{formatCurrency(item.currentValueCents, locale)}</div>
+                        <div className="text-sm font-semibold tabular-nums">
+                            {formatCurrency(item.currentValueCents, { locale, maximumFractionDigits: 0 })}
+                        </div>
                     ) : null}
                     {item.purchasedAt ? (
                         <div className="text-[10px] text-muted-foreground tabular-nums">
                             {{ de: 'Gekauft ', en: 'Bought ' }[locale]}
-                            {formatDate(item.purchasedAt, locale)}
+                            {formatDate(item.purchasedAt, { locale })}
                         </div>
                     ) : null}
                 </div>
@@ -440,7 +447,7 @@ function ItemCard({
 }
 
 function WarrantyBadge({ state, endsAt, locale }: { state: 'ok' | 'soon' | 'expired'; endsAt: string; locale: Locale }) {
-    const label = formatDate(endsAt, locale);
+    const label = formatDate(endsAt, { locale });
     const [Icon, cls, ariaLabel] =
         state === 'ok'
             ? [
@@ -524,10 +531,10 @@ function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null;
                         brand: state.brand.trim() || null,
                         model: state.model.trim() || null,
                         serialNumber: state.serialNumber.trim() || null,
-                        purchasedAt: state.purchasedAt ? dateToIso(state.purchasedAt) : null,
+                        purchasedAt: state.purchasedAt ? formatIsoDate(state.purchasedAt) : null,
                         purchasePriceCents: priceCents,
                         condition: state.condition === 'none' ? null : state.condition,
-                        warrantyEndsAt: state.warrantyEndsAt ? dateToIso(state.warrantyEndsAt) : null,
+                        warrantyEndsAt: state.warrantyEndsAt ? formatIsoDate(state.warrantyEndsAt) : null,
                         warrantyProvider: state.warrantyProvider.trim() || null,
                         warrantyNotes: state.warrantyNotes.trim() || null,
                         notes: state.notes.trim() || null,
@@ -763,33 +770,6 @@ function warrantyState(endsAt: string | null | undefined): 'ok' | 'soon' | 'expi
     if (days < 0) return 'expired';
     if (days < 90) return 'soon';
     return 'ok';
-}
-
-function formatCurrency(cents: number | null | undefined, locale: Locale): string {
-    const value = (cents ?? 0) / 100;
-    return new Intl.NumberFormat(locale === 'de' ? 'de-DE' : 'en-GB', {
-        style: 'currency',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
-    }).format(value);
-}
-
-function formatDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
-}
-
-function dateToIso(date: Date): string {
-    // Local date → ISO date-only string (YYYY-MM-DD), matching the drizzle
-    // `date` column's shape. Avoids timezone shift from `toISOString().slice(0, 10)`.
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
 }
 
 function centsToEuros(cents: number): string {

@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
 import {
     CalendarClockIcon,
     CheckIcon,
@@ -87,9 +86,9 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
-import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
+import { formatMonthYear } from '../../../shared';
 
 // Admin editor for Cem's movie watchlist, TV series library, and favourite
 // YouTube/podcast channels. Admin-only, noindex; nothing on this page has a
@@ -1284,11 +1283,7 @@ function ShowStatusGroup({
 function showNextSeasonLabel(show: ShowRow, locale: Locale): string | null {
     if (show.isCompleted) return { de: 'Abgeschlossen', en: 'Completed' }[locale];
     if (show.nextSeasonReleaseDate) {
-        try {
-            return format(parseISO(show.nextSeasonReleaseDate), 'MMM yyyy', { locale: DATE_FNS_LOCALE[locale] });
-        } catch {
-            return show.nextSeasonReleaseDate;
-        }
+        return formatMonthYear(show.nextSeasonReleaseDate, { locale });
     }
     if (show.nextSeasonReleaseRough) return show.nextSeasonReleaseRough;
     return null;

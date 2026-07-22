@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowRightIcon, BriefcaseIcon, CodeXmlIcon, MailIcon } from 'lucide-react';
+import { formatDate } from '../../shared';
 import { Button } from '../../web/components/base/button';
 import { CvSkillGroup } from '../../web/components/CvSkillGroup';
 import { Footer } from '../../web/components/Footer';
@@ -85,9 +86,6 @@ function buildFaq(locale: Locale): ReadonlyArray<FaqEntry> {
         },
     ];
 }
-
-const GERMAN_DATE_FORMATTER = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-const ENGLISH_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
 export const Route = createFileRoute('/{-$locale}/about')({
     loader: () => routeLoaderGraphqlClient(AboutPageDocument)(),
@@ -218,8 +216,7 @@ function AboutPortrait({ alt }: { alt: string }) {
 }
 
 function IdentityFacts({ locale }: { locale: Locale }) {
-    const formatter = locale === 'de' ? GERMAN_DATE_FORMATTER : ENGLISH_DATE_FORMATTER;
-    const born = `${formatter.format(new Date(personalInfo.dateOfBirth))} — ${personalInfo.placeOfBirth}`;
+    const born = `${formatDate(personalInfo.dateOfBirth, { locale, dateStyle: 'long' })} — ${personalInfo.placeOfBirth}`;
     const residence = `${personalInfo.residence.postalCode} ${personalInfo.residence.city}`;
     const languages = personalInfo.spokenLanguages.map((l) => l[locale]).join(', ');
     return (

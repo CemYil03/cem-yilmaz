@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../shared';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { adminTaxYearFindMany } from '../queries/adminTaxYearFindMany';
@@ -19,12 +20,14 @@ export async function taxSnapshotForAgent(session: GqlSSession, serverRuntime: S
     for (const year of [...years].sort((a, b) => b.year - a.year)) {
         const deadline = year.filingDeadline ? ` — deadline ${year.filingDeadline}` : '';
         lines.push('', `### ${year.year} (status: ${year.status}${deadline}) (id: ${year.taxYearId})`);
-        lines.push(`- totals: income ${formatEur(year.totalIncomeCents)}, deductible ${formatEur(year.totalDeductibleCents)}`);
+        lines.push(
+            `- totals: income ${formatCurrency(year.totalIncomeCents, { locale: 'de' })}, deductible ${formatCurrency(year.totalDeductibleCents, { locale: 'de' })}`,
+        );
 
         if (year.incomeSources.length > 0) {
             lines.push('- income sources:');
             for (const src of year.incomeSources) {
-                const amount = src.grossAmountCents != null ? formatEur(src.grossAmountCents) : '(amount TBD)';
+                const amount = src.grossAmountCents != null ? formatCurrency(src.grossAmountCents, { locale: 'de' }) : '(amount TBD)';
                 lines.push(`  - [${src.kind}] ${src.label}: ${amount} (id: ${src.incomeSourceId})`);
             }
         }
@@ -35,7 +38,7 @@ export async function taxSnapshotForAgent(session: GqlSSession, serverRuntime: S
                 const flag = exp.deductible ? '' : ' [not deductible]';
                 const files = exp.files.length > 0 ? ` [${exp.files.length} file(s)]` : '';
                 lines.push(
-                    `  - [${exp.categoryKey}] ${exp.description}: ${formatEur(exp.amountCents)}${flag}${files} (id: ${exp.expenseId})`,
+                    `  - [${exp.categoryKey}] ${exp.description}: ${formatCurrency(exp.amountCents, { locale: 'de' })}${flag}${files} (id: ${exp.expenseId})`,
                 );
             }
         }
@@ -49,8 +52,4 @@ export async function taxSnapshotForAgent(session: GqlSSession, serverRuntime: S
     }
 
     return lines.join('\n');
-}
-
-function formatEur(cents: number): string {
-    return `${(cents / 100).toFixed(2)} €`;
 }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import type {
@@ -10,8 +10,10 @@ import type {
 } from '../../graphql/generated';
 import type { DateTimeDraft, SlotDraft, SlotDraftOf } from '../../chat/chatAssistantInputKinds';
 import { formatAnswerValue, serializeSlotAnswer } from '../../chat/chatAssistantInputKinds';
+import { formatIsoDate } from '../../../shared';
 import { cn } from '../../utils/cn';
 import { DATE_FNS_LOCALE } from '../../utils/dateFnsLocale';
+import type { Locale } from '../../utils/locale';
 import { useLocale } from '../../hooks/useLocale';
 import { Button } from '../base/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../base/card';
@@ -117,7 +119,9 @@ export function ChatMessageAssistantInputCollectionView({
                               />
                           ))
                         : null}
-                    {state !== 'pending' ? <CollectionAnswerSummary inputs={message.inputs} answersByInputId={answersByInputId} /> : null}
+                    {state !== 'pending' ? (
+                        <CollectionAnswerSummary inputs={message.inputs} answersByInputId={answersByInputId} locale={locale} />
+                    ) : null}
                     {state === 'pending' && message.mode !== 'StepThrough' && isInteractive && onSubmit ? (
                         <Button size="sm" onClick={() => onSubmit(message.chatMessageId, collectAnswers())} className="justify-self-start">
                             {{ de: 'Absenden', en: 'Submit' }[locale]}
@@ -139,9 +143,11 @@ export function ChatMessageAssistantInputCollectionView({
 function CollectionAnswerSummary({
     inputs,
     answersByInputId,
+    locale,
 }: {
     inputs: ReadonlyArray<GqlCChatAssistantInput>;
     answersByInputId: ReadonlyMap<string, GqlCChatAssistantInputValue>;
+    locale: Locale;
 }) {
     return (
         <ul className="grid gap-2 text-sm">
@@ -151,7 +157,7 @@ function CollectionAnswerSummary({
                     <li key={slot.inputId} className="grid gap-0.5">
                         <span className="text-muted-foreground">{slot.prompt}</span>
                         <span className={cn('text-foreground', !answer && 'text-muted-foreground/60')}>
-                            {answer ? formatAnswerValue(answer) : '—'}
+                            {answer ? formatAnswerValue(answer, locale) : '—'}
                         </span>
                     </li>
                 );
@@ -397,7 +403,7 @@ function DateControl({
     return (
         <DatePicker
             value={value ? parseISO(value) : undefined}
-            onValueChange={(next) => onChange(next ? format(next, 'yyyy-MM-dd') : undefined)}
+            onValueChange={(next) => onChange(next ? formatIsoDate(next) : undefined)}
             className="w-full"
             locale={DATE_FNS_LOCALE[locale]}
         />
@@ -428,7 +434,7 @@ function DateRangeControl({
         <DateRangePicker
             value={value}
             onValueChange={(next) =>
-                onChange(next?.from ? format(next.from, 'yyyy-MM-dd') : undefined, next?.to ? format(next.to, 'yyyy-MM-dd') : undefined)
+                onChange(next?.from ? formatIsoDate(next.from) : undefined, next?.to ? formatIsoDate(next.to) : undefined)
             }
             className="w-full"
             locale={DATE_FNS_LOCALE[locale]}
@@ -519,7 +525,7 @@ function DateTimeControl({ value, onChange }: { value: DateTimeDraft | undefined
         <div className="flex gap-2">
             <DatePicker
                 value={value?.date ? parseISO(value.date) : undefined}
-                onValueChange={(next) => onChange({ date: next ? format(next, 'yyyy-MM-dd') : undefined, time: value?.time })}
+                onValueChange={(next) => onChange({ date: next ? formatIsoDate(next) : undefined, time: value?.time })}
                 className="flex-1"
                 locale={DATE_FNS_LOCALE[locale]}
             />

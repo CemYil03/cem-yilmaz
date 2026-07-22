@@ -11,6 +11,8 @@
 // typed `value` without ad-hoc type guards.
 
 import { format, parseISO } from 'date-fns';
+import { formatDate, formatDateRange } from '../../shared';
+import type { Locale } from '../utils/locale';
 import type { GqlCChatAssistantInputValue, GqlCChatMessageUserInputAnswerCreate } from '../graphql/generated';
 
 // --- Drafts (per-slot in-progress UI state) ---------------------------------
@@ -99,12 +101,12 @@ export function serializeSlotAnswer(draft: SlotDraft): GqlCChatAssistantInputVal
 
 /** Produce a human-readable rendering of a typed answer value. Used by
  *  `<ChatMessageUserInput>` to print previously-submitted answers. */
-export function formatAnswerValue(value: GqlCChatAssistantInputValue): string {
+export function formatAnswerValue(value: GqlCChatAssistantInputValue, locale: Locale): string {
     switch (value.__typename) {
         case 'ChatAssistantInputValueDate':
-            return format(parseISO(value.date), 'PP');
+            return formatDate(value.date, { locale });
         case 'ChatAssistantInputValueDateRange':
-            return `${format(parseISO(value.from), 'PP')} – ${format(parseISO(value.to), 'PP')}`;
+            return formatDateRange(value.from, value.to, { locale });
         case 'ChatAssistantInputValueDateTime':
             return format(parseISO(value.dateTime), 'PPpp');
         case 'ChatAssistantInputValueTime':
@@ -114,7 +116,7 @@ export function formatAnswerValue(value: GqlCChatAssistantInputValue): string {
         case 'ChatAssistantInputValueStringList':
             return value.values.join(', ');
         case 'ChatAssistantInputValueBoolean':
-            return value.boolean ? 'Yes' : 'No';
+            return value.boolean ? { de: 'Ja', en: 'Yes' }[locale] : { de: 'Nein', en: 'No' }[locale];
         case undefined:
             return '';
     }

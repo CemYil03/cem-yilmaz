@@ -1,5 +1,6 @@
 import { sankey, sankeyLinkHorizontal, sankeyLeft } from 'd3-sankey';
 import { useMemo } from 'react';
+import { formatCurrency } from '../../shared';
 import type { Locale } from '../utils/locale';
 
 // Hand-rolled inline SVG Sankey for `/workspace/finances`. Same "no chart
@@ -7,14 +8,6 @@ import type { Locale } from '../utils/locale';
 // layout math; every stroke, fill, and label is our SVG. Colors resolve via
 // Tailwind semantic classes so light / dark themes both work without a
 // per-mode branch. See `docs/features/workspace-finances.md`.
-
-function formatCents(cents: number, locale: Locale): string {
-    return new Intl.NumberFormat(locale === 'de' ? 'de-DE' : 'en-GB', {
-        style: 'currency',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
-    }).format(cents / 100);
-}
 
 type FinancesSankeyNodeKind = 'income' | 'category' | 'item';
 
@@ -140,7 +133,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
                             className="fill-none stroke-primary/25 hover:stroke-primary/45 transition-colors"
                             strokeWidth={Math.max(link.width ?? 1, 1)}
                         >
-                            <title>{formatCents(link.value, locale)}</title>
+                            <title>{formatCurrency(link.value, { locale, maximumFractionDigits: 0 })}</title>
                         </path>
                     );
                 })}
@@ -160,7 +153,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
                     return (
                         <g key={`node-${node.id}`}>
                             <rect x={x0} y={y0} width={x1 - x0} height={nodeHeight} rx={2} className={NODE_KIND_CLASSES[node.kind]}>
-                                <title>{`${node.label} — ${formatCents(node.value ?? 0, locale)}`}</title>
+                                <title>{`${node.label} — ${formatCurrency(node.value ?? 0, { locale, maximumFractionDigits: 0 })}`}</title>
                             </rect>
                             <text
                                 x={labelX}
@@ -172,7 +165,7 @@ export function FinancesSankey({ nodes, links, locale, ariaLabel }: FinancesSank
                                 {node.label}
                             </text>
                             {node.sublabel ? (
-                                <text x={labelX} y={midY + 10} dy="0.32em" textAnchor="start" className="fill-muted-foreground text-[10px]">
+                                <text x={labelX} y={midY + 10} dy="0.32em" textAnchor="start" className="fill-muted-foreground text-xs">
                                     {node.sublabel}
                                 </text>
                             ) : null}

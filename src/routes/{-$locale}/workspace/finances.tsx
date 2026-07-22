@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import type { LucideIcon } from 'lucide-react';
 import {
     Building2Icon,
     CalendarClockIcon,
@@ -21,11 +22,11 @@ import {
     Trash2Icon,
     UsersIcon,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
+import { formatCurrency, formatDateRange, formatIsoDate } from '../../../shared';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -43,8 +44,8 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
-import { FinancesSankey } from '../../../web/components/FinancesSankey';
 import type { FinancesSankeyInputLink, FinancesSankeyInputNode } from '../../../web/components/FinancesSankey';
+import { FinancesSankey } from '../../../web/components/FinancesSankey';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -261,14 +262,18 @@ function OverviewStrip({
         <section className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-3">
             <GlassCard className="px-5 py-4">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">{{ de: 'Pro Monat', en: 'Per month' }[locale]}</div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{formatCurrency(monthlyExpensesCents, locale)}</div>
+                <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {formatCurrency(monthlyExpensesCents, { locale, maximumFractionDigits: 0 })}
+                </div>
                 <div className="mt-1 text-xs text-muted-foreground">
                     {{ de: 'Summe aller aktiven Positionen', en: 'Sum of every active cost' }[locale]}
                 </div>
             </GlassCard>
             <GlassCard className="px-5 py-4">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">{{ de: 'Pro Jahr', en: 'Per year' }[locale]}</div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{formatCurrency(yearlyExpensesCents, locale)}</div>
+                <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {formatCurrency(yearlyExpensesCents, { locale, maximumFractionDigits: 0 })}
+                </div>
                 <div className="mt-1 text-xs text-muted-foreground">
                     {{ de: '12 Monate hochgerechnet', en: '12-month projection' }[locale]}
                 </div>
@@ -290,7 +295,7 @@ function OverviewStrip({
                 </div>
                 <div className="mt-1 text-2xl font-semibold tabular-nums">
                     {monthlyNetIncomeCents != null ? (
-                        formatCurrency(monthlyNetIncomeCents, locale)
+                        formatCurrency(monthlyNetIncomeCents, { locale, maximumFractionDigits: 0 })
                     ) : (
                         <span className="text-muted-foreground text-base font-normal">
                             {{ de: 'Nicht gesetzt', en: 'Not set' }[locale]}
@@ -302,12 +307,12 @@ function OverviewStrip({
                         ? { de: 'Setze dein Nettogehalt für einen Puffer.', en: 'Set your net salary to see leftover.' }[locale]
                         : leftoverCents >= 0
                           ? {
-                                de: `${formatCurrency(leftoverCents, locale)} übrig`,
-                                en: `${formatCurrency(leftoverCents, locale)} leftover`,
+                                de: `${formatCurrency(leftoverCents, { locale, maximumFractionDigits: 0 })} übrig`,
+                                en: `${formatCurrency(leftoverCents, { locale, maximumFractionDigits: 0 })} leftover`,
                             }[locale]
                           : {
-                                de: `${formatCurrency(-leftoverCents, locale)} über dem Einkommen`,
-                                en: `${formatCurrency(-leftoverCents, locale)} over income`,
+                                de: `${formatCurrency(-leftoverCents, { locale, maximumFractionDigits: 0 })} über dem Einkommen`,
+                                en: `${formatCurrency(-leftoverCents, { locale, maximumFractionDigits: 0 })} over income`,
                             }[locale]}
                 </div>
             </GlassCard>
@@ -383,8 +388,8 @@ function SankeyView({
     }
 
     const ariaLabel = {
-        de: `Sankey-Diagramm der Ausgaben (${PERIOD_LABELS[period].de.toLowerCase()}): ${formatCurrency(totalCents, locale)} verteilt auf ${costs.length} Positionen.`,
-        en: `Sankey diagram of expenses (${PERIOD_LABELS[period].en.toLowerCase()}): ${formatCurrency(totalCents, locale)} across ${costs.length} costs.`,
+        de: `Sankey-Diagramm der Ausgaben (${PERIOD_LABELS[period].de.toLowerCase()}): ${formatCurrency(totalCents, { locale, maximumFractionDigits: 0 })} verteilt auf ${costs.length} Positionen.`,
+        en: `Sankey diagram of expenses (${PERIOD_LABELS[period].en.toLowerCase()}): ${formatCurrency(totalCents, { locale, maximumFractionDigits: 0 })} across ${costs.length} costs.`,
     }[locale];
 
     return <FinancesSankey nodes={nodes} links={links} locale={locale} ariaLabel={ariaLabel} />;
@@ -438,7 +443,8 @@ function GroupedList({
                                 </span>
                             </h2>
                             <div className="text-xs tabular-nums text-muted-foreground">
-                                {formatCurrency(group.total, locale)} · {PERIOD_LABELS[period][locale].toLowerCase()}
+                                {formatCurrency(group.total, { locale, maximumFractionDigits: 0 })} ·{' '}
+                                {PERIOD_LABELS[period][locale].toLowerCase()}
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -489,11 +495,14 @@ function CostCard({
                     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                         <RepeatIcon className="size-3" aria-hidden />
                         <span>
-                            {formatCurrency(cost.amountCents, locale)} · {CADENCE_LABELS[cost.cadence][locale]}
+                            {formatCurrency(cost.amountCents, { locale, maximumFractionDigits: 0 })} ·{' '}
+                            {CADENCE_LABELS[cost.cadence][locale]}
                         </span>
                     </div>
                     {cost.startsOn || cost.endsOn ? (
-                        <div className="mt-0.5 text-xs text-muted-foreground">{formatDateRange(cost.startsOn, cost.endsOn, locale)}</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                            {formatDateRange(cost.startsOn, cost.endsOn, { locale, openEnded: true })}
+                        </div>
                     ) : null}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
@@ -524,7 +533,9 @@ function CostCard({
                     <div className="text-xs text-muted-foreground/60">&nbsp;</div>
                 )}
                 <div className="text-right shrink-0">
-                    <div className="text-sm font-semibold tabular-nums">{formatCurrency(projected, locale)}</div>
+                    <div className="text-sm font-semibold tabular-nums">
+                        {formatCurrency(projected, { locale, maximumFractionDigits: 0 })}
+                    </div>
                     <div className="text-[10px] text-muted-foreground tabular-nums">{PERIOD_LABELS[period][locale].toLowerCase()}</div>
                 </div>
             </div>
@@ -579,8 +590,8 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                         cadence: state.cadence,
                         notes: state.notes.trim() || null,
                         active: state.active,
-                        startsOn: state.startsOn ? dateToIso(state.startsOn) : null,
-                        endsOn: state.endsOn ? dateToIso(state.endsOn) : null,
+                        startsOn: state.startsOn ? formatIsoDate(state.startsOn) : null,
+                        endsOn: state.endsOn ? formatIsoDate(state.endsOn) : null,
                     },
                 ],
             });
@@ -856,7 +867,10 @@ function buildSankey(
         id: incomeId,
         kind: 'income',
         label: incomeCents != null ? { de: 'Nettoeinkommen', en: 'Net income' }[locale] : { de: 'Ausgaben', en: 'Expenses' }[locale],
-        sublabel: incomeCents != null ? formatCurrency(incomeCents, locale) : formatCurrency(totalCents, locale),
+        sublabel:
+            incomeCents != null
+                ? formatCurrency(incomeCents, { locale, maximumFractionDigits: 0 })
+                : formatCurrency(totalCents, { locale, maximumFractionDigits: 0 }),
     });
 
     const byCategory = new Map<GqlCAdminFinancesRecurringCostCategory, { total: number; rows: CostRow[] }>();
@@ -875,51 +889,22 @@ function buildSankey(
             id: categoryId,
             kind: 'category',
             label: CATEGORY_LABELS[key][locale],
-            sublabel: formatCurrency(entry.total, locale),
+            sublabel: formatCurrency(entry.total, { locale, maximumFractionDigits: 0 }),
         });
         links.push({ source: incomeId, target: categoryId, valueCents: entry.total });
         for (const row of entry.rows) {
             const itemId = `item:${row.costId}`;
-            nodes.push({ id: itemId, kind: 'item', label: row.name, sublabel: formatCurrency(projectedCents(row, period), locale) });
+            nodes.push({
+                id: itemId,
+                kind: 'item',
+                label: row.name,
+                sublabel: formatCurrency(projectedCents(row, period), { locale, maximumFractionDigits: 0 }),
+            });
             links.push({ source: categoryId, target: itemId, valueCents: projectedCents(row, period) });
         }
     }
 
     return { nodes, links, totalCents };
-}
-
-function formatCurrency(cents: number | null | undefined, locale: Locale): string {
-    const value = (cents ?? 0) / 100;
-    return new Intl.NumberFormat(locale === 'de' ? 'de-DE' : 'en-GB', {
-        style: 'currency',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
-    }).format(value);
-}
-
-function formatDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
-}
-
-function formatDateRange(startsOn: string | null | undefined, endsOn: string | null | undefined, locale: Locale): string {
-    if (!startsOn && !endsOn) return '—';
-    if (startsOn && endsOn) return `${formatDate(startsOn, locale)} – ${formatDate(endsOn, locale)}`;
-    if (startsOn) return { de: `ab ${formatDate(startsOn, locale)}`, en: `from ${formatDate(startsOn, locale)}` }[locale];
-    return { de: `bis ${formatDate(endsOn, locale)}`, en: `until ${formatDate(endsOn, locale)}` }[locale];
-}
-
-function dateToIso(date: Date): string {
-    // Local date → ISO date-only string (YYYY-MM-DD), matching the drizzle
-    // `date` column's shape. Avoids timezone shift from `toISOString().slice(0, 10)`.
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
 }
 
 function centsToEuros(cents: number): string {

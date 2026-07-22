@@ -1,4 +1,5 @@
 import { asc } from 'drizzle-orm';
+import { formatCurrency } from '../../shared';
 import type { AdminFinancesRecurringCost } from '../db/schema';
 import { financeRecurringCosts } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
@@ -27,8 +28,8 @@ export async function financesSnapshotForAgent(session: GqlSSession, serverRunti
 
     const lines: string[] = ['## Finances'];
     lines.push(
-        `- monthly net income: ${monthlyNetIncomeCents === null ? '(unset)' : formatEur(monthlyNetIncomeCents)}`,
-        `- recurring expenses (active rows): ${formatEur(totals.monthlyCents)}/month, ${formatEur(totals.yearlyCents)}/year`,
+        `- monthly net income: ${monthlyNetIncomeCents === null ? '(unset)' : formatCurrency(monthlyNetIncomeCents, { locale: 'de' })}`,
+        `- recurring expenses (active rows): ${formatCurrency(totals.monthlyCents, { locale: 'de' })}/month, ${formatCurrency(totals.yearlyCents, { locale: 'de' })}/year`,
     );
 
     if (rows.length === 0) {
@@ -53,12 +54,8 @@ export async function financesSnapshotForAgent(session: GqlSSession, serverRunti
 }
 
 function costLine(cost: AdminFinancesRecurringCost): string {
-    const amount = `${formatEur(cost.amountCents)}/${cost.cadence === 'yearly' ? 'year' : 'month'}`;
+    const amount = `${formatCurrency(cost.amountCents, { locale: 'de' })}/${cost.cadence === 'yearly' ? 'year' : 'month'}`;
     const paused = cost.active ? '' : ' [PAUSED]';
     const notes = cost.notes ? ` — ${cost.notes}` : '';
     return `${cost.name}: ${amount}${paused}${notes} (id: ${cost.costId})`;
-}
-
-function formatEur(cents: number): string {
-    return `${(cents / 100).toFixed(2)} €`;
 }

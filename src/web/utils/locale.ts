@@ -1,6 +1,8 @@
-export type Locale = 'de' | 'en';
-export const LOCALES = ['de', 'en'] as const;
-export const DEFAULT_LOCALE: Locale = 'de';
+import { DEFAULT_LOCALE, LOCALES } from '../../shared/locale';
+import type { Locale } from '../../shared/locale';
+
+export { DEFAULT_LOCALE, LOCALES } from '../../shared/locale';
+export type { Locale } from '../../shared/locale';
 
 export function localeFromAcceptLanguage(header: string | null | undefined): Locale {
     if (!header) return DEFAULT_LOCALE;

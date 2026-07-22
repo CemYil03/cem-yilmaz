@@ -1,4 +1,5 @@
 import type { Locale } from '../utils/locale';
+import { formatMonthYear } from '../../shared';
 import { AssistantMarkdown } from './AssistantMarkdown';
 import { GlassCard } from './GlassCard';
 import { Reveal } from './Reveal';
@@ -115,19 +116,8 @@ function formatDateParts(
     ongoingLabel: string,
     locale: Locale,
 ): { start: string; end: string | null } {
-    const start = startIso ? formatMonthYear(startIso, locale) : null;
-    const end = endIso ? formatMonthYear(endIso, locale) : ongoingLabel;
+    const start = startIso ? formatMonthYear(startIso, { locale }) : null;
+    const end = endIso ? formatMonthYear(endIso, { locale }) : ongoingLabel;
     if (!start) return { start: end, end: null };
     return { start, end };
-}
-
-const MONTH_FORMATTERS: Record<Locale, Intl.DateTimeFormat> = {
-    de: new Intl.DateTimeFormat('de-DE', { month: 'short', year: 'numeric' }),
-    en: new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }),
-};
-
-function formatMonthYear(iso: string, locale: Locale): string {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return iso;
-    return MONTH_FORMATTERS[locale].format(date);
 }

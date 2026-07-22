@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
+import { formatDate, formatIsoDate } from '../../../shared';
 import { ChevronDownIcon, DumbbellIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
@@ -48,7 +48,6 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
-import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -302,8 +301,8 @@ function WorkoutsTab({
                     heading={{ de: 'Training löschen?', en: 'Delete this workout?' }[locale]}
                     body={
                         {
-                            de: `Das Training vom ${formatDate(deletingSession.date, locale)} wird mit allen Sätzen entfernt.`,
-                            en: `The workout from ${formatDate(deletingSession.date, locale)} will be removed along with all its sets.`,
+                            de: `Das Training vom ${formatDate(deletingSession.date, { locale })} wird mit allen Sätzen entfernt.`,
+                            en: `The workout from ${formatDate(deletingSession.date, { locale })} will be removed along with all its sets.`,
                         }[locale]
                     }
                     locale={locale}
@@ -348,9 +347,9 @@ function SessionCard({
                 >
                     <ChevronDownIcon className={cn('size-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
                     <div className="min-w-0">
-                        <div className="text-sm font-semibold truncate">{session.title || formatDate(session.date, locale)}</div>
+                        <div className="text-sm font-semibold truncate">{session.title || formatDate(session.date, { locale })}</div>
                         <div className="text-xs text-muted-foreground">
-                            {formatDate(session.date, locale)} ·{' '}
+                            {formatDate(session.date, { locale })} ·{' '}
                             {{ de: `${session.sets.length} Sätze`, en: `${session.sets.length} sets` }[locale]}
                             {session.durationMinutes ? ` · ${session.durationMinutes} min` : ''}
                         </div>
@@ -469,7 +468,7 @@ function EditSessionDialog({
     const isNew = initial === null;
     const [state, setState] = useState<SessionFormState>(() => ({
         sessionId: initial?.sessionId ?? null,
-        date: initial?.date ?? dateToIso(new Date()),
+        date: initial?.date ?? formatIsoDate(new Date()),
         title: initial?.title ?? '',
         routineId: initial?.routineId ?? 'none',
         durationMinutes: initial?.durationMinutes != null ? String(initial.durationMinutes) : '',
@@ -1388,22 +1387,6 @@ function parseFloatOrNull(raw: string): number | null {
     if (!trimmed) return null;
     const n = Number.parseFloat(trimmed);
     return Number.isFinite(n) ? n : null;
-}
-
-function dateToIso(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
-function formatDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
 }
 
 // "100kg × 5" / "5 reps" / "bodyweight" — compact set summary.

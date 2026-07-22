@@ -90,6 +90,13 @@ Hoist a string to a small local `const` only when one of the following narrow ex
 For bilingual **data** (CV rows, future projects/blog/tools), the rule is different — paired `*De` / `*En` columns in Postgres and the
 GraphQL schema. See [Bilingual columns](#bilingual-columns) above.
 
+## Shared display formatting
+
+Isomorphic date and currency helpers live in `src/shared` (`formatDate`, `formatDateRange`, `formatMonthYear`, `formatCurrency`,
+`formatIsoDate`). Display helpers require `{ locale: 'de' | 'en' }` and map to `de-DE` / `en-US` via `languageTagFromLocale`. Do **not**
+redefine local `formatDate` / `formatCurrency` helpers in routes or components — import from `src/shared`. Relative time and calendar
+pickers still use `date-fns` + `DATE_FNS_LOCALE` (see [i18n.md](./architecture/i18n.md)).
+
 ## Theming
 
 The site supports **light, dark, and `auto`** (follow OS) themes, persisted in `localStorage`. Color tokens live as CSS custom properties in

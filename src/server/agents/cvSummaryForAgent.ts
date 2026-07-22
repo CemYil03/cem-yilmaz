@@ -1,4 +1,5 @@
 import { asc, desc, sql } from 'drizzle-orm';
+import { formatDate } from '../../shared';
 import { personalInfo } from '../../web/content/personalInfo';
 import type { CvEducation, CvExperience, CvHobby, CvSkill, CvSkillCategory } from '../db/schema';
 import { cvEducation, cvExperience, cvHobby, cvSkill } from '../db/schema';
@@ -50,7 +51,7 @@ export async function cvSummaryForAgent(serverRuntime: ServerRuntime): Promise<s
 }
 
 function identityBlock(): string {
-    const dob = formatGermanDate(personalInfo.dateOfBirth);
+    const dob = formatDate(personalInfo.dateOfBirth, { locale: 'de', dateStyle: 'long' });
     const languages = personalInfo.spokenLanguages.map((l) => l.de).join(', ');
     return [
         `## Über Cem`,
@@ -64,15 +65,15 @@ function identityBlock(): string {
 }
 
 function experienceLine(row: CvExperience): string {
-    const start = formatGermanDate(row.startDate);
-    const end = row.endDate ? formatGermanDate(row.endDate) : 'heute';
+    const start = formatDate(row.startDate, { locale: 'de', dateStyle: 'long' });
+    const end = row.endDate ? formatDate(row.endDate, { locale: 'de', dateStyle: 'long' }) : 'heute';
     const tech = row.technologies.length > 0 ? ` — Technologien: ${row.technologies.join(', ')}` : '';
     return `- **${start} – ${end}**, ${row.roleDe} bei ${row.company}: ${row.descriptionDe}${tech}`;
 }
 
 function educationLine(row: CvEducation): string {
-    const start = row.startDate ? formatGermanDate(row.startDate) : null;
-    const end = formatGermanDate(row.endDate);
+    const start = row.startDate ? formatDate(row.startDate, { locale: 'de', dateStyle: 'long' }) : null;
+    const end = formatDate(row.endDate, { locale: 'de', dateStyle: 'long' });
     const range = start ? `${start} – ${end}` : end;
     const subject = row.subjectDe ? ` (${row.subjectDe})` : '';
     const notes = row.notesDe ? ` — ${row.notesDe.replace(/\n+/g, ', ')}` : '';
@@ -104,29 +105,4 @@ function skillBlock(skills: CvSkill[]): string[] {
 
 function hobbyLine(row: CvHobby): string {
     return row.since ? `- Seit ${row.since}: ${row.textDe}` : `- ${row.textDe}`;
-}
-
-const GERMAN_MONTHS = [
-    'Januar',
-    'Februar',
-    'März',
-    'April',
-    'Mai',
-    'Juni',
-    'Juli',
-    'August',
-    'September',
-    'Oktober',
-    'November',
-    'Dezember',
-];
-
-// Drizzle returns `date` columns as `yyyy-mm-dd` strings; we format them as
-// "1. März 2025" without pulling in a date-fns locale just for the agent
-// summary path.
-function formatGermanDate(iso: string): string {
-    const [year, month, day] = iso.split('-');
-    if (!year || !month || !day) return iso;
-    const monthName = GERMAN_MONTHS[parseInt(month, 10) - 1] ?? month;
-    return `${parseInt(day, 10)}. ${monthName} ${year}`;
 }

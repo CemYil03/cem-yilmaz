@@ -347,6 +347,7 @@ function ChatLoaded({
                 isGenerating={live.isGenerating(chat.chatId)}
                 liveTurnMessageIds={live.liveTurnMessageIdsFor(chat.chatId)}
                 jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
+                locale={locale}
             />
             <VisitorChatComposer
                 chatId={chat.chatId}
@@ -386,6 +387,7 @@ function ChatTranscript({
     isGenerating,
     liveTurnMessageIds,
     jumpToLatestLabel,
+    locale,
 }: {
     chat: NonNullable<GqlCChatPageQuery['sessionFindOne']['visitorChatFindOne']>;
     appendedMessages: ReadonlyArray<TranscriptMessage>;
@@ -399,6 +401,7 @@ function ChatTranscript({
     isGenerating: boolean;
     liveTurnMessageIds: ReadonlySet<string>;
     jumpToLatestLabel: string;
+    locale: Locale;
 }) {
     const allMessages = mergeTranscriptMessages(chat.messages, appendedMessages);
     return (
@@ -409,6 +412,7 @@ function ChatTranscript({
                 onCollectionSubmit={onCollectionSubmit}
                 onApprovalRespond={onApprovalRespond}
                 jumpToLatestLabel={jumpToLatestLabel}
+                locale={locale}
                 initialFetching={fetching}
                 isGenerating={isGenerating}
                 liveTurnMessageIds={liveTurnMessageIds}

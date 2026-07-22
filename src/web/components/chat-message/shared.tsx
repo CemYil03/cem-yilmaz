@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { useLocale } from '../../hooks/useLocale';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { cn } from '../../utils/cn';
+import { languageTagFromLocale } from '../../../shared';
 import { markdownToPlainText } from '../../utils/markdownToPlainText';
 import { toolDisplay } from '../../chat/toolDisplay';
 import { interpretToolResult } from '../../chat/toolResult';
@@ -259,7 +260,7 @@ export function SpeakButton({ text }: { text: string }) {
             return;
         }
         try {
-            await speak(spokenText, locale === 'de' ? 'de-DE' : 'en-US');
+            await speak(spokenText, languageTagFromLocale(locale));
         } catch {
             toast.error({ de: 'Vorlesen fehlgeschlagen', en: 'Read-aloud failed' }[locale]);
         }

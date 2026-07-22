@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { format } from 'date-fns';
+import { formatDate } from '../../../shared';
 import {
     ActivityIcon,
     AlertTriangleIcon,
@@ -280,11 +281,9 @@ function OverviewTab({ overview, locale }: { overview: ReadonlyArray<OverviewRow
 function OverviewCard({ row, locale }: { row: OverviewRow; locale: Locale }) {
     const label = CATEGORY_LABELS[row.category][locale];
     const cadence = row.defaultCadenceMonths;
-    const lastLabel = row.lastCompletedAt
-        ? format(new Date(row.lastCompletedAt), 'PP', { locale: DATE_FNS_LOCALE[locale] })
-        : { de: '—', en: '—' }[locale];
+    const lastLabel = row.lastCompletedAt ? formatDate(row.lastCompletedAt, { locale }) : { de: '—', en: '—' }[locale];
     const nextLabel = row.nextDueAt
-        ? format(new Date(row.nextDueAt), 'PP', { locale: DATE_FNS_LOCALE[locale] })
+        ? formatDate(row.nextDueAt, { locale })
         : { de: 'Kein Termin geplant', en: 'No visit scheduled' }[locale];
 
     return (
@@ -326,9 +325,7 @@ function OverviewCard({ row, locale }: { row: OverviewRow; locale: Locale }) {
                         {row.upcoming.slice(0, 3).map((a) => (
                             <li key={a.appointmentId} className="flex justify-between gap-2">
                                 <span className="truncate">{a.title}</span>
-                                <span className="text-muted-foreground shrink-0">
-                                    {format(new Date(a.scheduledAt), 'PP', { locale: DATE_FNS_LOCALE[locale] })}
-                                </span>
+                                <span className="text-muted-foreground shrink-0">{formatDate(a.scheduledAt, { locale })}</span>
                             </li>
                         ))}
                     </ul>
@@ -511,8 +508,7 @@ function AppointmentRowCard({
                     {appointment.providerName && <span>· {appointment.providerName}</span>}
                     {appointment.nextDueAt && (
                         <span>
-                            · {{ de: 'nächster fällig', en: 'next due' }[locale]}{' '}
-                            {format(new Date(appointment.nextDueAt), 'PP', { locale: DATE_FNS_LOCALE[locale] })}
+                            · {{ de: 'nächster fällig', en: 'next due' }[locale]} {formatDate(appointment.nextDueAt, { locale })}
                         </span>
                     )}
                 </div>
@@ -786,9 +782,7 @@ function RecordsTab({
 
 function RecordCard({ record, locale, onEdit, onDelete }: { record: RecordRow; locale: Locale; onEdit: () => void; onDelete: () => void }) {
     const [, deleteFile] = useMutation(WorkspaceMedicalRecordFilesDeleteDocument);
-    const dateLabel = record.occurredAt
-        ? format(new Date(record.occurredAt), 'PP', { locale: DATE_FNS_LOCALE[locale] })
-        : format(new Date(record.createdAt), 'PP', { locale: DATE_FNS_LOCALE[locale] });
+    const dateLabel = record.occurredAt ? formatDate(record.occurredAt, { locale }) : formatDate(record.createdAt, { locale });
 
     return (
         <GlassCard
@@ -1111,7 +1105,7 @@ function RecordEditor({
                                     <SelectItem value="__none">{{ de: 'Keiner', en: 'None' }[locale]}</SelectItem>
                                     {appointments.map((a) => (
                                         <SelectItem key={a.appointmentId} value={a.appointmentId}>
-                                            {a.title} · {format(new Date(a.scheduledAt), 'PP', { locale: DATE_FNS_LOCALE[locale] })}
+                                            {a.title} · {formatDate(a.scheduledAt, { locale })}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

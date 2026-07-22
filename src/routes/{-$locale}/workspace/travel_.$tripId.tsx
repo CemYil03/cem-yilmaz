@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
+import { formatDate, formatDateRange } from '../../../shared';
 import {
     CalendarArrowDownIcon,
     CalendarDaysIcon,
@@ -54,7 +54,6 @@ import { useLocale } from '../../../web/hooks/useLocale';
 import { seoMeta } from '../../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../../web/seo/webPageUrlGet';
 import { cn } from '../../../web/utils/cn';
-import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
@@ -168,7 +167,7 @@ function TripHeader({ trip, locale }: { trip: TripDetail; locale: Locale }) {
                         {trip.startsOn || trip.endsOn ? (
                             <span className="inline-flex items-center gap-1">
                                 <CalendarDaysIcon className="size-3.5" aria-hidden />
-                                {formatDateRange(trip.startsOn, trip.endsOn, locale)}
+                                {formatDateRange(trip.startsOn, trip.endsOn, { locale })}
                             </span>
                         ) : null}
                         {trip.transportMode ? (
@@ -310,7 +309,7 @@ function DayBlock({
                             dateless sketch trip has no date, so the ordinal is all we
                             can show. `day.date` arrives already derived from the server. */}
                         {day.date ? (
-                            <span className="text-sm font-semibold tabular-nums">{formatDayDate(day.date, locale)}</span>
+                            <span className="text-sm font-semibold tabular-nums">{formatDate(day.date, { locale, weekday: true })}</span>
                         ) : (
                             <span className="text-sm font-semibold">
                                 {{ de: `Tag ${day.dayNumber}`, en: `Day ${day.dayNumber}` }[locale]}
@@ -1098,32 +1097,6 @@ function FieldWithLabel({
             {children}
         </label>
     );
-}
-
-function formatDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
-}
-
-// Day headers lead with the weekday name — "day N" alone gives no calendar
-// orientation, so "Mon, 5 Aug 2025" beats a bare number.
-function formatDayDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'EEEE, PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
-}
-
-function formatDateRange(startsOn: string | null | undefined, endsOn: string | null | undefined, locale: Locale): string {
-    if (!startsOn && !endsOn) return '—';
-    if (startsOn && endsOn) return `${formatDate(startsOn, locale)} – ${formatDate(endsOn, locale)}`;
-    return formatDate(startsOn ?? endsOn, locale);
 }
 
 function formatTime(value: string | null | undefined): string {

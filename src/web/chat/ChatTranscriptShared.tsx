@@ -1,6 +1,6 @@
-import { format, parseISO } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Fragment, useCallback } from 'react';
+import { formatDate } from '../../shared';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { ChatTranscriptShell } from '../components/base/chat-transcript-shell';
 import { Marker, MarkerContent, MarkerIcon } from '../components/base/marker';
@@ -8,6 +8,7 @@ import { MessageScrollerItem } from '../components/base/message-scroller';
 import { Spinner } from '../components/base/spinner';
 import { ChatMessage } from '../components/chat-message';
 import type { GqlCChatAssistantInputValue } from '../graphql/generated';
+import type { Locale } from '../utils/locale';
 import type { TranscriptMessage } from './chatTranscript';
 import {
     activeToolCallId,
@@ -59,6 +60,8 @@ export interface ChatTranscriptProps {
     /** Localized "Jump to latest" label so the SR-only text on the pill can
      *  read in the current locale. */
     jumpToLatestLabel: string;
+    /** Site locale for day separators and any other display formatting. */
+    locale: Locale;
     /** True while the transcript's first fetch is in-flight and there are no
      *  messages yet. Renders a centred spinner in place of the empty scroller
      *  so the visitor sheet's open transition doesn't flash empty. */
@@ -104,6 +107,7 @@ export function ChatTranscript({
     onCollectionSubmit,
     onApprovalRespond,
     jumpToLatestLabel,
+    locale,
     initialFetching = false,
     isGenerating = false,
     liveTurnMessageIds,
@@ -151,7 +155,7 @@ export function ChatTranscript({
                                 <CalendarIcon />
                             </MarkerIcon>
                             <MarkerContent>
-                                <time dateTime={group.date}>{format(parseISO(group.date), 'PP')}</time>
+                                <time dateTime={group.date}>{formatDate(group.date, { locale })}</time>
                             </MarkerContent>
                         </Marker>
                     </MessageScrollerItem>

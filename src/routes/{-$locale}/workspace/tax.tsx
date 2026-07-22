@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { formatCurrency, formatDate } from '../../../shared';
 import {
     BriefcaseIcon,
     CalendarClockIcon,
@@ -358,7 +359,7 @@ function OverviewStrip({ year, locale }: { year: YearRow; locale: Locale }) {
                 </div>
                 <div className="mt-1 text-2xl font-semibold tabular-nums">
                     {deadline ? (
-                        formatDate(deadline, locale)
+                        formatDate(deadline, { locale, dateStyle: 'short' })
                     ) : (
                         <span className="text-base font-normal text-muted-foreground">
                             {{ de: 'Nicht gesetzt', en: 'Not set' }[locale]}
@@ -380,7 +381,9 @@ function OverviewStrip({ year, locale }: { year: YearRow; locale: Locale }) {
                     <WalletIcon className="size-3.5" aria-hidden />
                     {{ de: 'Einnahmen', en: 'Income' }[locale]}
                 </div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{formatCurrency(year.totalIncomeCents, locale)}</div>
+                <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {formatCurrency(year.totalIncomeCents, { locale, maximumFractionDigits: 0 })}
+                </div>
                 <div className="mt-1 text-xs text-muted-foreground">
                     {{ de: `${year.incomeSources.length} Quellen`, en: `${year.incomeSources.length} sources` }[locale]}
                 </div>
@@ -390,7 +393,9 @@ function OverviewStrip({ year, locale }: { year: YearRow; locale: Locale }) {
                     <ReceiptTextIcon className="size-3.5" aria-hidden />
                     {{ de: 'Absetzbar', en: 'Deductible' }[locale]}
                 </div>
-                <div className="mt-1 text-2xl font-semibold tabular-nums">{formatCurrency(year.totalDeductibleCents, locale)}</div>
+                <div className="mt-1 text-2xl font-semibold tabular-nums">
+                    {formatCurrency(year.totalDeductibleCents, { locale, maximumFractionDigits: 0 })}
+                </div>
                 <div className="mt-1 text-xs text-muted-foreground">
                     {{ de: `${year.expenses.length} Ausgaben`, en: `${year.expenses.length} expenses` }[locale]}
                 </div>
@@ -546,7 +551,7 @@ function IncomeTab({ year, locale }: { year: YearRow; locale: Locale }) {
                                         </div>
                                         <div className="mt-3 text-right text-sm font-semibold tabular-nums">
                                             {row.grossAmountCents != null ? (
-                                                formatCurrency(row.grossAmountCents, locale)
+                                                formatCurrency(row.grossAmountCents, { locale, maximumFractionDigits: 0 })
                                             ) : (
                                                 <span className="text-xs font-normal text-muted-foreground">
                                                     {{ de: 'Betrag offen', en: 'Amount TBD' }[locale]}
@@ -625,7 +630,9 @@ function ExpensesTab({ year, locale }: { year: YearRow; locale: Locale }) {
                                     <ReceiptTextIcon className="size-4" aria-hidden />
                                     {EXPENSE_CATEGORY_LABELS[group.key][locale]}
                                 </h2>
-                                <div className="text-xs tabular-nums text-muted-foreground">{formatCurrency(group.total, locale)}</div>
+                                <div className="text-xs tabular-nums text-muted-foreground">
+                                    {formatCurrency(group.total, { locale, maximumFractionDigits: 0 })}
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {group.rows.map((row) => (
@@ -697,11 +704,13 @@ function ExpenseCard({
                         ) : null}
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
-                        {expense.incurredOn ? formatDate(new Date(expense.incurredOn), locale) : null}
+                        {expense.incurredOn ? formatDate(new Date(expense.incurredOn), { locale, dateStyle: 'short' }) : null}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="text-right text-sm font-semibold tabular-nums">{formatCurrency(expense.amountCents, locale)}</div>
+                    <div className="text-right text-sm font-semibold tabular-nums">
+                        {formatCurrency(expense.amountCents, { locale, maximumFractionDigits: 0 })}
+                    </div>
                     <RowActions locale={locale} onEdit={onEdit} onDelete={onDelete} />
                 </div>
             </div>
@@ -1497,19 +1506,6 @@ function DocumentDialog({
 }
 
 // --- Helpers ----------------------------------------------------------------
-
-function formatCurrency(cents: number | null | undefined, locale: Locale): string {
-    const value = (cents ?? 0) / 100;
-    return new Intl.NumberFormat(locale === 'de' ? 'de-DE' : 'en-GB', {
-        style: 'currency',
-        currency: 'EUR',
-        maximumFractionDigits: 0,
-    }).format(value);
-}
-
-function formatDate(date: Date, locale: Locale): string {
-    return new Intl.DateTimeFormat(locale === 'de' ? 'de-DE' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
-}
 
 function centsToEuros(cents: number): string {
     return (cents / 100).toFixed(2);

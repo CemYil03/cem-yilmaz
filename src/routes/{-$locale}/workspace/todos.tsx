@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { format, parseISO } from 'date-fns';
+import { formatIsoDate } from '../../../shared';
 import {
     BrainIcon,
     CheckIcon,
@@ -981,7 +982,7 @@ function TaskForm({
         title: task?.title ?? '',
         notes: task?.notes ?? '',
         status: task?.status ?? ('todo' as GqlCAdminProjectTaskStatus),
-        dueAt: task?.dueAt ? format(parseISO(task.dueAt as unknown as string), 'yyyy-MM-dd') : '',
+        dueAt: task?.dueAt ? formatIsoDate(parseISO(task.dueAt as unknown as string)) : '',
         effort: task?.effort ?? null,
         whenBucket: task?.whenBucket ?? null,
     });
@@ -1033,7 +1034,7 @@ function TaskForm({
                     <Field label={{ de: 'Fällig am', en: 'Due date' }[locale]}>
                         <DatePicker
                             value={form.dueAt ? parseISO(form.dueAt) : undefined}
-                            onValueChange={(next) => setForm({ ...form, dueAt: next ? format(next, 'yyyy-MM-dd') : '' })}
+                            onValueChange={(next) => setForm({ ...form, dueAt: next ? formatIsoDate(next) : '' })}
                             className="w-full"
                             locale={DATE_FNS_LOCALE[locale]}
                         />

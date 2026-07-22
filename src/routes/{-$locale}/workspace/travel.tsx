@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatDateRange, formatIsoDate } from '../../../shared';
 import { CalendarDaysIcon, LuggageIcon, MapPinIcon, PencilIcon, PlaneIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
@@ -314,7 +315,7 @@ function TripCard({
                     {trip.startsOn || trip.endsOn ? (
                         <div className="flex items-center gap-1">
                             <CalendarDaysIcon className="size-3 shrink-0" aria-hidden />
-                            <span>{formatDateRange(trip.startsOn, trip.endsOn, locale)}</span>
+                            <span>{formatDateRange(trip.startsOn, trip.endsOn, { locale })}</span>
                         </div>
                     ) : null}
                     {trip.transportMode ? (
@@ -382,8 +383,8 @@ function EditTripDialog({ initial, locale, onClose }: { initial: TripRow | null;
                         tripId: state.tripId,
                         title: state.title.trim(),
                         destination: state.destination.trim(),
-                        startsOn: state.dates?.from ? dateToIso(state.dates.from) : null,
-                        endsOn: state.dates?.to ? dateToIso(state.dates.to) : null,
+                        startsOn: state.dates?.from ? formatIsoDate(state.dates.from) : null,
+                        endsOn: state.dates?.to ? formatIsoDate(state.dates.to) : null,
                         status: state.status,
                         transportMode: state.transportMode === 'none' ? null : state.transportMode,
                         accommodation: state.accommodation.trim() || null,
@@ -606,7 +607,7 @@ function tripBelongsInTab(trip: TripRow, tab: TripTab): boolean {
 }
 
 function todayIso(): string {
-    return dateToIso(new Date());
+    return formatIsoDate(new Date());
 }
 
 function countTabs(trips: ReadonlyArray<TripRow>): Record<TripTab, number> {
@@ -615,28 +616,6 @@ function countTabs(trips: ReadonlyArray<TripRow>): Record<TripTab, number> {
         planned: trips.filter((t) => tripBelongsInTab(t, 'planned')).length,
         past: trips.filter((t) => tripBelongsInTab(t, 'past')).length,
     };
-}
-
-function formatDateRange(startsOn: string | null | undefined, endsOn: string | null | undefined, locale: Locale): string {
-    if (!startsOn && !endsOn) return '—';
-    if (startsOn && endsOn) return `${formatDate(startsOn, locale)} – ${formatDate(endsOn, locale)}`;
-    return formatDate(startsOn ?? endsOn, locale);
-}
-
-function formatDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
-}
-
-function dateToIso(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
 }
 
 // --- Live user hook ---------------------------------------------------------

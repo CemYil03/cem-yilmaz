@@ -20,6 +20,7 @@
 // engines have no freshness signal and may deprioritise stale-looking
 // content.
 
+import { languageTagFromLocale, LOCALES } from '../../shared';
 import { personalInfo } from '../content/personalInfo';
 import { SITE_NAME } from './seoConstants';
 
@@ -61,7 +62,7 @@ export function jsonLdScripts(webPageUrl: string): ReadonlyArray<JsonLdScript> {
         '@id': `${webPageUrl}/#website`,
         url: webPageUrl,
         name: SITE_NAME,
-        inLanguage: ['de-DE', 'en-US'],
+        inLanguage: LOCALES.map(languageTagFromLocale),
         dateModified: __SITE_LAST_MODIFIED__,
         publisher: { '@id': `${webPageUrl}/#person` },
     };
@@ -85,7 +86,7 @@ export function jsonLdProfilePage(webPageUrl: string, locale: 'de' | 'en'): Json
         '@id': `${webPageUrl}${path}#profile`,
         url: `${webPageUrl}${path}`,
         name: locale === 'de' ? `Über mich — ${personalInfo.fullName}` : `About — ${personalInfo.fullName}`,
-        inLanguage: locale === 'de' ? 'de-DE' : 'en-US',
+        inLanguage: languageTagFromLocale(locale),
         dateModified: __SITE_LAST_MODIFIED__,
         mainEntity: personEntity(webPageUrl),
     };

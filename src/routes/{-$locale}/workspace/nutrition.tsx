@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { addDays, format, parseISO, startOfWeek } from 'date-fns';
+import { formatDate, formatIsoDate } from '../../../shared';
 import {
     ChevronLeftIcon,
     ChevronRightIcon,
@@ -357,7 +358,7 @@ function RecipeCard({ recipe, locale, onEdit, onDelete }: { recipe: RecipeRow; l
                 {recipe.prepTimeMinutes ? <span className="tabular-nums">{recipe.prepTimeMinutes} min</span> : null}
                 {recipe.servings ? <span>{{ de: `${recipe.servings} Port.`, en: `${recipe.servings} servings` }[locale]}</span> : null}
                 {recipe.lastMadeAt ? (
-                    <span>{{ de: 'zuletzt ', en: 'last made ' }[locale] + formatDate(recipe.lastMadeAt, locale)}</span>
+                    <span>{{ de: 'zuletzt ', en: 'last made ' }[locale] + formatDate(recipe.lastMadeAt, { locale })}</span>
                 ) : null}
             </div>
             {recipe.ingredients.length > 0 ? (
@@ -608,7 +609,7 @@ function PlanTab({
                             </div>
                         ))}
                         {days.map((day) => {
-                            const iso = dateToIso(day);
+                            const iso = formatIsoDate(day);
                             return (
                                 <div key={iso} className="contents">
                                     <div className="flex flex-col justify-center px-2 py-3 text-sm">
@@ -737,7 +738,7 @@ function EditPlanCellDialog({
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {MEAL_TYPE_LABELS[mealType][locale]} · {formatDate(date, locale)}
+                        {MEAL_TYPE_LABELS[mealType][locale]} · {formatDate(date, { locale })}
                     </DialogTitle>
                     <DialogDescription>
                         {{ de: 'Wähle ein Rezept oder tippe eine freie Idee.', en: 'Pick a recipe or type a free-form idea.' }[locale]}
@@ -850,8 +851,8 @@ function DiaryTab({ entries, weekParam, locale }: { entries: ReadonlyArray<FoodL
             ) : (
                 <div className="mt-4 space-y-6">
                     {byDay.map(([day, dayEntries]) => (
-                        <section key={day} aria-label={formatDate(day, locale)}>
-                            <h3 className="mb-2 text-sm font-medium text-muted-foreground">{formatDate(day, locale)}</h3>
+                        <section key={day} aria-label={formatDate(day, { locale })}>
+                            <h3 className="mb-2 text-sm font-medium text-muted-foreground">{formatDate(day, { locale })}</h3>
                             <div className="space-y-2">
                                 {dayEntries.map((entry) => (
                                     <DiaryRow
@@ -935,7 +936,7 @@ function EditDiaryDialog({ initial, locale, onClose }: { initial: FoodLogRow | n
         description: initial?.description ?? '',
         kind: initial?.kind ?? 'food',
         mealType: initial?.mealType ?? guessMealType(now),
-        date: dateToIso(now),
+        date: formatIsoDate(now),
         time: format(now, 'HH:mm'),
     }));
     const [, upsert] = useMutation(WorkspaceFoodLogEntriesUpsertDocument);
@@ -1524,7 +1525,7 @@ function WeekNav({ weekStart, locale }: { weekStart: Date; locale: Locale }) {
             <Link
                 to="/{-$locale}/workspace/nutrition"
                 from="/{-$locale}/workspace/nutrition"
-                search={(prev) => ({ ...prev, week: dateToIso(addDays(weekStart, -7)) })}
+                search={(prev) => ({ ...prev, week: formatIsoDate(addDays(weekStart, -7)) })}
                 replace
                 aria-label={{ de: 'Vorherige Woche', en: 'Previous week' }[locale]}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -1535,7 +1536,7 @@ function WeekNav({ weekStart, locale }: { weekStart: Date; locale: Locale }) {
             <Link
                 to="/{-$locale}/workspace/nutrition"
                 from="/{-$locale}/workspace/nutrition"
-                search={(prev) => ({ ...prev, week: dateToIso(addDays(weekStart, 7)) })}
+                search={(prev) => ({ ...prev, week: formatIsoDate(addDays(weekStart, 7)) })}
                 replace
                 aria-label={{ de: 'Nächste Woche', en: 'Next week' }[locale]}
                 className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -1577,13 +1578,6 @@ function parseIntOrNull(raw: string): number | null {
     return Number.isFinite(n) ? n : null;
 }
 
-function dateToIso(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
 // Monday-anchored week start. `?week=` carries a specific week's Monday; absent
 // means the current week.
 function weekStartFromParam(weekParam: string | undefined): Date {
@@ -1597,15 +1591,6 @@ function guessMealType(at: Date): GqlCAdminNutritionMealType {
     if (h < 15) return 'lunch';
     if (h < 18) return 'snack';
     return 'dinner';
-}
-
-function formatDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
 }
 
 // --- Live user hook ---------------------------------------------------------

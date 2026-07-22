@@ -30,6 +30,7 @@ import type { ReactNode } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
+import { formatDate } from '../../../shared';
 import { uploadFile } from '../../../web/chat/fileUpload';
 import { previewKindFor } from '../../../web/chat/chatAttachmentPreview';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
@@ -240,11 +241,11 @@ function formatRelative(iso: string, locale: Locale): string {
     if (daysAgo < 7) {
         return formatDistanceToNowStrict(parsed, { addSuffix: true, locale: DATE_FNS_LOCALE[locale] });
     }
-    return format(parsed, locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: DATE_FNS_LOCALE[locale] });
+    return formatDate(iso, { locale });
 }
 
 function formatAbsolute(iso: string, locale: Locale): string {
-    return format(parseISO(iso), locale === 'de' ? 'd. MMM yyyy' : 'd MMM yyyy', { locale: DATE_FNS_LOCALE[locale] });
+    return formatDate(iso, { locale });
 }
 
 // URL state — `tab` selects the section, `focus` lights up a child row,

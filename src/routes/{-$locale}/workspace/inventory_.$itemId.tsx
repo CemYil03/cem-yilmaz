@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatCurrency, formatDate, formatIsoDate } from '../../../shared';
 import {
     ArrowLeftIcon,
     CircleDollarSignIcon,
@@ -195,14 +196,14 @@ function FactsGrid({ item, locale }: { item: ItemDetail; locale: Locale }) {
         <section aria-label={{ de: 'Grunddaten', en: 'Facts' }[locale]}>
             <GlassCard className="px-5 py-5">
                 <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-sm">
-                    <Fact label={{ de: 'Kaufdatum', en: 'Purchased' }[locale]} value={formatDate(item.purchasedAt, locale)} />
+                    <Fact label={{ de: 'Kaufdatum', en: 'Purchased' }[locale]} value={formatDate(item.purchasedAt, { locale })} />
                     <Fact
                         label={{ de: 'Kaufpreis', en: 'Purchase price' }[locale]}
-                        value={formatCurrency(item.purchasePriceCents, locale)}
+                        value={formatCurrency(item.purchasePriceCents, { locale, nullAs: 'emDash' })}
                     />
                     <Fact
                         label={{ de: 'Aktueller Wert', en: 'Current value' }[locale]}
-                        value={formatCurrency(item.currentValueCents, locale)}
+                        value={formatCurrency(item.currentValueCents, { locale, nullAs: 'emDash' })}
                         action={
                             <Button size="sm" variant="ghost" onClick={() => setRepricing(true)}>
                                 <TrendingUpIcon className="size-3.5" />
@@ -211,7 +212,10 @@ function FactsGrid({ item, locale }: { item: ItemDetail; locale: Locale }) {
                         }
                     />
                     <Fact label={{ de: 'Seriennummer', en: 'Serial number' }[locale]} value={item.serialNumber ?? '—'} />
-                    <Fact label={{ de: 'Garantie bis', en: 'Warranty until' }[locale]} value={formatDate(item.warrantyEndsAt, locale)} />
+                    <Fact
+                        label={{ de: 'Garantie bis', en: 'Warranty until' }[locale]}
+                        value={formatDate(item.warrantyEndsAt, { locale })}
+                    />
                     <Fact label={{ de: 'Garantiegeber', en: 'Warranty provider' }[locale]} value={item.warrantyProvider ?? '—'} />
                 </dl>
                 {item.warrantyNotes ? (
@@ -273,10 +277,14 @@ function ValuationsSection({ item, locale }: { item: ItemDetail; locale: Locale 
                         {valuations.map((v) => (
                             <li key={v.valuationId} className="flex items-center justify-between gap-3 py-2">
                                 <div className="min-w-0">
-                                    <div className="tabular-nums font-medium">{formatCurrency(v.valueCents, locale)}</div>
+                                    <div className="tabular-nums font-medium">
+                                        {formatCurrency(v.valueCents, { locale, nullAs: 'emDash' })}
+                                    </div>
                                     {v.note ? <div className="text-xs text-muted-foreground truncate">{v.note}</div> : null}
                                 </div>
-                                <div className="text-xs tabular-nums text-muted-foreground shrink-0">{formatDate(v.valuedAt, locale)}</div>
+                                <div className="text-xs tabular-nums text-muted-foreground shrink-0">
+                                    {formatDate(v.valuedAt, { locale })}
+                                </div>
                             </li>
                         ))}
                     </ul>
@@ -377,10 +385,12 @@ function ServiceEntryCard({
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                             {SERVICE_KIND_LABELS[entry.kind][locale]}
                         </span>
-                        <span className="tabular-nums text-muted-foreground">{formatDate(entry.performedAt, locale)}</span>
+                        <span className="tabular-nums text-muted-foreground">{formatDate(entry.performedAt, { locale })}</span>
                         {entry.vendor ? <span className="text-muted-foreground truncate">· {entry.vendor}</span> : null}
                         {entry.costCents != null ? (
-                            <span className="ml-auto tabular-nums font-medium">{formatCurrency(entry.costCents, locale)}</span>
+                            <span className="ml-auto tabular-nums font-medium">
+                                {formatCurrency(entry.costCents, { locale, nullAs: 'emDash' })}
+                            </span>
                         ) : null}
                     </div>
                     {entry.notes ? <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">{entry.notes}</p> : null}
@@ -388,8 +398,8 @@ function ServiceEntryCard({
                         <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                             {
                                 {
-                                    de: `Nächste Wartung: ${formatDate(entry.nextDueAt, locale)}`,
-                                    en: `Next due: ${formatDate(entry.nextDueAt, locale)}`,
+                                    de: `Nächste Wartung: ${formatDate(entry.nextDueAt, { locale })}`,
+                                    en: `Next due: ${formatDate(entry.nextDueAt, { locale })}`,
                                 }[locale]
                             }
                         </p>
@@ -747,11 +757,11 @@ function ServiceEntryDialog({
                         serviceEntryId: initial?.serviceEntryId ?? null,
                         itemId,
                         kind,
-                        performedAt: dateToIso(performedAt),
+                        performedAt: formatIsoDate(performedAt),
                         vendor: vendor.trim() || null,
                         costCents: eurosToCents(cost),
                         notes: notes.trim() || null,
-                        nextDueAt: nextDueAt ? dateToIso(nextDueAt) : null,
+                        nextDueAt: nextDueAt ? formatIsoDate(nextDueAt) : null,
                     },
                 ],
             });
@@ -857,8 +867,8 @@ function DeleteServiceEntryAlert({ entry, locale, onClose }: { entry: ServiceEnt
                     <AlertDialogDescription>
                         {
                             {
-                                de: `Wartungseintrag vom ${formatDate(entry.performedAt, locale)} wird entfernt.`,
-                                en: `Service entry from ${formatDate(entry.performedAt, locale)} will be removed.`,
+                                de: `Wartungseintrag vom ${formatDate(entry.performedAt, { locale })} wird entfernt.`,
+                                en: `Service entry from ${formatDate(entry.performedAt, { locale })} will be removed.`,
                             }[locale]
                         }
                     </AlertDialogDescription>
@@ -890,34 +900,10 @@ function NotFound({ locale }: { locale: Locale }) {
     );
 }
 
-function formatCurrency(cents: number | null | undefined, locale: Locale): string {
-    if (cents == null) return '—';
-    return new Intl.NumberFormat(locale === 'de' ? 'de-DE' : 'en-GB', {
-        style: 'currency',
-        currency: 'EUR',
-    }).format(cents / 100);
-}
-
-function formatDate(iso: string | null | undefined, locale: Locale): string {
-    if (!iso) return '—';
-    try {
-        return format(parseISO(iso), 'PP', { locale: DATE_FNS_LOCALE[locale] });
-    } catch {
-        return iso;
-    }
-}
-
 function formatBytes(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function dateToIso(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
 }
 
 function eurosToCents(input: string): number | null {

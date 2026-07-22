@@ -10,7 +10,8 @@ import viteReact from '@vitejs/plugin-react';
 // We define two projects with disjoint plugin sets:
 //
 //   server — Node environment, no plugins. Covers `src/server/**/*.test.ts`
-//            (commands, queries, mappers, utils). Pure TS, no JSX, no DOM.
+//            (commands, queries, mappers, utils) and `src/shared/**/*.test.ts`
+//            (isomorphic locale/format helpers). Pure TS, no JSX, no DOM.
 //
 //   web    — jsdom environment, `@vitejs/plugin-react` for the JSX runtime.
 //            Covers `src/web/**/*.test.{ts,tsx}` and any future component or
@@ -34,7 +35,7 @@ export default defineConfig({
                 test: {
                     name: 'server',
                     environment: 'node',
-                    include: ['src/server/**/*.test.{ts,tsx}'],
+                    include: ['src/server/**/*.test.{ts,tsx}', 'src/shared/**/*.test.{ts,tsx}'],
                     setupFiles: ['src/server/test/vitestSetup.ts'],
                     clearMocks: true,
                 },

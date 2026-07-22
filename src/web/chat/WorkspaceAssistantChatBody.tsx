@@ -458,6 +458,7 @@ export function WorkspaceAssistantChatTranscript({
                         onCollectionSubmit={onCollectionSubmit}
                         onApprovalRespond={onApprovalRespond}
                         jumpToLatestLabel={jumpToLatestLabel[locale]}
+                        locale={locale}
                         isGenerating={live.isGenerating(chatId)}
                         liveTurnMessageIds={live.liveTurnMessageIdsFor(chatId)}
                     />

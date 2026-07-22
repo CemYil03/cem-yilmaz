@@ -18,6 +18,7 @@ import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
 import { cn } from '../../web/utils/cn';
 import type { Locale } from '../../web/utils/locale';
 import { localeFromParam } from '../../web/utils/locale';
+import { formatMonthYear } from '../../shared';
 
 const PRIMARY_EMAIL = personalInfo.contact.emails[0] ?? '';
 
@@ -572,9 +573,5 @@ function CallToAction({ locale, onOpenChat }: { locale: Locale; onOpenChat: (tex
 function availabilityMonthLabel(locale: Locale): string {
     const now = new Date();
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const formatter = new Intl.DateTimeFormat(locale === 'de' ? 'de-DE' : 'en-GB', {
-        month: 'long',
-        year: 'numeric',
-    });
-    return formatter.format(next).replace(/\s/g, ' ');
+    return formatMonthYear(next, { locale, month: 'long' }).replace(/\s/g, ' ');
 }

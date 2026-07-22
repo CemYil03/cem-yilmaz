@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDate } from '../../../shared';
 import { ArrowLeftIcon, MessageSquareTextIcon } from 'lucide-react';
 import { z } from 'zod';
 import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
@@ -148,7 +149,7 @@ function VisitorChatDetail({ chat, locale }: { chat: VisitorChatAdmin['adminPubl
                 <>
                     <h1 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">{chat.title.trim() || untitled[locale]}</h1>
                     <GlassCard className="mt-6 px-4 py-6">
-                        <ReadOnlyTranscript chat={chat} />
+                        <ReadOnlyTranscript chat={chat} locale={locale} />
                     </GlassCard>
                 </>
             ) : (
@@ -163,14 +164,14 @@ function VisitorChatDetail({ chat, locale }: { chat: VisitorChatAdmin['adminPubl
 // so collection forms and approval requests render as static records. There
 // are no `appendedMessages` or `streamingTexts` — this view is a snapshot of
 // what's already persisted.
-function ReadOnlyTranscript({ chat }: { chat: NonNullable<VisitorChatAdmin['adminPublicChatFindOne']> }) {
+function ReadOnlyTranscript({ chat, locale }: { chat: NonNullable<VisitorChatAdmin['adminPublicChatFindOne']>; locale: Locale }) {
     const allMessages = mergeTranscriptMessages(chat.messages, [] as ReadonlyArray<TranscriptMessage>);
     const groupedMessages = groupMessagesByDate(allMessages);
     return (
         <div className="flex min-w-0 flex-col gap-6">
             {groupedMessages.map((group) => (
                 <section key={group.date} className="flex min-w-0 flex-col gap-4">
-                    <DateSeparator iso={group.date} />
+                    <DateSeparator iso={group.date} locale={locale} />
                     {group.messages.map((message) => (
                         <ChatMessage
                             key={message.chatMessageId}
@@ -187,11 +188,11 @@ function ReadOnlyTranscript({ chat }: { chat: NonNullable<VisitorChatAdmin['admi
     );
 }
 
-function DateSeparator({ iso }: { iso: string }) {
+function DateSeparator({ iso, locale }: { iso: string; locale: Locale }) {
     return (
         <div className="flex items-center gap-3 text-[11px] uppercase tracking-wide text-muted-foreground">
             <span className="h-px flex-1 bg-border" />
-            <time dateTime={iso}>{format(parseISO(iso), 'PP')}</time>
+            <time dateTime={iso}>{formatDate(iso, { locale })}</time>
             <span className="h-px flex-1 bg-border" />
         </div>
     );

@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../shared';
 import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
@@ -27,7 +28,10 @@ export async function inventorySnapshotForAgent(session: GqlSSession, serverRunt
     ]);
 
     const lines: string[] = ['## Inventory'];
-    lines.push(`- material net worth (owned items): ${formatEur(netWorthCents)}`, `- owned items: ${ownedItems.length}`);
+    lines.push(
+        `- material net worth (owned items): ${formatCurrency(netWorthCents, { locale: 'de' })}`,
+        `- owned items: ${ownedItems.length}`,
+    );
 
     if (warrantyExpirations.length > 0) {
         lines.push('', `## Warranties expiring within ${WARRANTY_WINDOW_DAYS} days`);
@@ -60,12 +64,11 @@ export async function inventorySnapshotForAgent(session: GqlSSession, serverRunt
 function itemLine(item: GqlSAdminInventoryItem): string {
     const label = [item.brand, item.model].filter(Boolean).join(' ');
     const name = label ? `${item.name} (${label})` : item.name;
-    const value = item.currentValueCents === null || item.currentValueCents === undefined ? 'unvalued' : formatEur(item.currentValueCents);
+    const value =
+        item.currentValueCents === null || item.currentValueCents === undefined
+            ? 'unvalued'
+            : formatCurrency(item.currentValueCents, { locale: 'de' });
     const condition = item.condition ? ` [${item.condition}]` : '';
     const warranty = item.warrantyEndsAt ? ` [warranty ends ${item.warrantyEndsAt}]` : '';
     return `${name}: ${value}${condition}${warranty} (id: ${item.itemId})`;
-}
-
-function formatEur(cents: number): string {
-    return `${(cents / 100).toFixed(2)} €`;
 }

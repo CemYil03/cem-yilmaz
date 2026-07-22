@@ -181,6 +181,7 @@ src/
 ├── routes/          TanStack Router — public under {-$locale}/, private under workspace/, GraphQL under api/
 ├── server/          CQRS (commands/, queries/, guards/, mappers/), agents/, jobs/, graphql/, db/, env/, domain/
 ├── web/             UI (components/, content/, hooks/, seo/, chat/), GraphQL client, utils/
+├── shared/          Isomorphic helpers (locale, date/currency formatting) used by web + server
 ├── router.tsx
 ├── routeTree.gen.ts Generated (DO NOT EDIT)
 └── styles.css

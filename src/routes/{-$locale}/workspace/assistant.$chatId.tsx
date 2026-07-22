@@ -173,6 +173,7 @@ function WorkspaceAssistantPage({
                             onCollectionSubmit={onCollectionSubmit}
                             onApprovalRespond={onApprovalRespond}
                             jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
+                            locale={locale}
                             isGenerating={live.isGenerating(chat.chatId)}
                             liveTurnMessageIds={live.liveTurnMessageIdsFor(chat.chatId)}
                         />

@@ -120,11 +120,6 @@ export function formatDuration(totalSec: number): string {
     return `${minutes}m`;
 }
 
-export function formatEur(cents: number | null | undefined): string {
-    if (cents == null) return '';
-    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
-}
-
 export function isSameDay(aIso: string, bIso: string): boolean {
     const a = parseISO(aIso);
     const b = parseISO(bIso);
