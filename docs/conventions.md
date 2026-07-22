@@ -218,10 +218,10 @@ If a comment paraphrases what the next line does, delete the comment and fix the
 
 ## UI Components
 
-- **Search before you create.** Before adding a new component (or hand-rolling markup that looks like one), search
-  `src/web/components/` and `src/web/components/base/` for an existing piece that already does the job — by name, by nearby exports, and by
-  the relevant `docs/styles/*.md` catalog when the surface has one (e.g. chat). Prefer reuse or a small extension of an existing component
-  over a parallel one. A new file is justified only when nothing in that tree covers the interaction, and the new piece belongs in
+- **Search before you create.** Before adding a new component (or hand-rolling markup that looks like one), search `src/web/components/` and
+  `src/web/components/base/` for an existing piece that already does the job — by name, by nearby exports, and by the relevant
+  `docs/styles/*.md` catalog when the surface has one (e.g. chat). Prefer reuse or a small extension of an existing component over a
+  parallel one. A new file is justified only when nothing in that tree covers the interaction, and the new piece belongs in
   `src/web/components/` (or `base/` for a true primitive) rather than living only at one call site.
 - Base components live in `src/web/components/base/` — these are Radix UI / shadcn primitives. Modify them sparingly.
 - Application-specific components live directly in `src/web/components/`.
