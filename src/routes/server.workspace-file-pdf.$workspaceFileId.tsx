@@ -21,8 +21,9 @@ import type { WorkspaceFilePdfContent } from '../server/queries/workspaceFilePdf
 // app chrome. `printBackground` + the `print` media emulation in
 // `browserCapturePdf` make these styles land in the PDF. The route still
 // renders inside `__root` (which mounts the ambient backdrop and toaster), so
-// we force a white, full-bleed sheet on top of it via inline styles and
-// `data-pdf-*` hooks.
+// we paint a white `min-h-screen` sheet over it via `relative z-50` and
+// `data-pdf-*` hooks. The sheet must stay in normal document flow — a
+// `fixed inset-0` overflow box clips Chromium's `page.pdf()` to one page.
 
 // A missing/blank `token` defaults to `''` rather than failing validation, so
 // a malformed URL degrades to the loader's clean 404 (invalid token) instead
@@ -57,12 +58,16 @@ export const Route = createFileRoute('/server/workspace-file-pdf/$workspaceFileI
 function WorkspaceFilePdfDocument() {
     const { title, content } = Route.useLoaderData();
     return (
-        // Fixed, full-bleed white sheet painted over the app's ambient backdrop
-        // so the capture is a clean light page regardless of the app theme.
-        // `colorScheme: light` forces light UA defaults; the margins come from
-        // `browserCapturePdf`'s `@page` settings, so the inner padding here is
-        // only the on-screen breathing room before capture.
-        <div data-pdf-ready style={{ colorScheme: 'light' }} className="fixed inset-0 z-50 overflow-auto bg-white text-neutral-900">
+        // White sheet painted over the app's ambient backdrop so the capture
+        // is a clean light page regardless of the app theme. Must stay in
+        // normal document flow (`relative` + `min-h-screen`, NOT
+        // `fixed inset-0`) — Chromium's `page.pdf()` only paginates content
+        // that grows the document height; a viewport-pinned overflow box
+        // clips to a single page. `colorScheme: light` forces light UA
+        // defaults; margins come from `browserCapturePdf`'s `@page`
+        // settings, so the inner padding here is only on-screen breathing
+        // room before capture.
+        <div data-pdf-ready style={{ colorScheme: 'light' }} className="relative z-50 min-h-screen bg-white text-neutral-900">
             <article className="mx-auto max-w-[720px] px-10 py-8">
                 <h1 className="mb-6 text-2xl font-semibold text-neutral-900">{title}</h1>
                 {/* Reuse the same renderer as the on-screen preview for content

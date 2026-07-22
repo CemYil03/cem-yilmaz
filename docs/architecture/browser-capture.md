@@ -100,6 +100,10 @@ browser: {
 `capture` screenshots (PNG/JPEG); `capturePdf` renders the page to a PDF via `page.pdf()` on the same singleton browser (`format: 'A4'`,
 `printBackground: true`, margins, `print` media emulation). Both take a caller-constructed absolute URL and reuse the singleton Chromium.
 
+**PDF layout constraint.** `page.pdf()` paginates from document-flow height. Print routes must let content grow the page (`relative` /
+`min-h-screen`, etc.) — a `fixed inset-0` + `overflow-auto` sheet only exposes one viewport to the printer and truncates multi-page
+documents.
+
 The **first real consumer** of this pipeline is the workspace-files PDF export (`docs/features/workspace-files.md`): a `/server/*` print
 route (`src/routes/server.workspace-file-pdf.$workspaceFileId.tsx`) plus an authenticated download route that mints the token and calls
 `browser.capturePdf`. Before it, `/server/*` had no routes — the pipeline shipped in the template baseline unused.
