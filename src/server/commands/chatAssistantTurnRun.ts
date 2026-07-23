@@ -45,9 +45,10 @@ import { chatMessageAppend } from './chatMessageAppend';
 //   returns immediately. Loads `coreMessages` itself (`chatMessageFindMany`
 //   then `toModelMessages`) so the three chat commands all share the same
 //   one-line "user-side row is durable; now run the agent" call. Bumps
-//   `chats.lastModifiedAt` after the turn finishes and routes any thrown
-//   error to `serverRuntime.log`. Used by `chatMessageCreate`,
-//   `chatInputCollectionRespond`, and `chatToolApprovalRespond`.
+//   `chats.lastModifiedAt` and `chats.contextTokensUsed` after the turn
+//   finishes and routes any thrown error to `serverRuntime.log`. Used by
+//   `chatMessageCreate`, `chatInputCollectionRespond`, and
+//   `chatToolApprovalRespond`.
 
 const PROMPT_USER_FOR_INPUT_TOOL_NAME = 'promptUserForInput';
 
@@ -319,7 +320,7 @@ async function chatAssistantTurnRun({
     serverRuntime,
     agentFactory,
     currentPagePath,
-}: ChatAssistantTurnRunOptions): Promise<void> {
+}: ChatAssistantTurnRunOptions): Promise<number | null> {
     const { generationId } = assistantOptions;
 
     // Pre-allocate the id of the eventual assistant-text row so streamed
@@ -327,8 +328,9 @@ async function chatAssistantTurnRun({
     // streaming preview row for the persisted message at end-of-stream.
     const assistantTextMessageId = crypto.randomUUID();
 
+    let contextTokensUsed: number | null = null;
     try {
-        await runAgentTurn({
+        contextTokensUsed = await runAgentTurn({
             chatId,
             coreMessages,
             requestingSession,
@@ -339,6 +341,22 @@ async function chatAssistantTurnRun({
             currentPagePath,
         });
     } finally {
+        // Persist activity timestamp + latest prompt size even when the turn
+        // threw after producing steps — the denormalized `contextTokensUsed`
+        // is what the workspace composer reads without scanning message
+        // variants. Only overwrite when this turn observed a usage snapshot.
+        try {
+            await serverRuntime.db
+                .update(chats)
+                .set({
+                    lastModifiedAt: new Date(),
+                    ...(contextTokensUsed != null ? { contextTokensUsed } : {}),
+                })
+                .where(eq(chats.chatId, chatId));
+        } catch (bumpError) {
+            serverRuntime.log.error(bumpError, requestingSession);
+        }
+
         // `TurnEnded` runs on every path out — success, agent throw, downstream
         // publish failure — so the client always tears down its per-turn
         // composer lock + streaming row, even when the turn produced no
@@ -357,6 +375,7 @@ async function chatAssistantTurnRun({
             }
         }
     }
+    return contextTokensUsed;
 }
 
 interface ChatAssistantTurnRunDetachedOptions {
@@ -380,9 +399,10 @@ interface ChatAssistantTurnRunDetachedOptions {
  * step, and re-reading after their own writes is what picks up command-side
  * side-effects (e.g. the synthetic skipped-userInput row `chatMessageCreate`
  * inserts when the user pivots away from a form). After the turn finishes
- * (either path), bumps `chats.lastModifiedAt` so chat lists/sorts reflect the
- * new activity. Any thrown error from the load, the turn, or the timestamp
- * bump is routed to `serverRuntime.log`.
+ * (either path), bumps `chats.lastModifiedAt` (and `contextTokensUsed` when
+ * the turn reported usage) so chat lists/sorts and the composer headroom chip
+ * reflect the new activity. Any thrown error from the load, the turn, or the
+ * timestamp bump is routed to `serverRuntime.log`.
  */
 export function chatAssistantTurnRunDetached({
     chatId,
@@ -404,7 +424,6 @@ export function chatAssistantTurnRunDetached({
                 agentFactory,
                 currentPagePath,
             });
-            await serverRuntime.db.update(chats).set({ lastModifiedAt: new Date() }).where(eq(chats.chatId, chatId));
         } catch (turnError) {
             serverRuntime.log.error(turnError, requestingSession);
         }
@@ -422,7 +441,7 @@ async function runAgentTurn({
     agentFactory,
     assistantTextMessageId,
     currentPagePath,
-}: ChatAssistantTurnRunOptions & { assistantTextMessageId: string }): Promise<void> {
+}: ChatAssistantTurnRunOptions & { assistantTextMessageId: string }): Promise<number | null> {
     const { generationId } = assistantOptions;
     const { db } = serverRuntime;
     // Every `onStepEnd` step caches its generation snapshot in this slot
@@ -559,6 +578,8 @@ async function runAgentTurn({
             serverRuntime.log.error(enqueueError, requestingSession);
         });
     }
+
+    return lastStepGeneration.value?.inputTokens ?? null;
 }
 
 // The tool's wire schema is intentionally flat (a `kind` enum + optional

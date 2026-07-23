@@ -203,6 +203,7 @@ query WorkspaceChatPage($chatId: ID!) {
                     chatId
                     title
                     lastModifiedAt
+                    contextTokensUsed
                     messages {
                         ...WorkspaceChatMessageFields
                     }
@@ -293,6 +294,7 @@ query WorkspaceChatConfig {
                         modelId
                         label
                         supportedMediaTypes
+                        contextWindowTokens
                     }
                     defaultModelId
                 }

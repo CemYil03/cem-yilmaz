@@ -547,6 +547,7 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                         modelId: model.modelId,
                         label: model.label,
                         supportedMediaTypes: [...model.supportedMediaTypes],
+                        contextWindowTokens: model.contextWindowTokens,
                     })),
                     defaultModelId: row.defaultModelId,
                 };

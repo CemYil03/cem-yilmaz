@@ -294,6 +294,11 @@ type Chat {
     chatId: ID!
     title: String!
     lastModifiedAt: DateTime!
+    # Latest LLM step's input-token count for this chat (prompt size the
+    # provider saw). Null until a turn with usage metadata has completed.
+    # Pair with `AdminChatModel.contextWindowTokens` for headroom. See
+    # `docs/features/admin-chat-config.md`.
+    contextTokensUsed: Int
     # Flat insertion-ordered list. Day-grouping is a render-time concern in the
     # client (the live `chatUpdates` subscription delivers raw messages, so the
     # client has to be the grouping authority anyway).
@@ -1475,10 +1480,14 @@ extend type AdminMutation {
 # can't be attached when the model is selected. The list is IANA media-type
 # strings (e.g. `application/pdf`,
 # `application/vnd.openxmlformats-officedocument.wordprocessingml.document`).
+# `contextWindowTokens` is the provider's max input tokens for one request;
+# the workspace composer shows last-turn `inputTokens` against it so the
+# admin can see remaining headroom.
 type AdminChatModel {
     modelId: String!
     label: String!
     supportedMediaTypes: [String!]!
+    contextWindowTokens: Int!
 }
 
 # Chat configuration surfaced to the workspace. `defaultModelId` is the saved

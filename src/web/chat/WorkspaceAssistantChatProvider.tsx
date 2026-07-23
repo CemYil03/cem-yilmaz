@@ -87,6 +87,9 @@ interface WorkspaceAssistantChatContextValue {
     /** Picks a new model: updates `selectedModelId` immediately and
      *  fire-and-forget persists it as the new default. */
     onModelChange: (modelId: string) => void;
+    /** Server-denormalized `Chat.contextTokensUsed` for the active chat.
+     *  Null when no chat is loaded or the chat has never reported usage. */
+    contextTokensUsed: number | null;
     /** The workspace file currently shown in the sidebar's file-display
      *  state, or null when the sidebar is on the chat browser / transcript.
      *  Opening a file attachment sets this; it takes visual precedence over
@@ -110,6 +113,7 @@ export function useWorkspaceAssistantChat(): WorkspaceAssistantChatContextValue 
 export function WorkspaceAssistantChatProvider({ children, chatConfig }: { children: ReactNode; chatConfig: WorkspaceChatConfig }) {
     const [chatId, setChatId] = useState<string | undefined>(undefined);
     const [loadedMessages, setLoadedMessages] = useState<ReadonlyArray<TranscriptMessage>>([]);
+    const [contextTokensUsed, setContextTokensUsed] = useState<number | null>(null);
     const [selectedModelId, setSelectedModelId] = useState(chatConfig.defaultModelId);
     const [openFileId, setOpenFileId] = useState<string | null>(null);
     const live = useChatLiveUpdates();
@@ -150,6 +154,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
         // this is a no-op for them.
         if (chatIdRef.current !== id) {
             setLoadedMessages([]);
+            setContextTokensUsed(null);
         }
         chatIdRef.current = id;
         setChatId(id);
@@ -164,6 +169,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
         chatIdRef.current = undefined;
         setChatId(undefined);
         setLoadedMessages([]);
+        setContextTokensUsed(null);
         if (leaving) live.forgetChat(leaving);
     }, [live]);
 
@@ -185,6 +191,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
             chatIdRef.current = chat.chatId;
             setChatId(chat.chatId);
             setLoadedMessages(chat.messages as ReadonlyArray<TranscriptMessage>);
+            setContextTokensUsed(chat.contextTokensUsed ?? null);
             // The fetched rows are authoritative — drop this chat's finished
             // live buffers so a settled turn's appended rows don't double up
             // with the query result. An in-flight turn keeps streaming.
@@ -204,6 +211,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
             chatConfig,
             selectedModelId,
             onModelChange,
+            contextTokensUsed,
             openFileId,
             openFile,
             closeFile,
@@ -218,6 +226,7 @@ export function WorkspaceAssistantChatProvider({ children, chatConfig }: { child
             chatConfig,
             selectedModelId,
             onModelChange,
+            contextTokensUsed,
             openFileId,
             openFile,
             closeFile,

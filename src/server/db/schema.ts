@@ -130,6 +130,12 @@ export const chats = pgTable(
         // `docs/features/chat-visitor.md`.
         sessionId: uuid(),
         lastModifiedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        // Latest LLM step's `inputTokens` for this chat — the prompt size the
+        // provider actually saw. Updated at end of each assistant turn so the
+        // workspace composer can show context-window headroom without scanning
+        // message variant tables. Null until the first turn with usage lands
+        // (fresh chats + legacy rows written before this column existed).
+        contextTokensUsed: integer(),
         createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
     },
     (table) => [

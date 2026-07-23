@@ -96,6 +96,7 @@ export interface GqlCAdminChatConfig {
 
 export interface GqlCAdminChatModel {
     __typename?: 'AdminChatModel';
+    contextWindowTokens: Scalars['Int']['output'];
     label: Scalars['String']['output'];
     modelId: Scalars['String']['output'];
     supportedMediaTypes: Array<Scalars['String']['output']>;
@@ -1950,6 +1951,7 @@ export type GqlCAdminTravelTripStatus = 'cancelled' | 'draft' | 'planned';
 export interface GqlCChat {
     __typename?: 'Chat';
     chatId: Scalars['ID']['output'];
+    contextTokensUsed?: Maybe<Scalars['Int']['output']>;
     lastModifiedAt: Scalars['DateTime']['output'];
     messages: Array<GqlCChatMessage>;
     title: Scalars['String']['output'];
@@ -2905,6 +2907,7 @@ export type GqlCWorkspaceChatPageQuery = {
                     chatId: string;
                     title: string;
                     lastModifiedAt: string;
+                    contextTokensUsed: number | null;
                     messages: Array<
                         | {
                               __typename: 'ChatMessageAssistantInputCollection';
@@ -3070,7 +3073,12 @@ export type GqlCWorkspaceChatConfigQuery = {
             admin: {
                 adminChatConfigFindOne: {
                     defaultModelId: string;
-                    availableModels: Array<{ modelId: string; label: string; supportedMediaTypes: Array<string> }>;
+                    availableModels: Array<{
+                        modelId: string;
+                        label: string;
+                        supportedMediaTypes: Array<string>;
+                        contextWindowTokens: number;
+                    }>;
                 };
             } | null;
         } | null;
@@ -11720,6 +11728,7 @@ export const WorkspaceChatPageDocument = {
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'chatId' } },
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'title' } },
                                                                     { kind: 'Field', name: { kind: 'Name', value: 'lastModifiedAt' } },
+                                                                    { kind: 'Field', name: { kind: 'Name', value: 'contextTokensUsed' } },
                                                                     {
                                                                         kind: 'Field',
                                                                         name: { kind: 'Name', value: 'messages' },
@@ -12581,6 +12590,10 @@ export const WorkspaceChatConfigDocument = {
                                                                                 {
                                                                                     kind: 'Field',
                                                                                     name: { kind: 'Name', value: 'supportedMediaTypes' },
+                                                                                },
+                                                                                {
+                                                                                    kind: 'Field',
+                                                                                    name: { kind: 'Name', value: 'contextWindowTokens' },
                                                                                 },
                                                                             ],
                                                                         },

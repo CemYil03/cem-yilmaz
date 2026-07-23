@@ -27,27 +27,37 @@ from the active model — `.docx` is pick-able iff the model says so. The picked
 The model dropdown ships on **every** admin composer via `WorkspaceAssistantChatProvider` (layout-mounted) → `WorkspaceChatComposer`.
 Picking a new model updates local state and fires `chatConfigDefaultModelSet` to persist the sticky default.
 
-| Entry point                                                   | Behavior                                                                                                           |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Workspace hub composer (`/workspace`)                         | Same `<WorkspaceChatComposer />`; model dropdown + Auto/Manual approval-mode selector in the bottom-addon row.     |
-| Workspace assistant sidebar (`WorkspaceAssistantChatSidebar`) | Wired — sidebar body uses `<WorkspaceChatComposer />` under the shared provider; same dropdown as hub / deep-link. |
-| Workspace deep-link (`/workspace/assistant/$chatId`)          | Same `<WorkspaceChatComposer />` + provider; dropdown always present.                                              |
-| Public visitor sheet (`/`, "Ask me anything")                 | **No dropdown.** The visitor surface stays on the catalog fallback (`gemini-2.5-flash`); admin-only feature.       |
+| Entry point                                                   | Behavior                                                                                                                             |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Workspace hub composer (`/workspace`)                         | Same `<WorkspaceChatComposer />`; model dropdown + Auto/Manual approval-mode selector + context-window ring in the bottom-addon row. |
+| Workspace assistant sidebar (`WorkspaceAssistantChatSidebar`) | Wired — sidebar body uses `<WorkspaceChatComposer />` under the shared provider; same dropdown + ring as hub / deep-link.            |
+| Workspace deep-link (`/workspace/assistant/$chatId`)          | Same `<WorkspaceChatComposer />` + provider; dropdown + ring always present.                                                         |
+| Public visitor sheet (`/`, "Ask me anything")                 | **No dropdown / no context ring.** The visitor surface stays on the catalog fallback (`gemini-2.5-flash`); admin-only feature.       |
 
 ## Model catalog
 
-The catalog lives in code at `src/server/agents/adminChatModels.ts`. Each entry is `{ modelId, label, supportedMediaTypes }`:
+The catalog lives in code at `src/server/agents/adminChatModels.ts`. Each entry is
+`{ modelId, label, supportedMediaTypes, contextWindowTokens }`:
 
-| `modelId`                | Label                    | Supported attachment types                                                 |
-| ------------------------ | ------------------------ | -------------------------------------------------------------------------- |
-| `gemini-2.5-flash`       | Gemini 2.5 Flash         | Images (png/jpeg/webp/heic/heif), PDF, plain text, markdown, csv           |
-| `gemini-2.5-pro`         | Gemini 2.5 Pro           | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML |
-| `gemini-3.5-flash`       | Gemini 3.5 Flash         | Same as Flash 2.5                                                          |
-| `gemini-3.1-pro-preview` | Gemini 3.1 Pro (preview) | Same as Pro 2.5                                                            |
+| `modelId`                | Label                    | Context window | Supported attachment types                                                 |
+| ------------------------ | ------------------------ | -------------- | -------------------------------------------------------------------------- |
+| `gemini-2.5-flash`       | Gemini 2.5 Flash         | 1,048,576      | Images (png/jpeg/webp/heic/heif), PDF, plain text, markdown, csv           |
+| `gemini-2.5-pro`         | Gemini 2.5 Pro           | 1,048,576      | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML |
+| `gemini-3.5-flash`       | Gemini 3.5 Flash         | 1,048,576      | Same as Flash 2.5                                                          |
+| `gemini-3.1-pro-preview` | Gemini 3.1 Pro (preview) | 1,048,576      | Same as Pro 2.5                                                            |
 
-Why code, not DB: adding or removing a model is a code change anyway — the provider needs to know the id is valid, the supported-media-type
-list is a deployment-time fact, and shipping the catalog as a typed const keeps the resolver and the validator pointing at the same source.
-The DB only stores **which one is currently picked**, not the list itself.
+`contextWindowTokens` is the provider's max **input** tokens for one request (from the model card). The workspace composer shows a compact
+usage **ring** (full = 100% used); hover expands to exact used / window / remaining counts. The ring turns destructive at ≥ 85% full.
+
+**Where “used” comes from.** Authoritative value is `Chat.contextTokensUsed` — denormalized onto the `Chats` row at the end of each
+assistant turn (same write that bumps `lastModifiedAt`), from the turn's last LLM step `inputTokens`. Reading it is O(1); no message-table
+scan on composer render. The client may overlay a fresher number from live `generation.inputTokens` on the open transcript while a turn
+streams in. Fresh chats and legacy rows with no usage yet read as empty (0 on the ring) until the first turn with metadata completes.
+
+Why code, not DB for the catalog: adding or removing a model is a code change anyway — the provider needs to know the id is valid, the
+supported-media-type list and context window are deployment-time facts, and shipping the catalog as a typed const keeps the resolver and the
+validator pointing at the same source. The DB stores **which model is currently picked** (`AdminChatConfig.defaultModelId`) and **how full
+the open chat's prompt is** (`Chats.contextTokensUsed`), not the catalog itself.
 
 ## Storage
 
@@ -132,6 +142,7 @@ zero effect; the field is admin-only by code, not just by schema.
 | Resolvers                               | `src/server/graphql/resolversCreate.ts`                                                           |
 | Client ops                              | `src/routes/{-$locale}/workspace/WorkspaceAssistantPage.graphql`                                  |
 | Composer (admin wrapper)                | `src/web/chat/WorkspaceChatComposer.tsx`                                                          |
+| Context-window helpers                  | `src/web/chat/chatContextUsage.ts`                                                                |
 | Composer (generic)                      | `src/web/chat/ChatComposer.tsx`                                                                   |
 | Composer primitive (accept passthrough) | `src/web/components/MessageComposer.tsx`                                                          |
 | Layout loader (config fetch)            | `src/routes/{-$locale}/workspace.tsx`                                                             |

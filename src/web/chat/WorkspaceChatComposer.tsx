@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { chatContextTokensUsed, formatTokenCount } from './chatContextUsage';
 import { ChatComposer } from './ChatComposer';
+import { mergeTranscriptMessages } from './chatTranscript';
+import type { TranscriptMessage } from './chatTranscript';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
+import { Button } from '../components/base/button';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/base/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/base/select';
 import { WorkspaceChatMessageCreateDocument } from '../graphql/generated';
+import { cn } from '../utils/cn';
 import type { Locale } from '../utils/locale';
 
 // Admin-namespace composer used on every workspace surface that lets the
@@ -19,9 +25,10 @@ import type { Locale } from '../utils/locale';
 //   assistant chat provider, so the same dropdown choice is reflected on
 //   every surface and a change is persisted as the new sticky default
 //   (see `docs/features/admin-chat-config.md`);
-// - renders the model dropdown and the tool-call approval-mode selector
-//   into the bottom-left addon slot — these are admin-only controls, so
-//   they live in this wrapper rather than the audience-agnostic base;
+// - renders the model dropdown, the tool-call approval-mode selector, and
+//   a compact context-window usage ring into the bottom-left addon slot —
+//   these are admin-only controls, so they live in this wrapper rather
+//   than the audience-agnostic base;
 // - leaves `chatId`, `addonStart` (optional surface-specific extras like
 //   the sheet's "new chat" button), `onMessageSent`, and the live-updates
 //   wiring to the caller — the three surfaces differ on those points
@@ -35,6 +42,9 @@ import type { Locale } from '../utils/locale';
 // `requireToolCallApprovals` so each call surfaces an approval message in the
 // transcript before it runs.
 type ToolCallApprovalMode = 'auto' | 'manual';
+
+/** Warn on the ring once the last prompt used ≥ 85% of the window. */
+const CONTEXT_WARN_RATIO = 0.85;
 
 interface WorkspaceChatComposerProps {
     locale: Locale;
@@ -61,6 +71,14 @@ interface WorkspaceChatComposerProps {
      *  resolve against the right surface. The mounting site reads it
      *  from `useLocation().pathname`. */
     currentPagePath?: string;
+    /** Merged transcript for the chat this composer is bound to. Used as a
+     *  live overlay for `generation.inputTokens` while messages stream in.
+     *  Deep-link / sidebar pass their merged messages; the hub omits this. */
+    messages?: ReadonlyArray<TranscriptMessage>;
+    /** Server-authoritative `Chat.contextTokensUsed` from the page query /
+     *  provider. Falls back when the live transcript has no generation
+     *  metadata yet (fresh chat, legacy rows). */
+    contextTokensUsed?: number | null;
 }
 
 const placeholderCopy = { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' };
@@ -82,9 +100,37 @@ export function WorkspaceChatComposer({
     autoFocus = false,
     addonStart,
     currentPagePath,
+    messages: messagesProp,
+    contextTokensUsed: contextTokensUsedProp,
 }: WorkspaceChatComposerProps) {
-    const { chatConfig, selectedModelId, onModelChange } = useWorkspaceAssistantChat();
+    const {
+        chatConfig,
+        selectedModelId,
+        onModelChange,
+        chatId: providerChatId,
+        loadedMessages,
+        live,
+        contextTokensUsed: providerContextTokensUsed,
+    } = useWorkspaceAssistantChat();
     const [mode, setMode] = useState<ToolCallApprovalMode>('auto');
+
+    // Prefer an explicit transcript from the mounting surface (deep-link /
+    // sidebar). Fall back to the provider's loaded + live rows when this
+    // composer is bound to the provider's active chat (hub after adopt).
+    const messages =
+        messagesProp ??
+        (chatId && chatId === providerChatId
+            ? mergeTranscriptMessages(loadedMessages, live.appendedMessagesFor(chatId) as ReadonlyArray<TranscriptMessage>)
+            : []);
+
+    const activeModel = chatConfig.availableModels.find((model) => model.modelId === selectedModelId) ?? chatConfig.availableModels[0];
+    const contextWindowTokens = activeModel?.contextWindowTokens ?? 0;
+    // Live message overlay wins when present (covers the turn that just
+    // landed via SSE). Otherwise the denormalized chat-row value from the
+    // server / provider. See `docs/features/admin-chat-config.md`.
+    const serverTokensUsed = contextTokensUsedProp ?? (chatId && chatId === providerChatId ? providerContextTokensUsed : null);
+    const tokensUsed = chatContextTokensUsed(messages) ?? serverTokensUsed ?? 0;
+    const tokensLeft = Math.max(0, contextWindowTokens - tokensUsed);
 
     return (
         <ChatComposer
@@ -106,8 +152,22 @@ export function WorkspaceChatComposer({
             addonStart={
                 <>
                     {addonStart}
+                    {contextWindowTokens > 0 ? (
+                        <ContextWindowStatus
+                            locale={locale}
+                            tokensUsed={tokensUsed}
+                            tokensLeft={tokensLeft}
+                            contextWindowTokens={contextWindowTokens}
+                        />
+                    ) : null}
                     <Select value={selectedModelId} onValueChange={onModelChange} disabled={isLocked}>
-                        <SelectTrigger size="sm" aria-label={modelLabel[locale]} className="h-7 gap-1 px-2 text-xs">
+                        <SelectTrigger
+                            size="sm"
+                            aria-label={modelLabel[locale]}
+                            // Cap width so "Gemini 3.1 Pro" truncates instead of
+                            // shoving Send past the sidebar composer edge.
+                            className="h-7 max-w-[7.5rem] min-w-0 shrink gap-1 px-1.5 text-xs *:data-[slot=select-value]:truncate"
+                        >
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -119,7 +179,11 @@ export function WorkspaceChatComposer({
                         </SelectContent>
                     </Select>
                     <Select value={mode} onValueChange={(value) => setMode(value as ToolCallApprovalMode)} disabled={isLocked}>
-                        <SelectTrigger size="sm" aria-label="Tool call approval mode" className="h-7 gap-1 px-2 text-xs">
+                        <SelectTrigger
+                            size="sm"
+                            aria-label="Tool call approval mode"
+                            className="h-7 max-w-[5.5rem] shrink-0 gap-1 px-1.5 text-xs"
+                        >
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -130,5 +194,91 @@ export function WorkspaceChatComposer({
                 </>
             }
         />
+    );
+}
+
+// Compact context-window ring — full ring = 100% of the model window used.
+// Exact counts stay on hover so the addon row stays scannable on a narrow
+// sidebar (same HoverCard pattern as the visitor daily-quota chip).
+function ContextWindowStatus({
+    locale,
+    tokensUsed,
+    tokensLeft,
+    contextWindowTokens,
+}: {
+    locale: Locale;
+    tokensUsed: number;
+    tokensLeft: number;
+    contextWindowTokens: number;
+}) {
+    const ratio = contextWindowTokens > 0 ? Math.min(1, tokensUsed / contextWindowTokens) : 0;
+    const isNearLimit = ratio >= CONTEXT_WARN_RATIO;
+    const usedLabel = formatTokenCount(tokensUsed);
+    const windowLabel = formatTokenCount(contextWindowTokens);
+    const fullText = isNearLimit
+        ? {
+              de: `Kontext fast voll: ${tokensUsed.toLocaleString('de-DE')} von ${contextWindowTokens.toLocaleString('de-DE')} Tokens genutzt. Noch etwa ${tokensLeft.toLocaleString('de-DE')} übrig.`,
+              en: `Context nearly full: ${tokensUsed.toLocaleString('en-US')} of ${contextWindowTokens.toLocaleString('en-US')} tokens used. About ${tokensLeft.toLocaleString('en-US')} left.`,
+          }[locale]
+        : {
+              de: `${tokensUsed.toLocaleString('de-DE')} von ${contextWindowTokens.toLocaleString('de-DE')} Kontext-Tokens genutzt. Noch etwa ${tokensLeft.toLocaleString('de-DE')} übrig.`,
+              en: `${tokensUsed.toLocaleString('en-US')} of ${contextWindowTokens.toLocaleString('en-US')} context tokens used. About ${tokensLeft.toLocaleString('en-US')} left.`,
+          }[locale];
+    const ariaLabel = { de: 'Kontextfenster', en: 'Context window' }[locale];
+
+    return (
+        <HoverCard openDelay={100} closeDelay={150}>
+            <HoverCardTrigger asChild>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    role="status"
+                    aria-label={`${ariaLabel}: ${usedLabel} / ${windowLabel}`}
+                    className={cn('shrink-0 cursor-help', isNearLimit ? 'text-destructive' : 'text-muted-foreground')}
+                >
+                    <ContextUsageRing ratio={ratio} nearLimit={isNearLimit} />
+                </Button>
+            </HoverCardTrigger>
+            <HoverCardContent side="top" align="start" className="w-auto max-w-xs text-xs leading-relaxed">
+                {fullText}
+            </HoverCardContent>
+        </HoverCard>
+    );
+}
+
+/** 14px SVG ring — track + progress arc. `ratio` 0…1; full = window exhausted. */
+function ContextUsageRing({ ratio, nearLimit }: { ratio: number; nearLimit: boolean }) {
+    const size = 14;
+    const stroke = 2;
+    const radius = (size - stroke) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const clamped = Math.min(1, Math.max(0, ratio));
+    const offset = circumference * (1 - clamped);
+
+    return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
+            <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={stroke}
+                className="text-muted-foreground/25"
+            />
+            <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={stroke}
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+                strokeLinecap="round"
+                className={nearLimit ? 'text-destructive' : 'text-foreground/70'}
+            />
+        </svg>
     );
 }

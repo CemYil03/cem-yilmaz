@@ -21,6 +21,10 @@ export interface AdminChatModelDefinition {
     label: string;
     /** IANA media types the model accepts as inline attachments. */
     supportedMediaTypes: readonly string[];
+    /** Max input tokens the model accepts in one request (provider context
+     *  window). Surfaced in the workspace composer as used / remaining so
+     *  the admin can see how much headroom the current chat has left. */
+    contextWindowTokens: number;
 }
 
 export type AdminChatModelId = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-3.5-flash' | 'gemini-3.1-pro-preview';
@@ -54,11 +58,36 @@ const PRO_MEDIA_TYPES: readonly string[] = [
     'text/xml',
 ];
 
+// Official Gemini input-token limits (ai.google.dev model cards). Every
+// catalog entry currently ships at 1M; keep the field per-model so a future
+// long-context variant can diverge without a schema change.
+const CONTEXT_WINDOW_1M = 1_048_576;
+
 export const ADMIN_CHAT_MODELS: readonly AdminChatModelDefinition[] = [
-    { modelId: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', supportedMediaTypes: FLASH_MEDIA_TYPES },
-    { modelId: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', supportedMediaTypes: PRO_MEDIA_TYPES },
-    { modelId: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', supportedMediaTypes: FLASH_MEDIA_TYPES },
-    { modelId: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', supportedMediaTypes: PRO_MEDIA_TYPES },
+    {
+        modelId: 'gemini-2.5-flash',
+        label: 'Gemini 2.5 Flash',
+        supportedMediaTypes: FLASH_MEDIA_TYPES,
+        contextWindowTokens: CONTEXT_WINDOW_1M,
+    },
+    {
+        modelId: 'gemini-2.5-pro',
+        label: 'Gemini 2.5 Pro',
+        supportedMediaTypes: PRO_MEDIA_TYPES,
+        contextWindowTokens: CONTEXT_WINDOW_1M,
+    },
+    {
+        modelId: 'gemini-3.5-flash',
+        label: 'Gemini 3.5 Flash',
+        supportedMediaTypes: FLASH_MEDIA_TYPES,
+        contextWindowTokens: CONTEXT_WINDOW_1M,
+    },
+    {
+        modelId: 'gemini-3.1-pro-preview',
+        label: 'Gemini 3.1 Pro',
+        supportedMediaTypes: PRO_MEDIA_TYPES,
+        contextWindowTokens: CONTEXT_WINDOW_1M,
+    },
 ];
 
 const ADMIN_CHAT_MODEL_IDS: readonly AdminChatModelId[] = ADMIN_CHAT_MODELS.map((model) => model.modelId);

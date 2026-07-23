@@ -93,6 +93,7 @@ export interface GqlSAdminChatConfig {
 
 export interface GqlSAdminChatModel {
     __typename?: 'AdminChatModel';
+    contextWindowTokens: Scalars['Int']['output'];
     label: Scalars['String']['output'];
     modelId: Scalars['String']['output'];
     supportedMediaTypes: Array<Scalars['String']['output']>;
@@ -1947,6 +1948,7 @@ export type GqlSAdminTravelTripStatus = 'cancelled' | 'draft' | 'planned';
 export interface GqlSChat {
     __typename?: 'Chat';
     chatId: Scalars['ID']['output'];
+    contextTokensUsed?: Maybe<Scalars['Int']['output']>;
     lastModifiedAt: Scalars['DateTime']['output'];
     messages: Array<GqlSChatMessage>;
     title: Scalars['String']['output'];
@@ -3158,6 +3160,7 @@ export type GqlSAdminChatModelResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminChatModel'] = GqlSResolversParentTypes['AdminChatModel'],
 > = ResolversObject<{
+    contextWindowTokens?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     label?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     modelId?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     supportedMediaTypes?: Resolver<Array<GqlSResolversTypes['String']>, ParentType, ContextType>;
@@ -4655,6 +4658,7 @@ export type GqlSChatResolvers<
     ParentType extends GqlSResolversParentTypes['Chat'] = GqlSResolversParentTypes['Chat'],
 > = ResolversObject<{
     chatId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    contextTokensUsed?: Resolver<Maybe<GqlSResolversTypes['Int']>, ParentType, ContextType>;
     lastModifiedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     messages?: Resolver<Array<GqlSResolversTypes['ChatMessage']>, ParentType, ContextType>;
     title?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;

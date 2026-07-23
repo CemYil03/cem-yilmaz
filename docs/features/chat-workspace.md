@@ -225,7 +225,9 @@ longer has to wait for a between-turn moment.
 Every admin composer — the hub's hero composer, the sidebar's composer, and the composer on the deep-link route — is the same
 `<WorkspaceChatComposer />` (`src/web/chat/WorkspaceChatComposer.tsx`). It is a thin wrapper around the generic `<ChatComposer />` that
 pre-wires the workspace `chatMessageCreate` mutation, its admin-namespace result extractor, the "Ask your assistant…" placeholder, and (via
-the chat provider) the shared model catalog, currently-selected model id, and `onModelChange` handler.
+the chat provider) the shared model catalog, currently-selected model id, and `onModelChange` handler. It also renders a compact
+context-window usage ring driven by the active model's `contextWindowTokens` and `Chat.contextTokensUsed` (with a live overlay from
+`generation.inputTokens` while the transcript streams) — see [admin-chat-config.md](./admin-chat-config.md).
 
 The sidebar's instance owns two extras (both in `WorkspaceAssistantChatComposer` in `WorkspaceAssistantChatBody.tsx`):
 

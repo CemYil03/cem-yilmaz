@@ -311,8 +311,11 @@ export function MessageComposer({
                     className="field-sizing-content max-h-[40vh]"
                 />
 
-                <InputGroupAddon align="block-end">
-                    {addonStart}
+                <InputGroupAddon align="block-end" className="min-w-0 gap-1.5">
+                    {/* Left cluster can shrink/truncate; attach + send stay
+                        pinned and never get shoved past the composer edge
+                        (narrow workspace sidebar packs model + mode + ring). */}
+                    {addonStart ? <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">{addonStart}</div> : null}
                     {attachmentsEnabled ? (
                         <>
                             <input
@@ -327,14 +330,10 @@ export function MessageComposer({
                                 type="button"
                                 variant="ghost"
                                 size="icon-xs"
-                                // ml-auto on the first of the right-group so addonStart
-                                // children stay left-aligned regardless of how many.
-                                // `variant="outline"` gives the button a visible border
-                                // so the paperclip never reads as empty space next to
-                                // the Send pill — critical when `addonStart` also hosts
-                                // selectors (model + approval mode on the workspace
-                                // surface), so the three-control row stays readable.
-                                className="ml-auto"
+                                // ml-auto only when there is no left cluster —
+                                // otherwise the flex-1 wrapper already pushes
+                                // this group to the trailing edge.
+                                className={addonStart ? 'shrink-0' : 'ml-auto shrink-0'}
                                 disabled={inputsLocked}
                                 title={attachmentsTitle}
                                 aria-label={attachmentsTitle ?? 'Attach files'}
@@ -356,10 +355,10 @@ export function MessageComposer({
                                     // something." Tailwind's `disabled:` already
                                     // dims the button via opacity-50, so this just
                                     // adds a tiny rise on the ready state.
-                                    'transition-all duration-200',
+                                    'shrink-0 transition-all duration-200',
                                     'enabled:-translate-y-px',
                                     'motion-reduce:enabled:translate-y-0',
-                                    attachmentsEnabled ? undefined : 'ml-auto',
+                                    attachmentsEnabled || addonStart ? undefined : 'ml-auto',
                                 )}
                                 disabled={!canSubmit}
                                 aria-label={sendLabel}

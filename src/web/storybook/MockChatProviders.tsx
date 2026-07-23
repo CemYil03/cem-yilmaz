@@ -60,12 +60,23 @@ export function MockWorkspaceAssistantChatProvider({ children }: { children: Rea
                 chatConfig: {
                     defaultModelId: 'gemini-pro',
                     availableModels: [
-                        { modelId: 'gemini-pro', label: 'Gemini Pro', supportedMediaTypes: ['image/*', 'application/pdf'] },
-                        { modelId: 'gemini-flash', label: 'Gemini Flash', supportedMediaTypes: ['image/*'] },
+                        {
+                            modelId: 'gemini-pro',
+                            label: 'Gemini Pro',
+                            supportedMediaTypes: ['image/*', 'application/pdf'],
+                            contextWindowTokens: 1_048_576,
+                        },
+                        {
+                            modelId: 'gemini-flash',
+                            label: 'Gemini Flash',
+                            supportedMediaTypes: ['image/*'],
+                            contextWindowTokens: 1_048_576,
+                        },
                     ],
                 },
                 selectedModelId: 'gemini-pro',
                 onModelChange: () => {},
+                contextTokensUsed: null,
                 openFileId: null,
                 openFile: () => {},
                 closeFile: () => {},

@@ -79,6 +79,9 @@ interface ChatComposerProps {
         modelId: string;
         label: string;
         supportedMediaTypes: ReadonlyArray<string>;
+        /** Optional — admin catalog only. Used by the workspace composer
+         *  for the context-window headroom chip; ignored here. */
+        contextWindowTokens?: number;
     }>;
     /** Content rendered in the bottom-left addon slot — wrappers use
      *  this for surface-specific controls (model dropdown, approval-mode

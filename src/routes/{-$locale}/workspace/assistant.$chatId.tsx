@@ -189,6 +189,8 @@ function WorkspaceAssistantPage({
                 endTurn={live.endTurn}
                 locale={locale}
                 currentPagePath={pathname}
+                messages={messages}
+                contextTokensUsed={chat.contextTokensUsed}
                 autoFocus
             />
         </main>

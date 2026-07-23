@@ -14,6 +14,7 @@ import { useMutation, useQuery } from 'urql';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
 import { ChatTranscript } from './ChatTranscriptShared';
 import type { TranscriptMessage } from './chatTranscript';
+import { mergeTranscriptMessages } from './chatTranscript';
 import { DocumentPanelProvider } from './DocumentPanelProvider';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from './WorkspaceChatComposer';
@@ -357,7 +358,7 @@ export function WorkspaceAssistantChatLoadedHeaderActions({ locale }: { locale: 
 // dropping the current chat while keeping the composer up.
 
 export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
-    const { chatId, live, setChatIdFromHub, resetChat } = useWorkspaceAssistantChat();
+    const { chatId, live, setChatIdFromHub, resetChat, loadedMessages } = useWorkspaceAssistantChat();
     // The body is mounted at the workspace layout, so `useLocation()` here
     // tracks whichever workspace route the user has open behind the
     // sidebar / sheet. Forwarded to the agent's system prompt so short
@@ -366,6 +367,7 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
     // `docs/features/chat-workspace.md`.
     const { pathname } = useLocation();
     const hasChat = !!chatId;
+    const messages = mergeTranscriptMessages(loadedMessages, live.appendedMessagesFor(chatId) as ReadonlyArray<TranscriptMessage>);
     return (
         <WorkspaceChatComposer
             locale={locale}
@@ -376,6 +378,7 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
             endTurn={live.endTurn}
             onMessageSent={setChatIdFromHub}
             currentPagePath={pathname}
+            messages={messages}
             // Body mounts fresh whenever the wrapper does (e.g. Sheet
             // close→open re-mounts) → focus the textarea so the user can
             // start typing immediately without first reaching for the input.
@@ -384,7 +387,14 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
                 hasChat ? (
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" type="button" onClick={resetChat} aria-label={newChatLabel[locale]}>
+                            <Button
+                                variant="ghost"
+                                type="button"
+                                size="icon-xs"
+                                className="shrink-0"
+                                onClick={resetChat}
+                                aria-label={newChatLabel[locale]}
+                            >
                                 <MessageSquarePlusIcon className="size-4" />
                             </Button>
                         </TooltipTrigger>

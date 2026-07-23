@@ -8,6 +8,7 @@ export function toGqlChat(chat: Chat, rows: ChatMessageRowJoined[]): GqlSChat {
         chatId: chat.chatId,
         title: chat.title,
         lastModifiedAt: chat.lastModifiedAt,
+        contextTokensUsed: chat.contextTokensUsed ?? null,
 
         // resolved fields
         // Insertion-ordered (rows arrive sorted by `chatMessageRowsLoad`); the

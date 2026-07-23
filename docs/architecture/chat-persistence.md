@@ -135,6 +135,8 @@ closure variable and spreads that into the assistant-text insert at end-of-strea
 rows. A naïve `SUM(totalTokens)` over `chatMessagesToolCall` therefore over-counts. The denormalization was chosen anyway because:
 
 - The dominant aggregation today is "show the model + token count next to _this_ assistant message", which is a row-local read with no join.
+- Chat-level headroom for the workspace composer is denormalized separately onto `Chats.contextTokensUsed` (latest step's `inputTokens`) at
+  end of turn — O(1) read, no variant scan. See [admin-chat-config.md](../features/admin-chat-config.md).
 - Aggregations that need accuracy (per-chat / per-user / per-day totals) can dedupe by `(chatMessageId, step boundary)` or join through a
   future generations table without a schema migration of the message tables.
 - A normalized "one row per step" table would force a join on the read path that's currently the fast happy path, for a feature whose
