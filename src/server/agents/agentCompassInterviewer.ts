@@ -184,12 +184,12 @@ function buildRunConfig({ serverRuntime, messages, locale, topic }: CompassInter
                 : messages.map((m) => ({ role: m.role, content: m.content }));
 
         const model = serverRuntime.ai.compassInterviewerModel();
-        // The runtime binds this factory to `gemini-2.5-pro`. Resolve the
-        // same id locally so `googleAgentProviderOptionsFor` picks the Pro
-        // branch (structured outputs on, no `thinkingBudget: 0` — Pro
-        // rejects it). If the runtime swaps tier later, this line is the
-        // single place to update.
-        const modelIdForProviderOptions = 'gemini-2.5-pro';
+        // The runtime binds this factory to `gemini-3.6-flash`. Resolve the
+        // same id locally so `googleAgentProviderOptionsFor` picks high
+        // thinking + thought summaries (not the Flash `thinkingBudget: 0`
+        // path used by 2.5 Flash). If the runtime swaps tier later, this
+        // line is the single place to update.
+        const modelIdForProviderOptions = 'gemini-3.6-flash';
         return {
             model,
             system,

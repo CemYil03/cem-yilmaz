@@ -164,8 +164,8 @@ Failures are logged and swallowed — the chat path has already returned.
 ### Synthesizer job
 
 1. Load all non-dismissed observations + the prior compass.
-2. `generateText` with `Output.object({ schema })` against `serverRuntime.ai.compassSynthesizerModel()` (Gemini 2.5 Pro by default), Zod
-   schema asking for `{ summary, prose, psychology }`.
+2. `generateText` with `Output.object({ schema })` against `serverRuntime.ai.compassSynthesizerModel()` (Gemini 3.6 Flash with high thinking
+   by default), Zod schema asking for `{ summary, prose, psychology }`.
 3. Prompt is treated as a refinement, not a regenerate — prior compass is included and "treat as a draft you are refining" is in the
    instructions.
 4. Write all three fields plus `synthesizedAt`, `synthesisModelId`, reset `observationsSinceSynthesis` to 0.
@@ -397,8 +397,8 @@ have a live UI. Single sentinel tool `concludeInterview({ note })` that the turn
 not persisted on the row. System prompt is anchored to the soft 4–8 question target, asks for one question per turn, matches the admin's
 reply language, and explicitly tells the agent NOT to summarize answers back (the analyzer does that).
 
-Model: `serverRuntime.ai.compassInterviewerModel()` — Gemini 2.5 Pro by default. The interviewer runs on a low-frequency cadence and the
-question-quality bar is high (probe gaps, don't repeat), so the higher tier is worth it.
+Model: `serverRuntime.ai.compassInterviewerModel()` — Gemini 3.6 Flash (high thinking) by default. The interviewer runs on a low-frequency
+cadence and the question-quality bar is high (probe gaps, don't repeat), so the higher tier is worth it.
 
 ### Cadence and idempotency
 

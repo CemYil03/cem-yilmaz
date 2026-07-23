@@ -75,8 +75,10 @@ surfaces them as `reasoning-delta` stream parts. This site publishes those as `C
 `chatMessageId` as the answer) and renders a collapsed **Thought / Nachgedacht** disclosure above the answer via `AssistantReasoning` (while
 streaming the label reads **Thinking… / Denke nach…**).
 
-- **Flash** (`gemini-*-flash*`): `agentScaffolding` sets `thinkingBudget: 0` on purpose — without it Flash periodically emits malformed tool
-  calls. With budget 0 there are no thoughts; the pending shimmer is the wait signal.
+- **gemini-3.6-flash**: `agentScaffolding` sets `thinkingLevel: 'high'` and `includeThoughts: true` — mid-tier replacement for the old 2.5
+  Pro slot. Thought text streams like Pro.
+- **Other Flash** (`gemini-*-flash*` except 3.6): `thinkingBudget: 0` on purpose — without it Gemini 2.5 Flash periodically emits malformed
+  tool calls. With budget 0 there are no thoughts; the pending shimmer is the wait signal.
 - **Pro** (and any non-Flash catalog model): `includeThoughts: true` with the provider default thinking budget. Thought text streams live
   via `ChatUpdateAssistantReasoningChunk` and is persisted on `ChatMessageAssistantText.reasoning` with the final answer row, so Thoughts
   survive a refresh. The live buffer in `useChatLiveUpdates` still holds the in-session copy until `forgetChat`; the transcript prefers live

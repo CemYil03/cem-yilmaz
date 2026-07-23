@@ -27,7 +27,7 @@ export interface AdminChatModelDefinition {
     contextWindowTokens: number;
 }
 
-export type AdminChatModelId = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-3.5-flash' | 'gemini-3.1-pro-preview';
+export type AdminChatModelId = 'gemini-2.5-flash' | 'gemini-3.6-flash' | 'gemini-3.1-pro-preview';
 
 // Common attachment surface: images, PDFs, and plain-text formats. Every
 // model in the catalog accepts at least this set.
@@ -71,14 +71,8 @@ export const ADMIN_CHAT_MODELS: readonly AdminChatModelDefinition[] = [
         contextWindowTokens: CONTEXT_WINDOW_1M,
     },
     {
-        modelId: 'gemini-2.5-pro',
-        label: 'Gemini 2.5 Pro',
-        supportedMediaTypes: PRO_MEDIA_TYPES,
-        contextWindowTokens: CONTEXT_WINDOW_1M,
-    },
-    {
-        modelId: 'gemini-3.5-flash',
-        label: 'Gemini 3.5 Flash',
+        modelId: 'gemini-3.6-flash',
+        label: 'Gemini 3.6 Flash',
         supportedMediaTypes: FLASH_MEDIA_TYPES,
         contextWindowTokens: CONTEXT_WINDOW_1M,
     },

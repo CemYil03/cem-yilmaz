@@ -100,7 +100,7 @@ describe('toGqlChatMessage — generation metadata', () => {
     it('passes persisted reasoning through on assistant text rows', () => {
         // Arrange
         const row = assistantTextRow({
-            modelId: 'gemini-2.5-pro',
+            modelId: 'gemini-3.1-pro-preview',
             reasoning: 'Considering the dates…',
         });
 

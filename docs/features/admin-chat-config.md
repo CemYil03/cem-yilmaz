@@ -42,9 +42,8 @@ The catalog lives in code at `src/server/agents/adminChatModels.ts`. Each entry 
 | `modelId`                | Label                    | Context window | Supported attachment types                                                 |
 | ------------------------ | ------------------------ | -------------- | -------------------------------------------------------------------------- |
 | `gemini-2.5-flash`       | Gemini 2.5 Flash         | 1,048,576      | Images (png/jpeg/webp/heic/heif), PDF, plain text, markdown, csv           |
-| `gemini-2.5-pro`         | Gemini 2.5 Pro           | 1,048,576      | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML |
-| `gemini-3.5-flash`       | Gemini 3.5 Flash         | 1,048,576      | Same as Flash 2.5                                                          |
-| `gemini-3.1-pro-preview` | Gemini 3.1 Pro (preview) | 1,048,576      | Same as Pro 2.5                                                            |
+| `gemini-3.6-flash`       | Gemini 3.6 Flash         | 1,048,576      | Same as Flash 2.5 (runs with `thinkingLevel: high` + thought summaries)    |
+| `gemini-3.1-pro-preview` | Gemini 3.1 Pro (preview) | 1,048,576      | Flash list **plus** Word (.doc/.docx), Excel (.xls/.xlsx), JSON, XML, HTML |
 
 `contextWindowTokens` is the provider's max **input** tokens for one request (from the model card). The workspace composer shows a compact
 usage **ring** (full = 100% used); hover expands to exact used / window / remaining counts. The ring turns destructive at ≥ 85% full.

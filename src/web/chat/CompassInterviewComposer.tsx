@@ -8,7 +8,7 @@ import type { Locale } from '../utils/locale';
 // the interview lifecycle:
 //
 // - No attachments (interviews are text-only).
-// - No model picker (the interviewer is pinned to Gemini 2.5 Pro).
+// - No model picker (the interviewer is pinned to Gemini 3.6 Flash high).
 // - No `currentPagePath` (the interview is a self-contained surface).
 // - No "first send creates a chat" handoff — the interview always has an
 //   id by the time the composer mounts.

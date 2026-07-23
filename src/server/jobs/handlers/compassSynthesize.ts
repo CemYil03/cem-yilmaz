@@ -5,6 +5,7 @@ import { compass, compassObservations, users } from '../../db/schema';
 import type { QueuedJobDefinition } from '../types';
 import { adminCompassFindOne } from '../../queries/adminCompassFindOne';
 import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
+import { googleAgentProviderOptionsFor } from '../../agents/agentScaffolding';
 
 // Reads every non-dismissed observation plus the prior compass and rewrites
 // the three text artifacts in one transaction. Resets
@@ -106,6 +107,7 @@ export const compassSynthesize: QueuedJobDefinition<CompassSynthesizeData> = {
                 output: Output.object({ schema: SYNTHESIS_SCHEMA }),
                 system: SYNTHESIS_SYSTEM_PROMPT,
                 prompt: userPrompt,
+                providerOptions: googleAgentProviderOptionsFor('gemini-3.6-flash'),
             });
 
             const now = new Date();

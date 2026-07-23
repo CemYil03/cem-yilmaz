@@ -80,12 +80,12 @@ export function serverRuntimeCreate(): ServerRuntime {
             // The synthesizer reads every active observation and rewrites
             // three text fields; runs only when the threshold trips or on
             // explicit request, so a more capable model is worth it.
-            compassSynthesizerModel: () => google('gemini-2.5-pro'),
+            compassSynthesizerModel: () => google('gemini-3.6-flash'),
             // Interviewer turns are infrequent (one weekly interview, a
             // handful of turns each) and the question-quality bar is high:
             // the agent has to probe for gaps in the existing compass without
             // repeating itself. Same tier as the synthesizer.
-            compassInterviewerModel: () => google('gemini-2.5-pro'),
+            compassInterviewerModel: () => google('gemini-3.6-flash'),
             // Google Search grounding. Gemini executes the search itself
             // and rides the result back on the same tool-call channel as
             // function tools; we just hand the agent the tool object. The
