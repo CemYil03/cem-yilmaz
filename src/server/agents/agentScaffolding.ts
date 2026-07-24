@@ -67,3 +67,53 @@ export function subAgentClosingRules(opts: { domainLabel: string; outOfDomainExa
         `- If outside ${opts.domainLabel} (e.g. '${opts.outOfDomainExample}'), return the same JSON with status \`noOp\` and empty \`missingFields\`.`,
     ];
 }
+
+// Sub-agent → orchestrator escape hatch. Emitted as the sub-agent's final
+// text when the brief is underspecified (`needsMoreInfo`) or out of domain
+// (`noOp`). Parsed by every `delegateTo*` tool — see agent-delegation.md.
+export interface SubAgentSentinel {
+    status: 'needsMoreInfo' | 'noOp';
+    missingFields: string[];
+    summary: string;
+}
+
+// Accept a bare JSON object or a fenced ```json block defensively — Gemini
+// occasionally wraps things even when `subAgentClosingRules` says not to.
+export function tryParseSubAgentSentinel(text: string): SubAgentSentinel | null {
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+
+    const candidates = [trimmed];
+    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fenceMatch?.[1]) candidates.push(fenceMatch[1].trim());
+
+    for (const candidate of candidates) {
+        if (!candidate.startsWith('{')) continue;
+        try {
+            const parsed = JSON.parse(candidate);
+            if (parsed && typeof parsed === 'object' && (parsed.status === 'needsMoreInfo' || parsed.status === 'noOp')) {
+                const missingFields = Array.isArray(parsed.missingFields)
+                    ? parsed.missingFields.filter((field: unknown): field is string => typeof field === 'string')
+                    : [];
+                const summary = typeof parsed.summary === 'string' ? parsed.summary : '';
+                return { status: parsed.status, missingFields, summary };
+            }
+        } catch {
+            // not JSON — keep looking
+        }
+    }
+    return null;
+}
+
+// Best-effort one-line summary for the orchestrator + transcript when a
+// delegate's `agent.generate` throws. Strips stack noise so the rendered
+// tool-result card stays readable; the full error already lands in
+// `serverRuntime.log` via the catch at the call site.
+export function summarizeDelegateError(error: unknown): string {
+    if (error instanceof Error) {
+        const message = error.message.trim();
+        if (message) return message.split('\n')[0]?.slice(0, 500) ?? 'unknown error';
+    }
+    if (typeof error === 'string' && error.trim()) return error.trim().slice(0, 500);
+    return 'unknown error';
+}

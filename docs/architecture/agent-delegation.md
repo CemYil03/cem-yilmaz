@@ -83,7 +83,8 @@ The delegate tool's `execute` parses these and returns them to the orchestrator.
 - on `needsMoreInfo`, call its own `promptUserForInput` with slots matching `missingFields`, then re-delegate with the brief enriched;
 - on `noOp`, fall back to a plain conversational reply or another tool.
 
-The parser accepts a bare object or a fenced ` ```json ` block defensively — Gemini occasionally wraps things even when told not to.
+The shared parser (`tryParseSubAgentSentinel` in `agentScaffolding.ts`) accepts a bare object or a fenced ` ```json ` block defensively —
+Gemini occasionally wraps things even when told not to.
 
 There is a third terminal status, **`failed`**, that the sub-agent never emits itself — the delegate tool's `execute` synthesizes it. The
 sub-agent run (the `agent.generate` call inside `toolDelegateToProjects.execute`) is wrapped in a `try/catch`; any throw — provider error,
@@ -238,10 +239,10 @@ adding `focus` to their search schema and the same `useEffect` shape.
   its own `execute`, or a `tool-error` synthesized by the SDK for reasons other than an `execute` throw. We do not write a dedicated chat
   row for the error — the matching tool-call row from Phase B already carries the error payload as its `toolResult` for the LLM. The Phase A
   pass exists solely to refuse to let a silent failure go without a log entry.
-- **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptions`,
-  `currentDateForAgent()`, `DELEGATE_BRIEF_DESCRIBE`, and `subAgentClosingRules()` (language / concision / ids / `needsMoreInfo`+`noOp` JSON
-  sentinel). Nothing else lives there — a tiny helper, not a base class; system-prompt domain rules, stop conditions, and tool sets stay
-  per-agent.
+- **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptionsFor`,
+  `currentDateForAgent()`, `DELEGATE_BRIEF_DESCRIBE`, `subAgentClosingRules()` (language / concision / ids / `needsMoreInfo`+`noOp` JSON
+  sentinel prompt), plus the matching wire helpers `tryParseSubAgentSentinel` / `summarizeDelegateError` used by every `delegateTo*` tool.
+  Nothing else lives there — a tiny helper, not a base class; system-prompt domain rules, stop conditions, and tool sets stay per-agent.
 - **Sub-agent failure isolates to its turn.** See the **`status: 'failed'`** bullet above and
   [Server-side error surfacing](#server-side-error-surfacing). The orchestrator narrates the failure to the user; the chat is never broken.
 - **Cross-domain chaining is the orchestrator's job.** The orchestrator calls delegates in series within a single turn (nutrition, fitness,

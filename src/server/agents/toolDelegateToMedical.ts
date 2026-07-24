@@ -8,7 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantMedical } from './agentPersonalAssistantMedical';
-import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
+import { DELEGATE_BRIEF_DESCRIBE, summarizeDelegateError, tryParseSubAgentSentinel } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -42,21 +42,6 @@ interface DelegateToMedicalContext {
     // Optional — when present, the pre-written parent row reuses this
     // step's live Thinking id + thought summary.
     stepArtifact?: ChatStepArtifact;
-}
-
-interface NeedsMoreInfoSentinel {
-    status: 'needsMoreInfo' | 'noOp';
-    missingFields: string[];
-    summary: string;
-}
-
-function summarizeError(error: unknown): string {
-    if (error instanceof Error) {
-        const message = error.message.trim();
-        if (message) return message.split('\n')[0]?.slice(0, 500) ?? 'unknown error';
-    }
-    if (typeof error === 'string' && error.trim()) return error.trim().slice(0, 500);
-    return 'unknown error';
 }
 
 export function toolDelegateToMedical({
@@ -120,7 +105,7 @@ export function toolDelegateToMedical({
                 const result = await agent.generate({ messages: [{ role: 'user', content: enrichedBrief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
 
-                const sentinel = tryParseSentinel(text);
+                const sentinel = tryParseSubAgentSentinel(text);
                 toolResult = sentinel
                     ? {
                           status: sentinel.status,
@@ -135,7 +120,7 @@ export function toolDelegateToMedical({
                 serverRuntime.log.error(error, session);
                 toolResult = {
                     status: 'failed',
-                    summary: summarizeError(error),
+                    summary: summarizeDelegateError(error),
                 };
             }
 
@@ -153,30 +138,4 @@ export function toolDelegateToMedical({
             return toolResult;
         },
     });
-}
-
-function tryParseSentinel(text: string): NeedsMoreInfoSentinel | null {
-    const trimmed = text.trim();
-    if (!trimmed) return null;
-
-    const candidates = [trimmed];
-    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (fenceMatch?.[1]) candidates.push(fenceMatch[1].trim());
-
-    for (const candidate of candidates) {
-        if (!candidate.startsWith('{')) continue;
-        try {
-            const parsed = JSON.parse(candidate);
-            if (parsed && typeof parsed === 'object' && (parsed.status === 'needsMoreInfo' || parsed.status === 'noOp')) {
-                const missingFields = Array.isArray(parsed.missingFields)
-                    ? parsed.missingFields.filter((field: unknown): field is string => typeof field === 'string')
-                    : [];
-                const summary = typeof parsed.summary === 'string' ? parsed.summary : '';
-                return { status: parsed.status, missingFields, summary };
-            }
-        } catch {
-            // not JSON — keep looking
-        }
-    }
-    return null;
 }

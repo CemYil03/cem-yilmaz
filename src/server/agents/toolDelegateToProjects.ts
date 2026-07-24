@@ -8,7 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantProjects } from './agentPersonalAssistantProjects';
-import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
+import { DELEGATE_BRIEF_DESCRIBE, summarizeDelegateError, tryParseSubAgentSentinel } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -46,25 +46,6 @@ interface DelegateToProjectsContext {
     // Optional — when present, the pre-written parent row reuses this
     // step's live Thinking id + thought summary.
     stepArtifact?: ChatStepArtifact;
-}
-
-interface NeedsMoreInfoSentinel {
-    status: 'needsMoreInfo' | 'noOp';
-    missingFields: string[];
-    summary: string;
-}
-
-// Best-effort one-line summary for the orchestrator + transcript when the
-// sub-agent throws. Strips stack noise so the rendered tool-result card
-// stays readable; the full error already lands in `serverRuntime.log` via
-// the catch below.
-function summarizeError(error: unknown): string {
-    if (error instanceof Error) {
-        const message = error.message.trim();
-        if (message) return message.split('\n')[0]?.slice(0, 500) ?? 'unknown error';
-    }
-    if (typeof error === 'string' && error.trim()) return error.trim().slice(0, 500);
-    return 'unknown error';
 }
 
 export function toolDelegateToProjects({
@@ -136,7 +117,7 @@ export function toolDelegateToProjects({
                 const result = await agent.generate({ messages: [{ role: 'user', content: input.brief }] });
                 const text = typeof result.text === 'string' ? result.text : '';
 
-                const sentinel = tryParseSentinel(text);
+                const sentinel = tryParseSubAgentSentinel(text);
                 toolResult = sentinel
                     ? {
                           status: sentinel.status,
@@ -151,7 +132,7 @@ export function toolDelegateToProjects({
                 serverRuntime.log.error(error, session);
                 toolResult = {
                     status: 'failed',
-                    summary: summarizeError(error),
+                    summary: summarizeDelegateError(error),
                 };
             }
 
@@ -174,33 +155,4 @@ export function toolDelegateToProjects({
             return toolResult;
         },
     });
-}
-
-// The sub-agent is coached to emit JSON-only as its final text when it
-// cannot complete the brief. Accept the bare object or a fenced ```json
-// block defensively — Gemini occasionally wraps things even when told not to.
-function tryParseSentinel(text: string): NeedsMoreInfoSentinel | null {
-    const trimmed = text.trim();
-    if (!trimmed) return null;
-
-    const candidates = [trimmed];
-    const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (fenceMatch?.[1]) candidates.push(fenceMatch[1].trim());
-
-    for (const candidate of candidates) {
-        if (!candidate.startsWith('{')) continue;
-        try {
-            const parsed = JSON.parse(candidate);
-            if (parsed && typeof parsed === 'object' && (parsed.status === 'needsMoreInfo' || parsed.status === 'noOp')) {
-                const missingFields = Array.isArray(parsed.missingFields)
-                    ? parsed.missingFields.filter((field: unknown): field is string => typeof field === 'string')
-                    : [];
-                const summary = typeof parsed.summary === 'string' ? parsed.summary : '';
-                return { status: parsed.status, missingFields, summary };
-            }
-        } catch {
-            // not JSON — keep looking
-        }
-    }
-    return null;
 }

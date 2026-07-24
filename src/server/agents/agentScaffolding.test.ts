@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { googleAgentProviderOptionsFor, subAgentClosingRules } from './agentScaffolding';
+import { googleAgentProviderOptionsFor, subAgentClosingRules, summarizeDelegateError, tryParseSubAgentSentinel } from './agentScaffolding';
 
 describe('googleAgentProviderOptionsFor', () => {
     it('uses high thinking with thought summaries on gemini-3.6-flash', () => {
@@ -33,5 +33,37 @@ describe('subAgentClosingRules', () => {
         expect(joined).toContain('noOp');
         expect(joined).toContain('media');
         expect(joined).toContain('add a task');
+    });
+});
+
+describe('tryParseSubAgentSentinel', () => {
+    it('parses a bare needsMoreInfo object', () => {
+        expect(tryParseSubAgentSentinel('{"status":"needsMoreInfo","missingFields":["title"],"summary":"Need a title"}')).toEqual({
+            status: 'needsMoreInfo',
+            missingFields: ['title'],
+            summary: 'Need a title',
+        });
+    });
+
+    it('parses a fenced noOp object', () => {
+        expect(tryParseSubAgentSentinel('```json\n{"status":"noOp","missingFields":[],"summary":"Wrong domain"}\n```')).toEqual({
+            status: 'noOp',
+            missingFields: [],
+            summary: 'Wrong domain',
+        });
+    });
+
+    it('returns null for plain prose', () => {
+        expect(tryParseSubAgentSentinel('Created the appointment.')).toBeNull();
+    });
+});
+
+describe('summarizeDelegateError', () => {
+    it('takes the first line of an Error message', () => {
+        expect(summarizeDelegateError(new Error('boom\nstack'))).toBe('boom');
+    });
+
+    it('falls back for unknown shapes', () => {
+        expect(summarizeDelegateError(null)).toBe('unknown error');
     });
 });

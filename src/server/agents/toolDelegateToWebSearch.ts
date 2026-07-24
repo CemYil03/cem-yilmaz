@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantWebSearch } from './agentPersonalAssistantWebSearch';
+import { summarizeDelegateError } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -63,18 +64,6 @@ interface DelegateToWebSearchContext {
     // Optional — when present, the pre-written parent row reuses this
     // step's live Thinking id + thought summary.
     stepArtifact?: ChatStepArtifact;
-}
-
-// Same one-line summary shape used by `toolDelegateToProjects` for its
-// `failed` status. Keeping the helper local (rather than reaching across
-// to the other delegate file) keeps each delegate file self-contained.
-function summarizeError(error: unknown): string {
-    if (error instanceof Error) {
-        const message = error.message.trim();
-        if (message) return message.split('\n')[0]?.slice(0, 500) ?? 'unknown error';
-    }
-    if (typeof error === 'string' && error.trim()) return error.trim().slice(0, 500);
-    return 'unknown error';
 }
 
 interface WebSearchBriefResult {
@@ -153,7 +142,7 @@ export function toolDelegateToWebSearch({
                     return { brief, status: 'completed', summary: text };
                 } catch (error) {
                     serverRuntime.log.error(error, session);
-                    return { brief, status: 'failed', summary: summarizeError(error) };
+                    return { brief, status: 'failed', summary: summarizeDelegateError(error) };
                 }
             };
             const settled = await Promise.allSettled(input.briefs.map((brief) => runOne(brief)));
@@ -166,7 +155,7 @@ export function toolDelegateToWebSearch({
                 if (entry.status === 'fulfilled') return entry.value;
                 const brief = input.briefs[index] ?? '';
                 serverRuntime.log.error(entry.reason, session);
-                return { brief, status: 'failed', summary: summarizeError(entry.reason) };
+                return { brief, status: 'failed', summary: summarizeDelegateError(entry.reason) };
             });
             const successCount = results.filter((r) => r.status === 'completed').length;
             const batchStatus: WebSearchBatchResult['status'] =
