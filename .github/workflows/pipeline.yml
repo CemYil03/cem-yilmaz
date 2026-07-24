@@ -227,10 +227,13 @@ jobs:
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -e
+          INITIAL_DELAY=30
           ATTEMPTS=60
           INTERVAL=5
           LAST_VERSION=""
           LAST_CODE=""
+          echo "Waiting ${INITIAL_DELAY}s for Coolify pull/restart before polling"
+          sleep $INITIAL_DELAY
           for i in $(seq 1 $ATTEMPTS); do
             RESP=$(curl -sS -m 5 -w "\n%{http_code}" "${WEB_APP_URL%/}/api/health" || echo $'\n000')
             BODY=$(echo "$RESP" | head -n -1); LAST_CODE=$(echo "$RESP" | tail -n1)
