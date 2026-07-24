@@ -95,10 +95,10 @@ export interface MessageComposerProps {
     /** Restricts both the file picker and accepted drops. Same syntax as
      *  `<input accept="...">`. */
     accept?: string;
-    /** Optional title/tooltip on the paperclip button — useful for callers that
+    /** Optional tooltip / aria-label on the paperclip button — useful for callers that
      *  want to surface "PDF, Word, images" alongside the icon so the user knows
-     *  what types the active model accepts before they open the picker. Also
-     *  used as the button's `aria-label` when set. */
+     *  what types the active model accepts before they open the picker. Falls
+     *  back to a bilingual "Attach files" label when unset. */
     attachmentsTitle?: string;
     /** Whether the picker accepts multiple files at once. Defaults to true.
      *  Drops are similarly clamped to one file when this is false. */
@@ -135,6 +135,7 @@ export function MessageComposer({
     const locale = useLocale();
     const isMobile = useIsMobile();
     const sendLabel = { de: 'Senden', en: 'Send' }[locale];
+    const attachLabel = attachmentsTitle ?? { de: 'Anhängen', en: 'Attach files' }[locale];
     const attachmentsEnabled = onAttachmentsAdd !== undefined && onAttachmentRemove !== undefined;
     const currentAttachments = attachments ?? [];
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -326,21 +327,25 @@ export function MessageComposer({
                                 className="hidden"
                                 onChange={onPickerChange}
                             />
-                            <InputGroupButton
-                                type="button"
-                                variant="ghost"
-                                size="icon-xs"
-                                // ml-auto only when there is no left cluster —
-                                // otherwise the flex-1 wrapper already pushes
-                                // this group to the trailing edge.
-                                className={addonStart ? 'shrink-0' : 'ml-auto shrink-0'}
-                                disabled={inputsLocked}
-                                title={attachmentsTitle}
-                                aria-label={attachmentsTitle ?? 'Attach files'}
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <PaperclipIcon />
-                            </InputGroupButton>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <InputGroupButton
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        // ml-auto only when there is no left cluster —
+                                        // otherwise the flex-1 wrapper already pushes
+                                        // this group to the trailing edge.
+                                        className={addonStart ? 'shrink-0' : 'ml-auto shrink-0'}
+                                        disabled={inputsLocked}
+                                        aria-label={attachLabel}
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <PaperclipIcon />
+                                    </InputGroupButton>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">{attachLabel}</TooltipContent>
+                            </Tooltip>
                         </>
                     ) : null}
                     <Tooltip>

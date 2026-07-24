@@ -2,7 +2,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import type { ReactNode } from 'react';
 import { useQuery } from 'urql';
 import { Button } from '../components/base/button';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/base/hover-card';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/base/popover';
 import { ChatMessageCreateDocument, VisitorChatQuotaDocument } from '../graphql/generated';
 import type { GqlCVisitorChatQuotaFieldsFragment } from '../graphql/generated';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
@@ -114,11 +114,11 @@ export function VisitorChatComposer({
 //
 // The visible chip is intentionally short — just `used / limit` — because
 // the composer addon row gets cramped on narrow viewports and the previous
-// full sentence wrapped or pushed the Send button. Hovering (desktop) or
-// tapping (mobile, the trigger is a `<button>` so a tap gives it focus
-// and HoverCard opens on focus) reveals the full explanation. The chip
-// flips to a destructive style at the limit so the visitor can see the
-// composer is locked without opening the card.
+// full sentence wrapped or pushed the Send button. A click/tap on the chip
+// opens a Popover with the full explanation (Popover, not Tooltip/HoverCard,
+// so the detail works on touch as well as desktop). The chip flips to a
+// destructive style at the limit so the visitor can see the composer is
+// locked without opening the card.
 function VisitorChatQuotaStatus({ quota, locale }: { quota: GqlCVisitorChatQuotaFieldsFragment | null; locale: Locale }) {
     if (!quota) return null;
     const isAtLimit = quota.used >= quota.limit;
@@ -142,8 +142,8 @@ function VisitorChatQuotaStatus({ quota, locale }: { quota: GqlCVisitorChatQuota
         ? { de: 'Tageslimit erreicht', en: 'Daily limit reached' }[locale]
         : { de: 'Tageslimit für Nachrichten', en: 'Daily message limit' }[locale];
     return (
-        <HoverCard openDelay={100} closeDelay={150}>
-            <HoverCardTrigger asChild>
+        <Popover>
+            <PopoverTrigger asChild>
                 <Button
                     type="button"
                     variant="ghost"
@@ -158,10 +158,10 @@ function VisitorChatQuotaStatus({ quota, locale }: { quota: GqlCVisitorChatQuota
                 >
                     {chipText}
                 </Button>
-            </HoverCardTrigger>
-            <HoverCardContent side="top" align="start" className="w-auto max-w-xs text-xs leading-relaxed">
+            </PopoverTrigger>
+            <PopoverContent side="top" align="start" className="w-auto max-w-xs p-3 text-xs leading-relaxed">
                 {fullText}
-            </HoverCardContent>
-        </HoverCard>
+            </PopoverContent>
+        </Popover>
     );
 }

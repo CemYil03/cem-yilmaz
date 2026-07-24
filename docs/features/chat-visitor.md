@@ -93,10 +93,10 @@ and they see the busy / sent micro-states on the input they actually typed in) a
   `agentVisitor`.
 - **Renders the rate-limit quota chip in the bottom-left addon slot, always visible.** The composer runs its own `VisitorChatQuota` query
   (`cache-and-network`) so every visitor surface that mounts it sees the current allowance — even on the first send of the day. The visible
-  chip is the bare ratio (`5 / 10`); hovering on desktop or tapping on mobile pops a `HoverCard` with the full sentence ("5 of 10 messages
-  used today. Resets in 18 hours."). The chip flips to a destructive style at the limit so the visitor sees the composer is locked without
-  opening the card. The long sentence used to live as a wrapping `<p>` under the textarea, but on narrow viewports it pushed past the Send
-  button — the HoverCard keeps the addon row short while still surfacing the detail on demand.
+  chip is the bare ratio (`5 / 10`); a click/tap opens a `Popover` with the full sentence ("5 of 10 messages used today. Resets in 18
+  hours.") — Popover rather than Tooltip/HoverCard so the detail works on touch. The chip flips to a destructive style at the limit so the
+  visitor sees the composer is locked without opening the card. The long sentence used to live as a wrapping `<p>` under the textarea, but
+  on narrow viewports it pushed past the Send button — the Popover keeps the addon row short while still surfacing the detail on demand.
 - Carries **none** of the admin-only chrome — no model dropdown, no approval-mode selector, no file attachments. Those live in the parallel
   `<WorkspaceChatComposer />` wrapper. The shared `<ChatComposer />` base is audience-agnostic; admin-only controls are added by the
   workspace wrapper, never by the visitor wrapper.
