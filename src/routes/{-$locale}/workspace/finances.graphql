@@ -14,6 +14,10 @@ fragment WorkspaceFinancesPageUser on User {
             adminFinancesMonthlyExpensesCentsFindOne
             adminFinancesQuarterlyExpensesCentsFindOne
             adminFinancesYearlyExpensesCentsFindOne
+            adminFinancesLiquidCentsFindOne
+            adminFinancesInvestedCentsFindOne
+            adminFinancesBausparCentsFindOne
+            adminFinancesFinancialNetWorthCentsFindOne
             adminFinancesIncomeStreamFindMany {
                 incomeStreamId
                 name
@@ -41,6 +45,24 @@ fragment WorkspaceFinancesPageUser on User {
                 createdAt
                 updatedAt
             }
+            adminFinancesAssetFindMany {
+                assetId
+                kind
+                name
+                location
+                currentValueCents
+                shares
+                symbol
+                isin
+                currency
+                notes
+                active
+                createdAt
+                updatedAt
+            }
+        }
+        adminInventoryFindOne {
+            adminInventoryMaterialNetWorthCentsFindOne
         }
     }
 }
@@ -89,6 +111,32 @@ mutation WorkspaceFinancesIncomeStreamsDelete($incomeStreamIds: [ID!]!) {
     admin {
         adminFinancesIncomeStreamsDelete(incomeStreamIds: $incomeStreamIds) {
             success
+        }
+    }
+}
+
+mutation WorkspaceFinancesAssetsUpsert($financeAssets: [AdminFinancesAssetInput!]!) {
+    admin {
+        adminFinancesAssetsUpsert(financeAssets: $financeAssets) {
+            success
+            referenceIds
+        }
+    }
+}
+
+mutation WorkspaceFinancesAssetsDelete($assetIds: [ID!]!) {
+    admin {
+        adminFinancesAssetsDelete(assetIds: $assetIds) {
+            success
+        }
+    }
+}
+
+mutation WorkspaceFinancesAssetsReprice($inputs: [AdminFinancesAssetRepriceInput!]!) {
+    admin {
+        adminFinancesAssetsReprice(inputs: $inputs) {
+            success
+            referenceIds
         }
     }
 }

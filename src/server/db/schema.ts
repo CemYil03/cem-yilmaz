@@ -2037,14 +2037,15 @@ export type AdminTravelTripPackingItemCreate = typeof tripPackingItems.$inferIns
 
 // --- Finances ---------------------------------------------------------------
 //
-// `FinanceRecurringCosts` + `FinanceIncomeStreams` back `/workspace/finances`.
+// Cashflow (`FinanceRecurringCosts` + `FinanceIncomeStreams`) plus wealth
+// (`FinanceAssets` + `FinanceAssetValuations`) back `/workspace/finances`.
 // Admin-only, `noindex` — no `*De`/`*En` pairs, no per-row `userId` (the
-// `User.admin` / `Mutation.admin` gate authorizes). One row per repeating
-// charge (rent, insurance, subscription, …) and one row per income stream
-// (salary, freelance, …). `amountCents` is the amount **per `cadence`**, so
-// the page-level Monthly / Yearly toggle is deterministic projection over the
-// same rows — no dated transactions in v1. See
-// `docs/features/workspace-finances.md`.
+// `User.admin` / `Mutation.admin` gate authorizes). Cashflow: one row per
+// repeating charge / income stream; `amountCents` is per-`cadence`. Wealth:
+// asset-first rows (`cash` / `security` / `bauspar`) with a plain `location`
+// label (TradeRepublic, Chase, …) — not nested under institutions.
+// `currentValueCents` is a cache; `adminFinancesAssetsReprice` owns it after
+// create. See `docs/features/workspace-finances.md`.
 
 export const financeRecurringCostCategories = [
     'housing',
@@ -2055,6 +2056,7 @@ export const financeRecurringCostCategories = [
     'cloud',
     'work',
     'sport',
+    'personalCare',
     'donations',
     'household',
     'savingsGeneral',
@@ -2111,6 +2113,70 @@ export const financeIncomeStreams = pgTable(
 
 export type AdminFinancesIncomeStream = typeof financeIncomeStreams.$inferSelect;
 export type AdminFinancesIncomeStreamCreate = typeof financeIncomeStreams.$inferInsert;
+
+export const financeAssetKinds = ['cash', 'security', 'bauspar'] as const;
+export type AdminFinancesAssetKind = (typeof financeAssetKinds)[number];
+
+// One owned financial position. Asset-first: the row is *what* you own;
+// `location` is only *where* it currently sits (broker / bank label).
+// `currentValueCents` is the cached snapshot of the latest valuation (or the
+// seed written on create). `shares` / `symbol` / `isin` apply to `security`
+// only — cash and bauspar leave them null.
+export const financeAssets = pgTable(
+    'AdminFinancesAsset',
+    {
+        assetId: uuid().primaryKey(),
+        kind: varchar().$type<AdminFinancesAssetKind>().notNull(),
+        name: varchar().notNull(),
+        location: varchar().notNull(),
+        currentValueCents: integer().notNull().default(0),
+        shares: numeric({ mode: 'number', precision: 18, scale: 8 }),
+        symbol: varchar(),
+        isin: varchar(),
+        currency: varchar({ length: 3 }).notNull().default('EUR'),
+        notes: text(),
+        active: boolean().notNull().default(true),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        index('AdminFinancesAsset_kind_idx').on(table.kind),
+        index('AdminFinancesAsset_active_idx').on(table.active),
+        index('AdminFinancesAsset_location_idx').on(table.location),
+    ],
+);
+
+export type AdminFinancesAsset = typeof financeAssets.$inferSelect;
+export type AdminFinancesAssetCreate = typeof financeAssets.$inferInsert;
+
+// Repricing journal. `adminFinancesAssetsReprice` writes one row here and
+// updates the cached `financeAssets.currentValueCents` in the same
+// transaction. Optional `shares` snapshot so a later sparkline can show
+// quantity at the time of the valuation.
+export const financeAssetValuations = pgTable(
+    'AdminFinancesAssetValuation',
+    {
+        valuationId: uuid().primaryKey(),
+        assetId: uuid().notNull(),
+        valueCents: integer().notNull(),
+        shares: numeric({ mode: 'number', precision: 18, scale: 8 }),
+        valuedAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        note: text(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.assetId],
+            foreignColumns: [financeAssets.assetId],
+        })
+            .onUpdate('cascade')
+            .onDelete('cascade'),
+        index('AdminFinancesAssetValuation_assetId_valuedAt_idx').on(table.assetId, table.valuedAt),
+    ],
+);
+
+export type AdminFinancesAssetValuation = typeof financeAssetValuations.$inferSelect;
+export type AdminFinancesAssetValuationCreate = typeof financeAssetValuations.$inferInsert;
 
 // --- Nutrition --------------------------------------------------------------
 //

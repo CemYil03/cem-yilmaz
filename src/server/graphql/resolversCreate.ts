@@ -26,6 +26,9 @@ import { adminInventoryItemsReprice } from '../commands/adminInventoryItemsRepri
 import { adminInventoryItemServiceEntriesDelete } from '../commands/adminInventoryItemServiceEntriesDelete';
 import { adminInventoryItemServiceEntriesUpsert } from '../commands/adminInventoryItemServiceEntriesUpsert';
 import { adminInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert';
+import { adminFinancesAssetsDelete } from '../commands/adminFinancesAssetsDelete';
+import { adminFinancesAssetsReprice } from '../commands/adminFinancesAssetsReprice';
+import { adminFinancesAssetsUpsert } from '../commands/adminFinancesAssetsUpsert';
 import { adminFinancesIncomeStreamsDelete } from '../commands/adminFinancesIncomeStreamsDelete';
 import { adminFinancesIncomeStreamsUpsert } from '../commands/adminFinancesIncomeStreamsUpsert';
 import { adminFinancesRecurringCostsDelete } from '../commands/adminFinancesRecurringCostsDelete';
@@ -150,6 +153,8 @@ import { adminInventoryItemFindOne } from '../queries/adminInventoryItemFindOne'
 import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
 import { adminInventoryMaterialNetWorthCentsFindOne } from '../queries/adminInventoryMaterialNetWorthCentsFindOne';
 import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
+import { adminFinancesAssetCentsFindOne } from '../queries/adminFinancesAssetCentsFindOne';
+import { adminFinancesAssetFindMany } from '../queries/adminFinancesAssetFindMany';
 import { adminFinancesExpensesCentsFindOne } from '../queries/adminFinancesExpensesCentsFindOne';
 import { adminFinancesIncomeCentsFindOne } from '../queries/adminFinancesIncomeCentsFindOne';
 import { adminFinancesIncomeStreamFindMany } from '../queries/adminFinancesIncomeStreamFindMany';
@@ -233,6 +238,9 @@ import type {
     GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
     GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
     GqlSAdminFinancesQuery,
+    GqlSAdminMutationAdminFinancesAssetsDeleteArgs,
+    GqlSAdminMutationAdminFinancesAssetsRepriceArgs,
+    GqlSAdminMutationAdminFinancesAssetsUpsertArgs,
     GqlSAdminMutationAdminFinancesIncomeStreamsDeleteArgs,
     GqlSAdminMutationAdminFinancesIncomeStreamsUpsertArgs,
     GqlSAdminMutationAdminFinancesRecurringCostsDeleteArgs,
@@ -736,6 +744,9 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             adminFinancesIncomeStreamFindMany(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
                 return adminFinancesIncomeStreamFindMany(requestingSession, serverRuntime);
             },
+            adminFinancesAssetFindMany(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                return adminFinancesAssetFindMany(requestingSession, serverRuntime);
+            },
             async adminFinancesMonthlyIncomeCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
                 const totals = await adminFinancesIncomeCentsFindOne(requestingSession, serverRuntime);
                 return totals.monthlyCents;
@@ -759,6 +770,18 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             async adminFinancesYearlyExpensesCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
                 const totals = await adminFinancesExpensesCentsFindOne(requestingSession, serverRuntime);
                 return totals.yearlyCents;
+            },
+            adminFinancesLiquidCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                return adminFinancesAssetCentsFindOne(requestingSession, serverRuntime, 'cash');
+            },
+            adminFinancesInvestedCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                return adminFinancesAssetCentsFindOne(requestingSession, serverRuntime, 'security');
+            },
+            adminFinancesBausparCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                return adminFinancesAssetCentsFindOne(requestingSession, serverRuntime, 'bauspar');
+            },
+            adminFinancesFinancialNetWorthCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                return adminFinancesAssetCentsFindOne(requestingSession, serverRuntime);
             },
         },
         AdminTaxQuery: {
@@ -1404,6 +1427,27 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 requestingSession: GqlSSession,
             ) {
                 return adminFinancesIncomeStreamsDelete(userId, args.incomeStreamIds, requestingSession, serverRuntime);
+            },
+            adminFinancesAssetsUpsert(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminFinancesAssetsUpsertArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminFinancesAssetsUpsert(userId, args.financeAssets, requestingSession, serverRuntime);
+            },
+            adminFinancesAssetsDelete(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminFinancesAssetsDeleteArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminFinancesAssetsDelete(userId, args.assetIds, requestingSession, serverRuntime);
+            },
+            adminFinancesAssetsReprice(
+                { userId }: GqlSAdminMutation,
+                args: GqlSAdminMutationAdminFinancesAssetsRepriceArgs,
+                requestingSession: GqlSSession,
+            ) {
+                return adminFinancesAssetsReprice(userId, args.inputs, requestingSession, serverRuntime);
             },
             adminTaxYearsUpsert(
                 { userId }: GqlSAdminMutation,

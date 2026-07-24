@@ -55,9 +55,11 @@ function summarizeError(error: unknown): string {
 export function toolDelegateToFinances({ serverRuntime, session, chatId, generationId, preWrittenToolCallIds }: DelegateToFinancesContext) {
     return tool({
         description: [
-            'Hand a finances instruction to the finances sub-agent. Use for ANY ask that touches income streams or',
-            'recurring costs — adding, editing, pausing, or deleting salary / freelance / other income, or a',
-            'recurring expense / subscription (rent, insurance, streaming, transport, utilities, …). Pass the brief',
+            'Hand a finances instruction to the finances sub-agent. Use for ANY ask that touches income streams,',
+            'recurring costs, or wealth assets — adding, editing, pausing, repricing, or deleting salary / freelance',
+            '/ other income, a recurring expense / subscription (rent, insurance, streaming, transport, utilities, …),',
+            'or a Tagesgeld / ETF / stock / Bauspar position (with a location label like TradeRepublic or Chase).',
+            'Pass the brief',
             'in natural language including the amount and period the user named. This is the durable path: the',
             'sub-agent writes to Postgres so the finances page and totals update. Do NOT try to "note" a cost or',
             'income in plain chat and expect it to persist — always delegate.',

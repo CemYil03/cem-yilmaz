@@ -2402,11 +2402,11 @@ extend type AdminMutation {
 
 # --- Finances ---------------------------------------------------------------
 #
-# `/workspace/finances` — Cem's recurring costs (rent, insurance,
-# subscriptions, transport, …) plus a Sankey visualisation. Admin-only,
-# `noindex`; no `*De`/`*En`. `amountCents` is per-`cadence`, so the Monthly /
-# Yearly toggle on the page is a deterministic projection over the same rows
-# (no dated transactions in v1). See `docs/features/workspace-finances.md`.
+# `/workspace/finances` — cashflow (income streams + recurring costs + Sankey)
+# plus wealth (asset-first positions with a location label). Admin-only,
+# `noindex`; no `*De`/`*En`. Cashflow `amountCents` is per-`cadence`. Wealth
+# `currentValueCents` is a cache owned by `adminFinancesAssetsReprice` after
+# create. See `docs/features/workspace-finances.md`.
 
 enum AdminFinancesRecurringCostCategory {
     housing
@@ -2417,6 +2417,7 @@ enum AdminFinancesRecurringCostCategory {
     cloud
     work
     sport
+    personalCare
     donations
     household
     savingsGeneral
@@ -2428,6 +2429,12 @@ enum AdminFinancesCadence {
     monthly
     quarterly
     yearly
+}
+
+enum AdminFinancesAssetKind {
+    cash
+    security
+    bauspar
 }
 
 # One recurring charge. `active = false` hides the row from the Sankey and
@@ -2466,19 +2473,53 @@ type AdminFinancesIncomeStream {
     updatedAt: DateTime!
 }
 
+# One owned financial position. Asset-first: the row is what you own;
+# `location` is only where it currently sits (TradeRepublic, Chase, …).
+# `currentValueCents` is the cached snapshot — `adminFinancesAssetsReprice`
+# writes the journal + cache after create; upsert seeds value on insert only.
+# `shares` / `symbol` / `isin` apply to `security`; null for cash / bauspar.
+type AdminFinancesAsset {
+    assetId: ID!
+    kind: AdminFinancesAssetKind!
+    name: String!
+    location: String!
+    currentValueCents: Int!
+    shares: Float
+    symbol: String
+    isin: String
+    currency: String!
+    notes: String
+    active: Boolean!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+}
+
+type AdminFinancesAssetValuation {
+    valuationId: ID!
+    valueCents: Int!
+    shares: Float
+    valuedAt: DateTime!
+    note: String
+}
+
 # Read namespace mounted under `Admin`. Gated once at the `Query.admin`
 # boundary by the resolver chain on `User.admin`. The `Cents` aggregates are
-# computed in the resolver from active income streams / recurring costs —
-# the Sankey and the overview strip both read them directly.
+# computed in the resolver from active income streams / recurring costs /
+# assets — the Sankey and the overview strip both read them directly.
 type AdminFinancesQuery {
     adminFinancesRecurringCostFindMany: [AdminFinancesRecurringCost!]!
     adminFinancesIncomeStreamFindMany: [AdminFinancesIncomeStream!]!
+    adminFinancesAssetFindMany: [AdminFinancesAsset!]!
     adminFinancesMonthlyIncomeCentsFindOne: Int!
     adminFinancesQuarterlyIncomeCentsFindOne: Int!
     adminFinancesYearlyIncomeCentsFindOne: Int!
     adminFinancesMonthlyExpensesCentsFindOne: Int!
     adminFinancesQuarterlyExpensesCentsFindOne: Int!
     adminFinancesYearlyExpensesCentsFindOne: Int!
+    adminFinancesLiquidCentsFindOne: Int!
+    adminFinancesInvestedCentsFindOne: Int!
+    adminFinancesBausparCentsFindOne: Int!
+    adminFinancesFinancialNetWorthCentsFindOne: Int!
 }
 
 extend type Admin {
@@ -2510,6 +2551,31 @@ input AdminFinancesIncomeStreamInput {
     endsOn: Date
 }
 
+# `currentValueCents` seeds the cache on create and is ignored on update —
+# later value changes go through `adminFinancesAssetsReprice`. `shares` is
+# required in app logic when `kind` is `security`.
+input AdminFinancesAssetInput {
+    assetId: ID
+    kind: AdminFinancesAssetKind!
+    name: String!
+    location: String!
+    currentValueCents: Int
+    shares: Float
+    symbol: String
+    isin: String
+    currency: String
+    notes: String
+    active: Boolean
+}
+
+input AdminFinancesAssetRepriceInput {
+    assetId: ID!
+    valueCents: Int!
+    shares: Float
+    valuedAt: DateTime
+    note: String
+}
+
 extend type AdminMutation {
     # Batch create-or-edit of recurring costs. Every row with a `costId` is
     # updated; every row without one is inserted. `referenceIds` echoes the
@@ -2522,6 +2588,11 @@ extend type AdminMutation {
     # posture as recurring costs.
     adminFinancesIncomeStreamsUpsert(financeIncomeStreams: [AdminFinancesIncomeStreamInput!]!): MutationResult!
     adminFinancesIncomeStreamsDelete(incomeStreamIds: [ID!]!): MutationResult!
+    # Batch create-or-edit of wealth assets. `currentValueCents` seeds on
+    # create only; reprice owns subsequent value writes.
+    adminFinancesAssetsUpsert(financeAssets: [AdminFinancesAssetInput!]!): MutationResult!
+    adminFinancesAssetsDelete(assetIds: [ID!]!): MutationResult!
+    adminFinancesAssetsReprice(inputs: [AdminFinancesAssetRepriceInput!]!): MutationResult!
 }
 
 # --- Nutrition --------------------------------------------------------------

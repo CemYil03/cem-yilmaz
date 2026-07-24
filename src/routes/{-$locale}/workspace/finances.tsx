@@ -14,12 +14,18 @@ import {
     HandHeartIcon,
     HeartHandshakeIcon,
     HomeIcon,
+    LandmarkIcon,
+    LayoutDashboardIcon,
     LayersIcon,
+    LineChartIcon,
+    PackageIcon,
     PencilIcon,
     PiggyBankIcon,
     PlaneIcon,
     PlusIcon,
+    RefreshCwIcon,
     RepeatIcon,
+    ScissorsIcon,
     SmartphoneIcon,
     SparklesIcon,
     Trash2Icon,
@@ -52,12 +58,16 @@ import { FinancesSankey } from '../../../web/components/FinancesSankey';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
+    GqlCAdminFinancesAssetKind,
     GqlCAdminFinancesCadence,
     GqlCAdminFinancesRecurringCostCategory,
     GqlCWorkspaceFinancesPageUpdatesSubscription,
     GqlCWorkspaceFinancesPageUserFragment,
 } from '../../../web/graphql/generated';
 import {
+    WorkspaceFinancesAssetsDeleteDocument,
+    WorkspaceFinancesAssetsRepriceDocument,
+    WorkspaceFinancesAssetsUpsertDocument,
     WorkspaceFinancesIncomeStreamsDeleteDocument,
     WorkspaceFinancesIncomeStreamsUpsertDocument,
     WorkspaceFinancesRecurringCostsDeleteDocument,
@@ -74,15 +84,16 @@ import { DATE_FNS_LOCALE } from '../../../web/utils/dateFnsLocale';
 import type { Locale } from '../../../web/utils/locale';
 import { localeFromParam } from '../../../web/utils/locale';
 
-// Admin editor for Cem's income streams and recurring costs. Same
-// seed-and-subscribe posture as `/workspace/inventory`: the loader seeds,
-// `userUpdates` swaps state on every server push, mutations never re-fetch.
-// See `docs/features/workspace-finances.md`.
+// Admin editor for Cem's cashflow (income + recurring costs + Sankey) and
+// wealth (asset-first positions with a location label). Same seed-and-subscribe
+// posture as `/workspace/inventory`: the loader seeds, `userUpdates` swaps
+// state on every server push, mutations never re-fetch. See
+// `docs/features/workspace-finances.md`.
 
 const title = { de: 'Finanzen', en: 'Finances' };
 const description = {
-    de: 'Einkommen, laufende Kosten und ein Sankey deiner Ausgaben.',
-    en: 'Income, recurring costs, and a Sankey of where the money goes.',
+    de: 'Vermögen, Einkommen, laufende Kosten und ein Sankey deiner Ausgaben.',
+    en: 'Net worth, income, recurring costs, and a Sankey of where the money goes.',
 };
 
 const CATEGORY_LABELS: Record<GqlCAdminFinancesRecurringCostCategory, { de: string; en: string }> = {
@@ -94,6 +105,7 @@ const CATEGORY_LABELS: Record<GqlCAdminFinancesRecurringCostCategory, { de: stri
     cloud: { de: 'Cloud', en: 'Cloud' },
     work: { de: 'Arbeit', en: 'Work' },
     sport: { de: 'Sport', en: 'Sport' },
+    personalCare: { de: 'Körperpflege', en: 'Personal care' },
     donations: { de: 'Spenden', en: 'Donations' },
     household: { de: 'Haushalt', en: 'Household' },
     savingsGeneral: { de: 'Sparen (Allgemein)', en: 'Savings (General)' },
@@ -109,6 +121,7 @@ const CATEGORY_ICONS: Record<GqlCAdminFinancesRecurringCostCategory, LucideIcon>
     cloud: CloudIcon,
     work: CodeIcon,
     sport: DumbbellIcon,
+    personalCare: ScissorsIcon,
     donations: HandHeartIcon,
     household: HeartHandshakeIcon,
     savingsGeneral: PiggyBankIcon,
@@ -145,7 +158,33 @@ const PERIOD_ICONS: Record<PeriodFilter, LucideIcon> = {
     yearly: CalendarRangeIcon,
 };
 
+type Tab = 'overview' | 'cashflow' | 'wealth';
+const TABS: ReadonlyArray<Tab> = ['overview', 'cashflow', 'wealth'];
+const TAB_LABELS: Record<Tab, { de: string; en: string }> = {
+    overview: { de: 'Überblick', en: 'Overview' },
+    cashflow: { de: 'Cashflow', en: 'Cashflow' },
+    wealth: { de: 'Vermögen', en: 'Wealth' },
+};
+const TAB_ICONS: Record<Tab, LucideIcon> = {
+    overview: LayoutDashboardIcon,
+    cashflow: WalletIcon,
+    wealth: LandmarkIcon,
+};
+
+const ASSET_KIND_ORDER: ReadonlyArray<GqlCAdminFinancesAssetKind> = ['cash', 'security', 'bauspar'];
+const ASSET_KIND_LABELS: Record<GqlCAdminFinancesAssetKind, { de: string; en: string }> = {
+    cash: { de: 'Liquidität', en: 'Liquid cash' },
+    security: { de: 'Investments', en: 'Investments' },
+    bauspar: { de: 'Bauspar', en: 'Bauspar' },
+};
+const ASSET_KIND_ICONS: Record<GqlCAdminFinancesAssetKind, LucideIcon> = {
+    cash: PiggyBankIcon,
+    security: LineChartIcon,
+    bauspar: HomeIcon,
+};
+
 const financesSearchSchema = z.object({
+    tab: z.enum(TABS).optional(),
     period: z.enum(PERIOD_FILTERS).optional(),
 });
 
@@ -153,6 +192,7 @@ type WorkspaceFinancesAdmin = NonNullable<GqlCWorkspaceFinancesPageUserFragment[
 type FinancesData = WorkspaceFinancesAdmin['adminFinancesFindOne'];
 type CostRow = FinancesData['adminFinancesRecurringCostFindMany'][number];
 type IncomeRow = FinancesData['adminFinancesIncomeStreamFindMany'][number];
+type AssetRow = FinancesData['adminFinancesAssetFindMany'][number];
 
 export const Route = createFileRoute('/{-$locale}/workspace/finances')({
     validateSearch: financesSearchSchema,
@@ -179,12 +219,17 @@ function FinancesArea() {
     const user = useWorkspaceFinancesLiveUser(data.sessionFindOne.user);
     const admin = user?.admin;
     const finances = admin?.adminFinancesFindOne;
+    const inventory = admin?.adminInventoryFindOne;
 
+    const tab: Tab = search.tab ?? 'overview';
     const period: PeriodFilter = search.period ?? 'monthly';
     const [editingCost, setEditingCost] = useState<CostRow | 'new' | null>(null);
     const [deletingCost, setDeletingCost] = useState<CostRow | null>(null);
     const [editingIncome, setEditingIncome] = useState<IncomeRow | 'new' | null>(null);
     const [deletingIncome, setDeletingIncome] = useState<IncomeRow | null>(null);
+    const [editingAsset, setEditingAsset] = useState<AssetRow | 'new' | null>(null);
+    const [repricingAsset, setRepricingAsset] = useState<AssetRow | null>(null);
+    const [deletingAsset, setDeletingAsset] = useState<AssetRow | null>(null);
 
     if (!admin) return <WorkspaceUnauthorized locale={locale} />;
     if (!finances) return null;
@@ -202,38 +247,70 @@ function FinancesArea() {
             : period === 'quarterly'
               ? finances.adminFinancesQuarterlyExpensesCentsFindOne
               : finances.adminFinancesMonthlyExpensesCentsFindOne;
+    const materialNetWorthCents = inventory?.adminInventoryMaterialNetWorthCentsFindOne ?? 0;
+    const totalNetWorthCents = finances.adminFinancesFinancialNetWorthCentsFindOne + materialNetWorthCents;
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
             <div className="border-b border-border/60">
-                <PeriodChips period={period} locale={locale} />
+                <TabChips tab={tab} locale={locale} />
             </div>
 
-            <PeriodSummary incomeCents={incomeCents} expensesCents={expensesCents} locale={locale} />
+            {tab === 'overview' ? (
+                <OverviewTab
+                    finances={finances}
+                    materialNetWorthCents={materialNetWorthCents}
+                    totalNetWorthCents={totalNetWorthCents}
+                    monthlyIncomeCents={finances.adminFinancesMonthlyIncomeCentsFindOne}
+                    monthlyExpensesCents={finances.adminFinancesMonthlyExpensesCentsFindOne}
+                    locale={locale}
+                />
+            ) : null}
 
-            <section className="mt-6">
-                <GlassCard className="p-4 md:p-6">
-                    <SankeyView costs={activeCosts} period={period} incomeCents={incomeCents} locale={locale} />
-                </GlassCard>
-            </section>
+            {tab === 'cashflow' ? (
+                <>
+                    <div className="mt-6 border-b border-border/60">
+                        <PeriodChips period={period} locale={locale} />
+                    </div>
 
-            <IncomeStreamsSection
-                streams={finances.adminFinancesIncomeStreamFindMany}
-                period={period}
-                locale={locale}
-                onNew={() => setEditingIncome('new')}
-                onEdit={setEditingIncome}
-                onDelete={setDeletingIncome}
-            />
+                    <PeriodSummary incomeCents={incomeCents} expensesCents={expensesCents} locale={locale} />
 
-            <RecurringCostsSection
-                costs={finances.adminFinancesRecurringCostFindMany}
-                period={period}
-                locale={locale}
-                onNew={() => setEditingCost('new')}
-                onEdit={setEditingCost}
-                onDelete={setDeletingCost}
-            />
+                    <section className="mt-6">
+                        <GlassCard className="p-4 md:p-6">
+                            <SankeyView costs={activeCosts} period={period} incomeCents={incomeCents} locale={locale} />
+                        </GlassCard>
+                    </section>
+
+                    <IncomeStreamsSection
+                        streams={finances.adminFinancesIncomeStreamFindMany}
+                        period={period}
+                        locale={locale}
+                        onNew={() => setEditingIncome('new')}
+                        onEdit={setEditingIncome}
+                        onDelete={setDeletingIncome}
+                    />
+
+                    <RecurringCostsSection
+                        costs={finances.adminFinancesRecurringCostFindMany}
+                        period={period}
+                        locale={locale}
+                        onNew={() => setEditingCost('new')}
+                        onEdit={setEditingCost}
+                        onDelete={setDeletingCost}
+                    />
+                </>
+            ) : null}
+
+            {tab === 'wealth' ? (
+                <WealthTab
+                    assets={finances.adminFinancesAssetFindMany}
+                    locale={locale}
+                    onNew={() => setEditingAsset('new')}
+                    onEdit={setEditingAsset}
+                    onReprice={setRepricingAsset}
+                    onDelete={setDeletingAsset}
+                />
+            ) : null}
 
             {editingCost !== null ? (
                 <EditCostDialog initial={editingCost === 'new' ? null : editingCost} locale={locale} onClose={() => setEditingCost(null)} />
@@ -249,7 +326,337 @@ function FinancesArea() {
             {deletingIncome !== null ? (
                 <DeleteIncomeAlert stream={deletingIncome} locale={locale} onClose={() => setDeletingIncome(null)} />
             ) : null}
+            {editingAsset !== null ? (
+                <EditAssetDialog
+                    initial={editingAsset === 'new' ? null : editingAsset}
+                    knownLocations={distinctLocations(finances.adminFinancesAssetFindMany)}
+                    locale={locale}
+                    onClose={() => setEditingAsset(null)}
+                />
+            ) : null}
+            {repricingAsset !== null ? (
+                <RepriceAssetDialog asset={repricingAsset} locale={locale} onClose={() => setRepricingAsset(null)} />
+            ) : null}
+            {deletingAsset !== null ? (
+                <DeleteAssetAlert asset={deletingAsset} locale={locale} onClose={() => setDeletingAsset(null)} />
+            ) : null}
         </main>
+    );
+}
+
+function distinctLocations(assets: readonly AssetRow[]): string[] {
+    return [...new Set(assets.map((a) => a.location).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+// --- Top-level tabs ---------------------------------------------------------
+
+function TabChips({ tab, locale }: { tab: Tab; locale: Locale }) {
+    return (
+        <nav
+            className="flex gap-1 overflow-x-auto overflow-y-hidden no-scrollbar scroll-fade-x"
+            aria-label={{ de: 'Bereich', en: 'Section' }[locale]}
+        >
+            {TABS.map((key) => {
+                const isActive = tab === key;
+                const Icon = TAB_ICONS[key];
+                return (
+                    <Link
+                        key={key}
+                        to="/{-$locale}/workspace/finances"
+                        from="/{-$locale}/workspace/finances"
+                        search={(prev) => ({ ...prev, tab: key === 'overview' ? undefined : key })}
+                        replace
+                        className={cn(
+                            '-mb-px flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+                            isActive ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+                        )}
+                        aria-current={isActive ? 'page' : undefined}
+                    >
+                        <Icon className="size-4" />
+                        {TAB_LABELS[key][locale]}
+                    </Link>
+                );
+            })}
+        </nav>
+    );
+}
+
+// --- Overview ---------------------------------------------------------------
+
+function OverviewTab({
+    finances,
+    materialNetWorthCents,
+    totalNetWorthCents,
+    monthlyIncomeCents,
+    monthlyExpensesCents,
+    locale,
+}: {
+    finances: FinancesData;
+    materialNetWorthCents: number;
+    totalNetWorthCents: number;
+    monthlyIncomeCents: number;
+    monthlyExpensesCents: number;
+    locale: Locale;
+}) {
+    const leftoverCents = monthlyIncomeCents - monthlyExpensesCents;
+    const tiles: Array<{ label: string; valueCents: number; hint?: string; icon: LucideIcon }> = [
+        {
+            label: { de: 'Gesamtvermögen', en: 'Total net worth' }[locale],
+            valueCents: totalNetWorthCents,
+            hint: { de: 'Finanziell + materiell', en: 'Financial + material' }[locale],
+            icon: LandmarkIcon,
+        },
+        {
+            label: { de: 'Liquidität', en: 'Liquid cash' }[locale],
+            valueCents: finances.adminFinancesLiquidCentsFindOne,
+            icon: PiggyBankIcon,
+        },
+        {
+            label: { de: 'Investments', en: 'Investments' }[locale],
+            valueCents: finances.adminFinancesInvestedCentsFindOne,
+            icon: LineChartIcon,
+        },
+        {
+            label: { de: 'Bauspar', en: 'Bauspar' }[locale],
+            valueCents: finances.adminFinancesBausparCentsFindOne,
+            icon: HomeIcon,
+        },
+        {
+            label: { de: 'Inventar', en: 'Inventory' }[locale],
+            valueCents: materialNetWorthCents,
+            hint: { de: 'Materielle Güter', en: 'Material belongings' }[locale],
+            icon: PackageIcon,
+        },
+    ];
+
+    return (
+        <>
+            <section className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {tiles.map((tile) => {
+                    const Icon = tile.icon;
+                    return (
+                        <GlassCard key={tile.label} className="px-5 py-4">
+                            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-foreground/60">
+                                <Icon className="size-3.5" />
+                                {tile.label}
+                            </div>
+                            <div className="mt-1 text-2xl font-semibold tabular-nums">
+                                {formatCurrency(tile.valueCents, { locale, maximumFractionDigits: 0 })}
+                            </div>
+                            {tile.hint ? <div className="mt-1 text-xs text-foreground/65">{tile.hint}</div> : null}
+                        </GlassCard>
+                    );
+                })}
+            </section>
+
+            <GlassCard className="mt-6 px-5 py-4">
+                <div className="text-xs uppercase tracking-wider text-foreground/60">
+                    {{ de: 'Monatlicher Cashflow', en: 'Monthly cashflow' }[locale]}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm tabular-nums">
+                    <span>
+                        {{ de: 'Einkommen', en: 'Income' }[locale]}:{' '}
+                        <strong>{formatCurrency(monthlyIncomeCents, { locale, maximumFractionDigits: 0 })}</strong>
+                    </span>
+                    <span>
+                        {{ de: 'Zahlungen', en: 'Payments' }[locale]}:{' '}
+                        <strong>{formatCurrency(monthlyExpensesCents, { locale, maximumFractionDigits: 0 })}</strong>
+                    </span>
+                    <span className={leftoverCents >= 0 ? 'text-foreground' : 'text-destructive'}>
+                        {leftoverCents >= 0
+                            ? {
+                                  de: `${formatCurrency(leftoverCents, { locale, maximumFractionDigits: 0 })} übrig`,
+                                  en: `${formatCurrency(leftoverCents, { locale, maximumFractionDigits: 0 })} leftover`,
+                              }[locale]
+                            : {
+                                  de: `${formatCurrency(-leftoverCents, { locale, maximumFractionDigits: 0 })} über dem Einkommen`,
+                                  en: `${formatCurrency(-leftoverCents, { locale, maximumFractionDigits: 0 })} over income`,
+                              }[locale]}
+                    </span>
+                </div>
+                <div className="mt-3">
+                    <Link
+                        to="/{-$locale}/workspace/finances"
+                        from="/{-$locale}/workspace/finances"
+                        search={(prev) => ({ ...prev, tab: 'cashflow' })}
+                        className="text-sm text-primary hover:underline"
+                    >
+                        {{ de: 'Zum Cashflow →', en: 'Go to cashflow →' }[locale]}
+                    </Link>
+                    <span className="mx-2 text-foreground/30">·</span>
+                    <Link to="/{-$locale}/workspace/inventory" className="text-sm text-primary hover:underline">
+                        {{ de: 'Zum Inventar →', en: 'Go to inventory →' }[locale]}
+                    </Link>
+                </div>
+            </GlassCard>
+        </>
+    );
+}
+
+// --- Wealth -----------------------------------------------------------------
+
+function WealthTab({
+    assets,
+    locale,
+    onNew,
+    onEdit,
+    onReprice,
+    onDelete,
+}: {
+    assets: readonly AssetRow[];
+    locale: Locale;
+    onNew: () => void;
+    onEdit: (asset: AssetRow) => void;
+    onReprice: (asset: AssetRow) => void;
+    onDelete: (asset: AssetRow) => void;
+}) {
+    const grouped = useMemo(() => {
+        return ASSET_KIND_ORDER.map((kind) => {
+            const list = assets.filter((a) => a.kind === kind).sort((a, b) => b.currentValueCents - a.currentValueCents);
+            const activeTotal = list.filter((a) => a.active).reduce((sum, a) => sum + a.currentValueCents, 0);
+            return { kind, list, activeTotal };
+        }).filter((group) => group.list.length > 0);
+    }, [assets]);
+
+    return (
+        <section className="mt-8">
+            <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold">{{ de: 'Vermögen', en: 'Wealth' }[locale]}</h2>
+                <Button type="button" size="sm" onClick={onNew}>
+                    <PlusIcon className="size-4" />
+                    {{ de: 'Asset hinzufügen', en: 'Add asset' }[locale]}
+                </Button>
+            </div>
+
+            {assets.length === 0 ? (
+                <GlassCard className="mt-4 px-5 py-8 text-center">
+                    <p className="text-sm text-foreground/70">
+                        {
+                            {
+                                de: 'Noch keine Assets. Tagesgeld, ETFs, Aktien oder Bauspar — mit einem Standort-Label (TradeRepublic, Chase, …).',
+                                en: 'No assets yet. Tagesgeld, ETFs, stocks, or Bauspar — with a location label (TradeRepublic, Chase, …).',
+                            }[locale]
+                        }
+                    </p>
+                    <Button type="button" className="mt-4" onClick={onNew}>
+                        <PlusIcon className="size-4" />
+                        {{ de: 'Erstes Asset anlegen', en: 'Add the first asset' }[locale]}
+                    </Button>
+                </GlassCard>
+            ) : (
+                <div className="mt-4 space-y-8">
+                    {grouped.map(({ kind, list, activeTotal }) => {
+                        const Icon = ASSET_KIND_ICONS[kind];
+                        return (
+                            <div key={kind}>
+                                <div className="flex items-baseline justify-between gap-3 border-b border-border/50 pb-2">
+                                    <h3 className="flex items-center gap-2 text-sm font-medium text-foreground/80">
+                                        <Icon className="size-4" />
+                                        {ASSET_KIND_LABELS[kind][locale]}
+                                        <span className="text-foreground/45 font-normal">({list.length})</span>
+                                    </h3>
+                                    <span className="text-sm font-semibold tabular-nums">
+                                        {formatCurrency(activeTotal, { locale, maximumFractionDigits: 0 })}
+                                    </span>
+                                </div>
+                                <ul className="mt-1 divide-y divide-border/40">
+                                    {list.map((asset) => (
+                                        <AssetRowItem
+                                            key={asset.assetId}
+                                            asset={asset}
+                                            locale={locale}
+                                            onEdit={() => onEdit(asset)}
+                                            onReprice={() => onReprice(asset)}
+                                            onDelete={() => onDelete(asset)}
+                                        />
+                                    ))}
+                                </ul>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </section>
+    );
+}
+
+function AssetRowItem({
+    asset,
+    locale,
+    onEdit,
+    onReprice,
+    onDelete,
+}: {
+    asset: AssetRow;
+    locale: Locale;
+    onEdit: () => void;
+    onReprice: () => void;
+    onDelete: () => void;
+}) {
+    const impliedPrice =
+        asset.kind === 'security' && asset.shares != null && asset.shares > 0 ? Math.round(asset.currentValueCents / asset.shares) : null;
+
+    return (
+        <li className={cn('group flex items-start justify-between gap-3 py-3', !asset.active && 'opacity-55')}>
+            <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium truncate">{asset.name}</span>
+                    {asset.symbol ? <span className="text-xs text-foreground/50 tabular-nums">{asset.symbol}</span> : null}
+                    {!asset.active ? (
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                            {{ de: 'Pausiert', en: 'Paused' }[locale]}
+                        </span>
+                    ) : null}
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-foreground/60">
+                    <span className="rounded border border-border/60 px-1.5 py-0.5">{asset.location}</span>
+                    {asset.kind === 'security' && asset.shares != null ? (
+                        <span className="tabular-nums">
+                            {asset.shares} {{ de: 'Anteile', en: 'shares' }[locale]}
+                            {impliedPrice != null
+                                ? ` · ≈ ${formatCurrency(impliedPrice, { locale, maximumFractionDigits: 2 })}/${{ de: 'Stück', en: 'share' }[locale]}`
+                                : ''}
+                        </span>
+                    ) : null}
+                    {asset.notes ? <span className="truncate">{asset.notes}</span> : null}
+                </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+                <span className="mr-2 text-sm font-semibold tabular-nums">
+                    {formatCurrency(asset.currentValueCents, { locale, maximumFractionDigits: 0 })}
+                </span>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    onClick={onReprice}
+                    aria-label={{ de: 'Neu bewerten', en: 'Reprice' }[locale]}
+                >
+                    <RefreshCwIcon className="size-4" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    onClick={onEdit}
+                    aria-label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                >
+                    <PencilIcon className="size-4" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                    onClick={onDelete}
+                    aria-label={{ de: 'Löschen', en: 'Delete' }[locale]}
+                >
+                    <Trash2Icon className="size-4" />
+                </Button>
+            </div>
+        </li>
     );
 }
 
@@ -1229,6 +1636,313 @@ function eurosToCents(input: string): number | null {
     const parsed = Number.parseFloat(trimmed);
     if (Number.isNaN(parsed)) return null;
     return Math.round(parsed * 100);
+}
+
+// --- Wealth asset dialogs ---------------------------------------------------
+
+function EditAssetDialog({
+    initial,
+    knownLocations,
+    locale,
+    onClose,
+}: {
+    initial: AssetRow | null;
+    knownLocations: readonly string[];
+    locale: Locale;
+    onClose: () => void;
+}) {
+    const isNew = initial === null;
+    const [kind, setKind] = useState<GqlCAdminFinancesAssetKind>(initial?.kind ?? 'cash');
+    const [name, setName] = useState(initial?.name ?? '');
+    const [location, setLocation] = useState(initial?.location ?? '');
+    const [valueEuros, setValueEuros] = useState(initial ? centsToEuros(initial.currentValueCents) : '');
+    const [shares, setShares] = useState(initial?.shares != null ? String(initial.shares) : '');
+    const [symbol, setSymbol] = useState(initial?.symbol ?? '');
+    const [isin, setIsin] = useState(initial?.isin ?? '');
+    const [notes, setNotes] = useState(initial?.notes ?? '');
+    const [active, setActive] = useState(initial?.active ?? true);
+    const [error, setError] = useState<string | null>(null);
+    const [{ fetching }, upsert] = useMutation(WorkspaceFinancesAssetsUpsertDocument);
+
+    const locationListId = 'finance-asset-locations';
+
+    async function handleSave() {
+        setError(null);
+        const trimmedName = name.trim();
+        const trimmedLocation = location.trim();
+        if (!trimmedName) {
+            setError({ de: 'Name ist erforderlich.', en: 'Name is required.' }[locale]);
+            return;
+        }
+        if (!trimmedLocation) {
+            setError({ de: 'Standort ist erforderlich.', en: 'Location is required.' }[locale]);
+            return;
+        }
+        const isSecurity = kind === 'security';
+        let sharesNumber: number | null = null;
+        if (isSecurity) {
+            const parsed = Number.parseFloat(shares.trim().replace(',', '.'));
+            if (Number.isNaN(parsed) || parsed <= 0) {
+                setError({ de: 'Anteile müssen größer als 0 sein.', en: 'Shares must be greater than 0.' }[locale]);
+                return;
+            }
+            sharesNumber = parsed;
+        }
+        let currentValueCents: number | null | undefined = undefined;
+        if (isNew) {
+            const cents = eurosToCents(valueEuros);
+            if (cents == null || cents < 0) {
+                setError({ de: 'Wert ist erforderlich.', en: 'Value is required.' }[locale]);
+                return;
+            }
+            currentValueCents = cents;
+        }
+
+        const result = await upsert({
+            financeAssets: [
+                {
+                    assetId: initial?.assetId ?? null,
+                    kind,
+                    name: trimmedName,
+                    location: trimmedLocation,
+                    currentValueCents: currentValueCents ?? null,
+                    shares: sharesNumber,
+                    symbol: isSecurity ? symbol.trim() || null : null,
+                    isin: isSecurity ? isin.trim() || null : null,
+                    notes: notes.trim() || null,
+                    active,
+                },
+            ],
+        });
+        if (result.error) {
+            setError(result.error.message);
+            return;
+        }
+        onClose();
+    }
+
+    return (
+        <Dialog open onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>
+                        {isNew ? { de: 'Asset hinzufügen', en: 'Add asset' }[locale] : { de: 'Asset bearbeiten', en: 'Edit asset' }[locale]}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {
+                            {
+                                de: 'Was du besitzt — der Standort ist nur, wo es liegt (TradeRepublic, Chase, …).',
+                                en: 'What you own — location is only where it sits (TradeRepublic, Chase, …).',
+                            }[locale]
+                        }
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-3 py-2">
+                    <label className="grid gap-1.5 text-sm">
+                        <span className="text-foreground/70">{{ de: 'Art', en: 'Kind' }[locale]}</span>
+                        <Select value={kind} onValueChange={(v) => setKind(v as GqlCAdminFinancesAssetKind)}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ASSET_KIND_ORDER.map((k) => (
+                                    <SelectItem key={k} value={k}>
+                                        {ASSET_KIND_LABELS[k][locale]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </label>
+                    <label className="grid gap-1.5 text-sm">
+                        <span className="text-foreground/70">{{ de: 'Name', en: 'Name' }[locale]}</span>
+                        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tagesgeld / VWCE / …" />
+                    </label>
+                    <label className="grid gap-1.5 text-sm">
+                        <span className="text-foreground/70">{{ de: 'Standort', en: 'Location' }[locale]}</span>
+                        <Input
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            list={locationListId}
+                            placeholder="TradeRepublic / Chase / LBS"
+                        />
+                        <datalist id={locationListId}>
+                            {knownLocations.map((loc) => (
+                                <option key={loc} value={loc} />
+                            ))}
+                        </datalist>
+                    </label>
+                    {kind === 'security' ? (
+                        <>
+                            <label className="grid gap-1.5 text-sm">
+                                <span className="text-foreground/70">{{ de: 'Anteile', en: 'Shares' }[locale]}</span>
+                                <Input value={shares} onChange={(e) => setShares(e.target.value)} inputMode="decimal" />
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className="grid gap-1.5 text-sm">
+                                    <span className="text-foreground/70">{{ de: 'Symbol', en: 'Symbol' }[locale]}</span>
+                                    <Input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="VWCE" />
+                                </label>
+                                <label className="grid gap-1.5 text-sm">
+                                    <span className="text-foreground/70">ISIN</span>
+                                    <Input value={isin} onChange={(e) => setIsin(e.target.value)} placeholder="IE00…" />
+                                </label>
+                            </div>
+                        </>
+                    ) : null}
+                    {isNew ? (
+                        <label className="grid gap-1.5 text-sm">
+                            <span className="text-foreground/70">{{ de: 'Aktueller Wert (€)', en: 'Current value (€)' }[locale]}</span>
+                            <Input value={valueEuros} onChange={(e) => setValueEuros(e.target.value)} inputMode="decimal" />
+                        </label>
+                    ) : (
+                        <p className="text-xs text-foreground/60">
+                            {
+                                {
+                                    de: `Aktueller Wert: ${formatCurrency(initial.currentValueCents, { locale })} — zum Ändern „Neu bewerten“ nutzen.`,
+                                    en: `Current value: ${formatCurrency(initial.currentValueCents, { locale })} — use “Reprice” to change it.`,
+                                }[locale]
+                            }
+                        </p>
+                    )}
+                    <label className="grid gap-1.5 text-sm">
+                        <span className="text-foreground/70">{{ de: 'Notizen', en: 'Notes' }[locale]}</span>
+                        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+                    </label>
+                    <label className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-foreground/70">{{ de: 'Aktiv', en: 'Active' }[locale]}</span>
+                        <Switch checked={active} onCheckedChange={setActive} />
+                    </label>
+                    {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
+                    </Button>
+                    <Button type="button" onClick={handleSave} disabled={fetching}>
+                        {{ de: 'Speichern', en: 'Save' }[locale]}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function RepriceAssetDialog({ asset, locale, onClose }: { asset: AssetRow; locale: Locale; onClose: () => void }) {
+    const [valueEuros, setValueEuros] = useState(centsToEuros(asset.currentValueCents));
+    const [shares, setShares] = useState(asset.shares != null ? String(asset.shares) : '');
+    const [note, setNote] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [{ fetching }, reprice] = useMutation(WorkspaceFinancesAssetsRepriceDocument);
+
+    async function handleSave() {
+        setError(null);
+        const cents = eurosToCents(valueEuros);
+        if (cents == null || cents < 0) {
+            setError({ de: 'Wert ist erforderlich.', en: 'Value is required.' }[locale]);
+            return;
+        }
+        let sharesNumber: number | null = null;
+        if (asset.kind === 'security' && shares.trim() !== '') {
+            const parsed = Number.parseFloat(shares.trim().replace(',', '.'));
+            if (Number.isNaN(parsed) || parsed <= 0) {
+                setError({ de: 'Anteile müssen größer als 0 sein.', en: 'Shares must be greater than 0.' }[locale]);
+                return;
+            }
+            sharesNumber = parsed;
+        }
+        const result = await reprice({
+            inputs: [
+                {
+                    assetId: asset.assetId,
+                    valueCents: cents,
+                    shares: sharesNumber,
+                    note: note.trim() || null,
+                },
+            ],
+        });
+        if (result.error) {
+            setError(result.error.message);
+            return;
+        }
+        onClose();
+    }
+
+    return (
+        <Dialog open onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>{{ de: 'Neu bewerten', en: 'Reprice' }[locale]}</DialogTitle>
+                    <DialogDescription>
+                        {asset.name} · {asset.location}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-3 py-2">
+                    <label className="grid gap-1.5 text-sm">
+                        <span className="text-foreground/70">{{ de: 'Neuer Wert (€)', en: 'New value (€)' }[locale]}</span>
+                        <Input value={valueEuros} onChange={(e) => setValueEuros(e.target.value)} inputMode="decimal" />
+                    </label>
+                    {asset.kind === 'security' ? (
+                        <label className="grid gap-1.5 text-sm">
+                            <span className="text-foreground/70">{{ de: 'Anteile (optional)', en: 'Shares (optional)' }[locale]}</span>
+                            <Input value={shares} onChange={(e) => setShares(e.target.value)} inputMode="decimal" />
+                        </label>
+                    ) : null}
+                    <label className="grid gap-1.5 text-sm">
+                        <span className="text-foreground/70">{{ de: 'Notiz', en: 'Note' }[locale]}</span>
+                        <Input value={note} onChange={(e) => setNote(e.target.value)} />
+                    </label>
+                    {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
+                    </Button>
+                    <Button type="button" onClick={handleSave} disabled={fetching}>
+                        {{ de: 'Speichern', en: 'Save' }[locale]}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function DeleteAssetAlert({ asset, locale, onClose }: { asset: AssetRow; locale: Locale; onClose: () => void }) {
+    const [{ fetching }, remove] = useMutation(WorkspaceFinancesAssetsDeleteDocument);
+
+    async function handleDelete() {
+        await remove({ assetIds: [asset.assetId] });
+        onClose();
+    }
+
+    return (
+        <AlertDialog open onOpenChange={(open) => !open && onClose()}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{{ de: 'Asset löschen?', en: 'Delete asset?' }[locale]}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {
+                            {
+                                de: `„${asset.name}“ bei ${asset.location} wird dauerhaft entfernt. Pausieren (Aktiv aus) ist die sanftere Alternative.`,
+                                en: `“${asset.name}” at ${asset.location} will be permanently removed. Pausing (Active off) is the softer alternative.`,
+                            }[locale]
+                        }
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={fetching}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                        {{ de: 'Löschen', en: 'Delete' }[locale]}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
 }
 
 // --- Live user hook ---------------------------------------------------------

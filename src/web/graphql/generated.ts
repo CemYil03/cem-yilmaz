@@ -129,6 +129,56 @@ export type GqlCAdminCompassAdminCompassObservationFindManyArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export interface GqlCAdminFinancesAsset {
+    __typename?: 'AdminFinancesAsset';
+    active: Scalars['Boolean']['output'];
+    assetId: Scalars['ID']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    currency: Scalars['String']['output'];
+    currentValueCents: Scalars['Int']['output'];
+    isin?: Maybe<Scalars['String']['output']>;
+    kind: GqlCAdminFinancesAssetKind;
+    location: Scalars['String']['output'];
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    shares?: Maybe<Scalars['Float']['output']>;
+    symbol?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlCAdminFinancesAssetInput = {
+    active?: InputMaybe<Scalars['Boolean']['input']>;
+    assetId?: InputMaybe<Scalars['ID']['input']>;
+    currency?: InputMaybe<Scalars['String']['input']>;
+    currentValueCents?: InputMaybe<Scalars['Int']['input']>;
+    isin?: InputMaybe<Scalars['String']['input']>;
+    kind: GqlCAdminFinancesAssetKind;
+    location: Scalars['String']['input'];
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    shares?: InputMaybe<Scalars['Float']['input']>;
+    symbol?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlCAdminFinancesAssetKind = 'bauspar' | 'cash' | 'security';
+
+export type GqlCAdminFinancesAssetRepriceInput = {
+    assetId: Scalars['ID']['input'];
+    note?: InputMaybe<Scalars['String']['input']>;
+    shares?: InputMaybe<Scalars['Float']['input']>;
+    valueCents: Scalars['Int']['input'];
+    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export interface GqlCAdminFinancesAssetValuation {
+    __typename?: 'AdminFinancesAssetValuation';
+    note?: Maybe<Scalars['String']['output']>;
+    shares?: Maybe<Scalars['Float']['output']>;
+    valuationId: Scalars['ID']['output'];
+    valueCents: Scalars['Int']['output'];
+    valuedAt: Scalars['DateTime']['output'];
+}
+
 export type GqlCAdminFinancesCadence = 'monthly' | 'quarterly' | 'yearly';
 
 export interface GqlCAdminFinancesIncomeStream {
@@ -160,7 +210,12 @@ export type GqlCAdminFinancesIncomeStreamInput = {
 
 export interface GqlCAdminFinancesQuery {
     __typename?: 'AdminFinancesQuery';
+    adminFinancesAssetFindMany: Array<GqlCAdminFinancesAsset>;
+    adminFinancesBausparCentsFindOne: Scalars['Int']['output'];
+    adminFinancesFinancialNetWorthCentsFindOne: Scalars['Int']['output'];
     adminFinancesIncomeStreamFindMany: Array<GqlCAdminFinancesIncomeStream>;
+    adminFinancesInvestedCentsFindOne: Scalars['Int']['output'];
+    adminFinancesLiquidCentsFindOne: Scalars['Int']['output'];
     adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
     adminFinancesMonthlyIncomeCentsFindOne: Scalars['Int']['output'];
     adminFinancesQuarterlyExpensesCentsFindOne: Scalars['Int']['output'];
@@ -195,6 +250,7 @@ export type GqlCAdminFinancesRecurringCostCategory =
     | 'housing'
     | 'insurance'
     | 'other'
+    | 'personalCare'
     | 'savingsGeneral'
     | 'savingsVacation'
     | 'sport'
@@ -767,6 +823,9 @@ export type GqlCAdminMedicalRecordSeverity = 'info' | 'mild' | 'moderate' | 'sev
 
 export interface GqlCAdminMutation {
     __typename?: 'AdminMutation';
+    adminFinancesAssetsDelete: GqlCMutationResult;
+    adminFinancesAssetsReprice: GqlCMutationResult;
+    adminFinancesAssetsUpsert: GqlCMutationResult;
     adminFinancesIncomeStreamsDelete: GqlCMutationResult;
     adminFinancesIncomeStreamsUpsert: GqlCMutationResult;
     adminFinancesRecurringCostsDelete: GqlCMutationResult;
@@ -875,6 +934,18 @@ export interface GqlCAdminMutation {
     cvSkillsDelete: GqlCMutationResult;
     cvSkillsUpsert: GqlCMutationResult;
 }
+
+export type GqlCAdminMutationAdminFinancesAssetsDeleteArgs = {
+    assetIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlCAdminMutationAdminFinancesAssetsRepriceArgs = {
+    inputs: Array<GqlCAdminFinancesAssetRepriceInput>;
+};
+
+export type GqlCAdminMutationAdminFinancesAssetsUpsertArgs = {
+    financeAssets: Array<GqlCAdminFinancesAssetInput>;
+};
 
 export type GqlCAdminMutationAdminFinancesIncomeStreamsDeleteArgs = {
     incomeStreamIds: Array<Scalars['ID']['input']>;
@@ -3635,6 +3706,10 @@ export type GqlCWorkspaceFinancesPageUserFragment = {
             adminFinancesMonthlyExpensesCentsFindOne: number;
             adminFinancesQuarterlyExpensesCentsFindOne: number;
             adminFinancesYearlyExpensesCentsFindOne: number;
+            adminFinancesLiquidCentsFindOne: number;
+            adminFinancesInvestedCentsFindOne: number;
+            adminFinancesBausparCentsFindOne: number;
+            adminFinancesFinancialNetWorthCentsFindOne: number;
             adminFinancesIncomeStreamFindMany: Array<{
                 incomeStreamId: string;
                 name: string;
@@ -3662,7 +3737,23 @@ export type GqlCWorkspaceFinancesPageUserFragment = {
                 createdAt: string;
                 updatedAt: string;
             }>;
+            adminFinancesAssetFindMany: Array<{
+                assetId: string;
+                kind: Schema.GqlCAdminFinancesAssetKind;
+                name: string;
+                location: string;
+                currentValueCents: number;
+                shares: number | null;
+                symbol: string | null;
+                isin: string | null;
+                currency: string;
+                notes: string | null;
+                active: boolean;
+                createdAt: string;
+                updatedAt: string;
+            }>;
         };
+        adminInventoryFindOne: { adminInventoryMaterialNetWorthCentsFindOne: number };
     } | null;
 };
 
@@ -3679,6 +3770,10 @@ export type GqlCWorkspaceFinancesPageQuery = {
                     adminFinancesMonthlyExpensesCentsFindOne: number;
                     adminFinancesQuarterlyExpensesCentsFindOne: number;
                     adminFinancesYearlyExpensesCentsFindOne: number;
+                    adminFinancesLiquidCentsFindOne: number;
+                    adminFinancesInvestedCentsFindOne: number;
+                    adminFinancesBausparCentsFindOne: number;
+                    adminFinancesFinancialNetWorthCentsFindOne: number;
                     adminFinancesIncomeStreamFindMany: Array<{
                         incomeStreamId: string;
                         name: string;
@@ -3706,7 +3801,23 @@ export type GqlCWorkspaceFinancesPageQuery = {
                         createdAt: string;
                         updatedAt: string;
                     }>;
+                    adminFinancesAssetFindMany: Array<{
+                        assetId: string;
+                        kind: Schema.GqlCAdminFinancesAssetKind;
+                        name: string;
+                        location: string;
+                        currentValueCents: number;
+                        shares: number | null;
+                        symbol: string | null;
+                        isin: string | null;
+                        currency: string;
+                        notes: string | null;
+                        active: boolean;
+                        createdAt: string;
+                        updatedAt: string;
+                    }>;
                 };
+                adminInventoryFindOne: { adminInventoryMaterialNetWorthCentsFindOne: number };
             } | null;
         } | null;
     };
@@ -3724,6 +3835,10 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
                 adminFinancesMonthlyExpensesCentsFindOne: number;
                 adminFinancesQuarterlyExpensesCentsFindOne: number;
                 adminFinancesYearlyExpensesCentsFindOne: number;
+                adminFinancesLiquidCentsFindOne: number;
+                adminFinancesInvestedCentsFindOne: number;
+                adminFinancesBausparCentsFindOne: number;
+                adminFinancesFinancialNetWorthCentsFindOne: number;
                 adminFinancesIncomeStreamFindMany: Array<{
                     incomeStreamId: string;
                     name: string;
@@ -3751,7 +3866,23 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
                     createdAt: string;
                     updatedAt: string;
                 }>;
+                adminFinancesAssetFindMany: Array<{
+                    assetId: string;
+                    kind: Schema.GqlCAdminFinancesAssetKind;
+                    name: string;
+                    location: string;
+                    currentValueCents: number;
+                    shares: number | null;
+                    symbol: string | null;
+                    isin: string | null;
+                    currency: string;
+                    notes: string | null;
+                    active: boolean;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
             };
+            adminInventoryFindOne: { adminInventoryMaterialNetWorthCentsFindOne: number };
         } | null;
     };
 };
@@ -3783,6 +3914,28 @@ export type GqlCWorkspaceFinancesIncomeStreamsDeleteMutationVariables = Exact<{
 }>;
 
 export type GqlCWorkspaceFinancesIncomeStreamsDeleteMutation = { admin: { adminFinancesIncomeStreamsDelete: { success: boolean } } };
+
+export type GqlCWorkspaceFinancesAssetsUpsertMutationVariables = Exact<{
+    financeAssets: Array<Schema.GqlCAdminFinancesAssetInput> | Schema.GqlCAdminFinancesAssetInput;
+}>;
+
+export type GqlCWorkspaceFinancesAssetsUpsertMutation = {
+    admin: { adminFinancesAssetsUpsert: { success: boolean; referenceIds: Array<string> | null } };
+};
+
+export type GqlCWorkspaceFinancesAssetsDeleteMutationVariables = Exact<{
+    assetIds: Array<string> | string;
+}>;
+
+export type GqlCWorkspaceFinancesAssetsDeleteMutation = { admin: { adminFinancesAssetsDelete: { success: boolean } } };
+
+export type GqlCWorkspaceFinancesAssetsRepriceMutationVariables = Exact<{
+    inputs: Array<Schema.GqlCAdminFinancesAssetRepriceInput> | Schema.GqlCAdminFinancesAssetRepriceInput;
+}>;
+
+export type GqlCWorkspaceFinancesAssetsRepriceMutation = {
+    admin: { adminFinancesAssetsReprice: { success: boolean; referenceIds: Array<string> | null } };
+};
 
 export type GqlCWorkspaceFitnessExerciseFragment = {
     exerciseId: string;
@@ -8204,6 +8357,10 @@ export const WorkspaceFinancesPageUserFragmentDoc = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesLiquidCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesInvestedCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesBausparCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesFinancialNetWorthCentsFindOne' } },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'adminFinancesIncomeStreamFindMany' },
@@ -8245,6 +8402,38 @@ export const WorkspaceFinancesPageUserFragmentDoc = {
                                                     ],
                                                 },
                                             },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesAssetFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'assetId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'location' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'shares' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'symbol' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isin' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminInventoryMaterialNetWorthCentsFindOne' } },
                                         ],
                                     },
                                 },
@@ -14587,6 +14776,10 @@ export const WorkspaceFinancesPageDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesLiquidCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesInvestedCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesBausparCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesFinancialNetWorthCentsFindOne' } },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'adminFinancesIncomeStreamFindMany' },
@@ -14628,6 +14821,38 @@ export const WorkspaceFinancesPageDocument = {
                                                     ],
                                                 },
                                             },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesAssetFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'assetId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'location' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'shares' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'symbol' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isin' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminInventoryMaterialNetWorthCentsFindOne' } },
                                         ],
                                     },
                                 },
@@ -14685,6 +14910,10 @@ export const WorkspaceFinancesPageUpdatesDocument = {
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesLiquidCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesInvestedCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesBausparCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesFinancialNetWorthCentsFindOne' } },
                                             {
                                                 kind: 'Field',
                                                 name: { kind: 'Name', value: 'adminFinancesIncomeStreamFindMany' },
@@ -14726,6 +14955,38 @@ export const WorkspaceFinancesPageUpdatesDocument = {
                                                     ],
                                                 },
                                             },
+                                            {
+                                                kind: 'Field',
+                                                name: { kind: 'Name', value: 'adminFinancesAssetFindMany' },
+                                                selectionSet: {
+                                                    kind: 'SelectionSet',
+                                                    selections: [
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'assetId' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'location' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currentValueCents' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'shares' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'symbol' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'isin' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'currency' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'notes' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'active' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                                        { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminInventoryFindOne' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminInventoryMaterialNetWorthCentsFindOne' } },
                                         ],
                                     },
                                 },
@@ -14957,6 +15218,174 @@ export const WorkspaceFinancesIncomeStreamsDeleteDocument = {
         },
     ],
 } as unknown as DocumentNode<GqlCWorkspaceFinancesIncomeStreamsDeleteMutation, GqlCWorkspaceFinancesIncomeStreamsDeleteMutationVariables>;
+export const WorkspaceFinancesAssetsUpsertDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFinancesAssetsUpsert' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'financeAssets' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFinancesAssetInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFinancesAssetsUpsert' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'financeAssets' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'financeAssets' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinancesAssetsUpsertMutation, GqlCWorkspaceFinancesAssetsUpsertMutationVariables>;
+export const WorkspaceFinancesAssetsDeleteDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFinancesAssetsDelete' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'assetIds' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFinancesAssetsDelete' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'assetIds' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'assetIds' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'Field', name: { kind: 'Name', value: 'success' } }],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinancesAssetsDeleteMutation, GqlCWorkspaceFinancesAssetsDeleteMutationVariables>;
+export const WorkspaceFinancesAssetsRepriceDocument = {
+    kind: 'Document',
+    definitions: [
+        {
+            kind: 'OperationDefinition',
+            operation: 'mutation',
+            name: { kind: 'Name', value: 'WorkspaceFinancesAssetsReprice' },
+            variableDefinitions: [
+                {
+                    kind: 'VariableDefinition',
+                    variable: { kind: 'Variable', name: { kind: 'Name', value: 'inputs' } },
+                    type: {
+                        kind: 'NonNullType',
+                        type: {
+                            kind: 'ListType',
+                            type: {
+                                kind: 'NonNullType',
+                                type: { kind: 'NamedType', name: { kind: 'Name', value: 'AdminFinancesAssetRepriceInput' } },
+                            },
+                        },
+                    },
+                },
+            ],
+            selectionSet: {
+                kind: 'SelectionSet',
+                selections: [
+                    {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'admin' },
+                        selectionSet: {
+                            kind: 'SelectionSet',
+                            selections: [
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'adminFinancesAssetsReprice' },
+                                    arguments: [
+                                        {
+                                            kind: 'Argument',
+                                            name: { kind: 'Name', value: 'inputs' },
+                                            value: { kind: 'Variable', name: { kind: 'Name', value: 'inputs' } },
+                                        },
+                                    ],
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'Field', name: { kind: 'Name', value: 'success' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'referenceIds' } },
+                                        ],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<GqlCWorkspaceFinancesAssetsRepriceMutation, GqlCWorkspaceFinancesAssetsRepriceMutationVariables>;
 export const WorkspaceFitnessPageDocument = {
     kind: 'Document',
     definitions: [

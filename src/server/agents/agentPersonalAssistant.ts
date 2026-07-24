@@ -268,11 +268,10 @@ export async function agentPersonalAssistant({
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
             }),
-            // Finances sub-agent — recurring costs (rent, insurance,
-            // subscriptions, …) and the monthly net-income baseline. Writes to
-            // Postgres so `/workspace/finances` and its totals update. This is
-            // the "add this to my expenses / subscriptions" path. See
-            // `docs/features/workspace-finances.md`.
+            // Finances sub-agent — cashflow (income streams + recurring costs)
+            // and wealth assets (Tagesgeld / ETF / stock / Bauspar with a
+            // location label). Writes to Postgres so `/workspace/finances`
+            // updates. See `docs/features/workspace-finances.md`.
             delegateToFinances: toolDelegateToFinances({
                 serverRuntime,
                 session,

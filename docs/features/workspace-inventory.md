@@ -54,8 +54,7 @@ address bar when they need it.
 
 ## Cross-references
 
-- `/workspace/finances` will eventually display a "material net worth" tile that reads `admin.inventory.materialNetWorthCents` — the field
-  is already exposed; the tile lands when the finances page is next touched.
+- `/workspace/finances` Overview strip reads `admin.inventory.materialNetWorthCents` (wired) and links here.
 - `/workspace/tax` may consume inventory data later (depreciation on business equipment) — no dependency yet.
 
 ## Design decisions
@@ -197,8 +196,6 @@ all.
 
 ## Open TODOs
 
-- **Finances tile.** Once `/workspace/finances` graduates from stub, add a "material net worth" tile reading
-  `admin.inventory.materialNetWorthCents` and link to `/workspace/inventory`. Schema side is ready.
 - **Category taxonomy.** The hard-coded enum is fine today. If ad-hoc categories start showing up in notes, promote to an `ItemCategories`
   table (with a user-editable list + default seed).
 - **Bulk actions.** Multi-select on the list for "mark as sold" / "export" would be nice but out of scope for v1.

@@ -126,6 +126,56 @@ export type GqlSAdminCompassAdminCompassObservationFindManyArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export interface GqlSAdminFinancesAsset {
+    __typename?: 'AdminFinancesAsset';
+    active: Scalars['Boolean']['output'];
+    assetId: Scalars['ID']['output'];
+    createdAt: Scalars['DateTime']['output'];
+    currency: Scalars['String']['output'];
+    currentValueCents: Scalars['Int']['output'];
+    isin?: Maybe<Scalars['String']['output']>;
+    kind: GqlSAdminFinancesAssetKind;
+    location: Scalars['String']['output'];
+    name: Scalars['String']['output'];
+    notes?: Maybe<Scalars['String']['output']>;
+    shares?: Maybe<Scalars['Float']['output']>;
+    symbol?: Maybe<Scalars['String']['output']>;
+    updatedAt: Scalars['DateTime']['output'];
+}
+
+export type GqlSAdminFinancesAssetInput = {
+    active?: InputMaybe<Scalars['Boolean']['input']>;
+    assetId?: InputMaybe<Scalars['ID']['input']>;
+    currency?: InputMaybe<Scalars['String']['input']>;
+    currentValueCents?: InputMaybe<Scalars['Int']['input']>;
+    isin?: InputMaybe<Scalars['String']['input']>;
+    kind: GqlSAdminFinancesAssetKind;
+    location: Scalars['String']['input'];
+    name: Scalars['String']['input'];
+    notes?: InputMaybe<Scalars['String']['input']>;
+    shares?: InputMaybe<Scalars['Float']['input']>;
+    symbol?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSAdminFinancesAssetKind = 'bauspar' | 'cash' | 'security';
+
+export type GqlSAdminFinancesAssetRepriceInput = {
+    assetId: Scalars['ID']['input'];
+    note?: InputMaybe<Scalars['String']['input']>;
+    shares?: InputMaybe<Scalars['Float']['input']>;
+    valueCents: Scalars['Int']['input'];
+    valuedAt?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export interface GqlSAdminFinancesAssetValuation {
+    __typename?: 'AdminFinancesAssetValuation';
+    note?: Maybe<Scalars['String']['output']>;
+    shares?: Maybe<Scalars['Float']['output']>;
+    valuationId: Scalars['ID']['output'];
+    valueCents: Scalars['Int']['output'];
+    valuedAt: Scalars['DateTime']['output'];
+}
+
 export type GqlSAdminFinancesCadence = 'monthly' | 'quarterly' | 'yearly';
 
 export interface GqlSAdminFinancesIncomeStream {
@@ -157,7 +207,12 @@ export type GqlSAdminFinancesIncomeStreamInput = {
 
 export interface GqlSAdminFinancesQuery {
     __typename?: 'AdminFinancesQuery';
+    adminFinancesAssetFindMany: Array<GqlSAdminFinancesAsset>;
+    adminFinancesBausparCentsFindOne: Scalars['Int']['output'];
+    adminFinancesFinancialNetWorthCentsFindOne: Scalars['Int']['output'];
     adminFinancesIncomeStreamFindMany: Array<GqlSAdminFinancesIncomeStream>;
+    adminFinancesInvestedCentsFindOne: Scalars['Int']['output'];
+    adminFinancesLiquidCentsFindOne: Scalars['Int']['output'];
     adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
     adminFinancesMonthlyIncomeCentsFindOne: Scalars['Int']['output'];
     adminFinancesQuarterlyExpensesCentsFindOne: Scalars['Int']['output'];
@@ -192,6 +247,7 @@ export type GqlSAdminFinancesRecurringCostCategory =
     | 'housing'
     | 'insurance'
     | 'other'
+    | 'personalCare'
     | 'savingsGeneral'
     | 'savingsVacation'
     | 'sport'
@@ -764,6 +820,9 @@ export type GqlSAdminMedicalRecordSeverity = 'info' | 'mild' | 'moderate' | 'sev
 
 export interface GqlSAdminMutation {
     __typename?: 'AdminMutation';
+    adminFinancesAssetsDelete: GqlSMutationResult;
+    adminFinancesAssetsReprice: GqlSMutationResult;
+    adminFinancesAssetsUpsert: GqlSMutationResult;
     adminFinancesIncomeStreamsDelete: GqlSMutationResult;
     adminFinancesIncomeStreamsUpsert: GqlSMutationResult;
     adminFinancesRecurringCostsDelete: GqlSMutationResult;
@@ -872,6 +931,18 @@ export interface GqlSAdminMutation {
     cvSkillsDelete: GqlSMutationResult;
     cvSkillsUpsert: GqlSMutationResult;
 }
+
+export type GqlSAdminMutationAdminFinancesAssetsDeleteArgs = {
+    assetIds: Array<Scalars['ID']['input']>;
+};
+
+export type GqlSAdminMutationAdminFinancesAssetsRepriceArgs = {
+    inputs: Array<GqlSAdminFinancesAssetRepriceInput>;
+};
+
+export type GqlSAdminMutationAdminFinancesAssetsUpsertArgs = {
+    financeAssets: Array<GqlSAdminFinancesAssetInput>;
+};
 
 export type GqlSAdminMutationAdminFinancesIncomeStreamsDeleteArgs = {
     incomeStreamIds: Array<Scalars['ID']['input']>;
@@ -2665,6 +2736,11 @@ export type GqlSResolversTypes = ResolversObject<{
     AdminChatConfig: ResolverTypeWrapper<GqlSAdminChatConfig>;
     AdminChatModel: ResolverTypeWrapper<GqlSAdminChatModel>;
     AdminCompass: ResolverTypeWrapper<GqlSAdminCompass>;
+    AdminFinancesAsset: ResolverTypeWrapper<GqlSAdminFinancesAsset>;
+    AdminFinancesAssetInput: GqlSAdminFinancesAssetInput;
+    AdminFinancesAssetKind: GqlSAdminFinancesAssetKind;
+    AdminFinancesAssetRepriceInput: GqlSAdminFinancesAssetRepriceInput;
+    AdminFinancesAssetValuation: ResolverTypeWrapper<GqlSAdminFinancesAssetValuation>;
     AdminFinancesCadence: GqlSAdminFinancesCadence;
     AdminFinancesIncomeStream: ResolverTypeWrapper<GqlSAdminFinancesIncomeStream>;
     AdminFinancesIncomeStreamInput: GqlSAdminFinancesIncomeStreamInput;
@@ -2909,6 +2985,10 @@ export type GqlSResolversParentTypes = ResolversObject<{
     AdminChatConfig: GqlSAdminChatConfig;
     AdminChatModel: GqlSAdminChatModel;
     AdminCompass: GqlSAdminCompass;
+    AdminFinancesAsset: GqlSAdminFinancesAsset;
+    AdminFinancesAssetInput: GqlSAdminFinancesAssetInput;
+    AdminFinancesAssetRepriceInput: GqlSAdminFinancesAssetRepriceInput;
+    AdminFinancesAssetValuation: GqlSAdminFinancesAssetValuation;
     AdminFinancesIncomeStream: GqlSAdminFinancesIncomeStream;
     AdminFinancesIncomeStreamInput: GqlSAdminFinancesIncomeStreamInput;
     AdminFinancesQuery: GqlSAdminFinancesQuery;
@@ -3199,6 +3279,36 @@ export type GqlSAdminCompassResolvers<
     synthesizedAt?: Resolver<Maybe<GqlSResolversTypes['DateTime']>, ParentType, ContextType>;
 }>;
 
+export type GqlSAdminFinancesAssetResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminFinancesAsset'] = GqlSResolversParentTypes['AdminFinancesAsset'],
+> = ResolversObject<{
+    active?: Resolver<GqlSResolversTypes['Boolean'], ParentType, ContextType>;
+    assetId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+    currency?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    currentValueCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    isin?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    kind?: Resolver<GqlSResolversTypes['AdminFinancesAssetKind'], ParentType, ContextType>;
+    location?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    name?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    notes?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    shares?: Resolver<Maybe<GqlSResolversTypes['Float']>, ParentType, ContextType>;
+    symbol?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    updatedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
+export type GqlSAdminFinancesAssetValuationResolvers<
+    ContextType = any,
+    ParentType extends GqlSResolversParentTypes['AdminFinancesAssetValuation'] = GqlSResolversParentTypes['AdminFinancesAssetValuation'],
+> = ResolversObject<{
+    note?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
+    shares?: Resolver<Maybe<GqlSResolversTypes['Float']>, ParentType, ContextType>;
+    valuationId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
+    valueCents?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    valuedAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
+}>;
+
 export type GqlSAdminFinancesIncomeStreamResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminFinancesIncomeStream'] = GqlSResolversParentTypes['AdminFinancesIncomeStream'],
@@ -3220,7 +3330,12 @@ export type GqlSAdminFinancesQueryResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminFinancesQuery'] = GqlSResolversParentTypes['AdminFinancesQuery'],
 > = ResolversObject<{
+    adminFinancesAssetFindMany?: Resolver<Array<GqlSResolversTypes['AdminFinancesAsset']>, ParentType, ContextType>;
+    adminFinancesBausparCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminFinancesFinancialNetWorthCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminFinancesIncomeStreamFindMany?: Resolver<Array<GqlSResolversTypes['AdminFinancesIncomeStream']>, ParentType, ContextType>;
+    adminFinancesInvestedCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminFinancesLiquidCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminFinancesMonthlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminFinancesMonthlyIncomeCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminFinancesQuarterlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
@@ -3629,6 +3744,24 @@ export type GqlSAdminMutationResolvers<
     ContextType = any,
     ParentType extends GqlSResolversParentTypes['AdminMutation'] = GqlSResolversParentTypes['AdminMutation'],
 > = ResolversObject<{
+    adminFinancesAssetsDelete?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminFinancesAssetsDeleteArgs, 'assetIds'>
+    >;
+    adminFinancesAssetsReprice?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminFinancesAssetsRepriceArgs, 'inputs'>
+    >;
+    adminFinancesAssetsUpsert?: Resolver<
+        GqlSResolversTypes['MutationResult'],
+        ParentType,
+        ContextType,
+        RequireFields<GqlSAdminMutationAdminFinancesAssetsUpsertArgs, 'financeAssets'>
+    >;
     adminFinancesIncomeStreamsDelete?: Resolver<
         GqlSResolversTypes['MutationResult'],
         ParentType,
@@ -5353,6 +5486,8 @@ export type GqlSResolvers<ContextType = any> = ResolversObject<{
     AdminChatConfig?: GqlSAdminChatConfigResolvers<ContextType>;
     AdminChatModel?: GqlSAdminChatModelResolvers<ContextType>;
     AdminCompass?: GqlSAdminCompassResolvers<ContextType>;
+    AdminFinancesAsset?: GqlSAdminFinancesAssetResolvers<ContextType>;
+    AdminFinancesAssetValuation?: GqlSAdminFinancesAssetValuationResolvers<ContextType>;
     AdminFinancesIncomeStream?: GqlSAdminFinancesIncomeStreamResolvers<ContextType>;
     AdminFinancesQuery?: GqlSAdminFinancesQueryResolvers<ContextType>;
     AdminFinancesRecurringCost?: GqlSAdminFinancesRecurringCostResolvers<ContextType>;
@@ -5478,6 +5613,12 @@ export const isDefinedNonNullAny = (v: any): v is definedNonNullAny => v !== und
 
 export const definedNonNullAnySchema = z.any().refine((v) => isDefinedNonNullAny(v));
 
+export const GqlSAdminFinancesAssetKindSchema: z.ZodType<'bauspar' | 'cash' | 'security', 'bauspar' | 'cash' | 'security'> = z.enum([
+    'bauspar',
+    'cash',
+    'security',
+]);
+
 export const GqlSAdminFinancesCadenceSchema: z.ZodType<'monthly' | 'quarterly' | 'yearly', 'monthly' | 'quarterly' | 'yearly'> = z.enum([
     'monthly',
     'quarterly',
@@ -5493,6 +5634,7 @@ export const GqlSAdminFinancesRecurringCostCategorySchema: z.ZodType<
     | 'housing'
     | 'insurance'
     | 'other'
+    | 'personalCare'
     | 'savingsGeneral'
     | 'savingsVacation'
     | 'sport'
@@ -5506,6 +5648,7 @@ export const GqlSAdminFinancesRecurringCostCategorySchema: z.ZodType<
     | 'housing'
     | 'insurance'
     | 'other'
+    | 'personalCare'
     | 'savingsGeneral'
     | 'savingsVacation'
     | 'sport'
@@ -5520,6 +5663,7 @@ export const GqlSAdminFinancesRecurringCostCategorySchema: z.ZodType<
     'housing',
     'insurance',
     'other',
+    'personalCare',
     'savingsGeneral',
     'savingsVacation',
     'sport',
@@ -5784,6 +5928,32 @@ export const GqlSLogLevelSchema: z.ZodType<'debug' | 'error' | 'info' | 'warn', 
     'info',
     'warn',
 ]);
+
+export function GqlSAdminFinancesAssetInputSchema(): z.ZodObject<Properties<GqlSAdminFinancesAssetInput>> {
+    return z.object({
+        active: z.boolean().nullish(),
+        assetId: z.string().nullish(),
+        currency: z.string().nullish(),
+        currentValueCents: z.number().nullish(),
+        isin: z.string().nullish(),
+        kind: GqlSAdminFinancesAssetKindSchema,
+        location: z.string(),
+        name: z.string(),
+        notes: z.string().nullish(),
+        shares: z.number().nullish(),
+        symbol: z.string().nullish(),
+    });
+}
+
+export function GqlSAdminFinancesAssetRepriceInputSchema(): z.ZodObject<Properties<GqlSAdminFinancesAssetRepriceInput>> {
+    return z.object({
+        assetId: z.string(),
+        note: z.string().nullish(),
+        shares: z.number().nullish(),
+        valueCents: z.number(),
+        valuedAt: z.date().nullish(),
+    });
+}
 
 export function GqlSAdminFinancesIncomeStreamInputSchema(): z.ZodObject<Properties<GqlSAdminFinancesIncomeStreamInput>> {
     return z.object({

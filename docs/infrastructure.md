@@ -194,8 +194,9 @@ Runs only on `push` to `main` and only after every gate passes. Uses a separate 
 2. Tags the image with the commit SHA and `latest`
 3. PATCHes the Coolify application to point to the new image tag
 4. Restarts the application via the Coolify API
-5. Polls `${WEB_APP_URL}/api/health` until the response's `version` field equals the deployed commit SHA — fails the workflow on timeout (~5
-   minutes) so a Coolify restart that silently rolled back to the old image surfaces as a red deploy job
+5. Waits 30s for Coolify to pull/restart, then polls `${WEB_APP_URL}/api/health` until the response's `version` field equals the deployed
+   commit SHA — fails the workflow on timeout (~5.5 minutes) so a Coolify restart that silently rolled back to the old image surfaces as a
+   red deploy job
 
 ### Required secrets
 
