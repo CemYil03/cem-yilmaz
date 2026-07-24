@@ -70,10 +70,13 @@ type ChatMessageGeneration {
 type ChatMessageAssistantText {
     chatMessageId: ID!
     body: String!
-    # Gemini thought summary for this answer (`thinkingConfig.includeThoughts`).
-    # Null when the model emitted none (Flash disables thinking) or for legacy
-    # rows written before persistence shipped. Live deltas still stream via
-    # `ChatUpdateAssistantReasoningChunk`; this field is the durable copy.
+    # Gemini thought summary for the LLM step that produced this answer
+    # (`thinkingConfig.includeThoughts`). Null when the model emitted none
+    # (Flash disables thinking) or for legacy rows. Live deltas stream via
+    # `ChatUpdateAssistantReasoningChunk` keyed on this row's id; this field
+    # is the durable copy. Multi-step turns keep each step's thoughts on the
+    # tool / approval / collection row that step produced — only the final
+    # step's summary lands here.
     reasoning: String
     # Snapshot of the LLM step that produced this row. See `ChatMessageGeneration`.
     generation: ChatMessageGeneration
@@ -101,6 +104,10 @@ type ChatMessageToolCall {
     # tools follow it) to drive the row's status indicator + inline summary,
     # and otherwise shows the raw JSON in the inspector. See docs/styles/chat.md.
     toolResult: JSON
+    # Thought summary for the LLM step that decided on this call. Set only on
+    # the first persisted artifact of a parallel multi-tool step; null on
+    # siblings and when the model emitted no thoughts.
+    reasoning: String
     generation: ChatMessageGeneration
     createdAt: DateTime!
 }
@@ -113,6 +120,9 @@ type ChatMessageToolApprovalRequest {
     # `ChatMessageToolCall.args`. Surfaced so the human can inspect what the
     # assistant is asking permission to run before approving.
     args: JSON!
+    # Thought summary for the step that requested approval — same first-of-step
+    # rule as `ChatMessageToolCall.reasoning`.
+    reasoning: String
     generation: ChatMessageGeneration
     createdAt: DateTime!
 }
@@ -150,6 +160,9 @@ type ChatMessageAssistantInputCollection {
     # the typescript plugin already emits. Same workaround the inlined
     # mutations use for named input types — see chat.md.
     mode: String!
+    # Thought summary for the step that produced this collection — same
+    # first-of-step rule as `ChatMessageToolCall.reasoning`.
+    reasoning: String
     generation: ChatMessageGeneration
     createdAt: DateTime!
 }
@@ -699,11 +712,13 @@ type AdminMutation {
 # `generationId` (UUIDv4); the unguessable id IS the capability today. Real
 # chat-level authorization will layer on once chats grow user ownership.
 #
-# `ChatUpdateAssistantTextChunk.chatMessageId` is pre-allocated server-side
-# before streaming begins; it equals the id of the eventual
+# `ChatUpdateAssistantTextChunk.chatMessageId` is the current LLM step's
+# pre-allocated id; for the final answer step it equals the eventual
 # `ChatMessageAssistantText` row that arrives as `ChatUpdateMessageAppended`
 # at end-of-stream. Clients use it to swap their in-place streaming row for
-# the persisted message with no layout shift.
+# the persisted message with no layout shift. Mid-turn steps that end in
+# tools reuse the same id scheme for reasoning chunks (see
+# `ChatUpdateAssistantReasoningChunk`).
 
 type ChatUpdateMessageAppended {
     message: ChatMessage!
@@ -715,10 +730,11 @@ type ChatUpdateAssistantTextChunk {
 }
 
 # Gemini thought-summary deltas (`thinkingConfig.includeThoughts` → AI SDK
-# `reasoning-delta`). Keyed on the same pre-allocated `chatMessageId` as the
-# eventual answer text so the client can attach a collapsed "Thoughts" region
-# to that turn while streaming. The final concatenated summary is persisted on
-# `ChatMessageAssistantText.reasoning` at end-of-stream. Flash models disable
+# `reasoning-delta`). Keyed on the current LLM step's pre-allocated
+# `chatMessageId` — the same id the first tool / approval / input-collection /
+# assistant-text row of that step will use — so the live "Thinking…" slot
+# swaps onto the persisted row with no layout shift. Each step keeps its own
+# summary; they are not concatenated across the turn. Flash models disable
 # thinking (`thinkingBudget: 0`) and never emit these.
 type ChatUpdateAssistantReasoningChunk {
     chatMessageId: ID!

@@ -24,6 +24,7 @@ import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '../bas
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../base/select';
 import { Textarea } from '../base/textarea';
 import { MessageRow, Timestamp } from './shared';
+import { AssistantReasoning } from '../AssistantReasoning';
 
 type SlotDrafts = Record<string, SlotDraft | undefined>;
 
@@ -44,6 +45,7 @@ export function ChatMessageAssistantInputCollectionView({
     isInteractive,
     userInput,
     onSubmit,
+    reasoningText,
 }: {
     message: GqlCChatMessageAssistantInputCollection;
     /** True only when the collection is the last message in the chat AND has no
@@ -57,6 +59,7 @@ export function ChatMessageAssistantInputCollectionView({
      *  Pivoting away to a free-text message is handled server-side (synthetic
      *  empty-answers row), not through this callback. */
     onSubmit?: (collectionMessageId: string, answers: ReadonlyArray<{ inputId: string; value: GqlCChatAssistantInputValue }>) => void;
+    reasoningText?: string;
 }) {
     const locale = useLocale();
     const state = deriveState(userInput);
@@ -95,41 +98,48 @@ export function ChatMessageAssistantInputCollectionView({
 
     return (
         <MessageRow side="assistant">
-            <Card className="w-full max-w-md gap-4 py-4" aria-disabled={state !== 'pending'} data-state={state} data-mode={message.mode}>
-                <CardHeader>
-                    <CardTitle className="text-sm whitespace-pre-wrap">{message.prompt}</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-3">
-                    {state === 'pending' && message.mode === 'StepThrough' ? (
-                        <CollectionStepThrough
-                            inputs={message.inputs}
-                            drafts={drafts}
-                            setDraft={setDraft}
-                            isInteractive={isInteractive && Boolean(onSubmit)}
-                            onSubmit={() => onSubmit?.(message.chatMessageId, collectAnswers())}
-                        />
-                    ) : null}
-                    {state === 'pending' && message.mode !== 'StepThrough'
-                        ? message.inputs.map((slot) => (
-                              <ChatAssistantInputSlotView
-                                  key={slotKey(slot)}
-                                  slot={slot}
-                                  draft={drafts[slot.inputId]}
-                                  onChange={(next) => setDraft(slot.inputId, next)}
-                              />
-                          ))
-                        : null}
-                    {state !== 'pending' ? (
-                        <CollectionAnswerSummary inputs={message.inputs} answersByInputId={answersByInputId} locale={locale} />
-                    ) : null}
-                    {state === 'pending' && message.mode !== 'StepThrough' && isInteractive && onSubmit ? (
-                        <Button size="sm" onClick={() => onSubmit(message.chatMessageId, collectAnswers())} className="justify-self-start">
-                            {{ de: 'Absenden', en: 'Submit' }[locale]}
-                        </Button>
-                    ) : null}
-                    <CollectionFooter state={state} promptedAt={message.createdAt} respondedAt={userInput?.createdAt} />
-                </CardContent>
-            </Card>
+            <div className="flex w-full max-w-md flex-col gap-2">
+                {reasoningText ? <AssistantReasoning text={reasoningText} /> : null}
+                <Card className="w-full gap-4 py-4" aria-disabled={state !== 'pending'} data-state={state} data-mode={message.mode}>
+                    <CardHeader>
+                        <CardTitle className="text-sm whitespace-pre-wrap">{message.prompt}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-3">
+                        {state === 'pending' && message.mode === 'StepThrough' ? (
+                            <CollectionStepThrough
+                                inputs={message.inputs}
+                                drafts={drafts}
+                                setDraft={setDraft}
+                                isInteractive={isInteractive && Boolean(onSubmit)}
+                                onSubmit={() => onSubmit?.(message.chatMessageId, collectAnswers())}
+                            />
+                        ) : null}
+                        {state === 'pending' && message.mode !== 'StepThrough'
+                            ? message.inputs.map((slot) => (
+                                  <ChatAssistantInputSlotView
+                                      key={slotKey(slot)}
+                                      slot={slot}
+                                      draft={drafts[slot.inputId]}
+                                      onChange={(next) => setDraft(slot.inputId, next)}
+                                  />
+                              ))
+                            : null}
+                        {state !== 'pending' ? (
+                            <CollectionAnswerSummary inputs={message.inputs} answersByInputId={answersByInputId} locale={locale} />
+                        ) : null}
+                        {state === 'pending' && message.mode !== 'StepThrough' && isInteractive && onSubmit ? (
+                            <Button
+                                size="sm"
+                                onClick={() => onSubmit(message.chatMessageId, collectAnswers())}
+                                className="justify-self-start"
+                            >
+                                {{ de: 'Absenden', en: 'Submit' }[locale]}
+                            </Button>
+                        ) : null}
+                        <CollectionFooter state={state} promptedAt={message.createdAt} respondedAt={userInput?.createdAt} />
+                    </CardContent>
+                </Card>
+            </div>
         </MessageRow>
     );
 }

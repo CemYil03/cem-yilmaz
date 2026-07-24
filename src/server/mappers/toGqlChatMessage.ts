@@ -121,6 +121,7 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
                 // row; top-level orchestrator tool calls are null. See
                 // `docs/architecture/agent-delegation.md` ("Nested tool calls").
                 parentChatMessageId: spine.parentChatMessageId,
+                reasoning: variant.reasoning ?? null,
                 generation: toGqlChatMessageGeneration(variant),
                 createdAt: spine.createdAt,
             };
@@ -133,6 +134,7 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
                 approvalId: variant.approvalId,
                 toolName: variant.toolName,
                 args: variant.toolArgs,
+                reasoning: variant.reasoning ?? null,
                 generation: toGqlChatMessageGeneration(variant),
                 createdAt: spine.createdAt,
             };
@@ -165,6 +167,7 @@ export function toGqlChatMessage(row: ChatMessageRowJoined): GqlSChatMessage {
                 // default; the `?? 'form'` guard is paranoia for any future
                 // hand-written row that omits it.
                 mode: variant.mode === 'stepThrough' ? 'StepThrough' : 'Form',
+                reasoning: variant.reasoning ?? null,
                 generation: toGqlChatMessageGeneration(variant),
                 createdAt: spine.createdAt,
             };

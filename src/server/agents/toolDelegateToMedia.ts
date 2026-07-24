@@ -4,12 +4,12 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { chatPersistStep } from '../commands/chatAssistantTurnRun';
 import type { OnStepEndContext, OnStepEndStep } from '../commands/chatAssistantTurnRun';
-import { chatMessageAppend } from '../commands/chatMessageAppend';
-import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCreate } from '../db/schema';
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantMedia } from './agentPersonalAssistantMedia';
+import type { ChatStepArtifact } from './chatStepArtifact';
+import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 
 // Orchestrator-side tool that delegates a media / movie / channel brief to
 // `agentPersonalAssistantMedia`. Mirrors `toolDelegateToProjects` exactly —
@@ -35,6 +35,9 @@ interface DelegateToMediaContext {
     chatId: string;
     generationId: string | null | undefined;
     preWrittenToolCallIds: Set<string>;
+    // Optional — when present, the pre-written parent row reuses this
+    // step's live Thinking id + thought summary.
+    stepArtifact?: ChatStepArtifact;
 }
 
 interface NeedsMoreInfoSentinel {
@@ -52,7 +55,14 @@ function summarizeError(error: unknown): string {
     return 'unknown error';
 }
 
-export function toolDelegateToMedia({ serverRuntime, session, chatId, generationId, preWrittenToolCallIds }: DelegateToMediaContext) {
+export function toolDelegateToMedia({
+    serverRuntime,
+    session,
+    chatId,
+    generationId,
+    preWrittenToolCallIds,
+    stepArtifact,
+}: DelegateToMediaContext) {
     return tool({
         description: [
             'Hand a media instruction to the media sub-agent. Use for ANY ask that touches the movie watchlist,',
@@ -72,27 +82,18 @@ export function toolDelegateToMedia({ serverRuntime, session, chatId, generation
         inputSchema: delegateToMediaInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;
-            const parentChatMessageId = crypto.randomUUID();
-            const parentSpine: ChatMessageRowCreate = {
-                chatMessageId: parentChatMessageId,
+            // Pre-write the delegate row so nested child tool calls have a
+            // parent to FK against; result is stamped after the sub-agent runs.
+            const parentChatMessageId = await chatDelegateParentPreWrite({
+                serverRuntime,
                 chatId,
-                kind: 'toolCall',
-                authorUserId: null,
-                parentChatMessageId: null,
-                createdAt: new Date(),
-            };
-            const parentVariant: ChatMessageToolCallCreate = {
-                chatMessageId: parentChatMessageId,
+                generationId,
                 toolCallId,
                 toolName: 'delegateToMedia',
                 toolArgs: input as JSONValue,
-                toolResult: null,
-                resultedAt: null,
-            };
-            await chatMessageAppend(db, serverRuntime, generationId, parentSpine, async (transaction) => {
-                await transaction.insert(chatMessagesToolCall).values(parentVariant);
+                preWrittenToolCallIds,
+                stepArtifact,
             });
-            preWrittenToolCallIds.add(toolCallId);
 
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {

@@ -27,17 +27,16 @@ import type { GqlCChatUpdatesSubscription } from '../graphql/generated';
 //   A republished id (e.g. a delegate row swapping `toolResult: null` for the
 //   settled batch) replaces the earlier copy in place. See
 //   `docs/architecture/agent-delegation.md`.
-// - `streaming` — the live text-delta buffer, keyed by the pre-allocated
-//   `chatMessageId` of the eventual assistant-text row. Cleared on `TurnEnded`
-//   and on the matching `MessageAppended`.
-// - `reasoning` — Gemini thought-summary buffer (same id key). Kept after
-//   `TurnEnded` / `MessageAppended` so the collapsed "Thoughts" region stays
-//   readable on the settled answer until `forgetChat`. The durable copy lives
-//   on `ChatMessageAssistantText.reasoning` and is what survives a refresh.
+// - `streaming` — the live text-delta buffer, keyed by the current LLM step's
+//   pre-allocated `chatMessageId`. Cleared on `TurnEnded` and on the matching
+//   `MessageAppended` (any variant that reused that step id).
+// - `reasoning` — Gemini thought-summary buffer (same per-step id key). Cleared
+//   from the live map when the matching row appends, and wiped on `TurnEnded`
+//   like `streaming` (settled rows already carry `message.reasoning`).
 // - `ended` — set on `TurnEnded`. Ended generations keep their `appended` rows
-//   (and `reasoning`) but stop contributing to the "still generating" and
-//   "current-turn tool call" signals. `forgetChat()` prunes them once
-//   authoritative rows are fetched.
+//   but stop contributing to the "still generating" and "current-turn tool
+//   call" signals. `forgetChat()` prunes them once authoritative rows are
+//   fetched.
 
 type ChatUpdate = GqlCChatUpdatesSubscription['chatUpdates'];
 type ChatUpdateMessage = Extract<ChatUpdate, { __typename: 'ChatUpdateMessageAppended' }>['message'];
@@ -113,15 +112,21 @@ export function useChatLiveUpdates(): ChatLiveUpdates {
                     existing === -1
                         ? [...generation.appended, incoming]
                         : generation.appended.map((m, i) => (i === existing ? incoming : m));
-                // Drop any streaming row whose id matches the persisted row — the
-                // assistant text just arrived in its final form.
+                // Drop live streaming / reasoning keyed to this id — the
+                // persisted row (any AI variant) now owns that step's UI.
                 let streaming = generation.streaming;
-                if (incoming.__typename === 'ChatMessageAssistantText' && incoming.chatMessageId in streaming) {
+                if (incoming.chatMessageId in streaming) {
                     const next = { ...streaming };
                     delete next[incoming.chatMessageId];
                     streaming = next;
                 }
-                return replaceAt(prev, index, { ...generation, appended, streaming });
+                let reasoning = generation.reasoning;
+                if (incoming.chatMessageId in reasoning) {
+                    const next = { ...reasoning };
+                    delete next[incoming.chatMessageId];
+                    reasoning = next;
+                }
+                return replaceAt(prev, index, { ...generation, appended, streaming, reasoning });
             }
 
             if (update.__typename === 'ChatUpdateAssistantTextChunk') {
@@ -141,10 +146,10 @@ export function useChatLiveUpdates(): ChatLiveUpdates {
             }
 
             // ChatUpdateTurnEnded — mark the generation finished and drop any
-            // orphan streaming buffer (an empty turn leaves a stale entry that
-            // `MessageAppended` never came to clean up). Keep `appended` and
-            // `reasoning` so the settled answer can still show Thoughts.
-            return replaceAt(prev, index, { ...generation, ended: true, streaming: {} });
+            // orphan streaming / reasoning buffers (an empty or aborted turn
+            // can leave a stale live Thought slot that `MessageAppended` never
+            // came to clean up). Settled rows already carry `message.reasoning`.
+            return replaceAt(prev, index, { ...generation, ended: true, streaming: {}, reasoning: {} });
         });
     }, []);
 

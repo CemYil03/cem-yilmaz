@@ -1,6 +1,13 @@
 import type { JSONValue, LanguageModelUsage, ModelMessage } from 'ai';
 import { eq } from 'drizzle-orm';
 import type { ChatAgentFactory } from '../agents/agentVisitor';
+import type { ChatStepArtifact } from '../agents/chatStepArtifact';
+import {
+    chatStepArtifactClaimFirstMessageId,
+    chatStepArtifactCreate,
+    chatStepArtifactReasoningOrNull,
+    chatStepArtifactReset,
+} from '../agents/chatStepArtifact';
 import { chatAssistantInputCollectionInputSchema } from '../agents/toolPromptUserForInput';
 import type { ChatAssistantInputCollectionInput } from '../agents/toolPromptUserForInput';
 import type { ChatAssistantInputSlot } from '../db/chatPayloadTypes';
@@ -31,10 +38,10 @@ import { chatMessageAppend } from './chatMessageAppend';
 //
 // Each persisted message commits in its own short transaction; after commit
 // the runner publishes a `ChatUpdateMessageAppended` so subscribers see the
-// new message immediately. The streaming text path additionally publishes a
-// `ChatUpdateAssistantTextChunk` per delta. The id of the eventual
-// `ChatMessageAssistantText` row is pre-allocated so the client can correlate
-// the streaming preview to its persisted swap-in.
+// new message immediately. Streaming publishes `assistantTextChunk` /
+// `assistantReasoningChunk` against the *current LLM step's* pre-allocated
+// id (`ChatStepArtifact`), which the first tool / approval / collection /
+// assistant-text row of that step reuses so the live preview swaps in place.
 //
 // Two entry points:
 // - `chatAssistantTurnRun` — runs one turn synchronously and returns when the
@@ -99,6 +106,9 @@ export type OnStepEndStep = {
     toolResults: ReadonlyArray<{ toolCallId: string; output: unknown }>;
     usage: LanguageModelUsage;
     model: { modelId: string };
+    // AI SDK per-step thought summary (`reasoningText`). Preferred over the
+    // stream buffer when stamping `reasoning` onto the first artifact.
+    reasoningText?: string | undefined;
 };
 
 export interface OnStepEndContext {
@@ -115,6 +125,10 @@ export interface OnStepEndContext {
     // `onStepEnd` must skip them so we don't insert a second row for the
     // same call. The set may be empty.
     preWrittenToolCallIds: ReadonlySet<string>;
+    // Shared step anchor for id + reasoning. Orchestrator passes the live
+    // stream/generate artifact; nested sub-agents omit it and mint fresh ids
+    // (still attaching `step.reasoningText` to the first child row).
+    stepArtifact?: ChatStepArtifact;
     // Mutated by the helper: flips to `true` if the step ended on a
     // `promptUserForInput` call. The runner uses this flag after the stream
     // ends to suppress the trailing assistant-text row that would otherwise
@@ -125,6 +139,36 @@ export interface OnStepEndContext {
     // snapshot so the runner can stamp it onto the post-stream
     // `chatMessagesAssistantText` row outside of `onStepEnd`.
     lastStepGeneration?: { value: StepGenerationMeta | null };
+}
+
+/** Spine id + optional reasoning for the next row written in this step. */
+function stepFirstArtifactFields(
+    context: OnStepEndContext,
+    step: OnStepEndStep,
+    firstOfPersist: { value: boolean },
+): { chatMessageId: string; reasoning: string | null } {
+    const claimed = chatStepArtifactClaimFirstMessageId(context.stepArtifact);
+    if (claimed != null) {
+        return {
+            chatMessageId: claimed,
+            reasoning: chatStepArtifactReasoningOrNull(context.stepArtifact, step.reasoningText),
+        };
+    }
+    if (context.stepArtifact) {
+        // Sibling artifact in a step whose first id was already claimed
+        // (earlier row or a pre-written delegate).
+        return { chatMessageId: crypto.randomUUID(), reasoning: null };
+    }
+    // Nested sub-agent: no shared stream artifact — first row of this
+    // `chatPersistStep` call gets `step.reasoningText`.
+    if (firstOfPersist.value) {
+        firstOfPersist.value = false;
+        return {
+            chatMessageId: crypto.randomUUID(),
+            reasoning: chatStepArtifactReasoningOrNull(null, step.reasoningText),
+        };
+    }
+    return { chatMessageId: crypto.randomUUID(), reasoning: null };
 }
 
 /**
@@ -151,6 +195,7 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
     const generation = stepGenerationMeta(step);
     if (context.lastStepGeneration) context.lastStepGeneration.value = generation;
     const { db } = serverRuntime;
+    const firstOfPersist = { value: true };
 
     // Phase A — approval requests. When a tool is gated by `needsApproval`,
     // the AI SDK emits a `tool-approval-request` content part instead of
@@ -198,8 +243,9 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
         };
         const { approvalId, toolCall } = approvalPart;
         approvalRequestedToolCallIds.add(toolCall.toolCallId);
+        const { chatMessageId, reasoning } = stepFirstArtifactFields(context, step, firstOfPersist);
         const requestSpine: ChatMessageRowCreate = {
-            chatMessageId: crypto.randomUUID(),
+            chatMessageId,
             chatId,
             kind: 'toolApprovalRequest',
             authorUserId: null,
@@ -212,6 +258,7 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
             toolCallId: toolCall.toolCallId,
             toolName: toolCall.toolName,
             toolArgs: toolCall.input as JSONValue,
+            reasoning,
             ...generation,
         };
         await chatMessageAppend(db, serverRuntime, generationId, requestSpine, async (transaction) => {
@@ -245,8 +292,9 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
                 );
                 continue;
             }
+            const { chatMessageId, reasoning } = stepFirstArtifactFields(context, step, firstOfPersist);
             const collectionSpine: ChatMessageRowCreate = {
-                chatMessageId: crypto.randomUUID(),
+                chatMessageId,
                 chatId,
                 kind: 'assistantInputCollection',
                 authorUserId: null,
@@ -261,6 +309,7 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
                 prompt: parsed.data.prompt,
                 inputs: parsed.data.inputs.map(chatAssistantInputSlotPromote),
                 mode: parsed.data.mode,
+                reasoning,
                 ...generation,
             };
             await chatMessageAppend(db, serverRuntime, generationId, collectionSpine, async (transaction) => {
@@ -269,8 +318,9 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
             continue;
         }
 
+        const { chatMessageId, reasoning } = stepFirstArtifactFields(context, step, firstOfPersist);
         const toolCallSpine: ChatMessageRowCreate = {
-            chatMessageId: crypto.randomUUID(),
+            chatMessageId,
             chatId,
             kind: 'toolCall',
             authorUserId: null,
@@ -285,6 +335,7 @@ export async function chatPersistStep(step: OnStepEndStep, context: OnStepEndCon
             toolArgs: call.input as JSONValue,
             toolResult: matchingResult ? (matchingResult.output as JSONValue) : null,
             resultedAt: matchingResult ? new Date() : null,
+            reasoning,
             ...generation,
         };
         await chatMessageAppend(db, serverRuntime, generationId, toolCallSpine, async (transaction) => {
@@ -323,10 +374,10 @@ async function chatAssistantTurnRun({
 }: ChatAssistantTurnRunOptions): Promise<number | null> {
     const { generationId } = assistantOptions;
 
-    // Pre-allocate the id of the eventual assistant-text row so streamed
-    // chunk events can carry it; the client uses this id to swap its
-    // streaming preview row for the persisted message at end-of-stream.
-    const assistantTextMessageId = crypto.randomUUID();
+    // Per-step artifact: live chunks and the first persisted row of each LLM
+    // step share this id. Rotated on AI SDK `start-step` (stream) or after a
+    // tool-bearing generate step.
+    const stepArtifact = chatStepArtifactCreate();
 
     let contextTokensUsed: number | null = null;
     try {
@@ -337,7 +388,7 @@ async function chatAssistantTurnRun({
             assistantOptions,
             serverRuntime,
             agentFactory,
-            assistantTextMessageId,
+            stepArtifact,
             currentPagePath,
         });
     } finally {
@@ -439,9 +490,9 @@ async function runAgentTurn({
     assistantOptions,
     serverRuntime,
     agentFactory,
-    assistantTextMessageId,
+    stepArtifact,
     currentPagePath,
-}: ChatAssistantTurnRunOptions & { assistantTextMessageId: string }): Promise<number | null> {
+}: ChatAssistantTurnRunOptions & { stepArtifact: ChatStepArtifact }): Promise<number | null> {
     const { generationId } = assistantOptions;
     const { db } = serverRuntime;
     // Every `onStepEnd` step caches its generation snapshot in this slot
@@ -462,8 +513,8 @@ async function runAgentTurn({
     const endedOnPromptForInput = { value: false };
     // Mutable set of `toolCallId`s the orchestrator's `onStepEnd` must skip
     // because some tool's `execute` already persisted its own
-    // `chatMessagesToolCall` row up front. Today only `toolDelegateToProjects`
-    // does this — it pre-writes the row so the sub-agent's child rows have an
+    // `chatMessagesToolCall` row up front. Every `delegateTo*` tool does
+    // this — it pre-writes the row so the sub-agent's child rows have an
     // existing parent to FK against, then mutates this set before returning
     // from `execute`. The orchestrator's later step (which surfaces the
     // delegate call) reads from here. See
@@ -476,13 +527,13 @@ async function runAgentTurn({
         chatId,
         currentPagePath,
         preWrittenToolCallIds,
+        stepArtifact,
         // The orchestrator-level `onStepEnd`. All tool-call/approval/input-
         // collection persistence is the shared `chatPersistStep` helper, which
         // also serves sub-agents running inside a delegating tool's `execute`.
         // At this level there is no parent row (top-level tool calls aren't
-        // nested) and no pre-written ids unless a delegating tool's `execute`
-        // pushed onto `preWrittenToolCallIds` before returning — see
-        // `toolDelegateToProjects` for the one tool that does this today.
+        // nested) and no pre-written ids unless a `delegateTo*` tool's
+        // `execute` pushed onto `preWrittenToolCallIds` before returning.
         onStepEnd: async (step: OnStepEndStep) => {
             await chatPersistStep(step, {
                 chatId,
@@ -491,39 +542,49 @@ async function runAgentTurn({
                 serverRuntime,
                 parentChatMessageId: null,
                 preWrittenToolCallIds,
+                stepArtifact,
                 endedOnPromptForInput,
                 lastStepGeneration,
             });
+            // Generate path has no `start-step` stream parts — rotate after a
+            // tool-bearing step so the eventual answer text gets a fresh id.
+            // Stream path rotates on `start-step` instead (below).
+            if (!generationId && step.toolCalls.length > 0) {
+                chatStepArtifactReset(stepArtifact);
+            }
         },
     });
 
-    let assistantText = '';
-    let assistantReasoning = '';
     if (generationId) {
         const result = await agent.stream({ messages: coreMessages });
         for await (const part of result.stream) {
+            if (part.type === 'start-step') {
+                // Fresh id + buffers for this LLM step. The first
+                // `start-step` replaces the turn-start mint; later ones
+                // follow tool-bearing steps.
+                chatStepArtifactReset(stepArtifact);
+                continue;
+            }
             if (part.type === 'text-delta') {
-                assistantText += part.text;
+                stepArtifact.text += part.text;
                 await serverRuntime.publish.chatUpdates({
                     generationId,
                     payload: {
                         kind: 'assistantTextChunk',
-                        chatMessageId: assistantTextMessageId,
+                        chatMessageId: stepArtifact.messageId,
                         delta: part.text,
                     },
                 });
             } else if (part.type === 'reasoning-delta') {
-                // Gemini thought summaries (Pro + `includeThoughts`). Same
-                // pre-allocated id as the answer so the client can attach a
-                // collapsed "Thoughts" region to that turn while streaming.
-                // Concatenated text is persisted on the assistant-text row at
-                // end-of-stream (see insert below).
-                assistantReasoning += part.text;
+                // Gemini thought summaries (Pro + `includeThoughts`). Keyed
+                // on this step's pre-allocated id so the client attaches
+                // "Thinking…" to the tool / answer row that reuses it.
+                stepArtifact.reasoning += part.text;
                 await serverRuntime.publish.chatUpdates({
                     generationId,
                     payload: {
                         kind: 'assistantReasoningChunk',
-                        chatMessageId: assistantTextMessageId,
+                        chatMessageId: stepArtifact.messageId,
                         delta: part.text,
                     },
                 });
@@ -531,9 +592,27 @@ async function runAgentTurn({
         }
     } else {
         const result = await agent.generate({ messages: coreMessages });
-        assistantText = result.text;
-        assistantReasoning = result.reasoningText ?? '';
+        // Non-stream path: tool rows already carry per-step reasoning from
+        // `onStepEnd`. Populate the trailing text-only step's buffers from
+        // the generate result when the final step did not emit tools.
+        const finalStep = Array.isArray(result.steps) ? result.steps.at(-1) : undefined;
+        const finalHadTools = Array.isArray(finalStep?.toolCalls) && finalStep.toolCalls.length > 0;
+        if (!finalHadTools) {
+            stepArtifact.text = typeof result.text === 'string' ? result.text : '';
+            const reasoningText =
+                (typeof finalStep?.reasoningText === 'string' && finalStep.reasoningText) ||
+                (typeof result.reasoningText === 'string' && result.reasoningText) ||
+                '';
+            stepArtifact.reasoning = reasoningText;
+        }
     }
+
+    // After stream/generate, the answer body and its thoughts are whatever
+    // the *current* (last) step buffered. Tool-only final steps leave text
+    // empty; `promptUserForInput` turns suppress the insert entirely.
+    const assistantText = stepArtifact.text;
+    const assistantReasoning = stepArtifact.reasoning;
+    const assistantTextMessageId = stepArtifact.messageId;
 
     // Suppress the trailing assistant-text row when the turn ended on a
     // `promptUserForInput` tool call. The model is coached (in
@@ -544,7 +623,13 @@ async function runAgentTurn({
     // and `findLatestCollectionId` locks any collection that isn't the tail —
     // the user would never see the Submit button. The form's own `prompt` is
     // the framing; the preamble's loss is acceptable.
-    if (assistantText.length > 0 && !endedOnPromptForInput.value) {
+    //
+    // Same skip when this step's id was already claimed by a tool / approval /
+    // collection — leftover `text-delta` preamble must not reuse that PK.
+    if (assistantText.length > 0 && !endedOnPromptForInput.value && !stepArtifact.firstClaimed) {
+        // Claim so a racing persist wouldn't reuse the id (normally unused
+        // on a text-only final step).
+        chatStepArtifactClaimFirstMessageId(stepArtifact);
         const assistantSpine: ChatMessageRowCreate = {
             chatMessageId: assistantTextMessageId,
             chatId,

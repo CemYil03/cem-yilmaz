@@ -55,13 +55,18 @@ fragment WorkspaceChatMessageFields on ChatMessage {
         args
         toolResult
         parentChatMessageId
+        reasoning
         createdAt
+        generation {
+            ...WorkspaceChatMessageGeneration
+        }
     }
     ... on ChatMessageToolApprovalRequest {
         chatMessageId
         approvalId
         toolName
         args
+        reasoning
         createdAt
         generation {
             ...WorkspaceChatMessageGeneration
@@ -78,6 +83,7 @@ fragment WorkspaceChatMessageFields on ChatMessage {
         chatMessageId
         prompt
         mode
+        reasoning
         createdAt
         generation {
             ...WorkspaceChatMessageGeneration

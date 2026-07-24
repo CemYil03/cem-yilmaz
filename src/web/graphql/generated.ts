@@ -2168,6 +2168,7 @@ export interface GqlCChatMessageAssistantInputCollection {
     inputs: Array<GqlCChatAssistantInput>;
     mode: Scalars['String']['output'];
     prompt: Scalars['String']['output'];
+    reasoning?: Maybe<Scalars['String']['output']>;
 }
 
 export interface GqlCChatMessageAssistantText {
@@ -2202,6 +2203,7 @@ export interface GqlCChatMessageToolApprovalRequest {
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlCChatMessageGeneration>;
+    reasoning?: Maybe<Scalars['String']['output']>;
     toolName: Scalars['String']['output'];
 }
 
@@ -2221,6 +2223,7 @@ export interface GqlCChatMessageToolCall {
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlCChatMessageGeneration>;
     parentChatMessageId?: Maybe<Scalars['ID']['output']>;
+    reasoning?: Maybe<Scalars['String']['output']>;
     toolName: Scalars['String']['output'];
     toolResult?: Maybe<Scalars['JSON']['output']>;
 }
@@ -2704,6 +2707,7 @@ export type GqlCWorkspaceVisitorChatQuery = {
                               chatMessageId: string;
                               prompt: string;
                               mode: string;
+                              reasoning: string | null;
                               createdAt: string;
                               generation: {
                                   modelId: string;
@@ -2751,6 +2755,7 @@ export type GqlCWorkspaceVisitorChatQuery = {
                               approvalId: string;
                               toolName: string;
                               args: unknown;
+                              reasoning: string | null;
                               createdAt: string;
                               generation: {
                                   modelId: string;
@@ -2776,7 +2781,16 @@ export type GqlCWorkspaceVisitorChatQuery = {
                               args: unknown;
                               toolResult: unknown;
                               parentChatMessageId: string | null;
+                              reasoning: string | null;
                               createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
                           }
                         | {
                               __typename: 'ChatMessageUser';
@@ -2832,6 +2846,7 @@ type GqlCWorkspaceChatMessageFields_ChatMessageAssistantInputCollection_Fragment
     chatMessageId: string;
     prompt: string;
     mode: string;
+    reasoning: string | null;
     createdAt: string;
     generation: {
         modelId: string;
@@ -2876,6 +2891,7 @@ type GqlCWorkspaceChatMessageFields_ChatMessageToolApprovalRequest_Fragment = {
     approvalId: string;
     toolName: string;
     args: unknown;
+    reasoning: string | null;
     createdAt: string;
     generation: {
         modelId: string;
@@ -2903,7 +2919,16 @@ type GqlCWorkspaceChatMessageFields_ChatMessageToolCall_Fragment = {
     args: unknown;
     toolResult: unknown;
     parentChatMessageId: string | null;
+    reasoning: string | null;
     createdAt: string;
+    generation: {
+        modelId: string;
+        inputTokens: number | null;
+        outputTokens: number | null;
+        totalTokens: number | null;
+        reasoningTokens: number | null;
+        cachedInputTokens: number | null;
+    } | null;
 };
 
 type GqlCWorkspaceChatMessageFields_ChatMessageUser_Fragment = {
@@ -2988,6 +3013,7 @@ export type GqlCWorkspaceChatPageQuery = {
                               chatMessageId: string;
                               prompt: string;
                               mode: string;
+                              reasoning: string | null;
                               createdAt: string;
                               generation: {
                                   modelId: string;
@@ -3035,6 +3061,7 @@ export type GqlCWorkspaceChatPageQuery = {
                               approvalId: string;
                               toolName: string;
                               args: unknown;
+                              reasoning: string | null;
                               createdAt: string;
                               generation: {
                                   modelId: string;
@@ -3060,7 +3087,16 @@ export type GqlCWorkspaceChatPageQuery = {
                               args: unknown;
                               toolResult: unknown;
                               parentChatMessageId: string | null;
+                              reasoning: string | null;
                               createdAt: string;
+                              generation: {
+                                  modelId: string;
+                                  inputTokens: number | null;
+                                  outputTokens: number | null;
+                                  totalTokens: number | null;
+                                  reasoningTokens: number | null;
+                                  cachedInputTokens: number | null;
+                              } | null;
                           }
                         | {
                               __typename: 'ChatMessageUser';
@@ -7006,6 +7042,7 @@ type GqlCChatMessageFields_ChatMessageAssistantInputCollection_Fragment = {
     chatMessageId: string;
     prompt: string;
     mode: string;
+    reasoning: string | null;
     createdAt: string;
     generation: {
         modelId: string;
@@ -7050,6 +7087,7 @@ type GqlCChatMessageFields_ChatMessageToolApprovalRequest_Fragment = {
     approvalId: string;
     toolName: string;
     args: unknown;
+    reasoning: string | null;
     createdAt: string;
     generation: {
         modelId: string;
@@ -7077,7 +7115,16 @@ type GqlCChatMessageFields_ChatMessageToolCall_Fragment = {
     args: unknown;
     toolResult: unknown;
     parentChatMessageId: string | null;
+    reasoning: string | null;
     createdAt: string;
+    generation: {
+        modelId: string;
+        inputTokens: number | null;
+        outputTokens: number | null;
+        totalTokens: number | null;
+        reasoningTokens: number | null;
+        cachedInputTokens: number | null;
+    } | null;
 };
 
 type GqlCChatMessageFields_ChatMessageUser_Fragment = {
@@ -7142,6 +7189,7 @@ export type GqlCChatPageQuery = {
                       chatMessageId: string;
                       prompt: string;
                       mode: string;
+                      reasoning: string | null;
                       createdAt: string;
                       generation: {
                           modelId: string;
@@ -7184,6 +7232,7 @@ export type GqlCChatPageQuery = {
                       approvalId: string;
                       toolName: string;
                       args: unknown;
+                      reasoning: string | null;
                       createdAt: string;
                       generation: {
                           modelId: string;
@@ -7209,7 +7258,16 @@ export type GqlCChatPageQuery = {
                       args: unknown;
                       toolResult: unknown;
                       parentChatMessageId: string | null;
+                      reasoning: string | null;
                       createdAt: string;
+                      generation: {
+                          modelId: string;
+                          inputTokens: number | null;
+                          outputTokens: number | null;
+                          totalTokens: number | null;
+                          reasoningTokens: number | null;
+                          cachedInputTokens: number | null;
+                      } | null;
                   }
                 | {
                       __typename: 'ChatMessageUser';
@@ -7295,6 +7353,7 @@ export type GqlCChatUpdatesSubscription = {
                         chatMessageId: string;
                         prompt: string;
                         mode: string;
+                        reasoning: string | null;
                         createdAt: string;
                         generation: {
                             modelId: string;
@@ -7337,6 +7396,7 @@ export type GqlCChatUpdatesSubscription = {
                         approvalId: string;
                         toolName: string;
                         args: unknown;
+                        reasoning: string | null;
                         createdAt: string;
                         generation: {
                             modelId: string;
@@ -7362,7 +7422,16 @@ export type GqlCChatUpdatesSubscription = {
                         args: unknown;
                         toolResult: unknown;
                         parentChatMessageId: string | null;
+                        reasoning: string | null;
                         createdAt: string;
+                        generation: {
+                            modelId: string;
+                            inputTokens: number | null;
+                            outputTokens: number | null;
+                            totalTokens: number | null;
+                            reasoningTokens: number | null;
+                            cachedInputTokens: number | null;
+                        } | null;
                     }
                   | {
                         __typename: 'ChatMessageUser';
@@ -7572,7 +7641,18 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolResult' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'generation' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceChatMessageGeneration' } },
+                                        ],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -7586,6 +7666,7 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'approvalId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -7623,6 +7704,7 @@ export const WorkspaceChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'mode' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -10460,7 +10542,16 @@ export const ChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolResult' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'generation' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'ChatMessageGeneration' } }],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -10474,6 +10565,7 @@ export const ChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'approvalId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -10509,6 +10601,7 @@ export const ChatMessageFieldsFragmentDoc = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'mode' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -11430,7 +11523,18 @@ export const WorkspaceVisitorChatDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolResult' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'generation' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceChatMessageGeneration' } },
+                                        ],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -11444,6 +11548,7 @@ export const WorkspaceVisitorChatDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'approvalId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -11481,6 +11586,7 @@ export const WorkspaceVisitorChatDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'mode' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -12069,7 +12175,18 @@ export const WorkspaceChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolResult' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'generation' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [
+                                            { kind: 'FragmentSpread', name: { kind: 'Name', value: 'WorkspaceChatMessageGeneration' } },
+                                        ],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -12083,6 +12200,7 @@ export const WorkspaceChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'approvalId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -12120,6 +12238,7 @@ export const WorkspaceChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'mode' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -25124,7 +25243,16 @@ export const ChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolResult' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'generation' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'ChatMessageGeneration' } }],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -25138,6 +25266,7 @@ export const ChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'approvalId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -25173,6 +25302,7 @@ export const ChatPageDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'mode' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -25926,7 +26056,16 @@ export const ChatUpdatesDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolResult' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'parentChatMessageId' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                                {
+                                    kind: 'Field',
+                                    name: { kind: 'Name', value: 'generation' },
+                                    selectionSet: {
+                                        kind: 'SelectionSet',
+                                        selections: [{ kind: 'FragmentSpread', name: { kind: 'Name', value: 'ChatMessageGeneration' } }],
+                                    },
+                                },
                             ],
                         },
                     },
@@ -25940,6 +26079,7 @@ export const ChatUpdatesDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'approvalId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'toolName' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'args' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',
@@ -25975,6 +26115,7 @@ export const ChatUpdatesDocument = {
                                 { kind: 'Field', name: { kind: 'Name', value: 'chatMessageId' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'prompt' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'mode' } },
+                                { kind: 'Field', name: { kind: 'Name', value: 'reasoning' } },
                                 { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
                                 {
                                     kind: 'Field',

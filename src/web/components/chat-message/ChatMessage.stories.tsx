@@ -226,6 +226,9 @@ const toolCall: GqlCChatMessage = {
     chatMessageId: 'm-tool',
     toolName: 'searchRestaurants',
     args: { city: 'Berlin', cuisine: 'Italian', partySize: 2, when: '2026-06-05T19:00:00.000Z' },
+    toolResult: null,
+    parentChatMessageId: null,
+    reasoning: null,
     createdAt: '2026-06-03T18:30:08.000Z',
 };
 
@@ -235,6 +238,7 @@ const approvalRequest: GqlCChatMessage = {
     approvalId: 'approval-123',
     toolName: 'createReservation',
     args: { restaurantId: 'r-42', name: 'Ada Lovelace', partySize: 2, when: '2026-06-05T19:00:00.000Z' },
+    reasoning: null,
     createdAt: '2026-06-03T18:30:12.000Z',
 };
 
@@ -288,6 +292,7 @@ const inputCollection: GqlCChatMessage = {
         { __typename: 'ChatAssistantInputBoolean', inputId: 'window', prompt: 'Window seat?' },
         { __typename: 'ChatAssistantInputText', inputId: 'notes', prompt: 'Anything else?' },
     ],
+    reasoning: null,
     createdAt: '2026-06-03T18:30:20.000Z',
 };
 

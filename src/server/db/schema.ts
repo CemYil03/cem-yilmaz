@@ -289,6 +289,12 @@ export const chatMessagesToolCall = pgTable(
         toolArgs: jsonb().notNull(),
         toolResult: jsonb(),
         resultedAt: timestamp({ withTimezone: true }),
+        // Gemini thought summary for the LLM step that produced this call.
+        // Attached only to the first persisted artifact of a multi-tool step;
+        // null on siblings, Flash (thinking disabled), and legacy rows.
+        // UI-only — `toModelMessages` does not replay it. See
+        // `docs/architecture/chat-persistence.md`.
+        reasoning: varchar(),
         modelId: varchar(),
         inputTokens: integer(),
         outputTokens: integer(),
@@ -323,6 +329,9 @@ export const chatMessagesToolApprovalRequest = pgTable(
         toolCallId: varchar().notNull(),
         toolName: varchar().notNull(),
         toolArgs: jsonb().notNull(),
+        // Gemini thought summary for the step that requested approval — same
+        // first-of-step rule as `chatMessagesToolCall.reasoning`.
+        reasoning: varchar(),
         // Generation metadata columns: see comment on `chatMessagesAssistantText`.
         modelId: varchar(),
         inputTokens: integer(),
@@ -397,6 +406,9 @@ export const chatMessagesAssistantInputCollection = pgTable(
         prompt: varchar().notNull(),
         inputs: jsonb().notNull(),
         mode: varchar().$type<'form' | 'stepThrough'>().notNull().default('form'),
+        // Gemini thought summary for the step that produced this collection —
+        // same first-of-step rule as `chatMessagesToolCall.reasoning`.
+        reasoning: varchar(),
         // Generation metadata columns: see comment on `chatMessagesAssistantText`.
         modelId: varchar(),
         inputTokens: integer(),

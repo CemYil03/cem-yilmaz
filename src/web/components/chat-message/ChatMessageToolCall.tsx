@@ -5,6 +5,7 @@ import { cn } from '../../utils/cn';
 import { toolDisplay } from '../../chat/toolDisplay';
 import { interpretToolResult } from '../../chat/toolResult';
 import { useDocumentPanel } from '../../chat/DocumentPanelProvider';
+import { AssistantReasoning } from '../AssistantReasoning';
 import {
     Attachment,
     AttachmentContent,
@@ -56,10 +57,13 @@ export function ChatMessageToolCallView({
     message,
     childMessages,
     active = false,
+    reasoningText,
 }: {
     message: GqlCChatMessageToolCall;
     childMessages?: ReadonlyArray<GqlCChatMessage>;
     active?: boolean;
+    /** Resolved thought summary for this step (live or persisted). */
+    reasoningText?: string;
 }) {
     const hasChildren = (childMessages?.length ?? 0) > 0;
     // A completed `workspaceFileCreate` grows a clickable document attachment
@@ -71,6 +75,7 @@ export function ChatMessageToolCallView({
     return (
         <MessageRow side="system">
             <div data-slot="chat-message-tool-call" className="flex max-w-full flex-col items-stretch gap-1">
+                {reasoningText ? <AssistantReasoning text={reasoningText} /> : null}
                 <ToolRowShell
                     toolName={message.toolName}
                     args={message.args}
@@ -98,13 +103,16 @@ export function ChatMessageToolCallView({
 // a status glyph, the args/result inspector, a timestamp, and — when the tool
 // returned a summary — a single clamped line (no expander here; the density of
 // the child list is the point, and the full result is one click away in the
-// inspector).
+// inspector). Nested steps have no live stream artifact, so Thoughts come
+// only from the persisted `child.reasoning` column.
 function ChildToolRow({ child }: { child: GqlCChatMessageToolCall }) {
     const locale = useLocale();
     const { Icon, label } = toolDisplay(child.toolName);
     const { status, summary } = interpretToolResult(child.toolResult, false);
+    const reasoning = child.reasoning ?? undefined;
     return (
         <li className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+            {reasoning ? <AssistantReasoning text={reasoning} className="text-xs" /> : null}
             <div className="group/tool-row inline-flex max-w-full items-center gap-2">
                 <Icon aria-hidden className="size-3 shrink-0" />
                 <span className="truncate">{label[locale]}</span>

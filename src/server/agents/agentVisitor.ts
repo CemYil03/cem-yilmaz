@@ -6,6 +6,7 @@ import type { GqlSSession } from '../graphql/generated';
 import { SITEMAP_PATHS } from '../../web/seo/sitemapRoutes';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
+import type { ChatStepArtifact } from './chatStepArtifact';
 import { cvSummaryForAgent } from './cvSummaryForAgent';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
 import { toolSendEmailToCem } from './toolSendEmailToCem';
@@ -27,13 +28,17 @@ export interface AgentChatOptions {
     // `docs/features/chat-visitor.md` and `docs/features/chat-workspace.md`.
     currentPagePath: string | null;
     // Shared mutable set the orchestrator uses to skip persisting a tool
-    // call whose row some tool's `execute` already wrote up front (today:
-    // `toolDelegateToProjects`, which pre-writes its delegate row so the
-    // sub-agent's child tool-call rows have a parent to FK against). Agents
-    // that don't host any such tool ignore the value; the orchestrator on
-    // `agentPersonalAssistant` is the only one that passes it into a tool.
-    // See `docs/architecture/agent-delegation.md` ("Nested tool calls").
+    // call whose row some tool's `execute` already wrote up front (every
+    // `delegateTo*` tool pre-writes its parent row so nested sub-agent
+    // tool-call rows have a parent to FK against). Agents that don't host
+    // any such tool ignore the value; `agentPersonalAssistant` is the one
+    // that passes it into tools. See `docs/architecture/agent-delegation.md`
+    // ("Nested tool calls").
     preWrittenToolCallIds: Set<string>;
+    // Per-LLM-step id + reasoning buffer shared with the turn runner so
+    // pre-written delegate rows reuse the live "Thinking…" slot id. Optional
+    // for agents that never pre-write (visitor).
+    stepArtifact?: ChatStepArtifact;
     // The tool set the agent is built with is heterogeneous (one entry per
     // approval-gated tool plus `promptUserForInput`), each with its own Zod
     // input schema. There is no single concrete `ToolSet` the caller can name

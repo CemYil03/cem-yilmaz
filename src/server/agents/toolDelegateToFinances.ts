@@ -4,12 +4,12 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { chatPersistStep } from '../commands/chatAssistantTurnRun';
 import type { OnStepEndContext, OnStepEndStep } from '../commands/chatAssistantTurnRun';
-import { chatMessageAppend } from '../commands/chatMessageAppend';
-import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCreate } from '../db/schema';
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantFinances } from './agentPersonalAssistantFinances';
+import type { ChatStepArtifact } from './chatStepArtifact';
+import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 
 // Orchestrator-side tool that delegates a recurring-cost / income brief to
 // `agentPersonalAssistantFinances`. Mirrors `toolDelegateToTravel` exactly —
@@ -35,6 +35,9 @@ interface DelegateToFinancesContext {
     chatId: string;
     generationId: string | null | undefined;
     preWrittenToolCallIds: Set<string>;
+    // Optional — when present, the pre-written parent row reuses this
+    // step's live Thinking id + thought summary.
+    stepArtifact?: ChatStepArtifact;
 }
 
 interface NeedsMoreInfoSentinel {
@@ -52,7 +55,14 @@ function summarizeError(error: unknown): string {
     return 'unknown error';
 }
 
-export function toolDelegateToFinances({ serverRuntime, session, chatId, generationId, preWrittenToolCallIds }: DelegateToFinancesContext) {
+export function toolDelegateToFinances({
+    serverRuntime,
+    session,
+    chatId,
+    generationId,
+    preWrittenToolCallIds,
+    stepArtifact,
+}: DelegateToFinancesContext) {
     return tool({
         description: [
             'Hand a finances instruction to the finances sub-agent. Use for ANY ask that touches income streams,',
@@ -75,27 +85,18 @@ export function toolDelegateToFinances({ serverRuntime, session, chatId, generat
         inputSchema: delegateToFinancesInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;
-            const parentChatMessageId = crypto.randomUUID();
-            const parentSpine: ChatMessageRowCreate = {
-                chatMessageId: parentChatMessageId,
+            // Pre-write the delegate row so nested child tool calls have a
+            // parent to FK against; result is stamped after the sub-agent runs.
+            const parentChatMessageId = await chatDelegateParentPreWrite({
+                serverRuntime,
                 chatId,
-                kind: 'toolCall',
-                authorUserId: null,
-                parentChatMessageId: null,
-                createdAt: new Date(),
-            };
-            const parentVariant: ChatMessageToolCallCreate = {
-                chatMessageId: parentChatMessageId,
+                generationId,
                 toolCallId,
                 toolName: 'delegateToFinances',
                 toolArgs: input as JSONValue,
-                toolResult: null,
-                resultedAt: null,
-            };
-            await chatMessageAppend(db, serverRuntime, generationId, parentSpine, async (transaction) => {
-                await transaction.insert(chatMessagesToolCall).values(parentVariant);
+                preWrittenToolCallIds,
+                stepArtifact,
             });
-            preWrittenToolCallIds.add(toolCallId);
 
             const childPreWrittenToolCallIds: Set<string> = new Set();
             const childOnStepContext: OnStepEndContext = {

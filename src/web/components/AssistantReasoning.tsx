@@ -4,12 +4,13 @@ import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
 import { AssistantMarkdown } from './AssistantMarkdown';
 
-// Collapsed Gemini thought-summary region shown above an assistant answer.
-// Fed live by `ChatUpdateAssistantReasoningChunk` (Pro + `includeThoughts`)
-// and durably by `ChatMessageAssistantText.reasoning` after the turn commits.
-// Flash never emits these. While `live`, the disclosure stays open so the
-// growing summary is readable; once the turn settles it starts collapsed with
-// a chevron to expand.
+// Collapsed Gemini thought-summary region shown above an AI-produced chat
+// message (tool call, approval, input collection, or final answer). Fed live
+// by `ChatUpdateAssistantReasoningChunk` (Pro + `includeThoughts`) and
+// durably by that message's `reasoning` field after the step commits. Flash
+// never emits these. While `live`, the disclosure stays open so the growing
+// summary is readable; once the step settles it starts collapsed with a
+// chevron to expand.
 //
 // User toggles animate height only (`grid-template-rows` 0fr↔1fr) + chevron
 // rotate (200 ms). No opacity fade — ease-out opacity on collapse blanks the

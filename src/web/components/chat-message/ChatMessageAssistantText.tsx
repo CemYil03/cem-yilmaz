@@ -9,15 +9,13 @@ export function ChatMessageAssistantTextView({
     reasoningText,
 }: {
     message: GqlCChatMessageAssistantText;
-    /** Live Gemini thought-summary buffer for this turn, if still held by
-     *  `useChatLiveUpdates`. Falls back to `message.reasoning` (persisted). */
+    /** Resolved thought summary for this step (live or persisted). */
     reasoningText?: string;
 }) {
-    const reasoning = reasoningText ?? message.reasoning ?? undefined;
     return (
         <div data-slot="chat-message-row" data-side="assistant" className="flex w-full min-w-0 max-w-full">
             <div className="flex w-full min-w-0 max-w-full flex-col gap-1 overflow-x-auto">
-                {reasoning ? <AssistantReasoning text={reasoning} /> : null}
+                {reasoningText ? <AssistantReasoning text={reasoningText} /> : null}
                 <AssistantMarkdown text={message.body} />
                 <div className="flex items-center gap-2 text-[11px] opacity-70">
                     <time dateTime={message.createdAt}>{format(parseISO(message.createdAt), 'HH:mm')}</time>

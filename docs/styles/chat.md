@@ -71,23 +71,27 @@ is showing, **and** no in-flight tool shimmer is active. Pending and tool shimme
 pill → pending again → answer. The shadcn `shimmer` utility is in `shadcn/tailwind.css`.
 
 **Gemini thinking / thought summaries.** Gemini can emit thought summaries when `thinkingConfig.includeThoughts` is true; the AI SDK
-surfaces them as `reasoning-delta` stream parts. This site publishes those as `ChatUpdateAssistantReasoningChunk` (same pre-allocated
-`chatMessageId` as the answer) and renders a collapsed **Thought / Nachgedacht** disclosure above the answer via `AssistantReasoning` (while
-streaming the label reads **Thinking… / Denke nach…**).
+surfaces them as `reasoning-delta` stream parts. This site publishes those as `ChatUpdateAssistantReasoningChunk` keyed on the **current LLM
+step's** pre-allocated `chatMessageId` and renders a collapsed **Thought / Nachgedacht** disclosure via `AssistantReasoning` (while
+streaming the label reads **Thinking… / Denke nach…**) **above the message that step produced** — tool pill, approval card, input
+collection, or final answer. Multi-step turns therefore read as an interleaved timeline: Thinking → tool (with Thought) → Thinking → answer.
+Parallel tools in one step share one Thought on the first pill only.
 
 - **gemini-3.6-flash**: `agentScaffolding` sets `thinkingLevel: 'high'` and `includeThoughts: true` — mid-tier replacement for the old 2.5
   Pro slot. Thought text streams like Pro.
 - **Other Flash** (`gemini-*-flash*` except 3.6): `thinkingBudget: 0` on purpose — without it Gemini 2.5 Flash periodically emits malformed
   tool calls. With budget 0 there are no thoughts; the pending shimmer is the wait signal.
 - **Pro** (and any non-Flash catalog model): `includeThoughts: true` with the provider default thinking budget. Thought text streams live
-  via `ChatUpdateAssistantReasoningChunk` and is persisted on `ChatMessageAssistantText.reasoning` with the final answer row, so Thoughts
-  survive a refresh. The live buffer in `useChatLiveUpdates` still holds the in-session copy until `forgetChat`; the transcript prefers live
-  text then falls back to the persisted field.
+  via `ChatUpdateAssistantReasoningChunk` and is persisted on that step's row (`ChatMessageToolCall.reasoning`,
+  `ChatMessageAssistantText.reasoning`, etc.) so Thoughts survive a refresh. Live buffers clear when the matching `MessageAppended` arrives;
+  the transcript prefers any remaining live text then falls back to the persisted field.
 
-The pending shimmer still covers the gap before the first thought _or_ text chunk. Once thoughts start, the disclosure replaces the pending
-row; once answer text starts, the disclosure collapses (user can re-open). User toggles animate height + chevron rotate (200 ms `ease-out`)
-— height clip only, no opacity fade (that blanked the text on collapse while the row was still open). Live-driven open/close is instant so
-stick-to-bottom scroll is not fought. `prefers-reduced-motion` skips the transition.
+The pending shimmer still covers the gap before the first thought _or_ text chunk _or_ open tool shimmer. Once thoughts start for a step,
+the disclosure replaces the pending row at the transcript tail; when that step's `MessageAppended` lands, thoughts move onto the settled row
+and the next step can stream at the new tail. Once answer text starts on the final step, the disclosure collapses (user can re-open). User
+toggles animate height + chevron rotate (200 ms `ease-out`) — height clip only, no opacity fade (that blanked the text on collapse while the
+row was still open). Live-driven open/close is instant so stick-to-bottom scroll is not fought. `prefers-reduced-motion` skips the
+transition.
 
 ## Scroll behaviour during streaming — follow while at the edge, never yank
 

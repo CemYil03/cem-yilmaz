@@ -46,13 +46,13 @@ chatMessagesAssistantText
   chatMessageId PK FK, body, reasoning?
 chatMessagesToolCall
   chatMessageId PK FK, toolCallId, toolName, toolArgs jsonb,
-  toolResult jsonb?, resultedAt timestamptz?
+  toolResult jsonb?, resultedAt timestamptz?, reasoning?
 chatMessagesToolApprovalRequest
-  chatMessageId PK FK, approvalId UNIQUE, toolName, toolArgs jsonb
+  chatMessageId PK FK, approvalId UNIQUE, toolName, toolArgs jsonb, reasoning?
 chatMessagesToolApprovalResponse
   chatMessageId PK FK, approvalId FK → request, approved
 chatMessagesAssistantInputCollection
-  chatMessageId PK FK, prompt, inputs jsonb
+  chatMessageId PK FK, prompt, inputs jsonb, reasoning?
 chatMessagesUserInput
   chatMessageId PK FK, collectionMessageId FK → collection, answers jsonb
 ```
@@ -176,15 +176,25 @@ this tool call — there is no `execute`, so the next turn-taker is the user, no
 The round-trip is restored on read: `toModelMessages` replays the collection as a `promptUserForInput` tool-call and the matching
 `ChatMessageUserInput` as the tool-result, so the LLM sees its own original turn shape on subsequent turns.
 
-### Streaming assistant text is inserted at end-of-stream
+### Streaming text and per-step thought summaries
 
-While a `ChatMessageAssistantText` is streaming, chunks are published over the live subscription channel (`chatUpdates(generationId)`), not
-written to the row. The `chatMessagesAssistantText` row is inserted once when the stream completes, with the final body **and** any Gemini
-thought summary accumulated from `reasoning-delta` parts (`reasoning` column — null when the model emitted none). The row is the durable
-artifact; the subscription is the live wire.
+While a step's answer text is streaming, chunks are published over the live subscription channel (`chatUpdates(generationId)`), not written
+to the row. Each LLM step gets a pre-allocated `chatMessageId` (`ChatStepArtifact` in `chatAssistantTurnRun`, rotated on AI SDK
+`start-step`). Reasoning and text deltas publish against that id; the **first** persisted artifact of the step reuses it:
 
-This avoids row mutation per chunk (high write amplification) and keeps the message log append-only — every row, once written, is final. A
-client that reconnects mid-stream sees no partial row in history; it sees the live subscription pick up where it left off.
+| Step outcome         | Where `reasoning` lands                                       |
+| -------------------- | ------------------------------------------------------------- |
+| Tool call(s)         | First `chatMessagesToolCall` (siblings get `reasoning: null`) |
+| Approval request     | `chatMessagesToolApprovalRequest`                             |
+| `promptUserForInput` | `chatMessagesAssistantInputCollection`                        |
+| Final answer text    | `chatMessagesAssistantText` (inserted at end-of-stream)       |
+
+Delegate tools that pre-write their parent row (`delegateTo*`) claim the same step id + reasoning at `execute` time so the live "Thinking…"
+slot swaps onto the parent pill. Nested sub-agent steps have no shared stream artifact; `chatPersistStep` still attaches
+`step.reasoningText` to the first child row of each nested step.
+
+The assistant-text row is inserted once when the stream completes, with the **last step's** body and thought summary only — earlier steps'
+thoughts already live on their tool / approval / collection rows. This avoids row mutation per chunk and keeps the message log append-only.
 
 Thought text is UI-only. `toModelMessages` still maps `chatMessagesAssistantText.body` alone — reasoning is not replayed to the LLM on later
 turns.

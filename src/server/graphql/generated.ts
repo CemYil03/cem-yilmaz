@@ -2165,6 +2165,7 @@ export interface GqlSChatMessageAssistantInputCollection {
     inputs: Array<GqlSChatAssistantInput>;
     mode: Scalars['String']['output'];
     prompt: Scalars['String']['output'];
+    reasoning?: Maybe<Scalars['String']['output']>;
 }
 
 export interface GqlSChatMessageAssistantText {
@@ -2199,6 +2200,7 @@ export interface GqlSChatMessageToolApprovalRequest {
     chatMessageId: Scalars['ID']['output'];
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlSChatMessageGeneration>;
+    reasoning?: Maybe<Scalars['String']['output']>;
     toolName: Scalars['String']['output'];
 }
 
@@ -2218,6 +2220,7 @@ export interface GqlSChatMessageToolCall {
     createdAt: Scalars['DateTime']['output'];
     generation?: Maybe<GqlSChatMessageGeneration>;
     parentChatMessageId?: Maybe<Scalars['ID']['output']>;
+    reasoning?: Maybe<Scalars['String']['output']>;
     toolName: Scalars['String']['output'];
     toolResult?: Maybe<Scalars['JSON']['output']>;
 }
@@ -5013,6 +5016,7 @@ export type GqlSChatMessageAssistantInputCollectionResolvers<
     inputs?: Resolver<Array<GqlSResolversTypes['ChatAssistantInput']>, ParentType, ContextType>;
     mode?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     prompt?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
+    reasoning?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5058,6 +5062,7 @@ export type GqlSChatMessageToolApprovalRequestResolvers<
     chatMessageId?: Resolver<GqlSResolversTypes['ID'], ParentType, ContextType>;
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     generation?: Resolver<Maybe<GqlSResolversTypes['ChatMessageGeneration']>, ParentType, ContextType>;
+    reasoning?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     toolName?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -5084,6 +5089,7 @@ export type GqlSChatMessageToolCallResolvers<
     createdAt?: Resolver<GqlSResolversTypes['DateTime'], ParentType, ContextType>;
     generation?: Resolver<Maybe<GqlSResolversTypes['ChatMessageGeneration']>, ParentType, ContextType>;
     parentChatMessageId?: Resolver<Maybe<GqlSResolversTypes['ID']>, ParentType, ContextType>;
+    reasoning?: Resolver<Maybe<GqlSResolversTypes['String']>, ParentType, ContextType>;
     toolName?: Resolver<GqlSResolversTypes['String'], ParentType, ContextType>;
     toolResult?: Resolver<Maybe<GqlSResolversTypes['JSON']>, ParentType, ContextType>;
     __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

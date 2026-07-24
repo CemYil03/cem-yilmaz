@@ -121,7 +121,8 @@ What this means concretely:
 
 The persistence flow is asymmetric because of FK ordering. The orchestrator's `onStepEnd` only fires after a tool's `execute` returns, so
 the parent row would be written **after** the children — making the children's FK invalid at insert time. To work around this, the delegate
-tool pre-writes its own `chatMessagesToolCall` row up front (`toolResult: null`) inside `execute`, adds its `toolCallId` to a shared
+tool pre-writes its own `chatMessagesToolCall` row up front (`toolResult: null`) inside `execute` via the shared
+`chatDelegateParentPreWrite` helper, adds its `toolCallId` to a shared
 `preWrittenToolCallIds` set so the orchestrator's outer `onStepEnd` skips it, runs the sub-agent (whose own `onStepEnd` is bound to
 `chatPersistStep` with `parentChatMessageId` set), then updates the delegate row with the final `toolResult` + `resultedAt` and republishes
 a fresh `ChatUpdateMessageAppended` so the UI swaps in the complete card.

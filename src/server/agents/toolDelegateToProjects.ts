@@ -4,12 +4,12 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { chatPersistStep } from '../commands/chatAssistantTurnRun';
 import type { OnStepEndContext, OnStepEndStep } from '../commands/chatAssistantTurnRun';
-import { chatMessageAppend } from '../commands/chatMessageAppend';
-import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCreate } from '../db/schema';
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantProjects } from './agentPersonalAssistantProjects';
+import type { ChatStepArtifact } from './chatStepArtifact';
+import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 
 // Orchestrator-side tool that delegates a project/task brief to
 // `agentPersonalAssistantProjects`. Runs the sub-agent in-process inside
@@ -52,6 +52,9 @@ interface DelegateToProjectsContext {
     // `toolCallId` to this set so the orchestrator's `onStepEnd` skips
     // writing a second row for the call.
     preWrittenToolCallIds: Set<string>;
+    // Optional — when present, the pre-written parent row reuses this
+    // step's live Thinking id + thought summary.
+    stepArtifact?: ChatStepArtifact;
 }
 
 interface NeedsMoreInfoSentinel {
@@ -73,7 +76,14 @@ function summarizeError(error: unknown): string {
     return 'unknown error';
 }
 
-export function toolDelegateToProjects({ serverRuntime, session, chatId, generationId, preWrittenToolCallIds }: DelegateToProjectsContext) {
+export function toolDelegateToProjects({
+    serverRuntime,
+    session,
+    chatId,
+    generationId,
+    preWrittenToolCallIds,
+    stepArtifact,
+}: DelegateToProjectsContext) {
     return tool({
         description: [
             'Hand a project or task instruction to the projects sub-agent. Use this for ANY ask that touches the',
@@ -93,32 +103,18 @@ export function toolDelegateToProjects({ serverRuntime, session, chatId, generat
         inputSchema: delegateToProjectsInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;
-            // Pre-write the delegate row so the sub-agent's child rows have an
-            // existing parent to FK against. `toolResult` and `resultedAt`
-            // are filled in below after `agent.generate` resolves; the
-            // initial publish goes out from `chatMessageAppend` so the UI
-            // can render the parent immediately and stream children into it.
-            const parentChatMessageId = crypto.randomUUID();
-            const parentSpine: ChatMessageRowCreate = {
-                chatMessageId: parentChatMessageId,
+            // Pre-write the delegate row so nested child tool calls have a
+            // parent to FK against; result is stamped after the sub-agent runs.
+            const parentChatMessageId = await chatDelegateParentPreWrite({
+                serverRuntime,
                 chatId,
-                kind: 'toolCall',
-                authorUserId: null,
-                parentChatMessageId: null,
-                createdAt: new Date(),
-            };
-            const parentVariant: ChatMessageToolCallCreate = {
-                chatMessageId: parentChatMessageId,
+                generationId,
                 toolCallId,
                 toolName: 'delegateToProjects',
                 toolArgs: input as JSONValue,
-                toolResult: null,
-                resultedAt: null,
-            };
-            await chatMessageAppend(db, serverRuntime, generationId, parentSpine, async (transaction) => {
-                await transaction.insert(chatMessagesToolCall).values(parentVariant);
+                preWrittenToolCallIds,
+                stepArtifact,
             });
-            preWrittenToolCallIds.add(toolCallId);
 
             // Sub-agent persistence — every tool call it makes lands as a
             // child row pointing at `parentChatMessageId`. The shared

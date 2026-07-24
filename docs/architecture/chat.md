@@ -252,13 +252,13 @@ type ChatUpdateMessageAppended {
 }
 
 type ChatUpdateAssistantTextChunk {
-  chatMessageId: ID! # pre-allocated id of the eventual ChatMessageAssistantText
+  chatMessageId: ID! # current LLM step's pre-allocated id (final answer step → ChatMessageAssistantText)
   delta: String!
 }
 
 type ChatUpdateAssistantReasoningChunk {
-  chatMessageId: ID! # same pre-allocated id as the answer text
-  delta: String! # Gemini thought-summary delta (`includeThoughts`); final text lands on `ChatMessageAssistantText.reasoning`
+  chatMessageId: ID! # same per-step id; first tool / approval / collection / answer of that step reuses it
+  delta: String! # Gemini thought-summary delta (`includeThoughts`); durable copy on that step's message.reasoning
 }
 
 type ChatUpdateTurnEnded {
@@ -271,14 +271,15 @@ type Subscription {
 ```
 
 Every newly persisted message — user message, tool call, approval request/response, input collection, and the final assistant text —
-publishes a `ChatUpdateMessageAppended` after the row commits. While the assistant is generating text, each delta publishes a
-`ChatUpdateAssistantTextChunk` carrying the **server-pre-allocated** `chatMessageId` of the row that will eventually arrive as
-`MessageAppended` at end-of-stream. When Gemini emits thought summaries (Pro + `includeThoughts`), each `reasoning-delta` publishes a
-`ChatUpdateAssistantReasoningChunk` on the **same** pre-allocated id. The concatenated summary is also written onto
-`ChatMessageAssistantText.reasoning` with the final answer row so Thoughts survive a refresh. Clients use the shared id to swap their
-in-place streaming preview for the persisted row in the same DOM slot, so the swap is a true no-op. `ChatUpdateTurnEnded` fires exactly once
-per turn (success, agent throw, or downstream publish failure) so the client can tear down its per-turn state without waiting on the
-kicking-off mutation.
+publishes a `ChatUpdateMessageAppended` after the row commits. While the assistant is generating, each LLM step gets a **pre-allocated**
+`chatMessageId` (`ChatStepArtifact`, rotated on AI SDK `start-step`). `text-delta` and `reasoning-delta` parts publish against that id; the
+**first** persisted artifact of the step (tool call, approval request, input collection, or the final assistant text) reuses it so the live
+preview swaps onto the settled row with no layout shift. Parallel tool calls in the same step mint fresh ids for siblings and leave
+`reasoning` null on them — one Thought block, then N pills. Thought summaries are **per step**, not concatenated across the turn: a
+tool-bearing step's thoughts land on that tool row; the final answer step's thoughts land on `ChatMessageAssistantText.reasoning`. Clients
+clear live streaming/reasoning buffers when any matching `MessageAppended` arrives. `ChatUpdateTurnEnded` fires exactly once per turn
+(success, agent throw, or downstream publish failure) so the client can tear down its per-turn state without waiting on the kicking-off
+mutation.
 
 Three rules fall out of this:
 

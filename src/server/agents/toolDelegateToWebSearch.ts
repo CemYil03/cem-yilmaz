@@ -4,12 +4,12 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { chatPersistStep } from '../commands/chatAssistantTurnRun';
 import type { OnStepEndContext, OnStepEndStep } from '../commands/chatAssistantTurnRun';
-import { chatMessageAppend } from '../commands/chatMessageAppend';
-import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolCallCreate } from '../db/schema';
 import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantWebSearch } from './agentPersonalAssistantWebSearch';
+import type { ChatStepArtifact } from './chatStepArtifact';
+import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 
 // Orchestrator-side tool that delegates a batch of web-search briefs to
 // `agentPersonalAssistantWebSearch`. Runs one sub-agent per brief
@@ -68,6 +68,9 @@ interface DelegateToWebSearchContext {
     // `toolCallId` to this set so the orchestrator's `onStepEnd` skips
     // writing a second row for the call.
     preWrittenToolCallIds: Set<string>;
+    // Optional — when present, the pre-written parent row reuses this
+    // step's live Thinking id + thought summary.
+    stepArtifact?: ChatStepArtifact;
 }
 
 // Same one-line summary shape used by `toolDelegateToProjects` for its
@@ -99,6 +102,7 @@ export function toolDelegateToWebSearch({
     chatId,
     generationId,
     preWrittenToolCallIds,
+    stepArtifact,
 }: DelegateToWebSearchContext) {
     return tool({
         description: [
@@ -123,30 +127,18 @@ export function toolDelegateToWebSearch({
         inputSchema: delegateToWebSearchInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;
-            // Pre-write the delegate row so every sub-agent's child rows have
-            // an existing parent to FK against. `toolResult` and `resultedAt`
-            // are filled in below after the batch settles.
-            const parentChatMessageId = crypto.randomUUID();
-            const parentSpine: ChatMessageRowCreate = {
-                chatMessageId: parentChatMessageId,
+            // Pre-write the delegate row so nested child tool calls have a
+            // parent to FK against; result is stamped after the sub-agent runs.
+            const parentChatMessageId = await chatDelegateParentPreWrite({
+                serverRuntime,
                 chatId,
-                kind: 'toolCall',
-                authorUserId: null,
-                parentChatMessageId: null,
-                createdAt: new Date(),
-            };
-            const parentVariant: ChatMessageToolCallCreate = {
-                chatMessageId: parentChatMessageId,
+                generationId,
                 toolCallId,
                 toolName: 'delegateToWebSearch',
                 toolArgs: input as JSONValue,
-                toolResult: null,
-                resultedAt: null,
-            };
-            await chatMessageAppend(db, serverRuntime, generationId, parentSpine, async (transaction) => {
-                await transaction.insert(chatMessagesToolCall).values(parentVariant);
+                preWrittenToolCallIds,
+                stepArtifact,
             });
-            preWrittenToolCallIds.add(toolCallId);
 
             // Sub-agent persistence — every tool call any sub-agent makes
             // lands as a child row pointing at `parentChatMessageId`. The

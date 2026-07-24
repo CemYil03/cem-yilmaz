@@ -50,9 +50,9 @@ export interface ChatTranscriptProps {
      *  after all persisted messages as sibling `MessageScrollerItem`s so the
      *  MessageScroller can follow growth while the reader is at the live edge. */
     streamingTexts: Readonly<Record<string, string>>;
-    /** Gemini thought-summary buffers, keyed by the same pre-allocated
-     *  assistant-text id. Shown collapsed above the answer (live while the
-     *  turn is open; settled after). Optional — Flash never emits these. */
+    /** Gemini thought-summary buffers, keyed by the current LLM step's
+     *  pre-allocated message id (tool / approval / collection / answer).
+     *  Optional — Flash never emits these. */
     reasoningTexts?: Readonly<Record<string, string>>;
     /** Submit handler for `ChatMessageAssistantInputCollection` prompts. The
      *  outermost provider owns the mutation (admin vs visitor) so this
@@ -135,23 +135,27 @@ export function ChatTranscript({
     const groupedMessages = groupMessagesByDate(topLevel);
     const streamingEntries = Object.entries(streamingTexts);
 
-    const persistedAssistantIds = useMemo(() => {
+    const persistedMessageIds = useMemo(() => {
         const ids = new Set<string>();
         for (const message of messages) {
-            if (message.__typename === 'ChatMessageAssistantText') ids.add(message.chatMessageId);
+            ids.add(message.chatMessageId);
         }
         return ids;
     }, [messages]);
 
-    // Live reasoning (not yet attached to a persisted assistant-text row) plus
-    // any in-flight streaming ids share one scroller slot per pre-allocated id.
+    // Live reasoning / streaming for step ids that are not yet in the
+    // transcript (the matching MessageAppended has not arrived). Once any
+    // variant reuses the step id, that row owns the Thoughts UI.
     const liveAssistantSlotIds = useMemo(() => {
-        const ids = new Set<string>(Object.keys(streamingTexts));
+        const ids = new Set<string>();
+        for (const id of Object.keys(streamingTexts)) {
+            if (!persistedMessageIds.has(id)) ids.add(id);
+        }
         for (const id of Object.keys(reasoningTexts)) {
-            if (!persistedAssistantIds.has(id)) ids.add(id);
+            if (!persistedMessageIds.has(id)) ids.add(id);
         }
         return [...ids];
-    }, [streamingTexts, reasoningTexts, persistedAssistantIds]);
+    }, [streamingTexts, reasoningTexts, persistedMessageIds]);
 
     // The trailing tool call shimmers "working on it" only while that call is
     // still open (`toolResult` null) on the live turn — settled tools yield
@@ -208,7 +212,10 @@ export function ChatTranscript({
                         const children =
                             message.__typename === 'ChatMessageToolCall' ? childrenByParentId.get(message.chatMessageId) : undefined;
                         const reasoning =
-                            message.__typename === 'ChatMessageAssistantText'
+                            message.__typename === 'ChatMessageAssistantText' ||
+                            message.__typename === 'ChatMessageToolCall' ||
+                            message.__typename === 'ChatMessageToolApprovalRequest' ||
+                            message.__typename === 'ChatMessageAssistantInputCollection'
                                 ? (reasoningTexts[message.chatMessageId] ?? message.reasoning ?? undefined)
                                 : undefined;
                         return (

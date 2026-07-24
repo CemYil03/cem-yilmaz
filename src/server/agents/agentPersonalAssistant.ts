@@ -147,6 +147,7 @@ export async function agentPersonalAssistant({
     chatId,
     currentPagePath,
     preWrittenToolCallIds,
+    stepArtifact,
     onStepEnd,
 }: AgentChatOptions) {
     const compassSummary = await compassSummaryFindOne(serverRuntime);
@@ -212,6 +213,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Media sub-agent — movies + favourite channels. TMDB search
             // lives inside this sub-agent as its own tool; the orchestrator
@@ -222,6 +224,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Medical sub-agent — health journal + appointments. Documentarian
             // with gentle triage; red-flag rules embedded in the sub-agent's
@@ -235,6 +238,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Travel sub-agent — trips, day-by-day itinerary, packing list.
             // The whole point of this delegate is durable trip planning: the
@@ -247,6 +251,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Nutrition sub-agent — cookbook, soft meal plan, food/drink diary.
             // Suggests snacks/meals from what Cem likes, logs what he ate, and
@@ -257,6 +262,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Fitness sub-agent — gym log (sessions + sets), routines, exercise
             // catalog. Logs workouts from chat and answers progression
@@ -267,6 +273,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Finances sub-agent — cashflow (income streams + recurring costs)
             // and wealth assets (Tagesgeld / ETF / stock / Bauspar with a
@@ -278,6 +285,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Inventory sub-agent — material belongings (electronics,
             // appliances, furniture, vehicles, …), what each is worth today
@@ -292,6 +300,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Tax sub-agent — the German tax return: tax years, income sources
             // (one per Anlage), deductible expenses, and the document
@@ -306,6 +315,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
             // Web search lives behind its own delegate sub-agent for one
             // reason: Gemini 2.5 rejects requests that mix provider-defined
@@ -323,6 +333,7 @@ export async function agentPersonalAssistant({
                 chatId,
                 generationId: assistantOptions.generationId,
                 preWrittenToolCallIds,
+                stepArtifact,
             }),
         },
     });

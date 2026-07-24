@@ -52,13 +52,18 @@ fragment ChatMessageFields on ChatMessage {
         args
         toolResult
         parentChatMessageId
+        reasoning
         createdAt
+        generation {
+            ...ChatMessageGeneration
+        }
     }
     ... on ChatMessageToolApprovalRequest {
         chatMessageId
         approvalId
         toolName
         args
+        reasoning
         createdAt
         generation {
             ...ChatMessageGeneration
@@ -75,6 +80,7 @@ fragment ChatMessageFields on ChatMessage {
         chatMessageId
         prompt
         mode
+        reasoning
         createdAt
         generation {
             ...ChatMessageGeneration
