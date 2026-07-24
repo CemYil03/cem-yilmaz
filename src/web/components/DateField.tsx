@@ -20,7 +20,8 @@ function DateField({
     onChange: (next: string) => void;
     required?: boolean;
     locale: Locale;
-    placeholder?: string;
+    /** Empty-state label. Required so callers can't ship an English-only default. */
+    placeholder: string;
 }) {
     return (
         <div className="relative">

@@ -66,8 +66,8 @@ The landing page (`/`) links into the page from its section grid; before this ch
 Static content + plain route. Revisit a DB-backed editor if the portfolio list outgrows PR edits.
 
 - **Data**: `src/web/content/portfolioProjects.ts` — typed `ReadonlyArray<PortfolioProject>` with `id`, `name`, optional `url` (omitted for
-  showcase-only projects), optional `repoUrl`, paired `*De` / `*En` text fields, an optional `facts: string[]` array of chip-sized tags, a
-  flat ordered `techStack: string[]` (most-distinctive items first, rendered in order), and the visual fields
+  showcase-only projects), optional `repoUrl`, paired `*De` / `*En` text fields, optional paired `factsDe` / `factsEn` arrays of chip-sized
+  tags, a flat ordered `techStack: string[]` (most-distinctive items first, rendered in order), and the visual fields
   (`images: ReadonlyArray<{ src; altDe; altEn }>`, `imageKind`, `accent`). The first entry of `images` is the hero; subsequent entries fill
   the thumbnail strip. Imported directly by the route.
 - **Route**: `src/routes/{-$locale}/projects.tsx` — single file, no GraphQL loader. Bilingual copy follows the inline `{ de, en }[locale]`
@@ -105,9 +105,9 @@ Per-project accent colors are defined as raw `oklch(...)` strings in `portfolioP
 
 Two small components surface project meta in the meta block:
 
-- **`FactBadges`** renders short chips (`'4 languages'`, `'EU-hosted'`, `'Live since 2022'`) right under the title. Neutral translucent
-  chips matching the `TechStack` family — primary-tinted variants visually outranked the role label above them in an earlier iteration.
-  Skipped silently when `facts` is empty or absent.
+- **`FactBadges`** renders short chips (`'4 languages'`, `'EU-hosted'`, `'Live since 2022'`) right under the title, picking `factsDe` /
+  `factsEn` by locale. Neutral translucent chips matching the `TechStack` family — primary-tinted variants visually outranked the role label
+  above them in an earlier iteration. Skipped silently when the locale's facts array is empty or absent.
 - **`TechStack`** renders the flat ordered `techStack` array as a wrapping row of subtle chips under a `Stack` label — translucent border,
   `text-foreground/80`, no fill colour beyond a faint white surface. Each item is a `<li>` so screen readers hear it as a list. The label is
   visible on `md+` (where the component owns the right column of the meta block) and `sr-only` on mobile (where it collapses into a plain

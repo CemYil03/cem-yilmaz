@@ -139,7 +139,7 @@ export function Header({
                             <div className="flex min-w-0 items-center gap-3 overflow-hidden">
                                 <Link
                                     to="/{-$locale}"
-                                    aria-label="Home"
+                                    aria-label={{ de: 'Startseite', en: 'Home' }[locale]}
                                     className="flex shrink-0 items-center transition-opacity hover:opacity-80 active:opacity-70"
                                 >
                                     <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />
@@ -224,7 +224,7 @@ export function Header({
                             <div className="flex items-center gap-2.5">
                                 <Link
                                     to="/{-$locale}"
-                                    aria-label="Home"
+                                    aria-label={{ de: 'Startseite', en: 'Home' }[locale]}
                                     className="flex items-center transition-opacity hover:opacity-80 active:opacity-70"
                                 >
                                     <img src="/favicon.ico" className="size-8 dark:hidden" alt="" />

@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover';
 function DateRangePicker({
     value,
     onValueChange,
-    placeholder = 'Pick a date',
+    placeholder,
     className,
     align = 'start',
     numberOfMonths = 2,
@@ -23,7 +23,8 @@ function DateRangePicker({
 }: {
     value?: DateRange;
     onValueChange?: (range: DateRange | undefined) => void;
-    placeholder?: string;
+    /** Empty-state label. Required so callers can't ship an English-only default. */
+    placeholder: string;
     className?: string;
     align?: React.ComponentProps<typeof PopoverContent>['align'];
     numberOfMonths?: number;

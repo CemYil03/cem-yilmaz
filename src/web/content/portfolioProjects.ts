@@ -12,10 +12,10 @@
 //
 // `techStack` is one flat ordered array — most-prominent / most-distinctive
 // items first. The route renders the items as a wrapping row of subtle
-// chips, in order, with no truncation. `facts` are short chip-sized tags
-// rendered near the title ("4 languages", "RTL support", "EU-hosted").
-// Both `facts` and tagline are concise on purpose — the layout leans on
-// the screenshot, not on copy.
+// chips, in order, with no truncation. `factsDe` / `factsEn` are short
+// chip-sized tags rendered near the title ("4 languages", "RTL support",
+// "EU-hosted"). Both facts and tagline are concise on purpose — the layout
+// leans on the screenshot, not on copy.
 //
 // Hero images live under `public/projects/<id>/` and are curated by hand
 // (sibling-repo exports, simulator screenshots, or one-off captures). Each
@@ -57,8 +57,9 @@ interface PortfolioProject {
     taglineEn: string;
     descriptionDe: string;
     descriptionEn: string;
-    /** Short chip-sized tags rendered near the title. Locale-independent. */
-    facts?: ReadonlyArray<string>;
+    /** Short chip-sized tags rendered near the title. Paired DE / EN. */
+    factsDe?: ReadonlyArray<string>;
+    factsEn?: ReadonlyArray<string>;
     /** Flat ordered tech list — most-distinctive items first. Rendered as
      *  a wrapping row of subtle chips. */
     techStack: ReadonlyArray<string>;
@@ -81,7 +82,8 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
             'Verantwortlich für technische Architektur und Umsetzung seit Tag eins — und Mitgestaltung der Geschäftsprozesse darüber hinaus. Eine zweiseitige Plattform für Gäste und Köche, ergänzt um einen umfangreichen Admin-Bereich als dritte Seite für Operations, Einblicke und Kuration. Mobile, Desktop und Barrierefreiheit als ein Produkt gedacht; SEO und GEO von Anfang an Teil der Architektur.',
         descriptionEn:
             'Owning technical architecture and implementation since day one — and shaping the business processes alongside. A two-sided platform for guests and chefs, complemented by an extensive admin space as a third side for operations, insights and curation. Mobile, desktop and accessibility treated as one product; SEO and GEO baked into the architecture from the start.',
-        facts: ['Live since 2022', 'DE + EN'],
+        factsDe: ['Live seit 2022', 'DE + EN'],
+        factsEn: ['Live since 2022', 'DE + EN'],
         techStack: [
             'TypeScript',
             'Next.js',
@@ -125,7 +127,8 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
             'Vollständig mehrsprachige Praxis-Website in vier Sprachen, inklusive RTL für Arabisch. Leistungen, Preisen und Terminanfragen sind durch einen KI-Assistenten ergänzt, der typische Fragen direkt beantwortet. Mobile-first, barrierefrei und sauber für SEO und GEO aufgesetzt — ersetzt die alte Jimdo-Seite durch einen modernen, eigens entwickelten Stack.',
         descriptionEn:
             'A fully multilingual practice website in four languages, with proper RTL support for Arabic. Services, pricing and appointment requests sit alongside an AI assistant that answers common questions directly. Mobile-first, accessibility-led and built properly for SEO and GEO — replacing the legacy Jimdo site with a modern, custom-built stack.',
-        facts: ['4 languages', 'RTL support'],
+        factsDe: ['4 Sprachen', 'RTL-Unterstützung'],
+        factsEn: ['4 languages', 'RTL support'],
         techStack: [
             'TypeScript',
             'React',
@@ -171,7 +174,8 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
             'Ein eigenes SaaS: Schemas im Team in Echtzeit entwerfen, bestehende Codebasen importieren (SQL, Drizzle, TypeORM) und produktionsreife Migrationen generieren. EU-gehostet und Open Source.',
         descriptionEn:
             'A self-built SaaS: design schemas with your team in real-time, import existing codebases (SQL, Drizzle, TypeORM) and generate production-ready migrations. EU-hosted and open source.',
-        facts: ['EU-hosted', 'Open source'],
+        factsDe: ['EU-gehostet', 'Open Source'],
+        factsEn: ['EU-hosted', 'Open source'],
         techStack: [
             'TypeScript',
             'React',
@@ -218,7 +222,8 @@ export const portfolioProjects: ReadonlyArray<PortfolioProject> = [
             'Nativ in SwiftUI entwickelte iPad-App, die einen neuen ergotherapeutischen Trainingsansatz für die Doktorarbeit einer Doktorandin überprüfbar macht. Übungen, Patientenakten und Verlaufsdaten werden lokal über SwiftData persistiert; Swift Charts visualisiert Fortschritt und Bewegungsmuster über die Zeit. Vollständig auf Querformat und Tablet-Workflows optimiert.',
         descriptionEn:
             'A native iPad app built in SwiftUI to validate a new occupational-therapy training approach as part of a doctoral dissertation. Exercises, patient records and progress data are persisted locally via SwiftData; Swift Charts visualizes progress and movement patterns over time. Built entirely around landscape and tablet-first workflows.',
-        facts: ['iPad only', 'Landscape', 'Research tool'],
+        factsDe: ['Nur iPad', 'Querformat', 'Forschungstool'],
+        factsEn: ['iPad only', 'Landscape', 'Research tool'],
         techStack: ['Swift', 'SwiftUI', 'SwiftData', 'Swift Charts', 'iPadOS'],
         imageKind: 'ipad',
         accent: 'oklch(0.74 0.13 200)', // calm cyan — clinical, not corporate

@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover';
 function DatePicker({
     value,
     onValueChange,
-    placeholder = 'Pick a date',
+    placeholder,
     className,
     align = 'start',
     disabled,
@@ -21,7 +21,8 @@ function DatePicker({
 }: {
     value?: Date;
     onValueChange?: (date: Date | undefined) => void;
-    placeholder?: string;
+    /** Empty-state label. Required so callers can't ship an English-only default. */
+    placeholder: string;
     className?: string;
     align?: React.ComponentProps<typeof PopoverContent>['align'];
     disabled?: React.ComponentProps<typeof Calendar>['disabled'];

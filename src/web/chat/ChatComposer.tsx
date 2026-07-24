@@ -152,10 +152,10 @@ export function ChatComposer({
     // user knows what the active model accepts before opening the picker.
     const attachmentsTitle = activeModel
         ? {
-              de: `Anhängen (${formatMediaTypeHint(activeModel.supportedMediaTypes)})`,
-              en: `Attach (${formatMediaTypeHint(activeModel.supportedMediaTypes)})`,
+              de: `Anhängen (${formatMediaTypeHint(activeModel.supportedMediaTypes, locale)})`,
+              en: `Attach (${formatMediaTypeHint(activeModel.supportedMediaTypes, locale)})`,
           }[locale]
-        : undefined;
+        : { de: 'Anhängen', en: 'Attach files' }[locale];
 
     const updateAttachment = useCallback((localId: string, patch: Partial<ComposerAttachment>) => {
         setAttachments((current) =>
@@ -182,13 +182,13 @@ export function ChatComposer({
                             fileUploadId: uploaded.fileUploadId,
                         });
                     } catch (error) {
-                        const message = error instanceof Error ? error.message : 'Upload failed';
+                        const message = uploadErrorMessage(error, locale);
                         updateAttachment(attachment.localId, { status: 'error', error: message });
                     }
                 })();
             }
         },
-        [updateAttachment],
+        [updateAttachment, locale],
     );
 
     const onAttachmentRemove = useCallback((localId: string) => {
@@ -291,13 +291,13 @@ export function ChatComposer({
 // Shortens a list of IANA media types into a tooltip-friendly hint —
 // `application/pdf` → "PDF",
 // `application/vnd.openxmlformats-officedocument.wordprocessingml.document` → "Word",
-// any `image/*` collapses to "images". Used only for the paperclip tooltip;
+// any `image/*` collapses to "images" / "Bilder". Used only for the paperclip tooltip;
 // the actual `accept` filter still carries the full list.
-function formatMediaTypeHint(mediaTypes: ReadonlyArray<string>): string {
+function formatMediaTypeHint(mediaTypes: ReadonlyArray<string>, locale: Locale): string {
     const labels = new Set<string>();
     for (const mediaType of mediaTypes) {
         if (mediaType.startsWith('image/')) {
-            labels.add('images');
+            labels.add({ de: 'Bilder', en: 'images' }[locale]);
         } else if (mediaType === 'application/pdf') {
             labels.add('PDF');
         } else if (mediaType.includes('wordprocessingml') || mediaType === 'application/msword') {
@@ -305,8 +305,22 @@ function formatMediaTypeHint(mediaTypes: ReadonlyArray<string>): string {
         } else if (mediaType.includes('spreadsheetml') || mediaType === 'application/vnd.ms-excel') {
             labels.add('Excel');
         } else if (mediaType.startsWith('text/')) {
-            labels.add('text');
+            labels.add({ de: 'Text', en: 'text' }[locale]);
         }
     }
     return Array.from(labels).join(', ');
+}
+
+function uploadErrorMessage(error: unknown, locale: Locale): string {
+    if (!(error instanceof Error)) {
+        return { de: 'Upload fehlgeschlagen', en: 'Upload failed' }[locale];
+    }
+    // `uploadFile` emits `Upload failed (NNN)` when the server body isn't a
+    // structured `{ error }` — localize that technical fallback; keep any
+    // other message (including server-provided copy) as-is.
+    const match = /^Upload failed \((\d+)\)$/.exec(error.message);
+    if (match) {
+        return { de: `Upload fehlgeschlagen (${match[1]})`, en: `Upload failed (${match[1]})` }[locale];
+    }
+    return error.message;
 }

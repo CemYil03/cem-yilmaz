@@ -4,6 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GqlCFileUpload } from '../../graphql/generated';
 import { ChatAttachmentTileGrid } from './ChatAttachmentTileGrid';
 
+vi.mock('../../hooks/useLocale', () => ({
+    useLocale: () => 'en' as const,
+}));
+
 // RTL's automatic cleanup only fires when a global setup file calls it; this
 // project doesn't ship a vitest setup file, so we run cleanup manually so
 // renders from earlier tests don't leak into later ones.

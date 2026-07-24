@@ -416,6 +416,7 @@ function DateControl({
             onValueChange={(next) => onChange(next ? formatIsoDate(next) : undefined)}
             className="w-full"
             locale={DATE_FNS_LOCALE[locale]}
+            placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
         />
     );
 }
@@ -448,6 +449,7 @@ function DateRangeControl({
             }
             className="w-full"
             locale={DATE_FNS_LOCALE[locale]}
+            placeholder={{ de: 'Zeitraum wählen', en: 'Pick dates' }[locale]}
         />
     );
 }
@@ -538,6 +540,7 @@ function DateTimeControl({ value, onChange }: { value: DateTimeDraft | undefined
                 onValueChange={(next) => onChange({ date: next ? formatIsoDate(next) : undefined, time: value?.time })}
                 className="flex-1"
                 locale={DATE_FNS_LOCALE[locale]}
+                placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
             />
             <Input
                 type="time"

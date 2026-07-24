@@ -1005,6 +1005,7 @@ function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; l
                                         value={form.releaseDate}
                                         onChange={(next) => setForm({ ...form, releaseDate: next })}
                                         locale={locale}
+                                        placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                                     />
                                 </Field>
                                 <Field label={{ de: 'Gesehen am', en: 'Watched on' }[locale]}>
@@ -1012,6 +1013,7 @@ function MovieEditDialog({ movie, locale, onClose }: { movie: MovieRow | null; l
                                         value={form.watchedAt ? form.watchedAt.slice(0, 10) : ''}
                                         onChange={(next) => setForm({ ...form, watchedAt: next ? `${next}T00:00:00.000Z` : '' })}
                                         locale={locale}
+                                        placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                                     />
                                 </Field>
                             </div>
@@ -1773,6 +1775,7 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
                                         value={form.firstAirDate}
                                         onChange={(next) => setForm({ ...form, firstAirDate: next })}
                                         locale={locale}
+                                        placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                                     />
                                 </Field>
                             </div>
@@ -1811,6 +1814,7 @@ function ShowEditDialog({ show, locale, onClose }: { show: ShowRow | null; local
                                             value={form.nextSeasonReleaseDate}
                                             onChange={(next) => setForm({ ...form, nextSeasonReleaseDate: next })}
                                             locale={locale}
+                                            placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                                         />
                                     </Field>
                                     <Field label={{ de: 'Nächste Staffel (ungefähr)', en: 'Next season (rough)' }[locale]}>

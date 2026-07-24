@@ -207,7 +207,7 @@ call site.
 bookmark-friendly, sharable, refresh-safe. Layout: the transcript centered on `max-w-3xl` and the shared composer parked at the viewport
 bottom. The chat title lives in the workspace header's trailing breadcrumb (via `WorkspaceHeader`'s `TRAILING_LABEL_SELECTORS`) — the
 in-page header is gone so the reading column starts at the top with no redundant title bar, and the "Workspace" crumb is the only "back"
-affordance. Untitled chats (titler hasn't run yet) fall back to "Untitled" in the crumb rather than exposing the raw id.
+affordance. Untitled chats (titler hasn't run yet) fall back to a localised "Ohne Titel" / "Untitled" crumb rather than exposing the raw id.
 
 Fresh chats start from the workspace hub composer (`/workspace`) — the sidebar covers "resume an existing chat", the hub covers "start a new
 one", so this route needs no landing / index sibling and no in-page "New chat" button.

@@ -272,7 +272,7 @@ function ValuationsSection({ item, locale }: { item: ItemDetail; locale: Locale 
                 </GlassCard>
             ) : (
                 <GlassCard className="px-5 py-4">
-                    <Sparkline points={valuations} />
+                    <Sparkline points={valuations} locale={locale} />
                     <ul className="mt-4 divide-y divide-border/60 text-sm">
                         {valuations.map((v) => (
                             <li key={v.valuationId} className="flex items-center justify-between gap-3 py-2">
@@ -294,7 +294,7 @@ function ValuationsSection({ item, locale }: { item: ItemDetail; locale: Locale 
     );
 }
 
-function Sparkline({ points }: { points: ReadonlyArray<Valuation> }) {
+function Sparkline({ points, locale }: { points: ReadonlyArray<Valuation>; locale: Locale }) {
     // Ordered oldest-first for the trend line. Server returns newest-first.
     const ordered = useMemo(() => [...points].reverse(), [points]);
     if (ordered.length < 2) return null;
@@ -312,7 +312,12 @@ function Sparkline({ points }: { points: ReadonlyArray<Valuation> }) {
         })
         .join(' ');
     return (
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16" role="img" aria-label="Value over time">
+        <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-16"
+            role="img"
+            aria-label={{ de: 'Wertverlauf', en: 'Value over time' }[locale]}
+        >
             <path d={path} fill="none" stroke="currentColor" strokeWidth="1.5" className="text-primary" />
         </svg>
     );
@@ -578,7 +583,9 @@ function FileCard({
                         className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
                     >
                         <div className="flex items-center gap-2 text-sm font-medium truncate">
-                            {file.pinned ? <PinIcon className="size-3 text-amber-500" aria-label="Pinned" /> : null}
+                            {file.pinned ? (
+                                <PinIcon className="size-3 text-amber-500" aria-label={{ de: 'Angepinnt', en: 'Pinned' }[locale]} />
+                            ) : null}
                             <span className="truncate">{file.label ?? file.fileUpload.filename}</span>
                         </div>
                         <div className="text-[10px] text-muted-foreground truncate">
@@ -804,6 +811,7 @@ function ServiceEntryDialog({
                             onValueChange={setPerformedAt}
                             locale={DATE_FNS_LOCALE[locale]}
                             captionLayout="dropdown"
+                            placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
                         />
                     </label>
                     <label className="flex flex-col gap-1.5 text-sm">
@@ -827,6 +835,7 @@ function ServiceEntryDialog({
                             onValueChange={setNextDueAt}
                             locale={DATE_FNS_LOCALE[locale]}
                             captionLayout="dropdown"
+                            placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                         />
                     </label>
                     <label className="flex flex-col gap-1.5 text-sm sm:col-span-2">

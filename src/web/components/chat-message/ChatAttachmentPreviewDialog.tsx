@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { formatBytes } from '../../../shared';
 import { previewKindFor } from '../../chat/chatAttachmentPreview';
 import type { GqlCFileUpload } from '../../graphql/generated';
+import { useLocale } from '../../hooks/useLocale';
 import { cn } from '../../utils/cn';
+import type { Locale } from '../../utils/locale';
 import { AssistantMarkdown } from '../AssistantMarkdown';
 import { Button } from '../base/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../base/dialog';
@@ -37,6 +39,7 @@ interface ChatAttachmentPreviewDialogProps {
 }
 
 export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, index, onIndexChange }: ChatAttachmentPreviewDialogProps) {
+    const locale = useLocale();
     const total = attachments.length;
     // Defensive clamp — if the caller passes an out-of-range index (e.g.
     // attachments shrank under it) we fall back to 0 rather than crashing
@@ -83,11 +86,14 @@ export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, i
             })
             .catch((error: unknown) => {
                 if (controller.signal.aborted) return;
-                const message = error instanceof Error ? error.message : 'Failed to load preview';
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : { de: 'Vorschau konnte nicht geladen werden', en: 'Failed to load preview' }[locale];
                 setTextState({ status: 'error', text: '', error: message });
             });
         return () => controller.abort();
-    }, [needsTextFetch, current]);
+    }, [needsTextFetch, current, locale]);
 
     // Keyboard navigation — listens on `window` while the dialog is open so
     // arrow keys work regardless of which element inside the dialog is
@@ -111,6 +117,7 @@ export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, i
 
     const goPrev = () => onIndexChange((safeIndex - 1 + total) % total);
     const goNext = () => onIndexChange((safeIndex + 1) % total);
+    const ofLabel = { de: `${safeIndex + 1} von ${total}`, en: `${safeIndex + 1} of ${total}` }[locale];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -119,13 +126,13 @@ export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, i
                     <DialogTitle className="truncate text-base">{current.filename}</DialogTitle>
                     <DialogDescription className="text-xs">
                         {current.mediaType} · {formatBytes(current.size)}
-                        {total > 1 ? ` · ${safeIndex + 1} of ${total}` : null}
+                        {total > 1 ? ` · ${ofLabel}` : null}
                     </DialogDescription>
                 </div>
 
                 <div className="relative flex min-h-0 items-center justify-center overflow-hidden rounded-md bg-muted/40">
                     <div className="flex size-full min-h-0 items-center justify-center overflow-auto p-2">
-                        <PreviewBody attachment={current} kind={previewKind} textState={textState} />
+                        <PreviewBody attachment={current} kind={previewKind} textState={textState} locale={locale} />
                     </div>
                     {total > 1 ? (
                         <>
@@ -133,7 +140,7 @@ export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, i
                                 type="button"
                                 variant="secondary"
                                 size="icon"
-                                aria-label="Previous attachment"
+                                aria-label={{ de: 'Vorheriger Anhang', en: 'Previous attachment' }[locale]}
                                 onClick={goPrev}
                                 className="absolute top-1/2 left-2 -translate-y-1/2 shadow-md"
                             >
@@ -143,7 +150,7 @@ export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, i
                                 type="button"
                                 variant="secondary"
                                 size="icon"
-                                aria-label="Next attachment"
+                                aria-label={{ de: 'Nächster Anhang', en: 'Next attachment' }[locale]}
                                 onClick={goNext}
                                 className="absolute top-1/2 right-2 -translate-y-1/2 shadow-md"
                             >
@@ -157,7 +164,7 @@ export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, i
                     <Button asChild variant="outline" size="sm">
                         <a href={current.url} target="_blank" rel="noreferrer">
                             <ExternalLinkIcon />
-                            Open in new tab
+                            {{ de: 'In neuem Tab öffnen', en: 'Open in new tab' }[locale]}
                         </a>
                     </Button>
                     <Button asChild variant="default" size="sm">
@@ -167,7 +174,7 @@ export function ChatAttachmentPreviewDialog({ open, onOpenChange, attachments, i
                             is what flips the browser to "save" mode. */}
                         <a href={current.url} download={current.filename}>
                             <DownloadIcon />
-                            Download
+                            {{ de: 'Herunterladen', en: 'Download' }[locale]}
                         </a>
                     </Button>
                 </div>
@@ -180,10 +187,12 @@ function PreviewBody({
     attachment,
     kind,
     textState,
+    locale,
 }: {
     attachment: GqlCFileUpload;
     kind: ReturnType<typeof previewKindFor>;
     textState: { status: 'idle' | 'loading' | 'loaded' | 'error'; text: string; error?: string };
+    locale: Locale;
 }) {
     if (kind === 'image') {
         return <img src={attachment.url} alt={attachment.filename} className="max-h-[70vh] max-w-full object-contain" />;
@@ -194,7 +203,16 @@ function PreviewBody({
             return <Spinner className="size-5 text-muted-foreground" />;
         }
         if (textState.status === 'error') {
-            return <div className="text-sm text-destructive">Could not load preview: {textState.error ?? 'unknown error'}</div>;
+            return (
+                <div className="text-sm text-destructive">
+                    {
+                        {
+                            de: `Vorschau konnte nicht geladen werden: ${textState.error ?? 'unbekannter Fehler'}`,
+                            en: `Could not load preview: ${textState.error ?? 'unknown error'}`,
+                        }[locale]
+                    }
+                </div>
+            );
         }
         if (kind === 'markdown') {
             return (
@@ -226,7 +244,12 @@ function PreviewBody({
                     {attachment.mediaType} · {formatBytes(attachment.size)}
                 </div>
                 <div className="mt-2 max-w-sm text-xs text-muted-foreground">
-                    No inline preview available for this file type. Use Open in new tab or Download to view it.
+                    {
+                        {
+                            de: 'Für diesen Dateityp ist keine Inline-Vorschau verfügbar. Nutze „In neuem Tab öffnen“ oder „Herunterladen“.',
+                            en: 'No inline preview available for this file type. Use Open in new tab or Download to view it.',
+                        }[locale]
+                    }
                 </div>
             </div>
         </div>

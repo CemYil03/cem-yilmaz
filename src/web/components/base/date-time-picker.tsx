@@ -17,7 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover';
 function DateTimePicker({
     value,
     onValueChange,
-    placeholder = 'Pick a date & time',
+    placeholder,
+    timeAriaLabel,
     className,
     align = 'start',
     disabled,
@@ -25,7 +26,10 @@ function DateTimePicker({
 }: {
     value?: Date;
     onValueChange?: (date: Date) => void;
-    placeholder?: string;
+    /** Empty-state label. Required so callers can't ship an English-only default. */
+    placeholder: string;
+    /** Accessible name for the time input. Required for the same reason. */
+    timeAriaLabel: string;
     className?: string;
     align?: React.ComponentProps<typeof PopoverContent>['align'];
     disabled?: React.ComponentProps<typeof Calendar>['disabled'];
@@ -72,7 +76,13 @@ function DateTimePicker({
             <PopoverContent className="w-auto p-0" align={align}>
                 <Calendar mode="single" selected={value} onSelect={setDay} defaultMonth={value} disabled={disabled} locale={locale} />
                 <div className="flex items-center gap-2 border-t border-border/60 p-3">
-                    <Input type="time" value={timeValue} onChange={(e) => setTime(e.target.value)} className="w-full" aria-label="Time" />
+                    <Input
+                        type="time"
+                        value={timeValue}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="w-full"
+                        aria-label={timeAriaLabel}
+                    />
                 </div>
             </PopoverContent>
         </Popover>

@@ -1,6 +1,7 @@
 import { XIcon } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import * as React from 'react';
+import { useLocale } from '../../hooks/useLocale';
 import { cn } from '../../utils/cn';
 import { Button } from './button';
 
@@ -41,6 +42,8 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
     showCloseButton?: boolean;
 }) {
+    const locale = useLocale();
+    const closeLabel = { de: 'Schließen', en: 'Close' }[locale];
     return (
         <DialogPortal data-slot="dialog-portal">
             <DialogOverlay />
@@ -59,7 +62,7 @@ function DialogContent({
                         className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 cursor-pointer"
                     >
                         <XIcon />
-                        <span className="sr-only">Close</span>
+                        <span className="sr-only">{closeLabel}</span>
                     </DialogPrimitive.Close>
                 )}
             </DialogPrimitive.Content>
@@ -79,12 +82,14 @@ function DialogFooter({
 }: React.ComponentProps<'div'> & {
     showCloseButton?: boolean;
 }) {
+    const locale = useLocale();
+    const closeLabel = { de: 'Schließen', en: 'Close' }[locale];
     return (
         <div data-slot="dialog-footer" className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)} {...props}>
             {children}
             {showCloseButton && (
                 <DialogPrimitive.Close asChild>
-                    <Button variant="outline">Close</Button>
+                    <Button variant="outline">{closeLabel}</Button>
                 </DialogPrimitive.Close>
             )}
         </div>

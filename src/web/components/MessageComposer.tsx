@@ -63,7 +63,7 @@ export interface ComposerAttachment {
     error?: string;
 }
 
-export interface MessageComposerProps {
+export type MessageComposerProps = {
     /** Current draft text. */
     value: string;
     /** Called on every keystroke with the next draft text. */
@@ -83,24 +83,9 @@ export interface MessageComposerProps {
     /** Optional content rendered inside the bottom addon, left of the Send
      *  button. Use this for feature-specific controls like a mode selector. */
     addonStart?: ReactNode;
-    /** Currently-attached files. Pass together with `onAttachmentsChange` to
-     *  enable the paperclip button, drop-zone behavior, and preview row. */
-    attachments?: readonly ComposerAttachment[];
-    /** Called whenever the parent should add new files (picker / drop). The
-     *  parent assigns `localId`s, kicks off uploads, and pushes onto its
-     *  state. */
-    onAttachmentsAdd?: (files: File[]) => void;
-    /** Called when the user clicks an X on a tile. The parent removes the
-     *  matching `localId` from its state (and may cancel an in-flight upload). */
-    onAttachmentRemove?: (localId: string) => void;
     /** Restricts both the file picker and accepted drops. Same syntax as
      *  `<input accept="...">`. */
     accept?: string;
-    /** Optional tooltip / aria-label on the paperclip button — useful for callers that
-     *  want to surface "PDF, Word, images" alongside the icon so the user knows
-     *  what types the active model accepts before they open the picker. Falls
-     *  back to a bilingual "Attach files" label when unset. */
-    attachmentsTitle?: string;
     /** Whether the picker accepts multiple files at once. Defaults to true.
      *  Drops are similarly clamped to one file when this is false. */
     multipleAttachments?: boolean;
@@ -113,7 +98,27 @@ export interface MessageComposerProps {
      *  is the page's primary affordance (e.g. the workspace hub) so the user
      *  can start typing without clicking. */
     autoFocus?: boolean;
-}
+} & (
+    | {
+          /** Currently-attached files. Pass together with `onAttachmentsAdd` /
+           *  `onAttachmentRemove` / `attachmentsTitle` to enable the paperclip. */
+          attachments: readonly ComposerAttachment[];
+          /** Called whenever the parent should add new files (picker / drop). */
+          onAttachmentsAdd: (files: File[]) => void;
+          /** Called when the user clicks an X on a tile. */
+          onAttachmentRemove: (localId: string) => void;
+          /** Tooltip / aria-label on the paperclip — required with attachments
+           *  so callers can't ship an English-only fallback. Surface accepted
+           *  types when known (e.g. "Attach (PDF, Word)"). */
+          attachmentsTitle: string;
+      }
+    | {
+          attachments?: undefined;
+          onAttachmentsAdd?: undefined;
+          onAttachmentRemove?: undefined;
+          attachmentsTitle?: undefined;
+      }
+);
 
 export function MessageComposer({
     value,
@@ -136,8 +141,10 @@ export function MessageComposer({
     const locale = useLocale();
     const isMobile = useIsMobile();
     const sendLabel = { de: 'Senden', en: 'Send' }[locale];
-    const attachLabel = attachmentsTitle ?? { de: 'Anhängen', en: 'Attach files' }[locale];
-    const attachmentsEnabled = onAttachmentsAdd !== undefined && onAttachmentRemove !== undefined;
+    // Attachments are a discriminated union: when `onAttachmentsAdd` is set,
+    // `onAttachmentRemove` + `attachmentsTitle` are required too — so one
+    // check is enough to enable the paperclip surface.
+    const attachmentsEnabled = onAttachmentsAdd !== undefined;
     const currentAttachments = attachments ?? [];
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -339,60 +346,74 @@ export function MessageComposer({
                                         // this group to the trailing edge.
                                         className={addonStart ? 'shrink-0' : 'ml-auto shrink-0'}
                                         disabled={inputsLocked}
-                                        aria-label={attachLabel}
+                                        aria-label={attachmentsTitle}
                                         onClick={() => fileInputRef.current?.click()}
                                     >
                                         <PaperclipIcon />
                                     </InputGroupButton>
                                 </TooltipTrigger>
-                                <TooltipContent side="top">{attachLabel}</TooltipContent>
+                                <TooltipContent side="top">{attachmentsTitle}</TooltipContent>
                             </Tooltip>
                         </>
                     ) : null}
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <InputGroupButton
-                                type="submit"
-                                variant="default"
-                                size="icon-xs"
+                            {/* Cursor lives on the wrapper so the disabled
+                                button can keep `pointer-events-none` (no
+                                hover/active flash) while hover still shows
+                                not-allowed when Send isn't available. */}
+                            <span
                                 className={cn(
-                                    // Lift + colour-shift the instant the draft is
-                                    // non-empty — answers "I noticed you typed
-                                    // something." Tailwind's `disabled:` already
-                                    // dims the button via opacity-50, so this just
-                                    // adds a tiny rise on the ready state.
-                                    'shrink-0 transition-all duration-200',
-                                    'enabled:-translate-y-px',
-                                    'motion-reduce:enabled:translate-y-0',
+                                    'inline-flex shrink-0',
                                     attachmentsEnabled || addonStart ? undefined : 'ml-auto',
+                                    !canSubmit && 'cursor-not-allowed',
                                 )}
-                                disabled={!canSubmit}
-                                aria-label={sendLabel}
                             >
-                                {/* Icon stack — exactly one visible at a time,
-                                    crossfaded so the swap reads as a state
-                                    change rather than a pop. */}
-                                <span className="relative grid place-items-center">
-                                    <ArrowUpIcon
-                                        aria-hidden
-                                        className={cn('transition-opacity duration-150', busy || showSent ? 'opacity-0' : 'opacity-100')}
-                                    />
-                                    <Spinner
-                                        aria-hidden
-                                        className={cn(
-                                            'absolute inset-0 transition-opacity duration-150',
-                                            busy ? 'opacity-100' : 'opacity-0',
-                                        )}
-                                    />
-                                    <CheckIcon
-                                        aria-hidden
-                                        className={cn(
-                                            'absolute inset-0 transition-opacity duration-150',
-                                            !busy && showSent ? 'opacity-100' : 'opacity-0',
-                                        )}
-                                    />
-                                </span>
-                            </InputGroupButton>
+                                <InputGroupButton
+                                    type="submit"
+                                    variant="default"
+                                    size="icon-xs"
+                                    className={cn(
+                                        // Lift + colour-shift the instant the draft is
+                                        // non-empty — answers "I noticed you typed
+                                        // something." Tailwind's `disabled:` already
+                                        // dims the button via opacity-50, so this just
+                                        // adds a tiny rise on the ready state.
+                                        'transition-all duration-200',
+                                        'enabled:-translate-y-px',
+                                        'motion-reduce:enabled:translate-y-0',
+                                    )}
+                                    disabled={!canSubmit}
+                                    aria-label={sendLabel}
+                                >
+                                    {/* Icon stack — exactly one visible at a time,
+                                        crossfaded so the swap reads as a state
+                                        change rather than a pop. */}
+                                    <span className="relative grid place-items-center">
+                                        <ArrowUpIcon
+                                            aria-hidden
+                                            className={cn(
+                                                'transition-opacity duration-150',
+                                                busy || showSent ? 'opacity-0' : 'opacity-100',
+                                            )}
+                                        />
+                                        <Spinner
+                                            aria-hidden
+                                            className={cn(
+                                                'absolute inset-0 transition-opacity duration-150',
+                                                busy ? 'opacity-100' : 'opacity-0',
+                                            )}
+                                        />
+                                        <CheckIcon
+                                            aria-hidden
+                                            className={cn(
+                                                'absolute inset-0 transition-opacity duration-150',
+                                                !busy && showSent ? 'opacity-100' : 'opacity-0',
+                                            )}
+                                        />
+                                    </span>
+                                </InputGroupButton>
+                            </span>
                         </TooltipTrigger>
                         <TooltipContent side="top">{sendLabel}</TooltipContent>
                     </Tooltip>
@@ -411,6 +432,7 @@ function AttachmentPreview({
     disabled?: boolean;
     onRemove: () => void;
 }) {
+    const locale = useLocale();
     const { file, status, error } = attachment;
     const isImage = file.type.startsWith('image/');
     const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -442,7 +464,12 @@ function AttachmentPreview({
                 {description ? <AttachmentDescription>{description}</AttachmentDescription> : null}
             </AttachmentContent>
             <AttachmentActions>
-                <AttachmentAction type="button" disabled={disabled} onClick={onRemove} aria-label={`Remove ${file.name}`}>
+                <AttachmentAction
+                    type="button"
+                    disabled={disabled}
+                    onClick={onRemove}
+                    aria-label={{ de: `${file.name} entfernen`, en: `Remove ${file.name}` }[locale]}
+                >
                     <XIcon aria-hidden />
                 </AttachmentAction>
             </AttachmentActions>

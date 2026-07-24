@@ -1037,6 +1037,7 @@ function TaskForm({
                             onValueChange={(next) => setForm({ ...form, dueAt: next ? formatIsoDate(next) : '' })}
                             className="w-full"
                             locale={DATE_FNS_LOCALE[locale]}
+                            placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                         />
                     </Field>
                     <Field label={{ de: 'Aufwand', en: 'Effort' }[locale]}>

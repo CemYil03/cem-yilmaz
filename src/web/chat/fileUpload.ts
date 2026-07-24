@@ -42,6 +42,8 @@ export async function uploadFile(file: File, signal?: AbortSignal): Promise<Uplo
 
     if (!response.ok) {
         const text = await response.text().catch(() => '');
+        // English technical fallback — callers with a locale (e.g. ChatComposer)
+        // should replace this when the server didn't return a structured error.
         let message = `Upload failed (${response.status})`;
         try {
             const parsed = JSON.parse(text) as { error?: string };

@@ -7,6 +7,10 @@ import { ChatAttachmentPreviewDialog } from './ChatAttachmentPreviewDialog';
 
 afterEach(cleanup);
 
+vi.mock('../../hooks/useLocale', () => ({
+    useLocale: () => 'en' as const,
+}));
+
 // Streamdown brings in heavy plugins we don't need to verify here — stub the
 // shared markdown component to a recognizable wrapper so we can assert the
 // markdown branch ran without parsing remark/rehype on every test.

@@ -620,6 +620,7 @@ function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null;
                             onValueChange={(d) => setState((s) => ({ ...s, purchasedAt: d }))}
                             locale={DATE_FNS_LOCALE[locale]}
                             captionLayout="dropdown"
+                            placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
                         />
                     </Field>
                     <Field label={{ de: 'Kaufpreis (EUR)', en: 'Purchase price (EUR)' }[locale]}>
@@ -636,6 +637,7 @@ function EditItemDialog({ initial, locale, onClose }: { initial: ItemRow | null;
                             onValueChange={(d) => setState((s) => ({ ...s, warrantyEndsAt: d }))}
                             locale={DATE_FNS_LOCALE[locale]}
                             captionLayout="dropdown"
+                            placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                         />
                     </Field>
                     <Field label={{ de: 'Garantiegeber', en: 'Warranty provider' }[locale]}>

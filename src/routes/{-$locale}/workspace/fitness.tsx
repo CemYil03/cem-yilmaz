@@ -549,6 +549,7 @@ function EditSessionDialog({
                             onChange={(next) => setState((s) => ({ ...s, date: next }))}
                             required
                             locale={locale}
+                            placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
                         />
                     </Field>
                     <Field label={{ de: 'Titel', en: 'Title' }[locale]}>

@@ -1035,7 +1035,12 @@ function NewYearDialog({ existingYears, locale, onClose }: { existingYears: numb
                         <Input inputMode="numeric" value={yearText} onChange={(e) => setYearText(e.target.value)} autoFocus />
                     </Field>
                     <Field label={{ de: 'Abgabefrist', en: 'Deadline' }[locale]}>
-                        <DateField value={deadline} onChange={setDeadline} locale={locale} />
+                        <DateField
+                            value={deadline}
+                            onChange={setDeadline}
+                            locale={locale}
+                            placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
+                        />
                     </Field>
                 </div>
                 {isDuplicate ? (
@@ -1321,6 +1326,7 @@ function ExpenseDialog({
                             value={state.incurredOn}
                             onChange={(next) => setState((s) => ({ ...s, incurredOn: next }))}
                             locale={locale}
+                            placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
                         />
                     </Field>
                     <Field label={{ de: 'Zugeordnete Einnahmequelle', en: 'Linked income source' }[locale]}>

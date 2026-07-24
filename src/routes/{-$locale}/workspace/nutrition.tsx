@@ -1022,7 +1022,12 @@ function EditDiaryDialog({ initial, locale, onClose }: { initial: FoodLogRow | n
                         </Select>
                     </Field>
                     <Field label={{ de: 'Datum', en: 'Date' }[locale]}>
-                        <DateField value={state.date} onChange={(next) => setState((s) => ({ ...s, date: next }))} locale={locale} />
+                        <DateField
+                            value={state.date}
+                            onChange={(next) => setState((s) => ({ ...s, date: next }))}
+                            locale={locale}
+                            placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
+                        />
                     </Field>
                     <Field label={{ de: 'Uhrzeit', en: 'Time' }[locale]}>
                         <Input type="time" value={state.time} onChange={(e) => setState((s) => ({ ...s, time: e.target.value }))} />

@@ -91,6 +91,7 @@ function MarkdownAnchor({
     // keep the fallback guards honest.
     const router = useRouter({ warn: false }) as ReturnType<typeof useRouter> | undefined;
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const locale = localeFromPathname(router?.state.location.pathname);
 
     const linkClassName = cn('wrap-anywhere font-medium text-primary underline', className);
 
@@ -103,7 +104,6 @@ function MarkdownAnchor({
     }
 
     if (isInternalHref(href)) {
-        const locale = localeFromPathname(router?.state.location.pathname);
         const target = localizeInternalHref(href, locale);
         return (
             <a
@@ -147,19 +147,19 @@ function MarkdownAnchor({
             <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Externen Link öffnen? / Open external link?</AlertDialogTitle>
+                        <AlertDialogTitle>{{ de: 'Externen Link öffnen?', en: 'Open external link?' }[locale]}</AlertDialogTitle>
                         <AlertDialogDescription>
                             <span className="break-all font-mono text-xs">{href}</span>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Abbrechen / Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{{ de: 'Abbrechen', en: 'Cancel' }[locale]}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
                                 window.open(href, '_blank', 'noreferrer');
                             }}
                         >
-                            Öffnen / Open
+                            {{ de: 'Öffnen', en: 'Open' }[locale]}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

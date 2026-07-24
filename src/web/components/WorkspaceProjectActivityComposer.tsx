@@ -196,6 +196,8 @@ export function WorkspaceProjectActivityComposer({
                     onValueChange={(d) => setOccurredAt(d)}
                     locale={DATE_FNS_LOCALE[locale]}
                     className="h-8 w-[210px] text-xs"
+                    placeholder={{ de: 'Datum & Uhrzeit wählen', en: 'Pick a date & time' }[locale]}
+                    timeAriaLabel={{ de: 'Uhrzeit', en: 'Time' }[locale]}
                 />
                 {durationEnabled ? (
                     <Input

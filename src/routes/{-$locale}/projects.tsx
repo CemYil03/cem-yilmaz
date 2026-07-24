@@ -89,6 +89,7 @@ type Project = (typeof portfolioProjects)[number];
 function ProjectRow({ project, locale, index, total }: { project: Project; locale: Locale; index: number; total: number }) {
     const role = locale === 'de' ? project.roleDe : project.roleEn;
     const description = locale === 'de' ? project.descriptionDe : project.descriptionEn;
+    const facts = locale === 'de' ? project.factsDe : project.factsEn;
     const counter = `${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
 
     return (
@@ -105,7 +106,7 @@ function ProjectRow({ project, locale, index, total }: { project: Project; local
                 <div className="md:col-span-8 flex flex-col gap-4">
                     <div className="flex flex-col gap-3">
                         <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">{project.name}</h2>
-                        {project.facts && project.facts.length > 0 && <FactBadges items={project.facts} />}
+                        {facts && facts.length > 0 && <FactBadges items={facts} />}
                     </div>
                     <p className="text-base leading-relaxed text-foreground/85">{description}</p>
                     {(project.url || project.repoUrl) && (

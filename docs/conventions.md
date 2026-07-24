@@ -87,6 +87,12 @@ Hoist a string to a small local `const` only when one of the following narrow ex
 - **Long enough to drown out the JSX.** A multi-line marketing paragraph reads better as a named const above the `return` than wedged inside
   an element. Use judgement — a single sentence stays inline.
 
+**Caller-facing string props are mandatory.** Shared components that accept user-visible copy (`DatePicker` / `DateField` `placeholder`,
+`DateTimePicker` `timeAriaLabel`, `MessageComposer` `attachmentsTitle` when attachments are enabled) must require those props — never
+default to an English-only string. Callers pass `{ de, en }[locale]` at the call site so TypeScript catches omissions. Universal chrome
+inside base primitives (`Dialog` / `Sheet` close, `Spinner` loading, pagination labels) is localized via `useLocale()` inside the primitive
+so every surface inherits it.
+
 For bilingual **data** (CV rows, future projects/blog/tools), the rule is different — paired `*De` / `*En` columns in Postgres and the
 GraphQL schema. See [Bilingual columns](#bilingual-columns) above.
 

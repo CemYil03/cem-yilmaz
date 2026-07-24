@@ -3,7 +3,7 @@ import { BotIcon, ShieldCheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './base/select';
 import { MessageComposer } from './MessageComposer';
-import type { ComposerAttachment, MessageComposerProps } from './MessageComposer';
+import type { ComposerAttachment } from './MessageComposer';
 
 // `MessageComposer` is fully controlled — the parent owns `value`, `busy`,
 // `disabled`, and `attachments`. A small in-story harness wraps it so the
@@ -34,10 +34,12 @@ const meta = {
         ),
     ],
     tags: ['autodocs'],
-} satisfies Meta<typeof MessageComposer>;
+    // Discriminated attachment props make CSF `args` resolve to `never` under
+    // `satisfies Meta<typeof MessageComposer>` — cast keeps stories writable.
+} as Meta<typeof MessageComposer>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof MessageComposer>;
 
 // ─── Static states ─────────────────────────────────────────────────────────
 
@@ -165,6 +167,7 @@ export const AttachmentsAllStates: Story = {
     name: 'Attachments — uploading / uploaded / error',
     args: {
         attachments: attachmentsAllStates,
+        attachmentsTitle: 'Attach files',
         onAttachmentsAdd: () => {},
         onAttachmentRemove: () => {},
     },
@@ -174,6 +177,7 @@ export const AttachmentImageOnly: Story = {
     name: 'Attachment — image preview',
     args: {
         attachments: [{ localId: 'a-img', file: makeFile('photo.png', 'image/png'), status: 'uploaded', fileUploadId: 'fu-img' }],
+        attachmentsTitle: 'Attach files',
         onAttachmentsAdd: () => {},
         onAttachmentRemove: () => {},
     },
@@ -190,6 +194,7 @@ export const AttachmentNonImageOnly: Story = {
                 fileUploadId: 'fu-doc',
             },
         ],
+        attachmentsTitle: 'Attach files',
         onAttachmentsAdd: () => {},
         onAttachmentRemove: () => {},
     },
@@ -204,6 +209,7 @@ export const AttachmentsMany: Story = {
             status: 'uploaded' as const,
             fileUploadId: `fu-${index}`,
         })),
+        attachmentsTitle: 'Attach files',
         onAttachmentsAdd: () => {},
         onAttachmentRemove: () => {},
     },
@@ -226,54 +232,62 @@ export const SingleAttachmentMode: Story = {
 // A small wrapper that owns draft + attachments + busy state so the stories
 // behave the way the real surfaces behave. Click Send → spinner for ~900ms
 // → check flash → back to idle.
-function InteractiveComposer({ withAttachments = false, ...props }: Partial<MessageComposerProps> & { withAttachments?: boolean }) {
+function InteractiveComposer({ withAttachments = false }: { withAttachments?: boolean }) {
     const [value, setValue] = useState('');
     const [busy, setBusy] = useState(false);
     const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+
+    const onSubmit = () => {
+        setBusy(true);
+        window.setTimeout(() => {
+            setBusy(false);
+            setValue('');
+            setAttachments([]);
+        }, 900);
+    };
+
+    if (withAttachments) {
+        return (
+            <MessageComposer
+                value={value}
+                onValueChange={setValue}
+                onSubmit={onSubmit}
+                busy={busy}
+                placeholder="Type and press Enter — or attach a file"
+                attachments={attachments}
+                attachmentsTitle="Attach files"
+                onAttachmentsAdd={(files) => {
+                    // Fake an upload that resolves after ~600ms.
+                    const created: ComposerAttachment[] = files.map((file) => ({
+                        localId: crypto.randomUUID(),
+                        file,
+                        status: 'uploading' as const,
+                    }));
+                    setAttachments((current) => [...current, ...created]);
+                    for (const attachment of created) {
+                        window.setTimeout(() => {
+                            setAttachments((current) =>
+                                current.map((existing) =>
+                                    existing.localId === attachment.localId
+                                        ? { ...existing, status: 'uploaded', fileUploadId: `fu-${attachment.localId}` }
+                                        : existing,
+                                ),
+                            );
+                        }, 600);
+                    }
+                }}
+                onAttachmentRemove={(localId) => setAttachments((current) => current.filter((a) => a.localId !== localId))}
+            />
+        );
+    }
 
     return (
         <MessageComposer
             value={value}
             onValueChange={setValue}
-            onSubmit={() => {
-                setBusy(true);
-                window.setTimeout(() => {
-                    setBusy(false);
-                    setValue('');
-                    setAttachments([]);
-                }, 900);
-            }}
+            onSubmit={onSubmit}
             busy={busy}
             placeholder="Type and press Enter — or attach a file"
-            attachments={withAttachments ? attachments : undefined}
-            onAttachmentsAdd={
-                withAttachments
-                    ? (files) => {
-                          // Fake an upload that resolves after ~600ms.
-                          const created: ComposerAttachment[] = files.map((file) => ({
-                              localId: crypto.randomUUID(),
-                              file,
-                              status: 'uploading' as const,
-                          }));
-                          setAttachments((current) => [...current, ...created]);
-                          for (const attachment of created) {
-                              window.setTimeout(() => {
-                                  setAttachments((current) =>
-                                      current.map((existing) =>
-                                          existing.localId === attachment.localId
-                                              ? { ...existing, status: 'uploaded', fileUploadId: `fu-${attachment.localId}` }
-                                              : existing,
-                                      ),
-                                  );
-                              }, 600);
-                          }
-                      }
-                    : undefined
-            }
-            onAttachmentRemove={
-                withAttachments ? (localId) => setAttachments((current) => current.filter((a) => a.localId !== localId)) : undefined
-            }
-            {...props}
         />
     );
 }

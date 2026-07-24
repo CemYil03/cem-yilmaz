@@ -635,13 +635,18 @@ function AppointmentEditor({ appointment, onClose, locale }: { appointment: Appo
                     <div className="grid grid-cols-2 gap-3">
                         <label className="block text-sm">
                             <span className="text-muted-foreground">{{ de: 'Termin', en: 'When' }[locale]}</span>
-                            <DatePicker value={form.scheduledAt} onValueChange={(d) => d && setForm((f) => ({ ...f, scheduledAt: d }))} />
+                            <DatePicker
+                                value={form.scheduledAt}
+                                onValueChange={(d) => d && setForm((f) => ({ ...f, scheduledAt: d }))}
+                                placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
+                            />
                         </label>
                         <label className="block text-sm">
                             <span className="text-muted-foreground">{{ de: 'Nächster fällig', en: 'Next due' }[locale]}</span>
                             <DatePicker
                                 value={form.nextDueAt ?? undefined}
                                 onValueChange={(d) => setForm((f) => ({ ...f, nextDueAt: d ?? null }))}
+                                placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
                             />
                         </label>
                     </div>
@@ -1090,7 +1095,11 @@ function RecordEditor({
                     <div className="grid grid-cols-2 gap-3">
                         <label className="block text-sm">
                             <span className="text-muted-foreground">{{ de: 'Aufgetreten', en: 'Occurred at' }[locale]}</span>
-                            <DatePicker value={form.occurredAt} onValueChange={(d) => d && setForm((f) => ({ ...f, occurredAt: d }))} />
+                            <DatePicker
+                                value={form.occurredAt}
+                                onValueChange={(d) => d && setForm((f) => ({ ...f, occurredAt: d }))}
+                                placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
+                            />
                         </label>
                         <label className="block text-sm">
                             <span className="text-muted-foreground">{{ de: 'Zugehöriger Termin', en: 'Related appointment' }[locale]}</span>

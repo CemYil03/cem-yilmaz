@@ -128,7 +128,16 @@ function buildCrumbs(pathname: string, locale: Locale, trailing: TrailingLabel):
                 // loader provides a human string, and we render empty until
                 // it does — better than flashing a UUID at the user.
                 if (trailing.hasSelector) {
-                    return { label: trailing.label ?? '', icon };
+                    // `undefined` = loader still resolving (render empty).
+                    // `''` = resolved but untitled — localize the placeholder.
+                    // Non-empty = real title from the detail-route selector.
+                    const label =
+                        trailing.label === undefined
+                            ? ''
+                            : trailing.label.length > 0
+                              ? trailing.label
+                              : { de: 'Ohne Titel', en: 'Untitled' }[locale];
+                    return { label, icon };
                 }
                 return { label: fallbackLabel, icon };
             }
@@ -178,15 +187,15 @@ const TRAILING_LABEL_SELECTORS: ReadonlyArray<{
         // Assistant deep-link route — swap the cryptic chatId for the
         // chat's title so the breadcrumb reads e.g. "Assistant / Bike
         // service plan" instead of "Assistant / 8c1a…". Untitled chats
-        // (the LLM titler hasn't run yet) fall back to the same
-        // "Untitled" placeholder used by the sidebar and visitor sheet.
+        // (the LLM titler hasn't run yet) return `''`; `buildCrumbs`
+        // localizes that to "Ohne Titel" / "Untitled".
         routeId: '/{-$locale}/workspace/assistant/$chatId',
         select: (loaderData) => {
             const chat = (loaderData as { currentSession?: { user?: { admin?: { chat?: { title?: string } | null } } } } | undefined)
                 ?.currentSession?.user?.admin?.chat;
             if (!chat) return undefined;
             const title = typeof chat.title === 'string' ? chat.title.trim() : '';
-            return title.length > 0 ? title : 'Untitled';
+            return title.length > 0 ? title : '';
         },
     },
     {

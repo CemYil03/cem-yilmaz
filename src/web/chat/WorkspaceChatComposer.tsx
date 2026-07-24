@@ -178,14 +178,14 @@ export function WorkspaceChatComposer({
                     <Select value={mode} onValueChange={(value) => setMode(value as ToolCallApprovalMode)} disabled={isLocked}>
                         <SelectTrigger
                             size="sm"
-                            aria-label="Tool call approval mode"
+                            aria-label={{ de: 'Freigabemodus für Tool-Aufrufe', en: 'Tool call approval mode' }[locale]}
                             className="h-7 max-w-22 shrink-0 gap-1 px-1.5 text-xs"
                         >
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="auto">Auto</SelectItem>
-                            <SelectItem value="manual">Manual</SelectItem>
+                            <SelectItem value="auto">{{ de: 'Auto', en: 'Auto' }[locale]}</SelectItem>
+                            <SelectItem value="manual">{{ de: 'Manuell', en: 'Manual' }[locale]}</SelectItem>
                         </SelectContent>
                     </Select>
                 </>

@@ -8,45 +8,48 @@ const meta = {
     title: 'Base/DateRangePicker',
     component: DateRangePicker,
     tags: ['autodocs'],
+    args: {
+        placeholder: 'Pick dates',
+    },
 } satisfies Meta<typeof DateRangePicker>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-    render: function Render() {
+    render: function Render(args) {
         const [range, setRange] = useState<DateRange | undefined>();
-        return <DateRangePicker value={range} onValueChange={setRange} />;
+        return <DateRangePicker {...args} value={range} onValueChange={setRange} />;
     },
 };
 
 export const WithInitialRange: Story = {
-    render: function Render() {
+    render: function Render(args) {
         const [range, setRange] = useState<DateRange | undefined>({
             from: new Date(new Date().getFullYear(), 0, 20),
             to: addDays(new Date(new Date().getFullYear(), 0, 20), 20),
         });
-        return <DateRangePicker value={range} onValueChange={setRange} />;
+        return <DateRangePicker {...args} value={range} onValueChange={setRange} />;
     },
 };
 
 export const SingleMonth: Story = {
-    render: function Render() {
+    render: function Render(args) {
         const [range, setRange] = useState<DateRange | undefined>();
-        return <DateRangePicker value={range} onValueChange={setRange} numberOfMonths={1} />;
+        return <DateRangePicker {...args} value={range} onValueChange={setRange} numberOfMonths={1} />;
     },
 };
 
 export const DisableWeekends: Story = {
-    render: function Render() {
+    render: function Render(args) {
         const [range, setRange] = useState<DateRange | undefined>();
-        return <DateRangePicker value={range} onValueChange={setRange} disabled={[{ dayOfWeek: [0, 6] }]} />;
+        return <DateRangePicker {...args} value={range} onValueChange={setRange} disabled={[{ dayOfWeek: [0, 6] }]} />;
     },
 };
 
 export const DropdownCaption: Story = {
-    render: function Render() {
+    render: function Render(args) {
         const [range, setRange] = useState<DateRange | undefined>();
-        return <DateRangePicker value={range} onValueChange={setRange} captionLayout="dropdown" />;
+        return <DateRangePicker {...args} value={range} onValueChange={setRange} captionLayout="dropdown" />;
     },
 };

@@ -217,10 +217,21 @@ function ExperienceForm({ row, locale, onClose }: { row: ExperienceRow | null; l
                     <Input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} required />
                 </Field>
                 <Field label={{ de: 'Beginn', en: 'Start' }[locale]}>
-                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} required locale={locale} />
+                    <DateField
+                        value={form.startDate}
+                        onChange={(next) => setForm({ ...form, startDate: next })}
+                        required
+                        locale={locale}
+                        placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
+                    />
                 </Field>
                 <Field label={{ de: 'Ende (leer = heute)', en: 'End (blank = ongoing)' }[locale]}>
-                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} locale={locale} />
+                    <DateField
+                        value={form.endDate}
+                        onChange={(next) => setForm({ ...form, endDate: next })}
+                        locale={locale}
+                        placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
+                    />
                 </Field>
                 <Field label={{ de: 'Beschreibung (DE)', en: 'Description (DE)' }[locale]} fullWidth>
                     <Textarea value={form.descriptionDe} onChange={(e) => setForm({ ...form, descriptionDe: e.target.value })} required />
@@ -362,10 +373,21 @@ function EducationForm({
                     <Input value={form.subjectEn} onChange={(e) => setForm({ ...form, subjectEn: e.target.value })} />
                 </Field>
                 <Field label={{ de: 'Beginn (optional)', en: 'Start (optional)' }[locale]}>
-                    <DateField value={form.startDate} onChange={(next) => setForm({ ...form, startDate: next })} locale={locale} />
+                    <DateField
+                        value={form.startDate}
+                        onChange={(next) => setForm({ ...form, startDate: next })}
+                        locale={locale}
+                        placeholder={{ de: 'Optional', en: 'Optional' }[locale]}
+                    />
                 </Field>
                 <Field label={{ de: 'Ende', en: 'End' }[locale]}>
-                    <DateField value={form.endDate} onChange={(next) => setForm({ ...form, endDate: next })} required locale={locale} />
+                    <DateField
+                        value={form.endDate}
+                        onChange={(next) => setForm({ ...form, endDate: next })}
+                        required
+                        locale={locale}
+                        placeholder={{ de: 'Datum wählen', en: 'Pick a date' }[locale]}
+                    />
                 </Field>
                 <Field label={{ de: 'Notizen (DE)', en: 'Notes (DE)' }[locale]} fullWidth>
                     <Textarea value={form.notesDe} onChange={(e) => setForm({ ...form, notesDe: e.target.value })} />

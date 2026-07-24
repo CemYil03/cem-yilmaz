@@ -1,5 +1,6 @@
 import { FileIcon } from 'lucide-react';
 import type { GqlCFileUpload } from '../../graphql/generated';
+import { useLocale } from '../../hooks/useLocale';
 import { cn } from '../../utils/cn';
 
 // Read-only attachment preview grid for a chat message. Capped at 4 tiles
@@ -25,6 +26,7 @@ export function ChatAttachmentTileGrid({
     onTileClick: (index: number) => void;
     className?: string;
 }) {
+    const locale = useLocale();
     if (attachments.length === 0) return null;
 
     // Once we exceed the 4-tile cap, the visible list shrinks to 3 and the
@@ -35,6 +37,13 @@ export function ChatAttachmentTileGrid({
         attachments.length > VISIBLE_LIMIT ? attachments.slice(0, VISIBLE_LIMIT - 1) : attachments.slice(0, VISIBLE_LIMIT);
     const overflowCount = Math.max(0, attachments.length - visibleAttachments.length);
     const showOverflowTile = attachments.length > VISIBLE_LIMIT;
+    const overflowLabel =
+        overflowCount === 1
+            ? { de: '1 weiteren Anhang zeigen', en: 'Show 1 more attachment' }[locale]
+            : {
+                  de: `${overflowCount} weitere Anhänge zeigen`,
+                  en: `Show ${overflowCount} more attachments`,
+              }[locale];
 
     return (
         <div
@@ -57,7 +66,7 @@ export function ChatAttachmentTileGrid({
             {showOverflowTile ? (
                 <button
                     type="button"
-                    aria-label={`Show ${overflowCount} more attachment${overflowCount === 1 ? '' : 's'}`}
+                    aria-label={overflowLabel}
                     onClick={() => onTileClick(VISIBLE_LIMIT - 1)}
                     className="flex aspect-square items-center justify-center rounded-md border border-primary-foreground/20 bg-background text-foreground hover:bg-accent"
                 >
@@ -69,13 +78,14 @@ export function ChatAttachmentTileGrid({
 }
 
 function AttachmentTileButton({ attachment, onClick }: { attachment: GqlCFileUpload; onClick: () => void }) {
+    const locale = useLocale();
     const isImage = attachment.mediaType.startsWith('image/');
     return (
         <button
             type="button"
             onClick={onClick}
             title={attachment.filename}
-            aria-label={`Open ${attachment.filename}`}
+            aria-label={{ de: `${attachment.filename} öffnen`, en: `Open ${attachment.filename}` }[locale]}
             className="group relative aspect-square overflow-hidden rounded-md border border-primary-foreground/20 bg-background hover:bg-accent"
         >
             {isImage ? (
