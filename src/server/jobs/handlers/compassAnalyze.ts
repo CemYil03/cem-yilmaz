@@ -1,8 +1,9 @@
 import { generateText, Output } from 'ai';
 import { and, asc, desc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
+import { COMPASS_SINGLETON_ID, COMPASS_SYNTHESIS_THRESHOLD } from '../../agents/compassConfig';
+import { compassInterviewTopics } from '../../agents/compassInterviewConfig';
 import { compassObservationCreate } from '../../commands/compassObservationCreate';
-import type { ServerRuntime } from '../../domain/ServerRuntime';
 import {
     chatMessages,
     chatMessagesUser,
@@ -13,8 +14,7 @@ import {
     compassObservationCategories,
 } from '../../db/schema';
 import type { CompassInterviewMessageAnalysisCreate, CompassMessageAnalysisCreate } from '../../db/schema';
-import { COMPASS_SINGLETON_ID, COMPASS_SYNTHESIS_THRESHOLD } from '../../agents/compassConfig';
-import { compassInterviewTopics } from '../../agents/compassInterviewConfig';
+import type { ServerRuntime } from '../../domain/ServerRuntime';
 import { adminCompassFindOne } from '../../queries/adminCompassFindOne';
 import type { QueuedJobDefinition } from '../types';
 import { compassSynthesize } from './compassSynthesize';

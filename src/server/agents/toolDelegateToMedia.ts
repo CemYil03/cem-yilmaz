@@ -8,8 +8,8 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantMedia } from './agentPersonalAssistantMedia';
-import type { ChatStepArtifact } from './chatStepArtifact';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
+import type { ChatStepArtifact } from './chatStepArtifact';
 
 // Orchestrator-side tool that delegates a media / movie / channel brief to
 // `agentPersonalAssistantMedia`. Mirrors `toolDelegateToProjects` exactly —

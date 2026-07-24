@@ -1,11 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
-import type { Locale } from '../utils/locale';
 import type { ReactNode } from 'react';
 import type { TypedDocumentNode } from 'urql';
 import { useMutation } from 'urql';
-import { uploadFile } from './fileUpload';
 import { MessageComposer } from '../components/MessageComposer';
 import type { ComposerAttachment } from '../components/MessageComposer';
+import type { Locale } from '../utils/locale';
+import { uploadFile } from './fileUpload';
 
 // Shared chat-composer base. Owns the per-turn machinery every audience-
 // specific composer needs:

@@ -1,21 +1,21 @@
-import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
-import type { AgentChatOptions } from './agentVisitor';
+import { hasToolCall, isStepCount, ToolLoopAgent } from 'ai';
+import { toolWorkspaceFileCreate, toolWorkspaceFileGet, toolWorkspaceFileUpdate } from '../commands/workspaceFileCreateFromMarkdown';
 import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 import { compassSummaryFindOne } from '../queries/compassSummaryFindOne';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
+import type { AgentChatOptions } from './agentVisitor';
+import { toolDelegateToFinances } from './toolDelegateToFinances';
+import { toolDelegateToFitness } from './toolDelegateToFitness';
+import { toolDelegateToInventory } from './toolDelegateToInventory';
 import { toolDelegateToMedia } from './toolDelegateToMedia';
 import { toolDelegateToMedical } from './toolDelegateToMedical';
-import { toolDelegateToProjects } from './toolDelegateToProjects';
-import { toolDelegateToTravel } from './toolDelegateToTravel';
 import { toolDelegateToNutrition } from './toolDelegateToNutrition';
-import { toolDelegateToFitness } from './toolDelegateToFitness';
-import { toolDelegateToFinances } from './toolDelegateToFinances';
-import { toolDelegateToInventory } from './toolDelegateToInventory';
+import { toolDelegateToProjects } from './toolDelegateToProjects';
 import { toolDelegateToTax } from './toolDelegateToTax';
+import { toolDelegateToTravel } from './toolDelegateToTravel';
 import { toolDelegateToWebSearch } from './toolDelegateToWebSearch';
 import { toolPromptUserForInput } from './toolPromptUserForInput';
-import { toolWorkspaceFileCreate, toolWorkspaceFileGet, toolWorkspaceFileUpdate } from '../commands/workspaceFileCreateFromMarkdown';
 
 // Personal-assistant agent for `/workspace/assistant`. This is the
 // orchestrator in the agent-delegation pattern: it owns the user-facing

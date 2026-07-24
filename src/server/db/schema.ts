@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
     boolean,
     customType,
@@ -14,7 +15,6 @@ import {
     uuid,
     varchar,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 // Drizzle has no first-class `bytea` builder; the `customType` helper wraps
 // `bytea` so the column round-trips as a Node `Buffer` on read and accepts

@@ -1,5 +1,5 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
-import { ToolLoopAgent, isStepCount } from 'ai';
+import { isStepCount, ToolLoopAgent } from 'ai';
 import { toolMediaChannelsDelete } from '../commands/adminMediaChannelsDelete';
 import { toolMediaChannelsUpsert } from '../commands/adminMediaChannelsUpsert';
 import { toolMoviesAddFromTmdb } from '../commands/adminMediaMoviesAddFromTmdb';
@@ -11,7 +11,7 @@ import { toolShowsUpsert } from '../commands/adminMediaShowsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
-import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
+import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { mediaSnapshotForAgent } from './mediaSnapshotForAgent';
 import { toolMediaChannelsList } from './toolMediaChannelsList';
 import { toolMoviesList } from './toolMoviesList';

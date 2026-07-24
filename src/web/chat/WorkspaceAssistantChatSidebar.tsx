@@ -1,5 +1,8 @@
 import { PanelRightCloseIcon, SparklesIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from '../components/base/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../components/base/tooltip';
+import type { Locale } from '../utils/locale';
 import type { TranscriptMessage } from './chatTranscript';
 import { mergeTranscriptMessages } from './chatTranscript';
 import {
@@ -10,9 +13,6 @@ import {
 } from './WorkspaceAssistantChatBody';
 import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 import { WorkspaceFileEditor } from './WorkspaceFileEditor';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar } from '../components/base/sidebar';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../components/base/tooltip';
-import type { Locale } from '../utils/locale';
 
 // Persistent right-side workspace-assistant sidebar built on shadcn's
 // `<Sidebar collapsible="offcanvas" side="right">`. Choices:

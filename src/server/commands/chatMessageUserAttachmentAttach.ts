@@ -1,6 +1,6 @@
 import { asc, eq, inArray } from 'drizzle-orm';
 import type { Database, DatabaseTransaction } from '../db';
-import { fileUploads, chatMessageUserAttachments } from '../db/schema';
+import { chatMessageUserAttachments, fileUploads } from '../db/schema';
 import type { FileUpload } from '../db/schema';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 

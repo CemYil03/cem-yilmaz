@@ -1,8 +1,8 @@
+import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequest, getRequestHeader, setResponseHeader } from '@tanstack/react-start/server';
 import { print } from 'graphql';
 import type { DocumentNode } from 'graphql';
-import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { urqlClientSimple } from './client';
 
 const printedDocumentCache = new WeakMap<DocumentNode, string>();

@@ -2,12 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SlashIcon } from 'lucide-react';
 import {
     Breadcrumb,
-    BreadcrumbList,
+    BreadcrumbEllipsis,
     BreadcrumbItem,
     BreadcrumbLink,
+    BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-    BreadcrumbEllipsis,
 } from './breadcrumb';
 
 const meta = {

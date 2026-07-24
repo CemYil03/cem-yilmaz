@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { formatCurrency, formatDate } from '../../../shared';
 import {
     BriefcaseIcon,
     CalendarClockIcon,
@@ -18,6 +17,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
+import { formatCurrency, formatDate } from '../../../shared';
+import { uploadFile } from '../../../web/chat/fileUpload';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -34,7 +35,6 @@ import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Switch } from '../../../web/components/base/switch';
 import { Textarea } from '../../../web/components/base/textarea';
-import { uploadFile } from '../../../web/chat/fileUpload';
 import { DateField } from '../../../web/components/DateField';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';

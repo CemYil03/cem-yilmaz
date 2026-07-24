@@ -2,7 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { fileUploads, projectFiles } from '../db/schema';
 import type { AdminProjectFileCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMutationResult, GqlSAdminProjectFileUpsert, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminProjectFileUpsert, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch create-or-update of project files. Every input with a `projectFileId`
 // is updated; every input without one is inserted. The underlying upload must

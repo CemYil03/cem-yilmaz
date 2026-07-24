@@ -1,5 +1,5 @@
-import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
 
 // `@testing-library/react` mounts every render into `document.body`. Without
 // an explicit unmount the DOM accumulates across tests in the same file and

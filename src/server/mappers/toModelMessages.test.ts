@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { toModelMessages } from './toModelMessages';
+import { describe, expect, it } from 'vitest';
 import type { ChatMessageRowJoined } from './toGqlChatMessage';
+import { toModelMessages } from './toModelMessages';
 
 // Pure unit tests — no DB. The mapper is the single boundary that translates
 // persisted rows to AI SDK `ModelMessage[]`, so we cover the user-content

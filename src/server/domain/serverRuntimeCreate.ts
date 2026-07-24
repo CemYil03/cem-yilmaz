@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { db } from '../db';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from '../agents/adminChatModels';
+import { db } from '../db';
 import { environmentVariables } from '../env/environmentVariablesCreate';
 import { PubSubPostgres } from '../graphql/PubSubPostgres';
 import { jobEnqueue, jobsActiveCount } from '../jobs/boss';

@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 
-import * as schema from './schema.ts';
 import { environmentVariables } from '../env/environmentVariablesCreate.ts';
+import * as schema from './schema.ts';
 
 export const db = drizzle(environmentVariables.databaseUrl, { schema });
 

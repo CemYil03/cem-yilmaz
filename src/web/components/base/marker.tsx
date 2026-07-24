@@ -1,7 +1,7 @@
-import * as React from 'react';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
 import { Slot } from 'radix-ui';
+import * as React from 'react';
 import { cn } from '../../utils/cn';
 
 // shadcn/ui `marker` — inline conversation status, bordered rows, and labeled

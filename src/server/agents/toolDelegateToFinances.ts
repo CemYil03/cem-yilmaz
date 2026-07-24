@@ -8,8 +8,8 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantFinances } from './agentPersonalAssistantFinances';
-import type { ChatStepArtifact } from './chatStepArtifact';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
+import type { ChatStepArtifact } from './chatStepArtifact';
 
 // Orchestrator-side tool that delegates a recurring-cost / income brief to
 // `agentPersonalAssistantFinances`. Mirrors `toolDelegateToTravel` exactly —

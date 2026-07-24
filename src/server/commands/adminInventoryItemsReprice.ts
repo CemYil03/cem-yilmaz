@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { requireAdminUserId } from '../agents/requireAdminUserId';
-import { itemValuations, items } from '../db/schema';
+import { items, itemValuations } from '../db/schema';
 import type { AdminInventoryItemValuationCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminInventoryItemRepriceInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';

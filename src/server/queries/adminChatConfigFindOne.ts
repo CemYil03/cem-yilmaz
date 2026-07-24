@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
+import { ADMIN_CHAT_CONFIG_SINGLETON_ID } from '../agents/adminChatConfig';
+import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from '../agents/adminChatModels';
 import type { Database, DatabaseTransaction } from '../db';
 import { adminChatConfig } from '../db/schema';
 import type { AdminChatConfig, AdminChatConfigCreate } from '../db/schema';
-import { ADMIN_CHAT_CONFIG_SINGLETON_ID } from '../agents/adminChatConfig';
-import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from '../agents/adminChatModels';
 
 // Loads the singleton `AdminChatConfig` row, creating it lazily if it does not
 // exist yet. Mirrors `compassGet` (`compassGet.ts`) — callers can rely on this

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { WorkspaceProjectActivityMessage } from './WorkspaceProjectActivityMessage';
 import type { WorkspaceProjectActivityRow } from './WorkspaceProjectActivityConstants';
+import { WorkspaceProjectActivityMessage } from './WorkspaceProjectActivityMessage';
 
 // Visual-only story for the project Activity-tab message rows. Verifies the
 // three direction layouts (outgoing / incoming / internal) and the opaque

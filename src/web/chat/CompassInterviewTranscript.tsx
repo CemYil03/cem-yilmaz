@@ -1,14 +1,14 @@
-import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { LinkIcon } from 'lucide-react';
+import { useMemo } from 'react';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { AssistantPendingStatus } from '../components/AssistantPendingStatus';
 import { ChatTranscriptShell } from '../components/base/chat-transcript-shell';
 import { MessageScrollerItem } from '../components/base/message-scroller';
 import { Bubble, CopyButton, MessageRow, SpeakButton, Timestamp } from '../components/chat-message/shared';
 import type { GqlCWorkspaceCompassInterviewMessageFragment, GqlCWorkspaceCompassObservationFragment } from '../graphql/generated';
-import type { Locale } from '../utils/locale';
 import { cn } from '../utils/cn';
+import type { Locale } from '../utils/locale';
 
 // Transcript for the compass psychological-interview view. Sits on top of the
 // shared `ChatTranscriptShell` (`src/web/components/base/chat-transcript-shell.tsx`)

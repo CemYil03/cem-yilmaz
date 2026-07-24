@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
+import { chatMessageUserAttachmentAttach } from '../commands/chatMessageUserAttachmentAttach';
 import type { Database, DatabaseTransaction } from '../db';
 import { chatMessages } from '../db/schema';
-import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { toChatMessageRow } from '../mappers/toChatMessageRow';
+import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageBaseQuery } from './chatMessageBaseQuery';
-import { chatMessageUserAttachmentAttach } from '../commands/chatMessageUserAttachmentAttach';
 
 // Single-row analogue of `chatMessageFindMany`: pulls one message together with
 // its variant row and (if present) author. Used by the per-message commit

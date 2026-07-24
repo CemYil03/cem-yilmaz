@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { NavigationProgress } from './NavigationProgress';
 import { cn } from '../utils/cn';
+import { NavigationProgress } from './NavigationProgress';
 
 // `NavigationProgress` reads from `useRouterState` directly — it can't be
 // driven from stories without a real navigation. The "Live" story mounts

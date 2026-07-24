@@ -1,8 +1,8 @@
 import { ShieldCheckIcon } from 'lucide-react';
 import { useState } from 'react';
+import { toolDisplayLabel } from '../../chat/toolDisplay';
 import type { GqlCChatMessageToolApprovalRequest } from '../../graphql/generated';
 import { useLocale } from '../../hooks/useLocale';
-import { toolDisplayLabel } from '../../chat/toolDisplay';
 import { AssistantReasoning } from '../AssistantReasoning';
 import { Button } from '../base/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../base/card';

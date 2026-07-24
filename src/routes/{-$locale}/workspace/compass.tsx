@@ -22,23 +22,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
+import { CompassInterviewComposer } from '../../../web/chat/CompassInterviewComposer';
+import { CompassInterviewTranscript } from '../../../web/chat/CompassInterviewTranscript';
+import { useCompassInterviewLiveUpdates } from '../../../web/chat/useCompassInterviewLiveUpdates';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../web/components/base/tooltip';
 import { SpeakButton } from '../../../web/components/chat-message/shared';
-import { CompassInterviewComposer } from '../../../web/chat/CompassInterviewComposer';
-import { CompassInterviewTranscript } from '../../../web/chat/CompassInterviewTranscript';
-import { useCompassInterviewLiveUpdates } from '../../../web/chat/useCompassInterviewLiveUpdates';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
+    GqlCCompassInterviewTopic,
     GqlCCompassObservationCategory,
     GqlCWorkspaceCompassInterviewSummaryFragment,
     GqlCWorkspaceCompassInterviewWithMessagesFragment,
     GqlCWorkspaceCompassPageUpdatesSubscription,
     GqlCWorkspaceCompassPageUpdatesSubscriptionVariables,
     GqlCWorkspaceCompassPageUserFragment,
-    GqlCCompassInterviewTopic,
 } from '../../../web/graphql/generated';
 import {
     WorkspaceCompassInterviewEndDocument,

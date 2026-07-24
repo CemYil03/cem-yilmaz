@@ -11,14 +11,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
-import { toFlatAnswerInput } from './chatAssistantInputKinds';
-import { ChatTranscript } from './ChatTranscriptShared';
-import type { TranscriptMessage } from './chatTranscript';
-import { mergeTranscriptMessages } from './chatTranscript';
-import { DocumentPanelProvider } from './DocumentPanelProvider';
-import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
-import { WorkspaceChatComposer } from './WorkspaceChatComposer';
-import { bucketChatsByDay } from './workspaceChatListBuckets';
 import { ExternalLinkConfirmationProvider } from '../components/AssistantMarkdown';
 import { Button } from '../components/base/button';
 import { Input } from '../components/base/input';
@@ -33,6 +25,14 @@ import {
 } from '../graphql/generated';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
+import { toFlatAnswerInput } from './chatAssistantInputKinds';
+import { mergeTranscriptMessages } from './chatTranscript';
+import type { TranscriptMessage } from './chatTranscript';
+import { ChatTranscript } from './ChatTranscriptShared';
+import { DocumentPanelProvider } from './DocumentPanelProvider';
+import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
+import { WorkspaceChatComposer } from './WorkspaceChatComposer';
+import { bucketChatsByDay } from './workspaceChatListBuckets';
 
 // Shared inner body for both the workspace-assistant Sheet (narrow viewports)
 // and Sidebar (`lg+`). The layout has three surfaces:

@@ -1,9 +1,9 @@
 import { desc, eq, or } from 'drizzle-orm';
-import { compass, compassInterviews } from '../../db/schema';
-import type { CompassInterviewCreate } from '../../db/schema';
+import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
 import type { CompassInterviewTopic } from '../../agents/compassInterviewConfig';
 import { COMPASS_INTERVIEW_CRON, COMPASS_INTERVIEW_TOPIC_ROTATION } from '../../agents/compassInterviewConfig';
-import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
+import { compass, compassInterviews } from '../../db/schema';
+import type { CompassInterviewCreate } from '../../db/schema';
 import type { RecurringJobDefinition } from '../types';
 
 // Scheduled cron — see `docs/features/compass.md` ("Psychological-interview

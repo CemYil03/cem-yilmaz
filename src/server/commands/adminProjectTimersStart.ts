@@ -2,7 +2,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { projectActivities } from '../db/schema';
 import type { AdminProjectActivityCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMutationResult, GqlSAdminProjectTimerStartInput, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminProjectTimerStartInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch start of work timers. Runs as a single transaction; each input is
 // processed sequentially, and for each one:

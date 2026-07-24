@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { format, parseISO } from 'date-fns';
 import {
     AlertTriangleIcon,
@@ -12,15 +11,16 @@ import {
     SquareIcon,
     Volume2Icon,
 } from 'lucide-react';
+import * as React from 'react';
 import { toast } from 'sonner';
-import { useLocale } from '../../hooks/useLocale';
-import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
-import { cn } from '../../utils/cn';
 import { languageTagFromLocale } from '../../../shared';
-import { markdownToPlainText } from '../../utils/markdownToPlainText';
 import { toolDisplay } from '../../chat/toolDisplay';
 import { interpretToolResult } from '../../chat/toolResult';
 import type { ToolStatus } from '../../chat/toolResult';
+import { useLocale } from '../../hooks/useLocale';
+import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
+import { cn } from '../../utils/cn';
+import { markdownToPlainText } from '../../utils/markdownToPlainText';
 import { Button } from '../base/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../base/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../base/tooltip';

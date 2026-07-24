@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import type { ServerRuntime } from '../domain/ServerRuntime';
 import { users } from '../db/schema';
+import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutation, GqlSSession } from '../graphql/generated';
 
 // Gates the workspace write namespace (`Mutation.admin`).

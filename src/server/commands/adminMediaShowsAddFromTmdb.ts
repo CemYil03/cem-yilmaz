@@ -6,7 +6,7 @@ import { shows } from '../db/schema';
 import type { AdminMediaShowCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { GqlSAdminMediaMovieStatusSchema } from '../graphql/generated';
-import type { GqlSMutationResult, GqlSSession, GqlSAdminMediaShowAddFromTmdbInput } from '../graphql/generated';
+import type { GqlSAdminMediaShowAddFromTmdbInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch add of TV series by TMDB id. Each input either creates a new `Shows`
 // row or refreshes metadata on the row that already carries the same

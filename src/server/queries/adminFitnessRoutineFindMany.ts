@@ -3,9 +3,9 @@ import { exercises, workoutRoutineItems, workoutRoutines } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type {
     GqlSAdminFitnessExercise,
-    GqlSSession,
     GqlSAdminFitnessWorkoutRoutine,
     GqlSAdminFitnessWorkoutRoutineItem,
+    GqlSSession,
 } from '../graphql/generated';
 import { toGqlAdminFitnessExercise } from '../mappers/toGqlAdminFitnessExercise';
 import { toGqlAdminFitnessWorkoutRoutine } from '../mappers/toGqlAdminFitnessWorkoutRoutine';

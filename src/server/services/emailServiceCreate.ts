@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import { environmentVariables } from '../env/environmentVariablesCreate';
 import { personalInfo } from '../../web/content/personalInfo';
+import { environmentVariables } from '../env/environmentVariablesCreate';
 
 // Single boundary between the rest of the server and Resend. Every outbound
 // email — the visitor's simple-email tool, the OTP for project requests, the

@@ -1,10 +1,10 @@
 import { asc, eq } from 'drizzle-orm';
-import { compassAnalyze } from '../jobs/handlers/compassAnalyze';
+import { agentCompassInterviewerGenerate, agentCompassInterviewerStream } from '../agents/agentCompassInterviewer';
 import { compassInterviewMessages, compassInterviews } from '../db/schema';
 import type { CompassInterviewMessageCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { agentCompassInterviewerGenerate, agentCompassInterviewerStream } from '../agents/agentCompassInterviewer';
+import { compassAnalyze } from '../jobs/handlers/compassAnalyze';
 
 // Runs one interview turn: loads the transcript, drives the interviewer
 // agent (streamed when a `generationId` is present, single-shot otherwise),

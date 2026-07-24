@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, ExternalLinkIcon, FileIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { formatBytes, previewKindFor } from '../../chat/chatAttachmentPreview';
 import type { GqlCFileUpload } from '../../graphql/generated';
 import { cn } from '../../utils/cn';
+import { AssistantMarkdown } from '../AssistantMarkdown';
 import { Button } from '../base/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../base/dialog';
 import { Spinner } from '../base/spinner';
-import { AssistantMarkdown } from '../AssistantMarkdown';
-import { formatBytes, previewKindFor } from '../../chat/chatAttachmentPreview';
 
 // Controlled preview dialog for chat attachments. The caller owns both `open`
 // and `index`; the dialog renders the attachment at `index` and exposes

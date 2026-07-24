@@ -1,9 +1,9 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
-import { ToolLoopAgent, hasToolCall, isStepCount } from 'ai';
+import { hasToolCall, isStepCount, ToolLoopAgent } from 'ai';
 import type { GqlCChatAssistantOptions } from '../../web/graphql/generated';
+import { SITEMAP_PATHS } from '../../web/seo/sitemapRoutes';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
-import { SITEMAP_PATHS } from '../../web/seo/sitemapRoutes';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import type { ChatStepArtifact } from './chatStepArtifact';

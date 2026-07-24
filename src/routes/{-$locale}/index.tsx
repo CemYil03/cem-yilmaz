@@ -1,6 +1,4 @@
-import { useEffect } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { z } from 'zod';
 import type { CodeXmlIcon } from 'lucide-react';
 import {
     ArrowRightIcon,
@@ -18,9 +16,11 @@ import {
     UserRoundIcon,
     WorkflowIcon,
 } from 'lucide-react';
-import { personalInfo } from '../../web/content/personalInfo';
-import { useVisitorChat } from '../../web/chat/VisitorChatProvider';
+import { useEffect } from 'react';
+import { z } from 'zod';
+import { formatMonthYear } from '../../shared';
 import { VisitorChatComposer } from '../../web/chat/VisitorChatComposer';
+import { useVisitorChat } from '../../web/chat/VisitorChatProvider';
 import { Button } from '../../web/components/base/button';
 import { CardContent, CardDescription, CardTitle } from '../../web/components/base/card';
 import { Footer } from '../../web/components/Footer';
@@ -28,6 +28,7 @@ import { GlassCard } from '../../web/components/GlassCard';
 import { Header } from '../../web/components/Header';
 import { Reveal } from '../../web/components/Reveal';
 import { WorldReachMap } from '../../web/components/WorldReachMap';
+import { personalInfo } from '../../web/content/personalInfo';
 import { HomePageDocument } from '../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../web/hooks/useLocale';
@@ -36,7 +37,6 @@ import { seoMeta } from '../../web/seo/seoMeta';
 import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
 import { localeFromParam } from '../../web/utils/locale';
 import type { Locale } from '../../web/utils/locale';
-import { formatMonthYear } from '../../shared';
 
 /* ----------------------------------------------------------------------------
  * Public landing page. Doubles as Cem's marketing surface — positions him as a

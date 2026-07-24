@@ -5,7 +5,7 @@ import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { supplementNutrients, supplements } from '../db/schema';
 import type { AdminNutritionSupplementNutrientCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMutationResult, GqlSAdminNutritionSupplementNutrientInput, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminNutritionSupplementNutrientInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Replace one supplement's entire per-serving composition. Deletes the existing
 // `SupplementNutrients` rows for the parent and inserts the new set with

@@ -1,7 +1,7 @@
 import { asc, desc, sql } from 'drizzle-orm';
 import { shows } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSSession, GqlSAdminMediaShow } from '../graphql/generated';
+import type { GqlSAdminMediaShow, GqlSSession } from '../graphql/generated';
 import { toGqlAdminMediaShow } from '../mappers/toGqlAdminMediaShow';
 
 // Lists every TV series the admin tracks. Same status-bucket ordering as

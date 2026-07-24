@@ -1,13 +1,13 @@
-import { and, eq, isNull } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
+import { and, eq, isNull } from 'drizzle-orm';
 
-import type { GqlSSession } from '../graphql/generated';
+import type { Database } from '../db';
 import { sessions } from '../db/schema';
 import type { Session } from '../db/schema';
-import type { Database } from '../db';
 import { environmentVariables } from '../env/environmentVariablesCreate';
-import type { Logger } from '../utils/loggerCreate';
+import type { GqlSSession } from '../graphql/generated';
 import { toGqlSession } from '../mappers/toGqlSession';
+import type { Logger } from '../utils/loggerCreate';
 
 // Hashes the request IP into the column we persist on `Sessions.ipHash`.
 // Salted with `VISITOR_IP_HASH_SALT` (per-deploy) so a DB leak does not

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { MailIcon, Loader2Icon, ChevronRightIcon } from 'lucide-react';
+import { ChevronRightIcon, Loader2Icon, MailIcon } from 'lucide-react';
 import { Button } from './button';
 
 const meta = {

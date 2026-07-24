@@ -1,10 +1,10 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
-import { ToolLoopAgent, isStepCount } from 'ai';
+import { isStepCount, ToolLoopAgent } from 'ai';
 import { toolInventoryFilesDelete } from '../commands/adminInventoryItemFilesDelete';
 import { toolInventoryFilesUpsert } from '../commands/adminInventoryItemFilesUpsert';
+import { toolInventoryItemsDelete } from '../commands/adminInventoryItemsDelete';
 import { toolInventoryServiceEntriesDelete } from '../commands/adminInventoryItemServiceEntriesDelete';
 import { toolInventoryServiceEntriesUpsert } from '../commands/adminInventoryItemServiceEntriesUpsert';
-import { toolInventoryItemsDelete } from '../commands/adminInventoryItemsDelete';
 import { toolInventoryItemsReprice } from '../commands/adminInventoryItemsReprice';
 import { toolInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert';
 import type { ServerRuntime } from '../domain/ServerRuntime';

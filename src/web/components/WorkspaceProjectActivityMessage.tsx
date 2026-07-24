@@ -10,8 +10,8 @@ import {
     ACTIVITY_CHANNEL_LABELS,
     ACTIVITY_KIND_ICONS,
     ACTIVITY_KIND_LABELS,
-    OFFER_STATUS_LABELS,
     formatDuration,
+    OFFER_STATUS_LABELS,
 } from './WorkspaceProjectActivityConstants';
 import type { WorkspaceProjectActivityRow } from './WorkspaceProjectActivityConstants';
 

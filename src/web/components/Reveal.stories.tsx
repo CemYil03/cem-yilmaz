@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Reveal } from './Reveal';
 import { GlassCard } from './GlassCard';
+import { Reveal } from './Reveal';
 
 // `Reveal` triggers when its element scrolls into view. Stories include a
 // tall spacer above each reveal so the user can actually scroll the

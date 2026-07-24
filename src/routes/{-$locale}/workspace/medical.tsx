@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { formatDate } from '../../../shared';
 import {
     ActivityIcon,
     AlertTriangleIcon,
@@ -21,6 +20,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
+import { formatDate } from '../../../shared';
+import { uploadFile } from '../../../web/chat/fileUpload';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -46,7 +47,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../web/components/base/textarea';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
-import { uploadFile } from '../../../web/chat/fileUpload';
 import type {
     GqlCAdminMedicalAppointmentStatus,
     GqlCAdminMedicalCategory,

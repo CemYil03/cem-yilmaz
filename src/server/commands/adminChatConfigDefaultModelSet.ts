@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
+import { ADMIN_CHAT_CONFIG_SINGLETON_ID } from '../agents/adminChatConfig';
+import { isAdminChatModelId } from '../agents/adminChatModels';
 import { adminChatConfig } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
-import { ADMIN_CHAT_CONFIG_SINGLETON_ID } from '../agents/adminChatConfig';
-import { isAdminChatModelId } from '../agents/adminChatModels';
 import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 
 // Persists the admin's chosen default chat model. Rejects unknown ids — the

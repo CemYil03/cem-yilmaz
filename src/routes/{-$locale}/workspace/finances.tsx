@@ -15,8 +15,8 @@ import {
     HeartHandshakeIcon,
     HomeIcon,
     LandmarkIcon,
-    LayoutDashboardIcon,
     LayersIcon,
+    LayoutDashboardIcon,
     LineChartIcon,
     PackageIcon,
     PencilIcon,
@@ -70,10 +70,10 @@ import {
     WorkspaceFinancesAssetsUpsertDocument,
     WorkspaceFinancesIncomeStreamsDeleteDocument,
     WorkspaceFinancesIncomeStreamsUpsertDocument,
-    WorkspaceFinancesRecurringCostsDeleteDocument,
-    WorkspaceFinancesRecurringCostsUpsertDocument,
     WorkspaceFinancesPageDocument,
     WorkspaceFinancesPageUpdatesDocument,
+    WorkspaceFinancesRecurringCostsDeleteDocument,
+    WorkspaceFinancesRecurringCostsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { ChevronDownIcon, SparklesIcon } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
+import { ChevronDownIcon, SparklesIcon } from 'lucide-react';
+import { useState } from 'react';
 import type { GqlCChatMessageUser } from '../../graphql/generated';
 import { cn } from '../../utils/cn';
 

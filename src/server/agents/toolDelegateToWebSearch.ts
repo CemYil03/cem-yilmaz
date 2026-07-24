@@ -8,8 +8,8 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantWebSearch } from './agentPersonalAssistantWebSearch';
-import type { ChatStepArtifact } from './chatStepArtifact';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
+import type { ChatStepArtifact } from './chatStepArtifact';
 
 // Orchestrator-side tool that delegates a batch of web-search briefs to
 // `agentPersonalAssistantWebSearch`. Runs one sub-agent per brief

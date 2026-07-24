@@ -1,6 +1,6 @@
 import { formatCurrency } from '../../shared';
-import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';
 import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
 import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
 import { adminInventoryMaterialNetWorthCentsFindOne } from '../queries/adminInventoryMaterialNetWorthCentsFindOne';

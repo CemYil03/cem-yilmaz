@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { supplementCompositionResearch } from './supplementCompositionResearch';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { supplementCompositionResearch } from './supplementCompositionResearch';
 
 // AI web-research for a supplement's composition. Persists nothing — it returns
 // the proposed serving info and nutrient rows so the agent can feed them into

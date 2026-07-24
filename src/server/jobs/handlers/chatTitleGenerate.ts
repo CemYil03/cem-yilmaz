@@ -1,8 +1,8 @@
 import { generateText, Output } from 'ai';
 import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import type { ServerRuntime } from '../../domain/ServerRuntime';
 import { chatMessages, chatMessagesAssistantText, chatMessagesUser, chats } from '../../db/schema';
+import type { ServerRuntime } from '../../domain/ServerRuntime';
 import type { QueuedJobDefinition } from '../types';
 
 // One enqueue per assistant turn while the chat's title is still empty. The

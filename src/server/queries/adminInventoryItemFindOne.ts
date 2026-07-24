@@ -1,5 +1,5 @@
 import { asc, desc, eq, inArray } from 'drizzle-orm';
-import { fileUploads, itemFiles, itemServiceEntries, itemValuations, items } from '../db/schema';
+import { fileUploads, itemFiles, items, itemServiceEntries, itemValuations } from '../db/schema';
 import type { FileUpload } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminInventoryItem, GqlSSession } from '../graphql/generated';

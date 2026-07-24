@@ -1,8 +1,8 @@
 import { Link } from '@tanstack/react-router';
 import { LockIcon } from 'lucide-react';
+import type { Locale } from '../utils/locale';
 import { Button } from './base/button';
 import { GlassCard } from './GlassCard';
-import type { Locale } from '../utils/locale';
 
 // Rendered by every `/workspace/*` page when its loader returned a query whose
 // `currentSession.user.admin` resolved to `null` — i.e. the visitor is not

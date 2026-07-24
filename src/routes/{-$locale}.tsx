@@ -1,7 +1,7 @@
-import { Outlet, createFileRoute, notFound, redirect } from '@tanstack/react-router';
+import { createFileRoute, notFound, Outlet, redirect } from '@tanstack/react-router';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeader, setResponseHeader } from '@tanstack/react-start/server';
-import { DEFAULT_LOCALE, LOCALES, localeFromAcceptLanguage } from '../web/utils/locale';
+import { DEFAULT_LOCALE, localeFromAcceptLanguage, LOCALES } from '../web/utils/locale';
 import type { Locale } from '../web/utils/locale';
 
 const LOCALE_COOKIE = 'locale';

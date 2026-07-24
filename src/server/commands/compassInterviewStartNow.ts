@@ -1,9 +1,9 @@
 import { eq, or } from 'drizzle-orm';
+import type { CompassInterviewTopic } from '../agents/compassInterviewConfig';
 import { compassInterviews } from '../db/schema';
 import type { CompassInterviewCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMutationCompassInterviewStartNowArgs, GqlSMutationResult, GqlSSession } from '../graphql/generated';
-import type { CompassInterviewTopic } from '../agents/compassInterviewConfig';
 
 // Manually create a `pending` interview, off the cron cadence. Same guard as
 // the recurring `compassInterviewScheduledDue` handler: if an interview is

@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
+import { COMPASS_SINGLETON_ID } from '../agents/compassConfig';
 import { compass } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import { COMPASS_SINGLETON_ID } from '../agents/compassConfig';
 
 // FIREWALL ANCHOR.
 //

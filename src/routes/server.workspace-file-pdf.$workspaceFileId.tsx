@@ -1,8 +1,8 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { AssistantMarkdown, ExternalLinkConfirmationProvider } from '../web/components/AssistantMarkdown';
 import type { WorkspaceFilePdfContent } from '../server/queries/workspaceFilePdfContentLoad';
+import { AssistantMarkdown, ExternalLinkConfirmationProvider } from '../web/components/AssistantMarkdown';
 
 // Print surface for a workspace markdown document — the page headless
 // Chromium navigates to and captures into a PDF (see

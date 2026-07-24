@@ -1,6 +1,6 @@
-import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { chromium } from 'playwright';
 
 // One-off capture for the public Projects page hero images. Mirrors the
 // seedCv.ts shape: idempotent, run it whenever a site's design changes.

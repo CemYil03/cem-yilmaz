@@ -1,6 +1,6 @@
 import { asc, desc, inArray } from 'drizzle-orm';
 import { fileUploads, medicalRecordFiles, medicalRecords } from '../db/schema';
-import type { FileUpload, AdminMedicalRecordFile } from '../db/schema';
+import type { AdminMedicalRecordFile, FileUpload } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSAdminMedicalRecord, GqlSSession } from '../graphql/generated';
 import { toGqlAdminMedicalRecord } from '../mappers/toGqlAdminMedicalRecord';

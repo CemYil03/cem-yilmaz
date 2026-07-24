@@ -6,7 +6,7 @@ import { recipes } from '../db/schema';
 import type { AdminNutritionRecipeCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { GqlSAdminNutritionMealTypeSchema } from '../graphql/generated';
-import type { GqlSMutationResult, GqlSAdminNutritionRecipeInput, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminNutritionRecipeInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of cookbook recipes. Every row with a `recipeId` is updated;
 // every row without one is inserted. `referenceIds` echoes the id per input

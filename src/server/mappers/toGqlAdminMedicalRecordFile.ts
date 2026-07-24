@@ -1,4 +1,4 @@
-import type { FileUpload, AdminMedicalRecordFile } from '../db/schema';
+import type { AdminMedicalRecordFile, FileUpload } from '../db/schema';
 import type { GqlSAdminMedicalRecordFile } from '../graphql/generated';
 import { toGqlFileUpload } from './toGqlFileUpload';
 

@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { agentVisitor } from '../agents/agentVisitor';
 import { chatMessages, chatMessagesAssistantInputCollection, chatMessagesUserInput, chats } from '../db/schema';
-import { commandSetup, testDb } from '../test/commandTestUtils';
 import type { GqlSChatAssistantOptions } from '../graphql/generated';
+import { commandSetup, testDb } from '../test/commandTestUtils';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
 import { chatInputCollectionRespond } from './chatInputCollectionRespond';
 import type { ChatMutationDispatch } from './chatMessageCreate';

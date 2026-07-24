@@ -1,10 +1,10 @@
 import { FileTextIcon } from 'lucide-react';
+import { useDocumentPanel } from '../../chat/DocumentPanelProvider';
+import { toolDisplay } from '../../chat/toolDisplay';
+import { interpretToolResult } from '../../chat/toolResult';
 import type { GqlCChatMessage, GqlCChatMessageToolCall } from '../../graphql/generated';
 import { useLocale } from '../../hooks/useLocale';
 import { cn } from '../../utils/cn';
-import { toolDisplay } from '../../chat/toolDisplay';
-import { interpretToolResult } from '../../chat/toolResult';
-import { useDocumentPanel } from '../../chat/DocumentPanelProvider';
 import { AssistantReasoning } from '../AssistantReasoning';
 import {
     Attachment,

@@ -1,7 +1,7 @@
 import { asc, isNull } from 'drizzle-orm';
 import { tasks } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSSession, GqlSAdminProjectTask } from '../graphql/generated';
+import type { GqlSAdminProjectTask, GqlSSession } from '../graphql/generated';
 import { toGqlAdminProjectTask } from '../mappers/toGqlAdminProjectTask';
 
 // Standalone todos: tasks with `projectId IS NULL`. Surfaced on the Todos

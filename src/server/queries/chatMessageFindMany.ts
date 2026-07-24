@@ -1,11 +1,11 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { chatMessageUserAttachmentAttach } from '../commands/chatMessageUserAttachmentAttach';
 import type { Database, DatabaseTransaction } from '../db';
 import { chatMessages, compassObservations } from '../db/schema';
 import type { CompassObservation } from '../db/schema';
-import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { toChatMessageRow } from '../mappers/toChatMessageRow';
+import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageBaseQuery } from './chatMessageBaseQuery';
-import { chatMessageUserAttachmentAttach } from '../commands/chatMessageUserAttachmentAttach';
 
 // Single round-trip that pulls every message in a chat together with whichever
 // variant row it has and (if any) its author user. Each variant table is

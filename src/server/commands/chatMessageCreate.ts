@@ -1,6 +1,4 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
-import { chatMessageAppend } from './chatMessageAppend';
 import type { ChatAgentFactory } from '../agents/agentVisitor';
 import type {
     ChatCreate,
@@ -11,13 +9,15 @@ import type {
     ChatMessageUserInput,
     ChatMessageUserInputCreate,
 } from '../db/schema';
-import { fileUploads, chatMessageUserAttachments, chatMessagesUser, chatMessagesUserInput, chats } from '../db/schema';
+import { chatMessagesUser, chatMessagesUserInput, chatMessageUserAttachments, chats, fileUploads } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatMessageCreateResult, GqlSMutationChatMessageCreateArgs, GqlSSession } from '../graphql/generated';
 import { compassAnalyze } from '../jobs/handlers/compassAnalyze';
 import type { ChatMessageRowJoined } from '../mappers/toGqlChatMessage';
 import { chatMessageFindMany } from '../queries/chatMessageFindMany';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
+import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
+import { chatMessageAppend } from './chatMessageAppend';
 
 // Dispatch context the resolver passes in. The mutation namespace decides the
 // values: visitor mutations pass `{ scope: 'public', agentFactory:

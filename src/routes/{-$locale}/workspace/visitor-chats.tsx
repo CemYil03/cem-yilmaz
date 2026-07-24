@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { formatDate } from '../../../shared';
 import { ArrowLeftIcon, MessageSquareTextIcon } from 'lucide-react';
 import { z } from 'zod';
+import { formatDate } from '../../../shared';
 import type { TranscriptMessage } from '../../../web/chat/chatTranscript';
 import { groupMessagesByDate, mergeTranscriptMessages } from '../../../web/chat/chatTranscript';
-import { GlassCard } from '../../../web/components/GlassCard';
 import { ChatMessage } from '../../../web/components/chat-message';
+import { GlassCard } from '../../../web/components/GlassCard';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type { GqlCWorkspaceVisitorChatQuery, GqlCWorkspaceVisitorChatsQuery } from '../../../web/graphql/generated';
 import { WorkspaceVisitorChatDocument, WorkspaceVisitorChatsDocument } from '../../../web/graphql/generated';

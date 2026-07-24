@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { emailToCemSend } from '../jobs/handlers/emailToCemSend';
 import type { ServerRuntime } from '../domain/ServerRuntime';
+import { emailToCemSend } from '../jobs/handlers/emailToCemSend';
 
 // --- toolSendEmailToCem ------------------------------------------------------
 //

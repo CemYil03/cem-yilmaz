@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 
 import { agentVisitor } from '../agents/agentVisitor';
-import { chatMessageUserAttachments, chatMessages, chatMessagesUser, chats } from '../db/schema';
-import { commandSetup, testDb } from '../test/commandTestUtils';
+import { chatMessages, chatMessagesUser, chatMessageUserAttachments, chats } from '../db/schema';
 import type { GqlSChatAssistantOptions } from '../graphql/generated';
+import { commandSetup, testDb } from '../test/commandTestUtils';
 import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
 import type { ChatMutationDispatch } from './chatMessageCreate';
 import { chatMessageCreate } from './chatMessageCreate';

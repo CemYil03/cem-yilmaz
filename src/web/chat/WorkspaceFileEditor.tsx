@@ -1,5 +1,6 @@
 import { DownloadIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useMutation, useQuery } from 'urql';
 import { AssistantMarkdown } from '../components/AssistantMarkdown';
 import { Button } from '../components/base/button';
@@ -8,7 +9,6 @@ import { Textarea } from '../components/base/textarea';
 import { WorkspaceFileDocument, WorkspaceFileUpdateDocument } from '../graphql/generated';
 import { cn } from '../utils/cn';
 import type { Locale } from '../utils/locale';
-import { toast } from 'sonner';
 
 // The workspace document editor — the half-screen panel body that opens when
 // Cem clicks a file attachment on an assistant message. Fetches the file by id,

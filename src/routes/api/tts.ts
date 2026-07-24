@@ -1,16 +1,16 @@
-import { createFileRoute } from '@tanstack/react-router';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createFileRoute } from '@tanstack/react-router';
 import { generateSpeech } from 'ai';
+import { ttsAudioCacheUpsert } from '../../server/commands/ttsAudioCacheUpsert';
+import { db } from '../../server/db';
 import { environmentVariables } from '../../server/env/environmentVariablesCreate';
+import { ttsAudioCacheFindOne } from '../../server/queries/ttsAudioCacheFindOne';
+import { audioTranscodePcmToMp3Stream } from '../../server/utils/audioTranscode';
+import { clientIpFromRequest } from '../../server/utils/clientIpFromRequest';
+import { loggerCreate } from '../../server/utils/loggerCreate';
 import { sessionUpsert } from '../../server/utils/sessionUpsert';
 import { sessionUtils } from '../../server/utils/sessionUtils';
-import { clientIpFromRequest } from '../../server/utils/clientIpFromRequest';
-import { db } from '../../server/db';
-import { loggerCreate } from '../../server/utils/loggerCreate';
 import { ttsContentHash } from '../../server/utils/ttsContentHash';
-import { ttsAudioCacheFindOne } from '../../server/queries/ttsAudioCacheFindOne';
-import { ttsAudioCacheUpsert } from '../../server/commands/ttsAudioCacheUpsert';
-import { audioTranscodePcmToMp3Stream } from '../../server/utils/audioTranscode';
 import { textToSentences } from '../../web/utils/textToSentences';
 
 const log = loggerCreate(db);

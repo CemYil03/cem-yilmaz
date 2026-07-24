@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
 import { eq } from 'drizzle-orm';
+import { describe, expect, it } from 'vitest';
 
-import { sessionUpsert } from './sessionUpsert';
-import { testDb, testLogger } from '../test/commandTestUtils';
 import { sessions } from '../db/schema';
+import { testDb, testLogger } from '../test/commandTestUtils';
+import { sessionUpsert } from './sessionUpsert';
 
 describe('sessionUpsert', () => {
     it('creates a new session when no existing session ID is provided', async () => {

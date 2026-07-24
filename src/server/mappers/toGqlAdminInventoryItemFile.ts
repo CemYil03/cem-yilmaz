@@ -1,4 +1,4 @@
-import type { FileUpload, AdminInventoryItemFile } from '../db/schema';
+import type { AdminInventoryItemFile, FileUpload } from '../db/schema';
 import type { GqlSAdminInventoryItemFile } from '../graphql/generated';
 import { toGqlFileUpload } from './toGqlFileUpload';
 

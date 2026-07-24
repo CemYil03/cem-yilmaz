@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
+import { COMPASS_SINGLETON_ID } from '../agents/compassConfig';
 import type { Database, DatabaseTransaction } from '../db';
 import { compass } from '../db/schema';
 import type { Compass, CompassCreate } from '../db/schema';
-import { COMPASS_SINGLETON_ID } from '../agents/compassConfig';
 
 // Loads the singleton `Compass` row, creating it lazily if it doesn't exist
 // yet. Callers can rely on this returning a row — they never need to handle

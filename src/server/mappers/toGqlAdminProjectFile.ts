@@ -1,4 +1,4 @@
-import type { FileUpload, AdminProjectFile } from '../db/schema';
+import type { AdminProjectFile, FileUpload } from '../db/schema';
 import type { GqlSAdminProjectFile } from '../graphql/generated';
 import { toGqlFileUpload } from './toGqlFileUpload';
 

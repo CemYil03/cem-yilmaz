@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { createSetCookieString, sessionUtils } from './sessionUtils';
 import type { SessionCookieConfiguration } from '../env/EnvironmentVariables';
 import type { GqlSChat, GqlSSession } from '../graphql/generated';
+import { createSetCookieString, sessionUtils } from './sessionUtils';
 
 const sessionCookieConfig: SessionCookieConfiguration = {
     name: 'session-cookie-name',

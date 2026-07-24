@@ -18,7 +18,7 @@ import {
     GqlSAdminProjectLinkKindSchema,
     GqlSAdminProjectOfferStatusSchema,
 } from '../graphql/generated';
-import type { GqlSMutationResult, GqlSAdminProjectActivityCreate, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminProjectActivityCreate, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Resolve the `direction` column for a non-timer activity. `work` / `note` /
 // `milestone` are always `internal` (they're not a turn in a dialogue). A

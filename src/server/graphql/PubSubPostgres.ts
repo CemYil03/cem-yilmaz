@@ -22,8 +22,8 @@
  * make sure to preserve the lower-case normalization + pg_notify usage.
  */
 
-import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { Client } from 'pg';
 import type { Notification, Pool } from 'pg';
 import type { Database } from '../db';

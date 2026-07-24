@@ -1,20 +1,21 @@
-import * as React from 'react';
 import { parseISO } from 'date-fns';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
+import { formatIsoDate } from '../../../shared';
+import type { DateTimeDraft, SlotDraft, SlotDraftOf } from '../../chat/chatAssistantInputKinds';
+import { formatAnswerValue, serializeSlotAnswer } from '../../chat/chatAssistantInputKinds';
 import type {
     GqlCChatAssistantInput,
     GqlCChatAssistantInputValue,
     GqlCChatMessageAssistantInputCollection,
     GqlCChatMessageUserInput,
 } from '../../graphql/generated';
-import type { DateTimeDraft, SlotDraft, SlotDraftOf } from '../../chat/chatAssistantInputKinds';
-import { formatAnswerValue, serializeSlotAnswer } from '../../chat/chatAssistantInputKinds';
-import { formatIsoDate } from '../../../shared';
+import { useLocale } from '../../hooks/useLocale';
 import { cn } from '../../utils/cn';
 import { DATE_FNS_LOCALE } from '../../utils/dateFnsLocale';
 import type { Locale } from '../../utils/locale';
-import { useLocale } from '../../hooks/useLocale';
+import { AssistantReasoning } from '../AssistantReasoning';
 import { Button } from '../base/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../base/card';
 import { DatePicker } from '../base/date-picker';
@@ -24,7 +25,6 @@ import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '../bas
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../base/select';
 import { Textarea } from '../base/textarea';
 import { MessageRow, Timestamp } from './shared';
-import { AssistantReasoning } from '../AssistantReasoning';
 
 type SlotDrafts = Record<string, SlotDraft | undefined>;
 

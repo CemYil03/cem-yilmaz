@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useLocation } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Maximize2Icon, MessageSquareTextIcon, Minimize2Icon, PlusIcon, SparklesIcon } from 'lucide-react';
-import { useLocation } from '@tanstack/react-router';
+import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
+import { Button } from '../components/base/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/base/sheet';
 import { Spinner } from '../components/base/spinner';
 import type { GqlCChatAssistantInputValue, GqlCChatPageQuery, GqlCVisitorChatListItemFragment } from '../graphql/generated';
@@ -18,12 +19,11 @@ import { cn } from '../utils/cn';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
-import { ChatTranscript as SharedChatTranscript } from './ChatTranscriptShared';
-import { VisitorChatComposer } from './VisitorChatComposer';
 import { mergeTranscriptMessages } from './chatTranscript';
 import type { TranscriptMessage } from './chatTranscript';
+import { ChatTranscript as SharedChatTranscript } from './ChatTranscriptShared';
+import { VisitorChatComposer } from './VisitorChatComposer';
 import { useVisitorChat } from './VisitorChatProvider';
-import { Button } from '../components/base/button';
 
 // Visitor-facing AI chat surface. Mounted once at the root layout — see
 // `__root.tsx` — so any surface can open it via `useVisitorChat()` without

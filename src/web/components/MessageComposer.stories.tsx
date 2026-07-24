@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
 import { BotIcon, ShieldCheckIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './base/select';
 import { MessageComposer } from './MessageComposer';
 import type { ComposerAttachment, MessageComposerProps } from './MessageComposer';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './base/select';
 
 // `MessageComposer` is fully controlled — the parent owns `value`, `busy`,
 // `disabled`, and `attachments`. A small in-story harness wraps it so the

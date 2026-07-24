@@ -3,13 +3,13 @@ import type { ModelMessage } from 'ai';
 import { z } from 'zod';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { compassInterviewContextFindOne } from '../queries/compassInterviewContextFindOne';
+import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import type { CompassInterviewTopic } from './compassInterviewConfig';
 import {
     COMPASS_INTERVIEW_MAX_QUESTIONS,
     COMPASS_INTERVIEW_MIN_QUESTIONS,
     COMPASS_INTERVIEW_TOPIC_PROMPTS,
 } from './compassInterviewConfig';
-import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 
 // Psychological-interview agent — see `docs/features/workspace-compass.md`
 // ("Psychological-interview agent").

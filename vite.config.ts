@@ -1,12 +1,12 @@
-import { defineConfig } from 'vite';
 import { execSync } from 'node:child_process';
+import tailwindcss from '@tailwindcss/vite';
 import { devtools } from '@tanstack/devtools-vite';
 
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import viteReact from '@vitejs/plugin-react';
 import { nitro } from 'nitro/vite';
 
-import viteReact from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 
 // Last commit date in ISO-8601 form, injected as `__SITE_LAST_MODIFIED__`

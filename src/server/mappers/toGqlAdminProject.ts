@@ -1,11 +1,11 @@
 import type {
-    FileUpload,
     AdminProject,
     AdminProjectActivity,
     AdminProjectFile,
     AdminProjectLink,
     AdminProjectRequest,
     AdminProjectTask,
+    FileUpload,
 } from '../db/schema';
 import type { GqlSAdminProject } from '../graphql/generated';
 import { toGqlAdminProjectActivity } from './toGqlAdminProjectActivity';

@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
+import { COMPASS_SINGLETON_ID } from '../agents/compassConfig';
 import { compass } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSMutationResult, GqlSSession } from '../graphql/generated';
-import { COMPASS_SINGLETON_ID } from '../agents/compassConfig';
 
 // Clear the AI-suggested schedule hint on the Compass singleton row without
 // acting on it. Called when Cem dismisses the suggestion card on

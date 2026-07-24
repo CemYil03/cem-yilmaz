@@ -6,7 +6,7 @@ import { shows } from '../db/schema';
 import type { AdminMediaShowCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { GqlSAdminMediaShowInputSchema } from '../graphql/generated';
-import type { GqlSMutationResult, GqlSSession, GqlSAdminMediaShowInput } from '../graphql/generated';
+import type { GqlSAdminMediaShowInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of TV series. Every input with a `showId` is updated; every
 // input without one is inserted under a freshly-minted UUID. The whole batch

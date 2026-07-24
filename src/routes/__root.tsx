@@ -1,13 +1,13 @@
-import { HeadContent, Outlet, Scripts, createRootRoute, useLocation } from '@tanstack/react-router';
+import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { Provider as GraphQLClientProvider } from 'urql';
 import appCss from '../styles.css?url';
+import { VisitorChatProvider } from '../web/chat/VisitorChatProvider';
+import { WebsiteVisitorAssistantChatSheet } from '../web/chat/WebsiteVisitorAssistantChatSheet';
 import { AmbientBackdrop } from '../web/components/AmbientBackdrop';
 import { Toaster } from '../web/components/base/sonner';
 import { TooltipProvider } from '../web/components/base/tooltip';
 import { NavigationProgress } from '../web/components/NavigationProgress';
-import { VisitorChatProvider } from '../web/chat/VisitorChatProvider';
-import { WebsiteVisitorAssistantChatSheet } from '../web/chat/WebsiteVisitorAssistantChatSheet';
 import { urqlClient } from '../web/graphql/client';
 import { useLocale } from '../web/hooks/useLocale';
 import { DEFAULT_SHARE_IMAGE, DEFAULT_SHARE_IMAGE_DIMENSIONS, SITE_NAME } from '../web/seo/seoConstants';

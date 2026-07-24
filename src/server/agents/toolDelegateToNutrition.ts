@@ -8,8 +8,8 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantNutrition } from './agentPersonalAssistantNutrition';
-import type { ChatStepArtifact } from './chatStepArtifact';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
+import type { ChatStepArtifact } from './chatStepArtifact';
 
 // Orchestrator-side tool that delegates a nutrition brief to
 // `agentPersonalAssistantNutrition`. Structural copy of `toolDelegateToTravel`

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { commandSetup } from '../test/commandTestUtils';
 import { cvExperiencesUpsert } from '../commands/cvExperiencesUpsert';
+import { commandSetup } from '../test/commandTestUtils';
 import { publicCvExperienceFindMany } from './publicCvExperienceFindMany';
 
 const seed = async (

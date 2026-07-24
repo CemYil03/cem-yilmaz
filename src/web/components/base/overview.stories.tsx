@@ -1,19 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { HeartIcon, MailIcon, BellIcon, SettingsIcon } from 'lucide-react';
+import { BellIcon, HeartIcon, MailIcon, SettingsIcon } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from './avatar';
 import { Button } from './button';
-import { Input } from './input';
-import { Textarea } from './textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
-import { Switch } from './switch';
-import { Slider } from './slider';
-import { Avatar, AvatarFallback, AvatarImage, AvatarGroup } from './avatar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
-import { Separator } from './separator';
-import { Skeleton } from './skeleton';
-import { Spinner } from './spinner';
+import { Input } from './input';
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from './input-otp';
 import { Kbd } from './kbd';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
-import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from './input-otp';
 import {
     Pagination,
     PaginationContent,
@@ -23,6 +15,14 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from './pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { Separator } from './separator';
+import { Skeleton } from './skeleton';
+import { Slider } from './slider';
+import { Spinner } from './spinner';
+import { Switch } from './switch';
+import { Textarea } from './textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 
 const meta = {
     title: 'Base/Overview',

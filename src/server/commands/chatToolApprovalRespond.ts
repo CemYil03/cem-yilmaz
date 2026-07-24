@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
-import type { ChatMutationDispatch } from './chatMessageCreate';
-import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
-import { chatMessageAppend } from './chatMessageAppend';
 import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageToolApprovalResponseCreate } from '../db/schema';
-import { chats, chatMessages, chatMessagesToolApprovalRequest, chatMessagesToolApprovalResponse } from '../db/schema';
+import { chatMessages, chatMessagesToolApprovalRequest, chatMessagesToolApprovalResponse, chats } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSChatMessageCreateResult, GqlSMutationChatToolApprovalRespondArgs, GqlSSession } from '../graphql/generated';
+import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
+import { chatMessageAppend } from './chatMessageAppend';
+import type { ChatMutationDispatch } from './chatMessageCreate';
 
 // Persists the human's Approve/Decline decision in response to a
 // `ChatMessageToolApprovalRequest`, then runs the next assistant turn via the

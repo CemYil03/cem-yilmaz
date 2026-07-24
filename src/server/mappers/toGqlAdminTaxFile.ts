@@ -1,4 +1,4 @@
-import type { FileUpload, AdminTaxFile } from '../db/schema';
+import type { AdminTaxFile, FileUpload } from '../db/schema';
 import type { GqlSAdminTaxFile } from '../graphql/generated';
 import { toGqlFileUpload } from './toGqlFileUpload';
 

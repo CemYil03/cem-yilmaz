@@ -1,5 +1,5 @@
-import { defineConfig } from 'vitest/config';
 import viteReact from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
 
 // Vitest is intentionally split from `vite.config.ts`. The dev/build config
 // loads the full TanStack Start + Nitro + React plugin stack, which Vitest 4 +

@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useLocale } from '../hooks/useLocale';
 import { DEFAULT_LOCALE, LOCALES } from '../utils/locale';
 import type { Locale } from '../utils/locale';
-import { useLocale } from '../hooks/useLocale';
 import { HeaderIconButton } from './HeaderIconButton';
 
 function setLocaleCookie(locale: Locale) {

@@ -31,21 +31,11 @@ import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
 import { formatDate } from '../../../shared';
-import { uploadFile } from '../../../web/chat/fileUpload';
 import { previewKindFor } from '../../../web/chat/chatAttachmentPreview';
+import { uploadFile } from '../../../web/chat/fileUpload';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
-import { ChatAttachmentPreviewDialog } from '../../../web/components/chat-message/ChatAttachmentPreviewDialog';
-import { GlassCard } from '../../../web/components/GlassCard';
-import { Reveal } from '../../../web/components/Reveal';
-import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
-import {
-    ACTIVITY_KIND_ICONS,
-    ACTIVITY_KIND_LABELS,
-    activityHeading,
-    formatDuration,
-} from '../../../web/components/WorkspaceProjectActivityConstants';
-import { WorkspaceProjectActivityTimeline } from '../../../web/components/WorkspaceProjectActivityTimeline';
 import { Button } from '../../../web/components/base/button';
+import { Checkbox } from '../../../web/components/base/checkbox';
 import { DatePicker } from '../../../web/components/base/date-picker';
 import {
     DropdownMenu,
@@ -55,9 +45,19 @@ import {
     DropdownMenuTrigger,
 } from '../../../web/components/base/dropdown-menu';
 import { Input } from '../../../web/components/base/input';
-import { Checkbox } from '../../../web/components/base/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
 import { Textarea } from '../../../web/components/base/textarea';
+import { ChatAttachmentPreviewDialog } from '../../../web/components/chat-message/ChatAttachmentPreviewDialog';
+import { GlassCard } from '../../../web/components/GlassCard';
+import { Reveal } from '../../../web/components/Reveal';
+import {
+    ACTIVITY_KIND_ICONS,
+    ACTIVITY_KIND_LABELS,
+    activityHeading,
+    formatDuration,
+} from '../../../web/components/WorkspaceProjectActivityConstants';
+import { WorkspaceProjectActivityTimeline } from '../../../web/components/WorkspaceProjectActivityTimeline';
+import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
     GqlCAdminProjectFileKind,
     GqlCAdminProjectLinkKind,

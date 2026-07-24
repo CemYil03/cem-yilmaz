@@ -1,5 +1,5 @@
-import { createClient, fetchExchange, subscriptionExchange } from 'urql';
 import { createClient as createSSEClient } from 'graphql-sse';
+import { createClient, fetchExchange, subscriptionExchange } from 'urql';
 
 // URQL ships with a GET-with-query-params default for queries, which trips up
 // proxies that cap URL length and complicates request logging. We force every

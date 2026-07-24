@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
 import { and, eq } from 'drizzle-orm';
+import { describe, expect, it } from 'vitest';
 
-import { loggerCreate } from './loggerCreate';
-import { testDb } from '../test/commandTestUtils';
 import { logs, sessions } from '../db/schema';
+import { testDb } from '../test/commandTestUtils';
+import { loggerCreate } from './loggerCreate';
 
 describe('loggerCreate', () => {
     it.each(['error', 'warn', 'info', 'debug'] as const)('persists a %s-level row from a string message', async (level) => {

@@ -1,12 +1,12 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { workspaceFiles } from '../db/schema';
 import type { WorkspaceFileCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession, GqlSWorkspaceFile } from '../graphql/generated';
 import { toGqlWorkspaceFile } from '../mappers/toGqlWorkspaceFile';
 import { adminWorkspaceFileFindOne } from '../queries/adminWorkspaceFileFindOne';
-import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { adminWorkspaceFileUpdate } from './adminWorkspaceFileUpdate';
 import { fileUploadCreate } from './fileUploadCreate';
 

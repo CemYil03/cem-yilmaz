@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm';
+import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { fileUploads, workspaceFiles } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession, GqlSWorkspaceFile } from '../graphql/generated';
 import { toGqlWorkspaceFile } from '../mappers/toGqlWorkspaceFile';
-import { requireAdminUserId } from '../agents/requireAdminUserId';
 
 // Loads a single standalone workspace file by id, scoped to the requesting
 // admin, and decodes its underlying upload bytes into a UTF-8 `content`

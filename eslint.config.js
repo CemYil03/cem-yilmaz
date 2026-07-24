@@ -9,8 +9,24 @@ export default [
     {
         rules: {
             'import/no-cycle': 'off',
-            'import/order': 'off',
-            'sort-imports': 'off',
+            // Override TanStack's import/order: alphabetize within groups, and keep
+            // `import type` with its module path (not a trailing type-only group).
+            'import/order': [
+                'error',
+                {
+                    groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object'],
+                    alphabetize: { order: 'asc', caseInsensitive: true },
+                },
+            ],
+            // Member names inside `{ a, b }` — declaration order is owned by import/order.
+            'sort-imports': [
+                'error',
+                {
+                    ignoreCase: true,
+                    ignoreDeclarationSort: true,
+                    ignoreMemberSort: false,
+                },
+            ],
             '@typescript-eslint/array-type': 'off',
             '@typescript-eslint/require-await': 'off',
             'pnpm/json-enforce-catalog': 'off',

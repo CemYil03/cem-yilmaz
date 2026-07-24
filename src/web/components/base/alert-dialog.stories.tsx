@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { TriangleAlertIcon, Trash2Icon } from 'lucide-react';
+import { Trash2Icon, TriangleAlertIcon } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,

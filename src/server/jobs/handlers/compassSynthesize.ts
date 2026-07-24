@@ -1,11 +1,11 @@
 import { generateText, Output } from 'ai';
 import { asc, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
-import { compass, compassObservations, users } from '../../db/schema';
-import type { QueuedJobDefinition } from '../types';
-import { adminCompassFindOne } from '../../queries/adminCompassFindOne';
-import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
 import { googleAgentProviderOptionsFor } from '../../agents/agentScaffolding';
+import { COMPASS_SINGLETON_ID } from '../../agents/compassConfig';
+import { compass, compassObservations, users } from '../../db/schema';
+import { adminCompassFindOne } from '../../queries/adminCompassFindOne';
+import type { QueuedJobDefinition } from '../types';
 
 // Reads every non-dismissed observation plus the prior compass and rewrites
 // the three text artifacts in one transaction. Resets

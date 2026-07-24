@@ -12,8 +12,8 @@
 
 import { format, parseISO } from 'date-fns';
 import { formatDate, formatDateRange } from '../../shared';
-import type { Locale } from '../utils/locale';
 import type { GqlCChatAssistantInputValue, GqlCChatMessageUserInputAnswerCreate } from '../graphql/generated';
+import type { Locale } from '../utils/locale';
 
 // --- Drafts (per-slot in-progress UI state) ---------------------------------
 

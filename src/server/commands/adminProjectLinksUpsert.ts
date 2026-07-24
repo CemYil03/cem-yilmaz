@@ -6,7 +6,7 @@ import { projectLinks } from '../db/schema';
 import type { AdminProjectLinkCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { GqlSAdminProjectLinkUpsertSchema } from '../graphql/generated';
-import type { GqlSMutationResult, GqlSAdminProjectLinkUpsert, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminProjectLinkUpsert, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch create-or-update of project links. Every input with a `projectLinkId`
 // is updated; every input without one is inserted. `activityId` is honoured

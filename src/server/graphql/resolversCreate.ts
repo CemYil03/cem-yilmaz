@@ -1,12 +1,107 @@
+import { eq } from 'drizzle-orm';
 import { DateResolver, DateTimeResolver, JSONResolver } from 'graphql-scalars';
 import { ADMIN_CHAT_MODELS } from '../agents/adminChatModels';
 import { agentPersonalAssistant } from '../agents/agentPersonalAssistant';
 import { agentVisitor } from '../agents/agentVisitor';
+import { supplementCompositionResearch } from '../agents/supplementCompositionResearch';
 import { adminChatConfigDefaultModelSet } from '../commands/adminChatConfigDefaultModelSet';
+import { adminFinancesAssetsDelete } from '../commands/adminFinancesAssetsDelete';
+import { adminFinancesAssetsReprice } from '../commands/adminFinancesAssetsReprice';
+import { adminFinancesAssetsUpsert } from '../commands/adminFinancesAssetsUpsert';
+import { adminFinancesIncomeStreamsDelete } from '../commands/adminFinancesIncomeStreamsDelete';
+import { adminFinancesIncomeStreamsUpsert } from '../commands/adminFinancesIncomeStreamsUpsert';
+import { adminFinancesRecurringCostsDelete } from '../commands/adminFinancesRecurringCostsDelete';
+import { adminFinancesRecurringCostsUpsert } from '../commands/adminFinancesRecurringCostsUpsert';
+import { adminFitnessExercisesDelete } from '../commands/adminFitnessExercisesDelete';
+import { adminFitnessExercisesUpsert } from '../commands/adminFitnessExercisesUpsert';
+import { adminFitnessWorkoutRoutineItemsDelete } from '../commands/adminFitnessWorkoutRoutineItemsDelete';
+import { adminFitnessWorkoutRoutineItemsUpsert } from '../commands/adminFitnessWorkoutRoutineItemsUpsert';
+import { adminFitnessWorkoutRoutinesDelete } from '../commands/adminFitnessWorkoutRoutinesDelete';
+import { adminFitnessWorkoutRoutinesUpsert } from '../commands/adminFitnessWorkoutRoutinesUpsert';
+import { adminFitnessWorkoutSessionsDelete } from '../commands/adminFitnessWorkoutSessionsDelete';
+import { adminFitnessWorkoutSessionsUpsert } from '../commands/adminFitnessWorkoutSessionsUpsert';
+import { adminFitnessWorkoutSetsDelete } from '../commands/adminFitnessWorkoutSetsDelete';
+import { adminFitnessWorkoutSetsUpsert } from '../commands/adminFitnessWorkoutSetsUpsert';
+import { adminInventoryItemFilesAttach } from '../commands/adminInventoryItemFilesAttach';
+import { adminInventoryItemFilesDelete } from '../commands/adminInventoryItemFilesDelete';
+import { adminInventoryItemFilesUpsert } from '../commands/adminInventoryItemFilesUpsert';
+import { adminInventoryItemsDelete } from '../commands/adminInventoryItemsDelete';
+import { adminInventoryItemServiceEntriesDelete } from '../commands/adminInventoryItemServiceEntriesDelete';
+import { adminInventoryItemServiceEntriesUpsert } from '../commands/adminInventoryItemServiceEntriesUpsert';
+import { adminInventoryItemsReprice } from '../commands/adminInventoryItemsReprice';
+import { adminInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert';
+import { adminMediaChannelReorder } from '../commands/adminMediaChannelReorder';
+import { adminMediaChannelsDelete } from '../commands/adminMediaChannelsDelete';
+import { adminMediaChannelsUpsert } from '../commands/adminMediaChannelsUpsert';
+import { adminMediaMoviesAddFromTmdb } from '../commands/adminMediaMoviesAddFromTmdb';
+import { adminMediaMoviesDelete } from '../commands/adminMediaMoviesDelete';
+import { adminMediaMoviesUpsert } from '../commands/adminMediaMoviesUpsert';
+import { adminMediaShowsAddFromTmdb } from '../commands/adminMediaShowsAddFromTmdb';
+import { adminMediaShowsDelete } from '../commands/adminMediaShowsDelete';
+import { adminMediaShowsUpsert } from '../commands/adminMediaShowsUpsert';
+import { adminMedicalAppointmentsDelete } from '../commands/adminMedicalAppointmentsDelete';
+import { adminMedicalAppointmentsUpsert } from '../commands/adminMedicalAppointmentsUpsert';
+import { adminMedicalRecordFilesAttach } from '../commands/adminMedicalRecordFilesAttach';
+import { adminMedicalRecordFilesDelete } from '../commands/adminMedicalRecordFilesDelete';
+import { adminMedicalRecordsDelete } from '../commands/adminMedicalRecordsDelete';
+import { adminMedicalRecordsUpsert } from '../commands/adminMedicalRecordsUpsert';
+import { adminNutritionFoodLogEntriesDelete } from '../commands/adminNutritionFoodLogEntriesDelete';
+import { adminNutritionFoodLogEntriesUpsert } from '../commands/adminNutritionFoodLogEntriesUpsert';
+import { adminNutritionMealPlanEntriesDelete } from '../commands/adminNutritionMealPlanEntriesDelete';
+import { adminNutritionMealPlanEntriesUpsert } from '../commands/adminNutritionMealPlanEntriesUpsert';
+import { adminNutritionRecipesDelete } from '../commands/adminNutritionRecipesDelete';
+import { adminNutritionRecipesUpsert } from '../commands/adminNutritionRecipesUpsert';
+import { adminNutritionSupplementNutrientsReplace } from '../commands/adminNutritionSupplementNutrientsReplace';
+import { adminNutritionSupplementsDelete } from '../commands/adminNutritionSupplementsDelete';
+import { adminNutritionSupplementsUpsert } from '../commands/adminNutritionSupplementsUpsert';
+import { adminProjectActivitiesDelete } from '../commands/adminProjectActivitiesDelete';
+import { adminProjectActivitiesUpsert } from '../commands/adminProjectActivitiesUpsert';
+import { adminProjectFilesDelete } from '../commands/adminProjectFilesDelete';
+import { adminProjectFilesUpsert } from '../commands/adminProjectFilesUpsert';
+import { adminProjectLinksDelete } from '../commands/adminProjectLinksDelete';
+import { adminProjectLinksUpsert } from '../commands/adminProjectLinksUpsert';
+import { adminProjectReorder } from '../commands/adminProjectReorder';
+import { adminProjectRequestArchive } from '../commands/adminProjectRequestArchive';
+import { adminProjectRequestDelete } from '../commands/adminProjectRequestDelete';
+import { adminProjectsDelete } from '../commands/adminProjectsDelete';
+import { adminProjectsUpsert } from '../commands/adminProjectsUpsert';
+import { adminProjectTaskReorder } from '../commands/adminProjectTaskReorder';
+import { adminProjectTasksDelete } from '../commands/adminProjectTasksDelete';
+import { adminProjectTasksUpsert } from '../commands/adminProjectTasksUpsert';
+import { adminProjectTimersStart } from '../commands/adminProjectTimersStart';
+import { adminProjectTimersStop } from '../commands/adminProjectTimersStop';
+import { adminTaxDocumentsDelete } from '../commands/adminTaxDocumentsDelete';
+import { adminTaxDocumentsUpsert } from '../commands/adminTaxDocumentsUpsert';
+import { adminTaxExpensesDelete } from '../commands/adminTaxExpensesDelete';
+import { adminTaxExpensesUpsert } from '../commands/adminTaxExpensesUpsert';
+import { adminTaxFilesAttach } from '../commands/adminTaxFilesAttach';
+import { adminTaxFilesDelete } from '../commands/adminTaxFilesDelete';
+import { adminTaxFilesUpsert } from '../commands/adminTaxFilesUpsert';
+import { adminTaxIncomeSourcesDelete } from '../commands/adminTaxIncomeSourcesDelete';
+import { adminTaxIncomeSourcesUpsert } from '../commands/adminTaxIncomeSourcesUpsert';
+import { adminTaxYearsDelete } from '../commands/adminTaxYearsDelete';
+import { adminTaxYearsUpsert } from '../commands/adminTaxYearsUpsert';
+import { adminTravelTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
+import { adminTravelTripActivitiesUpsert } from '../commands/adminTravelTripActivitiesUpsert';
+import { adminTravelTripDaysDelete } from '../commands/adminTravelTripDaysDelete';
+import { adminTravelTripDaysUpsert } from '../commands/adminTravelTripDaysUpsert';
+import { adminTravelTripPackingItemsDelete } from '../commands/adminTravelTripPackingItemsDelete';
+import { adminTravelTripPackingItemsUpsert } from '../commands/adminTravelTripPackingItemsUpsert';
+import { adminTravelTripsDelete } from '../commands/adminTravelTripsDelete';
+import { adminTravelTripsUpsert } from '../commands/adminTravelTripsUpsert';
+import { adminWorkspaceFileUpdate } from '../commands/adminWorkspaceFileUpdate';
 import { chatInputCollectionRespond } from '../commands/chatInputCollectionRespond';
-import type { ChatMutationDispatch } from '../commands/chatMessageCreate';
 import { chatMessageCreate } from '../commands/chatMessageCreate';
+import type { ChatMutationDispatch } from '../commands/chatMessageCreate';
 import { chatToolApprovalRespond } from '../commands/chatToolApprovalRespond';
+import { compassInterviewEnd } from '../commands/compassInterviewEnd';
+import { compassInterviewMessageSend } from '../commands/compassInterviewMessageSend';
+import { compassInterviewSkip } from '../commands/compassInterviewSkip';
+import { compassInterviewStart } from '../commands/compassInterviewStart';
+import { compassInterviewStartNow } from '../commands/compassInterviewStartNow';
+import { compassObservationDismiss } from '../commands/compassObservationDismiss';
+import { compassScheduledInterviewDismiss } from '../commands/compassScheduledInterviewDismiss';
+import { compassSynthesizeRequest } from '../commands/compassSynthesizeRequest';
 import { cvEducationReorder } from '../commands/cvEducationReorder';
 import { cvEducationsDelete } from '../commands/cvEducationsDelete';
 import { cvEducationsUpsert } from '../commands/cvEducationsUpsert';
@@ -18,179 +113,198 @@ import { cvHobbyReorder } from '../commands/cvHobbyReorder';
 import { cvSkillReorder } from '../commands/cvSkillReorder';
 import { cvSkillsDelete } from '../commands/cvSkillsDelete';
 import { cvSkillsUpsert } from '../commands/cvSkillsUpsert';
-import { adminInventoryItemsDelete } from '../commands/adminInventoryItemsDelete';
-import { adminInventoryItemFilesAttach } from '../commands/adminInventoryItemFilesAttach';
-import { adminInventoryItemFilesDelete } from '../commands/adminInventoryItemFilesDelete';
-import { adminInventoryItemFilesUpsert } from '../commands/adminInventoryItemFilesUpsert';
-import { adminInventoryItemsReprice } from '../commands/adminInventoryItemsReprice';
-import { adminInventoryItemServiceEntriesDelete } from '../commands/adminInventoryItemServiceEntriesDelete';
-import { adminInventoryItemServiceEntriesUpsert } from '../commands/adminInventoryItemServiceEntriesUpsert';
-import { adminInventoryItemsUpsert } from '../commands/adminInventoryItemsUpsert';
-import { adminFinancesAssetsDelete } from '../commands/adminFinancesAssetsDelete';
-import { adminFinancesAssetsReprice } from '../commands/adminFinancesAssetsReprice';
-import { adminFinancesAssetsUpsert } from '../commands/adminFinancesAssetsUpsert';
-import { adminFinancesIncomeStreamsDelete } from '../commands/adminFinancesIncomeStreamsDelete';
-import { adminFinancesIncomeStreamsUpsert } from '../commands/adminFinancesIncomeStreamsUpsert';
-import { adminFinancesRecurringCostsDelete } from '../commands/adminFinancesRecurringCostsDelete';
-import { adminFinancesRecurringCostsUpsert } from '../commands/adminFinancesRecurringCostsUpsert';
-import { adminTaxYearsUpsert } from '../commands/adminTaxYearsUpsert';
-import { adminTaxYearsDelete } from '../commands/adminTaxYearsDelete';
-import { adminTaxIncomeSourcesUpsert } from '../commands/adminTaxIncomeSourcesUpsert';
-import { adminTaxIncomeSourcesDelete } from '../commands/adminTaxIncomeSourcesDelete';
-import { adminTaxExpensesUpsert } from '../commands/adminTaxExpensesUpsert';
-import { adminTaxExpensesDelete } from '../commands/adminTaxExpensesDelete';
-import { adminTaxDocumentsUpsert } from '../commands/adminTaxDocumentsUpsert';
-import { adminTaxDocumentsDelete } from '../commands/adminTaxDocumentsDelete';
-import { adminTaxFilesAttach } from '../commands/adminTaxFilesAttach';
-import { adminTaxFilesUpsert } from '../commands/adminTaxFilesUpsert';
-import { adminTaxFilesDelete } from '../commands/adminTaxFilesDelete';
-import { adminMediaChannelsDelete } from '../commands/adminMediaChannelsDelete';
-import { adminMediaChannelReorder } from '../commands/adminMediaChannelReorder';
-import { adminMediaChannelsUpsert } from '../commands/adminMediaChannelsUpsert';
-import { adminMedicalAppointmentsDelete } from '../commands/adminMedicalAppointmentsDelete';
-import { adminMedicalAppointmentsUpsert } from '../commands/adminMedicalAppointmentsUpsert';
-import { adminMedicalRecordFilesAttach } from '../commands/adminMedicalRecordFilesAttach';
-import { adminMedicalRecordFilesDelete } from '../commands/adminMedicalRecordFilesDelete';
-import { adminMedicalRecordsDelete } from '../commands/adminMedicalRecordsDelete';
-import { adminMedicalRecordsUpsert } from '../commands/adminMedicalRecordsUpsert';
-import { adminTravelTripActivitiesDelete } from '../commands/adminTravelTripActivitiesDelete';
-import { adminTravelTripActivitiesUpsert } from '../commands/adminTravelTripActivitiesUpsert';
-import { adminTravelTripDaysDelete } from '../commands/adminTravelTripDaysDelete';
-import { adminTravelTripDaysUpsert } from '../commands/adminTravelTripDaysUpsert';
-import { adminTravelTripPackingItemsDelete } from '../commands/adminTravelTripPackingItemsDelete';
-import { adminTravelTripPackingItemsUpsert } from '../commands/adminTravelTripPackingItemsUpsert';
-import { adminTravelTripsDelete } from '../commands/adminTravelTripsDelete';
-import { adminTravelTripsUpsert } from '../commands/adminTravelTripsUpsert';
-import { adminNutritionRecipesUpsert } from '../commands/adminNutritionRecipesUpsert';
-import { adminNutritionRecipesDelete } from '../commands/adminNutritionRecipesDelete';
-import { adminNutritionMealPlanEntriesUpsert } from '../commands/adminNutritionMealPlanEntriesUpsert';
-import { adminNutritionMealPlanEntriesDelete } from '../commands/adminNutritionMealPlanEntriesDelete';
-import { adminNutritionFoodLogEntriesUpsert } from '../commands/adminNutritionFoodLogEntriesUpsert';
-import { adminNutritionFoodLogEntriesDelete } from '../commands/adminNutritionFoodLogEntriesDelete';
-import { adminNutritionSupplementsUpsert } from '../commands/adminNutritionSupplementsUpsert';
-import { adminNutritionSupplementsDelete } from '../commands/adminNutritionSupplementsDelete';
-import { adminNutritionSupplementNutrientsReplace } from '../commands/adminNutritionSupplementNutrientsReplace';
-import { supplementCompositionResearch } from '../agents/supplementCompositionResearch';
-import { adminFitnessExercisesUpsert } from '../commands/adminFitnessExercisesUpsert';
-import { adminFitnessExercisesDelete } from '../commands/adminFitnessExercisesDelete';
-import { adminFitnessWorkoutRoutinesUpsert } from '../commands/adminFitnessWorkoutRoutinesUpsert';
-import { adminFitnessWorkoutRoutinesDelete } from '../commands/adminFitnessWorkoutRoutinesDelete';
-import { adminFitnessWorkoutRoutineItemsUpsert } from '../commands/adminFitnessWorkoutRoutineItemsUpsert';
-import { adminFitnessWorkoutRoutineItemsDelete } from '../commands/adminFitnessWorkoutRoutineItemsDelete';
-import { adminFitnessWorkoutSessionsUpsert } from '../commands/adminFitnessWorkoutSessionsUpsert';
-import { adminFitnessWorkoutSessionsDelete } from '../commands/adminFitnessWorkoutSessionsDelete';
-import { adminFitnessWorkoutSetsUpsert } from '../commands/adminFitnessWorkoutSetsUpsert';
-import { adminFitnessWorkoutSetsDelete } from '../commands/adminFitnessWorkoutSetsDelete';
-import { adminMediaMoviesAddFromTmdb } from '../commands/adminMediaMoviesAddFromTmdb';
-import { adminMediaMoviesDelete } from '../commands/adminMediaMoviesDelete';
-import { adminMediaMoviesUpsert } from '../commands/adminMediaMoviesUpsert';
-import { adminMediaShowsAddFromTmdb } from '../commands/adminMediaShowsAddFromTmdb';
-import { adminMediaShowsDelete } from '../commands/adminMediaShowsDelete';
-import { adminMediaShowsUpsert } from '../commands/adminMediaShowsUpsert';
-import { compassObservationDismiss } from '../commands/compassObservationDismiss';
-import { compassSynthesizeRequest } from '../commands/compassSynthesizeRequest';
-import { compassInterviewStart } from '../commands/compassInterviewStart';
-import { compassInterviewMessageSend } from '../commands/compassInterviewMessageSend';
-import { compassInterviewEnd } from '../commands/compassInterviewEnd';
-import { compassInterviewSkip } from '../commands/compassInterviewSkip';
-import { compassInterviewStartNow } from '../commands/compassInterviewStartNow';
-import { compassScheduledInterviewDismiss } from '../commands/compassScheduledInterviewDismiss';
-import { adminProjectActivitiesDelete } from '../commands/adminProjectActivitiesDelete';
-import { adminProjectActivitiesUpsert } from '../commands/adminProjectActivitiesUpsert';
-import { adminProjectFilesDelete } from '../commands/adminProjectFilesDelete';
-import { adminProjectFilesUpsert } from '../commands/adminProjectFilesUpsert';
-import { adminWorkspaceFileUpdate } from '../commands/adminWorkspaceFileUpdate';
-import { adminProjectLinksDelete } from '../commands/adminProjectLinksDelete';
-import { adminProjectLinksUpsert } from '../commands/adminProjectLinksUpsert';
-import { adminProjectRequestArchive } from '../commands/adminProjectRequestArchive';
-import { adminProjectRequestDelete } from '../commands/adminProjectRequestDelete';
-import { adminProjectReorder } from '../commands/adminProjectReorder';
-import { adminProjectTimersStart } from '../commands/adminProjectTimersStart';
-import { adminProjectTimersStop } from '../commands/adminProjectTimersStop';
-import { adminProjectsDelete } from '../commands/adminProjectsDelete';
-import { adminProjectsUpsert } from '../commands/adminProjectsUpsert';
-import { adminProjectTasksDelete } from '../commands/adminProjectTasksDelete';
-import { adminProjectTaskReorder } from '../commands/adminProjectTaskReorder';
-import { adminProjectTasksUpsert } from '../commands/adminProjectTasksUpsert';
 import { userSessionTerminateMany } from '../commands/userSessionTerminateMany';
 import { userUpdate } from '../commands/userUpdate';
-import type { ServerRuntime } from '../domain/ServerRuntime';
 import { users } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import type { ServerRuntime } from '../domain/ServerRuntime';
 import { guardAdminMutation } from '../guards/guardAdminMutation';
 import { guardUserMutation } from '../guards/guardUserMutation';
 import { guardUserSubscription } from '../guards/guardUserSubscription';
+import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
 import { toGqlCompass } from '../mappers/toGqlCompass';
 import { toGqlCompassInterview } from '../mappers/toGqlCompassInterview';
-import { toGqlChatMessage } from '../mappers/toGqlChatMessage';
 import { toGqlCompassInterviewMessage } from '../mappers/toGqlCompassInterviewMessage';
-import { chatFindOne } from '../queries/chatFindOne';
-import { chatFindMany } from '../queries/chatFindMany';
-import { adminChatFindMany } from '../queries/adminChatFindMany';
+import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 import { adminChatCount } from '../queries/adminChatCount';
-import { chatMessageFindOne } from '../queries/chatMessageFindOne';
-import { compassInterviewMessageFindOne } from '../queries/compassInterviewMessageFindOne';
-import { visitorChatFindMany } from '../queries/visitorChatFindMany';
-import { visitorChatFindOne } from '../queries/visitorChatFindOne';
-import { publicCvEducationFindMany } from '../queries/publicCvEducationFindMany';
-import { publicCvExperienceFindMany } from '../queries/publicCvExperienceFindMany';
-import { publicCvHobbyFindMany } from '../queries/publicCvHobbyFindMany';
-import { publicCvSkillFindMany } from '../queries/publicCvSkillFindMany';
-import { adminMediaChannelFindMany } from '../queries/adminMediaChannelFindMany';
-import { adminMedicalAppointmentFindMany } from '../queries/adminMedicalAppointmentFindMany';
-import { adminMedicalCategoryOverviewFindMany } from '../queries/adminMedicalCategoryOverviewFindMany';
-import { adminMedicalRecordFindMany } from '../queries/adminMedicalRecordFindMany';
-import { adminTravelTripFindOne } from '../queries/adminTravelTripFindOne';
-import { adminTravelTripFindMany } from '../queries/adminTravelTripFindMany';
-import { adminNutritionRecipeFindMany } from '../queries/adminNutritionRecipeFindMany';
-import { adminNutritionMealPlanFindMany } from '../queries/adminNutritionMealPlanFindMany';
-import { adminNutritionFoodLogFindMany } from '../queries/adminNutritionFoodLogFindMany';
-import { adminNutritionSupplementFindMany } from '../queries/adminNutritionSupplementFindMany';
-import { adminFitnessExerciseFindMany } from '../queries/adminFitnessExerciseFindMany';
-import { adminFitnessRoutineFindMany } from '../queries/adminFitnessRoutineFindMany';
-import { adminFitnessSessionFindMany } from '../queries/adminFitnessSessionFindMany';
-import { adminInventoryItemFindOne } from '../queries/adminInventoryItemFindOne';
-import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
-import { adminInventoryMaterialNetWorthCentsFindOne } from '../queries/adminInventoryMaterialNetWorthCentsFindOne';
-import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
+import { adminChatFindMany } from '../queries/adminChatFindMany';
+import { adminCompassFindOne } from '../queries/adminCompassFindOne';
+import { adminCompassInterviewFindMany } from '../queries/adminCompassInterviewFindMany';
+import { adminCompassInterviewFindOne } from '../queries/adminCompassInterviewFindOne';
+import { adminCompassInterviewPendingFindOne } from '../queries/adminCompassInterviewPendingFindOne';
+import { adminCompassObservationFindMany } from '../queries/adminCompassObservationFindMany';
+import { adminCompassSynthesisInProgressFindOne } from '../queries/adminCompassSynthesisInProgressFindOne';
 import { adminFinancesAssetCentsFindOne } from '../queries/adminFinancesAssetCentsFindOne';
 import { adminFinancesAssetFindMany } from '../queries/adminFinancesAssetFindMany';
 import { adminFinancesExpensesCentsFindOne } from '../queries/adminFinancesExpensesCentsFindOne';
 import { adminFinancesIncomeCentsFindOne } from '../queries/adminFinancesIncomeCentsFindOne';
 import { adminFinancesIncomeStreamFindMany } from '../queries/adminFinancesIncomeStreamFindMany';
 import { adminFinancesRecurringCostFindMany } from '../queries/adminFinancesRecurringCostFindMany';
-import { adminTaxYearFindMany } from '../queries/adminTaxYearFindMany';
+import { adminFitnessExerciseFindMany } from '../queries/adminFitnessExerciseFindMany';
+import { adminFitnessRoutineFindMany } from '../queries/adminFitnessRoutineFindMany';
+import { adminFitnessSessionFindMany } from '../queries/adminFitnessSessionFindMany';
+import { adminInventoryItemFindMany } from '../queries/adminInventoryItemFindMany';
+import { adminInventoryItemFindOne } from '../queries/adminInventoryItemFindOne';
+import { adminInventoryItemUpcomingWarrantyFindMany } from '../queries/adminInventoryItemUpcomingWarrantyFindMany';
+import { adminInventoryMaterialNetWorthCentsFindOne } from '../queries/adminInventoryMaterialNetWorthCentsFindOne';
+import { adminLogFindMany } from '../queries/adminLogFindMany';
+import { adminMediaChannelFindMany } from '../queries/adminMediaChannelFindMany';
 import { adminMediaMovieFindMany } from '../queries/adminMediaMovieFindMany';
 import { adminMediaShowFindMany } from '../queries/adminMediaShowFindMany';
-import { adminCompassFindOne } from '../queries/adminCompassFindOne';
-import { adminCompassInterviewPendingFindOne } from '../queries/adminCompassInterviewPendingFindOne';
-import { adminCompassInterviewFindOne } from '../queries/adminCompassInterviewFindOne';
-import { adminCompassInterviewFindMany } from '../queries/adminCompassInterviewFindMany';
-import { adminLogFindMany } from '../queries/adminLogFindMany';
-import { adminCompassObservationFindMany } from '../queries/adminCompassObservationFindMany';
-import { adminCompassSynthesisInProgressFindOne } from '../queries/adminCompassSynthesisInProgressFindOne';
-import { adminProjectRequestFindMany } from '../queries/adminProjectRequestFindMany';
-import { adminProjectRequestInboxCount } from '../queries/adminProjectRequestInboxCount';
+import { adminMedicalAppointmentFindMany } from '../queries/adminMedicalAppointmentFindMany';
+import { adminMedicalCategoryOverviewFindMany } from '../queries/adminMedicalCategoryOverviewFindMany';
+import { adminMedicalRecordFindMany } from '../queries/adminMedicalRecordFindMany';
+import { adminNutritionFoodLogFindMany } from '../queries/adminNutritionFoodLogFindMany';
+import { adminNutritionMealPlanFindMany } from '../queries/adminNutritionMealPlanFindMany';
+import { adminNutritionRecipeFindMany } from '../queries/adminNutritionRecipeFindMany';
+import { adminNutritionSupplementFindMany } from '../queries/adminNutritionSupplementFindMany';
+import { adminProjectActiveTimerFindOne } from '../queries/adminProjectActiveTimerFindOne';
 import { adminProjectFindMany } from '../queries/adminProjectFindMany';
 import { adminProjectFindOne } from '../queries/adminProjectFindOne';
-import { adminWorkspaceFileFindOne } from '../queries/adminWorkspaceFileFindOne';
-import { adminProjectActiveTimerFindOne } from '../queries/adminProjectActiveTimerFindOne';
-import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
-import { sessionUserFindOne } from '../queries/sessionUserFindOne';
+import { adminProjectRequestFindMany } from '../queries/adminProjectRequestFindMany';
+import { adminProjectRequestInboxCount } from '../queries/adminProjectRequestInboxCount';
 import { adminStandaloneTaskFindMany } from '../queries/adminStandaloneTaskFindMany';
 import { adminStandaloneTaskOpenCount } from '../queries/adminStandaloneTaskOpenCount';
+import { adminTaxYearFindMany } from '../queries/adminTaxYearFindMany';
+import { adminTravelTripFindMany } from '../queries/adminTravelTripFindMany';
+import { adminTravelTripFindOne } from '../queries/adminTravelTripFindOne';
+import { adminWorkspaceFileFindOne } from '../queries/adminWorkspaceFileFindOne';
+import { chatFindMany } from '../queries/chatFindMany';
+import { chatFindOne } from '../queries/chatFindOne';
+import { chatMessageFindOne } from '../queries/chatMessageFindOne';
+import { compassInterviewMessageFindOne } from '../queries/compassInterviewMessageFindOne';
+import { publicCvEducationFindMany } from '../queries/publicCvEducationFindMany';
+import { publicCvExperienceFindMany } from '../queries/publicCvExperienceFindMany';
+import { publicCvHobbyFindMany } from '../queries/publicCvHobbyFindMany';
+import { publicCvSkillFindMany } from '../queries/publicCvSkillFindMany';
+import { sessionUserFindOne } from '../queries/sessionUserFindOne';
+import { visitorChatFindMany } from '../queries/visitorChatFindMany';
+import { visitorChatFindOne } from '../queries/visitorChatFindOne';
 import { visitorChatQuotaFindOne } from '../queries/visitorChatQuotaFindOne';
+import type { ChatUpdateWirePayload } from './chatUpdateWirePayload';
+import type { CompassInterviewUpdateWirePayload } from './compassInterviewUpdateWirePayload';
 import type {
     GqlSAdmin,
     GqlSAdminAdminChatCountArgs,
     GqlSAdminAdminChatFindManyArgs,
     GqlSAdminAdminChatFindOneArgs,
     GqlSAdminAdminLogFindManyArgs,
+    GqlSAdminAdminProjectFindManyArgs,
+    GqlSAdminAdminProjectFindOneArgs,
+    GqlSAdminAdminProjectRequestFindManyArgs,
+    GqlSAdminAdminPublicChatFindOneArgs,
+    GqlSAdminAdminWorkspaceFileFindOneArgs,
+    GqlSAdminCompass,
+    GqlSAdminCompassAdminCompassInterviewFindOneArgs,
+    GqlSAdminCompassAdminCompassObservationFindManyArgs,
+    GqlSAdminFinancesQuery,
+    GqlSAdminFitnessQuery,
+    GqlSAdminInventoryQuery,
+    GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs,
+    GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
+    GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
+    GqlSAdminMediaQuery,
+    GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
+    GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
+    GqlSAdminMediaQueryAdminMediaTmdbTvFindManyArgs,
+    GqlSAdminMediaQueryAdminMediaYoutubeFindManyArgs,
+    GqlSAdminMedicalQuery,
     GqlSAdminMutation,
+    GqlSAdminMutationAdminFinancesAssetsDeleteArgs,
+    GqlSAdminMutationAdminFinancesAssetsRepriceArgs,
+    GqlSAdminMutationAdminFinancesAssetsUpsertArgs,
+    GqlSAdminMutationAdminFinancesIncomeStreamsDeleteArgs,
+    GqlSAdminMutationAdminFinancesIncomeStreamsUpsertArgs,
+    GqlSAdminMutationAdminFinancesRecurringCostsDeleteArgs,
+    GqlSAdminMutationAdminFinancesRecurringCostsUpsertArgs,
+    GqlSAdminMutationAdminFitnessExercisesDeleteArgs,
+    GqlSAdminMutationAdminFitnessExercisesUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutineItemsDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutineItemsUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutinesDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutRoutinesUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSessionsDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSessionsUpsertArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSetsDeleteArgs,
+    GqlSAdminMutationAdminFitnessWorkoutSetsUpsertArgs,
+    GqlSAdminMutationAdminInventoryItemFilesAttachArgs,
+    GqlSAdminMutationAdminInventoryItemFilesDeleteArgs,
+    GqlSAdminMutationAdminInventoryItemFilesUpsertArgs,
+    GqlSAdminMutationAdminInventoryItemsDeleteArgs,
+    GqlSAdminMutationAdminInventoryItemServiceEntriesDeleteArgs,
+    GqlSAdminMutationAdminInventoryItemServiceEntriesUpsertArgs,
+    GqlSAdminMutationAdminInventoryItemsRepriceArgs,
+    GqlSAdminMutationAdminInventoryItemsUpsertArgs,
+    GqlSAdminMutationAdminMediaChannelReorderArgs,
+    GqlSAdminMutationAdminMediaChannelsDeleteArgs,
+    GqlSAdminMutationAdminMediaChannelsUpsertArgs,
+    GqlSAdminMutationAdminMediaMoviesAddFromTmdbArgs,
+    GqlSAdminMutationAdminMediaMoviesDeleteArgs,
+    GqlSAdminMutationAdminMediaMoviesUpsertArgs,
+    GqlSAdminMutationAdminMediaShowsAddFromTmdbArgs,
+    GqlSAdminMutationAdminMediaShowsDeleteArgs,
+    GqlSAdminMutationAdminMediaShowsUpsertArgs,
+    GqlSAdminMutationAdminMedicalAppointmentsDeleteArgs,
+    GqlSAdminMutationAdminMedicalAppointmentsUpsertArgs,
+    GqlSAdminMutationAdminMedicalRecordFilesAttachArgs,
+    GqlSAdminMutationAdminMedicalRecordFilesDeleteArgs,
+    GqlSAdminMutationAdminMedicalRecordsDeleteArgs,
+    GqlSAdminMutationAdminMedicalRecordsUpsertArgs,
+    GqlSAdminMutationAdminNutritionFoodLogEntriesDeleteArgs,
+    GqlSAdminMutationAdminNutritionFoodLogEntriesUpsertArgs,
+    GqlSAdminMutationAdminNutritionMealPlanEntriesDeleteArgs,
+    GqlSAdminMutationAdminNutritionMealPlanEntriesUpsertArgs,
+    GqlSAdminMutationAdminNutritionRecipesDeleteArgs,
+    GqlSAdminMutationAdminNutritionRecipesUpsertArgs,
+    GqlSAdminMutationAdminNutritionSupplementNutrientsReplaceArgs,
+    GqlSAdminMutationAdminNutritionSupplementResearchArgs,
+    GqlSAdminMutationAdminNutritionSupplementsDeleteArgs,
+    GqlSAdminMutationAdminNutritionSupplementsUpsertArgs,
+    GqlSAdminMutationAdminProjectActivitiesDeleteArgs,
+    GqlSAdminMutationAdminProjectActivitiesUpsertArgs,
+    GqlSAdminMutationAdminProjectFilesDeleteArgs,
+    GqlSAdminMutationAdminProjectFilesUpsertArgs,
+    GqlSAdminMutationAdminProjectLinksDeleteArgs,
+    GqlSAdminMutationAdminProjectLinksUpsertArgs,
+    GqlSAdminMutationAdminProjectReorderArgs,
+    GqlSAdminMutationAdminProjectRequestArchiveArgs,
+    GqlSAdminMutationAdminProjectRequestDeleteArgs,
+    GqlSAdminMutationAdminProjectsDeleteArgs,
+    GqlSAdminMutationAdminProjectsUpsertArgs,
+    GqlSAdminMutationAdminProjectTaskReorderArgs,
+    GqlSAdminMutationAdminProjectTasksDeleteArgs,
+    GqlSAdminMutationAdminProjectTasksUpsertArgs,
+    GqlSAdminMutationAdminProjectTimersStartArgs,
+    GqlSAdminMutationAdminProjectTimersStopArgs,
+    GqlSAdminMutationAdminTaxDocumentsDeleteArgs,
+    GqlSAdminMutationAdminTaxDocumentsUpsertArgs,
+    GqlSAdminMutationAdminTaxExpensesDeleteArgs,
+    GqlSAdminMutationAdminTaxExpensesUpsertArgs,
+    GqlSAdminMutationAdminTaxFilesAttachArgs,
+    GqlSAdminMutationAdminTaxFilesDeleteArgs,
+    GqlSAdminMutationAdminTaxFilesUpsertArgs,
+    GqlSAdminMutationAdminTaxIncomeSourcesDeleteArgs,
+    GqlSAdminMutationAdminTaxIncomeSourcesUpsertArgs,
+    GqlSAdminMutationAdminTaxYearsDeleteArgs,
+    GqlSAdminMutationAdminTaxYearsUpsertArgs,
+    GqlSAdminMutationAdminTravelTripActivitiesDeleteArgs,
+    GqlSAdminMutationAdminTravelTripActivitiesUpsertArgs,
+    GqlSAdminMutationAdminTravelTripDaysDeleteArgs,
+    GqlSAdminMutationAdminTravelTripDaysUpsertArgs,
+    GqlSAdminMutationAdminTravelTripPackingItemsDeleteArgs,
+    GqlSAdminMutationAdminTravelTripPackingItemsUpsertArgs,
+    GqlSAdminMutationAdminTravelTripsDeleteArgs,
+    GqlSAdminMutationAdminTravelTripsUpsertArgs,
+    GqlSAdminMutationAdminWorkspaceFileUpdateArgs,
     GqlSAdminMutationChatConfigDefaultModelSetArgs,
     GqlSAdminMutationChatInputCollectionRespondArgs,
     GqlSAdminMutationChatMessageCreateArgs,
     GqlSAdminMutationChatToolApprovalRespondArgs,
+    GqlSAdminMutationCompassInterviewEndArgs,
+    GqlSAdminMutationCompassInterviewMessageSendArgs,
+    GqlSAdminMutationCompassInterviewSkipArgs,
+    GqlSAdminMutationCompassInterviewStartArgs,
+    GqlSAdminMutationCompassInterviewStartNowArgs,
+    GqlSAdminMutationCompassObservationDismissArgs,
     GqlSAdminMutationCvEducationReorderArgs,
     GqlSAdminMutationCvEducationsDeleteArgs,
     GqlSAdminMutationCvEducationsUpsertArgs,
@@ -202,123 +316,11 @@ import type {
     GqlSAdminMutationCvSkillReorderArgs,
     GqlSAdminMutationCvSkillsDeleteArgs,
     GqlSAdminMutationCvSkillsUpsertArgs,
-    GqlSAdminMutationAdminInventoryItemsDeleteArgs,
-    GqlSAdminMutationAdminInventoryItemFilesAttachArgs,
-    GqlSAdminMutationAdminInventoryItemFilesDeleteArgs,
-    GqlSAdminMutationAdminInventoryItemFilesUpsertArgs,
-    GqlSAdminMutationAdminInventoryItemsRepriceArgs,
-    GqlSAdminMutationAdminInventoryItemServiceEntriesDeleteArgs,
-    GqlSAdminMutationAdminInventoryItemServiceEntriesUpsertArgs,
-    GqlSAdminMutationAdminInventoryItemsUpsertArgs,
-    GqlSAdminMutationAdminMediaChannelsDeleteArgs,
-    GqlSAdminMutationAdminMediaChannelReorderArgs,
-    GqlSAdminMutationAdminMediaChannelsUpsertArgs,
-    GqlSAdminMutationAdminMedicalAppointmentsDeleteArgs,
-    GqlSAdminMutationAdminMedicalAppointmentsUpsertArgs,
-    GqlSAdminMutationAdminMedicalRecordFilesAttachArgs,
-    GqlSAdminMutationAdminMedicalRecordFilesDeleteArgs,
-    GqlSAdminMutationAdminMedicalRecordsDeleteArgs,
-    GqlSAdminMutationAdminMedicalRecordsUpsertArgs,
-    GqlSAdminMutationAdminTravelTripActivitiesDeleteArgs,
-    GqlSAdminMutationAdminTravelTripActivitiesUpsertArgs,
-    GqlSAdminMutationAdminTravelTripDaysDeleteArgs,
-    GqlSAdminMutationAdminTravelTripDaysUpsertArgs,
-    GqlSAdminMutationAdminTravelTripPackingItemsDeleteArgs,
-    GqlSAdminMutationAdminTravelTripPackingItemsUpsertArgs,
-    GqlSAdminMutationAdminTravelTripsDeleteArgs,
-    GqlSAdminMutationAdminTravelTripsUpsertArgs,
-    GqlSAdminMutationAdminMediaMoviesAddFromTmdbArgs,
-    GqlSAdminMutationAdminMediaMoviesDeleteArgs,
-    GqlSAdminMutationAdminMediaMoviesUpsertArgs,
-    GqlSAdminMutationAdminMediaShowsAddFromTmdbArgs,
-    GqlSAdminMutationAdminMediaShowsDeleteArgs,
-    GqlSAdminMutationAdminMediaShowsUpsertArgs,
-    GqlSAdminInventoryQuery,
-    GqlSAdminInventoryQueryAdminInventoryItemFindManyArgs,
-    GqlSAdminInventoryQueryAdminInventoryItemFindOneArgs,
-    GqlSAdminInventoryQueryAdminInventoryItemUpcomingWarrantyFindManyArgs,
-    GqlSAdminFinancesQuery,
-    GqlSAdminMutationAdminFinancesAssetsDeleteArgs,
-    GqlSAdminMutationAdminFinancesAssetsRepriceArgs,
-    GqlSAdminMutationAdminFinancesAssetsUpsertArgs,
-    GqlSAdminMutationAdminFinancesIncomeStreamsDeleteArgs,
-    GqlSAdminMutationAdminFinancesIncomeStreamsUpsertArgs,
-    GqlSAdminMutationAdminFinancesRecurringCostsDeleteArgs,
-    GqlSAdminMutationAdminFinancesRecurringCostsUpsertArgs,
-    GqlSAdminTaxQuery,
-    GqlSAdminMutationAdminTaxYearsUpsertArgs,
-    GqlSAdminMutationAdminTaxYearsDeleteArgs,
-    GqlSAdminMutationAdminTaxIncomeSourcesUpsertArgs,
-    GqlSAdminMutationAdminTaxIncomeSourcesDeleteArgs,
-    GqlSAdminMutationAdminTaxExpensesUpsertArgs,
-    GqlSAdminMutationAdminTaxExpensesDeleteArgs,
-    GqlSAdminMutationAdminTaxDocumentsUpsertArgs,
-    GqlSAdminMutationAdminTaxDocumentsDeleteArgs,
-    GqlSAdminMutationAdminTaxFilesAttachArgs,
-    GqlSAdminMutationAdminTaxFilesUpsertArgs,
-    GqlSAdminMutationAdminTaxFilesDeleteArgs,
-    GqlSAdminMediaQuery,
-    GqlSAdminMediaQueryAdminMediaChannelFindManyArgs,
-    GqlSAdminMediaQueryAdminMediaTmdbFindManyArgs,
-    GqlSAdminMediaQueryAdminMediaTmdbTvFindManyArgs,
-    GqlSAdminMediaQueryAdminMediaYoutubeFindManyArgs,
-    GqlSAdminMedicalQuery,
-    GqlSAdminTravelQuery,
-    GqlSAdminTravelQueryAdminTravelTripFindOneArgs,
     GqlSAdminNutritionQuery,
     GqlSAdminNutritionQueryAdminNutritionRecipeFindManyArgs,
-    GqlSAdminFitnessQuery,
-    GqlSAdminMutationAdminNutritionRecipesUpsertArgs,
-    GqlSAdminMutationAdminNutritionRecipesDeleteArgs,
-    GqlSAdminMutationAdminNutritionMealPlanEntriesUpsertArgs,
-    GqlSAdminMutationAdminNutritionMealPlanEntriesDeleteArgs,
-    GqlSAdminMutationAdminNutritionFoodLogEntriesUpsertArgs,
-    GqlSAdminMutationAdminNutritionFoodLogEntriesDeleteArgs,
-    GqlSAdminMutationAdminNutritionSupplementsUpsertArgs,
-    GqlSAdminMutationAdminNutritionSupplementsDeleteArgs,
-    GqlSAdminMutationAdminNutritionSupplementNutrientsReplaceArgs,
-    GqlSAdminMutationAdminNutritionSupplementResearchArgs,
-    GqlSAdminMutationAdminFitnessExercisesUpsertArgs,
-    GqlSAdminMutationAdminFitnessExercisesDeleteArgs,
-    GqlSAdminMutationAdminFitnessWorkoutRoutinesUpsertArgs,
-    GqlSAdminMutationAdminFitnessWorkoutRoutinesDeleteArgs,
-    GqlSAdminMutationAdminFitnessWorkoutRoutineItemsUpsertArgs,
-    GqlSAdminMutationAdminFitnessWorkoutRoutineItemsDeleteArgs,
-    GqlSAdminMutationAdminFitnessWorkoutSessionsUpsertArgs,
-    GqlSAdminMutationAdminFitnessWorkoutSessionsDeleteArgs,
-    GqlSAdminMutationAdminFitnessWorkoutSetsUpsertArgs,
-    GqlSAdminMutationAdminFitnessWorkoutSetsDeleteArgs,
-    GqlSAdminMutationCompassObservationDismissArgs,
-    GqlSAdminMutationCompassInterviewStartArgs,
-    GqlSAdminMutationCompassInterviewMessageSendArgs,
-    GqlSAdminMutationCompassInterviewEndArgs,
-    GqlSAdminMutationCompassInterviewSkipArgs,
-    GqlSAdminMutationCompassInterviewStartNowArgs,
-    GqlSAdminCompassAdminCompassInterviewFindOneArgs,
-    GqlSAdminMutationAdminProjectActivitiesDeleteArgs,
-    GqlSAdminMutationAdminProjectActivitiesUpsertArgs,
-    GqlSAdminMutationAdminProjectFilesDeleteArgs,
-    GqlSAdminMutationAdminProjectFilesUpsertArgs,
-    GqlSAdminMutationAdminWorkspaceFileUpdateArgs,
-    GqlSAdminMutationAdminProjectLinksDeleteArgs,
-    GqlSAdminMutationAdminProjectLinksUpsertArgs,
-    GqlSAdminMutationAdminProjectReorderArgs,
-    GqlSAdminMutationAdminProjectRequestArchiveArgs,
-    GqlSAdminMutationAdminProjectRequestDeleteArgs,
-    GqlSAdminMutationAdminProjectTimersStartArgs,
-    GqlSAdminMutationAdminProjectTimersStopArgs,
-    GqlSAdminMutationAdminProjectsDeleteArgs,
-    GqlSAdminMutationAdminProjectsUpsertArgs,
-    GqlSAdminMutationAdminProjectTasksDeleteArgs,
-    GqlSAdminMutationAdminProjectTaskReorderArgs,
-    GqlSAdminMutationAdminProjectTasksUpsertArgs,
-    GqlSAdminCompass,
-    GqlSAdminCompassAdminCompassObservationFindManyArgs,
-    GqlSAdminAdminProjectFindOneArgs,
-    GqlSAdminAdminWorkspaceFileFindOneArgs,
-    GqlSAdminAdminProjectRequestFindManyArgs,
-    GqlSAdminAdminProjectFindManyArgs,
-    GqlSAdminAdminPublicChatFindOneArgs,
+    GqlSAdminTaxQuery,
+    GqlSAdminTravelQuery,
+    GqlSAdminTravelQueryAdminTravelTripFindOneArgs,
     GqlSChatAssistantInput,
     GqlSChatAssistantInputValue,
     GqlSChatMessage,
@@ -338,8 +340,6 @@ import type {
     GqlSUserMutationUserSessionTerminateManyArgs,
     GqlSUserMutationUserUpdateArgs,
 } from './generated';
-import type { ChatUpdateWirePayload } from './chatUpdateWirePayload';
-import type { CompassInterviewUpdateWirePayload } from './compassInterviewUpdateWirePayload';
 
 // Visitor / admin namespaces share the same chat command bodies — only the
 // scope and the agent factory change. Pinning these once keeps the resolver

@@ -6,7 +6,7 @@ import { tasks } from '../db/schema';
 import type { AdminProjectTaskCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { GqlSAdminProjectTaskStatusSchema } from '../graphql/generated';
-import type { GqlSMutationResult, GqlSSession, GqlSAdminProjectTaskCreate } from '../graphql/generated';
+import type { GqlSAdminProjectTaskCreate, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of tasks. Every input with a `taskId` is updated; every input
 // without one is inserted under a freshly-minted UUID. `projectId` is honored

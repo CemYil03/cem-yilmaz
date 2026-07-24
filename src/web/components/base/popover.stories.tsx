@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { SettingsIcon, BellIcon } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger, PopoverHeader, PopoverTitle, PopoverDescription } from './popover';
+import { BellIcon, SettingsIcon } from 'lucide-react';
 import { Button } from './button';
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from './popover';
 
 const meta = {
     title: 'Base/Popover',

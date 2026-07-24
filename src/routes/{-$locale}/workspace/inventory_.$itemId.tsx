@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { parseISO } from 'date-fns';
-import { formatCurrency, formatDate, formatIsoDate } from '../../../shared';
 import {
     ArrowLeftIcon,
     CircleDollarSignIcon,
@@ -22,6 +21,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
+import { formatCurrency, formatDate, formatIsoDate } from '../../../shared';
 import { uploadFile } from '../../../web/chat/fileUpload';
 import {
     AlertDialog,
@@ -54,10 +54,10 @@ import {
     WorkspaceItemFilesAttachDocument,
     WorkspaceItemFilesDeleteDocument,
     WorkspaceItemFilesUpsertDocument,
-    WorkspaceItemsRepriceDocument,
-    WorkspaceItemsUpsertDocument,
     WorkspaceItemServiceEntriesDeleteDocument,
     WorkspaceItemServiceEntriesUpsertDocument,
+    WorkspaceItemsRepriceDocument,
+    WorkspaceItemsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';

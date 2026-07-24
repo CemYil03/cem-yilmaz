@@ -1,10 +1,10 @@
 import { TimerIcon } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { useMutation } from 'urql';
-import { ChatTranscriptShell } from './base/chat-transcript-shell';
-import { MessageScrollerItem } from './base/message-scroller';
 import { WorkspaceProjectDetailDeleteActivitiesDocument } from '../graphql/generated';
 import type { Locale } from '../utils/locale';
+import { ChatTranscriptShell } from './base/chat-transcript-shell';
+import { MessageScrollerItem } from './base/message-scroller';
 import { WorkspaceProjectActivityComposer } from './WorkspaceProjectActivityComposer';
 import { isSameDay } from './WorkspaceProjectActivityConstants';
 import type { WorkspaceProjectActivityRow, WorkspaceProjectTaskRow } from './WorkspaceProjectActivityConstants';

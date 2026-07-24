@@ -1,6 +1,5 @@
 import type { ChatAssistantInputSlot, ChatAssistantInputValue, ChatMessageUserInputAnswer } from '../db/chatPayloadTypes';
 import type {
-    FileUpload,
     ChatMessage,
     ChatMessageAssistantInputCollection,
     ChatMessageAssistantText,
@@ -10,18 +9,19 @@ import type {
     ChatMessageUser,
     ChatMessageUserInput,
     CompassObservation,
+    FileUpload,
     User,
 } from '../db/schema';
 import type {
     GqlSChatAssistantInput,
     GqlSChatAssistantInputValue,
-    GqlSChatMessageGeneration,
     GqlSChatMessage,
+    GqlSChatMessageGeneration,
     GqlSChatMessageUserInputAnswer,
 } from '../graphql/generated';
 import { toGqlCompassObservation } from './toGqlCompassObservation';
-import { toGqlUser } from './toGqlUser';
 import { toGqlFileUpload } from './toGqlFileUpload';
+import { toGqlUser } from './toGqlUser';
 
 // Server-rooted URL the bytes are streamed back from. Centralized so the
 // mapper, the upload route, and the download route agree on the path. Path

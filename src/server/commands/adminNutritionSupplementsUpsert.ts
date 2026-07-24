@@ -5,7 +5,7 @@ import { requireAdminUserId } from '../agents/requireAdminUserId';
 import { supplements } from '../db/schema';
 import type { AdminNutritionSupplementCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
-import type { GqlSMutationResult, GqlSAdminNutritionSupplementInput, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminNutritionSupplementInput, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch upsert of supplement rows (the parent record only — nutrient rows are
 // written separately via `adminNutritionSupplementNutrientsReplace`, mirroring the

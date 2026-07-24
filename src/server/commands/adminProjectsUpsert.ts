@@ -6,7 +6,7 @@ import { projectRequests, projects } from '../db/schema';
 import type { AdminProjectCreate } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import { GqlSAdminProjectStatusSchema } from '../graphql/generated';
-import type { GqlSMutationResult, GqlSAdminProjectCreate, GqlSSession } from '../graphql/generated';
+import type { GqlSAdminProjectCreate, GqlSMutationResult, GqlSSession } from '../graphql/generated';
 
 // Batch create-or-update of projects. Every input with a `projectId` is
 // updated; every input without one is inserted under a freshly-minted UUID.

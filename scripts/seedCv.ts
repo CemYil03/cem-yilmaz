@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
 import { config } from 'dotenv';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { cvEducation, cvExperience, cvHobby, cvSkill } from '../src/server/db/schema';
 import type { CvEducationCreate, CvExperienceCreate, CvHobbyCreate, CvSkillCreate } from '../src/server/db/schema';
 

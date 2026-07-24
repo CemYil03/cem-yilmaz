@@ -29,9 +29,9 @@ import type {
 import {
     WorkspaceProjectRequestArchiveDocument,
     WorkspaceProjectRequestDeleteDocument,
-    WorkspaceProjectsUpsertDocument,
     WorkspaceProjectsPageDocument,
     WorkspaceProjectsPageUpdatesDocument,
+    WorkspaceProjectsUpsertDocument,
 } from '../../../web/graphql/generated';
 import { routeLoaderGraphqlClient } from '../../../web/graphql/routeLoaderGraphqlClient';
 import { useLocale } from '../../../web/hooks/useLocale';

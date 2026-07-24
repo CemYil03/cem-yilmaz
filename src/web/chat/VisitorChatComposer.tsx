@@ -1,13 +1,13 @@
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import type { ReactNode } from 'react';
 import { useQuery } from 'urql';
-import { ChatComposer } from './ChatComposer';
 import { Button } from '../components/base/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/base/hover-card';
 import { ChatMessageCreateDocument, VisitorChatQuotaDocument } from '../graphql/generated';
 import type { GqlCVisitorChatQuotaFieldsFragment } from '../graphql/generated';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
+import { ChatComposer } from './ChatComposer';
 
 // Visitor-facing chat composer. Wraps `<ChatComposer />` and pre-wires the
 // visitor `chatMessageCreate` mutation + its result extractor so the server

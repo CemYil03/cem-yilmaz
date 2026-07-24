@@ -507,6 +507,28 @@ Enforcement happens in two places:
   automatically on `npm install`) installs the hook.
 - `npm run commitlint:check` lints the most recent commit (`HEAD~1..HEAD`) and is part of `npm run check`.
 
+## Import Ordering
+
+Import order is enforced by ESLint (`import/order` + `sort-imports` in `eslint.config.js`) and autofixed by `npm run lint` / editor
+`source.fixAll.eslint` on save. Do not hand-sort imports — let the fixer own it.
+
+Rules:
+
+1. Groups, in order: builtin → external → internal → parent → sibling → index
+2. Alphabetize by module path within each group (case-insensitive)
+3. Named members inside `{ … }` are alphabetized (`sort-imports`)
+4. `import type` stays with its module path (not a separate trailing type-only group) — matches
+   `import/consistent-type-specifier-style: prefer-top-level` from the TanStack config
+
+```ts
+import { readFile } from 'node:fs/promises';
+import { eq } from 'drizzle-orm';
+import { ToolLoopAgent } from 'ai';
+import type { ServerRuntime } from '../domain/ServerRuntime';
+import { chatFindOne } from '../queries/chatFindOne';
+import { toolProjectsList } from './toolProjectsList';
+```
+
 ## Quality Checks
 
 Run all checks before pushing:

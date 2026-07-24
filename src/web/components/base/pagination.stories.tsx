@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
     Pagination,
     PaginationContent,
+    PaginationEllipsis,
     PaginationItem,
     PaginationLink,
-    PaginationPrevious,
     PaginationNext,
-    PaginationEllipsis,
+    PaginationPrevious,
 } from './pagination';
 
 const meta = {

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
     CloudIcon,
@@ -8,14 +7,16 @@ import {
     LogOutIcon,
     MailIcon,
     MessageSquareIcon,
-    PlusIcon,
     PlusCircleIcon,
+    PlusIcon,
     SettingsIcon,
+    Trash2Icon,
     UserIcon,
     UserPlusIcon,
     UsersIcon,
-    Trash2Icon,
 } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from './button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -33,7 +34,6 @@ import {
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from './dropdown-menu';
-import { Button } from './button';
 
 const meta = {
     title: 'Base/DropdownMenu',

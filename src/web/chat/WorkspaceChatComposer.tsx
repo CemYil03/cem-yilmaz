@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { chatContextTokensUsed, formatTokenCount } from './chatContextUsage';
-import { ChatComposer } from './ChatComposer';
-import { mergeTranscriptMessages } from './chatTranscript';
-import type { TranscriptMessage } from './chatTranscript';
-import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 import { Button } from '../components/base/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/base/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/base/select';
 import { WorkspaceChatMessageCreateDocument } from '../graphql/generated';
 import { cn } from '../utils/cn';
 import type { Locale } from '../utils/locale';
+import { ChatComposer } from './ChatComposer';
+import { chatContextTokensUsed, formatTokenCount } from './chatContextUsage';
+import type { TranscriptMessage } from './chatTranscript';
+import { mergeTranscriptMessages } from './chatTranscript';
+import { useWorkspaceAssistantChat } from './WorkspaceAssistantChatProvider';
 
 // Admin-namespace composer used on every workspace surface that lets the
 // user send a message — the hub composer on `/workspace`, the sidebar

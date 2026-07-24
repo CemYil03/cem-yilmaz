@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
-import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GqlCFileUpload } from '../../graphql/generated';
 import { ChatAttachmentPreviewDialog } from './ChatAttachmentPreviewDialog';
 

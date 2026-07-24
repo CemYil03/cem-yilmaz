@@ -1,5 +1,5 @@
 import type { AdminTaxYear } from '../db/schema';
-import type { GqlSAdminTaxYear, GqlSAdminTaxDocument, GqlSAdminTaxExpense, GqlSAdminTaxIncomeSource } from '../graphql/generated';
+import type { GqlSAdminTaxDocument, GqlSAdminTaxExpense, GqlSAdminTaxIncomeSource, GqlSAdminTaxYear } from '../graphql/generated';
 
 // The caller pre-loads and maps the children and pre-computes the totals, then
 // hands them in — the year row itself maps 1:1. Totals live on the query, not

@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
 import { useMutation } from 'urql';
-import { ChatTranscript } from '../../../web/chat/ChatTranscriptShared';
-import { mergeTranscriptMessages } from '../../../web/chat/chatTranscript';
 import { toFlatAnswerInput } from '../../../web/chat/chatAssistantInputKinds';
+import { mergeTranscriptMessages } from '../../../web/chat/chatTranscript';
+import { ChatTranscript } from '../../../web/chat/ChatTranscriptShared';
+import { DocumentPanelProvider } from '../../../web/chat/DocumentPanelProvider';
 import { useChatLiveUpdates } from '../../../web/chat/useChatLiveUpdates';
 import { useWorkspaceAssistantChat } from '../../../web/chat/WorkspaceAssistantChatProvider';
 import { WorkspaceChatComposer } from '../../../web/chat/WorkspaceChatComposer';
-import { DocumentPanelProvider } from '../../../web/chat/DocumentPanelProvider';
 import { ExternalLinkConfirmationProvider } from '../../../web/components/AssistantMarkdown';
 import { Button } from '../../../web/components/base/button';
 import type { GqlCChatAssistantInputValue, GqlCWorkspaceChatPageQuery } from '../../../web/graphql/generated';

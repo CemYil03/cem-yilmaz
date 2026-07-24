@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { CalendarClockIcon, ChevronLeftIcon, ChevronRightIcon, CodeXmlIcon, ExternalLinkIcon, MailIcon, SendIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatMonthYear } from '../../shared';
 import { useVisitorChat } from '../../web/chat/VisitorChatProvider';
 import { Button } from '../../web/components/base/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../../web/components/base/dialog';
@@ -18,7 +19,6 @@ import { webPageUrlGet } from '../../web/seo/webPageUrlGet';
 import { cn } from '../../web/utils/cn';
 import type { Locale } from '../../web/utils/locale';
 import { localeFromParam } from '../../web/utils/locale';
-import { formatMonthYear } from '../../shared';
 
 const PRIMARY_EMAIL = personalInfo.contact.emails[0] ?? '';
 

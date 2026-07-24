@@ -1,8 +1,8 @@
 import { desc, eq, isNull } from 'drizzle-orm';
-import { compass, compassObservations } from '../db/schema';
-import type { ServerRuntime } from '../domain/ServerRuntime';
 import { COMPASS_SINGLETON_ID } from '../agents/compassConfig';
 import { COMPASS_INTERVIEW_RECENT_OBSERVATIONS_COUNT } from '../agents/compassInterviewConfig';
+import { compass, compassObservations } from '../db/schema';
+import type { ServerRuntime } from '../domain/ServerRuntime';
 
 // FIREWALL EXCEPTION ANCHOR.
 //

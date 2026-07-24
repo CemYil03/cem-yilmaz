@@ -1,9 +1,9 @@
 import { MessageCircleIcon, SparklesIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useVisitorChat } from '../chat/VisitorChatProvider';
-import { useSidebar } from './base/sidebar';
 import { useLocale } from '../hooks/useLocale';
 import { cn } from '../utils/cn';
+import { useSidebar } from './base/sidebar';
 import { HeaderIconButton } from './HeaderIconButton';
 
 // Header entry point into a chat surface. Sized to match `LanguageSelector` /

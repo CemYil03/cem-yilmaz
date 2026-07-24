@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { environmentVariables } from '../server/env/environmentVariablesCreate';
-import { DEFAULT_LOCALE, LOCALES } from '../web/utils/locale';
-import type { Locale } from '../web/utils/locale';
 import { SITEMAP_PATHS } from '../web/seo/sitemapRoutes';
 import type { SitemapPath } from '../web/seo/sitemapRoutes';
+import { DEFAULT_LOCALE, LOCALES } from '../web/utils/locale';
+import type { Locale } from '../web/utils/locale';
 
 // Dynamic XML sitemap — emits one `<url>` per (path × locale) with
 // `xhtml:link rel="alternate" hreflang="…"` alternates plus `x-default`.

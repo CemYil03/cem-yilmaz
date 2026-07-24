@@ -1,5 +1,5 @@
 import type { GenerateTextOnStepEndCallback } from 'ai';
-import { ToolLoopAgent, isStepCount } from 'ai';
+import { isStepCount, ToolLoopAgent } from 'ai';
 import { toolProjectActivitiesUpsert } from '../commands/adminProjectActivitiesUpsert';
 import { toolProjectLinksUpsert } from '../commands/adminProjectLinksUpsert';
 import { toolProjectsDelete } from '../commands/adminProjectsDelete';
@@ -10,7 +10,7 @@ import { toolProjectFileCreate } from '../commands/projectFileCreateFromMarkdown
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
-import { googleAgentProviderOptionsFor, currentDateForAgent } from './agentScaffolding';
+import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
 import { toolProjectFileContentGet } from './toolProjectFileContentGet';
 import { toolProjectGet } from './toolProjectGet';

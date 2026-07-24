@@ -1,10 +1,7 @@
 import { eq } from 'drizzle-orm';
-import type { ChatMutationDispatch } from './chatMessageCreate';
-import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
-import { chatMessageAppend } from './chatMessageAppend';
 import type { ChatAssistantInputValue, ChatMessageUserInputAnswer as ChatMessageUserInputAnswerPayload } from '../db/chatPayloadTypes';
 import type { ChatMessageCreate as ChatMessageRowCreate, ChatMessageUserInputCreate } from '../db/schema';
-import { chats, chatMessages, chatMessagesAssistantInputCollection, chatMessagesUserInput } from '../db/schema';
+import { chatMessages, chatMessagesAssistantInputCollection, chatMessagesUserInput, chats } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type {
     GqlSChatAssistantInputValueKind,
@@ -13,6 +10,9 @@ import type {
     GqlSMutationChatInputCollectionRespondArgs,
     GqlSSession,
 } from '../graphql/generated';
+import { chatAssistantTurnRunDetached } from './chatAssistantTurnRun';
+import { chatMessageAppend } from './chatMessageAppend';
+import type { ChatMutationDispatch } from './chatMessageCreate';
 
 // Persists a `ChatMessageUserInput` row in response to an assistant input
 // collection, then runs the next assistant turn via the shared detached

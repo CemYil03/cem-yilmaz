@@ -1,5 +1,5 @@
-import type { GqlSSession } from '../graphql/generated';
 import type { SessionCookieConfiguration } from '../env/EnvironmentVariables';
+import type { GqlSSession } from '../graphql/generated';
 
 function getSessionIdFromRequest(sessionCookieConfig: SessionCookieConfiguration, request: Request): string | null {
     const cookieHeader = request.headers.get('cookie');

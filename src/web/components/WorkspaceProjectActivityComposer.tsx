@@ -3,6 +3,13 @@ import { LinkIcon, PaperclipIcon, SendIcon, XIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useMutation } from 'urql';
 import { uploadFile } from '../chat/fileUpload';
+import type {
+    GqlCAdminProjectActivityChannel,
+    GqlCAdminProjectActivityDirection,
+    GqlCAdminProjectActivityKind,
+    GqlCAdminProjectOfferStatus,
+} from '../graphql/generated';
+import { WorkspaceProjectDetailUpsertActivitiesDocument } from '../graphql/generated';
 import { cn } from '../utils/cn';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
@@ -11,23 +18,16 @@ import { DateTimePicker } from './base/date-time-picker';
 import { Input } from './base/input';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from './base/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './base/select';
-import type {
-    GqlCAdminProjectActivityChannel,
-    GqlCAdminProjectActivityDirection,
-    GqlCAdminProjectActivityKind,
-    GqlCAdminProjectOfferStatus,
-} from '../graphql/generated';
-import { WorkspaceProjectDetailUpsertActivitiesDocument } from '../graphql/generated';
 import {
     ACTIVITY_CHANNEL_LABELS,
     ACTIVITY_CHANNEL_ORDER,
     ACTIVITY_DIRECTION_LABELS,
     ACTIVITY_KIND_LABELS,
     ACTIVITY_KIND_ORDER,
+    defaultDirectionForKind,
     DURATION_CHANNELS,
     OFFER_STATUS_LABELS,
     OFFER_STATUS_ORDER,
-    defaultDirectionForKind,
 } from './WorkspaceProjectActivityConstants';
 import type { WorkspaceProjectActivityRow, WorkspaceProjectTaskRow } from './WorkspaceProjectActivityConstants';
 
