@@ -9,8 +9,10 @@ fragment WorkspaceFinancesPageUser on User {
     admin {
         adminFinancesFindOne {
             adminFinancesMonthlyIncomeCentsFindOne
+            adminFinancesQuarterlyIncomeCentsFindOne
             adminFinancesYearlyIncomeCentsFindOne
             adminFinancesMonthlyExpensesCentsFindOne
+            adminFinancesQuarterlyExpensesCentsFindOne
             adminFinancesYearlyExpensesCentsFindOne
             adminFinancesIncomeStreamFindMany {
                 incomeStreamId

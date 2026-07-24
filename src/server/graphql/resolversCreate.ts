@@ -513,7 +513,7 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             },
             // Finances namespace — same shell pattern. Per-field resolvers on
             // `AdminFinancesQuery` fan out to the recurring-cost list and the
-            // computed monthly / yearly totals. See
+            // computed monthly / quarterly / yearly totals. See
             // `docs/features/workspace-finances.md`.
             adminFinancesFindOne(): GqlSAdminFinancesQuery {
                 return {} as GqlSAdminFinancesQuery;
@@ -740,6 +740,10 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
                 const totals = await adminFinancesIncomeCentsFindOne(requestingSession, serverRuntime);
                 return totals.monthlyCents;
             },
+            async adminFinancesQuarterlyIncomeCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                const totals = await adminFinancesIncomeCentsFindOne(requestingSession, serverRuntime);
+                return totals.quarterlyCents;
+            },
             async adminFinancesYearlyIncomeCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
                 const totals = await adminFinancesIncomeCentsFindOne(requestingSession, serverRuntime);
                 return totals.yearlyCents;
@@ -747,6 +751,10 @@ export function resolversCreate(serverRuntime: ServerRuntime): GqlSResolvers {
             async adminFinancesMonthlyExpensesCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
                 const totals = await adminFinancesExpensesCentsFindOne(requestingSession, serverRuntime);
                 return totals.monthlyCents;
+            },
+            async adminFinancesQuarterlyExpensesCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
+                const totals = await adminFinancesExpensesCentsFindOne(requestingSession, serverRuntime);
+                return totals.quarterlyCents;
             },
             async adminFinancesYearlyExpensesCentsFindOne(_parent: GqlSAdminFinancesQuery, __: any, requestingSession: GqlSSession) {
                 const totals = await adminFinancesExpensesCentsFindOne(requestingSession, serverRuntime);

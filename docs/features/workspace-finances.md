@@ -2,20 +2,20 @@
 
 Income-stream and recurring-cost tracker for the admin: an admin editor at `/workspace/finances` with a Sankey chart that visualises where
 the money goes each period. This is the first iteration — durable lists of _what comes in_ and _what leaves the account on a schedule_
-(rent, insurance, subscriptions, transport, …), scaled monthly or yearly on demand. Ledger-shaped concerns (individual transactions,
-holdings, trading, bank import) are out of scope until this base surface earns its keep.
+(rent, insurance, subscriptions, transport, …), scaled monthly, quarterly, or yearly on demand. Ledger-shaped concerns (individual
+transactions, holdings, trading, bank import) are out of scope until this base surface earns its keep.
 
 ## User Behavior
 
 `/workspace/finances` is the surface. Top-down:
 
 - **Period switch** — canonical top-of-page underlined section tabs (see [conventions.md](../conventions.md#top-of-page-sub-view-switcher)):
-  **Monthly** (default) vs **Yearly**. Lives in the URL as `?period=yearly`; the default drops the key so the canonical landing URL has no
-  query string. The switch scales every number on the page — summary cards, Sankey flows, per-item projections, category subtotals — nothing
-  else moves.
+  **Monthly** (default) vs **Quarterly** vs **Yearly**. Lives in the URL as `?period=quarterly` / `?period=yearly`; the default drops the
+  key so the canonical landing URL has no query string. The switch scales every number on the page — summary cards, Sankey flows, per-item
+  projections, category subtotals — nothing else moves.
 - **Period summary** — two glass tiles directly under the period tabs, above the Sankey: **Income** (sum of active streams, period-scaled,
   with leftover / over-income subtitle) and **Payments** (sum of active recurring costs). Only the active period is shown — no parallel
-  monthly + yearly pair.
+  monthly + quarterly + yearly trio.
 - **Sankey** — aggregated income → categories → items. Wrapped in a `GlassCard`, drawn as inline SVG using `d3-sankey` for the layout math
   (no chart library shell — see below). Categories and items are ordered by volume descending (largest at the top). Each category (and its
   flows / items) gets a distinct `chart-2…5` / `chart-1` slot so adjacent bands read apart; income stays on brand `chart-1`. Hovering a flow
@@ -27,12 +27,12 @@ holdings, trading, bank import) are out of scope until this base surface earns i
   `connectivity`, `transport`, `insurance`, `subscriptionsEntertainment`, `subscriptionsWork`, `memberships`, `donations`, `household`,
   `savingsGeneral`, `savingsVacation`, `other`). Flat list rows (no nested glass cards) sorted by projected amount within each group.
   Inactive rows stay at reduced opacity with a "Paused" badge — they don't count toward totals or the Sankey. Cadence meta and the old
-  per-row "monthly / yearly" period label under the amount are omitted when they would only repeat the page period tab.
+  per-row "monthly / quarterly / yearly" period label under the amount are omitted when they would only repeat the page period tab.
 - **Empty state** replaces the expense list body when there are zero cost rows, with a "Add the first cost" call to action (the section
   header button remains available too).
 - **Dialogs** for new / edit income and cost. Cost fields: name (required), category, amount in EUR (required, positive), cadence (monthly /
-  yearly), starts on / ends on (optional, informational — do not affect totals or the Sankey), notes, active. Income fields are the same
-  minus category. Delete uses `AlertDialog` and warns that toggling `active` off is the softer alternative.
+  quarterly / yearly), starts on / ends on (optional, informational — do not affect totals or the Sankey), notes, active. Income fields are
+  the same minus category. Delete uses `AlertDialog` and warns that toggling `active` off is the softer alternative.
 
 Bilingual copy is inline `{ de, en }[locale]` at the call site per [conventions.md](../conventions.md#bilingual-copy). Only `title`,
 `description` (seoMeta only — not rendered as a page lead), `CATEGORY_LABELS`, `CADENCE_LABELS`, and `PERIOD_LABELS` are hoisted — reused
@@ -51,8 +51,8 @@ across `seoMeta()`, the Select options, and the tab labels.
   is the fat one, not just that subscriptions overall are fat. Cost is one more node column and a heavier layout — trivial with d3-sankey.
   Chosen: **income → category → item**, with volume-desc sort.
 - **Period switch semantics.** Considered a month/year date picker; rejected because there is no dated data behind it in v1 — every month
-  would look identical. A projection toggle (monthly ↔ yearly) is honest about what the numbers mean and free of ambiguity. Chosen: **toggle
-  only**.
+  would look identical. A projection toggle (monthly ↔ quarterly ↔ yearly) is honest about what the numbers mean and free of ambiguity.
+  Chosen: **toggle only**.
 - **Chart lib.** Considered Recharts (higher-level, larger dep, less styling control) and hand-rolled flow bars (cheap, worse-looking).
   `d3-sankey` gives us the crossing-minimization layout and lets us stay on inline SVG — the repo's established posture, see the sparkline
   in `inventory_.$itemId.tsx`. Chosen: **d3-sankey + d3-shape**.
@@ -65,9 +65,9 @@ Two domain tables, admin-only convention — no `*De`/`*En` pairs, no per-row `u
 
 - **`AdminFinancesRecurringCost`** — `costId`, `name`, `categoryKey` (enum: `housing` | `connectivity` | `transport` | `insurance` |
   `subscriptionsEntertainment` | `subscriptionsWork` | `memberships` | `donations` | `household` | `savingsGeneral` | `savingsVacation` |
-  `other`, default `other`), `amountCents` (per-`cadence` amount), `cadence` (`monthly` | `yearly`, default `monthly`), `currency`
-  (`char(3)`, default `EUR`), `notes`, `active` (default `true`), `startsOn` / `endsOn` (informational for v1), timestamps. Indexed on
-  `categoryKey` (list groups by it) and `active` (the SQL totals filter by it).
+  `other`, default `other`), `amountCents` (per-`cadence` amount), `cadence` (`monthly` | `quarterly` | `yearly`, default `monthly`),
+  `currency` (`char(3)`, default `EUR`), `notes`, `active` (default `true`), `startsOn` / `endsOn` (informational for v1), timestamps.
+  Indexed on `categoryKey` (list groups by it) and `active` (the SQL totals filter by it).
 - **`AdminFinancesIncomeStream`** — `incomeStreamId`, `name`, `amountCents`, `cadence`, `currency`, `notes`, `active`, `startsOn` /
   `endsOn`, timestamps. No category enum — the name is the stream identity. Indexed on `active`. Migration `0033` seeds one "Net income"
   stream from any prior `AdminFinancesSettings.monthlyNetIncomeCents`, then drops `AdminFinancesSettings`.
@@ -81,11 +81,12 @@ Enum tuples exported as `financeRecurringCostCategories` and `financeCadences`, 
 
 - `adminFinancesRecurringCostFindMany: [AdminFinancesRecurringCost!]!` — every row, ordered by category then name.
 - `adminFinancesIncomeStreamFindMany: [AdminFinancesIncomeStream!]!` — every row, ordered by name.
-- `adminFinancesMonthlyIncomeCentsFindOne: Int!` / `adminFinancesYearlyIncomeCentsFindOne: Int!` — projected totals over active streams (`0`
-  when none).
-- `adminFinancesMonthlyExpensesCentsFindOne: Int!` / `adminFinancesYearlyExpensesCentsFindOne: Int!` — projected totals over active costs,
-  computed in one SQL pass (see `adminFinancesExpensesCentsFindOne`). Yearly rows contribute `amount / 12` to the monthly total and `amount`
-  to the yearly total; monthly rows do the mirror.
+- `adminFinancesMonthlyIncomeCentsFindOne: Int!` / `adminFinancesQuarterlyIncomeCentsFindOne: Int!` /
+  `adminFinancesYearlyIncomeCentsFindOne: Int!` — projected totals over active streams (`0` when none).
+- `adminFinancesMonthlyExpensesCentsFindOne: Int!` / `adminFinancesQuarterlyExpensesCentsFindOne: Int!` /
+  `adminFinancesYearlyExpensesCentsFindOne: Int!` — projected totals over active costs, computed in one SQL pass (see
+  `adminFinancesExpensesCentsFindOne`). Quarterly rows contribute `amount / 3` to the monthly total, `amount` to the quarterly total, and
+  `amount * 4` to the yearly total; monthly and yearly rows do the mirror.
 
 `AdminMutation` extensions follow the repo-wide batch + `MutationResult` conventions: `adminFinancesRecurringCostsUpsert` /
 `adminFinancesRecurringCostsDelete`, `adminFinancesIncomeStreamsUpsert` / `adminFinancesIncomeStreamsDelete` — all return `MutationResult!`
@@ -98,9 +99,10 @@ Enum tuples exported as `financeRecurringCostCategories` and `financeCadences`, 
   pre-flight `inArray` existence check for update ids, per-row insert/update in the loop, one transaction). Each publishes `userUpdates` on
   success.
 - Queries: `adminFinancesRecurringCostFindMany`, `adminFinancesIncomeStreamFindMany`, `adminFinancesExpensesCentsFindOne`,
-  `adminFinancesIncomeCentsFindOne` (each returns `{ monthlyCents, yearlyCents }` — the period total resolvers both call them).
+  `adminFinancesIncomeCentsFindOne` (each returns `{ monthlyCents, quarterlyCents, yearlyCents }` — the period total resolvers all call
+  them).
 - Mappers: `toGqlAdminFinancesRecurringCost`, `toGqlAdminFinancesIncomeStream` — scalar 1:1.
-- Resolver wiring: `Admin.adminFinancesFindOne` shell, six `AdminFinancesQuery` field resolvers, four `AdminMutation` handlers — all in
+- Resolver wiring: `Admin.adminFinancesFindOne` shell, eight `AdminFinancesQuery` field resolvers, four `AdminMutation` handlers — all in
   `src/server/graphql/resolversCreate.ts`.
 
 ### Client GraphQL
@@ -134,13 +136,15 @@ total when not), one `category` node per non-empty category, one `item` node per
 
 ### Period math
 
-`projectedCents(row, period)` is the single source of truth for scaling (shared by costs and income streams):
+`projectedCents(row, period)` is the single source of truth for scaling (shared by costs and income streams). Normalize via a yearly base so
+monthly ↔ quarterly ↔ yearly stays integer-clean:
 
 - `row.cadence === period` → `row.amountCents`.
-- `period === 'monthly'`, row is yearly → `Math.round(row.amountCents / 12)`.
-- `period === 'yearly'`, row is monthly → `row.amountCents * 12`.
+- Otherwise: `yearly = monthly×12 | quarterly×4 | yearly`, then `period === 'yearly'` → `yearly`, `period === 'quarterly'` →
+  `Math.round(yearly / 4)`, `period === 'monthly'` → `Math.round(yearly / 12)`.
 
-`Math.round` for the monthly-from-yearly case is intentional; the yearly-from-monthly case is exact integer multiplication.
+`Math.round` for the divide cases is intentional; multiplying up (monthly→quarterly / monthly→yearly / quarterly→yearly) is exact integer
+multiplication.
 
 ### Route layout
 
@@ -163,11 +167,12 @@ without opening the page. This follows the orchestrator + sub-agent recipe in
 [../architecture/agent-delegation.md](../architecture/agent-delegation.md), mirroring the travel domain 1:1:
 
 - **Sub-agent** — `src/server/agents/agentPersonalAssistantFinances.ts`. System prompt carries the persona, the cents-conversion rule
-  ("25,95 im Monat" → `amountCents: 2595, cadence: "monthly"`), the "add to my expenses = recurring cost / add to my income = income stream,
-  there is no dated-transaction model" rule, and the `needsMoreInfo` / `noOp` sentinel contract (asks for the amount when a new row has only
-  a name).
+  ("25,95 im Monat" → `amountCents: 2595, cadence: "monthly"`; "89 € im Quartal" → `cadence: "quarterly"`), the "add to my expenses =
+  recurring cost / add to my income = income stream, there is no dated-transaction model" rule, and the `needsMoreInfo` / `noOp` sentinel
+  contract (asks for the amount when a new row has only a name).
 - **Snapshot** — `src/server/agents/financesSnapshotForAgent.ts` inlines every income stream and every cost grouped by category (with ids),
-  plus the current monthly/yearly income and expense totals, so the sub-agent answers "how much do I spend?" straight from its prompt.
+  plus the current monthly/quarterly/yearly income and expense totals, so the sub-agent answers "how much do I spend?" straight from its
+  prompt.
 - **Tools** — thin wrappers over the same commands/queries the resolvers use: `toolFinanceRecurringCostsUpsert` (reuses the generated,
   Gemini-safe `GqlSAdminFinancesRecurringCostInputSchema()`), `toolFinanceRecurringCostsDelete`, `toolFinanceRecurringCostsList`,
   `toolFinanceIncomeStreamsUpsert`, `toolFinanceIncomeStreamsDelete`, `toolFinanceIncomeStreamsList`. Pausing rides the upsert with

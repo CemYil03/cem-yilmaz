@@ -126,7 +126,7 @@ export type GqlSAdminCompassAdminCompassObservationFindManyArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export type GqlSAdminFinancesCadence = 'monthly' | 'yearly';
+export type GqlSAdminFinancesCadence = 'monthly' | 'quarterly' | 'yearly';
 
 export interface GqlSAdminFinancesIncomeStream {
     __typename?: 'AdminFinancesIncomeStream';
@@ -160,6 +160,8 @@ export interface GqlSAdminFinancesQuery {
     adminFinancesIncomeStreamFindMany: Array<GqlSAdminFinancesIncomeStream>;
     adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
     adminFinancesMonthlyIncomeCentsFindOne: Scalars['Int']['output'];
+    adminFinancesQuarterlyExpensesCentsFindOne: Scalars['Int']['output'];
+    adminFinancesQuarterlyIncomeCentsFindOne: Scalars['Int']['output'];
     adminFinancesRecurringCostFindMany: Array<GqlSAdminFinancesRecurringCost>;
     adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
     adminFinancesYearlyIncomeCentsFindOne: Scalars['Int']['output'];
@@ -3220,6 +3222,8 @@ export type GqlSAdminFinancesQueryResolvers<
     adminFinancesIncomeStreamFindMany?: Resolver<Array<GqlSResolversTypes['AdminFinancesIncomeStream']>, ParentType, ContextType>;
     adminFinancesMonthlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminFinancesMonthlyIncomeCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminFinancesQuarterlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
+    adminFinancesQuarterlyIncomeCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminFinancesRecurringCostFindMany?: Resolver<Array<GqlSResolversTypes['AdminFinancesRecurringCost']>, ParentType, ContextType>;
     adminFinancesYearlyExpensesCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
     adminFinancesYearlyIncomeCentsFindOne?: Resolver<GqlSResolversTypes['Int'], ParentType, ContextType>;
@@ -5473,7 +5477,11 @@ export const isDefinedNonNullAny = (v: any): v is definedNonNullAny => v !== und
 
 export const definedNonNullAnySchema = z.any().refine((v) => isDefinedNonNullAny(v));
 
-export const GqlSAdminFinancesCadenceSchema: z.ZodType<'monthly' | 'yearly', 'monthly' | 'yearly'> = z.enum(['monthly', 'yearly']);
+export const GqlSAdminFinancesCadenceSchema: z.ZodType<'monthly' | 'quarterly' | 'yearly', 'monthly' | 'quarterly' | 'yearly'> = z.enum([
+    'monthly',
+    'quarterly',
+    'yearly',
+]);
 
 export const GqlSAdminFinancesRecurringCostCategorySchema: z.ZodType<
     | 'connectivity'

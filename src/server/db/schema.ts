@@ -2062,7 +2062,7 @@ export const financeRecurringCostCategories = [
 ] as const;
 export type AdminFinancesRecurringCostCategory = (typeof financeRecurringCostCategories)[number];
 
-export const financeCadences = ['monthly', 'yearly'] as const;
+export const financeCadences = ['monthly', 'quarterly', 'yearly'] as const;
 export type AdminFinancesCadence = (typeof financeCadences)[number];
 
 export const financeRecurringCosts = pgTable(

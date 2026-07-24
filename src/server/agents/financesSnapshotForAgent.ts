@@ -13,9 +13,9 @@ import { adminFinancesIncomeCentsFindOne } from '../queries/adminFinancesIncomeC
 // inline so the agent can lift ids for edit / delete / pause without a list
 // call. Re-fetched on every delegation — volume is tiny.
 //
-// The header carries the current monthly/yearly income and expense totals
-// (over active rows), so the agent can answer "how much do I spend?" and
-// "can I afford this?" straight from the prompt.
+// The header carries the current monthly/quarterly/yearly income and expense
+// totals (over active rows), so the agent can answer "how much do I spend?"
+// and "can I afford this?" straight from the prompt.
 export async function financesSnapshotForAgent(session: GqlSSession, serverRuntime: ServerRuntime): Promise<string> {
     const [costRows, incomeRows, expenseTotals, incomeTotals] = await Promise.all([
         serverRuntime.db
@@ -29,8 +29,8 @@ export async function financesSnapshotForAgent(session: GqlSSession, serverRunti
 
     const lines: string[] = ['## Finances'];
     lines.push(
-        `- income (active streams): ${formatCurrency(incomeTotals.monthlyCents, { locale: 'de' })}/month, ${formatCurrency(incomeTotals.yearlyCents, { locale: 'de' })}/year`,
-        `- recurring expenses (active rows): ${formatCurrency(expenseTotals.monthlyCents, { locale: 'de' })}/month, ${formatCurrency(expenseTotals.yearlyCents, { locale: 'de' })}/year`,
+        `- income (active streams): ${formatCurrency(incomeTotals.monthlyCents, { locale: 'de' })}/month, ${formatCurrency(incomeTotals.quarterlyCents, { locale: 'de' })}/quarter, ${formatCurrency(incomeTotals.yearlyCents, { locale: 'de' })}/year`,
+        `- recurring expenses (active rows): ${formatCurrency(expenseTotals.monthlyCents, { locale: 'de' })}/month, ${formatCurrency(expenseTotals.quarterlyCents, { locale: 'de' })}/quarter, ${formatCurrency(expenseTotals.yearlyCents, { locale: 'de' })}/year`,
     );
 
     lines.push('', '## Income streams');
@@ -62,15 +62,21 @@ export async function financesSnapshotForAgent(session: GqlSSession, serverRunti
 }
 
 function incomeLine(stream: AdminFinancesIncomeStream): string {
-    const amount = `${formatCurrency(stream.amountCents, { locale: 'de' })}/${stream.cadence === 'yearly' ? 'year' : 'month'}`;
+    const amount = `${formatCurrency(stream.amountCents, { locale: 'de' })}/${cadenceUnit(stream.cadence)}`;
     const paused = stream.active ? '' : ' [PAUSED]';
     const notes = stream.notes ? ` — ${stream.notes}` : '';
     return `${stream.name}: ${amount}${paused}${notes} (id: ${stream.incomeStreamId})`;
 }
 
 function costLine(cost: AdminFinancesRecurringCost): string {
-    const amount = `${formatCurrency(cost.amountCents, { locale: 'de' })}/${cost.cadence === 'yearly' ? 'year' : 'month'}`;
+    const amount = `${formatCurrency(cost.amountCents, { locale: 'de' })}/${cadenceUnit(cost.cadence)}`;
     const paused = cost.active ? '' : ' [PAUSED]';
     const notes = cost.notes ? ` — ${cost.notes}` : '';
     return `${cost.name}: ${amount}${paused}${notes} (id: ${cost.costId})`;
+}
+
+function cadenceUnit(cadence: AdminFinancesIncomeStream['cadence']): string {
+    if (cadence === 'yearly') return 'year';
+    if (cadence === 'quarterly') return 'quarter';
+    return 'month';
 }

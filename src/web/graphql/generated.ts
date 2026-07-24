@@ -129,7 +129,7 @@ export type GqlCAdminCompassAdminCompassObservationFindManyArgs = {
     includeDismissed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export type GqlCAdminFinancesCadence = 'monthly' | 'yearly';
+export type GqlCAdminFinancesCadence = 'monthly' | 'quarterly' | 'yearly';
 
 export interface GqlCAdminFinancesIncomeStream {
     __typename?: 'AdminFinancesIncomeStream';
@@ -163,6 +163,8 @@ export interface GqlCAdminFinancesQuery {
     adminFinancesIncomeStreamFindMany: Array<GqlCAdminFinancesIncomeStream>;
     adminFinancesMonthlyExpensesCentsFindOne: Scalars['Int']['output'];
     adminFinancesMonthlyIncomeCentsFindOne: Scalars['Int']['output'];
+    adminFinancesQuarterlyExpensesCentsFindOne: Scalars['Int']['output'];
+    adminFinancesQuarterlyIncomeCentsFindOne: Scalars['Int']['output'];
     adminFinancesRecurringCostFindMany: Array<GqlCAdminFinancesRecurringCost>;
     adminFinancesYearlyExpensesCentsFindOne: Scalars['Int']['output'];
     adminFinancesYearlyIncomeCentsFindOne: Scalars['Int']['output'];
@@ -3627,8 +3629,10 @@ export type GqlCWorkspaceFinancesPageUserFragment = {
     admin: {
         adminFinancesFindOne: {
             adminFinancesMonthlyIncomeCentsFindOne: number;
+            adminFinancesQuarterlyIncomeCentsFindOne: number;
             adminFinancesYearlyIncomeCentsFindOne: number;
             adminFinancesMonthlyExpensesCentsFindOne: number;
+            adminFinancesQuarterlyExpensesCentsFindOne: number;
             adminFinancesYearlyExpensesCentsFindOne: number;
             adminFinancesIncomeStreamFindMany: Array<{
                 incomeStreamId: string;
@@ -3669,8 +3673,10 @@ export type GqlCWorkspaceFinancesPageQuery = {
             admin: {
                 adminFinancesFindOne: {
                     adminFinancesMonthlyIncomeCentsFindOne: number;
+                    adminFinancesQuarterlyIncomeCentsFindOne: number;
                     adminFinancesYearlyIncomeCentsFindOne: number;
                     adminFinancesMonthlyExpensesCentsFindOne: number;
+                    adminFinancesQuarterlyExpensesCentsFindOne: number;
                     adminFinancesYearlyExpensesCentsFindOne: number;
                     adminFinancesIncomeStreamFindMany: Array<{
                         incomeStreamId: string;
@@ -3712,8 +3718,10 @@ export type GqlCWorkspaceFinancesPageUpdatesSubscription = {
         admin: {
             adminFinancesFindOne: {
                 adminFinancesMonthlyIncomeCentsFindOne: number;
+                adminFinancesQuarterlyIncomeCentsFindOne: number;
                 adminFinancesYearlyIncomeCentsFindOne: number;
                 adminFinancesMonthlyExpensesCentsFindOne: number;
+                adminFinancesQuarterlyExpensesCentsFindOne: number;
                 adminFinancesYearlyExpensesCentsFindOne: number;
                 adminFinancesIncomeStreamFindMany: Array<{
                     incomeStreamId: string;
@@ -8190,8 +8198,10 @@ export const WorkspaceFinancesPageUserFragmentDoc = {
                                         kind: 'SelectionSet',
                                         selections: [
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
                                             {
                                                 kind: 'Field',
@@ -14571,8 +14581,10 @@ export const WorkspaceFinancesPageDocument = {
                                         kind: 'SelectionSet',
                                         selections: [
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
                                             {
                                                 kind: 'Field',
@@ -14667,8 +14679,10 @@ export const WorkspaceFinancesPageUpdatesDocument = {
                                         kind: 'SelectionSet',
                                         selections: [
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyIncomeCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyIncomeCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesMonthlyExpensesCentsFindOne' } },
+                                            { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesQuarterlyExpensesCentsFindOne' } },
                                             { kind: 'Field', name: { kind: 'Name', value: 'adminFinancesYearlyExpensesCentsFindOne' } },
                                             {
                                                 kind: 'Field',

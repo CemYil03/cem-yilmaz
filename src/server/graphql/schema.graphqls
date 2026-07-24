@@ -2425,6 +2425,7 @@ enum AdminFinancesRecurringCostCategory {
 
 enum AdminFinancesCadence {
     monthly
+    quarterly
     yearly
 }
 
@@ -2472,8 +2473,10 @@ type AdminFinancesQuery {
     adminFinancesRecurringCostFindMany: [AdminFinancesRecurringCost!]!
     adminFinancesIncomeStreamFindMany: [AdminFinancesIncomeStream!]!
     adminFinancesMonthlyIncomeCentsFindOne: Int!
+    adminFinancesQuarterlyIncomeCentsFindOne: Int!
     adminFinancesYearlyIncomeCentsFindOne: Int!
     adminFinancesMonthlyExpensesCentsFindOne: Int!
+    adminFinancesQuarterlyExpensesCentsFindOne: Int!
     adminFinancesYearlyExpensesCentsFindOne: Int!
 }
 

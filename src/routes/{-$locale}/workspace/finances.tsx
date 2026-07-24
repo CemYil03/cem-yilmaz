@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
     Building2Icon,
     CalendarClockIcon,
+    CalendarDaysIcon,
     CalendarRangeIcon,
     CarIcon,
     CircleDollarSignIcon,
@@ -128,17 +129,20 @@ const CATEGORY_ICONS: Record<GqlCAdminFinancesRecurringCostCategory, LucideIcon>
 
 const CADENCE_LABELS: Record<GqlCAdminFinancesCadence, { de: string; en: string }> = {
     monthly: { de: 'monatlich', en: 'monthly' },
+    quarterly: { de: 'quartalsweise', en: 'quarterly' },
     yearly: { de: 'jährlich', en: 'yearly' },
 };
 
-type PeriodFilter = 'monthly' | 'yearly';
-const PERIOD_FILTERS: ReadonlyArray<PeriodFilter> = ['monthly', 'yearly'];
+type PeriodFilter = GqlCAdminFinancesCadence;
+const PERIOD_FILTERS: ReadonlyArray<PeriodFilter> = ['monthly', 'quarterly', 'yearly'];
 const PERIOD_LABELS: Record<PeriodFilter, { de: string; en: string }> = {
     monthly: { de: 'Monatlich', en: 'Monthly' },
+    quarterly: { de: 'Quartalsweise', en: 'Quarterly' },
     yearly: { de: 'Jährlich', en: 'Yearly' },
 };
 const PERIOD_ICONS: Record<PeriodFilter, LucideIcon> = {
     monthly: CalendarClockIcon,
+    quarterly: CalendarDaysIcon,
     yearly: CalendarRangeIcon,
 };
 
@@ -188,9 +192,17 @@ function FinancesArea() {
 
     const activeCosts = finances.adminFinancesRecurringCostFindMany.filter((row) => row.active);
     const incomeCents =
-        period === 'yearly' ? finances.adminFinancesYearlyIncomeCentsFindOne : finances.adminFinancesMonthlyIncomeCentsFindOne;
+        period === 'yearly'
+            ? finances.adminFinancesYearlyIncomeCentsFindOne
+            : period === 'quarterly'
+              ? finances.adminFinancesQuarterlyIncomeCentsFindOne
+              : finances.adminFinancesMonthlyIncomeCentsFindOne;
     const expensesCents =
-        period === 'yearly' ? finances.adminFinancesYearlyExpensesCentsFindOne : finances.adminFinancesMonthlyExpensesCentsFindOne;
+        period === 'yearly'
+            ? finances.adminFinancesYearlyExpensesCentsFindOne
+            : period === 'quarterly'
+              ? finances.adminFinancesQuarterlyExpensesCentsFindOne
+              : finances.adminFinancesMonthlyExpensesCentsFindOne;
 
     return (
         <main className="px-6 md:px-10 lg:px-16 max-w-8xl mx-auto w-full py-12 leading-relaxed">
@@ -809,6 +821,7 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="monthly">{CADENCE_LABELS.monthly[locale]}</SelectItem>
+                                <SelectItem value="quarterly">{CADENCE_LABELS.quarterly[locale]}</SelectItem>
                                 <SelectItem value="yearly">{CADENCE_LABELS.yearly[locale]}</SelectItem>
                             </SelectContent>
                         </Select>
@@ -953,6 +966,7 @@ function EditIncomeDialog({ initial, locale, onClose }: { initial: IncomeRow | n
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="monthly">{CADENCE_LABELS.monthly[locale]}</SelectItem>
+                                <SelectItem value="quarterly">{CADENCE_LABELS.quarterly[locale]}</SelectItem>
                                 <SelectItem value="yearly">{CADENCE_LABELS.yearly[locale]}</SelectItem>
                             </SelectContent>
                         </Select>
@@ -1129,11 +1143,16 @@ function EmptyState({ locale, onNew }: { locale: Locale; onNew: () => void }) {
 type AmountCadenceRow = { amountCents: number; cadence: GqlCAdminFinancesCadence };
 
 // Project a row's cents amount into the requested period.
-// `amountCents` on the row is per its own `cadence`.
+// `amountCents` on the row is per its own `cadence`. Normalize via a yearly
+// base so monthly ↔ quarterly ↔ yearly stays integer-clean (same CASE shape
+// as `adminFinancesExpensesCentsFindOne`).
 function projectedCents(row: AmountCadenceRow, period: PeriodFilter): number {
     if (row.cadence === period) return row.amountCents;
-    if (period === 'monthly') return Math.round(row.amountCents / 12);
-    return row.amountCents * 12;
+    const yearlyCents =
+        row.cadence === 'yearly' ? row.amountCents : row.cadence === 'quarterly' ? row.amountCents * 4 : row.amountCents * 12;
+    if (period === 'yearly') return yearlyCents;
+    if (period === 'quarterly') return Math.round(yearlyCents / 4);
+    return Math.round(yearlyCents / 12);
 }
 
 function buildSankey(
