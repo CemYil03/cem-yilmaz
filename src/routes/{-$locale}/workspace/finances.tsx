@@ -8,7 +8,9 @@ import {
     CalendarRangeIcon,
     CarIcon,
     CircleDollarSignIcon,
+    CloudIcon,
     CodeIcon,
+    DumbbellIcon,
     HandHeartIcon,
     HeartHandshakeIcon,
     HomeIcon,
@@ -21,7 +23,6 @@ import {
     SmartphoneIcon,
     SparklesIcon,
     Trash2Icon,
-    UsersIcon,
     WalletIcon,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -84,28 +85,15 @@ const description = {
     en: 'Income, recurring costs, and a Sankey of where the money goes.',
 };
 
-const CATEGORY_ORDER: ReadonlyArray<GqlCAdminFinancesRecurringCostCategory> = [
-    'housing',
-    'connectivity',
-    'transport',
-    'insurance',
-    'subscriptionsEntertainment',
-    'subscriptionsWork',
-    'memberships',
-    'donations',
-    'household',
-    'savingsGeneral',
-    'savingsVacation',
-    'other',
-];
 const CATEGORY_LABELS: Record<GqlCAdminFinancesRecurringCostCategory, { de: string; en: string }> = {
     housing: { de: 'Wohnen', en: 'Housing' },
     connectivity: { de: 'Kommunikation', en: 'Connectivity' },
     transport: { de: 'Verkehr', en: 'Transport' },
     insurance: { de: 'Versicherungen', en: 'Insurance' },
-    subscriptionsEntertainment: { de: 'Abos (Unterhaltung)', en: 'Subscriptions (Entertainment)' },
-    subscriptionsWork: { de: 'Abos (Arbeit)', en: 'Subscriptions (Work)' },
-    memberships: { de: 'Vereinsbeiträge', en: 'Memberships' },
+    entertainment: { de: 'Unterhaltung', en: 'Entertainment' },
+    cloud: { de: 'Cloud', en: 'Cloud' },
+    work: { de: 'Arbeit', en: 'Work' },
+    sport: { de: 'Sport', en: 'Sport' },
     donations: { de: 'Spenden', en: 'Donations' },
     household: { de: 'Haushalt', en: 'Household' },
     savingsGeneral: { de: 'Sparen (Allgemein)', en: 'Savings (General)' },
@@ -117,15 +105,26 @@ const CATEGORY_ICONS: Record<GqlCAdminFinancesRecurringCostCategory, LucideIcon>
     connectivity: SmartphoneIcon,
     transport: CarIcon,
     insurance: Building2Icon,
-    subscriptionsEntertainment: SparklesIcon,
-    subscriptionsWork: CodeIcon,
-    memberships: UsersIcon,
+    entertainment: SparklesIcon,
+    cloud: CloudIcon,
+    work: CodeIcon,
+    sport: DumbbellIcon,
     donations: HandHeartIcon,
     household: HeartHandshakeIcon,
     savingsGeneral: PiggyBankIcon,
     savingsVacation: PlaneIcon,
     other: LayersIcon,
 };
+
+/** Alphabetical by locale label; `other` always last (select options + list sections). */
+function categoryOrderForLocale(locale: Locale): ReadonlyArray<GqlCAdminFinancesRecurringCostCategory> {
+    return [
+        ...(Object.keys(CATEGORY_LABELS) as GqlCAdminFinancesRecurringCostCategory[])
+            .filter((key) => key !== 'other')
+            .sort((a, b) => CATEGORY_LABELS[a][locale].localeCompare(CATEGORY_LABELS[b][locale], locale)),
+        'other',
+    ];
+}
 
 const CADENCE_LABELS: Record<GqlCAdminFinancesCadence, { de: string; en: string }> = {
     monthly: { de: 'monatlich', en: 'monthly' },
@@ -589,14 +588,14 @@ function GroupedList({
             list.push(row);
             byCategory.set(row.categoryKey, list);
         }
-        return CATEGORY_ORDER.flatMap((key) => {
+        return categoryOrderForLocale(locale).flatMap((key) => {
             const list = byCategory.get(key);
             if (!list || list.length === 0) return [];
             const sorted = [...list].sort((a, b) => projectedCents(b, period) - projectedCents(a, period));
             const total = sorted.filter((r) => r.active).reduce((sum, r) => sum + projectedCents(r, period), 0);
             return [{ key, costs: sorted, total }];
         });
-    }, [costs, period]);
+    }, [costs, period, locale]);
 
     return (
         <div className="space-y-8">
@@ -791,11 +790,11 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                             value={state.categoryKey}
                             onValueChange={(v) => setState((s) => ({ ...s, categoryKey: v as GqlCAdminFinancesRecurringCostCategory }))}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {CATEGORY_ORDER.map((key) => (
+                                {categoryOrderForLocale(locale).map((key) => (
                                     <SelectItem key={key} value={key}>
                                         {CATEGORY_LABELS[key][locale]}
                                     </SelectItem>
@@ -816,7 +815,7 @@ function EditCostDialog({ initial, locale, onClose }: { initial: CostRow | null;
                             value={state.cadence}
                             onValueChange={(v) => setState((s) => ({ ...s, cadence: v as GqlCAdminFinancesCadence }))}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -961,7 +960,7 @@ function EditIncomeDialog({ initial, locale, onClose }: { initial: IncomeRow | n
                             value={state.cadence}
                             onValueChange={(v) => setState((s) => ({ ...s, cadence: v as GqlCAdminFinancesCadence }))}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1029,7 +1028,7 @@ function Field({
     className?: string;
 }) {
     return (
-        <label className={cn('flex flex-col gap-1.5 text-sm', className)}>
+        <label className={cn('flex w-full min-w-0 flex-col gap-1.5 text-sm', className)}>
             <span className="text-xs font-medium text-muted-foreground">
                 {label}
                 {required ? <span className="text-destructive"> *</span> : null}

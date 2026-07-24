@@ -68,7 +68,8 @@ const NODE_SLOT = 36;
 const NODE_PADDING = 30;
 const NODE_WIDTH = 14;
 const MARGIN_TOP = 12;
-const MARGIN_BOTTOM = 12;
+/** Room for label + optional sublabel below the last node's midpoint. */
+const MARGIN_BOTTOM = 28;
 const MARGIN_LEFT = 8;
 /** Room for item name + amount outside the rightmost column. */
 const MARGIN_RIGHT = 180;

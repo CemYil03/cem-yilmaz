@@ -24,10 +24,11 @@ transactions, holdings, trading, bank import) are out of scope until this base s
   meta (only when the stream's cadence differs from the page period), optional date range / notes, projected amount at the current period,
   edit / delete (always visible on small screens, hover on `sm+`). "Add income" in the section header.
 - **Recurring costs list** — section header with "Add cost" (mirrors income), then every recurring cost grouped by category (`housing`,
-  `connectivity`, `transport`, `insurance`, `subscriptionsEntertainment`, `subscriptionsWork`, `memberships`, `donations`, `household`,
-  `savingsGeneral`, `savingsVacation`, `other`). Flat list rows (no nested glass cards) sorted by projected amount within each group.
-  Inactive rows stay at reduced opacity with a "Paused" badge — they don't count toward totals or the Sankey. Cadence meta and the old
-  per-row "monthly / quarterly / yearly" period label under the amount are omitted when they would only repeat the page period tab.
+  `connectivity`, `transport`, `insurance`, `entertainment`, `cloud`, `work`, `sport`, `donations`, `household`, `savingsGeneral`,
+  `savingsVacation`, `other`). Flat list rows (no nested glass cards) sorted by projected amount within each group. Category sections (and
+  the cost-dialog select) are ordered alphabetically by the locale label, with `other` last. Inactive rows stay at reduced opacity with a
+  "Paused" badge — they don't count toward totals or the Sankey. Cadence meta and the old per-row "monthly / quarterly / yearly" period
+  label under the amount are omitted when they would only repeat the page period tab.
 - **Empty state** replaces the expense list body when there are zero cost rows, with a "Add the first cost" call to action (the section
   header button remains available too).
 - **Dialogs** for new / edit income and cost. Cost fields: name (required), category, amount in EUR (required, positive), cadence (monthly /
@@ -64,10 +65,10 @@ across `seoMeta()`, the Select options, and the tab labels.
 Two domain tables, admin-only convention — no `*De`/`*En` pairs, no per-row `userId` (the `User.admin` / `Mutation.admin` gate authorizes):
 
 - **`AdminFinancesRecurringCost`** — `costId`, `name`, `categoryKey` (enum: `housing` | `connectivity` | `transport` | `insurance` |
-  `subscriptionsEntertainment` | `subscriptionsWork` | `memberships` | `donations` | `household` | `savingsGeneral` | `savingsVacation` |
-  `other`, default `other`), `amountCents` (per-`cadence` amount), `cadence` (`monthly` | `quarterly` | `yearly`, default `monthly`),
-  `currency` (`char(3)`, default `EUR`), `notes`, `active` (default `true`), `startsOn` / `endsOn` (informational for v1), timestamps.
-  Indexed on `categoryKey` (list groups by it) and `active` (the SQL totals filter by it).
+  `entertainment` | `cloud` | `work` | `sport` | `donations` | `household` | `savingsGeneral` | `savingsVacation` | `other`, default
+  `other`), `amountCents` (per-`cadence` amount), `cadence` (`monthly` | `quarterly` | `yearly`, default `monthly`), `currency` (`char(3)`,
+  default `EUR`), `notes`, `active` (default `true`), `startsOn` / `endsOn` (informational for v1), timestamps. Indexed on `categoryKey`
+  (list groups by it) and `active` (the SQL totals filter by it).
 - **`AdminFinancesIncomeStream`** — `incomeStreamId`, `name`, `amountCents`, `cadence`, `currency`, `notes`, `active`, `startsOn` /
   `endsOn`, timestamps. No category enum — the name is the stream identity. Indexed on `active`. Migration `0033` seeds one "Net income"
   stream from any prior `AdminFinancesSettings.monthlyNetIncomeCents`, then drops `AdminFinancesSettings`.
@@ -118,7 +119,7 @@ responsively via `className="w-full h-auto"`. Height grows with the densest colu
 label + amount pairs stay readable when many thin nodes pack the right column. `d3-sankey` does the layout with `nodePadding: 30` and
 `nodeSort` by value descending so largest flows stay at the top; `d3-shape`'s `sankeyLinkHorizontal` draws the flow paths. The layout extent
 leaves a ~180px right gutter so item labels sit outside the rightmost bars instead of sharing the middle gap with category labels (which was
-the main overlap failure mode).
+the main overlap failure mode). Bottom margin leaves room for the last node's label + amount so they are not clipped by the viewBox.
 
 - Colours resolve via Tailwind chart tokens (`fill-chart-1`…`fill-chart-5`, `stroke-chart-N/35`). Income stays on brand `chart-1`;
   categories walk `chart-2…5` then `chart-1` in volume order so the largest band doesn't collide with income; items inherit their category's
@@ -162,9 +163,9 @@ hook, imperative URQL over `wonka`. If `user.admin` is null → `<WorkspaceUnaut
 ## Assistant integration
 
 The workspace assistant can create, edit, pause, and delete income streams and recurring costs from natural language, so "Ich zahle für
-Apple One 25,95 im Monat, bitte füge das meinen Ausgaben hinzu" lands a `subscriptionsEntertainment` / `monthly` / `amountCents: 2595` row
-without opening the page. This follows the orchestrator + sub-agent recipe in
-[../architecture/agent-delegation.md](../architecture/agent-delegation.md), mirroring the travel domain 1:1:
+Apple One 25,95 im Monat, bitte füge das meinen Ausgaben hinzu" lands a `cloud` / `monthly` / `amountCents: 2595` row without opening the
+page. This follows the orchestrator + sub-agent recipe in [../architecture/agent-delegation.md](../architecture/agent-delegation.md),
+mirroring the travel domain 1:1:
 
 - **Sub-agent** — `src/server/agents/agentPersonalAssistantFinances.ts`. System prompt carries the persona, the cents-conversion rule
   ("25,95 im Monat" → `amountCents: 2595, cadence: "monthly"`; "89 € im Quartal" → `cadence: "quarterly"`), the "add to my expenses =

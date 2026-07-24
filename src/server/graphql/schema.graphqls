@@ -2413,9 +2413,10 @@ enum AdminFinancesRecurringCostCategory {
     connectivity
     transport
     insurance
-    subscriptionsEntertainment
-    subscriptionsWork
-    memberships
+    entertainment
+    cloud
+    work
+    sport
     donations
     household
     savingsGeneral

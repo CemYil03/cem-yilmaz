@@ -16,7 +16,7 @@ const seedRow = async (
             {
                 costId: null,
                 name: 'Netflix',
-                categoryKey: 'subscriptionsEntertainment',
+                categoryKey: 'entertainment',
                 amountCents: 1299,
                 cadence: 'monthly',
                 currency: null,

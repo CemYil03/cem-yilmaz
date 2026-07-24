@@ -184,18 +184,19 @@ export interface GqlSAdminFinancesRecurringCost {
 }
 
 export type GqlSAdminFinancesRecurringCostCategory =
+    | 'cloud'
     | 'connectivity'
     | 'donations'
+    | 'entertainment'
     | 'household'
     | 'housing'
     | 'insurance'
-    | 'memberships'
     | 'other'
     | 'savingsGeneral'
     | 'savingsVacation'
-    | 'subscriptionsEntertainment'
-    | 'subscriptionsWork'
-    | 'transport';
+    | 'sport'
+    | 'transport'
+    | 'work';
 
 export type GqlSAdminFinancesRecurringCostInput = {
     active?: InputMaybe<Scalars['Boolean']['input']>;
@@ -5484,43 +5485,46 @@ export const GqlSAdminFinancesCadenceSchema: z.ZodType<'monthly' | 'quarterly' |
 ]);
 
 export const GqlSAdminFinancesRecurringCostCategorySchema: z.ZodType<
+    | 'cloud'
     | 'connectivity'
     | 'donations'
+    | 'entertainment'
     | 'household'
     | 'housing'
     | 'insurance'
-    | 'memberships'
     | 'other'
     | 'savingsGeneral'
     | 'savingsVacation'
-    | 'subscriptionsEntertainment'
-    | 'subscriptionsWork'
-    | 'transport',
-    | 'connectivity'
-    | 'donations'
-    | 'household'
-    | 'housing'
-    | 'insurance'
-    | 'memberships'
-    | 'other'
-    | 'savingsGeneral'
-    | 'savingsVacation'
-    | 'subscriptionsEntertainment'
-    | 'subscriptionsWork'
+    | 'sport'
     | 'transport'
+    | 'work',
+    | 'cloud'
+    | 'connectivity'
+    | 'donations'
+    | 'entertainment'
+    | 'household'
+    | 'housing'
+    | 'insurance'
+    | 'other'
+    | 'savingsGeneral'
+    | 'savingsVacation'
+    | 'sport'
+    | 'transport'
+    | 'work'
 > = z.enum([
+    'cloud',
     'connectivity',
     'donations',
+    'entertainment',
     'household',
     'housing',
     'insurance',
-    'memberships',
     'other',
     'savingsGeneral',
     'savingsVacation',
-    'subscriptionsEntertainment',
-    'subscriptionsWork',
+    'sport',
     'transport',
+    'work',
 ]);
 
 export const GqlSAdminFitnessEquipmentTypeSchema: z.ZodType<

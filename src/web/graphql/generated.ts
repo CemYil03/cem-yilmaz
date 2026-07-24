@@ -187,18 +187,19 @@ export interface GqlCAdminFinancesRecurringCost {
 }
 
 export type GqlCAdminFinancesRecurringCostCategory =
+    | 'cloud'
     | 'connectivity'
     | 'donations'
+    | 'entertainment'
     | 'household'
     | 'housing'
     | 'insurance'
-    | 'memberships'
     | 'other'
     | 'savingsGeneral'
     | 'savingsVacation'
-    | 'subscriptionsEntertainment'
-    | 'subscriptionsWork'
-    | 'transport';
+    | 'sport'
+    | 'transport'
+    | 'work';
 
 export type GqlCAdminFinancesRecurringCostInput = {
     active?: InputMaybe<Scalars['Boolean']['input']>;
