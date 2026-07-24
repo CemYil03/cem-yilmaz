@@ -17,12 +17,11 @@
 // Both `facts` and tagline are concise on purpose — the layout leans on
 // the screenshot, not on copy.
 //
-// Hero images live under `public/projects/<id>/`. The capture script at
-// `scripts/captureProjectScreenshots.ts` re-grabs them; sites that block
-// headless traffic are flagged `manualOnly` there and the asset is dropped
-// in by hand. Each project carries a small gallery (`images`) — the first
-// entry is the hero, the rest render in a thumbnail strip below. `imageKind`
-// switches the route between three visual treatments:
+// Hero images live under `public/projects/<id>/` and are curated by hand
+// (sibling-repo exports, simulator screenshots, or one-off captures). Each
+// project carries a small gallery (`images`) — the first entry is the hero,
+// the rest render in a thumbnail strip below. `imageKind` switches the route
+// between three visual treatments:
 //   - `'browser'` frames the image in a faked browser-window chrome (used
 //     for software products with a live URL)
 //   - `'photo'` renders the image edge-to-edge inside the rounded card

@@ -167,18 +167,16 @@ detail pages today; the "Visit site" button takes visitors directly to the live 
 
 ### Hero images
 
-Hero images live under `public/projects/<id>/`. There are four sources:
+Hero images live under `public/projects/<id>/` and are curated by hand. Sources today:
 
-1. **Live capture** — the script `scripts/captureProjectScreenshots.ts` uses Playwright Chromium to grab `1600×900` screenshots. Run with
-   `npx tsx scripts/captureProjectScreenshots.ts` whenever a target site's design changes. Currently captures four routes for `peopleeat`
-   (`/`, `/chefs`, `/about-us`, `/cities/Berlin`) and the `/landing` page of `draw-schema`.
+1. **peopleeat** — `1600×900` site captures dropped into `public/projects/people-eat/` (`1.png`, `2.png`). Re-grab manually when the live
+   design changes.
 2. **Curated from sibling repo** — `Draw Schema` ships a polished 16:9 product shot in its own `public/16-9.png` and an empty-canvas shot in
-   `public/empty-canvas-16-9.png`. Both copied by hand into `public/projects/draw-schema/` and flagged `manualOnly: true` in the capture
-   script so they aren't overwritten.
-3. **Photo from sibling repo** — `Podologie Dudenhofen` reuses two photos from the practice's own `public/`: the treatment-room shot and a
-   portrait of the owner Annette Yilmaz. Honest, on-brand, and doesn't depend on the live site being reachable from the build host.
+   `public/empty-canvas-16-9.png`. Both copied by hand into `public/projects/draw-schema/`.
+3. **Photo from sibling repo** — `Podologie Dudenhofen` reuses photos from the practice's own `public/` (treatment-room shot, owner portrait).
+   Honest, on-brand, and doesn't depend on the live site being reachable from the build host.
 4. **iPad simulator export** — `Arm Skill Training` uses 4:3 landscape iPad screenshots exported from the Simulator (`landing-page.png`,
-   `exercise-aiming.png`). Not in the capture script; refreshed by hand whenever the app changes.
+   `exercise-aiming.png`). Refreshed by hand whenever the app changes.
 
 ### Scroll-in animation
 
@@ -193,6 +191,5 @@ broader motion guardrails this honours.
   `src/web/content/portfolioProjects.ts` and switch the route to a GraphQL loader. The visual layout should survive the swap unchanged.
 - **AI agent integration**: the visitor chat does not currently know about portfolio projects. When Phase 3 lands the DB table, extend
   `cvSummaryForAgent` (or a new `projectsSummaryForAgent`) so the agent can answer "what does Cem build?" deterministically.
-- **Re-capture podologie when the firewall lifts**: the `manualOnly` flag is a workaround, not the desired end state.
 - **Lightbox**: clicking a thumb currently swaps the hero in place. Could be promoted to a fullscreen lightbox if the strip grows past ~5
   images per project.
