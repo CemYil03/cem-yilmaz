@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantFinances } from './agentPersonalAssistantFinances';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -16,17 +17,7 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // see the shared write-up in `docs/architecture/agent-delegation.md`.
 
 const delegateToFinancesInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the finances sub-agent. Pass the user's request verbatim plus any",
-                'context (cost ids from earlier turns, amounts and periods the user named). The sub-agent has the live',
-                "finances snapshot in its system prompt — you don't need to summarize it here.",
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
 });
 
 interface DelegateToFinancesContext {
@@ -64,24 +55,8 @@ export function toolDelegateToFinances({
     stepArtifact,
 }: DelegateToFinancesContext) {
     return tool({
-        description: [
-            'Hand a finances instruction to the finances sub-agent. Use for ANY ask that touches income streams,',
-            'recurring costs, or wealth assets — adding, editing, pausing, repricing, or deleting salary / freelance',
-            '/ other income, a recurring expense / subscription (rent, insurance, streaming, transport, utilities, …),',
-            'or a Tagesgeld / ETF / stock / Bauspar position (with a location label like TradeRepublic or Chase).',
-            'Pass the brief',
-            'in natural language including the amount and period the user named. This is the durable path: the',
-            'sub-agent writes to Postgres so the finances page and totals update. Do NOT try to "note" a cost or',
-            'income in plain chat and expect it to persist — always delegate.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields` (most often the',
-            'amount), then call this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
-            'reply or another tool.',
-            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
-        ].join(' '),
+        description:
+            'Hand finances work to the finances sub-agent — income streams, recurring costs/subscriptions, wealth assets. Always delegate so totals persist; include amounts/periods in the brief.',
         inputSchema: delegateToFinancesInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

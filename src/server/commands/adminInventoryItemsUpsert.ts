@@ -142,15 +142,8 @@ interface InventoryAgentToolContext {
 
 export function toolInventoryItemsUpsert({ serverRuntime, session }: InventoryAgentToolContext) {
     return tool({
-        description: [
-            'Batch create-or-edit of inventory items. Every row with an `itemId` is updated; every row without one is',
-            'inserted. Pass a single-element array for one item, many for bulk. `purchasePriceCents` is in CENTS',
-            '(2.500 € → 250000). On create, the current value is seeded from the purchase price — do NOT try to set',
-            'the current value here; use `inventoryItemsReprice` to change what an item is worth today (it journals the',
-            'valuation). To dispose of an item (sold / gifted / lost / disposed) set `disposalState`; the row is kept',
-            'so material net worth stays reconcilable, and reverting to `owned` clears the disposal stamp. Returns',
-            '`referenceIds` in input order.',
-        ].join(' '),
+        description:
+            'Batch upsert inventory items. `purchasePriceCents` in cents; create seeds current value from purchase price — use `inventoryItemsReprice` to change value today. Dispose via `disposalState` (keep the row). Returns `referenceIds` in order.',
         inputSchema: toolInventoryItemsUpsertInputSchema,
         execute: async (input) => {
             const inputs: GqlSAdminInventoryItemInput[] = input.items.map((item) => ({

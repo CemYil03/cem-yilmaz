@@ -92,26 +92,8 @@ interface FinanceAgentToolContext {
 
 export function toolFinanceRecurringCostsUpsert({ serverRuntime, session }: FinanceAgentToolContext) {
     return tool({
-        description: [
-            'Batch create-or-edit of recurring costs — the "add this to my expenses / subscriptions" path. Every row',
-            'with a `costId` is updated; every row without one is inserted. Pass a single-element array for one cost,',
-            'many for bulk. `amountCents` is the amount in cents for ONE `cadence` period: 25,95 € per month →',
-            '`amountCents: 2595, cadence: "monthly"`; 89 € per quarter → `amountCents: 8900, cadence: "quarterly"`;',
-            '120 € per year → `amountCents: 12000, cadence: "yearly"`.',
-            'Infer `cadence` from the phrasing ("im Monat" / "a month" → monthly, "im Quartal" / "a quarter" /',
-            '"quartalsweise" → quarterly, "pro Jahr" / "a year" → yearly; default monthly when unstated). Pick',
-            '`categoryKey` from the enum — a streaming/media subscription (Netflix,',
-            'Disney+, Spotify) is `entertainment`, cloud/storage (Apple One, iCloud, Google One,',
-            'Dropbox) is `cloud`, a dev/work tool (Cursor, Figma, GitHub) is',
-            '`work`, rent (incl. Nebenkosten) is `housing`, mobile/internet (Vodafone) is `connectivity`,',
-            'an insurance policy is `insurance`, car tax/transit (Deutschland Ticket) is `transport`, a',
-            'gym/sports-club fee is `sport`, hairdresser/hygiene/body-care (Friseur, Pflege) is `personalCare`, a',
-            'charitable gift is `donations`, a transfer to the',
-            'joint/household account is `household`, general savings is `savingsGeneral`, vacation savings is',
-            '`savingsVacation`, anything else is `other`. To PAUSE a cost without deleting it, upsert the existing',
-            'row with `active: false`; to resume, `active: true`. Paused rows stay in the ledger but drop out of the',
-            'totals and Sankey. Returns `referenceIds` in input order.',
-        ].join(' '),
+        description:
+            'Batch upsert recurring costs/subscriptions. `amountCents` is cents for one cadence period. Infer cadence from phrasing (default monthly). Pick `categoryKey` from the enum. Pause with `active: false`. Returns `referenceIds` in order.',
         inputSchema: toolFinanceRecurringCostsUpsertInputSchema,
         execute: async (rawInput) => {
             const inputs = rawInput.financeRecurringCosts as GqlSAdminFinancesRecurringCostInput[];

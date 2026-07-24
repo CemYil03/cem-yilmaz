@@ -1,4 +1,4 @@
-import { asc, desc } from 'drizzle-orm';
+import { and, asc, desc, gte, lte } from 'drizzle-orm';
 import { foodLogEntries, mealPlanEntries, recipes, supplements } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 
@@ -7,28 +7,52 @@ import type { ServerRuntime } from '../domain/ServerRuntime';
 // planned tomorrow?" — without a list call. Each row keeps its id inline so
 // the agent can address it in mutation tools directly.
 //
-// Recipes are grouped by meal type with favourites and last-made date called
-// out (the two signals behind a good "something I like but haven't made
-// lately" suggestion). Plan and diary are trimmed to the near horizon.
+// Cookbook is capped so a large library does not dominate the prompt:
+// favourites first, then recently made, then others — max COOKBOOK_CAP total.
+// Meal plan is the near horizon only (today → +21 days). Diary stays last 15.
+const COOKBOOK_CAP = 40;
+const MEAL_PLAN_HORIZON_DAYS = 21;
+
 export async function nutritionSnapshotForAgent(serverRuntime: ServerRuntime): Promise<string> {
-    const recipeRows = await serverRuntime.db
-        .select()
-        .from(recipes)
-        .orderBy(desc(recipes.isFavorite), asc(recipes.mealType), asc(recipes.title));
-    const planRows = await serverRuntime.db
-        .select()
-        .from(mealPlanEntries)
-        .orderBy(asc(mealPlanEntries.date), asc(mealPlanEntries.mealType));
-    const logRows = await serverRuntime.db.select().from(foodLogEntries).orderBy(desc(foodLogEntries.consumedAt)).limit(15);
-    const supplementRows = await serverRuntime.db.select().from(supplements).orderBy(asc(supplements.name));
+    const today = new Date().toISOString().slice(0, 10);
+    const horizonEnd = new Date();
+    horizonEnd.setUTCDate(horizonEnd.getUTCDate() + MEAL_PLAN_HORIZON_DAYS);
+    const horizonEndStr = horizonEnd.toISOString().slice(0, 10);
+
+    const [recipeRows, planRows, logRows, supplementRows] = await Promise.all([
+        serverRuntime.db.select().from(recipes).orderBy(desc(recipes.isFavorite), asc(recipes.mealType), asc(recipes.title)),
+        serverRuntime.db
+            .select()
+            .from(mealPlanEntries)
+            .where(and(gte(mealPlanEntries.date, today), lte(mealPlanEntries.date, horizonEndStr)))
+            .orderBy(asc(mealPlanEntries.date), asc(mealPlanEntries.mealType)),
+        serverRuntime.db.select().from(foodLogEntries).orderBy(desc(foodLogEntries.consumedAt)).limit(15),
+        serverRuntime.db.select().from(supplements).orderBy(asc(supplements.name)),
+    ]);
+
+    // Prefer favourites, then recently made, then the rest — still capped.
+    const favourites = recipeRows.filter((r) => r.isFavorite);
+    const recentlyMade = recipeRows
+        .filter((r) => !r.isFavorite && r.lastMadeAt != null)
+        .sort((a, b) => (b.lastMadeAt?.getTime() ?? 0) - (a.lastMadeAt?.getTime() ?? 0));
+    const others = recipeRows.filter((r) => !r.isFavorite && r.lastMadeAt == null);
+    const cappedRecipes: typeof recipeRows = [];
+    const seen = new Set<string>();
+    for (const r of [...favourites, ...recentlyMade, ...others]) {
+        if (seen.has(r.recipeId)) continue;
+        seen.add(r.recipeId);
+        cappedRecipes.push(r);
+        if (cappedRecipes.length >= COOKBOOK_CAP) break;
+    }
+    const recipeTruncated = recipeRows.length > cappedRecipes.length;
 
     const lines: string[] = [];
 
     lines.push('## Cookbook');
-    if (recipeRows.length === 0) {
+    if (cappedRecipes.length === 0) {
         lines.push('(no recipes yet)');
     } else {
-        for (const r of recipeRows) {
+        for (const r of cappedRecipes) {
             const bits: string[] = [];
             if (r.isFavorite) bits.push('★fav');
             if (r.rating != null) bits.push(`${r.rating}/10`);
@@ -38,9 +62,12 @@ export async function nutritionSnapshotForAgent(serverRuntime: ServerRuntime): P
             const meta = bits.length > 0 ? ` — ${bits.join(' · ')}` : '';
             lines.push(`- [${r.mealType}] ${r.title}${meta} (id: ${r.recipeId})`);
         }
+        if (recipeTruncated) {
+            lines.push(`(…${recipeRows.length - cappedRecipes.length} more recipes omitted — call recipesList if needed)`);
+        }
     }
 
-    lines.push('', '## Meal plan (upcoming slots)');
+    lines.push('', `## Meal plan (today → +${MEAL_PLAN_HORIZON_DAYS}d)`);
     if (planRows.length === 0) {
         lines.push('(nothing planned)');
     } else {

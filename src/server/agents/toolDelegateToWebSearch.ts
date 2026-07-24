@@ -44,15 +44,7 @@ const delegateToWebSearchInputSchema = z.object({
         .min(1)
         .max(5)
         .describe(
-            [
-                'Array of independent, natural-language search briefs. Each brief is handed to its own web-search',
-                'sub-agent and they all run in parallel — so batch naturally-parallel questions ("compare X, Y, Z",',
-                '"latest on A and B") into one call instead of chaining delegations. Pass a single-item array for a',
-                'lone question. Each brief should stand on its own: state what to look up plainly, include the context',
-                "(a person's name, a library version, a timeframe) the sub-agent needs to pick a good query. Each",
-                'sub-agent runs Google Search grounding and replies with a focused answer plus inline `[title](url)`',
-                'citations.',
-            ].join(' '),
+            'Independent search briefs (1–5). Batched in parallel — prefer one call over sequential. Each brief must stand alone with enough context for a good query.',
         ),
 });
 
@@ -105,25 +97,8 @@ export function toolDelegateToWebSearch({
     stepArtifact,
 }: DelegateToWebSearchContext) {
     return tool({
-        description: [
-            'Hand a batch of independent web-search briefs to web-search sub-agents. Use this for anything',
-            'time-sensitive or external — current prices, recent releases, news, library/API docs, library version',
-            'status, sports results — that you cannot answer from this prompt or from the workspace data. Pass an',
-            'array of natural-language briefs (cap: 5 per call; use a single-item array for a lone question); the',
-            'tool spins up one sub-agent per brief, they run Google Search grounding in parallel, and each replies',
-            'with an answer plus inline `[title](url)` citations. Prefer one batched call over multiple sequential',
-            'ones — batching is why this tool takes an array. Each sub-agent does up to one refinement internally',
-            'before giving up, so do NOT chain delegations across turns when one batched call would cover the ground.',
-            "The tool result is shaped `{ status: 'completed' | 'partial' | 'failed', results: [{ brief, status,",
-            'summary }, ...] }`. `status` is `completed` when every brief succeeded, `failed` when every brief threw,',
-            '`partial` when some of each. On per-entry `completed`, narrate or quote `summary` back to the user — its',
-            'inline citations are the sources; do not append a separate "Sources:" block. On per-entry `failed`, the',
-            'sub-agent or the provider call threw — `summary` carries the one-line error message; tell Cem plainly',
-            'which brief failed. Do NOT retry automatically and do NOT invent a softer phrasing like "search is',
-            'unavailable".',
-            'Do NOT use this for things already in this prompt, workspace data (use `delegateToProjects` for the',
-            'project board), or pure reasoning / arithmetic / code questions.',
-        ].join(' '),
+        description:
+            'Batch up to 5 independent external/time-sensitive search briefs (news, prices, docs, sports). Parallel sub-agents with inline [title](url) citations. Prefer one batched call. Not for workspace data, this prompt, or pure reasoning.',
         inputSchema: delegateToWebSearchInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

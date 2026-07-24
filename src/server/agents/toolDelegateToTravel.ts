@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantTravel } from './agentPersonalAssistantTravel';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -16,17 +17,7 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // see the shared write-up in `docs/architecture/agent-delegation.md`.
 
 const delegateToTravelInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the travel sub-agent. Pass the user's request verbatim plus any",
-                'context (trip ids from earlier turns, dates the user named). The sub-agent has the live travel',
-                "snapshot in its system prompt — you don't need to summarize it here.",
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
 });
 
 interface DelegateToTravelContext {
@@ -64,21 +55,8 @@ export function toolDelegateToTravel({
     stepArtifact,
 }: DelegateToTravelContext) {
     return tool({
-        description: [
-            'Hand a travel instruction to the travel sub-agent. Use for ANY ask that touches trip planning — creating',
-            'trips, drafting day-by-day itineraries, adding or editing activities, managing the per-trip packing',
-            'checklist, marking items packed. Pass the brief in natural language. This is the durable-plan path: the',
-            'sub-agent writes the itinerary to Postgres so a future chat can read it back without replaying this',
-            'conversation. Do NOT try to draft an itinerary in plain chat and expect it to persist — always delegate.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
-            'this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
-            'reply or another tool.',
-            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
-        ].join(' '),
+        description:
+            'Hand travel work to the travel sub-agent — trips, day itineraries, activities, packing lists. Always delegate so plans persist; do not draft itineraries only in chat.',
         inputSchema: delegateToTravelInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

@@ -113,16 +113,8 @@ interface MediaAgentToolContext {
 
 export function toolMediaChannelsUpsert({ serverRuntime, session }: MediaAgentToolContext) {
     return tool({
-        description: [
-            'Batch create-or-edit of favourite YouTube / Twitch / podcast / other channels.',
-            'For NEW channels, omit `channelId` — the server allocates one and appends the row to the bottom of',
-            'every topic section. For an EDIT, pass the id from the snapshot or a prior `mediaChannelsList` call.',
-            '`topics` is the clustering axis — cluster tags like `tech`, `ai`, `movieCritic`, `entertainment`. A',
-            'channel can carry multiple tags; e.g. a tech YouTuber who also reviews films. `/workspace/software` reads',
-            'channels tagged `tech`, so keep the vocabulary consistent (see the snapshot). `platform` is one of',
-            '`youtube | twitch | podcast | other`. Batch same-shape writes into one call. Returns `referenceIds` in',
-            'input order.',
-        ].join(' '),
+        description:
+            'Batch upsert favourite channels. Omit `channelId` to create. `topics` are cluster tags (e.g. tech, ai); `platform` is youtube|twitch|podcast|other. Returns `referenceIds` in order.',
         inputSchema: toolMediaChannelsUpsertInputSchema,
         execute: async (rawInput) => {
             const inputs = rawInput.mediaChannels as GqlSAdminMediaChannelInput[];

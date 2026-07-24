@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantMedia } from './agentPersonalAssistantMedia';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -16,17 +17,7 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // see the shared write-up in `docs/architecture/agent-delegation.md`.
 
 const delegateToMediaInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the media sub-agent. Pass the user's request verbatim plus any",
-                'context (movie or channel ids from earlier turns, ratings the user named). The sub-agent has the',
-                "live library snapshot in its system prompt — you don't need to summarize it here.",
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
 });
 
 interface DelegateToMediaContext {
@@ -64,21 +55,8 @@ export function toolDelegateToMedia({
     stepArtifact,
 }: DelegateToMediaContext) {
     return tool({
-        description: [
-            'Hand a media instruction to the media sub-agent. Use for ANY ask that touches the movie watchlist,',
-            'the TV series library, or the favourite-channels list — searching TMDB or YouTube, adding, editing,',
-            'marking watched, rating, tracking next-season dates, deleting, listing channels by topic. Pass the',
-            'brief in natural language. TMDB search lives inside this sub-agent — do NOT reach for',
-            '`delegateToWebSearch` for film / series metadata.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
-            'this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
-            'reply or another tool.',
-            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
-        ].join(' '),
+        description:
+            'Hand media work to the media sub-agent — movies, series, favourite channels (YouTube/podcast/Twitch). TMDB/YouTube search lives here; do not use delegateToWebSearch for film/series metadata.',
         inputSchema: delegateToMediaInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

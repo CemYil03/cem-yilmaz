@@ -37,23 +37,7 @@ const COLLECTION_MODES = ['form', 'stepThrough'] as const;
 
 const inputSlotSchema = z
     .object({
-        kind: z
-            .enum(SLOT_KINDS)
-            .describe(
-                [
-                    'Type of value to collect. Must be one of:',
-                    '`Date` (single calendar day),',
-                    '`DateRange` (calendar range with required start and end days),',
-                    '`DateTime` (single instant),',
-                    '`Time` (clock time, no date),',
-                    '`SingleSelect` (pick exactly one of `options`),',
-                    '`MultiSelect` (pick zero or more of `options`),',
-                    '`Boolean` (yes/no answer, rendered as a Yes/No button pair),',
-                    '`Text` (free-form string),',
-                    '`Otp` (a 6-digit one-time code, rendered as a six-box code input — use this',
-                    'ONLY for verifying ownership of an email after `submitProjectRequest`).',
-                ].join(' '),
-            ),
+        kind: z.enum(SLOT_KINDS).describe('Must be one of the enum values. Use `Otp` only after `submitProjectRequest`.'),
         prompt: z.string().describe('Label shown next to this specific input slot.'),
         options: z
             .array(z.string())
@@ -68,15 +52,7 @@ export const chatAssistantInputCollectionInputSchema = z.object({
     mode: z
         .enum(COLLECTION_MODES)
         .default('form')
-        .describe(
-            [
-                'How the form is presented to the user.',
-                '`form` (default) renders all slots at once on a single card — good for short, tightly related batches (1–3 slots).',
-                '`stepThrough` walks the user through one slot at a time with Next / Skip / Back — better for longer or guided',
-                'flows (3+ slots, onboarding-style sequences). Submission semantics are identical: the user always answers the',
-                'collection in one round-trip; only the rendering differs.',
-            ].join(' '),
-        ),
+        .describe('`form` = all slots at once (default); `stepThrough` = one-at-a-time for longer flows.'),
 });
 
 export type ChatAssistantInputCollectionInput = z.infer<typeof chatAssistantInputCollectionInputSchema>;
@@ -84,22 +60,10 @@ export type ChatAssistantInputCollectionInput = z.infer<typeof chatAssistantInpu
 export function toolPromptUserForInput() {
     return tool({
         description: [
-            'Ask the user for one or more structured values in a single chat turn.',
-            'Use this WHENEVER the value you need has a known shape — a single email address, a date, a yes/no, a',
-            'pick from a list, a 6-digit code, a name. One slot is enough; do not wait until you have a full form',
-            'worth of fields to call this tool. Asking for a typed value in prose is a bug, even for a single value.',
-            'Group tightly-related questions into one call (e.g. subject + body + reply email for a contact email),',
-            'but it is fine and expected to make several calls over a conversation as new information becomes',
-            'relevant — collect what you can ask for now, then ask for the rest in a follow-up call.',
-            'Each slot MUST set `kind` to one of the allowed enum values; never invent fields like `name`,',
-            '`label`, or `input_type`.',
-            'Set `mode` to `stepThrough` when the form has many slots or works best as a guided sequence;',
-            'omit it (or set `form`) for short, tightly related batches that fit on one card.',
-            'The tool result has the shape `{ status: "answered" | "skipped", answers: [...] }`.',
-            'On `status: "skipped"`, the user declined to answer (e.g. they typed a free-text message',
-            'instead of filling the form) — drop the question and respond to whatever the user said next.',
-            'Do NOT immediately re-ask the same question; either rephrase, ask something different, or',
-            'proceed without the missing information.',
+            'Collect one or more typed values in a chat form. Use whenever the value has a known shape (email, date,',
+            'yes/no, select, OTP, name) — even for a single field; asking in prose is a bug.',
+            'Group tightly related slots in one call; follow up later as needed.',
+            'On status "skipped", do not immediately re-ask the same question.',
         ].join(' '),
         inputSchema: chatAssistantInputCollectionInputSchema,
     });

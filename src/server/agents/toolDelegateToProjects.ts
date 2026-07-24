@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantProjects } from './agentPersonalAssistantProjects';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -26,17 +27,7 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // via the shared `preWrittenToolCallIds` set so we don't insert a duplicate.
 
 const delegateToProjectsInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the projects sub-agent. Pass the user's request verbatim plus any context",
-                'you have collected (project ids referenced in earlier turns, dates the user named). The sub-agent has the',
-                "live project board in its system prompt — you don't need to summarize it here.",
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
 });
 
 interface DelegateToProjectsContext {
@@ -85,21 +76,8 @@ export function toolDelegateToProjects({
     stepArtifact,
 }: DelegateToProjectsContext) {
     return tool({
-        description: [
-            'Hand a project or task instruction to the projects sub-agent. Use this for ANY ask that touches the',
-            'workspace projects board or its tasks — listing, creating, updating, archiving, deleting, summarizing',
-            'progress, moving tasks between projects. Pass the brief in natural language; the sub-agent has its own',
-            'tools and a live snapshot of the board.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
-            'this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
-            'reply or another tool.',
-            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry the same brief automatically and do NOT confabulate softer',
-            'phrasings like "the tool is unreachable" — the failure is real and the message in `summary` is the truth of it.',
-        ].join(' '),
+        description:
+            'Hand project/task work to the projects sub-agent — board, tasks, activities, links, project files. Pass a natural-language brief; sub-agent has tools + live snapshot.',
         inputSchema: delegateToProjectsInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantMedical } from './agentPersonalAssistantMedical';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -23,28 +24,12 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // `medicalRecordsUpsert.fileUploadIds`.
 
 const delegateToMedicalInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the medical sub-agent. Pass the user's request verbatim plus any",
-                'context (record ids from earlier turns, prior conversation about symptoms, timestamps the user',
-                'named). The sub-agent has the live medical snapshot in its system prompt — you do not need to',
-                'summarize it here.',
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
     fileUploadIds: z
         .array(z.uuid())
         .nullish()
         .describe(
-            [
-                'File-upload ids the user attached to their message this turn. Forward these when the conversation',
-                'is health-related and the user included photos (rashes, wounds, lab result screenshots, etc.) —',
-                "the sub-agent will attach them to the record it files. You've already seen the bytes on the user",
-                "message; describing what's visible briefly in `brief` helps the sub-agent write a good summary.",
-            ].join(' '),
+            'Photo/document upload ids from this turn. Forward on health asks; briefly describe what is visible in `brief` (sub-agent does not see bytes).',
         ),
 });
 
@@ -83,26 +68,8 @@ export function toolDelegateToMedical({
     stepArtifact,
 }: DelegateToMedicalContext) {
     return tool({
-        description: [
-            "Hand a health / appointment instruction to the medical sub-agent. Use for ANY ask that touches Cem's",
-            'health journal (symptoms, records, "log this rash", "what should I do about X") or his medical',
-            'appointments (scheduling, marking a visit completed, "when is my next dentist visit"). The sub-agent is',
-            'a documentarian with gentle triage — do NOT try to answer medical questions yourself even for small',
-            'asks; routing every health-adjacent turn through this delegate keeps the disclaimer and the red-flag',
-            'rules in one place. Pass the brief in natural language. If the user attached photos or documents to',
-            'their message this turn AND the conversation is health-related, pass the `fileUploadIds` through — the',
-            'sub-agent will attach them to the record it files. You MAY briefly describe what the photo shows in',
-            '`brief` (the sub-agent does not see the bytes; you do).',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
-            'this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
-            'reply or another tool.',
-            'On `completed`, narrate `summary` back to Cem; it names the ids of any rows worth deep-linking. IMPORTANT:',
-            'the sub-agent is a documentarian, not a doctor — do NOT enrich its response with your own medical opinion.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry automatically.',
-        ].join(' '),
+        description:
+            'Hand health/appointment work to the medical sub-agent — journal, symptoms, appointments. Route every health-adjacent ask here (disclaimer + red flags). Forward `fileUploadIds` when photos were attached; do not add your own medical opinion to the result.',
         inputSchema: delegateToMedicalInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

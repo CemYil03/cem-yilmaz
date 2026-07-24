@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantTax } from './agentPersonalAssistantTax';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -16,17 +17,7 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // the shared write-up in `docs/architecture/agent-delegation.md`.
 
 const delegateToTaxInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the tax sub-agent. Pass the user's request verbatim plus any context",
-                '(tax-year / entity ids from earlier turns, amounts and dates the user named). The sub-agent has the live',
-                "tax snapshot in its system prompt — you don't need to summarize it here.",
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
 });
 
 interface DelegateToTaxContext {
@@ -64,22 +55,8 @@ export function toolDelegateToTax({
     stepArtifact,
 }: DelegateToTaxContext) {
     return tool({
-        description: [
-            'Hand a tax instruction to the tax sub-agent. Use for ANY ask that touches the German tax return —',
-            'recording an income source, logging a deductible expense (Betriebsausgabe / Werbungskosten / Vorsorge /',
-            'Sonderausgaben), adding or ticking off a checklist document, or creating a tax year. Pass the brief in',
-            'natural language including amounts and dates. This is the durable path: the sub-agent writes to Postgres',
-            'so the tax page updates. Do NOT try to "note" something in plain chat and expect it to persist — delegate.',
-            'The sub-agent is a documentarian, not a tax advisor: it records and organises but never gives binding',
-            'Steuerberatung, and will remind Cem to confirm uncertain deductibility with a professional.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields` (most often the',
-            'amount), then call this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain reply or another tool.',
-            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message. Tell',
-            'Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
-        ].join(' '),
+        description:
+            'Hand tax work to the tax sub-agent — tax years, income sources, deductible expenses, document checklist. Documentarian only (not Steuerberatung); always delegate so the tax page updates.',
         inputSchema: delegateToTaxInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

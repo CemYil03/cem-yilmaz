@@ -129,9 +129,9 @@ entries by `date|mealType` for O(1) cell lookup; `weekStartFromParam` anchors we
   `adminNutritionRecipesUpsert.lastMadeAt` rule, the "add supplement X" → `adminNutritionSupplementResearch` →
   `adminNutritionSupplementsUpsert` → `adminNutritionSupplementNutrientsReplace` rule (never invent amounts; on `found:false` add name/brand
   only and say so), and the `needsMoreInfo`/`noOp` sentinel contract.
-- **`nutritionSnapshotForAgent.ts`** — compact markdown: cookbook grouped by meal type with favourite/rating/last-made called out, upcoming
-  plan slots, the last 15 diary entries, and every tracked supplement (name, brand, serving size) — ids inline so the agent lifts them
-  without a list call.
+- **`nutritionSnapshotForAgent.ts`** — compact markdown: cookbook capped at 40 (favourites → recently made → others; truncated note points
+  at `recipesList`), meal plan for today→+21d only, the last 15 diary entries, and every tracked supplement — ids inline so the agent lifts
+  them without a list call.
 - **`toolDelegateToNutrition.ts`** — orchestrator-side delegate, structural copy of `toolDelegateToTravel` (pre-writes the parent tool-call
   row, forwards `onStepEnd`, wraps `agent.generate` in try/catch → `status: 'failed'`).
 - **Tools**: reads `recipesList`, `mealPlanList`, `foodLogList`, `supplementsList`, `adminNutritionSupplementResearch` (grounded,
@@ -140,8 +140,8 @@ entries by `date|mealType` for O(1) cell lookup; `weekStartFromParam` anchors we
   `adminNutritionFoodLogEntriesUpsert` (hand-built — `consumedAt` is `DateTime`), `adminNutritionFoodLogEntriesDelete`,
   `adminNutritionSupplementsUpsert` (hand-built — `researchedAt` is `DateTime`), `adminNutritionSupplementNutrientsReplace`,
   `adminNutritionSupplementsDelete`. Mutation-log kinds: `recipe*`, `mealPlan*`, `foodLog*`, `supplement*` (add/update/delete each).
-- Registered on `agentPersonalAssistant` as `delegateToNutrition`; the orchestrator system prompt carries recipe / diary deep-link
-  templates.
+- Registered on `agentPersonalAssistant` as `delegateToNutrition`; the orchestrator system prompt carries deep-link patterns for nutrition
+  surfaces.
 
 ## Deferred / follow-ups
 

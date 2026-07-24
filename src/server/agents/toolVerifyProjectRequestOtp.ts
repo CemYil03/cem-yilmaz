@@ -56,16 +56,8 @@ interface VerifyProjectRequestOtpContext {
 
 export function toolVerifyProjectRequestOtp({ serverRuntime }: VerifyProjectRequestOtpContext) {
     return tool({
-        description: [
-            'Verify the 6-digit one-time code a visitor entered after a `submitProjectRequest` call.',
-            'You MUST pass the exact `projectRequestId` returned by `submitProjectRequest` — never invent one, never reuse',
-            'an id from a different conversation. Pass the 6-digit code the visitor entered as `otp`.',
-            'The tool result has one of: `verified` (Cem has been notified — thank the visitor and let them know Cem will be',
-            'in touch), `incorrect` (with `attemptsRemaining`; politely ask them to try again unless 0 — then ask them to',
-            'restart the request), `expired` (the 10-minute window passed — ask them to restart), `tooManyAttempts` (cap',
-            'reached — ask them to restart), `alreadyVerified` / `archived` (the request is closed). Never reveal the',
-            'underlying hash or salt; just describe the outcome in natural language.',
-        ].join(' '),
+        description:
+            'Verify the 6-digit OTP after `submitProjectRequest`. Pass that exact `projectRequestId` and the code. Narrate the returned status; never invent an id.',
         inputSchema: verifyProjectRequestOtpInputSchema,
         execute: async (input): Promise<VerifyProjectRequestOtpResult> => {
             const { projectRequestId, otp } = input;

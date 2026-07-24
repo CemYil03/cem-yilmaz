@@ -48,3 +48,22 @@ export function googleAgentProviderOptionsFor(modelId: string): { google: Google
 export function currentDateForAgent(): string {
     return `Today's date is ${new Date().toISOString().slice(0, 10)}.`;
 }
+
+// Shared field copy for every `delegateTo*` `brief` input. Selection detail
+// lives on each tool's `description`; this only teaches how to fill the brief.
+export const DELEGATE_BRIEF_DESCRIBE =
+    "User request plus any ids/dates already collected. Sub-agent has a live snapshot — don't summarize it.";
+
+// Shared language / concision / id / sentinel rules for every domain mutation
+// sub-agent. Domain-specific workflows stay in each agent file; this block is
+// the wire contract with the orchestrator (see agent-delegation.md).
+export function subAgentClosingRules(opts: { domainLabel: string; outOfDomainExample: string }): string[] {
+    return [
+        '- Reply in the language the user wrote in (German or English).',
+        '- Be concise: your final text becomes the orchestrator narration. One or two sentences. Name ids of rows Cem may want to open.',
+        "- Never invent an id. Use ids from the snapshot or from a prior tool result's `referenceIds` (in input order).",
+        '- If required info is missing, return EXACTLY this JSON as your final text (no fence, no prose):',
+        '  {"status":"needsMoreInfo","missingFields":["..."],"summary":"..."}',
+        `- If outside ${opts.domainLabel} (e.g. '${opts.outOfDomainExample}'), return the same JSON with status \`noOp\` and empty \`missingFields\`.`,
+    ];
+}

@@ -98,8 +98,8 @@ Session cards use an accordion; "New workout" seeds sets from a chosen routine b
   `adminFitnessWorkoutRoutinesUpsert`/`Delete`, `adminFitnessWorkoutRoutineItemsUpsert`/`Delete`,
   `adminFitnessWorkoutSessionsUpsert`/`Delete`, `adminFitnessWorkoutSetsUpsert`/`Delete` — all reuse the generated `GqlS*InputSchema()` (no
   `DateTime` fields; `Date` is a safe string). Mutation-log kinds: `exercise*`, `routine*`, `routineItem*`, `session*`, `set*`.
-- Registered on `agentPersonalAssistant` as `delegateToFitness`; the orchestrator system prompt carries workout / routine / exercise
-  deep-link templates.
+- Registered on `agentPersonalAssistant` as `delegateToFitness`; the orchestrator system prompt carries deep-link patterns for fitness
+  surfaces.
 
 ## Deferred / follow-ups
 

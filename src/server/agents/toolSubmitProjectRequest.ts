@@ -66,15 +66,9 @@ interface SubmitProjectRequestContext {
 export function toolSubmitProjectRequest({ serverRuntime, chatId }: SubmitProjectRequestContext) {
     return tool({
         description: [
-            'Submit a structured project brief for review by Cem.',
-            'Use this when the visitor is describing a project, freelance gig, paid work, or business enquiry — anything',
-            'that warrants more structure than a simple message.',
-            'Before calling this tool, collect every field via `promptUserForInput` — never guess any value, never invent a',
-            'reply email. The `projectType` slot should be a `SingleSelect` with the five allowed values as options.',
-            'After this tool returns successfully, you MUST immediately call `promptUserForInput` with a single slot of',
-            'kind `Otp` to collect the 6-digit verification code that was just emailed to the visitor. Once they enter it,',
-            'call `verifyProjectRequestOtp` with the returned `projectRequestId` and the code.',
-            'The tool result has the shape `{ status: "otpSent", projectRequestId, emailMasked }`.',
+            'Submit a structured project/freelance brief for Cem to review.',
+            'Collect every field via `promptUserForInput` first (`projectType` as SingleSelect with the five allowed values).',
+            'On success, immediately collect an `Otp` slot, then call `verifyProjectRequestOtp` with the returned `projectRequestId`.',
         ].join(' '),
         inputSchema: submitProjectRequestInputSchema,
         execute: async (input) => {

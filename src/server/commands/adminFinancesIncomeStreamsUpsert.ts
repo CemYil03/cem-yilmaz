@@ -85,18 +85,8 @@ interface FinanceAgentToolContext {
 
 export function toolFinanceIncomeStreamsUpsert({ serverRuntime, session }: FinanceAgentToolContext) {
     return tool({
-        description: [
-            'Batch create-or-edit of income streams — salary, freelance, rental, side income, and the like. Every',
-            'row with an `incomeStreamId` is updated; every row without one is inserted. Pass a single-element array',
-            'for one stream, many for bulk. `amountCents` is the amount in cents for ONE `cadence` period: 4.500 €',
-            'net per month → `amountCents: 450000, cadence: "monthly"`; 2.400 € per quarter →',
-            '`amountCents: 240000, cadence: "quarterly"`; 12.000 € bonus per year →',
-            '`amountCents: 1200000, cadence: "yearly"`. Infer `cadence` from the phrasing ("im Monat" / "a month" →',
-            'monthly, "im Quartal" / "a quarter" / "quartalsweise" → quarterly, "pro Jahr" / "a year" → yearly;',
-            'default monthly when unstated). To PAUSE a stream without',
-            'deleting it, upsert the existing row with `active: false`; to resume, `active: true`. Paused rows stay',
-            'in the list but drop out of the income totals and Sankey. Returns `referenceIds` in input order.',
-        ].join(' '),
+        description:
+            'Batch upsert income streams. `amountCents` is cents for one cadence period; infer cadence (default monthly). Pause with `active: false`. Returns `referenceIds` in order.',
         inputSchema: toolFinanceIncomeStreamsUpsertInputSchema,
         execute: async (rawInput) => {
             const inputs = rawInput.financeIncomeStreams as GqlSAdminFinancesIncomeStreamInput[];

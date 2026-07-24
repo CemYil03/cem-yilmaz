@@ -37,16 +37,8 @@ interface SendEmailToCemContext {
 
 export function toolSendEmailToCem({ serverRuntime }: SendEmailToCemContext) {
     return tool({
-        description: [
-            'Send a plain email to Cem with whatever the visitor wrote.',
-            'Use this when the visitor wants to contact Cem about something simple — a question, a hello, a heads-up, a quick',
-            'message. Do NOT use this for project requests or business enquiries; call `submitProjectRequest` instead.',
-            'Before calling this tool, collect `subject`, `body`, and `replyEmail` from the visitor with',
-            "`promptUserForInput` — never invent a subject or guess at the visitor's reply address.",
-            'After this tool returns, briefly confirm to the visitor that you have passed the message on; do not promise a',
-            'specific response time.',
-            'The tool result has the shape `{ status: "queued" }`.',
-        ].join(' '),
+        description:
+            'Send a plain email to Cem for simple contact (hello, question). Not for project/business briefs — use `submitProjectRequest`. Collect subject, body, replyEmail via `promptUserForInput` first.',
         inputSchema: sendEmailToCemInputSchema,
         execute: async (input) => {
             await serverRuntime.jobs.enqueue(emailToCemSend, {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { googleAgentProviderOptionsFor } from './agentScaffolding';
+import { googleAgentProviderOptionsFor, subAgentClosingRules } from './agentScaffolding';
 
 describe('googleAgentProviderOptionsFor', () => {
     it('uses high thinking with thought summaries on gemini-3.6-flash', () => {
@@ -22,5 +22,16 @@ describe('googleAgentProviderOptionsFor', () => {
         expect(googleAgentProviderOptionsFor('gemini-2.5-flash').google.structuredOutputs).toBe(true);
         expect(googleAgentProviderOptionsFor('gemini-3.6-flash').google.structuredOutputs).toBe(true);
         expect(googleAgentProviderOptionsFor('gemini-3.1-pro-preview').google.structuredOutputs).toBe(true);
+    });
+});
+
+describe('subAgentClosingRules', () => {
+    it('embeds domain label and out-of-domain example in the sentinel rules', () => {
+        const lines = subAgentClosingRules({ domainLabel: 'media', outOfDomainExample: 'add a task' });
+        const joined = lines.join('\n');
+        expect(joined).toContain('needsMoreInfo');
+        expect(joined).toContain('noOp');
+        expect(joined).toContain('media');
+        expect(joined).toContain('add a task');
     });
 });

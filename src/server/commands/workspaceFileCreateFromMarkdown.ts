@@ -93,14 +93,8 @@ const workspaceFileCreateInputSchema = z.object({
 // attachment.
 export function toolWorkspaceFileCreate({ serverRuntime, session }: WorkspaceFilesAgentToolContext) {
     return tool({
-        description: [
-            'Create a standalone markdown (`.md`) document for Cem. Use this when he asks you to draft, write, or',
-            'put together a document — notes, a plan, a letter, a spec, meeting notes, etc. — that he will want to',
-            'read and edit rather than just see inline in chat. The document opens in an editable side panel in the',
-            'workspace, so you do NOT need to paste the whole body back into your reply — a short summary is enough.',
-            'The full markdown body goes in `markdown`; pick a `filename` ending in `.md`. Markdown only.',
-            'The result contains a `workspaceFileId` — mention what you created, no need to repeat the body.',
-        ].join(' '),
+        description:
+            'Create a markdown (`.md`) document for the editable side panel. Put the full body in `markdown`; do not paste it back into chat — a short confirmation is enough.',
         inputSchema: workspaceFileCreateInputSchema,
         execute: async (input) => {
             const file = await workspaceFileCreateFromMarkdown({
@@ -131,14 +125,8 @@ const workspaceFileGetInputSchema = z.object({
 // and as the read-before-write step for a revision.
 export function toolWorkspaceFileGet({ serverRuntime, session }: WorkspaceFilesAgentToolContext) {
     return tool({
-        description: [
-            'Fetch the current contents of a markdown document by id, including any edits Cem made in the editor',
-            'since it was created. Use this whenever he asks about, references, quotes, or wants to revise an',
-            'existing document — read the latest version so you are not working from a stale copy. The returned',
-            '`content` is the full markdown body: after reading it you MUST answer Cem in chat (summarize it, quote',
-            'the part he asked about, or say what you see). Reading the file is NOT the end of the turn — your',
-            'written reply is. Only chain into `workspaceFileUpdate` when he actually asked you to change the document.',
-        ].join(' '),
+        description:
+            'Fetch the latest markdown body by id. Always answer Cem in chat after reading (summarize/quote). Only chain into `workspaceFileUpdate` when he asked to change it.',
         inputSchema: workspaceFileGetInputSchema,
         execute: async (input) => {
             const file = await adminWorkspaceFileFindOne(input.workspaceFileId, session, serverRuntime);
@@ -179,11 +167,7 @@ const workspaceFileUpdateInputSchema = z.object({
 // `workspaceFileGet` if you need to preserve existing content.
 export function toolWorkspaceFileUpdate({ serverRuntime, session }: WorkspaceFilesAgentToolContext) {
     return tool({
-        description: [
-            'Overwrite an existing markdown document with a new body. Use this when Cem asks you to revise, rewrite,',
-            'or add to a document you (or he) already created. The `markdown` REPLACES the whole document, so fetch',
-            'the current version with `workspaceFileGet` first if you need to keep parts of it. Markdown only.',
-        ].join(' '),
+        description: 'Overwrite an existing markdown document. `markdown` replaces the whole body — get first if you need to keep parts.',
         inputSchema: workspaceFileUpdateInputSchema,
         execute: async (input) => {
             const userId = requireAdminUserId(session);

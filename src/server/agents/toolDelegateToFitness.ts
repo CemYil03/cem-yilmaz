@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantFitness } from './agentPersonalAssistantFitness';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -16,17 +17,7 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // — see the shared write-up in `docs/architecture/agent-delegation.md`.
 
 const delegateToFitnessInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the fitness sub-agent. Pass the user's request verbatim plus any",
-                'context (exercise / session ids from earlier turns). The sub-agent has the live fitness snapshot in',
-                "its system prompt — you don't need to summarize it here.",
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
 });
 
 interface DelegateToFitnessContext {
@@ -64,19 +55,7 @@ export function toolDelegateToFitness({
     stepArtifact,
 }: DelegateToFitnessContext) {
     return tool({
-        description: [
-            'Hand a fitness instruction to the fitness sub-agent. Use for ANY ask that touches training — logging a',
-            'workout (sessions and sets), answering progression questions ("what did I bench last time?"), managing',
-            'the exercise catalog, and building or editing reusable routines. Pass the brief in natural language.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields`, then call',
-            'this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
-            'reply or another tool.',
-            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
-        ].join(' '),
+        description: 'Hand fitness work to the fitness sub-agent — logging workouts, progression questions, exercise catalog, routines.',
         inputSchema: delegateToFitnessInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

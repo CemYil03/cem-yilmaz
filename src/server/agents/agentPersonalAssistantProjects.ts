@@ -10,7 +10,7 @@ import { toolProjectFileCreate } from '../commands/projectFileCreateFromMarkdown
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID } from './adminChatModels';
-import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
+import { currentDateForAgent, googleAgentProviderOptionsFor, subAgentClosingRules } from './agentScaffolding';
 import { projectsSnapshotForAgent } from './projectsSnapshotForAgent';
 import { toolProjectFileContentGet } from './toolProjectFileContentGet';
 import { toolProjectGet } from './toolProjectGet';
@@ -49,37 +49,16 @@ export interface ProjectsAgentOptions {
 
 function buildSystemPrompt(snapshot: string): string {
     return [
-        "You are the projects sub-agent inside Cem's personal workspace. You handle every project- and task-related",
-        'instruction the orchestrator delegates to you. Your tools touch the workspace DB directly — only use them',
-        'when the user has unambiguously asked you to change something. Each tool carries its own description of',
-        'when to reach for it and how its inputs are shaped; read those descriptions rather than expecting to be',
-        'told again here.',
+        "You are the projects sub-agent inside Cem's personal workspace. You handle project- and task-related work.",
+        'Mutate the DB only when unambiguously asked. Tools own when-to-use details.',
         '',
         currentDateForAgent(),
         '',
-        'Rules:',
-        '- Reply in the language the user wrote in (German or English).',
-        '- Be concise: your final text becomes the orchestrator narration to the user. One or two sentences naming',
-        '  what you did. When you create or change a project / task / activity / link / file Cem may want to open,',
-        '  name its id in your summary so the orchestrator can build a deep-link.',
-        '- Batch every same-shape write into one call — one `tasksUpsert` for all of them, not N calls. Same for',
-        '  `projectsUpsert`, `projectActivitiesUpsert`, and `projectLinksUpsert`.',
-        '- Never invent an id. Use ids from the snapshot below or from a prior tool result’s `referenceIds` (in',
-        '  input order) earlier in this turn.',
-        "- The snapshot only lists projects and task counts. To answer about a project's activity timeline or its",
-        '  attached files, call `projectGet` with the project id — do NOT pull the whole board via `projectsList`',
-        '  for one project. Before you summarize, quote, or revise an attached document, call `projectFileContentGet`',
-        '  to read its body first; if it returns `readable: false`, tell Cem to open the file at the given `url`',
-        '  instead of trying to read it.',
-        "- If the request is missing information you genuinely need (e.g. 'add a task' with no target project and",
-        '  no title), do NOT guess. Stop calling tools and return EXACTLY this JSON as your final text, nothing',
-        '  else (no code fence, no prose):',
-        '  {"status":"needsMoreInfo","missingFields":["..."],"summary":"..."}',
-        '  where `missingFields` is an array of short keys identifying what you still need (e.g. ["title",',
-        '  "projectId"]) and `summary` is a one-sentence explanation of what you understood so far.',
-        "- If the request asks for something outside the project/task surface (e.g. 'schedule a meeting',",
-        "  'log a workout'), return the same JSON sentinel with status `noOp` and an empty `missingFields`",
-        '  array — the orchestrator will handle it.',
+        'Domain rules:',
+        '- Batch same-shape writes — one `tasksUpsert` / `projectsUpsert` / `projectActivitiesUpsert` / `projectLinksUpsert`, not N calls.',
+        '- Snapshot lists projects + task counts only. For activity timeline or files, call `projectGet` (not `projectsList` for one project).',
+        '- Before summarizing/quoting/revising an attached document, call `projectFileContentGet`; if `readable: false`, tell Cem to open the `url`.',
+        ...subAgentClosingRules({ domainLabel: 'projects/tasks', outOfDomainExample: 'log a workout' }),
         '',
         'Current board snapshot (refreshed at the start of this turn):',
         '',

@@ -8,6 +8,7 @@ import { chatMessagesToolCall } from '../db/schema';
 import type { ServerRuntime } from '../domain/ServerRuntime';
 import type { GqlSSession } from '../graphql/generated';
 import { agentPersonalAssistantInventory } from './agentPersonalAssistantInventory';
+import { DELEGATE_BRIEF_DESCRIBE } from './agentScaffolding';
 import { chatDelegateParentPreWrite } from './chatDelegateParentPreWrite';
 import type { ChatStepArtifact } from './chatStepArtifact';
 
@@ -16,17 +17,7 @@ import type { ChatStepArtifact } from './chatStepArtifact';
 // see the shared write-up in `docs/architecture/agent-delegation.md`.
 
 const delegateToInventoryInputSchema = z.object({
-    brief: z
-        .string()
-        .min(1)
-        .max(2000)
-        .describe(
-            [
-                "Natural-language instruction for the inventory sub-agent. Pass the user's request verbatim plus any",
-                'context (item ids from earlier turns, prices and values the user named). The sub-agent has the live',
-                "inventory snapshot in its system prompt — you don't need to summarize it here.",
-            ].join(' '),
-        ),
+    brief: z.string().min(1).max(2000).describe(DELEGATE_BRIEF_DESCRIBE),
 });
 
 interface DelegateToInventoryContext {
@@ -64,23 +55,8 @@ export function toolDelegateToInventory({
     stepArtifact,
 }: DelegateToInventoryContext) {
     return tool({
-        description: [
-            'Hand an inventory instruction to the inventory sub-agent. Use for ANY ask that touches material',
-            'belongings — adding or editing an item (electronics, appliances, furniture, vehicles, tools, …),',
-            'recording what something is worth today, logging a repair / service, disposing of something sold / gifted',
-            '/ lost, or renaming / pinning / detaching a file already attached to an item. Pass the brief in natural',
-            'language including any price or value the user named. This is the durable path: the sub-agent writes to',
-            'Postgres so the inventory page and material net worth update. Do NOT try to "note" an item in plain chat',
-            'and expect it to persist — always delegate.',
-            "The tool result is shaped `{ status: 'completed' | 'needsMoreInfo' | 'noOp' | 'failed', summary, missingFields? }`.",
-            'On `needsMoreInfo`, call `promptUserForInput` to gather the slots named in `missingFields` (most often',
-            'which item is meant), then call this tool again with the brief enriched by their answers.',
-            'On `noOp`, the sub-agent decided the request is not in its domain — fall back to a plain conversational',
-            'reply or another tool.',
-            'On `completed`, narrate `summary` back to the user; it names the ids of any rows worth deep-linking.',
-            'On `failed`, the sub-agent or one of its tools threw — `summary` carries the one-line error message.',
-            'Tell Cem plainly what failed; do NOT retry automatically and do NOT confabulate softer phrasings.',
-        ].join(' '),
+        description:
+            'Hand inventory work to the inventory sub-agent — belongings, values, repairs/services, disposal, existing file metadata. Always delegate so net worth persists; include prices/values in the brief.',
         inputSchema: delegateToInventoryInputSchema,
         execute: async (input, { toolCallId }) => {
             const { db } = serverRuntime;

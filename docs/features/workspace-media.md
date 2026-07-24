@@ -259,7 +259,7 @@ any other workspace area (e.g. a future `/workspace/movies-inbox` for film criti
 | Client ops                  | `src/routes/{-$locale}/workspace/media.graphql`                                                                                                                                                                                                                                                      |
 | Cross-view (software)       | `src/routes/{-$locale}/workspace/software.tsx` + `software.graphql`                                                                                                                                                                                                                                  |
 | Assistant sub-agent + tools | `src/server/agents/agentPersonalAssistantMedia.ts`, `mediaSnapshotForAgent.ts`, `toolDelegateToMedia.ts`, `toolMovies*`, `toolShows*`, `toolMediaChannels*`, `toolMoviesList.ts`, `toolShowsList.ts`, `toolMediaChannelsList.ts`, `toolTmdbSearch.ts`, `toolTmdbTvSearch.ts`, `toolYoutubeSearch.ts` |
-| Orchestrator wiring         | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToMedia` + adds deep-link templates for movies / series / YouTube / podcasts)                                                                                                                                                      |
+| Orchestrator wiring         | `src/server/agents/agentPersonalAssistant.ts` (registers `delegateToMedia`; deep-link patterns cover media surfaces)                                                                                                                                                                                 |
 
 ## Out of scope
 

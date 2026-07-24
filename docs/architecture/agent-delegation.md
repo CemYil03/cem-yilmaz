@@ -133,12 +133,12 @@ means another `tool<Domain>Delegate.ts` file that mirrors `toolDelegateToProject
 
 ### Deep links
 
-The orchestrator's system prompt (`BASE_SYSTEM_PROMPT` in `src/server/agents/agentPersonalAssistant.ts`) carries a route-map block that
-instructs the model to format every project / inbox row / task / visitor chat it mentions as a markdown link to the matching workspace page
-with a `?focus=<id>` search param. `<AssistantMarkdown>` (the streamdown wrapper) renders these as clickable anchors. The destination pages
-read `focus` from their `validateSearch` schema and scroll-into-view + flash the matching DOM element (any `<li data-row-id="...">`) for
-~1500ms before dropping the param via a replace-navigate so a refresh doesn't re-flash. The flash animation is `@keyframes focus-flash` in
-`src/styles.css`, respecting `prefers-reduced-motion`.
+The orchestrator's system prompt (`BASE_SYSTEM_PROMPT` in `src/server/agents/agentPersonalAssistant.ts`) carries a short deep-link pattern
+block (surface → `/workspace/…?focus=<id>`) rather than a full per-entity template catalog. The model formats ids named in sub-agent
+summaries as markdown links; `<AssistantMarkdown>` renders them as clickable anchors. The destination pages read `focus` from their
+`validateSearch` schema and scroll-into-view + flash the matching DOM element (any `<li data-row-id="...">`) for ~1500ms before dropping the
+param via a replace-navigate so a refresh doesn't re-flash. The flash animation is `@keyframes focus-flash` in `src/styles.css`, respecting
+`prefers-reduced-motion`.
 
 The orchestrator gets the ids it needs from the sub-agent's `summary`, which names the id of every row it created or changed; the
 orchestrator's prompt turns those into deep-links. Routes that wire this today: `/workspace/projects`
@@ -197,22 +197,27 @@ adding `focus` to their search schema and the same `useEffect` shape.
 - **Follow-up (not yet done):** DateTime-safety is the open thread — either the codegen emits `z.iso.datetime()` for `DateTime` behind a
   separate agent-facing output, or a runtime helper walks `z.date()` → string on the object schemas. Either would let the DateTime-carrying
   tools drop their hand-built duplicates too.
-- <a id="tool-self-description"></a>**Tool self-description is authoritative.** A tool's `description` string plus its per-field
-  `.describe(...)` calls are the ONLY place a tool is explained. System prompts NEVER list tools — no "You have N tools: - foo does X"
-  catalog, no orchestrator-side "Capabilities" bullets that restate what each delegate is for, no "When to search" block that duplicates
-  what `toolDelegateToWebSearch` already carries. The information belongs on one surface so a change to one doesn't silently diverge from
-  the other; the LLM sees the tool description on every call anyway, so the duplication buys nothing but drift risk.
+- <a id="tool-self-description"></a>**Tool self-description is authoritative for selection.** A tool's `description` string plus its
+  per-field `.describe(...)` calls are the ONLY place that teaches _when to call_ a tool and how its inputs are shaped. System prompts NEVER
+  list tools — no "You have N tools: - foo does X" catalog, no orchestrator-side "Capabilities" bullets that restate what each delegate is
+  for, no "When to search" block that duplicates what `toolDelegateToWebSearch` already carries.
+
+  **Narration / wire contracts are the opposite:** they live once in the system prompt, not on every tool. In particular, the `completed` /
+  `needsMoreInfo` / `noOp` / `failed` (and web-search `partial`) handling policy lives only on the orchestrator prompt — `delegateTo*`
+  descriptions must not restate that envelope. Same rule for sub-agent `needsMoreInfo` / `noOp` JSON sentinels: shared via
+  `subAgentClosingRules()` in `agentScaffolding.ts`, not copy-pasted into nine agent files.
 
   What DOES stay in a system prompt: persona ("you are the medical sub-agent"), style rules (concision, language matching), cross-tool
-  workflow rules that span multiple tools (`agentPersonalAssistantMedia`'s "for 'I watched X' → `adminMediaMoviesUpsert` with
-  `status: watched`; if not in library → `adminMediaMoviesAddFromTmdb` first" workflow), agent-role behavior rules (the medical sub-agent's
-  RED FLAGS block — that's a _don't-call-any-tool_ rule), the `{ status: 'needsMoreInfo' | 'noOp' }` JSON sentinel contract (this is the
-  sub-agent → orchestrator wire, not a tool behavior), delegate-result-envelope narration policy on the orchestrator (how to react to
-  `needsMoreInfo` / `failed`), deep-link templates (narration policy for the ids delegates return), and inlined data snapshots.
+  workflow rules that span multiple tools (`agentPersonalAssistantMedia`'s search-before-add / mark-watched principles), agent-role behavior
+  rules (the medical sub-agent's RED FLAGS block — that's a _don't-call-any-tool_ rule), the `{ status: 'needsMoreInfo' | 'noOp' }` JSON
+  sentinel contract (sub-agent → orchestrator wire), delegate-result-envelope narration policy on the orchestrator, deep-link patterns
+  (narration policy for the ids delegates return), and inlined data snapshots.
 
-  The canonical exemplar of a self-describing tool is `toolProjectActivitiesUpsert.ts`: a multi-sentence description that names when to
-  reach for it, the cross-tool guidance ("work timer rows are NOT created here"), and per-field `.describe(...)` for every input. The
-  anti-pattern is a `buildSystemPrompt` with a "You have nine tools: - `adminProjectFindMany` — ... - `adminProjectsUpsert` — ..." block.
+  Keep tool descriptions short (roughly 1–3 sentences for selection). Prefer patterns over encyclopedias (category maps, enum tutorials,
+  worked visitor-flow scripts). Field `.describe(...)` should teach non-obvious behavior only — skip "optional free-form notes" noise.
+
+  The anti-pattern is a `buildSystemPrompt` with a "You have nine tools: - `adminProjectFindMany` — ..." block, or pasting the same
+  result-envelope essay onto every `delegateTo*` tool.
 
 - **Sub-agent failure is caught at the delegate layer and surfaced as `status: 'failed'`.** `toolDelegateToProjects.execute` wraps
   `agent.generate` in a try/catch: any throw — provider call, schema-decode mismatch, mutation command exception — is logged via
@@ -233,10 +238,10 @@ adding `focus` to their search schema and the same `useEffect` shape.
   its own `execute`, or a `tool-error` synthesized by the SDK for reasons other than an `execute` throw. We do not write a dedicated chat
   row for the error — the matching tool-call row from Phase B already carries the error payload as its `toolResult` for the LLM. The Phase A
   pass exists solely to refuse to let a silent failure go without a log entry.
-- **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptions` plus a
-  `currentDateForAgent()` helper (today's date as a one-liner each system prompt embeds near the top so Gemini doesn't fall back to its
-  training-cutoff date when reasoning about deadlines). Nothing else lives there — a tiny helper, not a base class; system-prompt builders,
-  stop conditions, and tool sets stay per-agent (same stance as the visitor / personal-assistant factories).
+- **Shared scaffolding is one tiny module.** `src/server/agents/agentScaffolding.ts` exports `googleAgentProviderOptions`,
+  `currentDateForAgent()`, `DELEGATE_BRIEF_DESCRIBE`, and `subAgentClosingRules()` (language / concision / ids / `needsMoreInfo`+`noOp` JSON
+  sentinel). Nothing else lives there — a tiny helper, not a base class; system-prompt domain rules, stop conditions, and tool sets stay
+  per-agent.
 - **Sub-agent failure isolates to its turn.** See the **`status: 'failed'`** bullet above and
   [Server-side error surfacing](#server-side-error-surfacing). The orchestrator narrates the failure to the user; the chat is never broken.
 - **Cross-domain chaining is the orchestrator's job.** The orchestrator calls delegates in series within a single turn (nutrition, fitness,
