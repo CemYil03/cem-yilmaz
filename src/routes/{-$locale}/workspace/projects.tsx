@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
+import { formatDuration, formatHms } from '../../../shared';
 import { Button } from '../../../web/components/base/button';
 import { Input } from '../../../web/components/base/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../web/components/base/select';
@@ -85,25 +86,6 @@ const PROJECT_TYPE_LABELS: Record<string, { de: string; en: string }> = {
     aiIntegration: { de: 'KI-Integration', en: 'AI integration' },
     other: { de: 'Sonstiges', en: 'Other' },
 };
-
-// Renders a seconds total as `Hh Mm` or `Mm Ss` for short stretches. The
-// project card's `Total: …` pill uses this.
-function formatDuration(totalSec: number): string {
-    if (totalSec < 60) return `${totalSec}s`;
-    const hours = Math.floor(totalSec / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-    return `${minutes}m`;
-}
-
-// HH:MM:SS — used for the live ticking timer pill, where seconds are
-// visible (the static badge above uses `formatDuration` for terse totals).
-function formatHms(totalSec: number): string {
-    const hours = Math.floor(totalSec / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    const seconds = totalSec % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
 
 // URL state for this page. `tab` selects the active section; `inboxView`
 // toggles the archive/inbox split on the Inbox tab and is absent (= `inbox`)

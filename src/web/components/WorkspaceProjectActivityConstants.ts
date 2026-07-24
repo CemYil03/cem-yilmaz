@@ -14,8 +14,8 @@ import type { Locale } from '../utils/locale';
 // page's Activity tab. Extracted from `projects_.$projectId.tsx` so the
 // timeline / message / composer cluster (all `WorkspaceProjectActivity*`)
 // share one source of truth. A handful of these (`ACTIVITY_KIND_ICONS`,
-// `ACTIVITY_KIND_LABELS`, `activityHeading`, `formatDuration`) are also
-// re-imported by the route's Overview tab. See
+// `ACTIVITY_KIND_LABELS`, `activityHeading`) are also re-imported by the
+// route's Overview tab. Duration formatting lives in `src/shared`. See
 // `docs/features/workspace-projects.md`.
 
 // Row-type aliases derived from the detail-page fragment, shared by every
@@ -110,14 +110,6 @@ export function defaultDirectionForKind(
 // a titleless row still reads as something in glance views.
 export function activityHeading(activity: WorkspaceProjectActivityRow, locale: Locale): string {
     return activity.title ?? ACTIVITY_KIND_LABELS[activity.kind][locale];
-}
-
-export function formatDuration(totalSec: number): string {
-    if (totalSec < 60) return `${totalSec}s`;
-    const hours = Math.floor(totalSec / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-    return `${minutes}m`;
 }
 
 export function isSameDay(aIso: string, bIso: string): boolean {

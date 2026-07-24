@@ -35,7 +35,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
-import { formatCurrency, formatDateRange, formatIsoDate } from '../../../shared';
+import { centsToEuros, eurosToCents, formatCurrency, formatDateRange, formatIsoDate } from '../../../shared';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -1624,18 +1624,6 @@ function buildSankey(
     });
 
     return { nodes, links, totalCents };
-}
-
-function centsToEuros(cents: number): string {
-    return (cents / 100).toFixed(2);
-}
-
-function eurosToCents(input: string): number | null {
-    const trimmed = input.trim().replace(',', '.');
-    if (trimmed === '') return null;
-    const parsed = Number.parseFloat(trimmed);
-    if (Number.isNaN(parsed)) return null;
-    return Math.round(parsed * 100);
 }
 
 // --- Wealth asset dialogs ---------------------------------------------------

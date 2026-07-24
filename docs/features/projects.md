@@ -173,8 +173,8 @@ Hero images live under `public/projects/<id>/` and are curated by hand. Sources 
    design changes.
 2. **Curated from sibling repo** — `Draw Schema` ships a polished 16:9 product shot in its own `public/16-9.png` and an empty-canvas shot in
    `public/empty-canvas-16-9.png`. Both copied by hand into `public/projects/draw-schema/`.
-3. **Photo from sibling repo** — `Podologie Dudenhofen` reuses photos from the practice's own `public/` (treatment-room shot, owner portrait).
-   Honest, on-brand, and doesn't depend on the live site being reachable from the build host.
+3. **Photo from sibling repo** — `Podologie Dudenhofen` reuses photos from the practice's own `public/` (treatment-room shot, owner
+   portrait). Honest, on-brand, and doesn't depend on the live site being reachable from the build host.
 4. **iPad simulator export** — `Arm Skill Training` uses 4:3 landscape iPad screenshots exported from the Simulator (`landing-page.png`,
    `exercise-aiming.png`). Refreshed by hand whenever the app changes.
 

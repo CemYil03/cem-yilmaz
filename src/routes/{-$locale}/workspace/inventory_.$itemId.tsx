@@ -21,7 +21,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
-import { formatCurrency, formatDate, formatIsoDate } from '../../../shared';
+import { centsToEuros, eurosToCents, formatBytes, formatCurrency, formatDate, formatIsoDate } from '../../../shared';
 import { uploadFile } from '../../../web/chat/fileUpload';
 import {
     AlertDialog,
@@ -614,7 +614,7 @@ function FileCard({
 // --- Dialogs ----------------------------------------------------------------
 
 function RepriceDialog({ item, locale, onClose }: { item: ItemDetail; locale: Locale; onClose: () => void }) {
-    const [value, setValue] = useState(item.currentValueCents != null ? (item.currentValueCents / 100).toFixed(2) : '');
+    const [value, setValue] = useState(item.currentValueCents != null ? centsToEuros(item.currentValueCents) : '');
     const [note, setNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [, reprice] = useMutation(WorkspaceItemsRepriceDocument);
@@ -741,7 +741,7 @@ function ServiceEntryDialog({
     const [kind, setKind] = useState<GqlCAdminInventoryItemServiceKind>(initial?.kind ?? 'service');
     const [performedAt, setPerformedAt] = useState<Date | undefined>(initial?.performedAt ? parseISO(initial.performedAt) : new Date());
     const [vendor, setVendor] = useState(initial?.vendor ?? '');
-    const [cost, setCost] = useState(initial?.costCents != null ? (initial.costCents / 100).toFixed(2) : '');
+    const [cost, setCost] = useState(initial?.costCents != null ? centsToEuros(initial.costCents) : '');
     const [notes, setNotes] = useState(initial?.notes ?? '');
     const [nextDueAt, setNextDueAt] = useState<Date | undefined>(initial?.nextDueAt ? parseISO(initial.nextDueAt) : undefined);
     const [submitting, setSubmitting] = useState(false);
@@ -898,20 +898,6 @@ function NotFound({ locale }: { locale: Locale }) {
             </Button>
         </main>
     );
-}
-
-function formatBytes(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function eurosToCents(input: string): number | null {
-    const trimmed = input.trim().replace(',', '.');
-    if (trimmed === '') return null;
-    const parsed = Number.parseFloat(trimmed);
-    if (Number.isNaN(parsed)) return null;
-    return Math.round(parsed * 100);
 }
 
 // Seed-and-subscribe. `itemId` scopes the subscription — the detail

@@ -30,7 +30,7 @@ import type { ReactNode } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
-import { formatDate } from '../../../shared';
+import { formatDate, formatDuration, formatHms } from '../../../shared';
 import { previewKindFor } from '../../../web/chat/chatAttachmentPreview';
 import { uploadFile } from '../../../web/chat/fileUpload';
 import { AssistantMarkdown } from '../../../web/components/AssistantMarkdown';
@@ -50,12 +50,7 @@ import { Textarea } from '../../../web/components/base/textarea';
 import { ChatAttachmentPreviewDialog } from '../../../web/components/chat-message/ChatAttachmentPreviewDialog';
 import { GlassCard } from '../../../web/components/GlassCard';
 import { Reveal } from '../../../web/components/Reveal';
-import {
-    ACTIVITY_KIND_ICONS,
-    ACTIVITY_KIND_LABELS,
-    activityHeading,
-    formatDuration,
-} from '../../../web/components/WorkspaceProjectActivityConstants';
+import { ACTIVITY_KIND_ICONS, ACTIVITY_KIND_LABELS, activityHeading } from '../../../web/components/WorkspaceProjectActivityConstants';
 import { WorkspaceProjectActivityTimeline } from '../../../web/components/WorkspaceProjectActivityTimeline';
 import { WorkspaceUnauthorized } from '../../../web/components/WorkspaceUnauthorized';
 import type {
@@ -223,13 +218,6 @@ const FILE_KIND_LABELS: Record<GqlCAdminProjectFileKind, { de: string; en: strin
     screenshot: { de: 'Screenshot', en: 'Screenshot' },
     other: { de: 'Sonstiges', en: 'Other' },
 };
-
-function formatHms(totalSec: number): string {
-    const hours = Math.floor(totalSec / 3600);
-    const minutes = Math.floor((totalSec % 3600) / 60);
-    const seconds = totalSec % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
 
 // "today" / "vor 3 Tagen" / "Mar 14" — relative when fresh enough to feel
 // recent, absolute once the user would rather just see the date. Used in the

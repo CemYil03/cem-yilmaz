@@ -92,9 +92,10 @@ GraphQL schema. See [Bilingual columns](#bilingual-columns) above.
 
 ## Shared display formatting
 
-Isomorphic date and currency helpers live in `src/shared` (`formatDate`, `formatDateRange`, `formatMonthYear`, `formatCurrency`,
-`formatIsoDate`). Display helpers require `{ locale: 'de' | 'en' }` and map to `de-DE` / `en-US` via `languageTagFromLocale`. Do **not**
-redefine local `formatDate` / `formatCurrency` helpers in routes or components — import from `src/shared`. Relative time and calendar
+Isomorphic date, currency, file-size, duration, and euro-amount helpers live in `src/shared` (`formatDate`, `formatDateRange`,
+`formatMonthYear`, `formatCurrency`, `formatIsoDate`, `formatBytes`, `formatDuration`, `formatHms`, `centsToEuros`, `eurosToCents`). Display
+helpers that need a locale require `{ locale: 'de' | 'en' }` and map to `de-DE` / `en-US` via `languageTagFromLocale`. Do **not** redefine
+local `formatDate` / `formatCurrency` / `formatBytes` helpers in routes or components — import from `src/shared`. Relative time and calendar
 pickers still use `date-fns` + `DATE_FNS_LOCALE` (see [i18n.md](./architecture/i18n.md)).
 
 ## Theming

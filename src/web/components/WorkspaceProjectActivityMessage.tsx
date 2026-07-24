@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { ChevronDownIcon, ChevronUpIcon, ExternalLinkIcon, PaperclipIcon, PencilIcon, TimerIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
-import { formatCurrency, formatDate } from '../../shared';
+import { formatCurrency, formatDate, formatDuration } from '../../shared';
 import { cn } from '../utils/cn';
 import type { Locale } from '../utils/locale';
 import { Button } from './base/button';
@@ -10,7 +10,6 @@ import {
     ACTIVITY_CHANNEL_LABELS,
     ACTIVITY_KIND_ICONS,
     ACTIVITY_KIND_LABELS,
-    formatDuration,
     OFFER_STATUS_LABELS,
 } from './WorkspaceProjectActivityConstants';
 import type { WorkspaceProjectActivityRow } from './WorkspaceProjectActivityConstants';

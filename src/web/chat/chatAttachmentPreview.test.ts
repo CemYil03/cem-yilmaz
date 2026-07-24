@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, previewKindFor } from './chatAttachmentPreview';
+import { previewKindFor } from './chatAttachmentPreview';
 
 describe('previewKindFor', () => {
     it('classifies image MIME types as image', () => {
@@ -39,27 +39,5 @@ describe('previewKindFor', () => {
         expect(previewKindFor('application/zip')).toBe('other');
         expect(previewKindFor('application/octet-stream')).toBe('other');
         expect(previewKindFor('')).toBe('other');
-    });
-});
-
-describe('formatBytes', () => {
-    it('formats sizes with the right unit', () => {
-        // Arrange — nothing
-        // Act / Assert
-        expect(formatBytes(0)).toBe('0 B');
-        expect(formatBytes(512)).toBe('512 B');
-        expect(formatBytes(1024)).toBe('1.0 KB');
-        expect(formatBytes(1536)).toBe('1.5 KB');
-        expect(formatBytes(1024 * 1024)).toBe('1.0 MB');
-        expect(formatBytes(Math.round(1.5 * 1024 * 1024))).toBe('1.5 MB');
-        expect(formatBytes(Math.round(2.3 * 1024 * 1024 * 1024))).toBe('2.3 GB');
-    });
-
-    it('handles invalid inputs without throwing', () => {
-        // Arrange — nothing
-        // Act / Assert
-        expect(formatBytes(NaN)).toBe('0 B');
-        expect(formatBytes(-100)).toBe('0 B');
-        expect(formatBytes(Number.POSITIVE_INFINITY)).toBe('0 B');
     });
 });

@@ -104,11 +104,7 @@ export function WorkspaceFileEditor({
                         onClick={() => setMode('preview')}
                         label={{ de: 'Vorschau', en: 'Preview' }[locale]}
                     />
-                    <ModeButton
-                        active={mode === 'edit'}
-                        onClick={() => setMode('edit')}
-                        label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
-                    />
+                    <ModeButton active={mode === 'edit'} onClick={() => setMode('edit')} label={{ de: 'Bearbeiten', en: 'Edit' }[locale]} />
                 </div>
                 <Button
                     variant="outline"
@@ -122,16 +118,9 @@ export function WorkspaceFileEditor({
                 </Button>
                 <Button size="sm" onClick={onSave} disabled={!isDirty || saving}>
                     {saving ? <Spinner className="size-4" /> : null}
-                    {saving
-                        ? { de: 'Speichern…', en: 'Saving…' }[locale]
-                        : { de: 'Speichern', en: 'Save' }[locale]}
+                    {saving ? { de: 'Speichern…', en: 'Saving…' }[locale] : { de: 'Speichern', en: 'Save' }[locale]}
                 </Button>
-                <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={onClose}
-                    aria-label={{ de: 'Schließen', en: 'Close' }[locale]}
-                >
+                <Button variant="ghost" size="icon-xs" onClick={onClose} aria-label={{ de: 'Schließen', en: 'Close' }[locale]}>
                     <XIcon />
                 </Button>
             </header>

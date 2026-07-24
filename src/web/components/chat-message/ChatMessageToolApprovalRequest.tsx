@@ -26,6 +26,7 @@ export function ChatMessageToolApprovalRequestView({
     // declines surface the textarea today.
     const [mode, setMode] = useState<'idle' | 'declining'>('idle');
     const [reasonDraft, setReasonDraft] = useState('');
+    const reasonLabel = { de: 'Optional: Ablehnungsgrund?', en: 'Optional: why decline?' }[locale];
 
     const handleConfirmDecline = () => {
         if (!onRespond) return;
@@ -41,7 +42,7 @@ export function ChatMessageToolApprovalRequestView({
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-sm">
                             <ShieldCheckIcon aria-hidden />
-                            Approval requested
+                            {{ de: 'Freigabe angefordert', en: 'Approval requested' }[locale]}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-2">
@@ -59,18 +60,18 @@ export function ChatMessageToolApprovalRequestView({
                         {onRespond && mode === 'idle' ? (
                             <div className="flex gap-2">
                                 <Button size="sm" onClick={() => onRespond(message.approvalId, true)}>
-                                    Approve
+                                    {{ de: 'Freigeben', en: 'Approve' }[locale]}
                                 </Button>
                                 <Button size="sm" variant="outline" onClick={() => setMode('declining')}>
-                                    Decline
+                                    {{ de: 'Ablehnen', en: 'Decline' }[locale]}
                                 </Button>
                             </div>
                         ) : null}
                         {onRespond && mode === 'declining' ? (
                             <div className="grid gap-2">
                                 <Textarea
-                                    aria-label="Optional reason for declining"
-                                    placeholder="Optional: why decline?"
+                                    aria-label={reasonLabel}
+                                    placeholder={reasonLabel}
                                     value={reasonDraft}
                                     onChange={(event) => setReasonDraft(event.target.value)}
                                     rows={3}
@@ -78,7 +79,7 @@ export function ChatMessageToolApprovalRequestView({
                                 />
                                 <div className="flex gap-2">
                                     <Button size="sm" variant="outline" onClick={handleConfirmDecline}>
-                                        Confirm decline
+                                        {{ de: 'Ablehnung bestätigen', en: 'Confirm decline' }[locale]}
                                     </Button>
                                     <Button
                                         size="sm"
@@ -88,7 +89,7 @@ export function ChatMessageToolApprovalRequestView({
                                             setReasonDraft('');
                                         }}
                                     >
-                                        Cancel
+                                        {{ de: 'Abbrechen', en: 'Cancel' }[locale]}
                                     </Button>
                                 </div>
                             </div>

@@ -1,6 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, ExternalLinkIcon, FileIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { formatBytes, previewKindFor } from '../../chat/chatAttachmentPreview';
+import { formatBytes } from '../../../shared';
+import { previewKindFor } from '../../chat/chatAttachmentPreview';
 import type { GqlCFileUpload } from '../../graphql/generated';
 import { cn } from '../../utils/cn';
 import { AssistantMarkdown } from '../AssistantMarkdown';

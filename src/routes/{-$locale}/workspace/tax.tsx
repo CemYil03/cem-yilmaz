@@ -17,7 +17,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRequest, useClient, useMutation } from 'urql';
 import { pipe, subscribe } from 'wonka';
 import { z } from 'zod';
-import { formatCurrency, formatDate } from '../../../shared';
+import { centsToEuros, eurosToCents, formatCurrency, formatDate } from '../../../shared';
 import { uploadFile } from '../../../web/chat/fileUpload';
 import {
     AlertDialog,
@@ -1503,20 +1503,6 @@ function DocumentDialog({
             </DialogContent>
         </Dialog>
     );
-}
-
-// --- Helpers ----------------------------------------------------------------
-
-function centsToEuros(cents: number): string {
-    return (cents / 100).toFixed(2);
-}
-
-function eurosToCents(input: string): number | null {
-    const trimmed = input.trim().replace(',', '.');
-    if (trimmed === '') return null;
-    const parsed = Number.parseFloat(trimmed);
-    if (Number.isNaN(parsed)) return null;
-    return Math.round(parsed * 100);
 }
 
 // --- Live user hook ---------------------------------------------------------
