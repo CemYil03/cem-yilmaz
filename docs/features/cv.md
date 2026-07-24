@@ -212,4 +212,3 @@ admin editor is the only edit path.
 
 - `/cv.pdf` server-rendered download via `serverRuntime.browser.capture()` — the existing `Lebenslauf.pdf` covers it for now.
 - A `toolCvSearch` agent tool — the embedded summary covers visitor questions for the current row count.
-- Profile photo asset and avatar surfacing on `/about`.
