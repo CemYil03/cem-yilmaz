@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import type { ChatAgentFactory } from '../agents/agentVisitor';
+import type { ChatAgentFactory } from '../agents/agentChatOptions';
 import type {
     ChatCreate,
     ChatMessage,

@@ -1,6 +1,6 @@
 import type { JSONValue, LanguageModelUsage, ModelMessage } from 'ai';
 import { eq } from 'drizzle-orm';
-import type { ChatAgentFactory } from '../agents/agentVisitor';
+import type { ChatAgentFactory } from '../agents/agentChatOptions';
 import type { ChatStepArtifact } from '../agents/chatStepArtifact';
 import {
     chatStepArtifactClaimFirstMessageId,

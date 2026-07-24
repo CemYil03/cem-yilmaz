@@ -410,6 +410,7 @@ in their own files and are wired directly into the agent's `tools` map.
 - `src/server/commands/chatMessageCreate.ts` — user send; ensures the chat row; synthesizes the skipped-userInput pivot row
 - `src/server/commands/chatInputCollectionRespond.ts` — userInput submit; double-submit guard
 - `src/server/commands/chatToolApprovalRespond.ts` — approval response writer (no `execute`)
+- `src/server/agents/agentChatOptions.ts` — shared `AgentChatOptions` / `ChatAgentFactory` for both top-level chat agents
 - `src/server/agents/toolPromptUserForInput.ts` — the `execute`-less tool that produces input collections
 - `src/server/mappers/toModelMessages.ts` — the only file that imports AI SDK content types
 - `src/web/components/chat-message/` — one render file per `ChatMessage` variant + shared row primitives

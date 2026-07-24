@@ -4,7 +4,7 @@ import { adminChatConfigFindOne } from '../queries/adminChatConfigFindOne';
 import { compassSummaryFindOne } from '../queries/compassSummaryFindOne';
 import { ADMIN_CHAT_MODEL_FALLBACK_ID, isAdminChatModelId } from './adminChatModels';
 import { currentDateForAgent, googleAgentProviderOptionsFor } from './agentScaffolding';
-import type { AgentChatOptions } from './agentVisitor';
+import type { AgentChatOptions } from './agentChatOptions';
 import { toolDelegateToFinances } from './toolDelegateToFinances';
 import { toolDelegateToFitness } from './toolDelegateToFitness';
 import { toolDelegateToInventory } from './toolDelegateToInventory';
