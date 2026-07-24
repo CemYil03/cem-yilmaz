@@ -20,19 +20,6 @@ import type { Locale } from '../utils/locale';
 // the sidebar/sheet renders it inside a `Sheet`. `onClose` clears whatever open
 // state the host owns (the `?doc` search param on the full page).
 
-const copy = {
-    preview: { de: 'Vorschau', en: 'Preview' },
-    edit: { de: 'Bearbeiten', en: 'Edit' },
-    save: { de: 'Speichern', en: 'Save' },
-    saving: { de: 'Speichern…', en: 'Saving…' },
-    saved: { de: 'Gespeichert', en: 'Saved' },
-    saveFailed: { de: 'Speichern fehlgeschlagen', en: 'Save failed' },
-    downloadPdf: { de: 'Als PDF herunterladen', en: 'Download PDF' },
-    close: { de: 'Schließen', en: 'Close' },
-    notFound: { de: 'Dokument nicht gefunden.', en: 'Document not found.' },
-    editPlaceholder: { de: 'Markdown eingeben…', en: 'Write markdown…' },
-} as const;
-
 type Mode = 'preview' | 'edit';
 
 export function WorkspaceFileEditor({
@@ -96,10 +83,10 @@ export function WorkspaceFileEditor({
             if (result.error || !result.data?.admin.adminWorkspaceFileUpdate.success) {
                 throw result.error ?? new Error('save failed');
             }
-            toast.success(copy.saved[locale]);
+            toast.success({ de: 'Gespeichert', en: 'Saved' }[locale]);
             refetch({ requestPolicy: 'network-only' });
         } catch {
-            toast.error(copy.saveFailed[locale]);
+            toast.error({ de: 'Speichern fehlgeschlagen', en: 'Save failed' }[locale]);
         } finally {
             setSaving(false);
         }
@@ -112,24 +99,39 @@ export function WorkspaceFileEditor({
                     {title}
                 </span>
                 <div className="flex items-center gap-1 rounded-md border p-0.5">
-                    <ModeButton active={mode === 'preview'} onClick={() => setMode('preview')} label={copy.preview[locale]} />
-                    <ModeButton active={mode === 'edit'} onClick={() => setMode('edit')} label={copy.edit[locale]} />
+                    <ModeButton
+                        active={mode === 'preview'}
+                        onClick={() => setMode('preview')}
+                        label={{ de: 'Vorschau', en: 'Preview' }[locale]}
+                    />
+                    <ModeButton
+                        active={mode === 'edit'}
+                        onClick={() => setMode('edit')}
+                        label={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                    />
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={onDownloadPdf}
                     disabled={!file || isDirty || saving}
-                    title={copy.downloadPdf[locale]}
+                    title={{ de: 'Als PDF herunterladen', en: 'Download PDF' }[locale]}
                 >
                     <DownloadIcon />
                     <span className="hidden sm:inline">PDF</span>
                 </Button>
                 <Button size="sm" onClick={onSave} disabled={!isDirty || saving}>
                     {saving ? <Spinner className="size-4" /> : null}
-                    {saving ? copy.saving[locale] : copy.save[locale]}
+                    {saving
+                        ? { de: 'Speichern…', en: 'Saving…' }[locale]
+                        : { de: 'Speichern', en: 'Save' }[locale]}
                 </Button>
-                <Button variant="ghost" size="icon-xs" onClick={onClose} aria-label={copy.close[locale]}>
+                <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={onClose}
+                    aria-label={{ de: 'Schließen', en: 'Close' }[locale]}
+                >
                     <XIcon />
                 </Button>
             </header>
@@ -139,7 +141,9 @@ export function WorkspaceFileEditor({
                         <Spinner className="size-5" />
                     </div>
                 ) : error || !file ? (
-                    <p className="p-4 text-sm text-muted-foreground">{copy.notFound[locale]}</p>
+                    <p className="p-4 text-sm text-muted-foreground">
+                        {{ de: 'Dokument nicht gefunden.', en: 'Document not found.' }[locale]}
+                    </p>
                 ) : mode === 'preview' ? (
                     <div className="p-4">
                         <AssistantMarkdown text={draft ?? file.content} />
@@ -148,7 +152,7 @@ export function WorkspaceFileEditor({
                     <Textarea
                         value={draft ?? ''}
                         onChange={(event) => setDraft(event.target.value)}
-                        placeholder={copy.editPlaceholder[locale]}
+                        placeholder={{ de: 'Markdown eingeben…', en: 'Write markdown…' }[locale]}
                         spellCheck={false}
                         className="h-full min-h-full resize-none rounded-none border-0 font-mono text-sm focus-visible:ring-0"
                     />

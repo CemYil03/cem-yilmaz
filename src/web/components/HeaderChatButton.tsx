@@ -31,12 +31,6 @@ import { HeaderIconButton } from './HeaderIconButton';
 // workspace variant has no equivalent — the sidebar's collapsed rail is
 // already the "your conversation lives here" affordance.
 
-const LABEL = {
-    visitor: { de: 'Chats', en: 'Chats' },
-    workspaceExpand: { de: 'Assistent ausklappen', en: 'Expand assistant' },
-    workspaceCollapse: { de: 'Assistent einklappen', en: 'Collapse assistant' },
-};
-
 // Match the CSS animation duration in `styles.css` (.animate-chat-button-pulse
 // runs `chat-button-pulse 1.2s ease-out 1`). Slightly longer here so the
 // class strips after the final frame paints.
@@ -57,11 +51,10 @@ export function HeaderChatButton({ variant = 'visitor' }: Props) {
 function VisitorVariant() {
     const locale = useLocale();
     const { openEmpty, highlightSignal } = useVisitorChat();
-    const label = LABEL.visitor[locale];
     return (
         <ChatButton
             onClick={openEmpty}
-            label={label}
+            label={{ de: 'Chats', en: 'Chats' }[locale]}
             icon={<MessageCircleIcon className="size-4" aria-hidden />}
             highlightSignal={highlightSignal}
         />
@@ -75,11 +68,14 @@ function WorkspaceVariant() {
     // `openMobile` is the shadcn-internal Sheet state. The pressed affordance
     // tracks whichever applies to the current viewport.
     const isVisible = isMobile ? openMobile : open;
-    const label = isVisible ? LABEL.workspaceCollapse[locale] : LABEL.workspaceExpand[locale];
     return (
         <ChatButton
             onClick={toggleSidebar}
-            label={label}
+            label={
+                isVisible
+                    ? { de: 'Assistent einklappen', en: 'Collapse assistant' }[locale]
+                    : { de: 'Assistent ausklappen', en: 'Expand assistant' }[locale]
+            }
             icon={<SparklesIcon className="size-4" aria-hidden />}
             highlightSignal={0}
             isPressed={isVisible}

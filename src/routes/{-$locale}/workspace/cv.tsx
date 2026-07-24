@@ -59,9 +59,6 @@ const description = {
     de: 'Quelle für /cv und /about. Änderungen sind sofort öffentlich sichtbar.',
     en: 'Source of truth for /cv and /about. Changes go public immediately.',
 };
-const rowEditLabel = { de: 'Bearbeiten', en: 'Edit' };
-const rowDeleteLabel = { de: 'Löschen', en: 'Delete' };
-const dragHandleLabel = { de: 'Ziehen zum Sortieren', en: 'Drag to reorder' };
 
 export const Route = createFileRoute('/{-$locale}/workspace/cv')({
     loader: () => routeLoaderGraphqlClient(WorkspaceCvPageDocument)(),
@@ -152,8 +149,8 @@ function ExperienceSection({ rows, locale }: { rows: ReadonlyArray<ExperienceRow
                                 onDelete={async () => {
                                     await deleteMutation({ cvExperienceIds: [row.cvExperienceId] });
                                 }}
-                                editLabel={rowEditLabel[locale]}
-                                deleteLabel={rowDeleteLabel[locale]}
+                                editLabel={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                                deleteLabel={{ de: 'Löschen', en: 'Delete' }[locale]}
                             />
                         </li>
                     ),
@@ -284,8 +281,8 @@ function EducationSection({ rows, locale }: { rows: ReadonlyArray<EducationRow>;
                                 onDelete={async () => {
                                     await deleteMutation({ cvEducationIds: [row.cvEducationId] });
                                 }}
-                                editLabel={rowEditLabel[locale]}
-                                deleteLabel={rowDeleteLabel[locale]}
+                                editLabel={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                                deleteLabel={{ de: 'Löschen', en: 'Delete' }[locale]}
                             />
                         </DraggableItem>
                     ),
@@ -601,8 +598,8 @@ function HobbySection({ rows, locale }: { rows: ReadonlyArray<HobbyRow>; locale:
                                 onDelete={async () => {
                                     await deleteMutation({ cvHobbyIds: [row.cvHobbyId] });
                                 }}
-                                editLabel={rowEditLabel[locale]}
-                                deleteLabel={rowDeleteLabel[locale]}
+                                editLabel={{ de: 'Bearbeiten', en: 'Edit' }[locale]}
+                                deleteLabel={{ de: 'Löschen', en: 'Delete' }[locale]}
                             />
                         </DraggableItem>
                     ),
@@ -777,8 +774,8 @@ function DraggableItem<T>({
             <button
                 type="button"
                 tabIndex={-1}
-                aria-label={dragHandleLabel[locale]}
-                title={dragHandleLabel[locale]}
+                aria-label={{ de: 'Ziehen zum Sortieren', en: 'Drag to reorder' }[locale]}
+                title={{ de: 'Ziehen zum Sortieren', en: 'Drag to reorder' }[locale]}
                 className={cn(
                     'flex shrink-0 cursor-grab items-center justify-center rounded-md border border-transparent text-muted-foreground hover:border-border/60 hover:text-foreground active:cursor-grabbing',
                     compact ? 'w-6' : 'w-7',

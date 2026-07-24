@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { useState } from 'react';
 import { Button } from '../components/base/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/base/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/base/select';
@@ -81,9 +81,6 @@ interface WorkspaceChatComposerProps {
     contextTokensUsed?: number | null;
 }
 
-const placeholderCopy = { de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' };
-const modelLabel = { de: 'Modell', en: 'Model' };
-
 const extractMessageCreateResult = (data: unknown): { chatId: string } | null => {
     const wrapper = data as { admin?: { chatMessageCreate?: { chatId: string } | null } | null } | null | undefined;
     return wrapper?.admin?.chatMessageCreate ?? null;
@@ -142,7 +139,7 @@ export function WorkspaceChatComposer({
             endTurn={endTurn}
             sendMutation={WorkspaceChatMessageCreateDocument}
             extractResult={extractMessageCreateResult}
-            placeholder={placeholderCopy[locale]}
+            placeholder={{ de: 'Frag deinen Assistenten…', en: 'Ask your assistant…' }[locale]}
             availableModels={chatConfig.availableModels}
             modelId={selectedModelId}
             requireToolCallApprovals={mode === 'manual'}
@@ -163,10 +160,10 @@ export function WorkspaceChatComposer({
                     <Select value={selectedModelId} onValueChange={onModelChange} disabled={isLocked}>
                         <SelectTrigger
                             size="sm"
-                            aria-label={modelLabel[locale]}
+                            aria-label={{ de: 'Modell', en: 'Model' }[locale]}
                             // Cap width so "Gemini 3.1 Pro" truncates instead of
                             // shoving Send past the sidebar composer edge.
-                            className="h-7 max-w-[7.5rem] min-w-0 shrink gap-1 px-1.5 text-xs *:data-[slot=select-value]:truncate"
+                            className="h-7 max-w-30 min-w-0 shrink gap-1 px-1.5 text-xs *:data-[slot=select-value]:truncate"
                         >
                             <SelectValue />
                         </SelectTrigger>
@@ -182,7 +179,7 @@ export function WorkspaceChatComposer({
                         <SelectTrigger
                             size="sm"
                             aria-label="Tool call approval mode"
-                            className="h-7 max-w-[5.5rem] shrink-0 gap-1 px-1.5 text-xs"
+                            className="h-7 max-w-22 shrink-0 gap-1 px-1.5 text-xs"
                         >
                             <SelectValue />
                         </SelectTrigger>

@@ -1,11 +1,12 @@
 import { useLocation } from '@tanstack/react-router';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { Maximize2Icon, MessageSquareTextIcon, Minimize2Icon, PlusIcon, SparklesIcon } from 'lucide-react';
+import { Maximize2Icon, MessageSquarePlusIcon, MessageSquareTextIcon, Minimize2Icon, SparklesIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'urql';
 import { Button } from '../components/base/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/base/sheet';
 import { Spinner } from '../components/base/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../components/base/tooltip';
 import type { GqlCChatAssistantInputValue, GqlCChatPageQuery, GqlCVisitorChatListItemFragment } from '../graphql/generated';
 import {
     ChatInputCollectionRespondDocument,
@@ -19,8 +20,8 @@ import { cn } from '../utils/cn';
 import { DATE_FNS_LOCALE } from '../utils/dateFnsLocale';
 import type { Locale } from '../utils/locale';
 import { toFlatAnswerInput } from './chatAssistantInputKinds';
-import { mergeTranscriptMessages } from './chatTranscript';
 import type { TranscriptMessage } from './chatTranscript';
+import { mergeTranscriptMessages } from './chatTranscript';
 import { ChatTranscript as SharedChatTranscript } from './ChatTranscriptShared';
 import { VisitorChatComposer } from './VisitorChatComposer';
 import { useVisitorChat } from './VisitorChatProvider';
@@ -56,8 +57,6 @@ import { useVisitorChat } from './VisitorChatProvider';
 // Radix's `Sheet` (a Dialog underneath) unmounts its children on close, so
 // every fresh open gets a fresh `ChatSurface` instance — no manual reset
 // of the seeded-once ref or chatId.
-
-const newChatLabel = { de: 'Neuer Chat', en: 'New chat' };
 
 interface WebsiteVisitorAssistantChatSheetProps {
     locale: Locale;
@@ -363,10 +362,21 @@ function ChatLoaded({
                 // visitor can keep typing without reaching for the input.
                 autoFocus
                 addonStart={
-                    <Button onClick={resetChat} aria-label={newChatLabel[locale]} variant="ghost">
-                        <PlusIcon className="size-3.5" />
-                        {newChatLabel[locale]}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                type="button"
+                                size="icon-xs"
+                                className="shrink-0"
+                                onClick={resetChat}
+                                aria-label={{ de: 'Neuen Chat starten', en: 'Start new chat' }[locale]}
+                            >
+                                <MessageSquarePlusIcon className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">{{ de: 'Neuen Chat starten', en: 'Start new chat' }[locale]}</TooltipContent>
+                    </Tooltip>
                 }
             />
         </div>

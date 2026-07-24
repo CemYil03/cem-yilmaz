@@ -49,17 +49,6 @@ import { bucketChatsByDay } from './workspaceChatListBuckets';
 // twice (e.g. mid-breakpoint swap) is safe — both mounts read the same
 // chatId, loadedMessages, and live updates.
 
-const jumpToLatestLabel = { de: 'Zum neuesten springen', en: 'Jump to latest' };
-const newChatLabel = { de: 'Neuen Chat starten', en: 'Start new chat' };
-const untitledLabel = { de: 'Ohne Titel', en: 'Untitled' };
-const noPreviousChatsLabel = { de: 'Noch keine Chats.', en: 'No chats yet.' };
-const noSearchResultsLabel = { de: 'Keine Treffer.', en: 'No results.' };
-const searchPlaceholderLabel = { de: 'Chats durchsuchen…', en: 'Search chats…' };
-const searchClearLabel = { de: 'Suche zurücksetzen', en: 'Clear search' };
-const showMoreLabel = { de: 'Mehr anzeigen', en: 'Show more' };
-const backToChatsLabel = { de: 'Chats Übersicht', en: 'Chats Overview' };
-const openStandaloneLabel = { de: 'In eigener Seite öffnen', en: 'Open in its own page' };
-
 // Sidebar chat browser pages by ten. The server clamps aggressively so we
 // couldn't ask for much more per page anyway; ten is what fits on one
 // vertical screen of the sidebar.
@@ -121,7 +110,7 @@ export function WorkspaceAssistantChatBrowser({ locale }: { locale: Locale }) {
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-3">
             <SearchField value={rawQuery} onChange={setRawQuery} locale={locale} />
-            <div className="flex min-h-0 flex-1 flex-col scroll-fade-y overflow-y-auto pr-1 [scrollbar-gutter:stable]">
+            <div className="flex min-h-0 flex-1 flex-col scroll-fade-y overflow-y-auto pr-1 scrollbar-gutter-stable">
                 {chats.length === 0 ? (
                     <EmptyResultsState locale={locale} fetching={fetching} hasQuery={trimmedQuery.length > 0} />
                 ) : (
@@ -144,7 +133,7 @@ export function WorkspaceAssistantChatBrowser({ locale }: { locale: Locale }) {
                     <div className="mt-3 grid place-items-center">
                         <Button variant="ghost" size="sm" onClick={showMore} disabled={fetching}>
                             {fetching ? <Spinner className="size-4" /> : null}
-                            {showMoreLabel[locale]}
+                            {{ de: 'Mehr anzeigen', en: 'Show more' }[locale]}
                         </Button>
                     </div>
                 ) : null}
@@ -164,8 +153,8 @@ function SearchField({ value, onChange, locale }: { value: string; onChange: (ne
                 type="search"
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                placeholder={searchPlaceholderLabel[locale]}
-                aria-label={searchPlaceholderLabel[locale]}
+                placeholder={{ de: 'Chats durchsuchen…', en: 'Search chats…' }[locale]}
+                aria-label={{ de: 'Chats durchsuchen…', en: 'Search chats…' }[locale]}
                 // WebKit renders its own clear-X inside `type="search"` inputs
                 // (visible in Chromium and Safari). We already render our own
                 // clear button on the right, so the native one is a second,
@@ -178,7 +167,7 @@ function SearchField({ value, onChange, locale }: { value: string; onChange: (ne
                 <button
                     type="button"
                     onClick={() => onChange('')}
-                    aria-label={searchClearLabel[locale]}
+                    aria-label={{ de: 'Suche zurücksetzen', en: 'Clear search' }[locale]}
                     className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
                 >
                     <XIcon className="size-3.5" />
@@ -202,7 +191,9 @@ function EmptyResultsState({ locale, fetching, hasQuery }: { locale: Locale; fet
         );
     }
     return (
-        <p className="px-1 py-4 text-xs text-muted-foreground">{hasQuery ? noSearchResultsLabel[locale] : noPreviousChatsLabel[locale]}</p>
+        <p className="px-1 py-4 text-xs text-muted-foreground">
+            {hasQuery ? { de: 'Keine Treffer.', en: 'No results.' }[locale] : { de: 'Noch keine Chats.', en: 'No chats yet.' }[locale]}
+        </p>
     );
 }
 
@@ -219,7 +210,7 @@ function ChatBrowserRow({
         addSuffix: true,
         locale: DATE_FNS_LOCALE[locale],
     });
-    const title = chat.title.trim() ? chat.title : untitledLabel[locale];
+    const title = chat.title.trim() ? chat.title : { de: 'Ohne Titel', en: 'Untitled' }[locale];
     const openStandalone = useOpenChatStandalone();
     // The row hosts two affordances that lead to different surfaces: the
     // whole surface peeks the chat inline (default click), and a tiny
@@ -257,13 +248,13 @@ function ChatBrowserRow({
                             event.stopPropagation();
                             openStandalone(chat.chatId);
                         }}
-                        aria-label={openStandaloneLabel[locale]}
+                        aria-label={{ de: 'In eigener Seite öffnen', en: 'Open in its own page' }[locale]}
                         className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 cursor-pointer place-items-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/row:opacity-100"
                     >
                         <ArrowUpRightIcon className="size-4" aria-hidden />
                     </button>
                 </TooltipTrigger>
-                <TooltipContent side="left">{openStandaloneLabel[locale]}</TooltipContent>
+                <TooltipContent side="left">{{ de: 'In eigener Seite öffnen', en: 'Open in its own page' }[locale]}</TooltipContent>
             </Tooltip>
         </div>
     );
@@ -322,26 +313,26 @@ export function WorkspaceAssistantChatLoadedHeaderActions({ locale }: { locale: 
                     <button
                         type="button"
                         onClick={resetChat}
-                        aria-label={backToChatsLabel[locale]}
+                        aria-label={{ de: 'Chats Übersicht', en: 'Chats Overview' }[locale]}
                         className={sidebarHeaderActionClassName}
                     >
                         <ListIcon className="size-4" aria-hidden />
                     </button>
                 </TooltipTrigger>
-                <TooltipContent>{backToChatsLabel[locale]}</TooltipContent>
+                <TooltipContent>{{ de: 'Chats Übersicht', en: 'Chats Overview' }[locale]}</TooltipContent>
             </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
                         type="button"
                         onClick={onOpenStandalone}
-                        aria-label={openStandaloneLabel[locale]}
+                        aria-label={{ de: 'In eigener Seite öffnen', en: 'Open in its own page' }[locale]}
                         className={sidebarHeaderActionClassName}
                     >
                         <ExternalLinkIcon className="size-4" aria-hidden />
                     </button>
                 </TooltipTrigger>
-                <TooltipContent>{openStandaloneLabel[locale]}</TooltipContent>
+                <TooltipContent>{{ de: 'In eigener Seite öffnen', en: 'Open in its own page' }[locale]}</TooltipContent>
             </Tooltip>
         </>
     );
@@ -393,12 +384,12 @@ export function WorkspaceAssistantChatComposer({ locale }: { locale: Locale }) {
                                 size="icon-xs"
                                 className="shrink-0"
                                 onClick={resetChat}
-                                aria-label={newChatLabel[locale]}
+                                aria-label={{ de: 'Neuen Chat starten', en: 'Start new chat' }[locale]}
                             >
                                 <MessageSquarePlusIcon className="size-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent side="top">{newChatLabel[locale]}</TooltipContent>
+                        <TooltipContent side="top">{{ de: 'Neuen Chat starten', en: 'Start new chat' }[locale]}</TooltipContent>
                     </Tooltip>
                 ) : null
             }
@@ -477,7 +468,7 @@ export function WorkspaceAssistantChatTranscript({
                         reasoningTexts={live.reasoningTextsFor(chatId)}
                         onCollectionSubmit={onCollectionSubmit}
                         onApprovalRespond={onApprovalRespond}
-                        jumpToLatestLabel={jumpToLatestLabel[locale]}
+                        jumpToLatestLabel={{ de: 'Zum neuesten springen', en: 'Jump to latest' }[locale]}
                         locale={locale}
                         isGenerating={live.isGenerating(chatId)}
                         liveTurnMessageIds={live.liveTurnMessageIdsFor(chatId)}

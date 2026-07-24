@@ -25,8 +25,6 @@ import { useLocale } from '../hooks/useLocale';
 
 const PRIMARY_EMAIL = personalInfo.contact.emails[0] ?? '';
 
-const exploreHeading = { de: 'Entdecken', en: 'Explore' };
-
 const exploreItems = [
     { to: '/{-$locale}/about', label: { de: 'Über mich', en: 'About me' }, icon: UserRoundIcon },
     { to: '/{-$locale}/cv', label: { de: 'Lebenslauf', en: 'CV' }, icon: FileTextIcon },
@@ -91,8 +89,10 @@ export function Footer() {
                         </p>
                     </div>
 
-                    <nav aria-label={exploreHeading[locale]} className="flex flex-col gap-3">
-                        <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/55">{exploreHeading[locale]}</h2>
+                    <nav aria-label={{ de: 'Entdecken', en: 'Explore' }[locale]} className="flex flex-col gap-3">
+                        <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/55">
+                            {{ de: 'Entdecken', en: 'Explore' }[locale]}
+                        </h2>
                         <ul className="flex flex-col gap-2 text-sm">
                             {exploreItems.map(({ to, label, icon: Icon }) => (
                                 <li key={to}>

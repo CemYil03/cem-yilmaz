@@ -37,8 +37,6 @@ const description = {
     de: 'Übersicht aller Konversationen, die Besucher mit dem KI-Assistenten geführt haben.',
     en: 'Every conversation visitors have had with the AI assistant.',
 };
-const untitled = { de: 'Ohne Titel', en: 'Untitled' };
-
 const visitorChatsSearchSchema = z.object({
     chatId: z.string().optional(),
 });
@@ -111,7 +109,7 @@ function VisitorChatsList({ chats, locale }: { chats: VisitorChatsAdmin['adminPu
                         addSuffix: true,
                         locale: DATE_FNS_LOCALE[locale],
                     });
-                    const chatTitle = chat.title.trim() ? chat.title : untitled[locale];
+                    const chatTitle = chat.title.trim() ? chat.title : { de: 'Ohne Titel', en: 'Untitled' }[locale];
                     return (
                         <li key={chat.chatId}>
                             <Link
@@ -147,7 +145,9 @@ function VisitorChatDetail({ chat, locale }: { chat: VisitorChatAdmin['adminPubl
 
             {chat ? (
                 <>
-                    <h1 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">{chat.title.trim() || untitled[locale]}</h1>
+                    <h1 className="mt-4 text-2xl md:text-3xl font-bold tracking-tight">
+                        {chat.title.trim() || { de: 'Ohne Titel', en: 'Untitled' }[locale]}
+                    </h1>
                     <GlassCard className="mt-6 px-4 py-6">
                         <ReadOnlyTranscript chat={chat} locale={locale} />
                     </GlassCard>

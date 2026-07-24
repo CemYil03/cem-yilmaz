@@ -41,10 +41,6 @@ import { WorkspaceFileEditor } from './WorkspaceFileEditor';
 //
 // See `docs/features/chat-workspace.md`.
 
-const collapseLabel = { de: 'Assistent ausblenden', en: 'Hide assistant' };
-const assistantLabel = { de: 'Persönlicher Assistent', en: 'Personal assistant' };
-const resizeLabel = { de: 'Breite anpassen', en: 'Resize' };
-
 interface WorkspaceAssistantChatSidebarProps {
     locale: Locale;
     minWidthPx: number;
@@ -120,7 +116,9 @@ export function WorkspaceAssistantChatSidebar({
                     <div className="flex min-w-0 flex-col gap-1">
                         <div className="flex items-center gap-2 text-primary">
                             <SparklesIcon className="size-4" />
-                            <span className="text-sm font-semibold text-sidebar-foreground">{assistantLabel[locale]}</span>
+                            <span className="text-sm font-semibold text-sidebar-foreground">
+                                {{ de: 'Persönlicher Assistent', en: 'Personal assistant' }[locale]}
+                            </span>
                         </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
@@ -130,13 +128,13 @@ export function WorkspaceAssistantChatSidebar({
                                 <button
                                     type="button"
                                     onClick={toggleSidebar}
-                                    aria-label={collapseLabel[locale]}
+                                    aria-label={{ de: 'Assistent ausblenden', en: 'Hide assistant' }[locale]}
                                     className="grid size-7 cursor-pointer place-items-center rounded-md text-sidebar-foreground/70 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:outline-hidden focus:ring-2 focus:ring-sidebar-ring focus:ring-offset-2 focus:ring-offset-sidebar"
                                 >
                                     <PanelRightCloseIcon className="size-4" />
                                 </button>
                             </TooltipTrigger>
-                            <TooltipContent>{collapseLabel[locale]}</TooltipContent>
+                            <TooltipContent>{{ de: 'Assistent ausblenden', en: 'Hide assistant' }[locale]}</TooltipContent>
                         </Tooltip>
                     </div>
                 </div>
@@ -265,7 +263,7 @@ function ResizeHandle({
         <div
             role="separator"
             aria-orientation="vertical"
-            aria-label={resizeLabel[locale]}
+            aria-label={{ de: 'Breite anpassen', en: 'Resize' }[locale]}
             tabIndex={-1}
             onPointerDown={onPointerDown}
             className={
